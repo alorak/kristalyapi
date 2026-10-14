@@ -1231,7 +1231,7 @@ function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null){
 }
 function sliceWorldCorners(g,axis,pos){
  const floating=[0,1,2].filter(n=>n!==axis),shape=volumeShape(g);
- const at=(a,b)=>{const xyz=[0,0,0];xyz[axis]=(g.dims[axis]-1)*pos/100;
+ const at=(a,b)=>{const xyz=[0,0,0];xyz[axis]=(shape[axis]-1)*pos/100;
   xyz[floating[0]]=a*(shape[floating[0]]-1);
   xyz[floating[1]]=b*(shape[floating[1]]-1);
   return volumeWorld(g,...xyz);
