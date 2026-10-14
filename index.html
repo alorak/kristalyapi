@@ -1,4 +1,58 @@
 <!doctype html>
+<!--
+Crystal data attribution and distribution notices.
+Source: https://github.com/anoopkcn/wyckoff
+MIT License
+
+Copyright (c) 2025 Anoop K. Chandran
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Source: https://github.com/spglib/spglib
+Copyright (c) 2024, Spglib team
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+* Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+* Neither the name of the <organization> nor the
+  names of its contributors may be used to endorse or promote products
+  derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT
+HOLDER> BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-->
 <html lang="tr">
 <head>
 <meta charset="utf-8">
@@ -229,6 +283,19 @@ function sgKeys(n){return Object.keys(SPACE_GROUPS).filter(k=>k===String(n)||k.s
 function preferredSetting(n){const a=sgKeys(n);return a.find(k=>k===String(n))||a.find(k=>k.endsWith('-b'))||a.find(k=>k.endsWith('-hexagonal'))||a.find(k=>k.endsWith('-1'))||a[0];}
 function settingData(key){const data=SPACE_GROUPS[key];if(!data)throw Error('Uzay grubu bulunamadı: '+key);return data;}
 function settingOps(key){const [cent,ops]=settingData(key);return ops.flatMap(op=>cent.map(shift=>[op,shift]));}
+function validateSymmetryMetric(cell,key,tolerance=1e-4){
+ const B=basis(cell),ops=settingData(key)[1],points=[[0,0,0],[1,0,0],[0,1,0],[0,0,1]];
+ for(const op of ops){
+  const xyz=points.map(p=>applySymmetry(op,p));
+  const cols=[1,2,3].map(i=>toCart(xyz[i].map((v,j)=>v-xyz[0][j]),B));
+  for(let i=0;i<3;i++)for(let j=i;j<3;j++){
+   const before=B[i].dot(B[j]),after=cols[i].dot(cols[j]);
+   if(Math.abs(before-after)>tolerance*Math.max(1,Math.abs(before),Math.abs(after)))return false;
+  }
+ }
+ return true;
+}
+
 function expandSites(sites,key,limit=1800){
  const out=[],seen=new Set(),ops=settingOps(key);
  for(const site of sites)for(const [op,shift] of ops){
@@ -411,6 +478,7 @@ function build(){
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
  const B=basis(state.cell);const center=toCart(state.rep.map(v=>v/2),B);clearRoot();root.position.copy(center).multiplyScalar(-1);
+ if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting))throw Error('Uzay grubu simetrisi hücre metrikleriyle uyumsuz. Hücreyi veya uzay grubunu düzeltin.');
  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
  const positions=new Set(),entry=[];
  for(let s=0;s<physical.length;s++){
