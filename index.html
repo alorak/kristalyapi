@@ -1879,7 +1879,7 @@ function tokenizeCif(src){
 function cifData(src){
  const t=tokenizeCif(src),tags={},loops=[];let i=0;
  while(i<t.length){
-  const k=t[i++];if(k.toLowerCase()==='loop_'){const cols=[];while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());if(!cols.length)continue;const rows=[];while(i<t.length&&!t[i].startsWith('_')&&!/^(loop_|data_|save_|stop_)$/i.test(t[i])&&!/^data_/i.test(t[i])){const row=t.slice(i,i+cols.length);if(row.length<cols.length)break;rows.push(row);i+=cols.length;}loops.push({cols,rows});}
+  const k=t[i++];if(k.toLowerCase()==='loop_'){const cols=[];while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());if(!cols.length)continue;const rows=[];while(i<t.length&&!t[i].startsWith('_')&&!/^(loop_|data_|save_|stop_)$/i.test(t[i])&&!/^data_/i.test(t[i])){const row=t.slice(i,i+cols.length);if(row.length<cols.length)break;rows.push(row);i+=cols.length;}if(cols.length===1&&rows.length===1&&cols[0].startsWith('_cell_'))tags[cols[0]]=rows[0][0];loops.push({cols,rows});}
   else if(k.startsWith('_')&&i<t.length)tags[k.toLowerCase()]=t[i++];
  }
  const get=(...ks)=>{for(const k of ks)if(tags[k]!==undefined)return tags[k];return undefined;};
@@ -1887,7 +1887,7 @@ function cifData(src){
  const sites=[];let sym=['x,y,z'];let explicitSymmetry=false;
  for(const lp of loops){
   const f=lp.cols.findIndex(k=>k==='_atom_site_fract_x'),fy=lp.cols.indexOf('_atom_site_fract_y'),fz=lp.cols.indexOf('_atom_site_fract_z');
-  if(f>=0&&fy>=0&&fz>=0){const el=lp.cols.indexOf('_atom_site_type_symbol'),label=lp.cols.indexOf('_atom_site_label'),occ=lp.cols.indexOf('_atom_site_occupancy');for(const row of lp.rows){const x=number(row[f]),y=number(row[fy]),z=number(row[fz]);if(![x,y,z].every(Number.isFinite))continue;const raw=el>=0?row[el]:(label>=0?row[label]:'X');sites.push({symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy:occ>=0&&Number.isFinite(number(row[occ]))?number(row[occ]):1});}}
+  if(f>=0&&fy>=0&&fz>=0){const el=lp.cols.indexOf('_atom_site_type_symbol'),label=lp.cols.indexOf('_atom_site_label'),occ=lp.cols.indexOf('_atom_site_occupancy');for(const row of lp.rows){const x=number(row[f]),y=number(row[fy]),z=number(row[fz]);if(![x,y,z].every(Number.isFinite))throw Error('CIF atom koordinatı eksik veya geçersiz: '+(label>=0?row[label]:'atom '+(sites.length+1)));const raw=el>=0?row[el]:(label>=0?row[label]:'X');sites.push({symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy:occ>=0&&Number.isFinite(number(row[occ]))?number(row[occ]):1});}}
   const op=lp.cols.findIndex(k=>k==='_space_group_symop_operation_xyz'||k==='_symmetry_equiv_pos_as_xyz');if(op>=0&&lp.rows.length){sym=lp.rows.map(row=>row[op]);explicitSymmetry=true;}
  }
  if(!sites.length)throw Error('CIF içinde _atom_site_fract_* koordinat döngüsü bulunamadı.');
@@ -1905,13 +1905,28 @@ function cifData(src){
  }else if(!explicitSymmetry&&sgNumber===1&&canon(sg)!==canon('P 1')){
   assumption='CIF uzay grubu "'+sg+'" tanımlanmış ancak tanınmayan simetri / setting nedeniyle yalnızca P1 konumları gösterildi.';
  }
- const out=[],seen=new Set();
+ const out=[],grouped=new Map(),vectors=basis(c);
+ const symmetryDistance=(a,b)=>{
+  // Compare equivalent sites in Cartesian Å, including periodic wrapping.
+  // CIF fractional values often have only four decimals (e.g. graphite);
+  // an exact decimal hash incorrectly doubles Wyckoff multiplicities.
+  const d=['x','y','z'].map((key,k)=>{const delta=a[k]-b[key];return delta-Math.round(delta);});
+  if(d.some(v=>Math.abs(v)>.001))return Infinity;
+  const X=d[0]*vectors[0].x+d[1]*vectors[1].x+d[2]*vectors[2].x;
+  const Y=d[0]*vectors[0].y+d[1]*vectors[1].y+d[2]*vectors[2].y;
+  const Z=d[0]*vectors[0].z+d[1]*vectors[1].z+d[2]*vectors[2].z;
+  return Math.hypot(X,Y,Z);
+ };
  for(const site of sites)for(let j=0;j<operations.length;j++){
   const [op,offset]=operations[j],shift=offset.split(',').map(rational);
   const xyz=applySymmetry(op,[site.x,site.y,site.z]).map((v,i)=>frac(v+shift[i]));
-  const keyPos=site.symbol+'|'+xyz.map(v=>Math.round(v*1e5)).join(',');
-  if(seen.has(keyPos))continue;seen.add(keyPos);
-  out.push({...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(operations.length>1?'_'+(j+1):'')});
+  // Mixed-occupancy species on a shared site must never be collapsed.
+  const group=site.symbol+'|'+Math.round(site.occupancy*10000);
+  let present=grouped.get(group);
+  if(!present){present=[];grouped.set(group,present);}
+  if(present.some(other=>symmetryDistance(xyz,other)<.001))continue;
+  const next={...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(operations.length>1?'_'+(j+1):'')};
+  present.push(next);out.push(next);
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
  const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
@@ -1922,7 +1937,7 @@ function symPart(expr,coord){
  for(const term of terms){let sign=1,s=term;if(s.startsWith('-')){sign=-1;s=s.slice(1);}else if(s.startsWith('+'))s=s.slice(1);
   const m=s.match(/^(\d*(?:\.\d+)?(?:\/\d+)?)?([xyz])(?:\/(\d+))?$/i);
   if(m){let coeff=m[1]?rational(m[1]):1;if(m[3])coeff/=Number(m[3]);sum+=sign*coeff*coord['xyz'.indexOf(m[2].toLowerCase())];}
-  else if(/^\d+(?:\.\d+)?(?:\/\d+)?$/.test(s))sum+=sign*rational(s);
+  else if(/^(?:\d+(?:\.\d*)?|\.\d+)(?:\/\d+)?$/.test(s))sum+=sign*rational(s);
   else throw Error('Desteklenmeyen CIF simetri ifadesi: '+expr);
  }
  return sum;
