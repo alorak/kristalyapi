@@ -487,6 +487,11 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 @media(max-width:1180px){#app>.panel.right{display:none}#app>.panel.right.open{display:flex}}
 @media(max-width:720px){#app>.panel.right{display:none}#app>.panel.right.open{display:flex}}
 
+
+.volume-color-legend{height:9px;min-height:9px;border-radius:20px;background:linear-gradient(to right,rgb(38,82,224),#fff,rgb(255,43,36));border:1px solid #d8e3ef}
+#app>.panel.right .right-tab-panel>.section .note,#app>.panel.right .right-tab-panel>.section .field span{color:#57728a}
+#app>.panel.right .right-tab-panel>.section h2{color:#47627e}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -629,6 +634,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      <label class="check"><input type="checkbox" id="volumeContours"> Kesitte izodeğer konturu</label>
      <button id="openPotential">Elektrostatik potansiyel yükle (renklendir)</button>
      <label class="check"><input type="checkbox" id="volumePotential"> İzoyüzeyi potansiyele göre renklendir</label>
+     <div id="volumeColorLegend" class="volume-color-legend" aria-label="Mavi düşük, beyaz orta, kırmızı yüksek skaler alan"></div>
      <button id="clearVolume">Hacimsel veriyi temizle</button>
    </div>
    <p class="hint">Izoyüzeyler marching tetrahedra ile oluşturulur. Büyük ızgaralar seyreltilir; kesit gerçek fiziksel koordinatlarda yerleştirilir. Yüzey renkleri ancak uyumlu ikinci potansiyel ızgarası yüklendiğinde potansiyeli temsil eder.</p>
@@ -1097,7 +1103,8 @@ function readXsf(src){
    if(Number.isInteger(atomCount)&&atomCount>0&&atomCount<=1000){
     const B=vectors.map(v=>new THREE.Vector3(...v));
     for(let i=0;i<atomCount;i++){
-     const row=(lines[pc+2+i]||'').split(/\s+/),symbol=cleanSymbol(row[0]);
+     const row=(lines[pc+2+i]||'').split(/\s+/),symbol=/^\d+$/.test(row[0])?PERIODIC_SYMBOLS[Number(row[0])-1]:cleanSymbol(row[0]);
+     if(!symbol)throw Error('XSF atom numarası geçersiz.');
      const xyz=row.slice(1,4).map(volumeNumber);
      if(xyz.length!==3)throw Error('XSF atom koordinatı eksik.');
      const f=toFrac(new THREE.Vector3(...xyz),B);
@@ -1311,7 +1318,7 @@ async function loadVolumeFile(file,asPotential=false){
 function resetVolume(){
  clearVolumeLayer();densityGrid=null;potentialGrid=null;
  volumeView.mode='off';$('volumeMode').value='off';$('volumePotential').checked=false;
- updateVolumeInfo();
+ updateVolumeInfo();if(root&&orbit)fit();
 }
 function initVolumeControls(){
  $('openVolume').onclick=()=>$('volumeFile').click();
