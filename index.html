@@ -501,6 +501,15 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 #viewport .topbar .tools .view-tool[aria-pressed="true"]{background:#e4effa;color:#1767ab;border-color:#9ac6e7}
 @media(max-width:720px){#viewport .topbar .tools{gap:3px;padding:4px}#viewport .topbar .tools .view-tool{width:34px;height:34px;min-width:34px;padding:5px}#viewport .topbar .tools .view-tool svg{width:18px;height:18px}}
 
+
+.bond-rule-editor{display:grid;gap:9px;margin-top:13px;padding:11px;background:#f6f9fd;border:1px solid #d9e3ef;border-radius:10px}
+.bond-editor-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+.bond-rule-list{display:grid;gap:6px}
+.bond-rule-row{display:flex;align-items:center;gap:9px;justify-content:space-between;padding:7px 9px;border:1px solid #e0e9f3;border-radius:8px;background:#fff;color:#395472;font-size:12px}
+.bond-rule-row button{padding:5px 9px;flex:none;font-size:12px}
+.bond-editor-pair .field{min-width:0}
+.bond-rule-editor button{font-size:12px}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -531,7 +540,12 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
    <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
    <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
-   <label class="field"><span>Koordinasyon çokyüzlüsü</span><select id="polyElement"><option value="">Kapalı</option></select></label>
+   <label class="field"><span>Koordinasyon çokyüzlüsü (merkez atom)</span><select id="polyElement"><option value="">Kapalı</option></select></label>
+   <div class="triple">
+     <label class="field compact"><span>Komşu sınırı (Å)</span><input id="polyCut" type="number" min="0" max="12" step="0.1" value="0" title="0: bağ kurallarını kullan"></label>
+     <label class="field compact"><span>En fazla komşu</span><input id="polyNeighbors" type="number" min="4" max="24" step="1" value="12"></label>
+   </div>
+   <p class="hint">0 Å: etkin bağ kuralları. Çokyüzlüler periyodik komşularla oluşturulur; kimyasal koordinasyon yorumunu kullanıcı doğrulamalıdır.</p>
   </div></div>
   <div class="section"><h2>Birim hücre <span>Å / °</span></h2>
    <div class="triple">
@@ -557,7 +571,19 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   <div class="section"><h2>Atom türlerine göre bağlar <span class="stage">Aşama 1</span></h2>
    <label class="field"><span>Özel eşikler (Å), örn. Si-O:1.4-2.0; Ti-O:1.7-2.3</span><input id="bondRules" type="text" placeholder="Si-O:1.4-2.0; Ti-O:1.7-2.3" style="width:100%"></label>
    <button id="applyBondRules" class="small" style="margin-top:8px">Bağ kurallarını uygula</button>
-   <p class="hint">Belirtilen atom çiftlerinde yalnızca özel mesafe aralığı geçerlidir. Diğer çiftler için genel eşik kullanılır.</p>
+   <div class="bond-rule-editor">
+     <div class="bond-editor-pair">
+       <label class="field compact"><span>Element A</span><select id="bondPairA"></select></label>
+       <label class="field compact"><span>Element B</span><select id="bondPairB"></select></label>
+     </div>
+     <div class="bond-editor-pair">
+       <label class="field compact"><span>En kısa (Å)</span><input id="bondMin" type="number" min="0" step=".05" value="1.4"></label>
+       <label class="field compact"><span>En uzun (Å)</span><input id="bondMax" type="number" min=".1" max="15" step=".05" value="2.0"></label>
+     </div>
+     <div class="actionrow"><button id="bondSuggest" type="button">Geometrik öneri</button><button id="bondRuleAdd" type="button" class="primary">Kural ekle / güncelle</button></div>
+     <div id="bondRuleList" class="bond-rule-list" aria-live="polite"></div>
+   </div>
+   <p class="hint">Element çiftine özel min–maks eşikleri diğer bağlardan bağımsızdır. Öneriler atom yarıçaplarına dayalı görsel başlangıç değerleridir, deneysel bağ doğrulaması değildir.</p>
   </div>
   <div class="section"><h2>Süperhücre</h2><div class="triple">
    <label class="field compact"><span>a ×</span><input id="ra" type="number" min="1" max="6" value="2"></label>
@@ -900,7 +926,7 @@ function toCart(f,B){return B[0].clone().multiplyScalar(f[0]).addScaledVector(B[
 function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));if(Math.abs(den)<1e-12)throw Error('Tekil örgü matrisi.');return [p.dot(new THREE.Vector3().crossVectors(B[1],B[2]))/den,p.dot(new THREE.Vector3().crossVectors(B[2],B[0]))/den,p.dot(new THREE.Vector3().crossVectors(B[0],B[1]))/den];}
 function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
 function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
-let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
+let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyCut:0,polyNeighbors:12,warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
 const MAX_ATOMS=1800,MAX_BONDS=6500;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
@@ -1425,6 +1451,46 @@ function bondRange(a,b,rules,cut,auto=false){
  const estimate=1.2*((RADII[a]||1.1)+(RADII[b]||1.1));
  return [.35,auto?Math.min(cut,estimate):cut];
 }
+
+/* Periodic first-neighbor coordination: each periodic image is a separate
+   geometric neighbor (NaCl has six distinct ion images, not one site).
+   No oxidation-state or bond-order inference is made here. */
+function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=24){
+ if(!sites[centerIndex])throw Error('Koordinasyon merkezi bulunamadı.');
+ const center=sites[centerIndex],start=[frac(+center.x),frac(+center.y),frac(+center.z)],found=[];
+ for(let j=0;j<sites.length;j++){
+  const site=sites[j],end=[frac(+site.x),frac(+site.y),frac(+site.z)];
+  const range=bondRange(center.symbol,site.symbol,rules,cut,auto);
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+   if(j===centerIndex&&x===0&&y===0&&z===0)continue;
+   const delta=[end[0]-start[0]+x,end[1]-start[1]+y,end[2]-start[2]+z];
+   const d=toCart(delta,B).length();
+   if(d<1e-5||d<range[0]-1e-6||d>range[1]+1e-6)continue;
+   found.push({index:j,element:site.symbol,distance:d,delta,shift:[x,y,z]});
+  }
+ }
+ found.sort((a,b)=>a.distance-b.distance||a.index-b.index);
+ return found.slice(0,Math.max(1,Math.min(24,Math.floor(maxNeighbors)||12)));
+}
+function coordinateBondSuggestion(a,b){
+ const r=(RADII[a]||1.1)+(RADII[b]||1.1);
+ return [Math.max(.35,Math.round(.72*r*20)/20),Math.min(15,Math.round(1.2*r*20)/20)];
+}
+function setPairBondRule(str,a,b,min,max){
+ const rules=parseBondRules(str);
+ const pair=[cleanSymbol(a),cleanSymbol(b)].sort().join('-');
+ if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<=min||max>15)
+  throw Error('Bağ aralığı geçersiz.');
+ rules.set(pair,[min,max]);
+ return [...rules.entries()].sort(([a],[b])=>a.localeCompare(b))
+   .map(([key,[lower,upper]])=>key+':'+Number(lower.toFixed(3))+'-'+Number(upper.toFixed(3))).join('; ');
+}
+function removePairBondRule(str,pair){
+ const rules=parseBondRules(str);rules.delete(pair);
+ return [...rules.entries()].sort(([a],[b])=>a.localeCompare(b))
+  .map(([key,[lo,hi]])=>key+':'+lo+'-'+hi).join('; ');
+}
+
 function minimumPeriodicImage(fa,fb,B){
  let distance=Infinity,shift=[0,0,0],delta=null;
  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
@@ -1776,13 +1842,22 @@ function build(){
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));root.add(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})));}}
  if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;root.add(sprite);}
  if(state.poly){
-  const mat=new THREE.MeshPhongMaterial({color:COLORS[state.poly]||'#54a1db',side:THREE.DoubleSide,transparent:true,opacity:.24,depthWrite:false,shininess:70});
+  const mat=new THREE.MeshPhongMaterial({color:COLORS[state.poly]||'#54a1db',side:THREE.DoubleSide,transparent:true,opacity:.25,depthWrite:false,shininess:70});
+  mat.userData.temporary=true;
+  const polyRules=state.polyCut>0?new Map():rules,polyCutoff=state.polyCut>0?state.polyCut:state.cut;
   let count=0;
-  for(let i=0;i<entry.length&&count<100;i++){
-   if(entry[i].site.symbol!==state.poly)continue;
-   const neigh=adjacency[i].sort((a,b)=>entry[a].pos.distanceTo(entry[i].pos)-entry[b].pos.distanceTo(entry[i].pos)).slice(0,12);
-   if(neigh.length<4)continue;
-   try{const g=new ConvexGeometry(neigh.map(j=>entry[j].pos));const mesh=new THREE.Mesh(g,mat);root.add(mesh);const ed=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x96d8ff,transparent:true,opacity:.65}));root.add(ed);count++;}catch(e){}
+  for(let i=0;i<entry.length&&count<64;i++){
+   if(!visibleAtom(entry[i])||entry[i].site.symbol!==state.poly)continue;
+   const neighbors=coordinationNeighbors(physical,entry[i].idx,B,polyRules,polyCutoff,state.polyCut>0?false:state.autoBond,state.polyNeighbors||12);
+   if(neighbors.length<4)continue;
+   try{
+    const vertices=neighbors.map(nb=>entry[i].pos.clone().add(toCart(nb.delta,B)));
+    const g=new ConvexGeometry(vertices);
+    const mesh=new THREE.Mesh(g,mat);root.add(mesh);
+    const edges=new THREE.LineSegments(new THREE.EdgesGeometry(g),
+     new THREE.LineBasicMaterial({color:0x4296c2,transparent:true,opacity:.74}));
+    root.add(edges);count++;
+   }catch(err){console.warn('Koordinasyon çokyüzlüsü oluşturulamadı:',err.message);}
   }
  }
  drawSelection();
@@ -1841,11 +1916,34 @@ function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncSgControls();$('bondRules').value=state.bondRules;
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
+ $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
- try{previewPlane();}catch(e){}fillPoly();renderSites();
+ try{previewPlane();}catch(e){}fillPoly();renderSites();renderBondRuleEditor();
 }
 function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
+
+function renderBondRuleEditor(){
+ const elements=[...new Set(state.sites.map(s=>cleanSymbol(s.symbol)))].sort();
+ for(const id of ['bondPairA','bondPairB']){
+  const node=$(id),value=node.value;node.replaceChildren();
+  for(const symbol of elements){const option=document.createElement('option');option.value=symbol;option.textContent=symbol;node.append(option);}
+  if(elements.includes(value))node.value=value;
+ }
+ const container=$('bondRuleList');container.replaceChildren();
+ const rules=parseBondRules(state.bondRules);
+ for(const [pair,[min,max]] of [...rules.entries()].sort(([a],[b])=>a.localeCompare(b))){
+  const line=document.createElement('div');line.className='bond-rule-row';
+  const text=document.createElement('span');text.textContent=pair+' · '+min.toFixed(2)+'–'+max.toFixed(2)+' Å';
+  const remove=document.createElement('button');remove.type='button';remove.textContent='Sil';
+  remove.setAttribute('aria-label',pair+' bağ kuralını sil');
+  remove.onclick=()=>{state.bondRules=removePairBondRule(state.bondRules,pair);
+   $('bondRules').value=state.bondRules;renderBondRuleEditor();build();};
+  line.append(text,remove);container.append(line);
+ }
+ if(!rules.size){const hint=document.createElement('small');hint.textContent='Henüz özel kural yok.';container.append(hint);}
+}
+
 function renderSites(){
  const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
  state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);tr.append(td);}
@@ -1873,7 +1971,7 @@ function loadPreset(key){
  if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
- state.cut=ex.cut;state.warning='';state.poly='';state.rep=[1,1,1];
+ state.cut=ex.cut;state.warning='';state.poly='';state.polyCut=0;state.polyNeighbors=12;state.rep=[1,1,1];
  state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};
  state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
@@ -1885,7 +1983,7 @@ function createEmptyStructure(){
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
- state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
+ state.poly='';state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
  state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};
  syncControls();build();fit();
@@ -2040,7 +2138,7 @@ function lastCrystalPayload(current){
   bondRules:current.bondRules,plane:current.plane,
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
-  atomScale:current.atomScale,poly:current.poly
+  atomScale:current.atomScale,poly:current.poly,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors
  };
 }
 function storeLastCrystal(storage,current){
@@ -2057,7 +2155,9 @@ function restoreLastCrystal(storage){
    bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,
    labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,
    poly:typeof obj.poly==='string'&&obj.poly.length<=3?obj.poly:'',
-   atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
+   atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8,
+   polyCut:Number.isFinite(Number(obj.polyCut))?clamp(Number(obj.polyCut),0,12):0,
+   polyNeighbors:Number.isInteger(Number(obj.polyNeighbors))?clamp(Number(obj.polyNeighbors),4,24):12};
 }
 function persistLastCrystal(){
  try{storeLastCrystal(window.localStorage,state);}catch(err){console.warn('Son kristal yerel olarak kaydedilemedi:',err.message);}
@@ -2572,7 +2672,9 @@ function bind(){
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('useSymmetry').onchange=e=>{if(e.target.checked&&!validateSymmetryMetric(state.cell,state.sgSetting)){e.target.checked=false;inform('Uzay grubu seçili hücre parametreleriyle uyumsuz.');return;}state.symmetryEnabled=e.target.checked;syncSgControls();renderSites();build();fit();};
  $('wyckoff').onchange=e=>{const w=settingData(state.sgSetting)[2].find(x=>x[0]===e.target.value);if(w)$('wyckoffInfo').textContent=w[1]+w[0]+' · site symmetry '+w[2]+' · örnek koordinat: '+w[3];};
- $('applyBondRules').onclick=()=>{try{const value=$('bondRules').value;parseBondRules(value);state.bondRules=value;build();inform('Bağ türü kuralları uygulandı.');}catch(e){inform(e.message);}};
+ $('applyBondRules').onclick=()=>{try{const value=$('bondRules').value;parseBondRules(value);state.bondRules=value;renderBondRuleEditor();build();inform('Bağ türü kuralları uygulandı.');}catch(e){inform(e.message);}};
+ $('bondSuggest').onclick=()=>{const range=coordinateBondSuggestion($('bondPairA').value,$('bondPairB').value);$('bondMin').value=range[0];$('bondMax').value=range[1];};
+ $('bondRuleAdd').onclick=()=>{try{state.bondRules=setPairBondRule(state.bondRules,$('bondPairA').value,$('bondPairB').value,Number($('bondMin').value),Number($('bondMax').value));$('bondRules').value=state.bondRules;renderBondRuleEditor();build();}catch(e){inform(e.message);}};
  $('applyPlane').onclick=()=>{try{previewPlane();build();}catch(e){inform(e.message);}};
  $('createSlab').onclick=applySurfaceSlab;
  $('matrixPreset').onchange=e=>{
@@ -2587,6 +2689,11 @@ function bind(){
  for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
+ for(const field of ['polyCut','polyNeighbors'])$(field).addEventListener('change',e=>{
+  const value=Number(e.target.value);
+  if(!Number.isFinite(value)||(field==='polyCut'&&(value<0||value>12))||(field==='polyNeighbors'&&(!Number.isInteger(value)||value<4||value>24))){inform('Geçersiz koordinasyon parametresi.');syncControls();return;}
+  state[field]=value;build();
+ });
  $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
  initExportModal();
  $('clearMeasure').onclick=()=>{selected=[];drawSelection();};
