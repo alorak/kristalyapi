@@ -2339,10 +2339,17 @@ function recordHistoryChange(){
 }
 function restoreHistorySnapshot(serialized){
  const restored=loadProject(serialized);
+ const cellChanged=JSON.stringify(state.cell)!==JSON.stringify(restored.cell);
+ const supercellChanged=JSON.stringify(state.rep)!==JSON.stringify(restored.rep);
+ const structureChanged=state.name!==restored.name||cellChanged;
  state={...state,...restored};
+ // A density/potential dataset is not part of the crystal history. Do not
+ // leave a previously imported volumetric dataset over an unrelated crystal.
+ if(structureChanged&&densityGrid)resetVolume();
  selected=[]; // Atom indices may no longer exist after undo/redo.
  syncControls();
  if(build()===false)throw Error('Kristal geçmişindeki yapı çizilemedi.');
+ if(cellChanged||supercellChanged)fit();
 }
 function applyHistory(direction){
  const action=direction==='undo'?editorHistory.undo:direction==='redo'?editorHistory.redo:null;
