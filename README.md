@@ -116,9 +116,26 @@ Modal `Escape`, **Vazgeç** veya kapat düğmesiyle kapanır. Dışa aktarma ve 
 
 COD resmî uç noktaları: [OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures), [klasik JSON araması](https://www.crystallography.net/cod/result.php?format=json), tekil CIF için `https://www.crystallography.net/cod/4335507.cif`.
 
-`Otomatik`, `Yalnız OPTIMADE` ve `Yalnız COD klasik` seçenekleri vardır. **`proxy.cors.dev` ve `allorigins.win` kullanılmaz**; harici CORS proxy'leri hata veriyor ve veri aktarımının gizliliğini karmaşıklaştırıyordu. JSON tabanlı REST API olması tarayıcının CORS güvenlik politikasını kendiliğinden aşmaz. Tam otomatik çevrimiçi içe aktarımı sunucu CORS izninden bağımsız ve garantili yapmak için GitHub Pages dışında kendi denetlediğin bir backend/reverse proxy gerekir. Bu proje, ek sunucu gerektirmeyen dosya seçme yolunu da sunar.
+`Otomatik`, `Yalnız kendi Cloudflare Worker API`, `Yalnız OPTIMADE` ve `Yalnız COD klasik` seçenekleri vardır. **`proxy.cors.dev` ve `allorigins.win` kullanılmaz**; harici CORS proxy'leri hata veriyor ve veri aktarımının gizliliğini karmaşıklaştırıyordu. JSON tabanlı REST API olması tarayıcının CORS güvenlik politikasını kendiliğinden aşmaz. Tam otomatik çevrimiçi içe aktarımı sunucu CORS izninden bağımsız ve garantili yapmak için GitHub Pages dışında kendi denetlediğin bir backend/reverse proxy gerekir. Bu proje, ek sunucu gerektirmeyen dosya seçme yolunu da sunar.
 
 
+### Tam otomatik CORS bağımsız içe aktarma (Cloudflare Worker)
+
+Depoda [Cloudflare Worker ağ geçidi](worker/README.md) için kaynak kod,
+Wrangler dağıtım yapılandırması ve güvenlik testleri bulunur. Kütüphane
+ekranındaki **Cloudflare Worker bağlantısı** alanına kendi dağıttığın
+Worker HTTPS adresini girip **Bağlantıyı test et** ile hem Worker sağlık
+kontrolünü hem de gerçek COD CIF indirmesini doğrulayabilirsin.
+**Kaydet** sonrasında Otomatik mod tüm sorgularda Worker'ı önce dener,
+yer imi içe aktarmada ise **orijinal CIF dosyasını** Worker'dan öncelikle
+indirir. Orijinal CIF, uzay grubu ve kristalografik üstverileri korur.
+İnternet yokken daha önce önbelleğe alınmış CIF kullanılabilir.
+
+Bu ek servis dağıtılmadığı veya adresi henüz girilmediği takdirde
+uygulama doğrudan COD / dosyadan içe aktarma yöntemiyle çalışmaya devam eder.
+**GitHub Pages merge işlemi Worker'ı Cloudflare hesabına otomatik dağıtmaz.**
+İlk kurulum: Cloudflare hesabında Wrangler ile Worker'ı yayımla, ardından
+Workers.dev HTTPS adresini uygulamaya kaydet.
 ## Özellikler
 
 - Si (diamond cubic), C (elmas), NaCl, CsCl, Cu (FCC), BaTiO₃ (ideal kübik), grafit örnekleri
