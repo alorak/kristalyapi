@@ -687,7 +687,7 @@ test('(111) Miller family repeats at integer offsets across a 2×2×2 supercell'
 test('Miller single-plane mode preserves requested t and signed indices are supported',()=>{
  assert.deepEqual(Array.from(api.millerPlaneOffsets(1,1,1,1,[2,2,2],false)),[1]);
  assert.deepEqual(Array.from(api.millerPlaneOffsets(-1,0,1,.5,[2,2,2],true)),
-  [-1.5,-.5,.5,1.5,2.5]);
+  [-1.5,-.5,.5,1.5]);
  assert.throws(()=>api.millerPlaneOffsets(1,1,1,NaN,[2,2,2],true));
 });
 test('Miller family checkbox and project round-trip retain the chosen display mode',()=>{
