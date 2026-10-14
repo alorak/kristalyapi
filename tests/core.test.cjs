@@ -676,3 +676,37 @@ test('VASP periodic grid closes at unit-cell boundary without duplicating stored
  assert.ok(iso.triangles>=0);
  assert.ok(Array.from(iso.positions).every(Number.isFinite));
 });
+
+test('CIF fractional symmetry operators accept leading-decimal translations',()=>{
+ const out=api.applySymmetry('z+.5, y-.5, -x+1/2',[.1,.2,.3]);
+ approx(out[0],.8);approx(out[1],-.3);approx(out[2],.4);
+ assert.throws(()=>api.applySymmetry('z+bad, y, x',[0,0,0]));
+});
+test('single-column CIF cell loop and quoted comments parse without losing lattice angles',()=>{
+ const p=fs.readFileSync(path.join(__dirname,'validation','fixtures','real','FePO4.cif'),'utf8');
+ const c=api.cifData(p);
+ assert.equal(c.sites.length,24);
+ approx(c.cell.alpha,91);approx(c.cell.beta,92);approx(c.cell.gamma,93);
+ assert.equal(c.sites.filter(s=>s.symbol==='Fe').length,4);
+});
+test('graphite short-precision equivalent Wyckoff sites are deduplicated with metric tolerance',()=>{
+ const p=fs.readFileSync(path.join(__dirname,'validation','fixtures','real','Graphite.cif'),'utf8');
+ const c=api.cifData(p);
+ assert.equal(c.sites.length,4);
+ assert.equal(c.sites.filter(s=>s.symbol==='C').length,4);
+});
+test('body centered Fe cubic CIF expands explicit half-translation to two atomic sites',()=>{
+ const p=fs.readFileSync(path.join(__dirname,'validation','fixtures','real','Fe.cif'),'utf8');
+ const c=api.cifData(p);
+ assert.equal(c.sites.length,2);
+ assert.equal(c.sites.every(s=>s.symbol==='Fe'),true);
+});
+test('unknown CIF atomic positions cannot silently disappear from imported crystal',()=>{
+ const p=fs.readFileSync(path.join(__dirname,'validation','fixtures','real','ICSD59959.cif'),'utf8');
+ assert.throws(()=>api.cifData(p),/atom koordinatı eksik/);
+});
+test('COD 4335507 keeps all 22 crystallographic sites',()=>{
+ const p=fs.readFileSync(path.join(__dirname,'validation','fixtures','real','COD_4335507.cif'),'utf8');
+ const c=api.cifData(p);
+ assert.equal(c.sites.length,22);
+});
