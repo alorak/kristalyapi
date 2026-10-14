@@ -44,6 +44,9 @@ jobs:
       - name: Validate measurement engine and pinned fixtures
         run: python -m unittest discover -s tests/validation -p 'test_*.py' -v
 
+      - name: Validate headless CIF extraction against UI bootstrap changes
+        run: node --test tests/validation/test_runner.cjs
+
       - name: Run browser vs Gemmi CIF measurements
         env:
           STRICT_MODE: ${{ inputs.strict || 'false' }}
