@@ -28,7 +28,7 @@ const script = moduleScript
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} } };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,SPACE_GROUPS,sgKeys,settingOps,expandSites,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -112,4 +112,79 @@ test('XYZ: places Cartesian positions in a padded non-periodic visual box', () =
   assert.equal(d.sites.length, 2);
   approx(d.cell.a, 6);
   assert.match(d.warning, /yapay/);
+});
+
+test('all 230 space-group numbers have at least one dataset setting', () => {
+  for(let n = 1; n <= 230; n++) assert.ok(api.sgKeys(n).length > 0, 'missing SG ' + n);
+});
+test('all 274 space-group settings reproduce general-position multiplicity', () => {
+  for(const [key, data] of Object.entries(api.SPACE_GROUPS)){
+    const site = [{symbol:'X', x:.137, y:.237, z:.341}];
+    const actual = api.expandSites(site, key).length;
+    const expected = data[2][data[2].length-1][1];
+    assert.equal(actual, expected, 'SG '+key);
+  }
+});
+test('special positions reduce orbit multiplicity (Fm-3m)', () => {
+  assert.equal(api.expandSites([{symbol:'Cu',x:0,y:0,z:0}], '225').length, 4);
+  assert.equal(api.expandSites([{symbol:'Cu',x:.137,y:.237,z:.341}], '225').length, 192);
+});
+test('cubic Miller d111 and finite (111) section polygon', () => {
+  const B = api.basis(cubic), info = api.planeNormal(1,1,1,B);
+  approx(info.d,5/Math.sqrt(3));
+  assert.equal(api.planeIntersections(1,1,1,1,[1,1,1],B).length,3);
+});
+test('triclinic Miller plane produces positive d spacing', () => {
+  const B=api.basis({a:4,b:5,c:6,alpha:75,beta:85,gamma:95});
+  const info=api.planeNormal(1,1,1,B);
+  assert.ok(info.d>0 && info.d<8);
+});
+test('Miller 000 is rejected', () => assert.throws(()=>api.planeNormal(0,0,0,api.basis(cubic))));
+test('periodic minimum image across cell boundary',()=>{
+  const B=api.basis(cubic);
+  approx(api.minimumPeriodicImage([.9,0,0],[.1,0,0],B).distance,1);
+});
+test('boundary clipped periodic bond segment',()=>{
+  const result=api.clipSegmentToCell([.9,.5,.5],[1.1,.5,.5],[1,1,1]);
+  approx(result[1][0],1);approx(result[0][0],.9);
+});
+test('periodic self-bond along boundary for primitive simple-cubic',()=>{
+  const sites=[{symbol:'Cu',x:0,y:0,z:0}],B=api.basis(cubic);
+  const segments=api.periodicBondSegments(sites,[1,1,1],B,new Map(),5.1);
+  assert.ok(segments.segments.length>=3);
+});
+test('pair-specific bond rule parses and rejects invalid ranges',()=>{
+  const rules=api.parseBondRules('Si-O:1.2-2.4; Ti-O:1.8-2.5');
+  assert.equal(rules.get('O-Si')[1],2.4);
+  assert.throws(()=>api.parseBondRules('Si-O:4-2'));
+});
+test('FCC conventional to primitive and reverse preserve physical atom count',()=>{
+  const cu=api.examples('fcc'),P=[[0,.5,.5],[.5,0,.5],[.5,.5,0]];
+  const primitive=api.transformCrystal(cu.cell,cu.sites,P);
+  assert.equal(primitive.sites.length,1);
+  approx(primitive.det,.25);
+  const reverse=api.transformCrystal(primitive.cell,primitive.sites,[[-1,1,1],[1,-1,1],[1,1,-1]]);
+  assert.equal(reverse.sites.length,4);
+  approx(api.volume(api.basis(reverse.cell)),api.volume(api.basis(cu.cell)));
+});
+test('CIF with SG 225 number and no explicit operators uses reference group',()=>{
+  const d=api.cifData([
+    'data_Cu',
+    '_cell_length_a 4',
+    '_cell_length_b 4',
+    '_cell_length_c 4',
+    '_cell_angle_alpha 90',
+    '_cell_angle_beta 90',
+    '_cell_angle_gamma 90',
+    '_space_group_IT_number 225',
+    'loop_',
+    '_atom_site_type_symbol',
+    '_atom_site_fract_x',
+    '_atom_site_fract_y',
+    '_atom_site_fract_z',
+    'Cu 0 0 0'
+  ].join('\n'));
+  assert.equal(d.sites.length,4);
+  assert.equal(d.sgNumber,225);
+  assert.match(d.warning,/referans ayarı/);
 });
