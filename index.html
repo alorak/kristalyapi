@@ -213,6 +213,7 @@ footer{color:#71869b}
   <div class="section"><h2>Görünüm</h2><div class="stack">
    <label class="field"><span>Model</span><select id="style"><option value="ball">Küre ve çubuk (Ball & Stick)</option><option value="space">Uzay dolduran (Space filling)</option><option value="stick">Çubuk (Stick)</option><option value="wire">Tel model (Wireframe)</option></select></label>
    <label class="check"><input id="bonds" type="checkbox" checked> Atomlar arası bağlar</label>
+   <label class="check"><input id="autoBond" type="checkbox" checked> Otomatik bağ uzunluğu (elemente göre)</label>
    <label class="check"><input id="cellVisible" type="checkbox" checked> Birim hücre çizgileri</label>
    <label class="check"><input id="boundary" type="checkbox" checked> Sınır atomlarını göster</label>
    <label class="check"><input id="labels" type="checkbox"> Atom sembollerini göster</label>
@@ -325,7 +326,7 @@ function toCart(f,B){return B[0].clone().multiplyScalar(f[0]).addScaledVector(B[
 function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));if(Math.abs(den)<1e-12)throw Error('Tekil örgü matrisi.');return [p.dot(new THREE.Vector3().crossVectors(B[1],B[2]))/den,p.dot(new THREE.Vector3().crossVectors(B[2],B[0]))/den,p.dot(new THREE.Vector3().crossVectors(B[0],B[1]))/den];}
 function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
 function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
-let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
+let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
 const MAX_ATOMS=1800,MAX_BONDS=6500;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
@@ -461,7 +462,11 @@ function parseBondRules(str){
   rules.set([cleanSymbol(m[1]),cleanSymbol(m[2])].sort().join('-'),[min,max]);
  }return rules;
 }
-function bondRange(a,b,rules,cut){return rules.get([a,b].sort().join('-'))||[.35,cut];}
+function bondRange(a,b,rules,cut,auto=false){
+ const pair=rules.get([a,b].sort().join('-'));if(pair)return pair;
+ const estimate=1.2*((RADII[a]||1.1)+(RADII[b]||1.1));
+ return [.35,auto?Math.min(cut,estimate):cut];
+}
 function minimumPeriodicImage(fa,fb,B){
  let distance=Infinity,shift=[0,0,0],delta=null;
  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
@@ -480,11 +485,11 @@ function clipSegmentToCell(a,b,repeat){
  }
  return [a.map((v,i)=>v+lower*d[i]),a.map((v,i)=>v+upper*d[i])];
 }
-function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500){
+function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false){
  if(sites.length>100) return null; // large structures retain spatial hash renderer
  const neighbors=[],fractional=sites.map(s=>[frac(+s.x),frac(+s.y),frac(+s.z)]);
  for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
-  const range=bondRange(sites[i].symbol,sites[j].symbol,rules,cut);
+  const range=bondRange(sites[i].symbol,sites[j].symbol,rules,cut,auto);
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
    if(i===j&&x===0&&y===0&&z===0)continue;
    if(i===j&&(x<0||(x===0&&y<0)||(x===0&&y===0&&z<0)))continue;
@@ -771,7 +776,7 @@ function build(){
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
    for(const j of buckets.get(key(b[0]+x,b[1]+y,b[2]+z))||[]){
     if(j<=i)continue;
-    const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
+    const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut,state.autoBond);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
     if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
     bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
    }
@@ -780,7 +785,7 @@ function build(){
  if(state.bonds&&state.style!=='space'){
   const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x8792a0:0x8d99a6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
   const radius=state.style==='wire'?.014:state.style==='stick'?.13:.075;
-  const periodic=state.plane.slab?null:periodicBondSegments(physical,state.rep,B,rules,state.cut);
+  const periodic=state.plane.slab?null:periodicBondSegments(physical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
   if(periodic){for(const [a,b] of periodic.segments)root.add(makeCylinder(a,b,radius,bondMat));if(periodic.truncated)capReached=true;}
   else for(const [i,j] of bondPairs)if(atomMesh[i].visible&&atomMesh[j].visible)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
  }
@@ -833,7 +838,7 @@ function drawSelection(){
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncSgControls();$('bondRules').value=state.bondRules;
- for(const k of ['style','bonds','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
+ for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('slabFilter').checked=state.plane.slab;
  try{previewPlane();}catch(e){}fillPoly();renderSites();
@@ -959,7 +964,7 @@ function loadProject(json){
  if(!Number.isFinite(cut)||cut<.8||cut>5)throw Error('Kaydedilen bağ eşiği geçersiz.');
  const style=['ball','space','stick','wire'].includes(obj.style)?obj.style:'ball';
  const plane={h,k,l,offset,thickness,visible:!!source.visible,slab:!!source.slab};
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane};
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane};
 }
 async function importFile(file){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
@@ -968,7 +973,7 @@ async function importFile(file){
  else if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))obj=cifData(str);
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
- state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function exportCif(){
@@ -995,7 +1000,7 @@ function exportPoscar(){
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
-function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane},null,2),'application/json');}
+function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane},null,2),'application/json');}
 function bind(){
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
@@ -1013,7 +1018,7 @@ function bind(){
  $('newBtn').onclick=()=>{state.name='Yeni kristal';state.detail='P1 · yeni yapı';state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;syncControls();build();fit();};
  $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
- for(const k of ['style','bonds','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();});
+ for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();});
  for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
