@@ -32,7 +32,7 @@ function validSearchKey(k) {
 }
 export function upstreamUrl(path, search) {
   const params = new URLSearchParams(search);
-  if (params.size > 25 || search.length > 2400) throw new Error('Query is too large');
+  if (params.size > 40 || search.length > 2400) throw new Error('Query is too large');
   if (path === '/api/search') {
     if ([...params.keys()].some(k => !validSearchKey(k) && k !== 'format') ||
         [...params.values()].some(v => v.length > 150) ||
