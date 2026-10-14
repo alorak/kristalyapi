@@ -135,7 +135,7 @@ footer{color:#71869b}
 .main-nav a.active{background:#e9f3ff;color:#1a67a9}
 body.library-open .workspace-action{display:none!important}
 body.library-open #app{display:none}
-#libraryPage[hidden],#libSearchPane[hidden],#libBookmarksPane[hidden],#codExternalSearch[hidden]{display:none!important}
+#libraryPage[hidden],#libSearchPane[hidden],#libPresetsPane[hidden],#libBookmarksPane[hidden],#codExternalSearch[hidden]{display:none!important}
 #libraryPage{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f7f9fc;color:#27384c}
 .library-wrap{max-width:1240px;margin:0 auto;padding:27px 22px 70px}
 .library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
@@ -204,6 +204,44 @@ body.library-open #app{display:none}
 @media(max-width:960px){.lib-search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lib-ranges{grid-template-columns:repeat(2,minmax(0,1fr))}.lib-element-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:600px){header{padding:0 9px}.brand-home{font-size:15px}.main-nav{padding-left:8px}.main-nav a{font-size:12px;padding:8px}.library-wrap{padding:17px 10px 48px}.library-header{align-items:flex-start}.library-header h2{font-size:24px}.library-header p{font-size:12px}.lib-cod-link{font-size:10px;padding:8px}.lib-panel{padding:15px 12px;border-radius:10px}.lib-search-grid{grid-template-columns:1fr;gap:11px}.lib-ranges{grid-template-columns:1fr 1fr}.lib-element-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.lib-panel-footer{flex-direction:column;align-items:stretch}.lib-connection{max-width:none}.lib-actions{justify-content:flex-end}.lib-privacy{margin-top:11px}.lib-flags{gap:10px}.lib-tabs button{font-size:12px;padding:10px}}
 
+
+/* Presets are selected in Kütüphane; editor sidebar is for structural editing only. */
+.lib-presets{min-height:250px}
+.preset-layout{display:grid;grid-template-columns:minmax(260px,1fr) minmax(280px,1fr);gap:22px;align-items:start}
+.preset-entry{display:flex;flex-direction:column;gap:11px}
+.preset-label{font-weight:650;font-size:13px;color:#405a75}
+.preset-entry select{max-width:550px;padding:12px 13px;font-size:14px;background:#fff}
+.preset-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:3px}
+.preset-buttons button{font-size:13px;padding:10px 14px}
+.preset-note{font-size:12px;color:#6d8092;line-height:1.65;margin:4px 0}
+.preset-preview{border:1px solid #dce8f5;border-radius:12px;background:#f6f9fe;padding:21px}
+.preset-preview-tag,.export-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#4d79a4;font-weight:760}
+.preset-preview h4{font-size:20px;color:#253b55;letter-spacing:-.4px;margin:9px 0 4px}
+.preset-preview p{font-size:12px;color:#718298;line-height:1.6;margin:0}
+.preset-specs{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:19px 0 0}
+.preset-specs div{display:flex;flex-direction:column;gap:5px}
+.preset-specs dt{font-size:11px;color:#75869a}
+.preset-specs dd{font-size:13px;font-weight:650;color:#2c465f;margin:0}
+.export-modal[hidden]{display:none!important}
+.export-modal{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:18px}
+.export-modal-scrim{position:absolute;inset:0;background:rgba(31,49,72,.46)}
+.export-dialog{position:relative;z-index:1;background:#fff;border:1px solid #dbe5f0;width:min(100%,560px);max-height:min(90dvh,750px);overflow-y:auto;border-radius:15px;box-shadow:0 30px 85px #152e4f38;outline:none}
+.export-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:13px;padding:25px 25px 17px}
+.export-dialog-head h2{font-size:22px;letter-spacing:-.4px;margin:5px 0;color:#283d54}
+.export-dialog-head p{font-size:12px;color:#708398;margin:7px 0 0;line-height:1.6}
+.export-close{font-size:23px;line-height:1;padding:5px 10px;border:0;background:transparent;box-shadow:none}
+.export-options{padding:4px 24px 12px;display:flex;flex-direction:column;gap:8px}
+.export-option{display:flex;align-items:center;text-align:left;gap:13px;padding:14px;border:1px solid #e2e9f2;background:#fff;border-radius:10px;width:100%;box-shadow:none}
+.export-option:hover{background:#f2f8ff;border-color:#b8d3ed}
+.export-option-icon{width:38px;height:38px;border-radius:9px;background:#eaf3fd;display:grid;place-items:center;font-size:20px;color:#2974b6;flex:none}
+.export-option>span:nth-child(2){display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.export-option strong{font-size:13px;color:#304965}
+.export-option small{font-size:11px;color:#74899e;line-height:1.5;white-space:normal}
+.export-option-arrow{color:#728ca5;font-size:17px}
+.export-dialog-foot{border-top:1px solid #e9edf3;padding:15px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.export-dialog-foot span{font-size:11px;color:#8b9bae}
+@media(max-width:720px){.preset-layout{grid-template-columns:1fr}.preset-specs{grid-template-columns:1fr 1fr}.export-dialog-head{padding:18px 15px 11px}.export-options{padding:0 14px 10px}.export-dialog-foot{padding:13px 15px}.export-dialog-foot span{max-width:160px;line-height:1.5}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -213,7 +251,7 @@ body.library-open #app{display:none}
  <div class="actions">
   <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
   <button id="openBtn" class="workspace-action" title="CIF, POSCAR, XYZ veya proje JSON dosyası">↥ Aç</button>
-  <button id="saveBtn" class="workspace-action" title="Proje dosyasını indir">↓ Kaydet</button>
+  <button id="saveBtn" class="workspace-action" type="button" title="Projeyi kaydet veya dışa aktar" aria-haspopup="dialog" aria-controls="exportModal">↓ Kaydet</button>
   <button id="inspectorToggle" class="nav-toggle workspace-action">Ölçüm</button>
   <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
  </div>
@@ -221,10 +259,6 @@ body.library-open #app{display:none}
 <input id="fileInput" type="file" accept=".cif,.mcif,.vasp,.poscar,.contcar,.xyz,.json,.txt">
 <div id="app">
  <aside class="panel left" id="leftPanel">
-  <div class="section"><h2>Kristal kütüphanesi</h2><div class="stack">
-   <label class="field"><span>Örnek yapı</span><select id="preset"><option value="silicon">Silisyum · Diamond cubic</option><option value="nacl">NaCl · Kaya tuzu</option><option value="cscl">CsCl · B2</option><option value="diamond">Elmas · C</option><option value="fcc">Bakır · FCC</option><option value="perovskite">BaTiO₃ · Perovskit</option><option value="graphite">Grafit · tabakalı</option></select></label>
-   <div class="actionrow"><button id="newBtn">Yeni P1</button><button id="resetBtn">Örneği yükle</button></div>
-  </div><p class="hint">Örnekler idealize edilmiş kristal modelleridir; deneysel yapının yerine geçmez.</p></div>
   <div class="section"><h2>Birim hücre <span>Å / °</span></h2>
    <div class="triple">
     <label class="field compact"><span>a (Å)</span><input id="a" type="number" min=".1" max="1000" step=".01"></label>
@@ -307,7 +341,6 @@ body.library-open #app{display:none}
     <div class="actionrow" style="margin-top:9px"><button id="addAtom">+ Atom ekle</button></div>
     <p class="hint">Kesirli koordinatlar: 0–1. CIF içe aktarımında simetri işlemleri P1 atomlarına genişletilir. Görünümdeki atomu seçerek ayrıntılarını inceleyebilirsiniz.</p>
   </div>
-  <div class="section"><h2>Dışa aktarma</h2><div class="actionrow"><button id="exportCif">CIF</button><button id="exportPoscar">POSCAR</button><button id="exportXyz">XYZ</button><button id="exportPng">PNG</button></div><p class="hint">CIF ve POSCAR temel hücredeki P1 konumlarını, XYZ ise görünür atomları dışa aktarır.</p></div>
   <footer>Tarayıcıda çalışır · Sunucuya yapı verisi gönderilmez</footer>
  </aside>
  <main id="viewport">
@@ -316,7 +349,7 @@ body.library-open #app{display:none}
    <div class="floating structure-name"><b id="viewTitle">Silisyum (Si)</b><small id="viewSubtitle">Kübik kristal · Fd-3m</small></div>
    <div class="floating tools" role="toolbar" aria-label="3B görünüm araçları">
     <button id="fitBtn" title="Görünüme sığdır">⌗ Sığdır</button><button id="topBtn" title="c doğrultusunda bakış">Üst</button><button id="frontBtn" title="Ön görünüm">Ön</button><button id="sideBtn" title="Yan görünüm">Yan</button>
-    <button id="projectionBtn" title="Perspektif/ortografik">Perspektif</button><button id="pngBtn" title="PNG görüntü kaydet">↧ PNG</button>
+    <button id="projectionBtn" title="Perspektif/ortografik">Perspektif</button>
    </div>
   </div>
   <div id="axisGizmo" class="axis-gizmo" role="img" aria-label="Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi">
@@ -341,8 +374,9 @@ body.library-open #app{display:none}
    <a class="lib-cod-link" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener noreferrer">COD resmî sitesi ↗</a>
   </div>
   <div class="lib-tabs" role="tablist" aria-label="Kütüphane görünümü">
-   <button id="libSearchTab" class="selected" type="button" role="tab" aria-selected="true">Ara ve sonuçları göster</button>
-   <button id="libBookmarksTab" type="button" role="tab" aria-selected="false">★ Yer imleri <span id="libBookmarkCount" class="lib-counter">0</span></button>
+   <button id="libSearchTab" class="selected" type="button" role="tab" aria-controls="libSearchPane" aria-selected="true">COD'da ara</button>
+   <button id="libPresetsTab" type="button" role="tab" aria-controls="libPresetsPane" aria-selected="false">Örnek Yapılar</button>
+   <button id="libBookmarksTab" type="button" role="tab" aria-controls="libBookmarksPane" aria-selected="false">★ Yer imleri <span id="libBookmarkCount" class="lib-counter">0</span></button>
   </div>
   <div id="libSearchPane">
    <form id="codSearchForm" class="lib-panel">
@@ -410,7 +444,40 @@ body.library-open #app{display:none}
     <a id="codExternalSearch" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener noreferrer" class="lib-external-search" hidden>Aramayı COD üzerinde aç ↗</a>
    </section>
   </div>
-  <section id="libBookmarksPane" class="lib-panel" hidden>
+
+  <section id="libPresetsPane" class="lib-panel lib-presets" role="tabpanel" aria-labelledby="libPresetsTab" hidden>
+   <div class="lib-panel-head"><h3>Örnek Yapılar</h3><p>Yerleşik ideal kristal modellerini seçerek 3B çalışma alanına aktar.</p></div>
+   <div class="preset-layout">
+    <div class="preset-entry">
+      <label for="preset" class="preset-label">Kristal yapı seçimi</label>
+      <select id="preset" aria-describedby="presetNote">
+       <option value="silicon">Silisyum · Diamond cubic</option>
+       <option value="nacl">NaCl · Kaya tuzu</option>
+       <option value="cscl">CsCl · B2</option>
+       <option value="diamond">Elmas · C</option>
+       <option value="fcc">Bakır · FCC</option>
+       <option value="perovskite">BaTiO₃ · Perovskit</option>
+       <option value="graphite">Grafit · tabakalı</option>
+      </select>
+      <div class="preset-buttons">
+       <button id="importPreset" type="button" class="primary">↧ Seçilen yapıyı içe aktar</button>
+       <button id="newStructureBtn" type="button">＋ Yeni P1 oluştur</button>
+      </div>
+      <p id="presetNote" class="preset-note">Modeller idealize edilmiştir; deneysel yapıların yerine geçmez. İçe aktarım çalışma alanındaki mevcut yapının yerini alır.</p>
+    </div>
+    <aside id="presetPreview" class="preset-preview" aria-live="polite">
+      <div class="preset-preview-tag">Yerleşik örnek</div>
+      <h4 id="presetName">Silisyum (Si)</h4>
+      <p id="presetDescription">Diamond cubic · idealize edilmiş Fd-3m</p>
+      <dl class="preset-specs">
+       <div><dt>Birim hücrede atom</dt><dd id="presetSiteCount">8</dd></div>
+       <div><dt>Örgü parametreleri</dt><dd id="presetCell">5.431 × 5.431 × 5.431 Å</dd></div>
+       <div><dt>Atom türleri</dt><dd id="presetElements">Si</dd></div>
+      </dl>
+    </aside>
+   </div>
+  </section>
+  <section id="libBookmarksPane" class="lib-panel" role="tabpanel" aria-labelledby="libBookmarksTab" hidden>
     <div class="lib-results-head"><div><h3>★ Kaydedilen malzemeler <span id="bookmarksTotal"></span></h3><p>Yalnızca malzeme verileri, COD kimliği ve CIF bağlantısı bu tarayıcıda saklanır.</p></div>
     <button type="button" id="bookmarkExport">Yer imlerini JSON indir</button></div>
     <div id="libBookmarksList" class="lib-table-wrap"></div>
@@ -418,6 +485,35 @@ body.library-open #app{display:none}
   </section>
  </div>
 </main>
+
+
+<div id="exportModal" class="export-modal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle" aria-describedby="exportModalDescription" hidden>
+ <div class="export-modal-scrim" data-close-export="true"></div>
+ <div class="export-dialog" tabindex="-1">
+  <div class="export-dialog-head">
+   <div><div class="export-eyebrow">Kristal Yapı</div><h2 id="exportModalTitle">Kaydet ve dışa aktar</h2><p id="exportModalDescription">Yapıyı proje olarak kaydet veya istediğin formatta indir.</p></div>
+   <button type="button" id="exportModalClose" class="export-close" aria-label="Kaydet penceresini kapat">×</button>
+  </div>
+  <div class="export-options">
+   <button type="button" data-export="project" class="export-option">
+    <span class="export-option-icon">▣</span><span><strong>Proje dosyası</strong><small>JSON · Düzenleme ve tüm proje ayarlarını korur</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="cif" class="export-option">
+    <span class="export-option-icon">◇</span><span><strong>CIF</strong><small>Kristalografik yapı ve hücre verileri</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="poscar" class="export-option">
+    <span class="export-option-icon">▥</span><span><strong>POSCAR</strong><small>VASP · Örgü vektörleri ve atom konumları</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="xyz" class="export-option">
+    <span class="export-option-icon">∴</span><span><strong>XYZ</strong><small>Görüntülenen süperhücredeki atom konumları</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="png" class="export-option">
+    <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünümün beyaz zeminli ekran görüntüsü</small></span><span class="export-option-arrow">↓</span>
+   </button>
+  </div>
+  <div class="export-dialog-foot"><span>Dosyalar tarayıcın üzerinden indirilir.</span><button type="button" id="exportModalCancel">Vazgeç</button></div>
+ </div>
+</div>
 
 <script type="module">
 
@@ -1018,7 +1114,51 @@ function renderSites(){
 }
 function applyCell(){try{const c={};for(const k of ['a','b','c','alpha','beta','gamma'])c[k]=Number($(k).value);state.cell=validateCell(c);state.warning='';build();fit();}catch(e){inform(e.message);}}
 function applyRepeat(){const r=['ra','rb','rc'].map(x=>Number($(x).value));if(r.some(x=>!Number.isInteger(x)||x<1||x>6)){inform('Her eksende tekrar sayısı 1 ile 6 arasında tam sayı olmalıdır.');return;}state.rep=r;build();fit();}
-function loadPreset(key){const ex=examples(key);state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;state.cut=ex.cut;state.warning='';state.poly='';state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;syncControls();build();fit();}
+const PRESET_KEYS=['silicon','nacl','cscl','diamond','fcc','perovskite','graphite'];
+function presetMetadata(key){
+ if(!PRESET_KEYS.includes(key))throw Error('Bilinmeyen örnek yapı: '+key);
+ const example=examples(key),elements=[...new Set(example.sites.map(site=>site.symbol))];
+ return {key,name:example.name,detail:example.detail,sites:example.sites.length,elements,cell:example.cell};
+}
+function updatePresetPreview(){
+ const example=presetMetadata($('preset').value);
+ $('presetName').textContent=example.name;
+ $('presetDescription').textContent=example.detail;
+ $('presetSiteCount').textContent=String(example.sites);
+ $('presetCell').textContent=[example.cell.a,example.cell.b,example.cell.c].map(value=>value.toFixed(3)).join(' × ')+' Å';
+ $('presetElements').textContent=example.elements.join(', ');
+}
+function loadPreset(key){
+ const ex=examples(presetMetadata(key).key);
+ state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
+ state.cut=ex.cut;state.warning='';state.poly='';state.rep=[1,1,1];
+ state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
+ state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
+ state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;
+ syncControls();build();fit();
+}
+function createEmptyStructure(){
+ state.name='Yeni kristal';state.detail='P1 · yeni yapı';
+ state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
+ state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
+ state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
+ syncControls();build();fit();
+}
+function importSelectedPreset(){
+ const key=$('preset').value;
+ if(!PRESET_KEYS.includes(key))throw Error('Geçersiz örnek yapı.');
+ window.location.hash='kristal';
+ syncLibraryNavigation();
+ loadPreset(key);
+ inform(presetMetadata(key).name+' örneği 3B çalışma alanına aktarıldı.');
+}
+function createBlankFromLibrary(){
+ window.location.hash='kristal';syncLibraryNavigation();createEmptyStructure();
+ inform('Yeni P1 hücresi oluşturuldu.');
+}
 function stripCifComment(line){let quote='';for(let k=0;k<line.length;k++){const c=line[k];if(quote){if(c===quote)quote='';}else if(c==='\''||c==='"')quote=c;else if(c==='#')return line.slice(0,k);}return line;}
 function tokenizeCif(src){
  const lines=src.replace(/\r\n?/g,'\n').split('\n'),tokens=[];
@@ -1424,13 +1564,18 @@ function renderCodBookmarks(){
  $('bookmarkEmpty').hidden=codBookmarks.length>0;
  if(codBookmarks.length)list.append(codTable(codBookmarks));
 }
+const LIBRARY_PANES=['search','presets','bookmarks'];
 function setLibraryPane(mode){
+ if(!LIBRARY_PANES.includes(mode))throw Error('Bilinmeyen kütüphane sekmesi: '+mode);
  codPane=mode;
  $('libSearchPane').hidden=mode!=='search';
+ $('libPresetsPane').hidden=mode!=='presets';
  $('libBookmarksPane').hidden=mode!=='bookmarks';
- for(const [id,selected] of [['libSearchTab',mode==='search'],['libBookmarksTab',mode==='bookmarks']]){
-  $(id).classList.toggle('selected',selected);$(id).setAttribute('aria-selected',String(selected));
+ for(const [id,selected] of [['libSearchTab',mode==='search'],['libPresetsTab',mode==='presets'],['libBookmarksTab',mode==='bookmarks']]){
+  $(id).classList.toggle('selected',selected);
+  $(id).setAttribute('aria-selected',String(selected));$(id).tabIndex=selected?0:-1;
  }
+ if(mode==='presets')updatePresetPreview();
  if(mode==='bookmarks')renderCodBookmarks();
 }
 function isLibraryHash(hash){return hash==='#kutuphane';}
@@ -1490,7 +1635,12 @@ function initLibrary(){
  codBookmarks=store?loadCodBookmarks(store):[];
  codBookmarkCount();renderCodBookmarks();renderCodResults();
  $('libSearchTab').onclick=()=>setLibraryPane('search');
+ $('libPresetsTab').onclick=()=>setLibraryPane('presets');
  $('libBookmarksTab').onclick=()=>setLibraryPane('bookmarks');
+ $('preset').onchange=updatePresetPreview;
+ $('importPreset').onclick=()=>{try{importSelectedPreset();}catch(e){inform('Örnek yapı aktarılamadı: '+e.message);}};
+ $('newStructureBtn').onclick=createBlankFromLibrary;
+ updatePresetPreview();
  $('codSearchForm').onsubmit=e=>{e.preventDefault();runCodSearch();};
  $('codExample').onclick=()=>{
   $('codSearchForm').reset();
@@ -1503,6 +1653,53 @@ function initLibrary(){
  $('bookmarkExport').onclick=()=>download('kristalyapi_cod_yer_imleri.json',JSON.stringify({format:'kristalyapi-cod-bookmarks-v1',entries:codBookmarks.map(codRecordForStorage)},null,2),'application/json');
  window.addEventListener('hashchange',syncLibraryNavigation);
  syncLibraryNavigation();
+}
+
+
+const EXPORT_FORMATS=['project','cif','poscar','xyz','png'];
+let exportFocusBefore=null;
+function exportFunction(format){
+ const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,png:screenshot};
+ if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
+ return functions[format];
+}
+function openExportModal(){
+ const modal=$('exportModal');exportFocusBefore=document.activeElement;
+ modal.hidden=false;
+ const first=modal.querySelector('[data-export="project"]');
+ if(first)first.focus();
+}
+function closeExportModal(){
+ const modal=$('exportModal');
+ if(modal.hidden)return;
+ modal.hidden=true;
+ if(exportFocusBefore&&typeof exportFocusBefore.focus==='function')exportFocusBefore.focus();
+ exportFocusBefore=null;
+}
+function selectExportFormat(format){
+ const action=exportFunction(format);
+ try{
+  action();
+  closeExportModal();
+ }catch(error){inform('Dışa aktarma başarısız: '+error.message);}
+}
+function initExportModal(){
+ const modal=$('exportModal');
+ $('exportModalClose').onclick=closeExportModal;
+ $('exportModalCancel').onclick=closeExportModal;
+ modal.querySelector('.export-modal-scrim').addEventListener('click',closeExportModal);
+ for(const button of modal.querySelectorAll('[data-export]')){
+  button.addEventListener('click',()=>selectExportFormat(button.dataset.export));
+ }
+ modal.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeExportModal();return;}
+  if(event.key!=='Tab')return;
+  const focusable=[...modal.querySelectorAll('button:not([disabled])')];
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ });
 }
 
 function bind(){
@@ -1519,8 +1716,7 @@ function bind(){
  };
  $('transformCell').onclick=applyTransformation;
  $('openBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{if(!e.target.files?.[0])return;try{await importFile(e.target.files[0]);}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
- $('saveBtn').onclick=saveProject;$('preset').onchange=e=>loadPreset(e.target.value);$('resetBtn').onclick=()=>loadPreset($('preset').value);
- $('newBtn').onclick=()=>{state.name='Yeni kristal';state.detail='P1 · yeni yapı';state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;syncControls();build();fit();};
+ $('saveBtn').onclick=openExportModal;
  $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();});
@@ -1528,7 +1724,7 @@ function bind(){
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
  $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
- $('pngBtn').onclick=screenshot;$('exportPng').onclick=screenshot;$('exportCif').onclick=exportCif;$('exportPoscar').onclick=exportPoscar;$('exportXyz').onclick=exportXyz;
+ initExportModal();
  $('clearMeasure').onclick=()=>{selected=[];drawSelection();};
  $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('open');};
  $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};

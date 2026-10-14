@@ -9,6 +9,27 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## Kütüphane → Örnek Yapılar
+
+**Kütüphane** sayfasında artık üç ayrı sekme var: **COD'da ara**, **Örnek Yapılar** ve **Yer imleri**. Yerleşik örnek kristallerin seçimi ve yeni P1 oluşturma işlemi 3B editörün sol panelinden kaldırılmıştır.
+
+- **Örnek Yapılar** sekmesindeki açılır listede Si (diamond cubic), NaCl, CsCl, elmas, FCC Cu, BaTiO₃ ve grafit bulunur. Seçim yapıldığında yalnızca sağdaki **bilgi önizlemesi** güncellenir; açık 3B yapı değiştirilmez.
+- **Seçilen yapıyı içe aktar** düğmesi, editöre döner ve yeni örneğin hücre parametrelerini, atomlarını, uygun uzay grubu numarasını, bağ sınırını ve 1×1×1 birim hücre gösterimini yükler. Önceki yapının görüntüleme kesiti/atom türü kuralı yeni örneğe taşınmaz. Yapı geçerli olduğunda 3B sahne yeniden oluşturulur.
+- **Yeni P1 oluştur** aynı sekmede 5 Å kenarlı, tek Si atomlu düzenlenebilir bir başlangıç hücresi oluşturur.
+- Örnek kristaller idealize edilmiştir; deneysel ölçüm ya da veri tabanı CIF kaydının yerine geçmez. İşlem, editördeki mevcut yapıyı değiştirir.
+
+## Kaydet / dışa aktar modalı
+
+Üst menüdeki **↓ Kaydet**, yapı dosyası formatı seçilebilen bir modal açar:
+
+- **Proje dosyası (JSON)**: Mevcut yapı ve uygulama ayarları, sonradan tekrar düzenlemek için saklanır.
+- **CIF**: Kristalografi dosyası (gerekli olduğunda simetri operatörleriyle).
+- **POSCAR**: VASP uyumlu hücre ve atom konumları.
+- **XYZ**: Görüntülenen süperhücrenin Kartezyen atom konumları.
+- **PNG**: Beyaz zeminli 3B görsel.
+
+Modal `Escape`, **Vazgeç** veya kapat düğmesiyle kapanır. Dışa aktarma ve örnek yapılar artık sol panelde yer kaplamaz. 3B editörün sol paneli hücre, simetri, bağ ve model düzenleme işlevlerine ayrılmıştır. Kod tek `index.html` içindedir; backend gerektirmez.
+
 ## COD Kütüphane (yalnızca frontend)
 
 Üst navigasyonda **Kristal Yapı** yazısına tıklamak 3B editöre, **Kütüphane** bağlantısına tıklamak aynı `index.html` içindeki COD arama sayfasına gider. Logo ve `3B Studio` rozeti kaldırılmıştır.
