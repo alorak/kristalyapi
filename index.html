@@ -263,8 +263,28 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 
 const $ = id => document.getElementById(id);
-const COLORS = {H:'#f2f5ff',C:'#5e728b',N:'#357bdf',O:'#ed5b68',Na:'#9e76ef',Cl:'#45bc78',Cs:'#aa8bd8',Si:'#d2ae72',Cu:'#d88d63',Ba:'#66b981',Ti:'#8897aa',S:'#ecd454',P:'#e7a66b',Fe:'#c87854',Al:'#95b8da',Ca:'#64ae80',K:'#a98bef',Mg:'#86bc87',F:'#86d49a',Zn:'#9db0ca',X:'#b1becd'};
-const RADII = {H:.3,C:.77,N:.71,O:.66,Na:1.66,Cl:1.02,Cs:2.44,Si:1.11,Cu:1.32,Ba:2.15,Ti:1.36,S:1.05,P:1.07,Fe:1.24,Al:1.21,Ca:1.76,K:2.03,Mg:1.41,F:.57,Zn:1.22,X:1};
+const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
+/* Stable Jmol/CPK-inspired colors; element colors never depend on appearance theme. */
+const COLORS={
+ H:'#ffffff',He:'#d9ffff',Li:'#cc80ff',Be:'#c2ff00',B:'#ffb5b5',C:'#737373',N:'#3050f8',O:'#fa3131',F:'#7cdb6e',Ne:'#b3e3f5',
+ Na:'#ab5cf2',Mg:'#8aff00',Al:'#bfa6a6',Si:'#e9b87e',P:'#ff8000',S:'#f4d92d',Cl:'#22bb4c',Ar:'#80d1e3',K:'#8f40d4',Ca:'#3dce6b',
+ Sc:'#c3c3d4',Ti:'#a0a3a9',V:'#a6a6ab',Cr:'#8a99c7',Mn:'#9c7ac7',Fe:'#e06633',Co:'#f090a0',Ni:'#50bd85',Cu:'#c88033',Zn:'#7d80b0',
+ Ga:'#c28f8f',Ge:'#668f8f',As:'#bd80e3',Se:'#ffa100',Br:'#a62929',Kr:'#5cb8d1',Rb:'#702eb0',Sr:'#00bc57',Y:'#94d7e7',Zr:'#94bdcd',
+ Nb:'#73c2c9',Mo:'#54b5b5',Tc:'#3b9e9e',Ru:'#248f8f',Rh:'#0a7d8c',Pd:'#006985',Ag:'#b7c1ca',Cd:'#eac083',In:'#a67573',Sn:'#668080',
+ Sb:'#9e63b5',Te:'#d47a00',I:'#940094',Xe:'#429eb0',Cs:'#b46bb5',Ba:'#54b35a',La:'#d98db9',Ce:'#ffffc7',Pr:'#d9ffc7',Nd:'#c7ffc7',
+ Pm:'#a3ffc7',Sm:'#8fffc7',Eu:'#61ffc7',Gd:'#45ffc7',Tb:'#30ffc7',Dy:'#1fffc7',Ho:'#00ff9c',Er:'#00e675',Tm:'#00d452',Yb:'#00bf38',
+ Lu:'#00ab24',Hf:'#4dc2ff',Ta:'#4da6ff',W:'#2194d6',Re:'#267dab',Os:'#266696',Ir:'#175487',Pt:'#b6b8cc',Au:'#ffd123',Hg:'#b8b8d0',
+ Tl:'#a6544d',Pb:'#575961',Bi:'#9e4fb5',Po:'#ab5c00',At:'#754f45',Rn:'#428296',Fr:'#420066',Ra:'#007d00',Ac:'#70abfa',
+ Th:'#00baff',Pa:'#00a1ff',U:'#008fff',Np:'#0080ff',Pu:'#006bff',Am:'#545cf2',Cm:'#785ce3',Bk:'#8a4fe3',Cf:'#a136d4',
+ Es:'#b31fd4',Fm:'#b31fba',Md:'#b30da6',No:'#bd0d87',Lr:'#c70066',Rf:'#cc0059',Db:'#d1004f',Sg:'#d90045',
+ Bh:'#e0003c',Hs:'#e50034',Mt:'#ea002b',Ds:'#ef0022',Rg:'#f20018',Cn:'#d1d1d1',Nh:'#a5a5a5',Fl:'#7a7a7a',
+ Mc:'#bc8498',Lv:'#9baf83',Ts:'#b19b63',Og:'#98b5bd',X:'#a0aeba'
+};
+function elementColor(raw){
+ const symbol=cleanSymbol(raw);if(COLORS[symbol])return COLORS[symbol];
+ const n=PERIODIC_SYMBOLS.indexOf(symbol);return n<0?'#95a5b6':'hsl('+((n*137.508)%360).toFixed(1)+' 58% 52%)';
+}
+const RADII = {H:.31,He:.28,Li:1.28,Be:.96,B:.84,C:.76,N:.71,O:.66,F:.57,Ne:.58,Na:1.66,Mg:1.41,Al:1.21,Si:1.11,P:1.07,S:1.05,Cl:1.02,Ar:1.06,K:2.03,Ca:1.76,Sc:1.7,Ti:1.36,V:1.34,Cr:1.22,Mn:1.19,Fe:1.24,Co:1.18,Ni:1.17,Cu:1.32,Zn:1.22,Ga:1.22,Ge:1.20,As:1.19,Se:1.20,Br:1.20,Kr:1.16,Rb:2.2,Sr:1.95,Y:1.9,Zr:1.75,Nb:1.64,Mo:1.54,Ru:1.46,Rh:1.42,Pd:1.39,Ag:1.45,Cd:1.44,In:1.42,Sn:1.39,Sb:1.39,Te:1.38,I:1.39,Xe:1.4,Cs:2.44,Ba:2.15,La:2.07,Ce:2.04,Nd:2.01,W:1.62,Pt:1.36,Au:1.36,Hg:1.32,Tl:1.45,Pb:1.46,Bi:1.48,U:1.96,X:1.1};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const frac=n=>((n%1)+1)%1;
 const cleanSymbol=s=>{ const x=String(s||'X').match(/[A-Za-z]{1,2}/); if(!x)return 'X'; return x[0][0].toUpperCase()+x[0].slice(1).toLowerCase(); };
@@ -305,13 +325,13 @@ function toCart(f,B){return B[0].clone().multiplyScalar(f[0]).addScaledVector(B[
 function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));if(Math.abs(den)<1e-12)throw Error('Tekil örgü matrisi.');return [p.dot(new THREE.Vector3().crossVectors(B[1],B[2]))/den,p.dot(new THREE.Vector3().crossVectors(B[2],B[0]))/den,p.dot(new THREE.Vector3().crossVectors(B[0],B[1]))/den];}
 function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
 function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
-let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,cellVisible:true,boundary:true,labels:false,axes:true,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
+let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
 const MAX_ATOMS=1800,MAX_BONDS=6500;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
 const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
 const atomMaterials=new Map();
-function materialFor(el){if(!atomMaterials.has(el))atomMaterials.set(el,new THREE.MeshStandardMaterial({color:COLORS[el]||'#afbfcf',roughness:.28,metalness:.09}));return atomMaterials.get(el);}
+function materialFor(el){if(!atomMaterials.has(el))atomMaterials.set(el,new THREE.MeshStandardMaterial({color:elementColor(el),roughness:.33,metalness:0}));return atomMaterials.get(el);}
 function inform(s){$('toast').textContent=s;$('toast').classList.add('visible');clearTimeout(warningTimer);warningTimer=setTimeout(()=>$('toast').classList.remove('visible'),5000);}
 function report(s){$('notice').textContent=s;$('notice').classList.toggle('visible',!!s);}
 function download(filename,content,mime){const blob=content instanceof Blob?content:new Blob([content],{type:mime||'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),600);}
@@ -319,10 +339,10 @@ function safeName(s){return String(s).normalize('NFKD').replace(/[^\w-]+/g,'_').
 function initScene(){
  scene=new THREE.Scene();
  perspective=true;camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
- renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;$('stage').appendChild(renderer.domElement);
- scene.add(new THREE.HemisphereLight(0xffffff,0x54698d,2.3));
- const l=new THREE.DirectionalLight(0xffffff,2.0);l.position.set(8,-13,18);scene.add(l);
- const l2=new THREE.DirectionalLight(0xa9d5ff,.8);l2.position.set(-10,12,-4);scene.add(l2);
+ renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;$('stage').appendChild(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xffffff,0xf0f2f5,1.15));
+ const l=new THREE.DirectionalLight(0xffffff,2.15);l.position.set(8,-13,18);scene.add(l);
+ const l2=new THREE.DirectionalLight(0xffffff,.55);l2.position.set(-10,12,-4);scene.add(l2);
  root=new THREE.Group();scene.add(root);
  orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.09;orbit.minDistance=.4;orbit.maxDistance=5000;orbit.screenSpacePanning=true;
  new ResizeObserver(resize).observe($('stage'));
@@ -339,10 +359,10 @@ function addCellLines(B,r){
  const pts=[],OUT=[];
  const corners=(i,j,k)=>{const arr=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)arr.push([i+x,j+y,k+z]);return arr;};
  const edges=(i,j,k,dest)=>{const ps=corners(i,j,k);for(let x=0;x<8;x++)for(let y=x+1;y<8;y++){const a=ps[x],b=ps[y];const d=Number(a[0]!==b[0])+Number(a[1]!==b[1])+Number(a[2]!==b[2]);if(d===1)dest.push(toCart(a,B),toCart(b,B));}};
- if(state.cellVisible){for(let i=0;i<r[0];i++)for(let j=0;j<r[1];j++)for(let k=0;k<r[2];k++)edges(i,j,k,pts);root.add(line(pts,0x587793,.36));edges(0,0,0,OUT); /* major boundary drawn separately below */}
+ if(state.cellVisible){for(let i=0;i<r[0];i++)for(let j=0;j<r[1];j++)for(let k=0;k<r[2];k++)edges(i,j,k,pts);root.add(line(pts,0x9cabb9,.55));edges(0,0,0,OUT); /* major boundary drawn separately below */}
  const cornersAll=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)cornersAll.push([x*r[0],y*r[1],z*r[2]]);
  const segments=[];for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){if(cornersAll[i].filter((v,n)=>v!==cornersAll[j][n]).length===1)segments.push(toCart(cornersAll[i],B),toCart(cornersAll[j],B));}
- if(state.cellVisible)root.add(line(segments,0x63d8eb,.92));
+ if(state.cellVisible)root.add(line(segments,0x546a7c,.83));
 }
 function makeCylinder(a,b,radius,mat){const d=new THREE.Vector3().subVectors(b,a),m=new THREE.Mesh(bondGeometry,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());m.scale.set(radius,d.length(),radius);return m;}
 
@@ -681,7 +701,7 @@ function build(){
  const atomOpacity=state.style==='wire'?.72:1;
  for(let i=0;i<entry.length;i++){
   const item=entry[i],baseR=RADII[item.site.symbol]||1.1;
-  const size=(state.style==='space'?baseR:Math.min(baseR,.9))*state.atomScale*radiusScale;
+  const size=(state.style==='space'?baseR:Math.min(baseR,1.6))*state.atomScale*radiusScale;
   const m=new THREE.Mesh(sphereGeometry,materialFor(item.site.symbol));m.position.copy(item.pos);m.scale.setScalar(size);m.userData.atomIndex=i;m.visible=visibleAtom(item);root.add(m);atomMesh.push(m);
  }
  const rules=parseBondRules(state.bondRules);const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
@@ -701,7 +721,7 @@ function build(){
   }
  }
  if(state.bonds&&state.style!=='space'){
-  const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x89a8c7:0x8ba7c6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
+  const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x8792a0:0x8d99a6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
   const radius=state.style==='wire'?.014:state.style==='stick'?.13:.075;
   const periodic=state.plane.slab?null:periodicBondSegments(physical,state.rep,B,rules,state.cut);
   if(periodic){for(const [a,b] of periodic.segments)root.add(makeCylinder(a,b,radius,bondMat));if(periodic.truncated)capReached=true;}
@@ -724,7 +744,7 @@ function build(){
  $('viewTitle').textContent=state.name;$('viewSubtitle').textContent=state.detail||'Özel yapı · P1';
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
- const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=COLORS[el]||'#afbfcf';x.append(sw,document.createTextNode(el));return x;}));
+ const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
  report([state.warning,capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
  }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));}
 }
@@ -917,7 +937,7 @@ function exportPoscar(){
  download('POSCAR',rows.join('\n')+'\n');
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
-function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#0a1729';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
+function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane},null,2),'application/json');}
 function bind(){
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
