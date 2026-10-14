@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1426">
+<title>Kristal Yapı — 3B Kristal Editörü</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e5edf9;background:#08111f;font-synthesis:none}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7bd6fb;outline-offset:2px}button{border:1px solid #334562;background:#192941;color:#e7eef9;border-radius:9px;padding:9px 12px;transition:.15s}button:hover:not(:disabled){background:#253955;border-color:#57779e}.primary{background:#276ee5;border-color:#3983ff;color:white}.primary:hover:not(:disabled){background:#3981f5}.danger{color:#f7a7a8}.small{font-size:12px;padding:6px 9px}.ghost{background:transparent;border-color:transparent}.muted{color:#91a4be}.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #31516b;border-radius:6px;background:#142840;color:#abdaf1;font-size:11px}header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 19px;border-bottom:1px solid #24344b;background:#0e1a2c;gap:12px}header .brand{display:flex;align-items:center;gap:12px;white-space:nowrap}header .gem{width:36px;height:36px;border-radius:10px;background:linear-gradient(140deg,#277adf,#37c6c9);display:grid;place-items:center;font-size:22px}h1{font-size:17px;margin:0;letter-spacing:-.4px}header .sub{font-size:11px;color:#8298b5}header .actions{display:flex;gap:8px;align-items:center}#app{height:calc(100dvh - 64px);display:grid;grid-template-columns:318px minmax(280px,1fr)300px}.panel{background:#0c182a;overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#39506b transparent}.left{border-right:1px solid #24344b}.right{border-left:1px solid #24344b}.section{padding:16px 18px;border-bottom:1px solid #223148}.section h2{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94aeca;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between}.section .hint{font-size:11px;line-height:1.5;color:#7e96b0;margin:8px 0 0}.stack{display:flex;flex-direction:column;gap:9px}.line{display:flex;align-items:center;gap:8px}.line>*{min-width:0}.split{display:grid;grid-template-columns:1fr 1fr;gap:8px}.triple{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.field{display:flex;flex-direction:column;gap:5px}.field span{font-size:11px;color:#96acc6}.field input,.field select,select{min-width:0;width:100%;background:#111f34;border:1px solid #31445f;border-radius:8px;color:#e5edf9;padding:9px 8px}.field input:focus{border-color:#6ab9e7}.field input[type=number]{font-variant-numeric:tabular-nums}.field.compact input{padding:7px 5px;font-size:12px}.check{display:flex;align-items:center;gap:8px;font-size:12px;color:#cdd9ea;cursor:pointer}.check input{accent-color:#3c93ff}.slider{display:flex;gap:12px;align-items:center}.slider input{flex:1;min-width:0;accent-color:#45b4ec}.slider output{font-size:12px;color:#bdd7ed;width:36px;text-align:right;font-variant-numeric:tabular-nums}.actionrow{display:flex;gap:7px;flex-wrap:wrap}.actionrow button{flex:1}.site-table{width:100%;border-collapse:collapse}.site-table th{font-size:10px;color:#7796b9;text-align:left;font-weight:600;padding:4px}.site-table td{padding:3px 2px}.site-table input{width:100%;min-width:0;padding:6px 3px;font-size:11px;border:1px solid #31445f;background:#14243a;border-radius:5px;color:white}.site-table input[name=element]{max-width:35px}.site-table .del{padding:3px 5px;background:transparent;border:0;color:#d997a4}#viewport{position:relative;min-width:0;background:radial-gradient(ellipse at 50% 36%,#172c4a 0%,#081421 65%,#07111f 100%);overflow:hidden}#stage{position:absolute;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}.floating{position:absolute;z-index:2;border:1px solid #334562;background:rgba(12,25,43,.92);backdrop-filter:blur(12px);border-radius:12px;box-shadow:0 8px 32px #0004}.topbar{left:16px;top:15px;right:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}.topbar>*{pointer-events:auto}.tools{display:flex;flex-wrap:wrap;gap:5px;padding:5px}.tools button{padding:7px 10px;font-size:12px}.tools button.active{background:#164d7a;border-color:#489bd1;color:#d6f4ff}.structure-name{padding:10px 13px;font-size:13px;color:#e3effd}.structure-name small{display:block;font-size:11px;color:#9bb2cb;margin-top:3px}.footbar{position:absolute;bottom:16px;left:16px;right:16px;padding:9px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#a1b9d2;pointer-events:none}.footbar>*{pointer-events:auto}.footbar .dot{width:7px;height:7px;border-radius:50%;background:#43d4aa;display:inline-block;margin-right:7px}.view-help{position:absolute;right:17px;bottom:62px;font-size:11px;color:#91a6bc;text-align:right;pointer-events:none}.legend{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.legend span{font-size:11px;color:#cadbf1;display:flex;align-items:center;gap:5px}.swatch{width:9px;height:9px;border-radius:50%;display:inline-block}.info{background:#12233a;border:1px solid #293d59;padding:12px;border-radius:9px}.info strong{display:block;font-size:17px;margin:4px 0}.info small{color:#8eabc8;font-size:11px}.measure-item{margin-top:8px;padding:9px;border-radius:8px;background:#12223a;border:1px solid #273b59;font-size:12px}.measure-item b{color:#d3e9fc}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{background:#13243a;border:1px solid #2b3e57;border-radius:9px;padding:10px}.metric strong{display:block;font-size:17px;color:#d2eaff;font-variant-numeric:tabular-nums}.metric small{font-size:10px;color:#8eabc5}.notice{font-size:11px;line-height:1.6;border:1px solid #5b4b29;background:#292418;padding:9px;border-radius:8px;color:#d9c49b;display:none}.notice.visible{display:block}#toast{position:absolute;z-index:10;left:50%;bottom:65px;transform:translateX(-50%);max-width:min(550px,90vw);padding:10px 15px;background:#192e4b;border:1px solid #4d8dbe;border-radius:9px;color:#e7f7ff;font-size:12px;display:none;box-shadow:0 8px 24px #0008}#toast.visible{display:block}#fileInput{display:none}.shortcuts{color:#92a9c3;font-size:11px;line-height:1.8}.empty{color:#849bb7;font-size:12px;line-height:1.6}.colour-square{display:inline-block;width:10px;height:10px;border-radius:3px;background:#3599ec;margin-right:5px}a{color:#7fc7ff;text-decoration:none}a:hover{text-decoration:underline}footer{font-size:11px;color:#8095b0;text-align:center;padding:12px}.nav-toggle{display:none}@media(max-width:1180px){#app{grid-template-columns:285px minmax(280px,1fr)}.right{position:absolute;right:0;top:64px;bottom:0;width:270px;z-index:5;box-shadow:-12px 0 30px #0007;display:none}.right.open{display:block}.nav-toggle{display:inline-block}}@media(max-width:720px){header{height:58px;padding:0 9px}header .sub{display:none}header .brand{gap:7px}header .gem{width:30px;height:30px}h1{font-size:14px}header .actions{gap:3px}header .actions button{padding:7px 8px;font-size:11px}#app{height:calc(100dvh - 58px);display:block}.left{position:absolute;z-index:6;top:58px;bottom:0;width:min(330px,90vw);display:none;box-shadow:12px 0 30px #0008}.left.open{display:block}.right{top:58px}.mobile-panel{display:inline-block!important}#viewport{width:100%;height:100%}.topbar{top:9px;left:9px;right:9px;align-items:flex-start;flex-direction:column}.topbar .structure-name{max-width:100%}.tools{max-width:100%}.tools button{font-size:11px;padding:6px}.footbar{bottom:8px;left:8px;right:8px;font-size:10px}.view-help{display:none}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="gem">◇</div><div><h1>Kristal Yapı <span class="tag">3B Studio</span></h1><div class="sub">Kristalografi ve yapı görselleştirme laboratuvarı</div></div></div>
+ <div class="actions">
+  <button id="leftToggle" class="mobile-panel" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
+  <button id="openBtn" title="CIF, POSCAR, XYZ veya proje JSON dosyası">↥ Aç</button>
+  <button id="saveBtn" title="Proje dosyasını indir">↓ Kaydet</button>
+  <button id="inspectorToggle" class="nav-toggle">Ölçüm</button>
+  <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
+ </div>
+</header>
+<input id="fileInput" type="file" accept=".cif,.mcif,.vasp,.poscar,.contcar,.xyz,.json,.txt">
+<div id="app">
+ <aside class="panel left" id="leftPanel">
+  <div class="section"><h2>Kristal kütüphanesi</h2><div class="stack">
+   <label class="field"><span>Örnek yapı</span><select id="preset"><option value="silicon">Silisyum · Diamond cubic</option><option value="nacl">NaCl · Kaya tuzu</option><option value="cscl">CsCl · B2</option><option value="diamond">Elmas · C</option><option value="fcc">Bakır · FCC</option><option value="perovskite">BaTiO₃ · Perovskit</option><option value="graphite">Grafit · tabakalı</option></select></label>
+   <div class="actionrow"><button id="newBtn">Yeni P1</button><button id="resetBtn">Örneği yükle</button></div>
+  </div><p class="hint">Örnekler idealize edilmiş kristal modelleridir; deneysel yapının yerine geçmez.</p></div>
+  <div class="section"><h2>Birim hücre <span>Å / °</span></h2>
+   <div class="triple">
+    <label class="field compact"><span>a (Å)</span><input id="a" type="number" min=".1" max="1000" step=".01"></label>
+    <label class="field compact"><span>b (Å)</span><input id="b" type="number" min=".1" max="1000" step=".01"></label>
+    <label class="field compact"><span>c (Å)</span><input id="c" type="number" min=".1" max="1000" step=".01"></label>
+    <label class="field compact"><span>α (°)</span><input id="alpha" type="number" min="1" max="179" step=".1"></label>
+    <label class="field compact"><span>β (°)</span><input id="beta" type="number" min="1" max="179" step=".1"></label>
+    <label class="field compact"><span>γ (°)</span><input id="gamma" type="number" min="1" max="179" step=".1"></label>
+   </div>
+   <button id="applyCell" class="primary" style="width:100%;margin-top:10px">Hücreyi uygula</button>
+  </div>
+  <div class="section"><h2>Süperhücre</h2><div class="triple">
+   <label class="field compact"><span>a ×</span><input id="ra" type="number" min="1" max="6" value="2"></label>
+   <label class="field compact"><span>b ×</span><input id="rb" type="number" min="1" max="6" value="2"></label>
+   <label class="field compact"><span>c ×</span><input id="rc" type="number" min="1" max="6" value="2"></label>
+  </div><div class="actionrow" style="margin-top:10px"><button id="applyRepeat" class="primary">Çoğalt</button><button id="repeatOne">1 × 1 × 1</button></div></div>
+  <div class="section"><h2>Görünüm</h2><div class="stack">
+   <label class="field"><span>Model</span><select id="style"><option value="ball">Küre ve çubuk (Ball & Stick)</option><option value="space">Uzay dolduran (Space filling)</option><option value="stick">Çubuk (Stick)</option><option value="wire">Tel model (Wireframe)</option></select></label>
+   <label class="check"><input id="bonds" type="checkbox" checked> Atomlar arası bağlar</label>
+   <label class="check"><input id="cellVisible" type="checkbox" checked> Birim hücre çizgileri</label>
+   <label class="check"><input id="boundary" type="checkbox" checked> Sınır atomlarını göster</label>
+   <label class="check"><input id="labels" type="checkbox"> Atom sembollerini göster</label>
+   <label class="check"><input id="axes" type="checkbox" checked> Kristal eksenlerini göster</label>
+   <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
+   <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
+   <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
+   <label class="field"><span>Koordinasyon çokyüzlüsü</span><select id="polyElement"><option value="">Kapalı</option></select></label>
+  </div></div>
+  <div class="section"><h2>Asimetrik konumlar / atomlar <span id="siteCount">0</span></h2>
+    <div style="overflow-x:auto"><table class="site-table"><thead><tr><th>Atom</th><th>x</th><th>y</th><th>z</th><th></th></tr></thead><tbody id="siteRows"></tbody></table></div>
+    <div class="actionrow" style="margin-top:9px"><button id="addAtom">+ Atom ekle</button></div>
+    <p class="hint">Kesirli koordinatlar: 0–1. CIF içe aktarımında simetri işlemleri P1 atomlarına genişletilir. Görünümdeki atomu seçerek ayrıntılarını inceleyebilirsiniz.</p>
+  </div>
+  <div class="section"><h2>Dışa aktarma</h2><div class="actionrow"><button id="exportCif">CIF</button><button id="exportPoscar">POSCAR</button><button id="exportXyz">XYZ</button><button id="exportPng">PNG</button></div><p class="hint">CIF ve POSCAR temel hücredeki P1 konumlarını, XYZ ise görünür atomları dışa aktarır.</p></div>
+  <footer>Tarayıcıda çalışır · Sunucuya yapı verisi gönderilmez</footer>
+ </aside>
+ <main id="viewport">
+  <div id="stage"></div>
+  <div class="topbar">
+   <div class="floating structure-name"><b id="viewTitle">Silisyum (Si)</b><small id="viewSubtitle">Kübik kristal · Fd-3m</small></div>
+   <div class="floating tools" role="toolbar" aria-label="3B görünüm araçları">
+    <button id="fitBtn" title="Görünüme sığdır">⌗ Sığdır</button><button id="topBtn" title="c doğrultusunda bakış">Üst</button><button id="frontBtn" title="Ön görünüm">Ön</button><button id="sideBtn" title="Yan görünüm">Yan</button>
+    <button id="projectionBtn" title="Perspektif/ortografik">Perspektif</button><button id="pngBtn" title="PNG görüntü kaydet">↧ PNG</button>
+   </div>
+  </div>
+  <div class="floating footbar"><div><span class="dot"></span><span id="renderStatus">3B görüntü hazırlanıyor</span></div><div id="totalSummary">—</div></div>
+  <div class="view-help">Sol tuş: Döndür · Sağ tuş: Kaydır · Tekerlek: Yakınlaştır<br>Atom seçimi: Mesafe (2) ve açı (3)</div>
+  <div id="toast" role="status" aria-live="polite"></div>
+ </main>
+ <aside class="panel right" id="rightPanel">
+  <div class="section"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
+  <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Atomlar arası uzaklık (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><button class="small" id="clearMeasure" style="margin-top:10px">Seçimi temizle</button><p class="hint">Ölçüm, görüntüde seçilen atom görüntüleri arasında yapılır. Periyodik en kısa mesafe otomatik uygulanmaz.</p></div>
+  <div class="section"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kesirli → Kartezyen dönüşümünde gerçek örgü vektörleri ve hücre açıları kullanılır. Bağlar, seçilen uzaklık eşiğine göre geometrik olarak çizilir; kimyasal bağ düzenini kesin olarak belirlemez.</p><p class="shortcuts">VESTA'nın elektron yoğunluğu izoyüzeyleri, manyetik yapılar, anizotropik termal elipsoitler ve kapsamlı uzay grubu veritabanı bu sürümde bulunmaz.</p></div>
+ </aside>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
+
+const $ = id => document.getElementById(id);
+const COLORS = {H:'#f2f5ff',C:'#5e728b',N:'#357bdf',O:'#ed5b68',Na:'#9e76ef',Cl:'#45bc78',Cs:'#aa8bd8',Si:'#d2ae72',Cu:'#d88d63',Ba:'#66b981',Ti:'#8897aa',S:'#ecd454',P:'#e7a66b',Fe:'#c87854',Al:'#95b8da',Ca:'#64ae80',K:'#a98bef',Mg:'#86bc87',F:'#86d49a',Zn:'#9db0ca',X:'#b1becd'};
+const RADII = {H:.3,C:.77,N:.71,O:.66,Na:1.66,Cl:1.02,Cs:2.44,Si:1.11,Cu:1.32,Ba:2.15,Ti:1.36,S:1.05,P:1.07,Fe:1.24,Al:1.21,Ca:1.76,K:2.03,Mg:1.41,F:.57,Zn:1.22,X:1};
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const frac=n=>((n%1)+1)%1;
+const cleanSymbol=s=>{ const x=String(s||'X').match(/[A-Za-z]{1,2}/); if(!x)return 'X'; return x[0][0].toUpperCase()+x[0].slice(1).toLowerCase(); };
+const number=s=>{ const v=parseFloat(String(s).replace(/\([0-9]+\)$/,''));return Number.isFinite(v)?v:NaN; };
+const near=(x,y,t=1e-5)=>Math.abs(x-y)<t;
+const atoms=(symbol,coords)=>coords.map((p,i)=>({symbol,label:symbol+(i+1),x:p[0],y:p[1],z:p[2],occupancy:1}));
+const fcc=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]];
+function examples(id){
+ const diamond=fcc.concat(fcc.map(p=>p.map(v=>frac(v+.25))));
+ if(id==='silicon')return {name:'Silisyum (Si)',detail:'Diamond cubic · idealize edilmiş Fd-3m',cell:{a:5.431,b:5.431,c:5.431,alpha:90,beta:90,gamma:90},sites:atoms('Si',diamond),cut:2.65};
+ if(id==='diamond')return {name:'Elmas (C)',detail:'Diamond cubic · idealize edilmiş Fd-3m',cell:{a:3.567,b:3.567,c:3.567,alpha:90,beta:90,gamma:90},sites:atoms('C',diamond),cut:1.75};
+ if(id==='nacl')return {name:'Sodyum klorür (NaCl)',detail:'Kaya tuzu · idealize edilmiş Fm-3m',cell:{a:5.64,b:5.64,c:5.64,alpha:90,beta:90,gamma:90},sites:atoms('Na',fcc).concat(atoms('Cl',fcc.map(p=>p.map(v=>frac(v+.5))))),cut:2.95};
+ if(id==='cscl')return {name:'Sezyum klorür (CsCl)',detail:'B2 tipi · idealize edilmiş Pm-3m',cell:{a:4.123,b:4.123,c:4.123,alpha:90,beta:90,gamma:90},sites:atoms('Cs',[[0,0,0]]).concat(atoms('Cl',[[.5,.5,.5]])),cut:3.65};
+ if(id==='fcc')return {name:'Bakır (Cu)',detail:'Yüzey merkezli kübik · Fm-3m',cell:{a:3.615,b:3.615,c:3.615,alpha:90,beta:90,gamma:90},sites:atoms('Cu',fcc),cut:2.7};
+ if(id==='perovskite')return {name:'BaTiO₃ (ideal)',detail:'Kübik perovskit modeli · Pm-3m',cell:{a:4,b:4,c:4,alpha:90,beta:90,gamma:90},sites:atoms('Ba',[[0,0,0]]).concat(atoms('Ti',[[.5,.5,.5]]),atoms('O',[[.5,.5,0],[.5,0,.5],[0,.5,.5]])),cut:2.18};
+ return {name:'Grafit (C)',detail:'AB tabakalı · idealize edilmiş P6₃/mmc',cell:{a:2.46,b:2.46,c:6.71,alpha:90,beta:90,gamma:120},sites:atoms('C',[[0,0,0],[1/3,2/3,0],[0,0,.5],[2/3,1/3,.5]]),cut:1.58};
+}
+function validateCell(c){
+ const vals=['a','b','c','alpha','beta','gamma'].map(k=>Number(c[k]));
+ if(vals.some(v=>!Number.isFinite(v)))throw Error('Hücre parametreleri sayısal olmalıdır.');
+ if(vals.slice(0,3).some(v=>v<=0||v>1000))throw Error('Kenar uzunlukları 0–1000 Å arasında olmalıdır.');
+ if(vals.slice(3).some(v=>v<=0||v>=180))throw Error('Açılar 0° ile 180° arasında olmalıdır.');
+ const a=vals[3]*Math.PI/180,b=vals[4]*Math.PI/180,g=vals[5]*Math.PI/180;
+ const volumeFactor=1+2*Math.cos(a)*Math.cos(b)*Math.cos(g)-Math.cos(a)**2-Math.cos(b)**2-Math.cos(g)**2;
+ if(volumeFactor<=1e-9)throw Error('Açılar geçerli bir 3B birim hücre oluşturmuyor.');
+ return {a:vals[0],b:vals[1],c:vals[2],alpha:vals[3],beta:vals[4],gamma:vals[5]};
+}
+function basis(c){
+ c=validateCell(c);
+ const al=c.alpha*Math.PI/180,be=c.beta*Math.PI/180,ga=c.gamma*Math.PI/180;
+ const A=new THREE.Vector3(c.a,0,0);
+ const B=new THREE.Vector3(c.b*Math.cos(ga),c.b*Math.sin(ga),0);
+ const cx=c.c*Math.cos(be),cy=c.c*(Math.cos(al)-Math.cos(be)*Math.cos(ga))/Math.sin(ga);
+ const C=new THREE.Vector3(cx,cy,Math.sqrt(Math.max(0,c.c*c.c-cx*cx-cy*cy)));
+ return [A,B,C];
+}
+function toCart(f,B){return B[0].clone().multiplyScalar(f[0]).addScaledVector(B[1],f[1]).addScaledVector(B[2],f[2]);}
+function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));if(Math.abs(den)<1e-12)throw Error('Tekil örgü matrisi.');return [p.dot(new THREE.Vector3().crossVectors(B[1],B[2]))/den,p.dot(new THREE.Vector3().crossVectors(B[2],B[0]))/den,p.dot(new THREE.Vector3().crossVectors(B[0],B[1]))/den];}
+function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
+function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
+let state={...examples('silicon'),rep:[2,2,2],style:'ball',bonds:true,cellVisible:true,boundary:true,labels:false,axes:true,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
+let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
+const MAX_ATOMS=1800,MAX_BONDS=6500;
+const sphereGeometry=new THREE.SphereGeometry(1,24,16);
+const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
+const atomMaterials=new Map();
+function materialFor(el){if(!atomMaterials.has(el))atomMaterials.set(el,new THREE.MeshStandardMaterial({color:COLORS[el]||'#afbfcf',roughness:.28,metalness:.09}));return atomMaterials.get(el);}
+function inform(s){$('toast').textContent=s;$('toast').classList.add('visible');clearTimeout(warningTimer);warningTimer=setTimeout(()=>$('toast').classList.remove('visible'),5000);}
+function report(s){$('notice').textContent=s;$('notice').classList.toggle('visible',!!s);}
+function download(filename,content,mime){const blob=content instanceof Blob?content:new Blob([content],{type:mime||'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),600);}
+function safeName(s){return String(s).normalize('NFKD').replace(/[^\w-]+/g,'_').slice(0,48)||'kristal';}
+function initScene(){
+ scene=new THREE.Scene();
+ perspective=true;camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
+ renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;$('stage').appendChild(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x54698d,2.3));
+ const l=new THREE.DirectionalLight(0xffffff,2.0);l.position.set(8,-13,18);scene.add(l);
+ const l2=new THREE.DirectionalLight(0xa9d5ff,.8);l2.position.set(-10,12,-4);scene.add(l2);
+ root=new THREE.Group();scene.add(root);
+ orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.09;orbit.minDistance=.4;orbit.maxDistance=5000;orbit.screenSpacePanning=true;
+ new ResizeObserver(resize).observe($('stage'));
+ renderer.domElement.addEventListener('pointerdown',e=>lastPointer={x:e.clientX,y:e.clientY});
+ renderer.domElement.addEventListener('pointerup',pickAtom);
+ renderer.domElement.addEventListener('dblclick',()=>{selected=[];drawSelection();});
+ requestAnimationFrame(loop);
+}
+function resize(){const r=$('stage').getBoundingClientRect();if(r.width<1||r.height<1)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;if(camera.isPerspectiveCamera)camera.updateProjectionMatrix();else{const scale=r.width/r.height;camera.left=-currentSpan*scale/2;camera.right=currentSpan*scale/2;camera.top=currentSpan/2;camera.bottom=-currentSpan/2;camera.updateProjectionMatrix();}}
+function loop(){requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();renderer.render(scene,camera);}
+function clearRoot(){for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==bondGeometry)x.geometry.dispose();if(x.material&&x.userData.disposableMaterial){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(m.map)m.map.dispose();m.dispose();});}});}atomMesh=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
+function line(points,color,opacity=1){return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false}));}
+function addCellLines(B,r){
+ const pts=[],OUT=[];
+ const corners=(i,j,k)=>{const arr=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)arr.push([i+x,j+y,k+z]);return arr;};
+ const edges=(i,j,k,dest)=>{const ps=corners(i,j,k);for(let x=0;x<8;x++)for(let y=x+1;y<8;y++){const a=ps[x],b=ps[y];const d=Number(a[0]!==b[0])+Number(a[1]!==b[1])+Number(a[2]!==b[2]);if(d===1)dest.push(toCart(a,B),toCart(b,B));}};
+ if(state.cellVisible){for(let i=0;i<r[0];i++)for(let j=0;j<r[1];j++)for(let k=0;k<r[2];k++)edges(i,j,k,pts);root.add(line(pts,0x587793,.36));edges(0,0,0,OUT); /* major boundary drawn separately below */}
+ const cornersAll=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)cornersAll.push([x*r[0],y*r[1],z*r[2]]);
+ const segments=[];for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){if(cornersAll[i].filter((v,n)=>v!==cornersAll[j][n]).length===1)segments.push(toCart(cornersAll[i],B),toCart(cornersAll[j],B));}
+ root.add(line(segments,0x63d8eb,.92));
+}
+function makeCylinder(a,b,radius,mat){const d=new THREE.Vector3().subVectors(b,a),m=new THREE.Mesh(bondGeometry,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());m.scale.set(radius,d.length(),radius);return m;}
+function build(){
+ try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
+ state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
+ const B=basis(state.cell);const center=toCart(state.rep.map(v=>v/2),B);clearRoot();root.position.copy(center).multiplyScalar(-1);
+ const positions=new Set(),entry=[];
+ for(let s=0;s<state.sites.length;s++){
+  const site=state.sites[s];site.symbol=cleanSymbol(site.symbol);for(const k of ['x','y','z'])if(!Number.isFinite(Number(site[k])))throw Error('Atom koordinatları sayısal olmalıdır.');
+  const f=[frac(+site.x),frac(+site.y),frac(+site.z)];
+  const ranges=f.map((v,i)=>state.rep[i]+(state.boundary&&near(v,0)?1:0));
+  for(let i=0;i<ranges[0];i++)for(let j=0;j<ranges[1];j++)for(let k=0;k<ranges[2];k++){
+   const coord=[f[0]+i,f[1]+j,f[2]+k],key=site.symbol+':'+coord.map(x=>x.toFixed(5)).join('/');
+   if(positions.has(key))continue;positions.add(key);
+   entry.push({id:s+'-'+i+'-'+j+'-'+k,site,idx:s,frac:coord,pos:toCart(coord,B)});
+   if(entry.length>MAX_ATOMS)throw Error('Çok fazla atom: '+entry.length+'. Süperhücreyi küçültün (en fazla '+MAX_ATOMS+' atom).');
+  }
+ }
+ atomData=entry;
+ const radiusScale=state.style==='space'?1.0:state.style==='stick'?.20:state.style==='wire'?.11:.52;
+ const atomOpacity=state.style==='wire'?.72:1;
+ for(let i=0;i<entry.length;i++){
+  const item=entry[i],baseR=RADII[item.site.symbol]||1.1;
+  const size=(state.style==='space'?baseR:Math.min(baseR,.9))*state.atomScale*radiusScale;
+  const m=new THREE.Mesh(sphereGeometry,materialFor(item.site.symbol));m.position.copy(item.pos);m.scale.setScalar(size);m.userData.atomIndex=i;root.add(m);atomMesh.push(m);
+ }
+ const buckets=new Map(),size=state.cut;const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
+ const key=(x,y,z)=>x+','+y+','+z;
+ for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
+ const adjacency=Array.from({length:entry.length},()=>[]);
+ let capReached=false;
+ for(let i=0;i<entry.length;i++){
+  const p=entry[i].pos,b=ck(p);
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+   for(const j of buckets.get(key(b[0]+x,b[1]+y,b[2]+z))||[]){
+    if(j<=i)continue;
+    const d=p.distanceTo(entry[j].pos);if(d<.35||d>state.cut+1e-6)continue;
+    if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
+    bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
+   }
+  }
+ }
+ if(state.bonds&&state.style!=='space'){
+  const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x89a8c7:0x8ba7c6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
+  const radius=state.style==='wire'?.014:state.style==='stick'?.13:.075;
+  for(const [i,j] of bondPairs)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
+ }
+ addCellLines(B,state.rep);
+ if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));root.add(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})));}}
+ if(state.labels&&entry.length<=160)for(const item of entry){const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;root.add(sprite);}
+ if(state.poly){
+  const mat=new THREE.MeshPhongMaterial({color:COLORS[state.poly]||'#54a1db',side:THREE.DoubleSide,transparent:true,opacity:.24,depthWrite:false,shininess:70});
+  let count=0;
+  for(let i=0;i<entry.length&&count<100;i++){
+   if(entry[i].site.symbol!==state.poly)continue;
+   const neigh=adjacency[i].sort((a,b)=>entry[a].pos.distanceTo(entry[i].pos)-entry[b].pos.distanceTo(entry[i].pos)).slice(0,12);
+   if(neigh.length<4)continue;
+   try{const g=new ConvexGeometry(neigh.map(j=>entry[j].pos));const mesh=new THREE.Mesh(g,mat);root.add(mesh);const ed=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x96d8ff,transparent:true,opacity:.65}));root.add(ed);count++;}catch(e){}
+  }
+ }
+ drawSelection();
+ $('viewTitle').textContent=state.name;$('viewSubtitle').textContent=state.detail||'Özel yapı · P1';
+ $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.length+' atom · '+bondPairs.length+' mesafe-eşleşmesi';
+ $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=state.sites.length;
+ const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=COLORS[el]||'#afbfcf';x.append(sw,document.createTextNode(el));return x;}));
+ report([state.warning,capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
+ }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));}
+}
+function fit(){
+ if(!atomData.length)return;const span=Math.max(...basis(state.cell).map((b,i)=>b.length()*state.rep[i]),4);currentSpan=span*2.2;
+ camera.position.set(span*1.3,-span*1.75,span*1.35);camera.near=.01;camera.far=Math.max(1000,span*50);camera.updateProjectionMatrix();orbit.target.set(0,0,0);orbit.minDistance=.2;orbit.maxDistance=Math.max(300,span*20);resize();orbit.update();
+}
+function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);camera.lookAt(orbit.target);orbit.update();}
+function toggleProjection(){
+ const old=camera,p=old.position.clone(),t=orbit.target.clone();perspective=!perspective;
+ if(perspective){camera=new THREE.PerspectiveCamera(44,1,.01,10000);}else{camera=new THREE.OrthographicCamera(-10,10,10,-10,.01,10000);}
+ camera.up.set(0,0,1);camera.position.copy(p);orbit.object=camera;orbit.target.copy(t);resize();orbit.update();$('projectionBtn').textContent=perspective?'Perspektif':'Ortografik';
+}
+function pickAtom(e){
+ if(!lastPointer||Math.hypot(e.clientX-lastPointer.x,e.clientY-lastPointer.y)>4||e.button!==0)return;
+ const r=renderer.domElement.getBoundingClientRect();const v=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));
+ const ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects(atomMesh,false)[0];if(!hit)return;
+ const id=hit.object.userData.atomIndex;if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length>=3)selected=[id];else selected.push(id);
+ drawSelection();$('rightPanel').classList.add('open');
+}
+function drawSelection(){
+ for(const m of highlights){root.remove(m);m.geometry.dispose();m.material.dispose();}highlights=[];
+ for(const i of selected){const item=atomData[i];if(!item)continue;const obj=atomMesh[i];const h=new THREE.Mesh(new THREE.SphereGeometry(1,18,12),new THREE.MeshBasicMaterial({color:0xffde72,wireframe:true,depthTest:false}));h.position.copy(item.pos);h.scale.setScalar(obj.scale.x*1.2);root.add(h);highlights.push(h);}
+ const list=$('measureList');list.replaceChildren();$('measureEmpty').style.display=selected.length?'none':'block';for(const [k,id] of selected.entries()){const a=atomData[id];if(!a)continue;const box=document.createElement('div');box.className='measure-item';const title=document.createElement('b');title.textContent=['A','B','C'][k]+' · '+a.site.symbol+' ('+a.site.label+')';const detail=document.createElement('div');detail.className='muted';detail.textContent='Kesirli: '+a.frac.map(v=>v.toFixed(4)).join(', ')+' · doluluk: '+(a.site.occupancy??1);box.append(title,detail);list.append(box);}
+ const d=$('distanceResult'),a=$('angleResult');d.style.display=selected.length>=2?'block':'none';a.style.display=selected.length>=3?'block':'none';
+ if(selected.length>=2){d.querySelector('strong').textContent=atomData[selected[0]].pos.distanceTo(atomData[selected[1]].pos).toFixed(4);}
+ if(selected.length>=3){const p=atomData[selected[0]].pos,q=atomData[selected[1]].pos,r=atomData[selected[2]].pos;const u=p.clone().sub(q),v=r.clone().sub(q);a.querySelector('strong').textContent=(u.angleTo(v)*180/Math.PI).toFixed(2);}
+}
+function syncControls(){
+ for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
+ ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);
+ for(const k of ['style','bonds','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
+ $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
+ fillPoly();renderSites();
+}
+function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
+function renderSites(){
+ const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;
+ state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol'){fillPoly();renderSites();}});td.append(inp);tr.append(td);}
+  const td=document.createElement('td'),btn=document.createElement('button');btn.className='del';btn.textContent='×';btn.title='Atom konumunu sil';btn.disabled=state.sites.length<2;btn.addEventListener('click',()=>{state.sites.splice(i,1);state.warning='';fillPoly();renderSites();build();});td.append(btn);tr.append(td);rows.append(tr);});
+}
+function applyCell(){try{const c={};for(const k of ['a','b','c','alpha','beta','gamma'])c[k]=Number($(k).value);state.cell=validateCell(c);state.warning='';build();fit();}catch(e){inform(e.message);}}
+function applyRepeat(){const r=['ra','rb','rc'].map(x=>Number($(x).value));if(r.some(x=>!Number.isInteger(x)||x<1||x>6)){inform('Her eksende tekrar sayısı 1 ile 6 arasında tam sayı olmalıdır.');return;}state.rep=r;build();fit();}
+function loadPreset(key){const ex=examples(key);state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;state.cut=ex.cut;state.warning='';state.poly='';syncControls();build();fit();}
+function tokenizeCif(src){
+ const lines=src.replace(/\r\n?/g,'\n').split('\n'),tokens=[];
+ for(let i=0;i<lines.length;i++){
+  const line=lines[i];if(line.startsWith(';')){const out=[];i++;while(i<lines.length&&!lines[i].startsWith(';'))out.push(lines[i++]);tokens.push(out.join('\n'));continue;}
+  const re=/'(?:[^']|'')*'|"(?:[^"]|"")*"|[^\s#]+/g;let m;while((m=re.exec(line))){let v=m[0];if(v.startsWith('#'))break;if((v[0]==="'"&&v.endsWith("'"))||(v[0]==='"'&&v.endsWith('"')))v=v.slice(1,-1);tokens.push(v);}
+ }
+ return tokens;
+}
+function cifData(src){
+ const t=tokenizeCif(src),tags={},loops=[];let i=0;
+ while(i<t.length){
+  const k=t[i++];if(k.toLowerCase()==='loop_'){const cols=[];while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());if(!cols.length)continue;const rows=[];while(i<t.length&&!t[i].startsWith('_')&&!/^(loop_|data_|save_|stop_)$/i.test(t[i])&&!/^data_/i.test(t[i])){const row=t.slice(i,i+cols.length);if(row.length<cols.length)break;rows.push(row);i+=cols.length;}loops.push({cols,rows});}
+  else if(k.startsWith('_')&&i<t.length)tags[k.toLowerCase()]=t[i++];
+ }
+ const get=(...ks)=>{for(const k of ks)if(tags[k]!==undefined)return tags[k];return undefined;};
+ const c={a:number(get('_cell_length_a')),b:number(get('_cell_length_b')),c:number(get('_cell_length_c')),alpha:number(get('_cell_angle_alpha')),beta:number(get('_cell_angle_beta')),gamma:number(get('_cell_angle_gamma'))};validateCell(c);
+ const sites=[];let sym=['x,y,z'];
+ for(const lp of loops){
+  const f=lp.cols.findIndex(k=>k==='_atom_site_fract_x'),fy=lp.cols.indexOf('_atom_site_fract_y'),fz=lp.cols.indexOf('_atom_site_fract_z');
+  if(f>=0&&fy>=0&&fz>=0){const el=lp.cols.indexOf('_atom_site_type_symbol'),label=lp.cols.indexOf('_atom_site_label'),occ=lp.cols.indexOf('_atom_site_occupancy');for(const row of lp.rows){const x=number(row[f]),y=number(row[fy]),z=number(row[fz]);if(![x,y,z].every(Number.isFinite))continue;const raw=el>=0?row[el]:(label>=0?row[label]:'X');sites.push({symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy:occ>=0&&Number.isFinite(number(row[occ]))?number(row[occ]):1});}}
+  const op=lp.cols.findIndex(k=>k==='_space_group_symop_operation_xyz'||k==='_symmetry_equiv_pos_as_xyz');if(op>=0&&lp.rows.length)sym=lp.rows.map(row=>row[op]);
+ }
+ if(!sites.length)throw Error('CIF içinde _atom_site_fract_* koordinat döngüsü bulunamadı.');
+ const opTag=get('_space_group_symop_operation_xyz','_symmetry_equiv_pos_as_xyz');if(opTag)sym=[opTag];
+ const out=[],seen=new Set();
+ for(const site of sites)for(let j=0;j<sym.length;j++){
+  const xyz=applySymmetry(sym[j],[site.x,site.y,site.z]).map(frac);
+  const key=site.symbol+'|'+xyz.map(v=>Math.round(v*1e5)).join(',');
+  if(seen.has(key))continue;seen.add(key);out.push({...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(sym.length>1?'_'+(j+1):'')});
+  if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
+ }
+ const sg=get('_space_group_name_h-m_alt','_symmetry_space_group_name_h-m','_space_group_it_number','_symmetry_int_tables_number')||'P1';
+ const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
+ const warn=sym.length===1&&sym[0]==='x,y,z'&&!/^(p ?1|1)$/i.test(String(sg).replace(/['"]/g,'').trim())?'CIF uzay grubu '+sg+' fakat açık simetri işlemleri yok; atomlar P1 gibi gösteriliyor. Tam uzay grubu genişletmesi yapılmadı.':'';
+ return {name:label,detail:'CIF içe aktarma · '+sg+' · '+out.length+' genişletilmiş atom',cell:c,sites:out,warning:warn};
+}
+function symPart(expr,coord){
+ let sum=0;const terms=expr.replace(/\s+/g,'').replace(/−/g,'-').match(/[+-]?[^+-]+/g)||[];
+ for(const term of terms){let sign=1,s=term;if(s.startsWith('-')){sign=-1;s=s.slice(1);}else if(s.startsWith('+'))s=s.slice(1);
+  const m=s.match(/^(\d*(?:\.\d+)?(?:\/\d+)?)?([xyz])(?:\/(\d+))?$/i);
+  if(m){let coeff=m[1]?rational(m[1]):1;if(m[3])coeff/=Number(m[3]);sum+=sign*coeff*coord['xyz'.indexOf(m[2].toLowerCase())];}
+  else if(/^\d+(?:\.\d+)?(?:\/\d+)?$/.test(s))sum+=sign*rational(s);
+  else throw Error('Desteklenmeyen CIF simetri ifadesi: '+expr);
+ }
+ return sum;
+}
+function rational(s){const bits=s.split('/');return Number(bits[0])/(bits[1]?Number(bits[1]):1);}
+function applySymmetry(s,coord){const parts=s.replace(/['"]/g,'').replace(/\s/g,'').split(',');if(parts.length!==3)throw Error('Desteklenmeyen CIF simetri işlemi: '+s);return parts.map(p=>symPart(p,coord));}
+function poscarData(text){
+ const l=text.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
+ if(l.length<8)throw Error('POSCAR içeriği eksik.');
+ const title=l[0],scale=Number(l[1]),rows=l.slice(2,5).map(v=>v.split(/\s+/).slice(0,3).map(Number));
+ if(!Number.isFinite(scale)||scale===0||rows.some(row=>row.length!==3||row.some(v=>!Number.isFinite(v))))throw Error('Geçersiz POSCAR örgü matrisi.');
+ let B=rows.map(v=>new THREE.Vector3(...v)),mult=scale;
+ if(scale<0){const vol=volume(B);if(vol<=0)throw Error('Geçersiz POSCAR hücre hacmi.');mult=Math.cbrt(-scale/vol);}
+ B.forEach(v=>v.multiplyScalar(mult));
+ let p=5,symbols=l[p].split(/\s+/),counts;
+ if(symbols.every(s=>/^\d+$/.test(s))){counts=symbols.map(Number);symbols=counts.map((_,i)=>'X');p++;}
+ else{p++;counts=l[p++].split(/\s+/).map(Number);}
+ if(counts.length!==symbols.length||counts.some(v=>!Number.isInteger(v)||v<0)||counts.reduce((a,b)=>a+b,0)>1000)throw Error('POSCAR element/sayı satırları geçersiz veya çok büyük.');
+ if(/^s/i.test(l[p]))p++;
+ const direct=/^[dD]/.test(l[p]||'');if(!direct&&!/^[cCkK]/.test(l[p]||''))throw Error('POSCAR koordinat modu Direct veya Cartesian olmalıdır.');p++;
+ const sites=[];for(let e=0;e<symbols.length;e++)for(let k=0;k<counts[e];k++){
+  const xyz=(l[p++]||'').split(/\s+/).slice(0,3).map(Number);if(xyz.length!==3||xyz.some(v=>!Number.isFinite(v)))throw Error('POSCAR atom koordinatları eksik.');
+  const f=direct?xyz:toFrac(new THREE.Vector3(...xyz).multiplyScalar(mult),B);
+  sites.push({symbol:cleanSymbol(symbols[e]),label:cleanSymbol(symbols[e])+(k+1),x:frac(f[0]),y:frac(f[1]),z:frac(f[2]),occupancy:1});
+ }
+ return {name:title||'POSCAR kristali',detail:'VASP POSCAR · '+sites.length+' atom',cell:metric(B),sites,warning:symbols.includes('X')?'Eski POSCAR biçiminde element sembolleri yok; X olarak gösterildi.':''};
+}
+function xyzData(text){
+ const l=text.replace(/\r/g,'').split('\n');const n=Number(l[0].trim());if(!Number.isInteger(n)||n<1||n>1000)throw Error('XYZ atom sayısı geçersiz (1–1000).');
+ const sites=[],coords=[];for(let i=0;i<n;i++){const p=(l[i+2]||'').trim().split(/\s+/);if(p.length<4)throw Error('XYZ satırı eksik: '+(i+3));const xyz=p.slice(1,4).map(Number);if(xyz.some(v=>!Number.isFinite(v)))throw Error('XYZ koordinatı sayısal değil.');coords.push(xyz);sites.push({symbol:cleanSymbol(p[0]),label:cleanSymbol(p[0])+(i+1),occupancy:1});}
+ const min=[0,1,2].map(j=>Math.min(...coords.map(p=>p[j]))),max=[0,1,2].map(j=>Math.max(...coords.map(p=>p[j]))),span=min.map((v,j)=>Math.max(max[j]-v+4,6));
+ sites.forEach((s,i)=>{s.x=(coords[i][0]-min[0]+2)/span[0];s.y=(coords[i][1]-min[1]+2)/span[1];s.z=(coords[i][2]-min[2]+2)/span[2];});
+ return {name:l[1]?.trim()||'XYZ molekülü',detail:'XYZ · yapay kutu içine yerleştirilmiş atomlar',cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},sites,warning:'XYZ dosyasında örgü/simetri bilgisi yoktur. Görselleştirmek için atomların etrafına 2 Å boşluklu yapay ortorombik hücre oluşturuldu.'};
+}
+function loadProject(json){
+ const obj=JSON.parse(json);if(!obj||!obj.cell||!Array.isArray(obj.sites))throw Error('Geçersiz proje JSON.');
+ validateCell(obj.cell);if(!obj.sites.length||obj.sites.length>1000)throw Error('Proje atom sayısı 1–1000 aralığında olmalıdır.');
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites:obj.sites.map((s,i)=>({symbol:cleanSymbol(s.symbol),label:String(s.label||('Atom '+i)).slice(0,80),x:+s.x,y:+s.y,z:+s.z,occupancy:clamp(Number(s.occupancy??1),0,1)})),warning:'' ,rep:Array.isArray(obj.rep)?obj.rep:undefined};
+}
+async function importFile(file){
+ if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
+ const str=await file.text(),name=file.name.toLowerCase();let obj;
+ if(name.endsWith('.json'))obj=loadProject(str);
+ else if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))obj=cifData(str);
+ else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
+ else obj=poscarData(str);
+ state={...state,...obj,rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
+}
+function exportCif(){
+ const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    'P 1'",'_symmetry_Int_Tables_number       1'];
+ for(const k of ['a','b','c','alpha','beta','gamma'])q.push('_cell_'+(k.length>1?'angle_':'length_')+k+' '+c[k].toFixed(6));
+ q.push('loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy');
+ state.sites.forEach((s,i)=>q.push((safeName(s.label)||s.symbol+(i+1))+' '+s.symbol+' '+[s.x,s.y,s.z].map(v=>frac(+v).toFixed(8)).join(' ')+' '+Number(s.occupancy??1).toFixed(4)));
+ download(safeName(state.name)+'.cif',q.join('\n')+'\n');
+}
+function exportPoscar(){
+ const B=basis(state.cell),species=[...new Set(state.sites.map(s=>s.symbol))],rows=[state.name,'1.0',...B.map(v=>v.toArray().map(n=>n.toFixed(9)).join(' ')),species.join(' '),species.map(s=>state.sites.filter(a=>a.symbol===s).length).join(' '),'Direct'];
+ for(const sp of species)for(const s of state.sites.filter(a=>a.symbol===sp))rows.push([s.x,s.y,s.z].map(v=>frac(+v).toFixed(9)).join(' '));
+ download('POSCAR',rows.join('\n')+'\n');
+}
+function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
+function screenshot(){renderer.render(scene,camera);renderer.domElement.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
+function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut},null,2),'application/json');}
+function bind(){
+ $('openBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{if(!e.target.files?.[0])return;try{await importFile(e.target.files[0]);}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
+ $('saveBtn').onclick=saveProject;$('preset').onchange=e=>loadPreset(e.target.value);$('resetBtn').onclick=()=>loadPreset($('preset').value);
+ $('newBtn').onclick=()=>{state.name='Yeni kristal';state.detail='P1 · yeni yapı';state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];state.poly='';state.warning='';syncControls();build();fit();};
+ $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
+ $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
+ for(const k of ['style','bonds','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();});
+ for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
+ for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
+ $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
+ $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
+ $('pngBtn').onclick=screenshot;$('exportPng').onclick=screenshot;$('exportCif').onclick=exportCif;$('exportPoscar').onclick=exportPoscar;$('exportXyz').onclick=exportXyz;
+ $('clearMeasure').onclick=()=>{selected=[];drawSelection();};
+ $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('open');};
+ $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
+}
+try{initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
+</script>
+</body>
+</html>
