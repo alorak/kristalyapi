@@ -37,9 +37,9 @@ const bootstrapMarker = '// @kristalyapi/browser-bootstrap:';
 const bootstrapIndex = moduleScript.indexOf(bootstrapMarker);
 assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
-const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
+const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -302,6 +302,10 @@ test('new library header has exactly the two navigation entries',()=>{
  assert.match(html,/id="libraryPage"/);
  assert.match(html,/id="codSearchForm"/);
  assert.match(html,/id="libBookmarksPane"/);
+ assert.match(html,/id="codImportHelp"/);
+ assert.match(html,/id="codImportLocalFile"/);
+ assert.ok(!html.includes('proxy.cors.dev'));
+ assert.ok(!html.includes('allorigins.win'));
 });
 test('COD record normalization uses COD data schema and safe URLs',()=>{
  const entry=api.normalizeCodRecord({file:4335507,formula:'Ge4 In0.94 La4 Mn2',sg:'C 1 2/m 1',a:'16.646',b:'4.419',c:'7.4834',vol:'526.72',year:2013,journal:'Inorganic Chemistry',doi:'10.1021/ic401234'});
@@ -362,14 +366,56 @@ test('COD bookmark storage keeps metadata/CIF URL, never CIF text',()=>{
  assert.equal(restored[0].formula,'La4 Mn2 Ge4');
  assert.equal(restored[0].cifUrl,item.cifUrl);
 });
-test('COD connection modes stay within the fixed COD endpoint and explicit proxy domains',()=>{
+test('COD connection modes use official COD endpoints only (no public proxy)',()=>{
  const url=api.codCifUrl('4335507');
  assert.equal(api.codRequestUrls(url,'direct').length,1);
- assert.equal(api.codRequestUrls(url,'auto').length,3);
- assert.equal(api.codRequestUrls(url,'proxy').length,2);
+ assert.equal(api.codRequestUrls(url,'auto').length,1);
+ assert.equal(api.codRequestUrls(url,'optimade').length,1);
+ assert.throws(()=>api.codRequestUrls(url,'proxy'));
  assert.throws(()=>api.codRequestUrls('https://example.com/secrets','auto'));
+ assert.throws(()=>api.codRequestUrls('https://www.crystallography.net/other/file','auto'));
+ assert.equal(api.codOptimadeItemUrl('4335507'),'https://www.crystallography.net/cod/optimade/v1/structures/4335507');
  assert.equal(api.isLibraryHash('#kutuphane'),true);
  assert.equal(api.isLibraryHash('#kristal'),false);
+});
+test('COD OPTIMADE search preserves standardized element and count constraints',()=>{
+ const p=new URLSearchParams({format:'json',el1:'Si',el2:'O',nel1:'Fe',strictmin:'2',strictmax:'3'});
+ const url=new URL(api.codOptimadeSearchUrl(p));
+ assert.equal(url.hostname,'www.crystallography.net');
+ assert.match(url.searchParams.get('filter'),/elements HAS ALL "Si","O"/);
+ assert.match(url.searchParams.get('filter'),/elements HAS NONE "Fe"/);
+ assert.match(url.searchParams.get('filter'),/nelements>=2/);
+ assert.match(url.searchParams.get('filter'),/nelements<=3/);
+ assert.equal(api.codSearchUrls(p,'auto').length,2);
+ assert.equal(api.codSearchUrls(p,'optimade').length,1);
+ p.set('year','2013');
+ assert.equal(api.codOptimadeSearchUrl(p),null);
+ assert.equal(api.codSearchUrls(p,'auto').length,1);
+ assert.throws(()=>api.codSearchUrls(p,'optimade'));
+ assert.match(api.codSearchUrl(p),/result\.php\?/);
+});
+test('COD OPTIMADE JSON structures can be reconstructed into native P1 CIF',()=>{
+ const payload={data:{id:'4335507',attributes:{
+  lattice_vectors:[[5,0,0],[0,5,0],[0,0,5]],
+  cartesian_site_positions:[[0,0,0],[2.5,2.5,2.5]],
+  species_at_sites:['na','cl'],
+  species:[
+   {name:'na',chemical_symbols:['Na'],concentration:[1]},
+   {name:'cl',chemical_symbols:['Cl'],concentration:[1]}
+  ]
+ }}};
+ const cif=api.codOptimadeToCif(payload,'4335507');
+ assert.match(cif,/data_COD_4335507/);
+ assert.match(cif,/_cell_length_a 5\.00000000/);
+ assert.match(cif,/Cl2 Cl 0\.500000000 0\.500000000 0\.500000000 1\.000000/);
+ const crystal=api.cifData(cif);
+ assert.equal(crystal.sites.length,2);
+ assert.equal(crystal.cell.a,5);
+ assert.deepEqual([...new Set(crystal.sites.map(x=>x.symbol))].sort(),['Cl','Na']);
+ assert.throws(()=>api.codOptimadeToCif(payload,'1000001'));
+ assert.throws(()=>api.codOptimadeToCif({data:{id:'4335507',attributes:{}}},'4335507'));
+ const record=api.normalizeCodRecord({id:'4335507',attributes:{chemical_formula_reduced:'ClNa'}});
+ assert.equal(record.formula,'ClNa');
 });
 test('COD element validation rejects unknown elements and normalizes case',()=>{
  assert.equal(api.codCleanSymbol('la'),'La');
