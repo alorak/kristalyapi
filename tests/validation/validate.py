@@ -61,21 +61,12 @@ def gemmi_reference(entry):
         record.update(result="error",error=(type(ex).__name__+": "+str(ex))[:500])
     return record
 
-def periodic_distance(a,b,c):
-    aa,bb,cc=c["a"],c["b"],c["c"]
-    co=[math.cos(math.radians(c[k])) for k in ("alpha","beta","gamma")]
-    dx,dy,dz=(a[k]-b[k] for k in ("x","y","z"))
-    best=math.inf
-    for i in (-1,0,1):
-        x=dx+i
-        for j in (-1,0,1):
-            y=dy+j
-            for k in (-1,0,1):
-                z=dz+k
-                d=(aa*x)**2+(bb*y)**2+(cc*z)**2
-                d+=2*aa*bb*co[2]*x*y+2*aa*cc*co[1]*x*z+2*bb*cc*co[0]*y*z
-                best=min(best,d)
-    return math.sqrt(max(best,0))
+def periodic_distance(a,b,cell):
+    # Independent Gemmi minimum-image implementation; deliberately do NOT
+    # repeat the browser's 27-neighbor search, which may fail in skew cells.
+    f1=gemmi.Fractional(float(a["x"]),float(a["y"]),float(a["z"]))
+    f2=gemmi.Fractional(float(b["x"]),float(b["y"]),float(b["z"]))
+    return float(cell.find_nearest_pbc_image(f1,f2).dist())
 
 def groups(sites):
     result=defaultdict(list)
@@ -113,6 +104,8 @@ def bipartite(a,b,cell,tol):
 
 def compare_sites(bsites,rsites,cell,tol):
     bg,rg=groups(bsites),groups(rsites)
+    gemmi_cell=gemmi.UnitCell(cell["a"],cell["b"],cell["c"],
+                             cell["alpha"],cell["beta"],cell["gamma"])
     if set(bg)!=set(rg):
         return dict(success=False,reason="element/occupancy-group mismatch",
           browser_groups={str(k):len(v) for k,v in bg.items()},
@@ -125,7 +118,7 @@ def compare_sites(bsites,rsites,cell,tol):
         worst=0.
         for k,b in bg.items():
             shifted=[dict(s,x=s["x"]+shift[0],y=s["y"]+shift[1],z=s["z"]+shift[2]) for s in b]
-            success,matched,error=bipartite(shifted,rg[k],cell,tol)
+            success,matched,error=bipartite(shifted,rg[k],gemmi_cell,tol)
             if not success:return False,matched,worst
             worst=max(worst,error)
         return True,len(bsites),worst
