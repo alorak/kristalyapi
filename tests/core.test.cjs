@@ -38,7 +38,7 @@ const script = moduleScript
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -453,4 +453,71 @@ test('library import and Save handlers are registered, old sidebar handlers remo
  for(const id of ['resetBtn','newBtn','pngBtn','exportCif','exportPoscar','exportXyz','exportPng']){
   assert.ok(!script.includes("$('"+id+"')"),'stale event handler: '+id);
  }
+});
+
+test('workspace has distinct whites and cool grays with clear visual hierarchy',()=>{
+ assert.match(html,/--workspace-shell:#eaf0f6/);
+ assert.match(html,/--workspace-left:#eff4f9/);
+ assert.match(html,/--workspace-right:#f2f6fa/);
+ assert.match(html,/#viewport\{\s*background:#fff;/);
+ assert.match(html,/header\{\s*position:relative;\s*z-index:12;\s*background:#fbfdff/);
+ assert.match(html,/#app>\.panel>\.section\{/);
+ assert.match(html,/#app>\.panel\.left \.left-tab-panel>\.section\{/);
+});
+test('sidebar General and Atomlar tabs are in bottom nav outside scroll content',()=>{
+ const start=html.indexOf('<aside class="panel left"');
+ const end=html.indexOf('</aside>',start);
+ const sidebar=html.slice(start,end);
+ const general=sidebar.indexOf('id="leftGeneralPane"');
+ const atom=sidebar.indexOf('id="leftAtomsPane"');
+ const scrollClose=sidebar.indexOf('class="left-tabbar"');
+ assert.ok(general>0&&atom>general&&scrollClose>atom);
+ assert.match(sidebar,/id="leftGeneralTab"[^>]*role="tab"[^>]*aria-controls="leftGeneralPane"/);
+ assert.match(sidebar,/id="leftAtomsTab"[^>]*role="tab"[^>]*aria-controls="leftAtomsPane"/);
+ assert.ok(sidebar.indexOf('Asimetrik konumlar / atomlar')>atom);
+ assert.ok(sidebar.indexOf('Asimetrik konumlar / atomlar')<scrollClose);
+ assert.ok(sidebar.indexOf('Birim hücre')>general&&sidebar.indexOf('Birim hücre')<atom);
+ assert.ok(!sidebar.slice(general,atom).includes('id="siteRows"'));
+ assert.equal((sidebar.match(/id="siteRows"/g)||[]).length,1);
+ assert.equal((sidebar.match(/id="siteCount"/g)||[]).length,1);
+});
+test('tab switch preserves independent scroll offsets, toggles ARIA selection, rejects invalid tabs',()=>{
+ assert.deepEqual(Array.from(api.LEFT_SIDEBAR_TABS),['general','atoms']);
+ const nodes={};
+ const getNode=id=>nodes[id]??(nodes[id]={
+  hidden:false,scrollTop:0,tabIndex:0,selected:false,
+  classList:{toggle(c,v){this[c]=v}},
+  setAttribute(name,value){this[name]=value}
+ });
+ const prev=context.document.getElementById;
+ context.document.getElementById=getNode;
+ try{
+  const scroll=getNode('leftTabContent');
+  scroll.scrollTop=179;
+  api.setLeftSidebarTab('atoms');
+  assert.equal(getNode('leftGeneralPane').hidden,true);
+  assert.equal(getNode('leftAtomsPane').hidden,false);
+  assert.equal(getNode('leftGeneralTab')['aria-selected'],'false');
+  assert.equal(getNode('leftAtomsTab')['aria-selected'],'true');
+  assert.equal(scroll.scrollTop,0);
+  scroll.scrollTop=72;
+  api.setLeftSidebarTab('general');
+  assert.equal(scroll.scrollTop,179);
+  api.setLeftSidebarTab('atoms');
+  assert.equal(scroll.scrollTop,72);
+  assert.throws(()=>api.setLeftSidebarTab('other'));
+  api.setLeftSidebarTab('general');
+ }finally{context.document.getElementById=prev;}
+});
+test('atom badge follows imported structures by updating during every renderSites',()=>{
+ assert.match(script,/function renderSites\(\)\{[\s\S]{0,1500}\$\('leftAtomsBadge'\)\.textContent=String\(state\.sites\.length\)/);
+ assert.match(script,/async function importFile\(file\)[\s\S]*syncControls\(\);build\(\);fit\(\);/);
+ assert.match(script,/function syncControls\(\)[\s\S]*fillPoly\(\);renderSites\(\);/);
+});
+test('mobile layout hides closed tabbed sidebar and preserves bottom navigation',()=>{
+ assert.match(html,/#app>\.panel\.left\{display:none\}/);
+ assert.match(html,/#app>\.panel\.left\.open\{display:flex\}/);
+ assert.match(html,/\.left-tabbar\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(html,/\.left-tab-content\{[\s\S]*?overflow-y:auto/);
+ assert.match(html,/\.left-tab-panel\[hidden\]\{display:none!important\}/);
 });
