@@ -175,7 +175,7 @@ body.library-open #app{display:none}
 .lib-panel-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;border-top:1px solid #edf1f5;padding-top:19px;margin-top:20px}
 .lib-connection{flex:1;max-width:380px}
 .lib-actions{display:flex;gap:9px}
-.lib-actions button{min-width:95px}
+.lib-actions button{min-width:95px}.lib-actions #codExample{white-space:nowrap;background:#f2f8fe;color:#3573a9}
 .lib-privacy{font-size:11px;line-height:1.6;color:#8190a3;margin:14px 0 0}
 .lib-results{min-height:160px}
 .lib-results-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
@@ -398,7 +398,7 @@ body.library-open #app{display:none}
           <option value="proxy">Harici aracı kullan (CORS)</option>
         </select>
       </div>
-      <div class="lib-actions"><button id="codReset" type="reset">Sıfırla</button><button id="codSubmit" type="submit" class="primary">⌕ COD'da ara</button></div>
+      <div class="lib-actions"><button id="codReset" type="reset">Sıfırla</button><button id="codExample" type="button">La–Mn–Ge–In örneği</button><button id="codSubmit" type="submit" class="primary">⌕ COD'da ara</button></div>
     </div>
     <p class="lib-privacy">Harici CORS aracısı kullanıldığında arama parametreleri ve CIF isteği üçüncü tarafın sunucusuna iletilir. Kendi uygulama sunucumuz/veritabanımız yoktur; CIF içerikleri yer imlerine kaydedilmez.</p>
    </form>
@@ -1492,6 +1492,13 @@ function initLibrary(){
  $('libSearchTab').onclick=()=>setLibraryPane('search');
  $('libBookmarksTab').onclick=()=>setLibraryPane('bookmarks');
  $('codSearchForm').onsubmit=e=>{e.preventDefault();runCodSearch();};
+ $('codExample').onclick=()=>{
+  $('codSearchForm').reset();
+  const required=$('codMustElements').querySelectorAll('input');
+  ['La','Mn','Ge','In'].forEach((symbol,i)=>required[i].value=symbol);
+  $('codDistinctMin').value='4';$('codDistinctMax').value='4';
+  codSearchMessage('Örnek filtreler hazır: La, Mn, Ge ve In içeren dört elementli yapılar. Aramak için "COD’da ara"ya bas.');
+ };
  $('codSearchForm').onreset=()=>{if(codAbort){codAbort.abort();codAbort=null;}codGeneration++;codSetLoading(false);codResults=[];codPage=0;$('codExternalSearch').hidden=true;setTimeout(()=>{renderCodResults();codSearchMessage('Filtreler temizlendi. Yeni bir arama yapabilirsin.');},0);};
  $('bookmarkExport').onclick=()=>download('kristalyapi_cod_yer_imleri.json',JSON.stringify({format:'kristalyapi-cod-bookmarks-v1',entries:codBookmarks.map(codRecordForStorage)},null,2),'application/json');
  window.addEventListener('hashchange',syncLibraryNavigation);
