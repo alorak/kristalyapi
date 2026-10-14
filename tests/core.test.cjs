@@ -36,9 +36,9 @@ assert.ok(moduleScript, 'HTML must contain the inline module script');
 const script = moduleScript
   .replace(/^import .*?;\s*$/gm, '')
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
-const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} } };
+const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -292,4 +292,87 @@ test('light theme and axis widget are present in single HTML', () => {
   assert.match(html,/id="axisGizmoSvg"/);
   assert.match(html,/id="autoBond"/);
   assert.ok(!html.includes('Kristalografi ve yapı görselleştirme laboratuvarı'));
+});
+
+test('new library header has exactly the two navigation entries',()=>{
+ assert.match(html,/id="homeLink"[^>]*>Kristal Yapı<\/a>/);
+ assert.match(html,/id="libraryNav"[^>]*>Kütüphane<\/a>/);
+ assert.ok(!html.includes('3B Studio</span>'));
+ assert.match(html,/id="libraryPage"/);
+ assert.match(html,/id="codSearchForm"/);
+ assert.match(html,/id="libBookmarksPane"/);
+});
+test('COD record normalization uses COD data schema and safe URLs',()=>{
+ const entry=api.normalizeCodRecord({file:4335507,formula:'Ge4 In0.94 La4 Mn2',sg:'C 1 2/m 1',a:'16.646',b:'4.419',c:'7.4834',vol:'526.72',year:2013,journal:'Inorganic Chemistry',doi:'10.1021/ic401234'});
+ assert.equal(entry.codId,'4335507');
+ assert.equal(entry.spacegroup,'C 1 2/m 1');
+ assert.equal(entry.cifUrl,'https://www.crystallography.net/cod/4335507.cif');
+ assert.equal(entry.entryUrl,'https://www.crystallography.net/cod/4335507.html');
+ assert.equal(entry.volume,'526.72');
+ assert.equal(entry.year,'2013');
+ assert.throws(()=>api.codCifUrl('javascript:alert(1)'));
+});
+test('COD search normalizes arrays, keyed objects, duplicate entries',()=>{
+ const entry={file:'4335507',formula:'La4 Mn2 Ge4'};
+ assert.equal(api.normalizeCodResults([entry,entry]).length,1);
+ assert.equal(api.normalizeCodResults({'4335507':{formula:'La4 Mn2 Ge4'}})[0].codId,'4335507');
+ assert.equal(api.normalizeCodResults({results:[entry]})[0].formula,entry.formula);
+ assert.equal(api.normalizeCodResults({data:[entry]}).length,1);
+ assert.equal(api.normalizeCodResults({}).length,0);
+});
+test('COD search parameters map element, count and volume filters correctly',()=>{
+ const values={
+  codText:'',codId:'',codFormula:'',codSpacegroup:'',codJournal:'',codYear:'2013',codVolume:'',codIssue:'',codDoi:'',
+  codDistinctMin:'4',codDistinctMax:'4',codVolMin:'100',codVolMax:'700',codZMin:'',codZMax:'',codZpMin:'',codZpMax:''
+ };
+ const elements=['La','Mn','Ge','In'];
+ const omitted=['Fe'];
+ context.document.getElementById=id=>{
+  if(id==='codMustElements')return {querySelectorAll(){return elements.map(value=>({value}))}};
+  if(id==='codNotElements')return {querySelectorAll(){return omitted.map(value=>({value}))}};
+  return {value:values[id]??'',checked:false};
+ };
+ const params=api.codSearchParamsFromForm();
+ assert.equal(params.get('format'),'json');
+ assert.equal(params.get('el1'),'La');
+ assert.equal(params.get('el4'),'In');
+ assert.equal(params.get('nel1'),'Fe');
+ assert.equal(params.get('strictmin'),'4');
+ assert.equal(params.get('strictmax'),'4');
+ assert.equal(params.get('vmin'),'100');
+ assert.equal(params.get('vmax'),'700');
+ assert.equal(params.get('year'),'2013');
+ assert.ok(api.codSearchUrl(params).includes('format=json'));
+ values.codVolMin='800';assert.throws(()=>api.codSearchParamsFromForm());
+ values.codVolMin='';
+ values.codDistinctMin='';values.codDistinctMax='';values.codYear='';
+ elements.length=0;omitted.length=0;values.codVolMax='';
+ assert.throws(()=>api.codSearchParamsFromForm());
+});
+test('COD bookmark storage keeps metadata/CIF URL, never CIF text',()=>{
+ const item=api.normalizeCodRecord({file:'4335507',formula:'La4 Mn2 Ge4',sg:'C 1 2/m 1',year:'2013'});
+ const db=new Map(),storage={getItem:k=>db.get(k)||null,setItem:(k,v)=>db.set(k,v)};
+ const bookmark=api.codRecordForStorage({...item,cif:'data_huge',text:'data_4335507',atomSites:[1,2]});
+ assert.equal(bookmark.cifUrl,api.codCifUrl('4335507'));
+ assert.ok(!JSON.stringify(bookmark).includes('data_4335507'));
+ api.saveCodBookmarks(storage,[bookmark]);
+ const restored=api.loadCodBookmarks(storage);
+ assert.equal(restored.length,1);assert.equal(restored[0].codId,'4335507');
+ assert.equal(restored[0].formula,'La4 Mn2 Ge4');
+ assert.equal(restored[0].cifUrl,item.cifUrl);
+});
+test('COD connection modes stay within the fixed COD endpoint and explicit proxy domains',()=>{
+ const url=api.codCifUrl('4335507');
+ assert.equal(api.codRequestUrls(url,'direct').length,1);
+ assert.equal(api.codRequestUrls(url,'auto').length,3);
+ assert.equal(api.codRequestUrls(url,'proxy').length,2);
+ assert.throws(()=>api.codRequestUrls('https://example.com/secrets','auto'));
+ assert.equal(api.isLibraryHash('#kutuphane'),true);
+ assert.equal(api.isLibraryHash('#kristal'),false);
+});
+test('COD element validation rejects unknown elements and normalizes case',()=>{
+ assert.equal(api.codCleanSymbol('la'),'La');
+ assert.equal(api.codCleanSymbol('MN'),'Mn');
+ assert.throws(()=>api.codCleanSymbol('Nn'));
+ assert.throws(()=>api.codCleanSymbol('Fe2'));
 });
