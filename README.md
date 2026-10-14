@@ -9,6 +9,17 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## Çalışma alanı ve sol panel sekmeleri
+
+Beyaz tema, **3B model görünümünü saf beyaz**, sol düzenleme panelini hafif mavi-gri, sağ yapı/ölçüm panelini daha açık gri, üst menüyü ayrı kırık beyaz yüzey olarak kullanır. Bölümlerin kart sınırları, araç çubuğu ve alt durum çubuğu düşük yoğunluklu çizgi/gölgeyle ayrılır. Bu düzen yalnızca görünüme etki eder; kristal hesaplamalarının sonucu değişmez.
+
+Sol sidebar'ın en altında **her zaman görünür iki sekme** bulunur:
+
+- **Genel**: birim hücre, uzay grubu, bağ kuralları, süperhücre, Miller düzlemleri, örgü dönüşümü ve 3B görünüm ayarları.
+- **Atomlar**: daha önce sol panelin en sonunda bulunan **Asimetrik konumlar / atomlar** tablosu, kesirli koordinatlar, Wyckoff eşleşmeleri ve atom ekleme/silme işlevleri. Sekme başlığında mevcut yapının bağımsız atom/konum sayısı gösterilir.
+
+Tab çubuğu sol panelin kaydırılabilir kısmının **dışında** tutulur; içerik uzasa da kaybolmaz. Sekmeler ayrı kaydırma konumlarını hatırlar. CIF/POSCAR/XYZ veya yerleşik örnek içe aktarımından sonra Atomlar tablosu ve sayaç, `state.sites` üzerinden yeniden çizilir. Mobilde sol panel kapalı kalır, menü düğmesiyle açıldığında iki sekme de görünür.
+
 ## Kütüphane → Örnek Yapılar
 
 **Kütüphane** sayfasında artık üç ayrı sekme var: **COD'da ara**, **Örnek Yapılar** ve **Yer imleri**. Yerleşik örnek kristallerin seçimi ve yeni P1 oluşturma işlemi 3B editörün sol panelinden kaldırılmıştır.

@@ -242,6 +242,233 @@ body.library-open #app{display:none}
 .export-dialog-foot span{font-size:11px;color:#8b9bae}
 @media(max-width:720px){.preset-layout{grid-template-columns:1fr}.preset-specs{grid-template-columns:1fr 1fr}.export-dialog-head{padding:18px 15px 11px}.export-options{padding:0 14px 10px}.export-dialog-foot{padding:13px 15px}.export-dialog-foot span{max-width:160px;line-height:1.5}}
 
+
+/* WORKSPACE SURFACE HIERARCHY
+   White 3D canvas, gently tinted editor sidebars and a separate top navigation.
+   Keep component cards white so input fields are not lost inside the panels. */
+:root{
+ --workspace-shell:#eaf0f6;
+ --workspace-left:#eff4f9;
+ --workspace-right:#f2f6fa;
+ --workspace-card:#ffffff;
+ --workspace-edge:#d9e3ee;
+ --workspace-ink:#263c54;
+ --workspace-subtle:#657d95;
+}
+body{background:var(--workspace-shell)}
+header{
+ position:relative;
+ z-index:12;
+ background:#fbfdff;
+ border-bottom:1px solid #ccd8e5;
+ box-shadow:0 2px 9px rgba(36,65,98,.075);
+}
+header .brand-home{color:#203a56;font-weight:760}
+header .main-nav{border-left-color:#d7e1ec}
+header .main-nav a.active{background:#e8f1fc;color:#195d9b}
+header .actions button{background:#fff;border-color:#cddbea;color:#304960}
+header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
+#app{background:var(--workspace-shell);isolation:isolate}
+#app>.panel{
+ padding:8px 0 16px;
+ background:var(--workspace-left);
+ scrollbar-color:#b1c3d5 transparent;
+ scrollbar-width:thin;
+}
+#app>.panel.left{
+ border-right:1px solid #cbd8e5;
+ box-shadow:inset -4px 0 8px rgba(41,68,101,.025);
+}
+#app>.panel.right{
+ background:var(--workspace-right);
+ border-left:1px solid #cbd8e5;
+ box-shadow:inset 4px 0 8px rgba(41,68,101,.025);
+}
+#app>.panel>.section{
+ background:var(--workspace-card);
+ border:1px solid var(--workspace-edge);
+ border-radius:11px;
+ margin:8px 10px 12px;
+ padding:16px 15px;
+ box-shadow:0 2px 8px rgba(32,57,84,.045);
+}
+#app>.panel>.section h2{
+ color:#47627e;
+ font-weight:750;
+ letter-spacing:1.3px;
+ margin-bottom:13px;
+}
+#app>.panel>.section h2 .stage{color:#3075b3}
+#app>.panel>.section .hint,
+#app>.panel>.section .shortcuts,
+#app>.panel>.section .empty{color:var(--workspace-subtle)}
+#app>.panel>.section .field span{color:#526d87}
+#app>.panel>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea){
+ background:#fbfdff;
+ border-color:#cbd8e6;
+ color:var(--workspace-ink);
+}
+#app>.panel>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea):focus{
+ background:#fff;
+ border-color:#3b89c8;
+}
+#app>.panel>.section .note{background:#f2f7fd;border-color:#dce8f4;color:#526e89}
+#app>.panel>.section :is(.info,.metric,.measure-item){
+ background:#f5f8fc;
+ border-color:#dfe8f1;
+ box-shadow:none;
+}
+#app>.panel>.section :is(.info strong,.metric strong){color:#294562}
+#app>.panel footer{color:#758ba2;padding:7px 12px 16px}
+#viewport{
+ background:#fff;
+ border:1px solid #d5e0ec;
+ border-radius:12px;
+ margin:9px 8px;
+ height:calc(100% - 18px);
+ box-shadow:0 3px 18px rgba(25,51,83,.065);
+ isolation:isolate;
+}
+#viewport .floating{
+ background:rgba(255,255,255,.97);
+ border-color:#d8e3ef;
+ box-shadow:0 3px 12px rgba(30,61,95,.075);
+}
+#viewport .topbar .structure-name{border-color:#d9e4ef}
+#viewport .topbar .tools{border-color:#d6e2ef}
+#viewport .tools button{border-color:#d0ddeb}
+#viewport .tools button:hover{background:#eff6fd}
+#viewport .footbar{
+ background:rgba(249,251,254,.97);
+ border-top:1px solid #e0e8f1;
+ box-shadow:none;
+ color:#637991;
+}
+#viewport .view-help{color:#74899e}
+#viewport .axis-gizmo .gizmo-caption{color:#668198}
+@media(max-width:1180px){
+ #app>.panel.right.open{
+  box-shadow:-13px 0 30px rgba(30,54,85,.17);
+  border-left:1px solid #cbd8e5;
+ }
+}
+@media(max-width:720px){
+ #app>.panel{
+  padding-top:7px;
+ }
+ #app>.panel.left.open{
+  box-shadow:13px 0 30px rgba(30,54,85,.2);
+ }
+ #app>.panel>.section{margin:7px 9px 11px;padding:14px 13px}
+ #viewport{
+  margin:0;
+  height:100%;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+ }
+ #viewport .topbar .tools{box-shadow:0 3px 12px rgba(30,61,95,.075)}
+}
+
+
+/* Always-visible tabs below the independently scrollable editor content. */
+#app>.panel.left{
+ display:flex;
+ flex-direction:column;
+ overflow:hidden;
+ padding:0;
+ min-height:0;
+}
+.left-tab-content{
+ flex:1 1 auto;
+ min-height:0;
+ overflow-y:auto;
+ overflow-x:hidden;
+ padding:8px 0 13px;
+ scrollbar-width:thin;
+ scrollbar-color:#b1c3d5 transparent;
+ overscroll-behavior:contain;
+}
+.left-tab-panel[hidden]{display:none!important}
+#app>.panel.left .left-tab-panel>.section{
+ background:var(--workspace-card);
+ border:1px solid var(--workspace-edge);
+ border-radius:11px;
+ margin:8px 10px 12px;
+ padding:16px 15px;
+ box-shadow:0 2px 8px rgba(32,57,84,.045);
+}
+#app>.panel.left .left-tab-panel>.section h2{
+ color:#47627e;
+ font-weight:750;
+ letter-spacing:1.3px;
+}
+#app>.panel.left .left-tab-panel>.section .hint{color:var(--workspace-subtle)}
+#app>.panel.left .left-tab-panel>.section .field span{color:#526d87}
+#app>.panel.left .left-tab-panel>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea){
+ background:#fbfdff;border-color:#cbd8e6;color:var(--workspace-ink)
+}
+#app>.panel.left .left-tab-panel>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea):focus{
+ background:#fff;border-color:#3b89c8
+}
+#app>.panel.left .left-tab-panel>.section .note{
+ background:#f2f7fd;border-color:#dce8f4;color:#526e89
+}
+.left-tabbar{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ flex:0 0 auto;
+ padding:9px 10px;
+ gap:8px;
+ border-top:1px solid #cbd8e5;
+ background:#fbfdff;
+ box-shadow:0 -4px 14px rgba(31,58,84,.055);
+ z-index:2;
+}
+.left-tabbar button{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ min-height:39px;
+ padding:9px 10px;
+ border:1px solid transparent;
+ border-radius:9px;
+ box-shadow:none;
+ background:transparent;
+ color:#60758b;
+ font-size:13px;
+ font-weight:700;
+}
+.left-tabbar button:hover:not(:disabled){background:#eef5fc;border-color:#d8e5f1}
+.left-tabbar button.selected{
+ border-color:#c1daef;
+ background:#eaf4ff;
+ color:#176ba8;
+}
+.left-atoms-count{
+ display:inline-flex;
+ justify-content:center;
+ align-items:center;
+ min-width:22px;
+ min-height:21px;
+ padding:0 6px;
+ border-radius:11px;
+ background:#dfe8f2;
+ color:#4b6985;
+ font-size:11px;
+ font-variant-numeric:tabular-nums;
+}
+.left-tabbar button.selected .left-atoms-count{background:#d1e7fa;color:#21679c}
+@media(max-width:720px){
+ .left-tab-content{padding-top:7px}
+ #app>.panel.left .left-tab-panel>.section{margin:7px 9px 11px;padding:14px 13px}
+ .left-tabbar{padding:8px 9px}
+ /* Sidebar remains closed until the mobile panel button is pressed. */
+ #app>.panel.left{display:none}
+ #app>.panel.left.open{display:flex}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -258,7 +485,9 @@ body.library-open #app{display:none}
 </header>
 <input id="fileInput" type="file" accept=".cif,.mcif,.vasp,.poscar,.contcar,.xyz,.json,.txt">
 <div id="app">
- <aside class="panel left" id="leftPanel">
+ <aside class="panel left" id="leftPanel" aria-label="Kristal yapı düzenleyicisi">
+  <div id="leftTabContent" class="left-tab-content">
+   <div id="leftGeneralPane" class="left-tab-panel" role="tabpanel" aria-labelledby="leftGeneralTab">
   <div class="section"><h2>Birim hücre <span>Å / °</span></h2>
    <div class="triple">
     <label class="field compact"><span>a (Å)</span><input id="a" type="number" min=".1" max="1000" step=".01"></label>
@@ -336,12 +565,20 @@ body.library-open #app{display:none}
    <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
    <label class="field"><span>Koordinasyon çokyüzlüsü</span><select id="polyElement"><option value="">Kapalı</option></select></label>
   </div></div>
+  <footer>Tarayıcıda çalışır · Sunucuya yapı verisi gönderilmez</footer>
+   </div>
+   <div id="leftAtomsPane" class="left-tab-panel" role="tabpanel" aria-labelledby="leftAtomsTab" hidden>
   <div class="section"><h2>Asimetrik konumlar / atomlar <span id="siteCount">0</span></h2>
     <div style="overflow-x:auto"><table class="site-table"><thead><tr><th>Atom</th><th>x</th><th>y</th><th>z</th><th>WP</th><th></th></tr></thead><tbody id="siteRows"></tbody></table></div>
     <div class="actionrow" style="margin-top:9px"><button id="addAtom">+ Atom ekle</button></div>
     <p class="hint">Kesirli koordinatlar: 0–1. CIF içe aktarımında simetri işlemleri P1 atomlarına genişletilir. Görünümdeki atomu seçerek ayrıntılarını inceleyebilirsiniz.</p>
   </div>
-  <footer>Tarayıcıda çalışır · Sunucuya yapı verisi gönderilmez</footer>
+   </div>
+  </div>
+  <nav class="left-tabbar" role="tablist" aria-label="Kristal düzenleyici sekmeleri">
+    <button id="leftGeneralTab" type="button" role="tab" aria-controls="leftGeneralPane" aria-selected="true" tabindex="0" class="selected">Genel</button>
+    <button id="leftAtomsTab" type="button" role="tab" aria-controls="leftAtomsPane" aria-selected="false" tabindex="-1">Atomlar <span id="leftAtomsBadge" class="left-atoms-count">0</span></button>
+  </nav>
  </aside>
  <main id="viewport">
   <div id="stage"></div>
@@ -1106,9 +1343,9 @@ function syncControls(){
 }
 function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
 function renderSites(){
- const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;
+ const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
  state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);tr.append(td);}
-  const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#91c7ed;white-space:nowrap';
+  const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#55718e;white-space:nowrap';
   if(state.symmetryEnabled&&state.sites.length<=60){try{const id=identifyWyckoff(site,state.sgSetting);wp.textContent=id.matches.length===1?id.matches[0]:(id.matches.length?id.matches.join('/'):'m='+id.multiplicity);wp.title='Eşdeğer konum sayısı: '+id.multiplicity+' · '+(id.matches.length?id.matches.join(', '):'kesin Wyckoff konumu eşleşmedi');}catch(e){wp.textContent='?';wp.title=e.message;}}else wp.textContent='—';tr.append(wp);
   const td=document.createElement('td'),btn=document.createElement('button');btn.className='del';btn.textContent='×';btn.title='Atom konumunu sil';btn.disabled=state.sites.length<2;btn.addEventListener('click',()=>{state.sites.splice(i,1);state.warning='';fillPoly();renderSites();build();});td.append(btn);tr.append(td);rows.append(tr);});
 }
@@ -1702,8 +1939,45 @@ function initExportModal(){
  });
 }
 
+
+const LEFT_SIDEBAR_TABS=['general','atoms'];
+let leftSidebarTab='general';
+const leftSidebarScroll={general:0,atoms:0};
+function setLeftSidebarTab(tab){
+ if(!LEFT_SIDEBAR_TABS.includes(tab))throw Error('Geçersiz sol panel sekmesi: '+tab);
+ const scroll=$('leftTabContent');
+ leftSidebarScroll[leftSidebarTab]=scroll.scrollTop;
+ leftSidebarTab=tab;
+ for(const [name,buttonId,paneId] of [
+  ['general','leftGeneralTab','leftGeneralPane'],
+  ['atoms','leftAtomsTab','leftAtomsPane']
+ ]){
+  const selected=name===tab;
+  $(paneId).hidden=!selected;
+  const button=$(buttonId);
+  button.classList.toggle('selected',selected);
+  button.setAttribute('aria-selected',String(selected));
+  button.tabIndex=selected?0:-1;
+ }
+ scroll.scrollTop=leftSidebarScroll[tab]||0;
+}
+function initLeftSidebarTabs(){
+ for(const [name,id] of [['general','leftGeneralTab'],['atoms','leftAtomsTab']]){
+  $(id).addEventListener('click',()=>setLeftSidebarTab(name));
+  $(id).addEventListener('keydown',event=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+   event.preventDefault();
+   const selected=event.key==='Home'?'general':event.key==='End'?'atoms':name==='general'?'atoms':'general';
+   setLeftSidebarTab(selected);
+   $(selected==='general'?'leftGeneralTab':'leftAtomsTab').focus();
+  });
+ }
+ setLeftSidebarTab('general');
+}
+
 function bind(){
  initLibrary();
+ initLeftSidebarTabs();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('useSymmetry').onchange=e=>{if(e.target.checked&&!validateSymmetryMetric(state.cell,state.sgSetting)){e.target.checked=false;inform('Uzay grubu seçili hücre parametreleriyle uyumsuz.');return;}state.symmetryEnabled=e.target.checked;syncSgControls();renderSites();build();fit();};
