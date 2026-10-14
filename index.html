@@ -2632,7 +2632,7 @@ function codRequestUrls(url,mode='auto'){
 
 async function codReadResponse(url,signal,limit=6500000){
  const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),12500);
+ const timer=setTimeout(()=>controller.abort(),18000);
  const cancel=()=>controller.abort();
  if(signal){if(signal.aborted)controller.abort();else signal.addEventListener('abort',cancel,{once:true});}
  try{
@@ -3050,7 +3050,7 @@ function initLibrary(){
   let base;
   try{base=codValidateWorkerBase($('codWorkerUrl').value);if(!base)throw Error('Worker URL girin.');}
   catch(e){codWorkerStatus(e.message,'error');return;}
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),22000);
   $('codWorkerTest').disabled=true;codWorkerStatus('Worker bağlantısı deneniyor…');
   try{
    const response=await fetch(base+'/health',{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal:controller.signal});
