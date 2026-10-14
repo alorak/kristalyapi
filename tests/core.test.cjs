@@ -1131,3 +1131,27 @@ test('Isotropic Uiso gives spherical Cartesian ellipsoid even in triclinic cell'
  const e=api.adpEllipsoid({label:'Iso',uIso:.03},cell,90);
  e.scales.forEach(v=>approx(v,Math.sqrt(.03*6.251388631),1e-8));
 });
+
+
+test('Layer visibility, opacity and order survive snapshot restore and project roundtrip',()=>{
+ const source=api.examples('silicon');
+ const input={...source,rep:[1,1,1],sgNumber:1,sgSetting:'1',plane:{h:1,k:1,l:1,offset:1,thickness:2},
+  layers:api.normalizedLayerState({bonds:{visible:false,opacity:.4,color:'#225588'}}),
+  layerOrder:api.normalizedLayerOrder(['volume','bonds','atoms'])};
+ const snapshot=api.lastCrystalPayload(input);
+ assert.equal(snapshot.layers.bonds.visible,false);
+ assert.equal(snapshot.layers.bonds.opacity,.4);
+ assert.equal(snapshot.layerOrder[0],'volume');
+ const restored=api.loadProject(JSON.stringify(snapshot));
+ assert.equal(restored.layers.bonds.visible,false);
+ assert.equal(restored.layers.bonds.color,'#225588');
+ assert.equal(restored.layers.bonds.opacity,.4);
+ assert.equal(restored.layerOrder[0],'volume');
+ const history=api.createEditorHistory(5,100000);
+ history.record(JSON.stringify(snapshot));
+ const next={...snapshot,layers:api.normalizedLayerState({...snapshot.layers,bonds:{visible:true,opacity:1,color:''}})};
+ history.record(JSON.stringify(next));
+ const undo=api.loadProject(history.undo());
+ assert.equal(undo.layers.bonds.visible,false);
+ assert.equal(undo.layers.bonds.opacity,.4);
+});
