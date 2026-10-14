@@ -9,6 +9,39 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## VESTA Aşama 1 — CIF / WebGL / katmanlar / termal elipsoitler
+
+- **CIF doğruluğu:** CIF anizotropik `_atom_site_aniso_U_ij` / `_atom_site_aniso_B_ij`
+  ve izotropik `U_iso_or_equiv` / `B_iso_or_equiv` alanlarını okur.
+  CIF simetri operatörleriyle oluşturulan eşdeğer konumların **ADP tensörleri
+  de döndürülür**; tensor koordinatları triclinic örgü metriğiyle Kartezyen
+  uzaya dönüşür. Orijinal P1 genişletmesi korunur.
+- **Kayıt ve kaynak üstverileri:** seçilmiş kimyasal ve bibliyografik **skaler**
+  CIF alanları (örn. DOI, dergi, başlık, COD kimliği), Uij ve Uiso proje/son
+  kristal kayıtları ile CIF dışa aktarımına taşınır. Atom bileşimi değiştiyse
+  kaynak `_chemical_formula_sum` otomatik olarak tekrar yazılmaz.
+  **Tam CIF round-trip garantisi yoktur:** bilinmeyen tag ve loop blokları,
+  tüm alternatif origin/setting eşdeğerliği, çoklu CIF veri blokları ve
+  manyetik mCIF verileri hâlâ eksik; CIF dışa aktarımı genişletilmiş atomlarla
+  P1 üretir. Metadata için kaynak dosyayı saklamanız önerilir.
+- **Termal elipsoitler:** Sol Genel → Görünüm bölümünde ADP göster ve
+  50 / 90 / 99 % olasılık düzeyi. Özdeğer ayrışımına dayalı yönlenmiş
+  elipsoid; pozitif tanımlı olmayan tensörler çizilmez ve sayılar raporlanır.
+  İzotropik Uiso, triklinik hücrede dahi Kartezyen küre olarak gösterilir.
+- **Katman yöneticisi:** Sağ Yapı → Nesneler ve katmanlar. Atomlar, elipsoitler,
+  bağlar, koordinasyon çokyüzlüleri, hücre, Miller katmanları, hacimsel
+  veri, etiketler, eksenler için görünürlük, opaklık, uygun katmanlarda renk
+  ve sıralama. İşlemler proje/son-kristal kaydına ve Undo/Redo'ya dahildir.
+- **Bağımsız testler:** 5 gerçek CIF (COD 4335507, Fe3O4, grafit, LiFePO4,
+  CuCl) için atom/hücre roundtrip kontrolleri; ADP tensor ve izotropik
+  ellipsoid için triclinic regresyonları; katman state testleri.
+- **Gerçek tarayıcı testi:** `.github/workflows/browser-visual.yml` yalnızca
+  main push / manuel çalışmada yazılım WebGL ile Chromium render eder.
+  Si, COD, ADP ve Miller sahnelerini PNG ve sayısal piksel istatistiği
+  artifact'lerine yazar; görüş, elipsoid ve Miller görünürlüğünün ekrana
+  etkisini test eder. Harici Three.js CDN erişimi ve Chromium/SwiftShader
+  bulunduğu CI ortamı gereklidir. Bu test VESTA görüntüsüyle piksel-piksel
+  bilimsel eşitlik iddiası taşımaz.
 ## Güncel kısa vade ve VESTA yol haritası
 
 [**VESTA farkları ve sıralı geliştirme planı → ROADMAP.md**](ROADMAP.md)
