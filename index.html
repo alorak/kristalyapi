@@ -1752,7 +1752,7 @@ function applySurfaceSlab(){
   state.detail='(' + [h,k,l].join(' ') + ') yüzey · geometrik, relakse edilmemiş P1 slab';
   if(densityGrid)resetVolume();
   state.cell=result.cell;state.sites=result.sites;state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
-  state.rep=[1,1,1];state.plane={...state.plane,visible:false,slab:false};
+  state.rep=[1,1,1];state.plane={...state.plane,visible:false,slab:false};state.planeLayers=[];state.planeLayers=[];
   state.warning='Vakumlu yüzey hücresi üretildi. Yüzey atomları relakse edilmemiştir; fiziksel hesaplama öncesi kontrol edin.';
   syncControls();build();fit();
   inform('Slab: '+result.sites.length+' atom · yüzey alanı '+result.area.toFixed(2)+' Å² · vakum '+result.vacuum+' Å');
@@ -2050,7 +2050,7 @@ function drawSelection(){
  if(selected.length>=2){const one=atomData[selected[0]],two=atomData[selected[1]];d.querySelector('strong').textContent=one.pos.distanceTo(two.pos).toFixed(4);pd.querySelector('strong').textContent=minimumPeriodicImage(one.frac.map(frac),two.frac.map(frac),basis(state.cell)).distance.toFixed(4);}
  if(selected.length>=3){const p=atomData[selected[0]].pos,q=atomData[selected[1]].pos,r=atomData[selected[2]].pos;const u=p.clone().sub(q),v=r.clone().sub(q);a.querySelector('strong').textContent=(u.angleTo(v)*180/Math.PI).toFixed(2);}
  const t=$('torsionResult');t.style.display=selected.length===4?'block':'none';
- if(selected.length===4){const coords=selected.map(k=>atomData[k].pos.toArray());t.querySelector('strong').textContent=dihedralDegrees(...coords).toFixed(2);}
+ if(selected.length===4){const coords=selected.map(k=>atomData[k].pos.toArray());try{t.querySelector('strong').textContent=dihedralDegrees(...coords).toFixed(2);}catch(e){t.querySelector('strong').textContent='Tanımsız';}}
  renderCoordinationSummary();
 }
 function syncControls(){
@@ -2126,7 +2126,7 @@ function createEmptyStructure(){
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
  state.poly='';state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
  state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
- state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
  syncControls();build();fit();
 }
 function importSelectedPreset(){
@@ -2266,8 +2266,11 @@ function loadProject(json){
  if(!Number.isFinite(cut)||cut<.8||cut>5)throw Error('Kaydedilen bağ eşiği geçersiz.');
  const style=['ball','space','stick','wire'].includes(obj.style)?obj.style:'ball';
  const planeLayers=normalizedMillerLayers(obj.planeLayers,obj.cell);
+ const poly=typeof obj.poly==='string'&&obj.poly.length<=2?obj.poly:'';
+ const polyCut=Number(obj.polyCut??0),polyNeighbors=Number(obj.polyNeighbors??12);
+ if(!Number.isFinite(polyCut)||polyCut<0||polyCut>12||!Number.isInteger(polyNeighbors)||polyNeighbors<4||polyNeighbors>24)throw Error('Kaydedilen koordinasyon ayarları geçersiz.');
  const plane={h,k,l,offset,thickness,visible:!!source.visible,repeat:source.repeat!==false,slab:!!source.slab};
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers};
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,poly,polyCut,polyNeighbors,bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
 
 const LAST_CRYSTAL_KEY='kristalyapi.last-structure.v2';
@@ -2317,7 +2320,7 @@ async function importFile(file){
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
  if(densityGrid)resetVolume();
- state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function exportCif(){
@@ -2344,7 +2347,7 @@ function exportPoscar(){
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
-function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors},null,2),'application/json');}
+function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
