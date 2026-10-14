@@ -128,7 +128,7 @@ header{height:54px}.brand h1{font-size:16px}.brand .gem{width:32px;height:32px}#
  </main>
  <aside class="panel right" id="rightPanel">
   <div class="section"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
-  <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Atomlar arası uzaklık (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><button class="small" id="clearMeasure" style="margin-top:10px">Seçimi temizle</button><p class="hint">Ölçüm, görüntüde seçilen atom görüntüleri arasında yapılır. Periyodik en kısa mesafe otomatik uygulanmaz.</p></div>
+  <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Seçilen görüntüler arası uzaklık (Å)</small></div><div id="periodicResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Periyodik en yakın görüntü uzaklığı (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><button class="small" id="clearMeasure" style="margin-top:10px">Seçimi temizle</button><p class="hint">İki atom için hem doğrudan hem de 27 komşu hücre üzerinden en kısa periyodik görüntü mesafesi hesaplanır.</p></div>
   <div class="section"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kesirli → Kartezyen dönüşümünde gerçek örgü vektörleri ve hücre açıları kullanılır. Bağlar, seçilen uzaklık eşiğine göre geometrik olarak çizilir; kimyasal bağ düzenini kesin olarak belirlemez.</p><p class="shortcuts">VESTA'nın elektron yoğunluğu izoyüzeyleri, manyetik yapılar, anizotropik termal elipsoitler ve kapsamlı uzay grubu veritabanı bu sürümde bulunmaz.</p></div>
  </aside>
 </div>
@@ -258,6 +258,44 @@ function minimumPeriodicImage(fa,fb,B){
   if(len<distance){distance=len;shift=[x,y,z];delta=d;}
  }return {distance,shift,delta};
 }
+
+function clipSegmentToCell(a,b,repeat){
+ let lower=0,upper=1;const d=b.map((v,i)=>v-a[i]);
+ for(let i=0;i<3;i++){
+  if(Math.abs(d[i])<1e-12){if(a[i]<-1e-7||a[i]>repeat[i]+1e-7)return null;continue;}
+  const t0=-a[i]/d[i],t1=(repeat[i]-a[i])/d[i];
+  lower=Math.max(lower,Math.min(t0,t1));upper=Math.min(upper,Math.max(t0,t1));
+  if(lower>=upper-1e-8)return null;
+ }
+ return [a.map((v,i)=>v+lower*d[i]),a.map((v,i)=>v+upper*d[i])];
+}
+function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500){
+ if(sites.length>100) return null; // large structures retain spatial hash renderer
+ const neighbors=[],fractional=sites.map(s=>[frac(+s.x),frac(+s.y),frac(+s.z)]);
+ for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
+  const range=bondRange(sites[i].symbol,sites[j].symbol,rules,cut);
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+   if(i===j&&x===0&&y===0&&z===0)continue;
+   if(i===j&&(x<0||(x===0&&y<0)||(x===0&&y===0&&z<0)))continue;
+   const delta=[fractional[j][0]-fractional[i][0]+x,fractional[j][1]-fractional[i][1]+y,fractional[j][2]-fractional[i][2]+z];
+   const dist=toCart(delta,B).length();
+   if(dist>range[1]+1e-6||dist<range[0]-1e-6)continue;
+   neighbors.push([i,j,[x,y,z],dist]);
+  }
+ }
+ const result=[],dedup=new Set();
+ for(let u=0;u<repeat[0];u++)for(let v=0;v<repeat[1];v++)for(let w=0;w<repeat[2];w++){
+  for(const [i,j,shift] of neighbors){
+   const a=fractional[i].map((x,k)=>x+[u,v,w][k]),b=fractional[j].map((x,k)=>x+[u,v,w][k]+shift[k]);
+   const clipped=clipSegmentToCell(a,b,repeat);if(!clipped)continue;
+   const [p,q]=clipped;const key=[p,q].map(z=>z.map(x=>x.toFixed(6)).join('/')).sort().join(':');
+   if(dedup.has(key))continue;dedup.add(key);result.push([toCart(p,B),toCart(q,B)]);
+   if(result.length>=limit)return {segments:result,truncated:true};
+  }
+ }
+ return {segments:result,truncated:false};
+}
+
 function planeNormal(h,k,l,B){
  if(![h,k,l].every(Number.isInteger)||Math.max(Math.abs(h),Math.abs(k),Math.abs(l))>8||(!h&&!k&&!l))throw Error('Miller indisleri −8…8 arasında olmalı; (000) geçersizdir.');
  const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
@@ -415,7 +453,9 @@ function build(){
  if(state.bonds&&state.style!=='space'){
   const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x89a8c7:0x8ba7c6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
   const radius=state.style==='wire'?.014:state.style==='stick'?.13:.075;
-  for(const [i,j] of bondPairs)if(atomMesh[i].visible&&atomMesh[j].visible)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
+  const periodic=state.plane.slab?null:periodicBondSegments(physical,state.rep,B,rules,state.cut);
+  if(periodic){for(const [a,b] of periodic.segments)root.add(makeCylinder(a,b,radius,bondMat));if(periodic.truncated)capReached=true;}
+  else for(const [i,j] of bondPairs)if(atomMesh[i].visible&&atomMesh[j].visible)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
  }
  addCellLines(B,state.rep);drawMillerPlane(B);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));root.add(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})));}}
@@ -459,8 +499,8 @@ function drawSelection(){
  for(const m of highlights){root.remove(m);m.geometry.dispose();m.material.dispose();}highlights=[];
  for(const i of selected){const item=atomData[i];if(!item)continue;const obj=atomMesh[i];const h=new THREE.Mesh(new THREE.SphereGeometry(1,18,12),new THREE.MeshBasicMaterial({color:0xffde72,wireframe:true,depthTest:false}));h.position.copy(item.pos);h.scale.setScalar(obj.scale.x*1.2);root.add(h);highlights.push(h);}
  const list=$('measureList');list.replaceChildren();$('measureEmpty').style.display=selected.length?'none':'block';for(const [k,id] of selected.entries()){const a=atomData[id];if(!a)continue;const box=document.createElement('div');box.className='measure-item';const title=document.createElement('b');title.textContent=['A','B','C'][k]+' · '+a.site.symbol+' ('+a.site.label+')';const detail=document.createElement('div');detail.className='muted';detail.textContent='Kesirli: '+a.frac.map(v=>v.toFixed(4)).join(', ')+' · doluluk: '+(a.site.occupancy??1);box.append(title,detail);list.append(box);}
- const d=$('distanceResult'),a=$('angleResult');d.style.display=selected.length>=2?'block':'none';a.style.display=selected.length>=3?'block':'none';
- if(selected.length>=2){d.querySelector('strong').textContent=atomData[selected[0]].pos.distanceTo(atomData[selected[1]].pos).toFixed(4);}
+ const d=$('distanceResult'),a=$('angleResult'),pd=$('periodicResult');d.style.display=selected.length>=2?'block':'none';pd.style.display=d.style.display;a.style.display=selected.length>=3?'block':'none';
+ if(selected.length>=2){const one=atomData[selected[0]],two=atomData[selected[1]];d.querySelector('strong').textContent=one.pos.distanceTo(two.pos).toFixed(4);pd.querySelector('strong').textContent=minimumPeriodicImage(one.frac.map(frac),two.frac.map(frac),basis(state.cell)).distance.toFixed(4);}
  if(selected.length>=3){const p=atomData[selected[0]].pos,q=atomData[selected[1]].pos,r=atomData[selected[2]].pos;const u=p.clone().sub(q),v=r.clone().sub(q);a.querySelector('strong').textContent=(u.angleTo(v)*180/Math.PI).toFixed(2);}
 }
 function syncControls(){
