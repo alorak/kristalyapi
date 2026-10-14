@@ -30,6 +30,10 @@ def gemmi_reference(entry):
     path=(BASE/entry["path"]).resolve()
     if not path.is_relative_to(BASE/"fixtures"):
         raise ValueError("Fixture path escapes fixtures directory")
+    raw=path.read_bytes()
+    actual=hashlib.sha1(("blob "+str(len(raw))+"\\0").encode().replace(b"\\0",b"\0")+raw).hexdigest()
+    if actual!=entry["git_blob_sha1"]:
+        raise RuntimeError("Pinned Git blob SHA-1 mismatch: "+entry["id"])
     record={"id":entry["id"],"sha256":sha(path),"engine":"Gemmi "+gemmi.__version__}
     try:
         block=gemmi.cif.read_file(str(path)).sole_block()
@@ -162,7 +166,7 @@ def measure(entry,js,ref,tol):
     left,right=js["cell"],ref["cell"]
     keys=("a","b","c","alpha","beta","gamma")
     deltas={k:abs(left[k]-right[k]) for k in keys}
-    v=abs(volume(left)-volume(right))/right["a"]/right["b"]/right["c"]
+
     # Use the Gemmi reference volume as denominator for a unit-independent relative error.
     v=abs(volume(left)-ref["volume"])/ref["volume"]
     row["measurements"].update(cell_errors=deltas,volume_relative_error=v,
