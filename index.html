@@ -1517,6 +1517,7 @@ function applySurfaceSlab(){
   const {h,k,l}=state.plane;
   state.name=state.name+' · slab ('+h+k+l+')';
   state.detail='(' + [h,k,l].join(' ') + ') yüzey · geometrik, relakse edilmemiş P1 slab';
+  if(densityGrid)resetVolume();
   state.cell=result.cell;state.sites=result.sites;state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
   state.rep=[1,1,1];state.plane={...state.plane,visible:false,slab:false};
   state.warning='Vakumlu yüzey hücresi üretildi. Yüzey atomları relakse edilmemiştir; fiziksel hesaplama öncesi kontrol edin.';
@@ -1570,6 +1571,7 @@ function applyTransformation(){
  try{
   const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
   const next=transformCrystal(state.cell,physical,matrixFromControls());
+  if(densityGrid)resetVolume();
   state.cell=next.cell;state.sites=next.sites;state.rep=[1,1,1];state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
   state.plane={...state.plane,visible:false,slab:false};
   state.warning='Dönüşümden sonra özgün uzay grubu P1 oldu; simetri isterseniz yeniden atayın.';
@@ -1703,6 +1705,7 @@ function build(){
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
+ persistLastCrystal();
  report([state.warning,capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
  }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));}
 }
@@ -1764,6 +1767,7 @@ function updatePresetPreview(){
  $('presetElements').textContent=example.elements.join(', ');
 }
 function loadPreset(key){
+ if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
  state.cut=ex.cut;state.warning='';state.poly='';state.rep=[1,1,1];
@@ -1774,6 +1778,7 @@ function loadPreset(key){
  syncControls();build();fit();
 }
 function createEmptyStructure(){
+ if(densityGrid)resetVolume();
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
@@ -1906,6 +1911,44 @@ function loadProject(json){
  const plane={h,k,l,offset,thickness,visible:!!source.visible,slab:!!source.slab};
  return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane};
 }
+
+const LAST_CRYSTAL_KEY='kristalyapi.last-structure.v2';
+function lastCrystalPayload(current){
+ return {
+  format:'kristalyapi-last-v2',name:current.name,detail:current.detail,
+  cell:current.cell,sites:current.sites,rep:current.rep,style:current.style,
+  cut:current.cut,autoBond:current.autoBond,sgNumber:current.sgNumber,
+  sgSetting:current.sgSetting,symmetryEnabled:current.symmetryEnabled,
+  bondRules:current.bondRules,plane:current.plane,
+  bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
+  labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
+  atomScale:current.atomScale,poly:current.poly
+ };
+}
+function storeLastCrystal(storage,current){
+ const serialized=JSON.stringify(lastCrystalPayload(current));
+ if(serialized.length>380000)throw Error('Kaydedilecek kristal tarayıcı sınırını aşıyor.');
+ storage.setItem(LAST_CRYSTAL_KEY,serialized);
+}
+function restoreLastCrystal(storage){
+ const saved=storage.getItem(LAST_CRYSTAL_KEY);
+ if(!saved)return null;
+ const obj=JSON.parse(saved),parsed=loadProject(saved);
+ if(obj.format!=='kristalyapi-last-v2')return null;
+ return {...parsed,
+   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,
+   labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,
+   poly:typeof obj.poly==='string'&&obj.poly.length<=3?obj.poly:'',
+   atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
+}
+function persistLastCrystal(){
+ try{storeLastCrystal(window.localStorage,state);}catch(err){console.warn('Son kristal yerel olarak kaydedilemedi:',err.message);}
+}
+function restoreInitialCrystal(){
+ try{const saved=restoreLastCrystal(window.localStorage);if(saved)state={...state,...saved};}
+ catch(err){console.warn('Son kristal geri yüklenemedi; yerleşik örnek açıldı:',err.message);}
+}
+
 async function importFile(file){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
  const str=await file.text(),name=file.name.toLowerCase();let obj;
@@ -1913,6 +1956,7 @@ async function importFile(file){
  else if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))obj=cifData(str);
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
+ if(densityGrid)resetVolume();
  state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
@@ -2432,7 +2476,7 @@ function bind(){
  $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
 }
-try{initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
+try{restoreInitialCrystal();initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
 </script>
 </body>
 </html>
