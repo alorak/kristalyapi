@@ -2313,7 +2313,7 @@ function tokenizeCif(src){
  const lines=src.replace(/\r\n?/g,'\n').split('\n'),tokens=[];
  for(let i=0;i<lines.length;i++){
   const line=stripCifComment(lines[i]);if(line.startsWith(';')){const out=[];i++;while(i<lines.length&&!lines[i].startsWith(';'))out.push(lines[i++]);tokens.push(out.join('\n'));continue;}
-  const re=/'(?:[^']|'')*'|"(?:[^"]|"")*"|[^\s#]+/g;let m;while((m=re.exec(line))){let v=m[0];if(v.startsWith('#'))break;if((v[0]==="'"&&v.endsWith("'"))||(v[0]==='"'&&v.endsWith('"')))v=v.slice(1,-1);tokens.push(v);}
+  const re=/'(?:[^']|'')*'|"(?:[^"]|"")*"|[^\s#]+/g;let m;while((m=re.exec(line))){let v=m[0];if(v.startsWith('#'))break;if((v[0]==="'"&&v.endsWith("'"))||(v[0]==='"'&&v.endsWith('"')))v=v.slice(1,-1).replace(/''/g,"'");tokens.push(v);}
  }
  return tokens;
 }
@@ -2674,7 +2674,7 @@ async function importFile(file){
  state={...state,...obj,cifMeta:cifMetaValid(obj.cifMeta),adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
-function exportCif(){
+function cifExportText(state){
  const symmetry=state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
@@ -2687,15 +2687,21 @@ function exportCif(){
   });
  }
  for(const k of ['a','b','c','alpha','beta','gamma'])q.push('_cell_'+(k.length>1?'angle_':'length_')+k+' '+c[k].toFixed(6));
+ const withIso=outSites.some(s=>Number.isFinite(s.uIso));
  q.push('loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy');
- outSites.forEach((s,i)=>q.push((safeName(s.label)||s.symbol+(i+1))+' '+s.symbol+' '+[s.x,s.y,s.z].map(v=>frac(+v).toFixed(8)).join(' ')+' '+Number(s.occupancy??1).toFixed(4)));
+ if(withIso)q.push('_atom_site_U_iso_or_equiv');
+ outSites.forEach((s,i)=>{
+  const row=(safeName(s.label)||s.symbol+(i+1))+' '+s.symbol+' '+[s.x,s.y,s.z].map(v=>frac(+v).toFixed(8)).join(' ')+' '+Number(s.occupancy??1).toFixed(4);
+  q.push(row+(withIso?' '+(Number.isFinite(s.uIso)?s.uIso.toFixed(8):'?'):''));
+ });
  const aniso=outSites.filter(s=>s.adp);
  if(aniso.length){
   q.push('loop_','_atom_site_aniso_label',...ADP_COMPONENTS.map(k=>'_atom_site_aniso_U_'+k));
   for(const s of aniso){adpMatrix(s.adp);q.push(safeName(s.label)+' '+s.adp.map(v=>v.toFixed(8)).join(' '));}
  }
-  download(safeName(state.name)+'.cif',q.join('\n')+'\n');
+  return q.join('\n')+'\n';
 }
+function exportCif(){download(safeName(state.name)+'.cif',cifExportText(state));}
 function exportPoscar(){
  const outSites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
  const B=basis(state.cell),species=[...new Set(outSites.map(s=>s.symbol))],rows=[state.name,'1.0',...B.map(v=>v.toArray().map(n=>n.toFixed(9)).join(' ')),species.join(' '),species.map(s=>outSites.filter(a=>a.symbol===s).length).join(' '),'Direct'];
