@@ -16,10 +16,11 @@
     {
       "id": "real-01",
       "kind": "real",
-      "path": "fixtures/real/AgO_kpath_test.cif",
+      "path": "fixtures/real/COD_4335507.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/AgO_kpath_test.cif",
-      "git_blob_sha1": "dadde773b9bea5146084aaee0eee70b6ae22d1b6"
+      "source": "https://www.crystallography.net/cod/4335507.cif",
+      "source_mirror": "https://github.com/Arahman0i/SSP-Lab/blob/d6b5db09c864a51db231f01107447450c558757b/Input-Germanide-compound.cif",
+      "git_blob_sha1": "f91d54dc2bb6382d3061dcb3d718fde46e300a93"
     },
     {
       "id": "real-02",
