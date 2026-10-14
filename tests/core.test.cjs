@@ -30,7 +30,7 @@ const script = moduleScript
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} } };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,SPACE_GROUPS,sgKeys,settingOps,expandSites,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,SPACE_GROUPS,sgKeys,settingOps,expandSites,validateSymmetryMetric,loadProject,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -189,4 +189,26 @@ test('CIF with SG 225 number and no explicit operators uses reference group',()=
   assert.equal(d.sites.length,4);
   assert.equal(d.sgNumber,225);
   assert.match(d.warning,/referans ayarı/);
+});
+
+test('space group metric validation accepts FCC cubic symmetry',()=>{
+  const f=api.examples('fcc');
+  assert.ok(api.validateSymmetryMetric(f.cell,'225'));
+});
+test('space group metric validation rejects Fm-3m on orthorhombic cell',()=>{
+  const f=api.examples('fcc');
+  assert.ok(!api.validateSymmetryMetric({...f.cell,b:f.cell.b*1.2},'225'));
+});
+test('project JSON validates and restores new settings',()=>{
+  const obj={cell:cubic,sites:[{symbol:'Si',x:0,y:0,z:0}],sgNumber:225,sgSetting:'225',symmetryEnabled:true,
+    rep:[2,1,1],bondRules:'Si-O:1.2-2.2',plane:{h:1,k:1,l:0,offset:.75,thickness:1,visible:true,slab:true},style:'wire',cut:3.2};
+  const read=api.loadProject(JSON.stringify(obj));
+  assert.equal(read.sgNumber,225);
+  assert.equal(read.plane.offset,.75);
+  assert.equal(read.plane.slab,true);
+  assert.equal(read.style,'wire');
+});
+test('project JSON rejects forged spacegroup settings / invalid atom coords',()=>{
+  const obj={cell:cubic,sites:[{symbol:'O',x:null,y:0,z:0}],sgNumber:999};
+  assert.throws(()=>api.loadProject(JSON.stringify(obj)));
 });
