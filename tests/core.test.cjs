@@ -893,9 +893,9 @@ test('Undo/Redo: icons have accessible labels, stay disabled initially and are o
   assert.match(html,re);
  }
  assert.match(html,/recordHistoryChange\(\);\s*persistLastCrystal\(\)/);
- assert.match(html,/\\$\\('undoBtn'\\)\.onclick=/);
- assert.match(html,/\\$\\('redoBtn'\\)\.onclick=/);
- assert.match(html,/if\\(historyShortcut\\(e\\)\\)return/);
+ assert.ok(html.includes("$('undoBtn').onclick="));
+ assert.ok(html.includes("$('redoBtn').onclick="));
+ assert.ok(html.includes('if(historyShortcut(e))return'));
 });
 test('Undo/Redo: keyboard interception ignores text editors and unrelated key chords',()=>{
  assert.equal(api.isEditableHistoryTarget({closest:s=>s.includes('input')?{}:null}),true);
@@ -908,4 +908,37 @@ test('Undo/Redo: keyboard interception ignores text editors and unrelated key ch
  assert.equal(api.historyShortcut(evt('z',{altKey:true})),false);
  assert.equal(api.historyShortcut(evt('z')),true);
  assert.equal(prevented,true);
+});
+
+test('Undo/Redo: controller restores editor snapshots without recording replay as new edits',()=>{
+ const mockButtons={};
+ const isolated={
+  THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
+  URLSearchParams,
+  document:{getElementById(id){return mockButtons[id]??(mockButtons[id]={disabled:true});}}
+ };
+ vm.createContext(isolated);
+ const operations=[
+  'build=function(){recordHistoryChange();return true;};',
+  'syncControls=function(){};',
+  'fit=function(){};',
+  'recordHistoryChange();',
+  "state={...state,name:'Second crystal',sites:state.sites.slice(0,3)};",
+  'recordHistoryChange();',
+  'this.editorView=()=>({name:state.name,sites:state.sites.length,history:editorHistory.counts()});',
+  "this.editorUndo=()=>applyHistory('undo');",
+  "this.editorRedo=()=>applyHistory('redo');"
+ ].join('\n');
+ vm.runInContext(script+'\n'+operations,isolated);
+ assert.equal(isolated.editorView().name,'Second crystal');
+ assert.equal(isolated.editorView().sites,3);
+ assert.equal(isolated.editorUndo(),true);
+ assert.equal(isolated.editorView().name,api.examples('silicon').name);
+ assert.equal(isolated.editorView().sites,8);
+ assert.deepEqual(JSON.parse(JSON.stringify(isolated.editorView().history)),{undo:0,redo:1});
+ assert.equal(isolated.editorRedo(),true);
+ assert.equal(isolated.editorView().name,'Second crystal');
+ assert.equal(isolated.editorView().sites,3);
+ assert.deepEqual(JSON.parse(JSON.stringify(isolated.editorView().history)),{undo:1,redo:0});
+ assert.equal(isolated.editorRedo(),false);
 });
