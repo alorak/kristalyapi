@@ -522,6 +522,14 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 .miller-layer-row span{overflow-wrap:anywhere}.miller-layer-row input[type=color]{width:30px;height:26px;padding:0;border:0;background:none;cursor:pointer}
 .miller-layer-row button{padding:4px 6px;min-height:26px}
 
+
+/* Compact structure-editing history actions in the top navigation. */
+.history-toolbar{display:inline-flex;align-items:center;gap:3px;border:1px solid #d1ddea;border-radius:10px;padding:3px;background:#f8fbff}
+.history-toolbar .history-button{min-width:35px;height:32px;padding:6px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:transparent;box-shadow:none;color:#2c4b69}
+.history-toolbar .history-button:hover:not(:disabled){background:#eaf3fd;color:#1768a6}
+.history-toolbar .history-button:focus-visible{outline:2px solid #2683d0;outline-offset:1px}
+.history-toolbar .history-button:disabled{color:#9eafc0;cursor:not-allowed;opacity:.55}
+@media(max-width:720px){.history-toolbar{gap:1px;padding:2px}.history-toolbar .history-button{min-width:31px;height:30px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -530,6 +538,14 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  <div class="brand"><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a></nav></div>
  <div class="actions">
   <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
+  <div class="history-toolbar workspace-action" role="group" aria-label="Kristal düzenleme geçmişi">
+   <button id="undoBtn" type="button" class="history-button" aria-label="Geri al" title="Geri al · Ctrl/Cmd+Z" disabled>
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>
+   </button>
+   <button id="redoBtn" type="button" class="history-button" aria-label="Yinele" title="Yinele · Ctrl/Cmd+Shift+Z / Ctrl+Y" disabled>
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h2"/></svg>
+   </button>
+  </div>
   <button id="openBtn" class="workspace-action" title="CIF, POSCAR, XYZ veya proje JSON dosyası">↥ Aç</button>
   <button id="saveBtn" class="workspace-action" type="button" title="Projeyi kaydet veya dışa aktar" aria-haspopup="dialog" aria-controls="exportModal">↓ Kaydet</button>
   <button id="inspectorToggle" class="nav-toggle workspace-action">Ölçüm</button>
@@ -1946,9 +1962,11 @@ function build(){
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
+ recordHistoryChange();
  persistLastCrystal();
  report([state.warning,capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
- }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));}
+ return true;
+ }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));return false;}
 }
 function volumeBounds(g){
  const dims=volumeShape(g),all=[];for(const i of [0,dims[0]-1])for(const j of [0,dims[1]-1])for(const k of [0,dims[2]-1])all.push(volumeWorld(g,i,j,k));
@@ -2274,6 +2292,92 @@ function loadProject(json){
 }
 
 const LAST_CRYSTAL_KEY='kristalyapi.last-structure.v2';
+
+/* In-memory bounded snapshots; storage persists only the latest crystal.
+   Undo/redo operates on complete scientific structure state, not camera/UI focus. */
+function createEditorHistory(limit=60,maxSnapshot=380000){
+ if(!Number.isInteger(limit)||limit<1||!Number.isInteger(maxSnapshot)||maxSnapshot<100)throw Error('Geçersiz geçmiş sınırı.');
+ const past=[],future=[];
+ let present=null;
+ return {
+  record(snapshot){
+   if(typeof snapshot!=='string'||snapshot.length>maxSnapshot||!snapshot){
+    past.length=0;future.length=0;present=null;return false;
+   }
+   if(present===snapshot)return false;
+   if(present!==null){
+    past.push(present);
+    if(past.length>limit)past.splice(0,past.length-limit);
+   }
+   present=snapshot;future.length=0;
+   return true;
+  },
+  canUndo:()=>past.length>0,
+  canRedo:()=>future.length>0,
+  undo(){
+   if(!past.length)return null;
+   future.push(present);present=past.pop();return present;
+  },
+  redo(){
+   if(!future.length)return null;
+   past.push(present);present=future.pop();return present;
+  },
+  current:()=>present,
+  counts:()=>({undo:past.length,redo:future.length}),
+ };
+}
+const editorHistory=createEditorHistory();
+let historyApplying=false;
+function updateHistoryButtons(){
+ $('undoBtn').disabled=!editorHistory.canUndo();
+ $('redoBtn').disabled=!editorHistory.canRedo();
+}
+function recordHistoryChange(){
+ if(historyApplying)return;
+ editorHistory.record(JSON.stringify(lastCrystalPayload(state)));
+ updateHistoryButtons();
+}
+function restoreHistorySnapshot(serialized){
+ const restored=loadProject(serialized);
+ state={...state,...restored};
+ selected=[]; // Atom indices may no longer exist after undo/redo.
+ syncControls();
+ if(build()===false)throw Error('Kristal geçmişindeki yapı çizilemedi.');
+}
+function applyHistory(direction){
+ const action=direction==='undo'?editorHistory.undo:direction==='redo'?editorHistory.redo:null;
+ if(!action||!editorHistory[direction==='undo'?'canUndo':'canRedo']())return false;
+ const before=editorHistory.current(),previousState=state;
+ const snapshot=action();
+ historyApplying=true;
+ try{
+  restoreHistorySnapshot(snapshot);
+  updateHistoryButtons();
+  return true;
+ }catch(err){
+  // Restore the history pointer and model if a damaged snapshot cannot render.
+  if(direction==='undo')editorHistory.redo();else editorHistory.undo();
+  state=previousState;
+  try{syncControls();build();}catch(e){console.error('Geçmiş geri yükleme kurtarılamadı:',e);}
+  updateHistoryButtons();
+  inform('Geri alma / yineleme başarısız: '+err.message);
+  return false;
+ }finally{historyApplying=false;}
+}
+function isEditableHistoryTarget(target){
+ if(!target||typeof target.closest!=='function')return false;
+ return !!target.closest('input,textarea,[contenteditable="true"],[role="textbox"]');
+}
+function historyShortcut(event){
+ if(!(event.ctrlKey||event.metaKey)||event.altKey||isEditableHistoryTarget(event.target))return false;
+ const key=String(event.key||'').toLowerCase();
+ const command=key==='z'?(event.shiftKey?'redo':'undo'):key==='y'&&!event.shiftKey?'redo':null;
+ if(!command)return false;
+ event.preventDefault();
+ applyHistory(command);
+ return true;
+}
+
 function lastCrystalPayload(current){
  return {
   format:'kristalyapi-last-v2',name:current.name,detail:current.detail,
@@ -2830,9 +2934,11 @@ function bind(){
  $('transformCell').onclick=applyTransformation;
  $('openBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{if(!e.target.files?.[0])return;try{await importFile(e.target.files[0]);}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
  $('saveBtn').onclick=openExportModal;
+ $('undoBtn').onclick=()=>applyHistory('undo');
+ $('redoBtn').onclick=()=>applyHistory('redo');
  $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
- for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();});
+ for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();else{recordHistoryChange();persistLastCrystal();}});
  for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
@@ -2851,7 +2957,7 @@ function bind(){
  renderMeasurementHistory();
  $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('open');};
  $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
+ document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
 }
 // @kristalyapi/browser-bootstrap: browser UI entry point, not part of the CIF parser
 try{restoreInitialCrystal();initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
