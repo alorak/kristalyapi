@@ -1,0 +1,65 @@
+name: CIF crystal accuracy · Gemmi reference
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'tests/validation/**'
+      - '.github/workflows/cif-validation.yml'
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: 'Fail the job if any CIF mismatch or inconclusive result occurs'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cif-accuracy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scientific-validation:
+    name: 30 real + 10 synthetic CIF accuracy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python and Node
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned scientific reference
+        run: python -m pip install --disable-pip-version-check gemmi==0.7.4
+
+      - name: Validate measurement engine and pinned fixtures
+        run: python -m unittest discover -s tests/validation -p 'test_*.py' -v
+
+      - name: Run browser vs Gemmi CIF measurements
+        env:
+          STRICT_MODE: ${{ inputs.strict || 'false' }}
+        shell: bash
+        run: |
+          if [ "$STRICT_MODE" = 'true' ]; then
+            python tests/validation/validate.py --out-dir validation-results --strict
+          else
+            python tests/validation/validate.py --out-dir validation-results
+          fi
+
+      - name: Upload detailed reference, metrics and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cif-accuracy-${{ github.run_number }}
+          path: validation-results/
+          if-no-files-found: warn
+          retention-days: 30

@@ -9,6 +9,17 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## Bağımsız CIF doğruluğu (GitHub Actions)
+
+[**CIF doğrulama hattı**](tests/validation/README.md), 29 açık kaynak test CIF'si + özel olarak COD 4335507 ve 10 sentetik zorlayıcı örneği **Gemmi 0.7.4** ile karşılaştırır. Testler aynı `index.html` içindeki CIF ayrıştırıcısını kullanır. Atom türü, occupancy, simetriyle genişletilmiş konumlar, periyodik koordinatlar, hücre metrikleri ve hacim karşılaştırılır.
+
+- Sadece `main` dalına ilgili kod/test değişiklikleri merge/push edildiğinde veya `workflow_dispatch` ile çalışır; PR'larda tetiklenmez.
+- Sonuçlar GitHub Actions **Summary** ve `browser.json`, `reference.json`, `report.json`, `report.md` içeren indirilebilir **artifact** olarak sunulur.
+- Varsayılan **ölçüm modu** uyumsuzlukları gizlemez ancak mevcut Pages yayınını engellemez. Manuel `strict` modda uyumsuzluk veya belirsiz sonuç işin başarısız olmasına yol açar.
+- Test sırasında COD bağlantısına gerek yoktur; tüm fixture dosyaları kaynak ve Git blob SHA-1 pinleriyle repoda saklanır, her çalışmada ayrıca SHA-256 kaydedilir.
+
+Bu hat **uyumsuzlukları ölçer**, CIF parser'ındaki hataları otomatik düzeltmez. Referans üretimi ve bilimsel ölçümler yalnızca CI/test ortamında yapılır; frontend uygulamasına Python veya backend eklenmez.
+
 ## Çalışma alanı ve sol panel sekmeleri
 
 Beyaz tema, **3B model görünümünü saf beyaz**, sol düzenleme panelini hafif mavi-gri, sağ yapı/ölçüm panelini daha açık gri, üst menüyü ayrı kırık beyaz yüzey olarak kullanır. Bölümlerin kart sınırları, araç çubuğu ve alt durum çubuğu düşük yoğunluklu çizgi/gölgeyle ayrılır. Bu düzen yalnızca görünüme etki eder; kristal hesaplamalarının sonucu değişmez.
