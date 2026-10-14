@@ -135,7 +135,7 @@ footer{color:#71869b}
 .main-nav a.active{background:#e9f3ff;color:#1a67a9}
 body.library-open .workspace-action{display:none!important}
 body.library-open #app{display:none}
-#libraryPage[hidden],#libSearchPane[hidden],#libBookmarksPane[hidden],#codExternalSearch[hidden]{display:none!important}
+#libraryPage[hidden],#libSearchPane[hidden],#libPresetsPane[hidden],#libBookmarksPane[hidden],#codExternalSearch[hidden]{display:none!important}
 #libraryPage{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f7f9fc;color:#27384c}
 .library-wrap{max-width:1240px;margin:0 auto;padding:27px 22px 70px}
 .library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
@@ -1132,7 +1132,7 @@ function loadPreset(key){
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
  state.cut=ex.cut;state.warning='';state.poly='';state.rep=[1,1,1];
- state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';
+ state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
  state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
  state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;
@@ -1142,7 +1142,7 @@ function createEmptyStructure(){
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
- state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';
+ state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
  state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
  state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
  syncControls();build();fit();
@@ -1638,7 +1638,7 @@ function initLibrary(){
  $('libPresetsTab').onclick=()=>setLibraryPane('presets');
  $('libBookmarksTab').onclick=()=>setLibraryPane('bookmarks');
  $('preset').onchange=updatePresetPreview;
- $('importPreset').onclick=()=>{try{importSelectedPreset();}catch(e){codSearchMessage(e.message,true);}};
+ $('importPreset').onclick=()=>{try{importSelectedPreset();}catch(e){inform('Örnek yapı aktarılamadı: '+e.message);}};
  $('newStructureBtn').onclick=createBlankFromLibrary;
  updatePresetPreview();
  $('codSearchForm').onsubmit=e=>{e.preventDefault();runCodSearch();};
