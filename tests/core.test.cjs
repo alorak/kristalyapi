@@ -38,7 +38,7 @@ const script = moduleScript
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -375,4 +375,82 @@ test('COD element validation rejects unknown elements and normalizes case',()=>{
  assert.equal(api.codCleanSymbol('MN'),'Mn');
  assert.throws(()=>api.codCleanSymbol('Nn'));
  assert.throws(()=>api.codCleanSymbol('Fe2'));
+});
+
+test('Kütüphane has an independent Örnek Yapılar tab and no old sidebar presets',()=>{
+ assert.match(html,/id="libPresetsTab"[^>]*>Örnek Yapılar<\/button>/);
+ assert.match(html,/id="libPresetsPane"[^>]*role="tabpanel"/);
+ assert.match(html,/id="preset"[^>]*aria-describedby="presetNote"/);
+ assert.match(html,/id="importPreset"/);
+ assert.match(html,/id="newStructureBtn"/);
+ assert.ok(!html.includes('<h2>Kristal kütüphanesi'));
+ assert.ok(!html.includes('id="resetBtn"'));
+ assert.ok(!html.includes('id="newBtn"'));
+ assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks']);
+});
+test('all seven sample structures have valid metadata without loading editor',()=>{
+ const examples=['silicon','nacl','cscl','diamond','fcc','perovskite','graphite'];
+ assert.deepEqual(Array.from(api.PRESET_KEYS),examples);
+ for(const key of examples){
+  const m=api.presetMetadata(key),p=api.examples(key);
+  assert.equal(m.key,key);
+  assert.equal(m.sites,p.sites.length);
+  assert.ok(m.sites>0);
+  assert.ok(m.elements.length>=1);
+  approx(m.cell.a,p.cell.a);
+ }
+ assert.equal(api.presetMetadata('silicon').sites,8);
+ assert.equal(api.presetMetadata('perovskite').sites,5);
+ assert.throws(()=>api.presetMetadata('not-a-crystal'));
+});
+test('preset tab shows preview without immediately importing or changing edit controls',()=>{
+ const created={};
+ const el=id=>(created[id] ||= {
+  value:id==='preset'?'nacl':'',
+  hidden:false,tabIndex:0,
+  classList:{toggle(){}},setAttribute(){},
+  textContent:''
+ });
+ const before=context.document.getElementById;
+ context.document.getElementById=el;
+ try{
+  api.setLibraryPane('presets');
+  assert.equal(el('libSearchPane').hidden,true);
+  assert.equal(el('libPresetsPane').hidden,false);
+  assert.equal(el('libBookmarksPane').hidden,true);
+  assert.match(el('presetName').textContent,/Sodyum klorür/);
+  assert.equal(el('presetSiteCount').textContent,'8');
+  assert.equal(el('presetElements').textContent,'Na, Cl');
+  el('preset').value='silicon';
+  api.updatePresetPreview();
+  assert.match(el('presetName').textContent,/Silisyum/);
+  assert.equal(el('presetElements').textContent,'Si');
+  assert.throws(()=>api.setLibraryPane('other'));
+ }finally{context.document.getElementById=before;}
+});
+test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ and PNG choices',()=>{
+ assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
+ assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','png']);
+ for(const name of api.EXPORT_FORMATS){
+  assert.match(html,new RegExp('data-export="'+name+'"'));
+  assert.equal(typeof api.exportFunction(name),'function');
+ }
+ assert.equal(api.exportFunction('project').name,'saveProject');
+ assert.equal(api.exportFunction('cif').name,'exportCif');
+ assert.equal(api.exportFunction('poscar').name,'exportPoscar');
+ assert.equal(api.exportFunction('xyz').name,'exportXyz');
+ assert.equal(api.exportFunction('png').name,'screenshot');
+ assert.throws(()=>api.exportFunction('unsafe'));
+ assert.ok(!html.includes('<h2>Dışa aktarma</h2>'));
+ assert.ok(!html.includes('id="pngBtn"'));
+});
+test('library import and Save handlers are registered, old sidebar handlers removed',()=>{
+ assert.match(script,/\$\('importPreset'\)\.onclick/);
+ assert.match(script,/\$\('preset'\)\.onchange=updatePresetPreview/);
+ assert.match(script,/\$\('saveBtn'\)\.onclick=openExportModal/);
+ assert.match(script,/initExportModal\(\);/);
+ for(const id of ['resetBtn','newBtn','pngBtn','exportCif','exportPoscar','exportXyz','exportPng']){
+  assert.ok(!script.includes("$('"+id+"')"),'stale event handler: '+id);
+ }
 });
