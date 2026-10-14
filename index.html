@@ -64,6 +64,67 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Layout: prevent nested absolute-position floating toolbar from overlapping the header. */
 header{height:54px}.brand h1{font-size:16px}.brand .gem{width:32px;height:32px}#app{height:calc(100dvh - 54px)}.topbar{top:9px;left:10px;right:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;z-index:4}.topbar .floating{position:relative;inset:auto;left:auto;top:auto;right:auto;bottom:auto;flex:none}.topbar .tools{max-width:min(100%,690px);display:flex;flex-wrap:wrap;justify-content:flex-end}.topbar .tools button{white-space:nowrap}.topbar .structure-name{max-width:48%;white-space:normal}.left .field small{font-size:11px}.note{border:1px solid #344c66;border-radius:8px;padding:10px;font-size:11px;color:#a9c2dd;line-height:1.5;background:#0d2138}.matrix{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.matrix input{width:100%;min-width:0;background:#14243a;color:#e8effa;border:1px solid #354963;border-radius:6px;padding:7px 5px;font-size:12px;text-align:center}.section h2 .stage{color:#67b3ef;font-weight:600;letter-spacing:0;text-transform:none}.compact-options{display:grid;grid-template-columns:1fr 1fr;gap:7px}@media(max-width:1180px){.topbar .structure-name{display:none}.topbar{justify-content:flex-end}.topbar .tools{max-width:100%}}@media(max-width:720px){header{height:54px}#app{height:calc(100dvh - 54px)}.left,.right{top:54px}.topbar{top:7px;right:7px;left:7px;display:flex;flex-direction:row;justify-content:center}.topbar .tools{justify-content:center;gap:3px}.topbar .tools button{font-size:10px;padding:6px 7px}}
+
+/* VESTA-inspired light workspace: all controls, panes and popovers share one light palette. */
+:root{color-scheme:light;background:#f6f8fb;color:#22334b}
+body{background:#fff}
+button{background:#fff;color:#334155;border-color:#cbd5e1;box-shadow:0 1px 2px rgba(22,38,59,.035)}
+button:hover:not(:disabled){background:#eef5ff;border-color:#8eb5e4}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #397cbb}
+.primary{background:#2877d0;color:white;border-color:#2877d0}
+.primary:hover:not(:disabled){background:#1564ba}
+.ghost{background:transparent}.danger{color:#b42336}
+.muted{color:#687b90}
+.tag{background:#eff7fe;border-color:#c9dfef;color:#246089}
+header{background:#fff;color:#233348;border-color:#dfe6ee;box-shadow:0 1px 3px rgba(21,42,68,.035)}
+header .gem{color:#fff;background:linear-gradient(145deg,#378ccf,#57bad7)}
+header .sub{display:none}
+.panel{background:#fff;scrollbar-color:#b9c7d6 transparent}
+.left{border-color:#dce5ef}.right{border-color:#dce5ef}
+.section{border-color:#e7edf4}.section h2{color:#526a83}.section .hint{color:#687c91}
+.field span{color:#526a83}
+.field input,.field select,select{background:#fff;border-color:#c7d2e0;color:#21344c}
+.field input:focus{border-color:#338ac5}
+.check{color:#344b63}
+.slider output{color:#344b63}
+.site-table th{color:#61788f}.site-table input{color:#203449;background:#fff;border-color:#cbd6e3}
+.site-table .del{color:#b42336}
+#viewport{background:#fff}
+#stage canvas{background:transparent}
+.floating{background:rgba(255,255,255,.96);border-color:#d6e0ea;box-shadow:0 2px 12px rgba(37,59,85,.065);backdrop-filter:blur(10px)}
+.topbar{position:absolute;top:12px;left:14px;right:14px;align-items:flex-start}
+.topbar .tools{background:rgba(255,255,255,.97)}
+.topbar .tools button{background:#fff;box-shadow:none}
+.tools button.active{background:#e4f3ff;border-color:#8eb8df;color:#195e98}
+.structure-name{color:#263b53}
+.structure-name small{color:#647b92}
+.footbar{position:absolute;bottom:0;left:0;right:0;border-radius:0;border:0;border-top:1px solid #e5ebf1;box-shadow:none;height:36px;background:rgba(255,255,255,.94);color:#60788f;padding:9px 15px}
+.footbar .dot{background:#21a17b}
+.view-help{color:#728399;bottom:51px}
+.legend span{color:#344960}
+.info,.metric,.measure-item{background:#f7f9fc;border-color:#e1e8f0}
+.info strong,.metric strong{color:#263b53}
+.info small,.metric small{color:#6a8195}
+.measure-item b{color:#2a4563}
+.notice{background:#fff7e7;color:#8b5d17;border-color:#efdcb9}
+#toast{background:#ffffff;border-color:#a2c6e7;color:#174365;box-shadow:0 8px 20px #1d345a1a}
+.shortcuts,.empty{color:#6b8195}
+a{color:#1d6ca9}
+footer{color:#71869b}
+.note{background:#f3f8ff;border-color:#d7e5f2;color:#506783}
+.matrix input{background:#fff;color:#293c53;border-color:#cad6e3}
+.section h2 .stage{color:#2574b5}
+.axis-gizmo{position:absolute;z-index:3;left:18px;bottom:54px;width:116px;height:116px;pointer-events:none;user-select:none}
+.axis-gizmo svg{display:block;width:100%;height:100%;overflow:visible}
+.axis-gizmo .gizmo-caption{position:absolute;left:0;bottom:-3px;font-size:10px;white-space:nowrap;color:#76899c;letter-spacing:.01em}
+@media(max-width:720px){
+ .topbar{position:absolute;left:8px;right:8px;top:8px}
+ .topbar .tools{max-width:100%;justify-content:center}
+ .footbar{left:0;right:0;bottom:0;padding:8px 10px;height:34px}
+ .axis-gizmo{left:8px;bottom:48px;width:95px;height:95px}
+ .view-help{display:none}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -155,7 +216,7 @@ header{height:54px}.brand h1{font-size:16px}.brand .gem{width:32px;height:32px}#
    <label class="check"><input id="cellVisible" type="checkbox" checked> Birim hücre çizgileri</label>
    <label class="check"><input id="boundary" type="checkbox" checked> Sınır atomlarını göster</label>
    <label class="check"><input id="labels" type="checkbox"> Atom sembollerini göster</label>
-   <label class="check"><input id="axes" type="checkbox" checked> Kristal eksenlerini göster</label>
+   <label class="check"><input id="axes" type="checkbox"> Kristal eksenlerini yapı içinde göster</label>
    <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
    <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
    <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
@@ -177,6 +238,10 @@ header{height:54px}.brand h1{font-size:16px}.brand .gem{width:32px;height:32px}#
     <button id="fitBtn" title="Görünüme sığdır">⌗ Sığdır</button><button id="topBtn" title="c doğrultusunda bakış">Üst</button><button id="frontBtn" title="Ön görünüm">Ön</button><button id="sideBtn" title="Yan görünüm">Yan</button>
     <button id="projectionBtn" title="Perspektif/ortografik">Perspektif</button><button id="pngBtn" title="PNG görüntü kaydet">↧ PNG</button>
    </div>
+  </div>
+  <div id="axisGizmo" class="axis-gizmo" role="img" aria-label="Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi">
+    <svg id="axisGizmoSvg" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="58" r="4" fill="#69798a" stroke="#fff" stroke-width="1.5"/></svg>
+    <div class="gizmo-caption">X · Y · Z</div>
   </div>
   <div class="floating footbar"><div><span class="dot"></span><span id="renderStatus">3B görüntü hazırlanıyor</span></div><div id="totalSummary">—</div></div>
   <div class="view-help">Sol tuş: Döndür · Sağ tuş: Kaydır · Tekerlek: Yakınlaştır<br>Atom seçimi: Mesafe (2) ve açı (3)</div>
