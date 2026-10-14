@@ -17,6 +17,17 @@ Son kısa-vade güncellemesinde: tekrar eden 3B çalışma alanı başlığı ka
 
 Bunlar gerçek kimyasal bağ varlığını veya yüzey relaksasyonunu hesaplamaz; bilimsel karşılaştırmalar ve gerçek WebGL görsel doğrulaması ayrıca gereklidir.
 
+## Undo / Redo · Kristal düzenleme geçmişi
+
+Üst menüde **Geri al (↶)** ve **Yinele (↷)** ikonları yer alır. Yapı düzenlemesinden önce etkin olmayan düğmeler, değişiklik kaydedildikçe açılır.
+
+- **Klavye:** `Ctrl+Z` / `Cmd+Z` geri alır, `Ctrl+Shift+Z` / `Cmd+Shift+Z` veya `Ctrl+Y` yeniden uygular.
+- Atom ekleme, silme ve koordinat değiştirme; yapı içe aktarma / örnek yükleme; hücre, uzay grubu, süperhücre, bağ kuralları, koordinasyon parametreleri, görünüm ve Miller ayarlarının **başarıyla çizilmiş durumları** kaydedilir.
+- Yinele yaptıktan sonra yeni bir düzenleme uygulanırsa eski yineleme kolu temizlenir. Birbirinin aynısı olan yeniden çizimler geçmişi doldurmaz.
+- 60 önceki durumla ve tek görüntü için 380.000 karakterle sınırlandırılmış **bellek içi geçmiş** kullanılır. Geçmiş sayfa yenilenince sıfırlanır; **yalnız son kristal** önceki `localStorage` mekanizmasıyla kalıcıdır.
+- Metin veya sayı kutusu odaktayken klavye kısayolları tarayıcının **yerel metin geri alma** davranışını bozmaz; kristal durumunu geri almak için üstteki düğmeleri kullanabilirsin.
+- Kamera hareketleri ve ayrıca kaydedilmiş ölçüm geçmişi bu özelliğin kapsamında değildir. CUBE/CHGCAR/XSF alan matrisi geçmişe kopyalanmaz; önceki kristale dönüşte uyumsuz hacimsel katman temizlenir.
+
 ## Bağımsız CIF doğruluğu (GitHub Actions)
 
 [**CIF doğrulama hattı**](tests/validation/README.md), 29 açık kaynak test CIF'si + özel olarak COD 4335507 ve 10 sentetik zorlayıcı örneği **Gemmi 0.7.4** ile karşılaştırır. Testler aynı `index.html` içindeki CIF ayrıştırıcısını kullanır. Atom türü, occupancy, simetriyle genişletilmiş konumlar, periyodik koordinatlar, hücre metrikleri ve hacim karşılaştırılır.
