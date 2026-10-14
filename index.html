@@ -597,6 +597,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   </div>
 
 
+  <span id="renderStatus" hidden></span><span id="totalSummary" hidden></span>
   <div id="toast" role="status" aria-live="polite"></div>
  </main>
  <aside class="panel right" id="rightPanel" aria-label="Yapı ve Miller inceleme paneli">
@@ -2030,8 +2031,37 @@ function initLeftSidebarTabs(){
  setLeftSidebarTab('general');
 }
 
+
+
+const RIGHT_SIDEBAR_TABS=['structure','miller'];
+let rightSidebarTab='structure';
+const rightSidebarScroll={structure:0,miller:0};
+function setRightSidebarTab(tab){
+ if(!RIGHT_SIDEBAR_TABS.includes(tab))throw Error('Geçersiz sağ panel sekmesi: '+tab);
+ const scroll=$('rightTabContent');rightSidebarScroll[rightSidebarTab]=scroll.scrollTop;
+ rightSidebarTab=tab;
+ for(const [name,id,pane] of [['structure','rightStructureTab','rightStructurePane'],['miller','rightMillerTab','rightMillerPane']]){
+  const active=name===tab;$(pane).hidden=!active;
+  $(id).classList.toggle('selected',active);$(id).setAttribute('aria-selected',String(active));$(id).tabIndex=active?0:-1;
+ }
+ scroll.scrollTop=rightSidebarScroll[tab]||0;
+}
+function initRightSidebarTabs(){
+ for(const [name,id] of [['structure','rightStructureTab'],['miller','rightMillerTab']]){
+  $(id).onclick=()=>setRightSidebarTab(name);
+  $(id).onkeydown=e=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+   e.preventDefault();
+   const next=e.key==='Home'?'structure':e.key==='End'?'miller':name==='structure'?'miller':'structure';
+   setRightSidebarTab(next);$(next==='structure'?'rightStructureTab':'rightMillerTab').focus();
+  };
+ }
+ setRightSidebarTab('structure');
+}
+
 function bind(){
  initLibrary();
+ initRightSidebarTabs();
  initLeftSidebarTabs();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
