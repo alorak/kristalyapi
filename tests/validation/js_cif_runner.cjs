@@ -43,6 +43,13 @@ function main(){
     if(!name.startsWith(path.join(base,'fixtures')+path.sep))throw Error('Fixture path escaped fixtures/: '+entry.path);
     const buffer=fs.readFileSync(name);
     const record={id:entry.id,kind:entry.kind,path:entry.path,sha256:crypto.createHash('sha256').update(buffer).digest('hex')};
+    const blobSha=crypto.createHash('sha1').update('blob '+buffer.length+'\0').update(buffer).digest('hex');
+    if(blobSha!==entry.git_blob_sha1){
+      record.result='error';
+      record.error='Fixture differs from pinned Git blob SHA-1 ('+entry.git_blob_sha1+')';
+      output.push(record);
+      continue;
+    }
     try{
       const data=parse(buffer.toString('utf8'));
       const c=data.cell;
