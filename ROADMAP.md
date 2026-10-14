@@ -2,6 +2,17 @@
 
 Bu plan gerçek VESTA özellikleriyle mevcut tek-`index.html` tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a; 3B görüntü Three.js CDN'ine bağlıdır.
 
+## VESTA Aşama 1 — bu dalda uygulanan kapsam
+
+| Paket | Gerçekleştirilen | Doğrulama / sınır |
+| --- | --- | --- |
+| A1.1 · CIF veri bütünlüğü | Seçili yayın/metaveri alanları, Uij/Bij ve Uiso/Biso; simetriyle tensör dönüşümü, kaynak formül koruma kontrolü ve 5 gerçek CIF için round-trip testleri | Tam CIF/mCIF metadata döngüsü, alternatif setting/orijin dönüşümü ve tüm genişletilmiş simetri testleri henüz kapsanmıyor |
+| A1.2 · Gerçek WebGL testleri | Playwright+Chromium başsız görüntüleme, Si/COD/ADP/Miller ekran görüntüleri, piksel fark ölçümleri, artifact yükleme | İlk gerçek GitHub Actions koşusu ve gerçek VESTA eş görüntü kıyaslaması merge sonrasında doğrulanacak |
+| A1.3 · Nesne / katman yöneticisi | 9 katmanda görünürlük, opaklık, sıra; renk değiştirilebilen katmanlarda renk, proje kaydı ve Undo/Redo | Büyük hacimsel veri ve yoğun sahnede performans ayrıca değerlendirilmelidir |
+| A1.4 · Termal elipsoitler | Uij/Bij/Uiso/Biso okuma; triclinic Cartesian tensor dönüşümü; 50/90/99% olasılıklı 3D elipsoid, pozitif tanımlılık kontrolü ve P1 CIF dışa aktarımı | Kompleks mCIF ve makale temelli VESTA görsel uyum testleri henüz yapılmadı |
+
+Bu kapsam uygulandı ancak **CI/WebGL E2E ve gerçek cihaz doğrulaması yapılmadan tamamı kanıtlanmış sayılmaz**.
+İlk PR merge sonrası hem Pages testlerini hem `browser-visual` iş akışını kontrol et.
 ## Kısa vade · PR #12 (bu geliştirme)
 
 | Sıra | İş | Durum / teslim ölçütü |
@@ -26,7 +37,7 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
 | Öncelik | Paket | Kabul kriteri |
 | --- | --- | --- |
 | O1a · tamamlandı | Kristal düzenleme Undo/Redo | 60 durumluk, tekrarları ayıklayan geri alma/yineleme; atom/hücre/simetri/bağ/Miller ve görünüm durumları; Ctrl/Cmd kısayolları. **İlk 90 regresyon testi geçti**; gerçek browser E2E ayrıca bekliyor. |
-| O1b · sıradaki | Nesne / katman paneli ve görünürlük yöneticisi | Kristal, bağ, çokyüzlü, Miller ve hacimsel öğeler için tutarlı ağaç, tek tek görünürlük/renk, katman yeniden sıralama; düzenlemeler Undo/Redo'da korunur |
+| O1b · Aşama 1 PR'ında | Nesne / katman paneli ve görünürlük yöneticisi | Kristal, bağ, çokyüzlü, Miller ve hacimsel öğeler için tutarlı ağaç, tek tek görünürlük/renk, katman yeniden sıralama; düzenlemeler Undo/Redo'da korunur |
 | O2 | Çok seviyeli izoyüzey | Tek CUBE/CHGCAR/XSF alanında birden fazla izodeğer, ayrı renk/opacity ve katman kontrolü |
 | O3 | Çoklu hacim alanı + uyum kontrolü | Aynı yapıya birden fazla yoğunluk/potansiyel haritası; birim, koordinat çerçevesi ve grid interpolasyonu açıkça doğrulanır |
 | O4 | Gelişmiş 2B kesitler | Orta/kenar düzlemleri, nicel skala, kontur seviyeleri, PNG/SVG çıktısı ve eğik hücrede örnekleme doğruluğu |
