@@ -9,6 +9,14 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## Güncel kısa vade ve VESTA yol haritası
+
+[**VESTA farkları ve sıralı geliştirme planı → ROADMAP.md**](ROADMAP.md)
+
+Son kısa-vade güncellemesinde: tekrar eden 3B çalışma alanı başlığı kaldırıldı; kamera görünüm düğmeleri ikonlaştırıldı; bağ çifti editörü ve periyodik çokyüzlüler genişletildi; 4 atomlu dihedral ve CSV ölçüm geçmişi eklendi; Miller paneli bağımsız düzlem katmanlarını, görünürlük ve renk ayarlarını yönetir.
+
+Bunlar gerçek kimyasal bağ varlığını veya yüzey relaksasyonunu hesaplamaz; bilimsel karşılaştırmalar ve gerçek WebGL görsel doğrulaması ayrıca gereklidir.
+
 ## Bağımsız CIF doğruluğu (GitHub Actions)
 
 [**CIF doğrulama hattı**](tests/validation/README.md), 29 açık kaynak test CIF'si + özel olarak COD 4335507 ve 10 sentetik zorlayıcı örneği **Gemmi 0.7.4** ile karşılaştırır. Testler aynı `index.html` içindeki CIF ayrıştırıcısını kullanır. Atom türü, occupancy, simetriyle genişletilmiş konumlar, periyodik koordinatlar, hücre metrikleri ve hacim karşılaştırılır.
