@@ -1114,7 +1114,51 @@ function renderSites(){
 }
 function applyCell(){try{const c={};for(const k of ['a','b','c','alpha','beta','gamma'])c[k]=Number($(k).value);state.cell=validateCell(c);state.warning='';build();fit();}catch(e){inform(e.message);}}
 function applyRepeat(){const r=['ra','rb','rc'].map(x=>Number($(x).value));if(r.some(x=>!Number.isInteger(x)||x<1||x>6)){inform('Her eksende tekrar sayısı 1 ile 6 arasında tam sayı olmalıdır.');return;}state.rep=r;build();fit();}
-function loadPreset(key){const ex=examples(key);state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;state.cut=ex.cut;state.warning='';state.poly='';state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;syncControls();build();fit();}
+const PRESET_KEYS=['silicon','nacl','cscl','diamond','fcc','perovskite','graphite'];
+function presetMetadata(key){
+ if(!PRESET_KEYS.includes(key))throw Error('Bilinmeyen örnek yapı: '+key);
+ const example=examples(key),elements=[...new Set(example.sites.map(site=>site.symbol))];
+ return {key,name:example.name,detail:example.detail,sites:example.sites.length,elements,cell:example.cell};
+}
+function updatePresetPreview(){
+ const example=presetMetadata($('preset').value);
+ $('presetName').textContent=example.name;
+ $('presetDescription').textContent=example.detail;
+ $('presetSiteCount').textContent=String(example.sites);
+ $('presetCell').textContent=[example.cell.a,example.cell.b,example.cell.c].map(value=>value.toFixed(3)).join(' × ')+' Å';
+ $('presetElements').textContent=example.elements.join(', ');
+}
+function loadPreset(key){
+ const ex=examples(presetMetadata(key).key);
+ state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
+ state.cut=ex.cut;state.warning='';state.poly='';state.rep=[1,1,1];
+ state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
+ state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
+ state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;
+ syncControls();build();fit();
+}
+function createEmptyStructure(){
+ state.name='Yeni kristal';state.detail='P1 · yeni yapı';
+ state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
+ state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';
+ state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
+ syncControls();build();fit();
+}
+function importSelectedPreset(){
+ const key=$('preset').value;
+ if(!PRESET_KEYS.includes(key))throw Error('Geçersiz örnek yapı.');
+ window.location.hash='kristal';
+ syncLibraryNavigation();
+ loadPreset(key);
+ inform(presetMetadata(key).name+' örneği 3B çalışma alanına aktarıldı.');
+}
+function createBlankFromLibrary(){
+ window.location.hash='kristal';syncLibraryNavigation();createEmptyStructure();
+ inform('Yeni P1 hücresi oluşturuldu.');
+}
 function stripCifComment(line){let quote='';for(let k=0;k<line.length;k++){const c=line[k];if(quote){if(c===quote)quote='';}else if(c==='\''||c==='"')quote=c;else if(c==='#')return line.slice(0,k);}return line;}
 function tokenizeCif(src){
  const lines=src.replace(/\r\n?/g,'\n').split('\n'),tokens=[];
@@ -1520,13 +1564,18 @@ function renderCodBookmarks(){
  $('bookmarkEmpty').hidden=codBookmarks.length>0;
  if(codBookmarks.length)list.append(codTable(codBookmarks));
 }
+const LIBRARY_PANES=['search','presets','bookmarks'];
 function setLibraryPane(mode){
+ if(!LIBRARY_PANES.includes(mode))throw Error('Bilinmeyen kütüphane sekmesi: '+mode);
  codPane=mode;
  $('libSearchPane').hidden=mode!=='search';
+ $('libPresetsPane').hidden=mode!=='presets';
  $('libBookmarksPane').hidden=mode!=='bookmarks';
- for(const [id,selected] of [['libSearchTab',mode==='search'],['libBookmarksTab',mode==='bookmarks']]){
-  $(id).classList.toggle('selected',selected);$(id).setAttribute('aria-selected',String(selected));
+ for(const [id,selected] of [['libSearchTab',mode==='search'],['libPresetsTab',mode==='presets'],['libBookmarksTab',mode==='bookmarks']]){
+  $(id).classList.toggle('selected',selected);
+  $(id).setAttribute('aria-selected',String(selected));$(id).tabIndex=selected?0:-1;
  }
+ if(mode==='presets')updatePresetPreview();
  if(mode==='bookmarks')renderCodBookmarks();
 }
 function isLibraryHash(hash){return hash==='#kutuphane';}
@@ -1586,7 +1635,12 @@ function initLibrary(){
  codBookmarks=store?loadCodBookmarks(store):[];
  codBookmarkCount();renderCodBookmarks();renderCodResults();
  $('libSearchTab').onclick=()=>setLibraryPane('search');
+ $('libPresetsTab').onclick=()=>setLibraryPane('presets');
  $('libBookmarksTab').onclick=()=>setLibraryPane('bookmarks');
+ $('preset').onchange=updatePresetPreview;
+ $('importPreset').onclick=()=>{try{importSelectedPreset();}catch(e){codSearchMessage(e.message,true);}};
+ $('newStructureBtn').onclick=createBlankFromLibrary;
+ updatePresetPreview();
  $('codSearchForm').onsubmit=e=>{e.preventDefault();runCodSearch();};
  $('codExample').onclick=()=>{
   $('codSearchForm').reset();
@@ -1599,6 +1653,53 @@ function initLibrary(){
  $('bookmarkExport').onclick=()=>download('kristalyapi_cod_yer_imleri.json',JSON.stringify({format:'kristalyapi-cod-bookmarks-v1',entries:codBookmarks.map(codRecordForStorage)},null,2),'application/json');
  window.addEventListener('hashchange',syncLibraryNavigation);
  syncLibraryNavigation();
+}
+
+
+const EXPORT_FORMATS=['project','cif','poscar','xyz','png'];
+let exportFocusBefore=null;
+function exportFunction(format){
+ const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,png:screenshot};
+ if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
+ return functions[format];
+}
+function openExportModal(){
+ const modal=$('exportModal');exportFocusBefore=document.activeElement;
+ modal.hidden=false;
+ const first=modal.querySelector('[data-export="project"]');
+ if(first)first.focus();
+}
+function closeExportModal(){
+ const modal=$('exportModal');
+ if(modal.hidden)return;
+ modal.hidden=true;
+ if(exportFocusBefore&&typeof exportFocusBefore.focus==='function')exportFocusBefore.focus();
+ exportFocusBefore=null;
+}
+function selectExportFormat(format){
+ const action=exportFunction(format);
+ try{
+  action();
+  closeExportModal();
+ }catch(error){inform('Dışa aktarma başarısız: '+error.message);}
+}
+function initExportModal(){
+ const modal=$('exportModal');
+ $('exportModalClose').onclick=closeExportModal;
+ $('exportModalCancel').onclick=closeExportModal;
+ modal.querySelector('.export-modal-scrim').addEventListener('click',closeExportModal);
+ for(const button of modal.querySelectorAll('[data-export]')){
+  button.addEventListener('click',()=>selectExportFormat(button.dataset.export));
+ }
+ modal.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeExportModal();return;}
+  if(event.key!=='Tab')return;
+  const focusable=[...modal.querySelectorAll('button:not([disabled])')];
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ });
 }
 
 function bind(){
@@ -1615,8 +1716,7 @@ function bind(){
  };
  $('transformCell').onclick=applyTransformation;
  $('openBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{if(!e.target.files?.[0])return;try{await importFile(e.target.files[0]);}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
- $('saveBtn').onclick=saveProject;$('preset').onchange=e=>loadPreset(e.target.value);$('resetBtn').onclick=()=>loadPreset($('preset').value);
- $('newBtn').onclick=()=>{state.name='Yeni kristal';state.detail='P1 · yeni yapı';state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;syncControls();build();fit();};
+ $('saveBtn').onclick=openExportModal;
  $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();});
@@ -1624,7 +1724,7 @@ function bind(){
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
  $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
- $('pngBtn').onclick=screenshot;$('exportPng').onclick=screenshot;$('exportCif').onclick=exportCif;$('exportPoscar').onclick=exportPoscar;$('exportXyz').onclick=exportXyz;
+ initExportModal();
  $('clearMeasure').onclick=()=>{selected=[];drawSelection();};
  $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('open');};
  $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
