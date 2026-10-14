@@ -336,6 +336,62 @@ function inform(s){$('toast').textContent=s;$('toast').classList.add('visible');
 function report(s){$('notice').textContent=s;$('notice').classList.toggle('visible',!!s);}
 function download(filename,content,mime){const blob=content instanceof Blob?content:new Blob([content],{type:mime||'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),600);}
 function safeName(s){return String(s).normalize('NFKD').replace(/[^\w-]+/g,'_').slice(0,48)||'kristal';}
+
+/* Small camera-locked XYZ triad rendered as lightweight SVG (not in the 3D scene). */
+const GIZMO_AXES = [
+ {label:'X',direction:[1,0,0],color:'#e24b4b'},
+ {label:'Y',direction:[0,1,0],color:'#23a45b'},
+ {label:'Z',direction:[0,0,1],color:'#286de0'}
+];
+let axisGizmoParts=[],axisGizmoLastRotation=null;
+function initAxisGizmo(){
+ const svg=$('axisGizmoSvg'),ns='http://www.w3.org/2000/svg',center=svg.querySelector('circle');
+ for(const axis of GIZMO_AXES){
+  const group=document.createElementNS(ns,'g');
+  const line=document.createElementNS(ns,'line');
+  line.setAttribute('stroke',axis.color);line.setAttribute('stroke-width','4');line.setAttribute('stroke-linecap','round');
+  const arrow=document.createElementNS(ns,'polygon');arrow.setAttribute('fill',axis.color);
+  const text=document.createElementNS(ns,'text');text.textContent=axis.label;
+  text.setAttribute('fill',axis.color);text.setAttribute('font-size','13');text.setAttribute('font-family','system-ui, sans-serif');
+  text.setAttribute('font-weight','750');text.setAttribute('text-anchor','middle');
+  text.setAttribute('paint-order','stroke');text.setAttribute('stroke','#ffffff');text.setAttribute('stroke-width','3');
+  group.append(line,arrow,text);svg.insertBefore(group,center);
+  axisGizmoParts.push({axis,group,line,arrow,text});
+ }
+}
+function gizmoProjection(cameraQuaternion){
+ const inverse=cameraQuaternion.clone().invert();
+ return GIZMO_AXES.map(a=>{
+  const v=new THREE.Vector3(...a.direction).applyQuaternion(inverse);
+  return {label:a.label,x:v.x,y:-v.y,depth:v.z};
+ });
+}
+function updateAxisGizmo(){
+ if(!camera||!axisGizmoParts.length)return;
+ if(axisGizmoLastRotation&&axisGizmoLastRotation.angleTo(camera.quaternion)<0.0002)return;
+ if(!axisGizmoLastRotation)axisGizmoLastRotation=camera.quaternion.clone();
+ else axisGizmoLastRotation.copy(camera.quaternion);
+ const svg=$('axisGizmoSvg'),center=svg.querySelector('circle');
+ const coordinates=gizmoProjection(camera.quaternion);
+ const ordered=axisGizmoParts.map((part,i)=>({part,...coordinates[i]})).sort((a,b)=>a.depth-b.depth);
+ for(const {part,x,y,depth} of ordered){
+  const length=Math.hypot(x,y),radius=Math.max(6,38*length);
+  const dx=length>1e-4?x/length:0,dy=length>1e-4?y/length:-1;
+  const tipX=60+dx*radius,tipY=58+dy*radius;
+  const baseX=tipX-dx*8,baseY=tipY-dy*8;
+  const sideX=-dy*4.3,sideY=dx*4.3;
+  part.line.setAttribute('x1','60');part.line.setAttribute('y1','58');
+  part.line.setAttribute('x2',baseX.toFixed(2));part.line.setAttribute('y2',baseY.toFixed(2));
+  part.arrow.setAttribute('points',[
+   [tipX,tipY],[baseX+sideX,baseY+sideY],[baseX-sideX,baseY-sideY]
+  ].map(p=>p.map(v=>v.toFixed(2)).join(',')).join(' '));
+  part.text.setAttribute('x',clamp(tipX+dx*11,8,112).toFixed(2));
+  part.text.setAttribute('y',clamp(tipY+dy*11+4,12,115).toFixed(2));
+  part.group.setAttribute('opacity',depth<0?.74:1);
+  svg.insertBefore(part.group,center);
+ }
+}
+
 function initScene(){
  scene=new THREE.Scene();
  perspective=true;camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
@@ -344,6 +400,7 @@ function initScene(){
  const l=new THREE.DirectionalLight(0xffffff,2.15);l.position.set(8,-13,18);scene.add(l);
  const l2=new THREE.DirectionalLight(0xffffff,.55);l2.position.set(-10,12,-4);scene.add(l2);
  root=new THREE.Group();scene.add(root);
+ initAxisGizmo();
  orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.09;orbit.minDistance=.4;orbit.maxDistance=5000;orbit.screenSpacePanning=true;
  new ResizeObserver(resize).observe($('stage'));
  renderer.domElement.addEventListener('pointerdown',e=>lastPointer={x:e.clientX,y:e.clientY});
@@ -352,7 +409,7 @@ function initScene(){
  requestAnimationFrame(loop);
 }
 function resize(){const r=$('stage').getBoundingClientRect();if(r.width<1||r.height<1)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;if(camera.isPerspectiveCamera)camera.updateProjectionMatrix();else{const scale=r.width/r.height;camera.left=-currentSpan*scale/2;camera.right=currentSpan*scale/2;camera.top=currentSpan/2;camera.bottom=-currentSpan/2;camera.updateProjectionMatrix();}}
-function loop(){requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();renderer.render(scene,camera);}
+function loop(){requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();updateAxisGizmo();renderer.render(scene,camera);}
 function clearRoot(){const freed=new Set(),shared=new Set(atomMaterials.values());for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==bondGeometry&&!freed.has(x.geometry)){freed.add(x.geometry);x.geometry.dispose();}if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(!shared.has(m)&&!freed.has(m)){freed.add(m);if(m.map)m.map.dispose();m.dispose();}});}});}atomMesh=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
 function line(points,color,opacity=1){return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false}));}
 function addCellLines(B,r){
