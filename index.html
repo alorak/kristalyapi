@@ -679,9 +679,26 @@ function xyzData(text){
  return {name:l[1]?.trim()||'XYZ molekülü',detail:'XYZ · yapay kutu içine yerleştirilmiş atomlar',cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},sites,warning:'XYZ dosyasında örgü/simetri bilgisi yoktur. Görselleştirmek için atomların etrafına 2 Å boşluklu yapay ortorombik hücre oluşturuldu.'};
 }
 function loadProject(json){
- const obj=JSON.parse(json);if(!obj||!obj.cell||!Array.isArray(obj.sites))throw Error('Geçersiz proje JSON.');
- validateCell(obj.cell);if(!obj.sites.length||obj.sites.length>1000)throw Error('Proje atom sayısı 1–1000 aralığında olmalıdır.');
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites:obj.sites.map((s,i)=>({symbol:cleanSymbol(s.symbol),label:String(s.label||('Atom '+i)).slice(0,80),x:+s.x,y:+s.y,z:+s.z,occupancy:clamp(Number(s.occupancy??1),0,1)})),warning:'' ,rep:Array.isArray(obj.rep)?obj.rep:undefined,sgNumber:Number(obj.sgNumber||1),sgSetting:String(obj.sgSetting||'1'),symmetryEnabled:!!obj.symmetryEnabled,bondRules:String(obj.bondRules||'')};
+ const obj=JSON.parse(json);
+ if(!obj||!obj.cell||!Array.isArray(obj.sites))throw Error('Geçersiz proje JSON.');
+ validateCell(obj.cell);
+ if(!obj.sites.length||obj.sites.length>1000)throw Error('Proje atom sayısı 1–1000 aralığında olmalıdır.');
+ const n=Number(obj.sgNumber||1);if(!Number.isInteger(n)||n<1||n>230)throw Error('Projedeki uzay grubu geçersiz.');
+ const setting=sgKeys(n).includes(String(obj.sgSetting))?String(obj.sgSetting):preferredSetting(n);
+ const rep=Array.isArray(obj.rep)?obj.rep.map(Number):[1,1,1];
+ if(rep.length!==3||rep.some(x=>!Number.isInteger(x)||x<1||x>6))throw Error('Geçersiz proje süperhücre boyutları.');
+ const sites=obj.sites.map((v,i)=>({symbol:cleanSymbol(v.symbol),label:String(v.label||('Atom '+i)).slice(0,80),x:+v.x,y:+v.y,z:+v.z,occupancy:Number(v.occupancy??1)}));
+ if(sites.some(v=>![v.x,v.y,v.z,v.occupancy].every(Number.isFinite)||v.occupancy<0||v.occupancy>1))throw Error('Atom koordinatları / doluluk oranı geçersiz.');
+ const bondRules=String(obj.bondRules||'');parseBondRules(bondRules);
+ const source=obj.plane&&typeof obj.plane==='object'?obj.plane:{};
+ const h=Number(source.h??1),k=Number(source.k??1),l=Number(source.l??1),offset=Number(source.offset??1),thickness=Number(source.thickness??2);
+ planeNormal(h,k,l,basis(obj.cell));
+ if(!Number.isFinite(offset)||!Number.isFinite(thickness)||thickness<=0||thickness>100)throw Error('Kaydedilen Miller kesiti geçersiz.');
+ const cut=Number(obj.cut??2.65);
+ if(!Number.isFinite(cut)||cut<.8||cut>5)throw Error('Kaydedilen bağ eşiği geçersiz.');
+ const style=['ball','space','stick','wire'].includes(obj.style)?obj.style:'ball';
+ const plane={h,k,l,offset,thickness,visible:!!source.visible,slab:!!source.slab};
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane};
 }
 async function importFile(file){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
@@ -690,7 +707,7 @@ async function importFile(file){
  else if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))obj=cifData(str);
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
- state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,bondRules:obj.bondRules||'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function exportCif(){
