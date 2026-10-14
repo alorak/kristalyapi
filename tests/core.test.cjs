@@ -1092,3 +1092,42 @@ test('Layer manager: canonical order, visibility, opacity and color are bounded'
  assert.match(html,/id="adpVisible"/);
  assert.match(html,/id="adpLevel"/);
 });
+
+
+test('CIF scientific roundtrip: five diverse real structures preserve P1 geometry',()=>{
+ const paths=['COD_4335507.cif','Fe3O4.cif','Graphite.cif','LiFePO4.cif','CuCl.cif'];
+ for(const name of paths){
+  const content=fs.readFileSync(path.join(__dirname,'validation','fixtures','real',name),'utf8');
+  const one=api.cifData(content),two=api.cifData(api.cifExportText({...one,name:'Roundtrip'}));
+  assert.equal(two.sites.length,one.sites.length,name+' site count');
+  for(let i=0;i<one.sites.length;i++){
+   const a=one.sites[i],b=two.sites[i];
+   assert.equal(b.symbol,a.symbol,name+' atom '+i+' element');
+   approx(b.occupancy,a.occupancy,.001);
+   for(const k of ['x','y','z'])approx(b[k],a[k],.00001);
+  }
+  for(const k of ['a','b','c'])approx(one.cell[k],two.cell[k],.00001);
+  for(const k of ['alpha','beta','gamma'])approx(one.cell[k],two.cell[k],.00001);
+ }
+});
+test('CIF source formula is dropped after composition change, while bibliography remains',()=>{
+ const source=[
+  'data_formula','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_chemical_formula_sum 'Na Cl'","_journal_name_full 'Example Journal'",
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x',
+  '_atom_site_fract_y','_atom_site_fract_z',
+  'Na1 Na 0 0 0','Cl1 Cl 0.5 0.5 0.5'
+ ].join('\n');
+ const crystal=api.cifData(source);
+ assert.match(api.cifExportText(crystal),/_chemical_formula_sum/);
+ crystal.sites[0].symbol='K';
+ const edited=api.cifExportText(crystal);
+ assert.doesNotMatch(edited,/_chemical_formula_sum/);
+ assert.match(edited,/_journal_name_full/);
+});
+test('Isotropic Uiso gives spherical Cartesian ellipsoid even in triclinic cell',()=>{
+ const cell={a:5,b:6,c:7,alpha:78,beta:84,gamma:98};
+ const e=api.adpEllipsoid({label:'Iso',uIso:.03},cell,90);
+ e.scales.forEach(v=>approx(v,Math.sqrt(.03*6.251388631),1e-8));
+});
