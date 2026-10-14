@@ -52,6 +52,12 @@ def gemmi_reference(entry):
         if not s.sites: raise ValueError("No structural atom sites")
         sites=s.get_all_unit_cell_sites()
         if len(sites)>6000: raise ValueError("Reference too large")
+        # CIF '.' means unknown, NOT fractional zero. Gemmi can represent it
+        # as NaN, which is an incomplete crystallographic reference, not a
+        # failure of the Python comparison algorithm.
+        if any(not all(math.isfinite(float(x)) for x in
+               (site.fract.x,site.fract.y,site.fract.z,site.occ)) for site in sites):
+            raise ValueError("Reference has unspecified/nonfinite atom positions or occupancy")
         record.update(result="parsed",cell=dict(zip(("a","b","c","alpha","beta","gamma"),lengths+angles)),
           volume=c.volume,spacegroup=s.spacegroup_hm,spacegroup_number=s.spacegroup_number or None,
           asymmetric_sites=len(s.sites),
