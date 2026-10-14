@@ -1448,7 +1448,7 @@ async function loadVolumeFile(file,asPotential=false){
   $('volumePotential').checked=false;
   if(parsed.crystal&&$('volumeLoadAtoms').checked){
    state={...state,name:parsed.crystal.name,detail:parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
-    sites:parsed.crystal.sites,cifMeta:{},adpVisible:false,sgNumber:1,sgSetting:'1',symmetryEnabled:false,rep:[1,1,1],
+    sites:parsed.crystal.sites,cifMeta:{},cifComposition:'',adpVisible:false,sgNumber:1,sgSetting:'1',symmetryEnabled:false,rep:[1,1,1],
     poly:'',bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2}};
    syncControls();build();
   }
@@ -2282,7 +2282,7 @@ function loadPreset(key){
  if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
- state.cifMeta={};state.adpVisible=false;state.adpLevel=50;
+ state.cifMeta={};state.cifComposition='';state.adpVisible=false;state.adpLevel=50;
  state.cut=ex.cut;state.warning='';state.poly='';state.polyCut=0;state.polyNeighbors=12;state.rep=[1,1,1];
  state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
@@ -2293,7 +2293,7 @@ function loadPreset(key){
 function createEmptyStructure(){
  if(densityGrid)resetVolume();
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
- state.cifMeta={};state.adpVisible=false;state.adpLevel=50;
+ state.cifMeta={};state.cifComposition='';state.adpVisible=false;state.adpLevel=50;
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
  state.poly='';state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
@@ -2383,6 +2383,11 @@ function adpEllipsoid(site,cell,level=50){
 const CIF_META_TAGS=['_chemical_name_common','_chemical_name_systematic','_chemical_formula_sum',
  '_journal_name_full','_journal_year','_journal_volume','_journal_issue','_journal_page_first',
  '_journal_page_last','_journal_paper_doi','_publ_section_title','_cod_database_code'];
+function cifCompositionSignature(sites){
+ const sums=new Map();
+ for(const s of sites){const key=cleanSymbol(s.symbol);sums.set(key,(sums.get(key)||0)+Number(s.occupancy??1));}
+ return [...sums].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+':'+v.toFixed(4)).join('|');
+}
 function cifMetaFromTags(tags){const result={};for(const k of CIF_META_TAGS)if(typeof tags[k]==='string'&&!['?','.'].includes(tags[k]))result[k]=tags[k].slice(0,600);return result;}
 function cifMetaValid(raw){if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};const result={};for(const k of CIF_META_TAGS)if(typeof raw[k]==='string')result[k]=raw[k].slice(0,600);return result;}
 function cifQuoted(value){const s=String(value).replace(/[\r\n]+/g,' ').trim().slice(0,600);return /^[a-z0-9.,+/_():-]+$/i.test(s)&&!/^(data_|loop_|save_)/i.test(s)?s:"'"+s.replace(/'/g,"''")+"'";}
@@ -2458,7 +2463,7 @@ function cifData(src){
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
  const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
- return {name:label,detail:'CIF içe aktarma · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,warning:assumption,cifMeta:cifMetaFromTags(tags),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
+ return {name:label,detail:'CIF içe aktarma · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,warning:assumption,cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){
  let sum=0;const terms=expr.replace(/\s+/g,'').replace(/−/g,'-').match(/[+-]?[^+-]+/g)||[];
@@ -2529,7 +2534,7 @@ function loadProject(json){
  const polyCut=Number(obj.polyCut??0),polyNeighbors=Number(obj.polyNeighbors??12);
  if(!Number.isFinite(polyCut)||polyCut<0||polyCut>12||!Number.isInteger(polyNeighbors)||polyNeighbors<4||polyNeighbors>24)throw Error('Kaydedilen koordinasyon ayarları geçersiz.');
  const plane={h,k,l,offset,thickness,visible:!!source.visible,repeat:source.repeat!==false,slab:!!source.slab};
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,poly,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,poly,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
   adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
   layers:normalizedLayerState(obj.layers),layerOrder:normalizedLayerOrder(obj.layerOrder),
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
@@ -2636,7 +2641,7 @@ function lastCrystalPayload(current){
   cut:current.cut,autoBond:current.autoBond,sgNumber:current.sgNumber,
   sgSetting:current.sgSetting,symmetryEnabled:current.symmetryEnabled,
   bondRules:current.bondRules,plane:current.plane,planeLayers:current.planeLayers||[],
-  cifMeta:cifMetaValid(current.cifMeta),adpVisible:!!current.adpVisible,adpLevel:current.adpLevel||50,
+  cifMeta:cifMetaValid(current.cifMeta),cifComposition:current.cifComposition||'',adpVisible:!!current.adpVisible,adpLevel:current.adpLevel||50,
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
   atomScale:current.atomScale,poly:current.poly,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors,
@@ -2677,14 +2682,17 @@ async function importFile(file){
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
  if(densityGrid)resetVolume();
- state={...state,...obj,cifMeta:cifMetaValid(obj.cifMeta),adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function cifExportText(state){
  const symmetry=state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
- for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta)))q.push(tag+' '+cifQuoted(value));
+ for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta))){
+  if(tag==='_chemical_formula_sum'&&state.cifComposition&&cifCompositionSignature(state.sites)!==state.cifComposition)continue;
+  q.push(tag+' '+cifQuoted(value));
+ }
  if(symmetry){
   q.push('loop_','_space_group_symop_id','_space_group_symop_operation_xyz');
   settingOps(state.sgSetting).forEach(([op,centre],i)=>{
@@ -2717,7 +2725,7 @@ function exportPoscar(){
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
- cifMeta:cifMetaValid(state.cifMeta),adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
+ cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
