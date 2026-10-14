@@ -38,7 +38,7 @@ const script = moduleScript
   .replace(/try\{(?:restoreInitialCrystal\(\);)?initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -631,4 +631,32 @@ test('localStorage state round trip preserves last imported structure and select
  assert.equal(restored.atomScale,.75);
  assert.equal(restored.poly,'Na');
  assert.equal(api.restoreLastCrystal({getItem(){return null;}}),null);
+});
+
+test('CHGCAR can extract and align atomic sites and triclinic cell metadata',()=>{
+ const txt=['CHGCAR structure','1.0','4 0 0','0 4 0','0 0 4','Fe O','1 1','Direct',
+  '0.0 0.0 0.0','0.5 0.5 0.5','','2 2 2','0 0 0 0 0 0 0 0'].join('\n');
+ const g=api.readChgcar(txt);
+ assert.ok(g.crystal);
+ assert.equal(g.crystal.sites.length,2);
+ assert.equal(g.crystal.sites[0].symbol,'Fe');
+ assert.equal(g.crystal.sites[1].symbol,'O');
+ approx(g.crystal.cell.a,4);
+ approx(g.crystal.sites[1].x,.5);
+});
+test('XSF PRIMVEC/PRIMCOORD atom list is correctly placed in volume coordinates',()=>{
+ const txt=['CRYSTAL','PRIMVEC','2 0 0','0 2 0','0 0 2','PRIMCOORD','1 1',
+  'Si 1 1 1','BEGIN_BLOCK_DATAGRID_3D','density','BEGIN_DATAGRID_3D_density',
+  '2 2 2','0 0 0','2 0 0','0 2 0','0 0 2','0 0 0 0 0 0 0 0','END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ const g=api.readXsf(txt);
+ assert.equal(g.crystal.sites.length,1);
+ approx(g.crystal.sites[0].x,.5);
+ approx(g.crystal.cell.a,2);
+});
+
+test('fitting volume returns correctly offset physical Cartesian bounds',()=>{
+ const g=api.volumeGrid([2,2,2],[10,20,30],[[2,0,0],[0,3,0],[0,0,4]],Array(8).fill(0),'demo','');
+ const result=api.volumeBounds(g);
+ assert.deepEqual(Array.from(result.center),[11,21.5,32]);
+ approx(result.span,Math.sqrt(29));
 });
