@@ -582,6 +582,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <label class="check"><input id="labels" type="checkbox"> Atom sembollerini göster</label>
    <label class="check"><input id="axes" type="checkbox"> Kristal eksenlerini yapı içinde göster</label>
    <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
+   <label class="check"><input id="adpVisible" type="checkbox"> Termal elipsoitleri (ADP) göster</label>
+   <label class="field"><span>Elipsoit olasılık düzeyi</span><select id="adpLevel"><option value="50">50%</option><option value="90">90%</option><option value="99">99%</option></select></label>
+   <p class="hint">CIF Uij/Bij veya Uiso/Biso alanlarından hesaplanır. Uij kristal eksenlerine göre Kartezyen tensöre çevrilir; geçersiz tensörler çizilmez.</p>
    <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
    <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
    <label class="field"><span>Koordinasyon çokyüzlüsü (merkez atom)</span><select id="polyElement"><option value="">Kapalı</option></select></label>
@@ -1945,10 +1948,23 @@ function build(){
  const visibleAtom=item=>!activePlane||Math.abs((state.plane.h*item.frac[0]+state.plane.k*item.frac[1]+state.plane.l*item.frac[2]-state.plane.offset)*activePlane.d)<=state.plane.thickness/2+1e-7;
  const radiusScale=state.style==='space'?1.0:state.style==='stick'?.20:state.style==='wire'?.11:.52;
  const atomOpacity=state.style==='wire'?.72:1;
+ let adpInvalid=0;
  for(let i=0;i<entry.length;i++){
   const item=entry[i],baseR=RADII[item.site.symbol]||1.1;
   const size=(state.style==='space'?baseR:Math.min(baseR,1.6))*state.atomScale*radiusScale;
   const m=new THREE.Mesh(sphereGeometry,materialFor(item.site.symbol));m.position.copy(item.pos);m.scale.setScalar(size);m.userData.atomIndex=i;m.visible=visibleAtom(item);root.add(m);atomMesh.push(m);
+  if(state.adpVisible&&m.visible&&(item.site.adp||Number.isFinite(item.site.uIso))){
+   try{
+    const ellipsoid=adpEllipsoid(item.site,state.cell,state.adpLevel||50);
+    if(ellipsoid){
+     const mesh=new THREE.Mesh(sphereGeometry,new THREE.MeshPhongMaterial({
+      color:elementColor(item.site.symbol),transparent:true,opacity:.62,depthWrite:false,side:THREE.DoubleSide}));
+     mesh.position.copy(item.pos);mesh.scale.set(...ellipsoid.scales);
+     mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(...ellipsoid.axes));
+     mesh.userData.layer='ellipsoids';root.add(mesh);
+    }
+   }catch(e){adpInvalid++;}
+  }
  }
  const rules=parseBondRules(state.bondRules);const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
  const key=(x,y,z)=>x+','+y+','+z;
@@ -2002,7 +2018,7 @@ function build(){
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
  recordHistoryChange();
  persistLastCrystal();
- report([state.warning,capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
+ report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
  return true;
  }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));return false;}
 }
@@ -2112,7 +2128,8 @@ function drawSelection(){
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncSgControls();$('bondRules').value=state.bondRules;
- for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
+ for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
+ $('adpLevel').value=String(state.adpLevel||50);
  $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
@@ -2392,7 +2409,12 @@ function loadProject(json){
  const setting=sgKeys(n).includes(String(obj.sgSetting))?String(obj.sgSetting):preferredSetting(n);
  const rep=Array.isArray(obj.rep)?obj.rep.map(Number):[1,1,1];
  if(rep.length!==3||rep.some(x=>!Number.isInteger(x)||x<1||x>6))throw Error('Geçersiz proje süperhücre boyutları.');
- const sites=obj.sites.map((v,i)=>({symbol:cleanSymbol(v.symbol),label:String(v.label||('Atom '+i)).slice(0,80),x:+v.x,y:+v.y,z:+v.z,occupancy:Number(v.occupancy??1)}));
+ const sites=obj.sites.map((v,i)=>{
+  const s={symbol:cleanSymbol(v.symbol),label:String(v.label||('Atom '+i)).slice(0,80),x:+v.x,y:+v.y,z:+v.z,occupancy:Number(v.occupancy??1)};
+  if(v.adp!==undefined){adpMatrix(v.adp);s.adp=v.adp.slice();}
+  if(v.uIso!==undefined){s.uIso=Number(v.uIso);if(!Number.isFinite(s.uIso)||s.uIso<=0)throw Error('Geçersiz izotropik ADP.');}
+  return s;
+ });
  if(sites.some(v=>![v.x,v.y,v.z,v.occupancy].every(Number.isFinite)||v.occupancy<0||v.occupancy>1))throw Error('Atom koordinatları / doluluk oranı geçersiz.');
  const bondRules=String(obj.bondRules||'');parseBondRules(bondRules);
  const source=obj.plane&&typeof obj.plane==='object'?obj.plane:{};
@@ -2407,7 +2429,9 @@ function loadProject(json){
  const polyCut=Number(obj.polyCut??0),polyNeighbors=Number(obj.polyNeighbors??12);
  if(!Number.isFinite(polyCut)||polyCut<0||polyCut>12||!Number.isInteger(polyNeighbors)||polyNeighbors<4||polyNeighbors>24)throw Error('Kaydedilen koordinasyon ayarları geçersiz.');
  const plane={h,k,l,offset,thickness,visible:!!source.visible,repeat:source.repeat!==false,slab:!!source.slab};
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,poly,polyCut,polyNeighbors,bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,poly,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),
+  adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
+  bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
 
 const LAST_CRYSTAL_KEY='kristalyapi.last-structure.v2';
@@ -2511,6 +2535,7 @@ function lastCrystalPayload(current){
   cut:current.cut,autoBond:current.autoBond,sgNumber:current.sgNumber,
   sgSetting:current.sgSetting,symmetryEnabled:current.symmetryEnabled,
   bondRules:current.bondRules,plane:current.plane,planeLayers:current.planeLayers||[],
+  cifMeta:cifMetaValid(current.cifMeta),adpVisible:!!current.adpVisible,adpLevel:current.adpLevel||50,
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
   atomScale:current.atomScale,poly:current.poly,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors
@@ -2550,13 +2575,14 @@ async function importFile(file){
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
  if(densityGrid)resetVolume();
- state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,cifMeta:cifMetaValid(obj.cifMeta),adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function exportCif(){
  const symmetry=state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
+ for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta)))q.push(tag+' '+cifQuoted(value));
  if(symmetry){
   q.push('loop_','_space_group_symop_id','_space_group_symop_operation_xyz');
   settingOps(state.sgSetting).forEach(([op,centre],i)=>{
@@ -2567,7 +2593,12 @@ function exportCif(){
  for(const k of ['a','b','c','alpha','beta','gamma'])q.push('_cell_'+(k.length>1?'angle_':'length_')+k+' '+c[k].toFixed(6));
  q.push('loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy');
  outSites.forEach((s,i)=>q.push((safeName(s.label)||s.symbol+(i+1))+' '+s.symbol+' '+[s.x,s.y,s.z].map(v=>frac(+v).toFixed(8)).join(' ')+' '+Number(s.occupancy??1).toFixed(4)));
- download(safeName(state.name)+'.cif',q.join('\n')+'\n');
+ const aniso=outSites.filter(s=>s.adp);
+ if(aniso.length){
+  q.push('loop_','_atom_site_aniso_label',...ADP_COMPONENTS.map(k=>'_atom_site_aniso_U_'+k));
+  for(const s of aniso){adpMatrix(s.adp);q.push(safeName(s.label)+' '+s.adp.map(v=>v.toFixed(8)).join(' '));}
+ }
+  download(safeName(state.name)+'.cif',q.join('\n')+'\n');
 }
 function exportPoscar(){
  const outSites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
@@ -2577,7 +2608,8 @@ function exportPoscar(){
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
-function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
+function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
+ cifMeta:cifMetaValid(state.cifMeta),adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
@@ -3299,9 +3331,10 @@ function bind(){
  $('redoBtn').onclick=()=>applyHistory('redo');
  $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
- for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();else{recordHistoryChange();persistLastCrystal();}});
+ for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();else{recordHistoryChange();persistLastCrystal();}});
  for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
+ $('adpLevel').onchange=e=>{state.adpLevel=Number(e.target.value);build();};
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
  for(const field of ['polyCut','polyNeighbors'])$(field).addEventListener('change',e=>{
   const value=Number(e.target.value);
