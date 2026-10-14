@@ -2546,7 +2546,7 @@ function codSearchParamsFromForm(){
  return p;
 }
 function codSearchUrl(params){return COD_BASE+'/result.php?'+params.toString();}
-function codOptimadeItemUrl(id){return COD_OPTIMADE_BASE+'/'+encodeURIComponent(String(id).match(/^\d{6,9}$/)?.[0]||codCifUrl(id).split('/').pop().replace('.cif',''));}
+function codOptimadeItemUrl(id){return COD_OPTIMADE_BASE+'/'+encodeURIComponent(codCifUrl(id).match(/\/(\d+)\.cif$/)[1]);}
 /* OPTIMADE covers the standardized subset of COD filters. Other filters must use
    result.php rather than silently dropping scientific search constraints. */
 function codOptimadeSearchUrl(params){
@@ -2721,7 +2721,8 @@ function codActions(record){
   catch(e){codSearchMessage('Otomatik içe aktarma başarısız: '+e.message+'. Aşağıdaki dosya seçme bölümünü kullan.',true);showCodManualImport(record,e.message);imp.textContent='Yeniden dene';}
   finally{imp.disabled=false;}
  });
- actions.append(fav,imp);return actions;
+ const local=codButton('Dosyadan','lib-import',()=>showCodManualImport(record,'İçe aktarmak için yerel dosya seçildi.'));
+ actions.append(fav,imp,local);return actions;
 }
 function codTable(entries){
  const table=codPlainNode('table',undefined,'lib-table'),thead=document.createElement('thead'),head=document.createElement('tr');
@@ -2966,8 +2967,10 @@ function initLibrary(){
   const selected=e.target.files?.[0],record=codPendingLocalRecord;
   if(!selected||!record)return;
   try{
-   if(!/\.mcif?$/.test(selected.name.toLowerCase()))throw Error('Lütfen .cif veya .mcif dosyası seç.');
+   if(!/\.(?:cif|mcif)$/.test(selected.name.toLowerCase()))throw Error('Lütfen .cif veya .mcif dosyası seç.');
    if(selected.size>4000000)throw Error('CIF 4 MB sınırını aşıyor.');
+   const namedId=selected.name.match(/(?:^|_)(\d{6,9})\.(?:cif|mcif)$/i)?.[1];
+   if(namedId&&namedId!==record.codId)throw Error('Seçilen dosyanın COD numarası beklenen kayıttan farklı.');
    const cif=await selected.text();
    await codOpenCif(record,cif,selected.name);
   }catch(error){$('codImportHelpText').textContent='Dosya açılamadı: '+error.message+'. Doğru CIF dosyasını yeniden seçebilirsin.';}
