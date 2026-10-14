@@ -510,6 +510,11 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 .bond-editor-pair .field{min-width:0}
 .bond-rule-editor button{font-size:12px}
 
+
+.measure-subheading{font-size:12px;color:#34526e;font-weight:700}
+#measurementHistory{display:grid;gap:5px;max-height:170px;overflow-y:auto}
+#coordinationInfo{background:#f6f9fd;padding:9px;border-radius:8px;overflow-wrap:anywhere}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -646,7 +651,20 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   <div id="rightTabContent" class="right-tab-content">
    <div id="rightStructurePane" class="right-tab-panel" role="tabpanel" aria-labelledby="rightStructureTab">
   <div class="section"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
-  <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Seçilen görüntüler arası uzaklık (Å)</small></div><div id="periodicResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Periyodik en yakın görüntü uzaklığı (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><button class="small" id="clearMeasure" style="margin-top:10px">Seçimi temizle</button><p class="hint">İki atom için hem doğrudan hem de 27 komşu hücre üzerinden en kısa periyodik görüntü mesafesi hesaplanır.</p></div>
+  <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Seçilen görüntüler arası uzaklık (Å)</small></div><div id="periodicResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Periyodik en yakın görüntü uzaklığı (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><div id="torsionResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Dört atomun dihedral açısı (°)</small></div>
+  <div class="bond-rule-list" style="margin-top:10px">
+   <strong class="measure-subheading">Seçili atomun periyodik komşuları</strong>
+   <div id="coordinationInfo" class="hint">Koordinasyon çevresini görmek için bir atom seçin.</div>
+  </div><div class="actionrow" style="margin-top:10px">
+    <button class="small" id="clearMeasure">Seçimi temizle</button>
+    <button class="small primary" id="saveMeasurement" type="button">Ölçümü kaydet</button>
+   </div>
+   <div class="bond-rule-list" style="margin-top:12px">
+    <strong class="measure-subheading">Ölçüm geçmişi</strong>
+    <div id="measurementHistory" aria-live="polite"></div>
+    <div class="actionrow"><button id="exportMeasurements" type="button">CSV dışa aktar</button><button id="clearHistory" type="button">Geçmişi temizle</button></div>
+   </div>
+   <p class="hint">2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.</p></div>
   <div class="section volumetric-panel"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
    <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
@@ -927,7 +945,7 @@ function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[
 function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
 function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
 let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyCut:0,polyNeighbors:12,warning:''};
-let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
+let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer,measurementHistory=[];
 const MAX_ATOMS=1800,MAX_BONDS=6500;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
 const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
@@ -1901,16 +1919,76 @@ function pickAtom(e){
  if(!lastPointer||Math.hypot(e.clientX-lastPointer.x,e.clientY-lastPointer.y)>4||e.button!==0)return;
  const r=renderer.domElement.getBoundingClientRect();const v=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));
  const ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects(atomMesh,false)[0];if(!hit)return;
- const id=hit.object.userData.atomIndex;if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length>=3)selected=[id];else selected.push(id);
+ const id=hit.object.userData.atomIndex;if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length>=4)selected=[id];else selected.push(id);
  drawSelection();$('rightPanel').classList.add('open');
 }
+
+function dihedralDegrees(a,b,c,d){
+ const subtract=(u,v)=>u.map((x,i)=>x-v[i]),cross=(u,v)=>[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+ const dot=(u,v)=>u.reduce((sum,x,i)=>sum+x*v[i],0);
+ const b1=subtract(b,a),b2=subtract(c,b),b3=subtract(d,c);
+ const n1=cross(b1,b2),n2=cross(b2,b3),length=Math.hypot(...b2);
+ if(length<1e-9||Math.hypot(...n1)<1e-9||Math.hypot(...n2)<1e-9)throw Error('Dihedral açı için dört doğrusal olmayan atom gerekir.');
+ return Math.atan2(dot(cross(n1,n2),b2)/length,dot(n1,n2))*180/Math.PI;
+}
+function describeMeasurement(){
+ if(selected.length<2)return null;
+ const atoms=selected.map(i=>atomData[i]);
+ if(atoms.some(a=>!a))return null;
+ const labels=atoms.map(a=>a.site.symbol+' '+a.site.label);
+ const two=atoms[0].pos.distanceTo(atoms[1].pos);
+ const values={distance_A:two,periodic_A:minimumPeriodicImage(atoms[0].frac.map(frac),atoms[1].frac.map(frac),basis(state.cell)).distance};
+ if(atoms.length>=3)values.angle_deg=atoms[0].pos.clone().sub(atoms[1].pos).angleTo(atoms[2].pos.clone().sub(atoms[1].pos))*180/Math.PI;
+ if(atoms.length>=4)values.dihedral_deg=dihedralDegrees(...atoms.map(a=>a.pos.toArray()));
+ return {structure:state.name,atoms:labels,values};
+}
+function renderCoordinationSummary(){
+ const node=$('coordinationInfo');node.replaceChildren();
+ if(!selected.length||!atomData[selected[0]]){node.textContent='Koordinasyon çevresini görmek için bir atom seçin.';return;}
+ const B=basis(state.cell),sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
+ const atom=atomData[selected[0]],rules=parseBondRules(state.bondRules);
+ const shell=coordinationNeighbors(sites,atom.idx,B,rules,state.cut,state.autoBond,24);
+ const counts=new Map();for(const n of shell)counts.set(n.element,(counts.get(n.element)||0)+1);
+ const head=document.createElement('div');head.textContent='Geometrik komşu: '+shell.length+(shell.length===24?' (ilk 24)':'')+' · '+[...counts].map(([el,count])=>el+': '+count).join(', ');
+ node.append(head);
+ const limited=shell.slice(0,12);
+ if(limited.length){const sample=document.createElement('div');sample.textContent='En kısa uzaklıklar: '+limited.map(x=>x.element+' '+x.distance.toFixed(3)+' Å').join(' · ');sample.style.marginTop='5px';node.append(sample);}
+}
+function recordMeasurement(){
+ try{
+  const row=describeMeasurement();
+  if(!row){inform('Ölçümü kaydetmek için en az iki atom seçin.');return;}
+  measurementHistory.unshift(row);
+  measurementHistory=measurementHistory.slice(0,50);
+  renderMeasurementHistory();
+ }catch(err){inform(err.message);}
+}
+function measurementCsv(rows){
+ const headers=['Yapı','Atomlar','Doğrudan uzaklık (Å)','Periyodik uzaklık (Å)','Açı (°)','Dihedral (°)'];
+ const safe=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
+ return [headers.map(safe).join(','),...rows.map(r=>[r.structure,r.atoms.join(' – '),r.values.distance_A,r.values.periodic_A,r.values.angle_deg,r.values.dihedral_deg].map(safe).join(','))].join('\r\n')+'\r\n';
+}
+function renderMeasurementHistory(){
+ const node=$('measurementHistory');node.replaceChildren();
+ for(const row of measurementHistory){
+  const item=document.createElement('div');item.className='bond-rule-row';
+  const label=document.createElement('span');const last=Object.entries(row.values).at(-1);
+  label.textContent=row.atoms.join(' – ')+' · '+last[1].toFixed(3)+(last[0].includes('deg')?'°':' Å');
+  item.append(label);node.append(item);
+ }
+ if(!measurementHistory.length)node.textContent='Henüz kayıt yok.';
+}
+
 function drawSelection(){
  for(const m of highlights){root.remove(m);m.geometry.dispose();m.material.dispose();}highlights=[];
  for(const i of selected){const item=atomData[i];if(!item)continue;const obj=atomMesh[i];const h=new THREE.Mesh(new THREE.SphereGeometry(1,18,12),new THREE.MeshBasicMaterial({color:0xffde72,wireframe:true,depthTest:false}));h.position.copy(item.pos);h.scale.setScalar(obj.scale.x*1.2);root.add(h);highlights.push(h);}
- const list=$('measureList');list.replaceChildren();$('measureEmpty').style.display=selected.length?'none':'block';for(const [k,id] of selected.entries()){const a=atomData[id];if(!a)continue;const box=document.createElement('div');box.className='measure-item';const title=document.createElement('b');title.textContent=['A','B','C'][k]+' · '+a.site.symbol+' ('+a.site.label+')';const detail=document.createElement('div');detail.className='muted';detail.textContent='Kesirli: '+a.frac.map(v=>v.toFixed(4)).join(', ')+' · doluluk: '+(a.site.occupancy??1);box.append(title,detail);list.append(box);}
+ const list=$('measureList');list.replaceChildren();$('measureEmpty').style.display=selected.length?'none':'block';for(const [k,id] of selected.entries()){const a=atomData[id];if(!a)continue;const box=document.createElement('div');box.className='measure-item';const title=document.createElement('b');title.textContent=['A','B','C','D'][k]+' · '+a.site.symbol+' ('+a.site.label+')';const detail=document.createElement('div');detail.className='muted';detail.textContent='Kesirli: '+a.frac.map(v=>v.toFixed(4)).join(', ')+' · doluluk: '+(a.site.occupancy??1);box.append(title,detail);list.append(box);}
  const d=$('distanceResult'),a=$('angleResult'),pd=$('periodicResult');d.style.display=selected.length>=2?'block':'none';pd.style.display=d.style.display;a.style.display=selected.length>=3?'block':'none';
  if(selected.length>=2){const one=atomData[selected[0]],two=atomData[selected[1]];d.querySelector('strong').textContent=one.pos.distanceTo(two.pos).toFixed(4);pd.querySelector('strong').textContent=minimumPeriodicImage(one.frac.map(frac),two.frac.map(frac),basis(state.cell)).distance.toFixed(4);}
  if(selected.length>=3){const p=atomData[selected[0]].pos,q=atomData[selected[1]].pos,r=atomData[selected[2]].pos;const u=p.clone().sub(q),v=r.clone().sub(q);a.querySelector('strong').textContent=(u.angleTo(v)*180/Math.PI).toFixed(2);}
+ const t=$('torsionResult');t.style.display=selected.length===4?'block':'none';
+ if(selected.length===4){const coords=selected.map(k=>atomData[k].pos.toArray());t.querySelector('strong').textContent=dihedralDegrees(...coords).toFixed(2);}
+ renderCoordinationSummary();
 }
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
@@ -2697,6 +2775,11 @@ function bind(){
  $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
  initExportModal();
  $('clearMeasure').onclick=()=>{selected=[];drawSelection();};
+ $('saveMeasurement').onclick=recordMeasurement;
+ $('exportMeasurements').onclick=()=>{if(!measurementHistory.length){inform('Kaydedilmiş ölçüm yok.');return;}
+  download('kristal_olcumler.csv','\ufeff'+measurementCsv(measurementHistory),'text/csv;charset=utf-8');};
+ $('clearHistory').onclick=()=>{measurementHistory=[];renderMeasurementHistory();};
+ renderMeasurementHistory();
  $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('open');};
  $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
