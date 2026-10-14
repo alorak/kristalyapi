@@ -469,6 +469,24 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  #app>.panel.left.open{display:flex}
 }
 
+
+#app>.panel.right{display:flex;flex-direction:column;overflow:hidden;padding:0;min-height:0}
+.right-tab-content{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#b1c3d5 transparent;padding:8px 0 12px;overscroll-behavior:contain}
+.right-tab-panel[hidden]{display:none!important}
+#app>.panel.right .right-tab-panel>.section{background:#fff;border:1px solid #d9e3ee;border-radius:11px;margin:8px 10px 12px;padding:15px 13px;box-shadow:0 2px 8px rgba(32,57,84,.045)}
+.right-tabbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px 10px;background:#fbfdff;border-top:1px solid #cbd8e5;flex-shrink:0;box-shadow:0 -3px 12px #1f3a5410}
+.right-tabbar button{border-color:transparent;box-shadow:none;background:transparent;color:#60758b;font-weight:700}
+.right-tabbar button.selected{background:#eaf4ff;border-color:#c1daef;color:#176ba8}
+#app>.panel.right .volumetric-panel input[type="range"]{accent-color:#2c79c0;width:100%}
+#app>.panel.right .volumetric-panel .field select,#app>.panel.right .volumetric-panel .field input[type="number"]{background:#fbfdff;border-color:#cbd8e6;color:#263d55}
+#app>.panel.right .volumetric-panel .note{background:#f2f7fd;border-color:#dce8f4;color:#506980;overflow-wrap:anywhere}
+#app>.panel.right .volumetric-panel .hint{overflow-wrap:anywhere}
+#app>.panel.right .volumetric-panel button{max-width:100%;white-space:normal}
+.axis-gizmo{bottom:16px}
+#toast{bottom:20px}
+@media(max-width:1180px){#app>.panel.right{display:none}#app>.panel.right.open{display:flex}}
+@media(max-width:720px){#app>.panel.right{display:none}#app>.panel.right.open{display:flex}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -488,6 +506,19 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  <aside class="panel left" id="leftPanel" aria-label="Kristal yapı düzenleyicisi">
   <div id="leftTabContent" class="left-tab-content">
    <div id="leftGeneralPane" class="left-tab-panel" role="tabpanel" aria-labelledby="leftGeneralTab">
+  <div class="section"><h2>Görünüm</h2><div class="stack">
+   <label class="field"><span>Model</span><select id="style"><option value="ball">Küre ve çubuk (Ball & Stick)</option><option value="space">Uzay dolduran (Space filling)</option><option value="stick">Çubuk (Stick)</option><option value="wire">Tel model (Wireframe)</option></select></label>
+   <label class="check"><input id="bonds" type="checkbox" checked> Atomlar arası bağlar</label>
+   <label class="check"><input id="autoBond" type="checkbox" checked> Otomatik bağ uzunluğu (elemente göre)</label>
+   <label class="check"><input id="cellVisible" type="checkbox" checked> Birim hücre çizgileri</label>
+   <label class="check"><input id="boundary" type="checkbox" checked> Sınır atomlarını göster</label>
+   <label class="check"><input id="labels" type="checkbox"> Atom sembollerini göster</label>
+   <label class="check"><input id="axes" type="checkbox"> Kristal eksenlerini yapı içinde göster</label>
+   <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
+   <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
+   <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
+   <label class="field"><span>Koordinasyon çokyüzlüsü</span><select id="polyElement"><option value="">Kapalı</option></select></label>
+  </div></div>
   <div class="section"><h2>Birim hücre <span>Å / °</span></h2>
    <div class="triple">
     <label class="field compact"><span>a (Å)</span><input id="a" type="number" min=".1" max="1000" step=".01"></label>
@@ -519,22 +550,6 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <label class="field compact"><span>b ×</span><input id="rb" type="number" min="1" max="6" value="2"></label>
    <label class="field compact"><span>c ×</span><input id="rc" type="number" min="1" max="6" value="2"></label>
   </div><div class="actionrow" style="margin-top:10px"><button id="applyRepeat" class="primary">Çoğalt</button><button id="repeatOne">1 × 1 × 1</button></div></div>
-  <div class="section"><h2>Miller düzlemleri (hkl) <span class="stage">Aşama 2</span></h2>
-   <div class="triple">
-    <label class="field compact"><span>h</span><input id="h" type="number" step="1" min="-8" max="8" value="1"></label>
-    <label class="field compact"><span>k</span><input id="k" type="number" step="1" min="-8" max="8" value="1"></label>
-    <label class="field compact"><span>l</span><input id="l" type="number" step="1" min="-8" max="8" value="1"></label>
-   </div>
-   <label class="field" style="margin-top:8px"><span>Düzlem konumu (h·x+k·y+l·z = t)</span><input id="planeOffset" type="number" step=".25" value="1"></label>
-   <label class="check" style="margin-top:8px"><input id="showPlane" type="checkbox"> Miller düzlemini görüntüle</label>
-   <label class="check" style="margin-top:8px"><input id="slabFilter" type="checkbox"> Sonlu kalınlıklı yüzey kesitini göster</label>
-   <label class="field" style="margin-top:8px"><span>Kesit kalınlığı (Å)</span><input id="slabThickness" type="number" step=".25" min=".1" max="100" value="2"></label>
-   <div class="note" id="planeInfo" style="margin-top:8px">Miller indislerini girin.</div>
-   <button id="applyPlane" class="primary" style="width:100%;margin-top:9px">Düzlem / kesiti uygula</button>
-   <label class="field" style="margin-top:12px"><span>Slab için vakum boşluğu (Å)</span><input id="vacuumThickness" type="number" step="1" min="2" max="80" value="12"></label>
-   <button id="createSlab" style="width:100%;margin-top:9px">Vakumlu yüzey hücresi oluştur</button>
-   <p class="hint">Kesit görünümü atom-merkezi filtresidir. Aşağıdaki oluşturma aracı ayrıca gerçek 2B periyodik yüzey vektörleriyle yeni 3B hücre ve vakum üretir; yüzey relaksasyonu yapmaz.</p>
-  </div>
   <div class="section"><h2>Örgü dönüşümü <span class="stage">Aşama 2</span></h2>
    <label class="field"><span>Hazır dönüşüm</span><select id="matrixPreset">
     <option value="custom">Özel 3×3 matris</option>
@@ -552,20 +567,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <p class="hint">Sütunlar yeni a′, b′, c′ vektörlerini eski kesirli eksenlerde tanımlar. Atomları Kartezyen konumları koruyarak yeni hücreye taşır.</p>
    <button id="transformCell" style="width:100%" class="primary">Hücreyi ve atomları dönüştür</button>
   </div>
-  <div class="section"><h2>Görünüm</h2><div class="stack">
-   <label class="field"><span>Model</span><select id="style"><option value="ball">Küre ve çubuk (Ball & Stick)</option><option value="space">Uzay dolduran (Space filling)</option><option value="stick">Çubuk (Stick)</option><option value="wire">Tel model (Wireframe)</option></select></label>
-   <label class="check"><input id="bonds" type="checkbox" checked> Atomlar arası bağlar</label>
-   <label class="check"><input id="autoBond" type="checkbox" checked> Otomatik bağ uzunluğu (elemente göre)</label>
-   <label class="check"><input id="cellVisible" type="checkbox" checked> Birim hücre çizgileri</label>
-   <label class="check"><input id="boundary" type="checkbox" checked> Sınır atomlarını göster</label>
-   <label class="check"><input id="labels" type="checkbox"> Atom sembollerini göster</label>
-   <label class="check"><input id="axes" type="checkbox"> Kristal eksenlerini yapı içinde göster</label>
-   <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
-   <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
-   <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
-   <label class="field"><span>Koordinasyon çokyüzlüsü</span><select id="polyElement"><option value="">Kapalı</option></select></label>
-  </div></div>
-  <footer>Tarayıcıda çalışır · Sunucuya yapı verisi gönderilmez</footer>
+
    </div>
    <div id="leftAtomsPane" class="left-tab-panel" role="tabpanel" aria-labelledby="leftAtomsTab" hidden>
   <div class="section"><h2>Asimetrik konumlar / atomlar <span id="siteCount">0</span></h2>
@@ -591,16 +593,69 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   </div>
   <div id="axisGizmo" class="axis-gizmo" role="img" aria-label="Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi">
     <svg id="axisGizmoSvg" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="58" r="4" fill="#69798a" stroke="#fff" stroke-width="1.5"/></svg>
-    <div class="gizmo-caption">X · Y · Z</div>
+
   </div>
-  <div class="floating footbar"><div><span class="dot"></span><span id="renderStatus">3B görüntü hazırlanıyor</span></div><div id="totalSummary">—</div></div>
-  <div class="view-help">Sol tuş: Döndür · Sağ tuş: Kaydır · Tekerlek: Yakınlaştır<br>Atom seçimi: Mesafe (2) ve açı (3)</div>
+
+
   <div id="toast" role="status" aria-live="polite"></div>
  </main>
- <aside class="panel right" id="rightPanel">
+ <aside class="panel right" id="rightPanel" aria-label="Yapı ve Miller inceleme paneli">
+  <div id="rightTabContent" class="right-tab-content">
+   <div id="rightStructurePane" class="right-tab-panel" role="tabpanel" aria-labelledby="rightStructureTab">
   <div class="section"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
   <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Seçilen görüntüler arası uzaklık (Å)</small></div><div id="periodicResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Periyodik en yakın görüntü uzaklığı (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><button class="small" id="clearMeasure" style="margin-top:10px">Seçimi temizle</button><p class="hint">İki atom için hem doğrudan hem de 27 komşu hücre üzerinden en kısa periyodik görüntü mesafesi hesaplanır.</p></div>
-  <div class="section"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kesirli → Kartezyen dönüşümünde gerçek örgü vektörleri ve hücre açıları kullanılır. Bağlar, seçilen uzaklık eşiğine göre geometrik olarak çizilir; kimyasal bağ düzenini kesin olarak belirlemez.</p><p class="shortcuts">VESTA'nın elektron yoğunluğu izoyüzeyleri, manyetik yapılar, anizotropik termal elipsoitler ve kapsamlı uzay grubu veritabanı bu sürümde bulunmaz.</p></div>
+  <div class="section volumetric-panel"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
+   <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
+   <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
+   <input type="file" id="potentialFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
+   <div class="stack">
+     <button id="openVolume" class="primary">Hacimsel veri yükle</button>
+     <div class="note" id="volumeInfo">Henüz veri yüklenmedi.</div>
+     <label class="field"><span>Görselleştirme</span><select id="volumeMode">
+       <option value="iso">3B izoyüzey</option><option value="slice">2B kesit / yoğunluk haritası</option>
+       <option value="both">İzoyüzey + kesit</option><option value="off">Gizle</option>
+     </select></label>
+     <label class="field"><span>İzodeğer</span><input type="number" id="volumeIso" step="0.01" value="0.1"></label>
+     <label class="field"><span>İzoyüzey saydamlığı</span><input type="range" id="volumeOpacity" min=".15" max="1" step=".05" value=".62"></label>
+     <label class="field"><span>Kesit yönü</span><select id="volumeAxis">
+       <option value="2">Z / c doğrultusu</option><option value="1">Y / b doğrultusu</option><option value="0">X / a doğrultusu</option>
+     </select></label>
+     <label class="field"><span>Kesit konumu (%)</span><input type="range" id="volumePosition" min="0" max="100" value="50"></label>
+     <label class="field"><span>Renk haritası</span><select id="volumePalette">
+       <option value="thermal">Mavi – beyaz – kırmızı</option><option value="viridis">Viridis-benzeri</option>
+     </select></label>
+     <label class="check"><input type="checkbox" id="volumeContours"> Kesitte izodeğer konturu</label>
+     <button id="openPotential">Elektrostatik potansiyel yükle (renklendir)</button>
+     <label class="check"><input type="checkbox" id="volumePotential"> İzoyüzeyi potansiyele göre renklendir</label>
+     <button id="clearVolume">Hacimsel veriyi temizle</button>
+   </div>
+   <p class="hint">Izoyüzeyler marching tetrahedra ile oluşturulur. Büyük ızgaralar seyreltilir; kesit gerçek fiziksel koordinatlarda yerleştirilir. Yüzey renkleri ancak uyumlu ikinci potansiyel ızgarası yüklendiğinde potansiyeli temsil eder.</p>
+  </div>
+  <div class="section"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kristal koordinatları, örgü vektörleri ve ölçümler gerçek hücre metriğini kullanır. Bağlar geometrik eşikle çizilir. İzoyüzeyler fiziksel hesaplama yapmaz; dosyadaki örneklenmiş alanı gösterir.</p></div>
+   </div>
+   <div id="rightMillerPane" class="right-tab-panel" role="tabpanel" aria-labelledby="rightMillerTab" hidden>
+  <div class="section"><h2>Miller düzlemleri (hkl) <span class="stage">Aşama 2</span></h2>
+   <div class="triple">
+    <label class="field compact"><span>h</span><input id="h" type="number" step="1" min="-8" max="8" value="1"></label>
+    <label class="field compact"><span>k</span><input id="k" type="number" step="1" min="-8" max="8" value="1"></label>
+    <label class="field compact"><span>l</span><input id="l" type="number" step="1" min="-8" max="8" value="1"></label>
+   </div>
+   <label class="field" style="margin-top:8px"><span>Düzlem konumu (h·x+k·y+l·z = t)</span><input id="planeOffset" type="number" step=".25" value="1"></label>
+   <label class="check" style="margin-top:8px"><input id="showPlane" type="checkbox"> Miller düzlemini görüntüle</label>
+   <label class="check" style="margin-top:8px"><input id="slabFilter" type="checkbox"> Sonlu kalınlıklı yüzey kesitini göster</label>
+   <label class="field" style="margin-top:8px"><span>Kesit kalınlığı (Å)</span><input id="slabThickness" type="number" step=".25" min=".1" max="100" value="2"></label>
+   <div class="note" id="planeInfo" style="margin-top:8px">Miller indislerini girin.</div>
+   <button id="applyPlane" class="primary" style="width:100%;margin-top:9px">Düzlem / kesiti uygula</button>
+   <label class="field" style="margin-top:12px"><span>Slab için vakum boşluğu (Å)</span><input id="vacuumThickness" type="number" step="1" min="2" max="80" value="12"></label>
+   <button id="createSlab" style="width:100%;margin-top:9px">Vakumlu yüzey hücresi oluştur</button>
+   <p class="hint">Kesit görünümü atom-merkezi filtresidir. Aşağıdaki oluşturma aracı ayrıca gerçek 2B periyodik yüzey vektörleriyle yeni 3B hücre ve vakum üretir; yüzey relaksasyonu yapmaz.</p>
+  </div>
+   </div>
+  </div>
+  <nav class="right-tabbar" role="tablist" aria-label="Sağ panel sekmeleri">
+   <button id="rightStructureTab" type="button" role="tab" aria-controls="rightStructurePane" aria-selected="true" tabindex="0" class="selected">Yapı</button>
+   <button id="rightMillerTab" type="button" role="tab" aria-controls="rightMillerPane" aria-selected="false" tabindex="-1">Miller</button>
+  </nav>
  </aside>
 </div>
 
