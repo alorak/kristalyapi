@@ -18,6 +18,8 @@ class Vector3 {
     this.z = a.x * b.y - a.y * b.x;
     return this;
   }
+  sub(v) { this.x -= v.x; this.y -= v.y; this.z -= v.z; return this; }
+  normalize() { return this.multiplyScalar(1 / (this.length() || 1)); }
   toArray() { return [this.x, this.y, this.z]; }
 }
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
@@ -77,7 +79,7 @@ test('CIF: reads numeric uncertainties, strips comments and expands explicit sym
   approx(d.cell.a, 4);
   approx(d.sites[1].x, .9);
 });
-test('CIF: warns when non-P1 space group has no operators', () => {
+test('CIF: reference group expands atoms when operations are absent', () => {
   const cif = header + [
 "_space_group_name_H-M_alt 'F m -3 m'",
 'loop_',
@@ -89,8 +91,8 @@ test('CIF: warns when non-P1 space group has no operators', () => {
 ''
 ].join('\n');
   const d = api.cifData(cif);
-  assert.equal(d.sites.length, 1);
-  assert.match(d.warning, /simetri işlemleri yok/);
+  assert.equal(d.sites.length, 4);
+  assert.match(d.warning, /referans ayarı/);
 });
 test('CIF: supports fractional shifts in symmetry expression', () => {
   const got = api.applySymmetry('-x+1/2,y+1/2,-z', [.1, .3, .4]);
