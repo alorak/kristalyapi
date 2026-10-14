@@ -31,7 +31,7 @@ def gemmi_reference(entry):
     if not path.is_relative_to(BASE/"fixtures"):
         raise ValueError("Fixture path escapes fixtures directory")
     raw=path.read_bytes()
-    actual=hashlib.sha1(("blob "+str(len(raw))+"\\0").encode().replace(b"\\0",b"\0")+raw).hexdigest()
+    actual=hashlib.sha1(("blob "+str(len(raw))+chr(0)).encode()+raw).hexdigest()
     if actual!=entry["git_blob_sha1"]:
         raise RuntimeError("Pinned Git blob SHA-1 mismatch: "+entry["id"])
     record={"id":entry["id"],"sha256":sha(path),"engine":"Gemmi "+gemmi.__version__}
