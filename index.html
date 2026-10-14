@@ -464,6 +464,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  .left-tab-content{padding-top:7px}
  #app>.panel.left .left-tab-panel>.section{margin:7px 9px 11px;padding:14px 13px}
  .left-tabbar{padding:8px 9px}
+ /* Sidebar remains closed until the mobile panel button is pressed. */
+ #app>.panel.left{display:none}
+ #app>.panel.left.open{display:flex}
 }
 
 </style>
@@ -1342,7 +1345,7 @@ function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(
 function renderSites(){
  const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
  state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);tr.append(td);}
-  const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#91c7ed;white-space:nowrap';
+  const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#55718e;white-space:nowrap';
   if(state.symmetryEnabled&&state.sites.length<=60){try{const id=identifyWyckoff(site,state.sgSetting);wp.textContent=id.matches.length===1?id.matches[0]:(id.matches.length?id.matches.join('/'):'m='+id.multiplicity);wp.title='Eşdeğer konum sayısı: '+id.multiplicity+' · '+(id.matches.length?id.matches.join(', '):'kesin Wyckoff konumu eşleşmedi');}catch(e){wp.textContent='?';wp.title=e.message;}}else wp.textContent='—';tr.append(wp);
   const td=document.createElement('td'),btn=document.createElement('button');btn.className='del';btn.textContent='×';btn.title='Atom konumunu sil';btn.disabled=state.sites.length<2;btn.addEventListener('click',()=>{state.sites.splice(i,1);state.warning='';fillPoly();renderSites();build();});td.append(btn);tr.append(td);rows.append(tr);});
 }
