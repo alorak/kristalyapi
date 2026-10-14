@@ -25,12 +25,27 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
 
 | Öncelik | Paket | Kabul kriteri |
 | --- | --- | --- |
-| O1 | Undo/Redo + nesne/katman yönetimi | Atom, bağ, Miller ve görünüm düzenlemeleri geri alınabilir; performans sınırı ve klavye kısayolları test edilir |
+| O1a · tamamlandı | Kristal düzenleme Undo/Redo | 60 durumluk, tekrarları ayıklayan geri alma/yineleme; atom/hücre/simetri/bağ/Miller ve görünüm durumları; Ctrl/Cmd kısayolları. **İlk 90 regresyon testi geçti**; gerçek browser E2E ayrıca bekliyor. |
+| O1b · sıradaki | Nesne / katman paneli ve görünürlük yöneticisi | Kristal, bağ, çokyüzlü, Miller ve hacimsel öğeler için tutarlı ağaç, tek tek görünürlük/renk, katman yeniden sıralama; düzenlemeler Undo/Redo'da korunur |
 | O2 | Çok seviyeli izoyüzey | Tek CUBE/CHGCAR/XSF alanında birden fazla izodeğer, ayrı renk/opacity ve katman kontrolü |
 | O3 | Çoklu hacim alanı + uyum kontrolü | Aynı yapıya birden fazla yoğunluk/potansiyel haritası; birim, koordinat çerçevesi ve grid interpolasyonu açıkça doğrulanır |
 | O4 | Gelişmiş 2B kesitler | Orta/kenar düzlemleri, nicel skala, kontur seviyeleri, PNG/SVG çıktısı ve eğik hücrede örnekleme doğruluğu |
 | O5 | Kristal morfolojisi / crystal faces | Ayrı `{hkl}` yüz aileleri, orijinden mesafe, kapalı morfoloji poliedri ve bağımsız renk/etiket katmanı |
 | O6 | Koordinasyon/bağ kimyasının bilimsel kontrolü | Site bazında CN, bağ uzunluğu dağılımı, minimum-image tolerans kontrolü, kısmi occupancy ayrımı; testli BVS hazırlığı |
+
+### Undo/Redo sonrasında kesin uygulama sırası
+
+1. **O1b – Nesne/katman yöneticisi:** Çalışma alanı objelerini tek panelde düzenleme, görünürlük ve renk kontrolü, geçmişe dahil etme.
+2. **Kalite kapısı:** Gerçek WebGL E2E, NaCl/Si/grafit/COD 4335507 gibi yapılarda PBC koordinasyon ve bağ/çokyüzlü doğrulaması.
+3. **O2 – Çok seviyeli izoyüzeyler:** Her izoyüzeyin ayrı eşik, renk ve opaklığı.
+4. **O3 – Çoklu hacimsel alan:** Yoğunluk/potansiyel ızgaralarında birim ve geometri uyumu.
+5. **O4 – Nicel 2B kesitler:** Ölçek, renk çubuğu, kontur ve bilimsel veri çıktısı.
+6. **O5 – Morfoloji:** `{hkl}` yüz aileleri, dış kristal geometrisi, yüz etiketleri.
+7. **O6 – Koordinasyon/BVS doğrulaması:** Bağ-değerliği ve site çevresi analizleri.
+8. **U1–U3 – Termal elipsoitler, best-fit plane, çoklu yapı üst üste bindirme.**
+9. **U4–U6 – Patterson, Voronoi ve ileri format/yayın çıktıları.**
+
+> Undo/Redo şu an yalnızca **kristal durumunu** kapsar. Harici hacimsel alan baytları, kamera hareketleri ve ayrı ölçüm kayıtları sürüm geçmişinde değildir. Nesne ağacı ile beraber katman bazlı geçmiş ayrıca genişletilecektir.
 
 ## Uzun vade · önerilen uygulama sırası
 
