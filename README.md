@@ -11,7 +11,7 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 
 ## Bağımsız CIF doğruluğu (GitHub Actions)
 
-[**CIF doğrulama hattı**](tests/validation/README.md), 30 gerçek kristal CIF dosyası ve 10 sentetik zorlayıcı örneği **Gemmi 0.7.4** ile karşılaştırır. Testler aynı `index.html` içindeki CIF ayrıştırıcısını kullanır. Atom türü, occupancy, simetriyle genişletilmiş konumlar, periyodik koordinatlar, hücre metrikleri ve hacim karşılaştırılır.
+[**CIF doğrulama hattı**](tests/validation/README.md), 29 açık kaynak test CIF'si + özel olarak COD 4335507 ve 10 sentetik zorlayıcı örneği **Gemmi 0.7.4** ile karşılaştırır. Testler aynı `index.html` içindeki CIF ayrıştırıcısını kullanır. Atom türü, occupancy, simetriyle genişletilmiş konumlar, periyodik koordinatlar, hücre metrikleri ve hacim karşılaştırılır.
 
 - Sadece `main` dalına ilgili kod/test değişiklikleri merge/push edildiğinde veya `workflow_dispatch` ile çalışır; PR'larda tetiklenmez.
 - Sonuçlar GitHub Actions **Summary** ve `browser.json`, `reference.json`, `report.json`, `report.md` içeren indirilebilir **artifact** olarak sunulur.
