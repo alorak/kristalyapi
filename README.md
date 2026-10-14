@@ -104,20 +104,20 @@ Modal `Escape`, **Vazgeç** veya kapat düğmesiyle kapanır. Dışa aktarma ve 
 
 ## COD Kütüphane (yalnızca frontend)
 
-Üst navigasyonda **Kristal Yapı** yazısına tıklamak 3B editöre, **Kütüphane** bağlantısına tıklamak aynı `index.html` içindeki COD arama sayfasına gider. Logo ve `3B Studio` rozeti kaldırılmıştır.
+Üst navigasyondaki **Kütüphane** üzerinden COD'da arama yapabilir, yerleşik örnekleri inceleyebilir ve yer imlerindeki yapıları 3B editöre aktarabilirsin.
 
-- **Gelişmiş COD filtreleri**: metin, COD numarası, kimyasal formül (Hill notasyonu), uzay grubu, dergi, yayın yılı, cilt, sayı, DOI; bulunması gereken 8 ve bulunmaması gereken 4 element; farklı element sayısı, hücre hacmi, Z, Z′ aralıkları; Fobs, tekrar kayıtları, hatalı/teorik kayıt seçenekleri.
-- Örnek **La–Mn–Ge–In** aramasını tek düğmeyle doldurabilir, sonuçları COD kimliği, formül, uzay grubu, hücre, hacim, yayın bilgisi ve CIF bağlantısı üzerinden inceleyebilirsin. Sonuçların ilk 600 kaydı, sayfa başına 30 kayıt gösterilir. COD REST API geniş sorgularda çok büyük cevap döndürebilir; filtreleri daraltmak gerekir.
-- Her sonuç için **↧ İçe aktar**, uzak CIF dosyasını çalışma belleğine alıp mevcut CIF ayrıştırıcısıyla 3B editörde açmayı dener. İçe aktarım sadece başarılı olduğunda editöre geçilir. Hata halinde COD sayfasından CIF'i elle indirip **Kristal Yapı → Aç** üzerinden içe aktarabilirsin.
-- **☆ Yer imleri** düğmesi `localStorage` içinde **yalnızca üstverileri** (`codId`, formül, hücre/uzay grubu, bibliyografi, `cifUrl`, `entryUrl`, ekleme zamanı) saklar. CIF metni, atom koordinatları ya da CIF dosyasının kendisi saklanmaz. Yer imlerine yeniden girişte uzak CIF yeniden alınır. Ayrıca yer imleri JSON olarak dışa aktarılabilir. Kayıtlar tarayıcı/profil bazlıdır; diğer cihazlara kendiliğinden eşitlenmez.
+- **OPTIMADE REST API**: COD kimliği, gerekli/hariç elementler ve element sayısı aralığı gibi OPTIMADE standart filtreleri doğrudan `https://www.crystallography.net/cod/optimade/v1/structures` üzerinden sorgulanır. Gelişmiş (metin, yayın, formül, hacim, Z, Z′ vb.) filtrelerde klasik `result.php?format=json` uç noktası kullanılır. Desteklenmeyen filtreler sessizce yok sayılmaz.
+- **İçe aktar**: Önce tarayıcının CIF önbelleği, sonra COD OPTIMADE tekil yapı JSON'u denenir; JSON'daki örgü vektörleri ve atom konumları P1 CIF biçimine dönüştürülerek mevcut doğrulanmış CIF ayrıştırıcısıyla açılır. Gerektiğinde doğrudan `<COD-ID>.cif` istenir. Bu iki çevrimiçi yolun çalışması, COD sunucusunun uygun CORS yanıtı vermesine bağlıdır.
+- **CORS bağımsız dosya yolu**: Arama sonucu ve yer imlerindeki **Dosyadan** düğmesiyle CIF indirme bağlantısı ve dosya seçicisi açılır. CIF'i COD'dan indir, dosya seçicisiyle aç; hiçbir CORS izni veya proxy gerekmez. Otomatik içe aktarım başarısız olduğunda aynı bölüm gösterilir. Seçilen COD ID ile dosya adındaki COD ID farklıysa işlem engellenir.
+- **Yer imleri**: `localStorage` yalnızca kaynak üstverilerini tutar; JSON olarak dışa aktarılabilir. Başarıyla açılmış CIF/P1 içerikleri, tarayıcı destekliyorsa Cache Storage üzerinde sınırlı sayıda bu cihaza kaydedilir. Tekrar içe aktarmada önbellek önceliklidir. Tarayıcının site verilerini silmek önbelleği de siler.
+- **Arama filtreleri**: metin, COD numarası, kimyasal formül, uzay grubu, dergi, yayın yılı, cilt, sayı, DOI, gerekli/hariç elementler ve sayısal aralıklar, ayrıca kayıt bayrakları.
 
-### COD erişimi ve CORS sınırları
+### CORS ve bağlantı yöntemleri
 
-COD'nin resmî arama uç noktası `https://www.crystallography.net/cod/result?format=json`, CIF erişimi `https://www.crystallography.net/cod/<COD-ID>.cif` biçimindedir; belgeler: https://wiki.crystallography.net/RESTful_API/ .
+COD resmî uç noktaları: [OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures), [klasik JSON araması](https://www.crystallography.net/cod/result.php?format=json), tekil CIF için `https://www.crystallography.net/cod/4335507.cif`.
 
-**COD API tarayıcıdaki CORS isteklerine izin vermeyebilir.** Bu nedenle bağlantı ayarlarında `Yalnız doğrudan`, `Otomatik` ve `Harici aracı` seçenekleri vardır. Otomatikte önce doğrudan COD'ye, bu olmazsa `proxy.cors.dev` ve `api.allorigins.win` açık CORS aracılarına başvurulur. Bu, uygulamanın kendi backend'i değildir; ancak **harici servis bağımlılığıdır** ve bu servisler kesintiye uğrayabilir veya oran sınırları koyabilir.
+`Otomatik`, `Yalnız OPTIMADE` ve `Yalnız COD klasik` seçenekleri vardır. **`proxy.cors.dev` ve `allorigins.win` kullanılmaz**; harici CORS proxy'leri hata veriyor ve veri aktarımının gizliliğini karmaşıklaştırıyordu. JSON tabanlı REST API olması tarayıcının CORS güvenlik politikasını kendiliğinden aşmaz. Tam otomatik çevrimiçi içe aktarımı sunucu CORS izninden bağımsız ve garantili yapmak için GitHub Pages dışında kendi denetlediğin bir backend/reverse proxy gerekir. Bu proje, ek sunucu gerektirmeyen dosya seçme yolunu da sunar.
 
-**Gizlilik:** Harici aracı aktifse COD arama URL'si, arama ölçütleri ve indirilecek CIF bağlantısı aracı sağlayıcısına gönderilir. COD dosyasının içeriği aracı üzerinden akar. Bu sınırlama form içinde de belirtilir. Özel/veri gizliliği gerektiren sorgular için `Yalnız doğrudan` seçilmeli veya CIF manuel yüklenmelidir. Gerçek COD sunucusuna bu çalışma ortamından uçtan uca tarayıcı/CORS doğrulaması yapılamamıştır; her zaman manuel açma yolu sunulur.
 
 ## Özellikler
 
