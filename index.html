@@ -492,6 +492,15 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 #app>.panel.right .right-tab-panel>.section .note,#app>.panel.right .right-tab-panel>.section .field span{color:#57728a}
 #app>.panel.right .right-tab-panel>.section h2{color:#47627e}
 
+
+/* Icon-only camera controls: visual viewport is reserved for the crystal. */
+#viewport .topbar{justify-content:flex-end}
+#viewport .topbar .tools{display:flex;align-items:center;gap:6px}
+#viewport .topbar .tools .view-tool{display:inline-grid;place-items:center;width:37px;height:37px;min-width:37px;padding:6px;border-radius:9px}
+#viewport .topbar .tools .view-tool svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+#viewport .topbar .tools .view-tool[aria-pressed="true"]{background:#e4effa;color:#1767ab;border-color:#9ac6e7}
+@media(max-width:720px){#viewport .topbar .tools{gap:3px;padding:4px}#viewport .topbar .tools .view-tool{width:34px;height:34px;min-width:34px;padding:5px}#viewport .topbar .tools .view-tool svg{width:18px;height:18px}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -590,10 +599,12 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  <main id="viewport">
   <div id="stage"></div>
   <div class="topbar">
-   <div class="floating structure-name"><b id="viewTitle">Silisyum (Si)</b><small id="viewSubtitle">Kübik kristal · Fd-3m</small></div>
    <div class="floating tools" role="toolbar" aria-label="3B görünüm araçları">
-    <button id="fitBtn" title="Görünüme sığdır">⌗ Sığdır</button><button id="topBtn" title="c doğrultusunda bakış">Üst</button><button id="frontBtn" title="Ön görünüm">Ön</button><button id="sideBtn" title="Yan görünüm">Yan</button>
-    <button id="projectionBtn" title="Perspektif/ortografik">Perspektif</button>
+    <button id="fitBtn" class="view-tool" type="button" aria-label="Görünüme sığdır" title="Görünüme sığdır"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 8 3 3m13 5 5-5M8 16l-5 5m13-5 5 5"/></svg></button>
+    <button id="topBtn" class="view-tool" type="button" aria-label="Üstten görünüm" title="Üstten görünüm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 4v16" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="2"/></svg></button>
+    <button id="frontBtn" class="view-tool" type="button" aria-label="Önden görünüm" title="Önden görünüm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="m4 6 4-3h12v17M4 20h16"/></svg></button>
+    <button id="sideBtn" class="view-tool" type="button" aria-label="Yandan görünüm" title="Yandan görünüm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h10l3 4v12H8zM8 4 3 8v12h18M3 8h18"/></svg></button>
+    <button id="projectionBtn" class="view-tool" type="button" aria-pressed="false" aria-label="Perspektif görünümü; ortografiye geç" title="Perspektif / ortografik"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/></svg></button>
    </div>
   </div>
   <div id="axisGizmo" class="axis-gizmo" role="img" aria-label="Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi">
@@ -1776,7 +1787,6 @@ function build(){
  }
  drawSelection();
  drawVolume();
- $('viewTitle').textContent=state.name;$('viewSubtitle').textContent=state.detail||'Özel yapı · P1';
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
@@ -1810,7 +1820,7 @@ function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const
 function toggleProjection(){
  const old=camera,p=old.position.clone(),t=orbit.target.clone();perspective=!perspective;
  if(perspective){camera=new THREE.PerspectiveCamera(44,1,.01,10000);}else{camera=new THREE.OrthographicCamera(-10,10,10,-10,.01,10000);}
- camera.up.set(0,0,1);camera.position.copy(p);orbit.object=camera;orbit.target.copy(t);resize();orbit.update();$('projectionBtn').textContent=perspective?'Perspektif':'Ortografik';
+ camera.up.set(0,0,1);camera.position.copy(p);orbit.object=camera;orbit.target.copy(t);resize();orbit.update();$('projectionBtn').setAttribute('aria-pressed',String(!perspective));$('projectionBtn').setAttribute('aria-label',perspective?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
 }
 function pickAtom(e){
  if(!lastPointer||Math.hypot(e.clientX-lastPointer.x,e.clientY-lastPointer.y)>4||e.button!==0)return;
