@@ -125,17 +125,96 @@ footer{color:#71869b}
  .view-help{display:none}
 }
 
+
+/* Single-file COD library, visually integrated with the light editor. */
+.brand-home{color:#253b52;font-size:17px;font-weight:760;letter-spacing:-.4px;text-decoration:none;white-space:nowrap}
+.brand-home:hover{color:#1765ad;text-decoration:none}
+.main-nav{display:flex;gap:5px;border-left:1px solid #dfe6ef;padding-left:16px;margin-left:3px}
+.main-nav a{display:inline-block;color:#5e7085;text-decoration:none;font-size:13px;font-weight:650;padding:8px 13px;border-radius:8px}
+.main-nav a:hover{background:#edf4fb;text-decoration:none}
+.main-nav a.active{background:#e9f3ff;color:#1a67a9}
+body.library-open .workspace-action{display:none!important}
+body.library-open #app{display:none}
+#libraryPage[hidden],#libSearchPane[hidden],#libBookmarksPane[hidden],#codExternalSearch[hidden]{display:none!important}
+#libraryPage{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f7f9fc;color:#27384c}
+.library-wrap{max-width:1240px;margin:0 auto;padding:27px 22px 70px}
+.library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.library-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:700;color:#6d8299;margin-bottom:6px}
+.library-header h2{font-size:27px;letter-spacing:-.7px;line-height:1.1;margin:0;color:#223750}
+.library-header p,.lib-results-head p{color:#6c8095;font-size:13px;line-height:1.6;margin:8px 0 0}
+.lib-cod-link{white-space:nowrap;padding:9px 12px;border:1px solid #d6e3f0;border-radius:8px;background:#fff;color:#246ca8;font-size:12px}
+.lib-tabs{display:flex;align-items:center;gap:6px;margin-bottom:17px;border-bottom:1px solid #dde5ef}
+.lib-tabs button{border:0;background:transparent;border-bottom:2px solid transparent;border-radius:0;color:#74849a;padding:10px 15px;box-shadow:none}
+.lib-tabs button.selected{color:#1769b0;border-bottom-color:#2879d0;font-weight:700}
+.lib-counter{background:#e8eef7;border-radius:12px;font-size:11px;padding:2px 7px;color:#475c74}
+.lib-panel{background:#fff;border:1px solid #dde6ef;border-radius:13px;padding:23px 25px;margin-bottom:20px;box-shadow:0 2px 8px rgba(25,49,74,.035)}
+.lib-panel-head{display:flex;align-items:baseline;gap:15px;margin-bottom:21px;flex-wrap:wrap}
+.lib-panel h3{font-size:17px;margin:0;color:#273c54;letter-spacing:-.25px}
+.lib-panel-head p{margin:0;color:#8191a3;font-size:12px}
+.lib-search-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 18px}
+.lib-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lib-field span{font-size:12px;font-weight:620;color:#526881}
+.lib-field input,.lib-field select,.lib-element-grid input,.lib-range input{width:100%;min-width:0;border:1px solid #ccd7e4;border-radius:8px;color:#273c53;background:#fff;font-size:13px;padding:10px 11px;box-shadow:none}
+.lib-field input:focus,.lib-element-grid input:focus,.lib-range input:focus{border-color:#4c93ce}
+.lib-field input::placeholder,.lib-element-grid input::placeholder,.lib-range input::placeholder{color:#a0acb9}
+.lib-field.lib-wide{grid-column:span 1}
+.lib-divider{height:1px;background:#edf1f5;margin:21px 0}
+.lib-subtitle{font-size:12px;font-weight:700;color:#425a73;display:flex;align-items:center;gap:9px;margin:0 0 9px}
+.lib-subtitle span{font-size:11px;font-weight:400;color:#93a0b0}
+.lib-element-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:17px}
+.lib-element-grid.compact{grid-template-columns:repeat(4,minmax(0,100px))}
+.lib-element-grid input{padding:9px 8px;text-align:center}
+.lib-ranges{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.lib-range{margin:0;min-width:0;display:flex;align-items:center;gap:6px;border:1px solid #e1e8f0;border-radius:9px;padding:11px 10px 10px}
+.lib-range legend{font-size:11px;font-weight:650;color:#526980;padding:0 4px}
+.lib-range span{color:#9aa8b6}
+.lib-range input{min-width:0;width:calc(50% - 12px);padding:8px 6px}
+.lib-flags{display:flex;flex-wrap:wrap;gap:11px 23px;padding-top:20px}
+.lib-flags label{font-size:12px;display:flex;align-items:center;gap:7px;color:#52667e}
+.lib-flags input{accent-color:#2877d0}
+.lib-panel-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;border-top:1px solid #edf1f5;padding-top:19px;margin-top:20px}
+.lib-connection{flex:1;max-width:380px}
+.lib-actions{display:flex;gap:9px}
+.lib-actions button{min-width:95px}
+.lib-privacy{font-size:11px;line-height:1.6;color:#8190a3;margin:14px 0 0}
+.lib-results{min-height:160px}
+.lib-results-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.lib-results-head h3 span{font-weight:400;font-size:13px;color:#8b9bae}
+.lib-status{background:#f2f7fc;color:#60778f;border:1px solid #e3edf5;border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:14px}
+.lib-status.error{background:#fff3f2;color:#9f4036;border-color:#f4cfc9}
+.lib-status.loading{background:#eaf4ff;color:#26669e}
+.lib-table-wrap{width:100%;overflow-x:auto}
+.lib-table{width:100%;border-collapse:collapse;font-size:12px;text-align:left;table-layout:auto}
+.lib-table th{font-size:11px;white-space:nowrap;background:#f6f8fb;color:#667e95;border-bottom:1px solid #dce5ef;padding:12px 10px;font-weight:700}
+.lib-table td{border-bottom:1px solid #edf1f5;color:#4c6278;padding:12px 10px;vertical-align:middle}
+.lib-table td strong{display:block;color:#223d55;font-weight:700}
+.lib-table td small{display:block;color:#8394a6;font-size:11px;margin-top:4px;line-height:1.45}
+.lib-table a{font-weight:650;white-space:nowrap;color:#166ead}
+.lib-table td.lib-formula{min-width:135px;max-width:220px}
+.lib-table td.lib-bib{min-width:150px;max-width:250px}
+.lib-table td.lib-cell-data{white-space:nowrap;font-variant-numeric:tabular-nums;color:#5c7188}
+.lib-row-actions{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.lib-row-actions button{font-size:11px;white-space:nowrap;padding:7px 9px}
+.lib-row-actions .lib-star{font-size:19px;color:#a4b2c0;border:0;box-shadow:none;padding:4px;background:transparent}
+.lib-row-actions .lib-star.on{color:#e2a220}
+.lib-row-actions .lib-import{background:#e6f1ff;color:#1e68a9;border-color:#bcdaf2;font-weight:650}
+.lib-pager{display:flex;gap:6px;align-items:center;color:#7b8ca1;font-size:11px}
+.lib-pager button{padding:6px 10px}
+.lib-external-search{display:inline-block;font-size:12px;margin-top:10px}
+@media(max-width:960px){.lib-search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lib-ranges{grid-template-columns:repeat(2,minmax(0,1fr))}.lib-element-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:600px){header{padding:0 9px}.brand-home{font-size:15px}.main-nav{padding-left:8px}.main-nav a{font-size:12px;padding:8px}.library-wrap{padding:17px 10px 48px}.library-header{align-items:flex-start}.library-header h2{font-size:24px}.library-header p{font-size:12px}.lib-cod-link{font-size:10px;padding:8px}.lib-panel{padding:15px 12px;border-radius:10px}.lib-search-grid{grid-template-columns:1fr;gap:11px}.lib-ranges{grid-template-columns:1fr 1fr}.lib-element-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.lib-panel-footer{flex-direction:column;align-items:stretch}.lib-connection{max-width:none}.lib-actions{justify-content:flex-end}.lib-privacy{margin-top:11px}.lib-flags{gap:10px}.lib-tabs button{font-size:12px;padding:10px}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
 <body>
 <header>
- <div class="brand"><div class="gem">◇</div><div><h1>Kristal Yapı <span class="tag">3B Studio</span></h1></div></div>
+ <div class="brand"><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a></nav></div>
  <div class="actions">
-  <button id="leftToggle" class="mobile-panel" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
-  <button id="openBtn" title="CIF, POSCAR, XYZ veya proje JSON dosyası">↥ Aç</button>
-  <button id="saveBtn" title="Proje dosyasını indir">↓ Kaydet</button>
-  <button id="inspectorToggle" class="nav-toggle">Ölçüm</button>
+  <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
+  <button id="openBtn" class="workspace-action" title="CIF, POSCAR, XYZ veya proje JSON dosyası">↥ Aç</button>
+  <button id="saveBtn" class="workspace-action" title="Proje dosyasını indir">↓ Kaydet</button>
+  <button id="inspectorToggle" class="nav-toggle workspace-action">Ölçüm</button>
   <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
  </div>
 </header>
@@ -254,6 +333,92 @@ footer{color:#71869b}
   <div class="section"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kesirli → Kartezyen dönüşümünde gerçek örgü vektörleri ve hücre açıları kullanılır. Bağlar, seçilen uzaklık eşiğine göre geometrik olarak çizilir; kimyasal bağ düzenini kesin olarak belirlemez.</p><p class="shortcuts">VESTA'nın elektron yoğunluğu izoyüzeyleri, manyetik yapılar, anizotropik termal elipsoitler ve kapsamlı uzay grubu veritabanı bu sürümde bulunmaz.</p></div>
  </aside>
 </div>
+
+<main id="libraryPage" hidden aria-label="Kütüphane ve COD kristal araması">
+ <div class="library-wrap">
+  <div class="library-header">
+   <div><div class="library-eyebrow">Kristal Yapı / Veritabanı</div><h2>Kütüphane</h2><p>Crystallography Open Database (COD) kayıtlarını filtrele, incele ve kristal yapıya aktar.</p></div>
+   <a class="lib-cod-link" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener noreferrer">COD resmî sitesi ↗</a>
+  </div>
+  <div class="lib-tabs" role="tablist" aria-label="Kütüphane görünümü">
+   <button id="libSearchTab" class="selected" type="button" role="tab" aria-selected="true">Ara ve sonuçları göster</button>
+   <button id="libBookmarksTab" type="button" role="tab" aria-selected="false">★ Yer imleri <span id="libBookmarkCount" class="lib-counter">0</span></button>
+  </div>
+  <div id="libSearchPane">
+   <form id="codSearchForm" class="lib-panel">
+    <div class="lib-panel-head"><h3>Gelişmiş arama</h3><p>Alanları birleştirebilirsin. En az bir arama ölçütü gir.</p></div>
+    <div class="lib-search-grid">
+     <label class="lib-field lib-wide"><span>Metin / malzeme adı</span><input id="codText" placeholder="Örn. perovskite, manganite, germanide"></label>
+     <label class="lib-field"><span>COD numarası</span><input id="codId" inputmode="numeric" placeholder="4335507" maxlength="9"></label>
+     <label class="lib-field"><span>Kimyasal formül (Hill notasyonu)</span><input id="codFormula" placeholder="Ge4 In0.94 La4 Mn2"></label>
+     <label class="lib-field"><span>Uzay grubu</span><input id="codSpacegroup" placeholder="C 1 2/m 1"></label>
+     <label class="lib-field"><span>Dergi adı</span><input id="codJournal" placeholder="Inorganic Chemistry"></label>
+     <label class="lib-field"><span>Yayın yılı</span><input id="codYear" inputmode="numeric" placeholder="2013"></label>
+     <label class="lib-field"><span>DOI</span><input id="codDoi" placeholder="10.1021/..."></label>
+     <label class="lib-field"><span>Cilt</span><input id="codVolume" placeholder="52"></label>
+     <label class="lib-field"><span>Sayı</span><input id="codIssue" placeholder="..."></label>
+    </div>
+    <div class="lib-divider"></div>
+    <div class="lib-subtitle">İçermesi gereken elementler <span>En fazla 8</span></div>
+    <div class="lib-element-grid" id="codMustElements">
+      <input class="lib-element" placeholder="La" aria-label="Gerekli element 1" maxlength="2">
+      <input class="lib-element" placeholder="Mn" aria-label="Gerekli element 2" maxlength="2">
+      <input class="lib-element" placeholder="Ge" aria-label="Gerekli element 3" maxlength="2">
+      <input class="lib-element" placeholder="In" aria-label="Gerekli element 4" maxlength="2">
+      <input class="lib-element" placeholder="5" aria-label="Gerekli element 5" maxlength="2">
+      <input class="lib-element" placeholder="6" aria-label="Gerekli element 6" maxlength="2">
+      <input class="lib-element" placeholder="7" aria-label="Gerekli element 7" maxlength="2">
+      <input class="lib-element" placeholder="8" aria-label="Gerekli element 8" maxlength="2">
+    </div>
+    <div class="lib-subtitle">İçermemesi gereken elementler <span>En fazla 4</span></div>
+    <div class="lib-element-grid compact" id="codNotElements">
+      <input class="lib-exclude" placeholder="Fe" aria-label="Hariç element 1" maxlength="2">
+      <input class="lib-exclude" placeholder="Ni" aria-label="Hariç element 2" maxlength="2">
+      <input class="lib-exclude" placeholder="3" aria-label="Hariç element 3" maxlength="2">
+      <input class="lib-exclude" placeholder="4" aria-label="Hariç element 4" maxlength="2">
+    </div>
+    <div class="lib-divider"></div>
+    <div class="lib-ranges">
+      <fieldset class="lib-range"><legend>Farklı element sayısı</legend><input id="codDistinctMin" type="number" min="1" max="50" step="1" placeholder="Min"><span>—</span><input id="codDistinctMax" type="number" min="1" max="50" step="1" placeholder="Maks"></fieldset>
+      <fieldset class="lib-range"><legend>Hücre hacmi (Å³)</legend><input id="codVolMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codVolMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
+      <fieldset class="lib-range"><legend>Z (formül birimi)</legend><input id="codZMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codZMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
+      <fieldset class="lib-range"><legend>Z′ (asimetrik birim)</legend><input id="codZpMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codZpMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
+    </div>
+    <div class="lib-flags">
+      <label><input id="codFobs" type="checkbox"> Fobs verisi olanlar</label>
+      <label><input id="codDuplicates" type="checkbox"> Tekrar kayıtları dahil et</label>
+      <label><input id="codErrors" type="checkbox"> Hatalı kayıtları dahil et</label>
+      <label><input id="codTheoretical" type="checkbox"> Teorik yapıları dahil et</label>
+    </div>
+    <div class="lib-panel-footer">
+      <div class="lib-field lib-connection"><span>Bağlantı yöntemi</span>
+        <select id="codConnection" aria-label="COD bağlantı yöntemi">
+          <option value="auto">Otomatik (doğrudan; gerekirse harici aracı)</option>
+          <option value="direct">Yalnız doğrudan COD (CORS gerekebilir)</option>
+          <option value="proxy">Harici aracı kullan (CORS)</option>
+        </select>
+      </div>
+      <div class="lib-actions"><button id="codReset" type="reset">Sıfırla</button><button id="codSubmit" type="submit" class="primary">⌕ COD'da ara</button></div>
+    </div>
+    <p class="lib-privacy">Harici CORS aracısı kullanıldığında arama parametreleri ve CIF isteği üçüncü tarafın sunucusuna iletilir. Kendi uygulama sunucumuz/veritabanımız yoktur; CIF içerikleri yer imlerine kaydedilmez.</p>
+   </form>
+   <section id="codResultsBox" class="lib-panel lib-results" aria-live="polite">
+    <div class="lib-results-head"><h3>Arama sonuçları <span id="codResultCount"></span></h3><div id="codResultsActions" class="lib-pager"></div></div>
+    <div id="codSearchStatus" class="lib-status">Bir malzeme, formül, element veya COD numarası girerek aramaya başlayabilirsin.</div>
+    <div id="codResults" class="lib-table-wrap"></div>
+    <div id="codPager" class="lib-pager"></div>
+    <a id="codExternalSearch" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener noreferrer" class="lib-external-search" hidden>Aramayı COD üzerinde aç ↗</a>
+   </section>
+  </div>
+  <section id="libBookmarksPane" class="lib-panel" hidden>
+    <div class="lib-results-head"><div><h3>★ Kaydedilen malzemeler <span id="bookmarksTotal"></span></h3><p>Yalnızca malzeme verileri, COD kimliği ve CIF bağlantısı bu tarayıcıda saklanır.</p></div>
+    <button type="button" id="bookmarkExport">Yer imlerini JSON indir</button></div>
+    <div id="libBookmarksList" class="lib-table-wrap"></div>
+    <div id="bookmarkEmpty" class="lib-status">Henüz yer imi bulunmuyor. COD aramasındaki ☆ düğmesiyle malzeme kaydedebilirsin.</div>
+  </section>
+ </div>
+</main>
+
 <script type="module">
 
 // Embedded crystallographic reference positions: wyckoff MIT (Anoop K. Chandran, 2025). See README.
