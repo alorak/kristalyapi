@@ -177,6 +177,13 @@ body.library-open #app{display:none}
 .lib-actions{display:flex;gap:9px}
 .lib-actions button{min-width:95px}.lib-actions #codExample{white-space:nowrap;background:#f2f8fe;color:#3573a9}
 .lib-privacy{font-size:11px;line-height:1.6;color:#8190a3;margin:14px 0 0}
+.cod-import-help[hidden]{display:none!important}
+.cod-import-help{border-color:#bfd8ed;background:#f7fbff}
+.cod-import-help p{font-size:13px;line-height:1.6;color:#526980}
+.cod-import-help-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+.cod-import-help-actions a{display:inline-block;border:1px solid #c6dcec;border-radius:8px;background:white;padding:10px 13px;color:#216ca9;text-decoration:none;font-size:13px;font-weight:650}
+.cod-import-help-actions input{max-width:100%;font-size:12px}
+.cod-import-help-actions button{margin-left:auto}
 .lib-results{min-height:160px}
 .lib-results-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .lib-results-head h3 span{font-weight:400;font-size:13px;color:#8b9bae}
@@ -814,14 +821,14 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <div class="lib-panel-footer">
       <div class="lib-field lib-connection"><span>Bağlantı yöntemi</span>
         <select id="codConnection" aria-label="COD bağlantı yöntemi">
-          <option value="auto">Otomatik (doğrudan; gerekirse harici aracı)</option>
-          <option value="direct">Yalnız doğrudan COD (CORS gerekebilir)</option>
-          <option value="proxy">Harici aracı kullan (CORS)</option>
+          <option value="auto">Otomatik (OPTIMADE → COD, aracısız)</option>
+          <option value="optimade">Yalnız OPTIMADE API</option>
+          <option value="direct">Yalnız COD klasik API / CIF</option>
         </select>
       </div>
       <div class="lib-actions"><button id="codReset" type="reset">Sıfırla</button><button id="codExample" type="button">La–Mn–Ge–In örneği</button><button id="codSubmit" type="submit" class="primary">⌕ COD'da ara</button></div>
     </div>
-    <p class="lib-privacy">Harici CORS aracısı kullanıldığında arama parametreleri ve CIF isteği üçüncü tarafın sunucusuna iletilir. Kendi uygulama sunucumuz/veritabanımız yoktur; CIF içerikleri yer imlerine kaydedilmez.</p>
+    <p class="lib-privacy">Aramalar COD'un resmî API uç noktalarına doğrudan yapılır; üçüncü taraf CORS proxy kullanılmaz. Kaydedilen yer imleri yalnızca metadata içerir. Başarıyla açılan CIF verileri, desteklenen tarayıcılarda bu cihaza önbelleğe alınır. COD CORS izni vermezse CIF bağlantısından indirip yerel dosyayı içe aktarabilirsin.</p>
    </form>
    <section id="codResultsBox" class="lib-panel lib-results" aria-live="polite">
     <div class="lib-results-head"><h3>Arama sonuçları <span id="codResultCount"></span></h3><div id="codResultsActions" class="lib-pager"></div></div>
@@ -831,6 +838,16 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <a id="codExternalSearch" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener noreferrer" class="lib-external-search" hidden>Aramayı COD üzerinde aç ↗</a>
    </section>
   </div>
+
+  <section id="codImportHelp" class="lib-panel cod-import-help" hidden aria-live="polite">
+   <h3 id="codImportHelpTitle">CIF dosyasından içe aktar</h3>
+   <p id="codImportHelpText">COD dosyasını indirip aşağıdan seçebilirsin. Bu yöntem CORS'a ihtiyaç duymaz.</p>
+   <div class="cod-import-help-actions">
+    <a id="codImportDownload" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener noreferrer" download>CIF dosyasını COD'dan aç / indir ↗</a>
+    <label class="lib-field"><span>İndirilen CIF dosyasını seç</span><input id="codImportLocalFile" type="file" accept=".cif,.mcif,chemical/x-cif,text/plain"></label>
+    <button type="button" id="codImportHelpClose">Kapat</button>
+   </div>
+  </section>
 
   <section id="libPresetsPane" class="lib-panel lib-presets" role="tabpanel" aria-labelledby="libPresetsTab" hidden>
    <div class="lib-panel-head"><h3>Örnek Yapılar</h3><p>Yerleşik ideal kristal modellerini seçerek 3B çalışma alanına aktar.</p></div>
@@ -2464,6 +2481,8 @@ const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
 const COD_PAGE_SIZE=30;
 const COD_MAX_VISIBLE=600;
+const COD_OPTIMADE_BASE=COD_BASE+'/optimade/v1/structures';
+const COD_CACHE_NAME='kristalyapi.cod.cif.v1';
 let codBookmarks=[],codResults=[],codPage=0,codPane='search',codBusy=false,codAbort=null,codGeneration=0;
 function codCifUrl(id){
  const safe=String(id||'').trim();
@@ -2526,12 +2545,42 @@ function codSearchParamsFromForm(){
  }
  return p;
 }
-function codSearchUrl(params){return COD_BASE+'/result?'+params.toString();}
-function codRequestUrls(url,mode){
- if(!url.startsWith(COD_BASE+'/'))throw Error('Yalnızca COD kayıtları sorgulanabilir.');
- const urls={direct:url,proxy:'https://proxy.cors.dev/'+url,mirror:'https://api.allorigins.win/raw?url='+encodeURIComponent(url)};
- return mode==='direct'?[urls.direct]:mode==='proxy'?[urls.proxy,urls.mirror]:[urls.direct,urls.proxy,urls.mirror];
+function codSearchUrl(params){return COD_BASE+'/result.php?'+params.toString();}
+function codOptimadeItemUrl(id){return COD_OPTIMADE_BASE+'/'+encodeURIComponent(codCifUrl(id).match(/\/(\d+)\.cif$/)[1]);}
+/* OPTIMADE covers the standardized subset of COD filters. Other filters must use
+   result.php rather than silently dropping scientific search constraints. */
+function codOptimadeSearchUrl(params){
+ const fields=[...params.keys()];
+ if(fields.some(k=>!['format','id','strictmin','strictmax'].includes(k)&&!/^n?el\d+$/.test(k)))return null;
+ const clauses=[];
+ if(params.has('id'))clauses.push('id="'+params.get('id')+'"');
+ const elements=[...params.entries()].filter(([k])=>/^el\d+$/.test(k)).map(([,v])=>v);
+ const excluded=[...params.entries()].filter(([k])=>/^nel\d+$/.test(k)).map(([,v])=>v);
+ if(elements.length)clauses.push('elements HAS ALL '+elements.map(x=>'"'+x+'"').join(','));
+ if(excluded.length)clauses.push('elements HAS NONE '+excluded.map(x=>'"'+x+'"').join(','));
+ if(params.has('strictmin'))clauses.push('nelements>='+params.get('strictmin'));
+ if(params.has('strictmax'))clauses.push('nelements<='+params.get('strictmax'));
+ if(!clauses.length)return null;
+ const q=new URLSearchParams({filter:clauses.join(' AND '),page_limit:'100'});
+ return COD_OPTIMADE_BASE+'?'+q.toString();
 }
+function codSearchUrls(params,mode='auto'){
+ const standard=codOptimadeSearchUrl(params),classic=codSearchUrl(params);
+ if(mode==='optimade'){
+  if(!standard)throw Error('Bu filtreler OPTIMADE standardında mevcut değil. Otomatik veya COD klasik yöntemini seçin.');
+  return [standard];
+ }
+ if(mode==='direct')return [classic];
+ return standard?[standard,classic]:[classic];
+}
+function codRequestUrls(url,mode='auto'){
+ const target=new URL(url);
+ if(target.origin!==new URL(COD_BASE).origin||!target.pathname.startsWith('/cod/')||
+    (target.username||target.password))throw Error('Yalnızca COD kayıtları sorgulanabilir.');
+ if(!['auto','direct','optimade'].includes(mode))throw Error('Geçersiz bağlantı yöntemi.');
+ return [target.href];
+}
+
 async function codReadResponse(url,signal,limit=6500000){
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),12500);
@@ -2549,15 +2598,12 @@ async function codReadResponse(url,signal,limit=6500000){
  }finally{clearTimeout(timer);if(signal)signal.removeEventListener('abort',cancel);}
 }
 async function fetchCodText(url,{mode='auto',signal,limit}={}){
- const urls=codRequestUrls(url,mode),errors=[];
- for(const target of urls){
+ const [target]=codRequestUrls(url,mode);
+ try{return await codReadResponse(target,signal,limit);}
+ catch(e){
   if(signal?.aborted)throw Error('İstek iptal edildi.');
-  try{return await codReadResponse(target,signal,limit);}catch(e){
-   if(signal?.aborted)throw Error('İstek iptal edildi.');
-   errors.push(e.message||'Bağlantı sorunu');
-  }
+  throw Error('COD bağlantısı başarısız ('+(e.message||'Ağ hatası')+'). Sunucu CORS izni vermiyor veya erişilemiyor olabilir.');
  }
- throw Error('COD verisi alınamadı ('+errors.join(' / ')+'). CORS veya COD sunucusuna erişim kısıtlı olabilir.');
 }
 function codFirst(o,names){
  for(const name of names){const value=o?.[name];if(value!==undefined&&value!==null&&String(value).trim()!=='')return String(value).trim();}
@@ -2566,17 +2612,18 @@ function codFirst(o,names){
 function normalizeCodRecord(raw,idHint=''){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
  const codId=codFirst(raw,['file','cod_id','codId','id','entry_id'])||String(idHint);
+ const attrs=raw.attributes&&typeof raw.attributes==='object'?raw.attributes:raw;
  if(!/^\d{6,9}$/.test(codId))return null;
  const record={
   codId,
-  formula:codFirst(raw,['formula','calcformula','chemical_formula_sum','chemical_formula','sum_formula']),
-  spacegroup:codFirst(raw,['sg','spacegroup','space_group','space_group_name_H-M']),
-  cellA:codFirst(raw,['a','cell_length_a']),cellB:codFirst(raw,['b','cell_length_b']),
-  cellC:codFirst(raw,['c','cell_length_c']),volume:codFirst(raw,['vol','volume','cell_volume']),
-  alpha:codFirst(raw,['alpha','cell_angle_alpha']),beta:codFirst(raw,['beta','cell_angle_beta']),gamma:codFirst(raw,['gamma','cell_angle_gamma']),
-  year:codFirst(raw,['year','publication_year']),journal:codFirst(raw,['journal','journal_name_full']),
-  authors:codFirst(raw,['authors','author','publ_author_name']),title:codFirst(raw,['title','publication_title']),
-  doi:codFirst(raw,['doi','journal_paper_doi']),elements:codFirst(raw,['nel']),
+  formula:codFirst(attrs,['formula','calcformula','chemical_formula_descriptive','chemical_formula_reduced','chemical_formula_sum','chemical_formula','sum_formula']),
+  spacegroup:codFirst(attrs,['sg','spacegroup','space_group','space_group_name_H-M']),
+  cellA:codFirst(attrs,['a','cell_length_a']),cellB:codFirst(attrs,['b','cell_length_b']),
+  cellC:codFirst(attrs,['c','cell_length_c']),volume:codFirst(attrs,['vol','volume','cell_volume']),
+  alpha:codFirst(attrs,['alpha','cell_angle_alpha']),beta:codFirst(attrs,['beta','cell_angle_beta']),gamma:codFirst(attrs,['gamma','cell_angle_gamma']),
+  year:codFirst(attrs,['year','publication_year']),journal:codFirst(attrs,['journal','journal_name_full']),
+  authors:codFirst(attrs,['authors','author','publ_author_name']),title:codFirst(attrs,['title','publication_title']),
+  doi:codFirst(attrs,['doi','journal_paper_doi']),elements:codFirst(attrs,['nel']),
   cifUrl:codCifUrl(codId),entryUrl:codEntryUrl(codId)
  };
  return record;
@@ -2671,10 +2718,11 @@ function codActions(record){
  const imp=codButton('↧ İçe aktar','lib-import',async()=>{
   imp.disabled=true;imp.textContent='Alınıyor…';
   try{await importCodEntry(record);imp.textContent='↧ İçe aktar';}
-  catch(e){codSearchMessage('CIF içe aktarılamadı: '+e.message+'. CIF bağlantısından dosyayı indirip Kristal Yapı → Aç ile içe aktarabilirsin.',true);imp.textContent='Yeniden dene';}
+  catch(e){codSearchMessage('Otomatik içe aktarma başarısız: '+e.message+'. Aşağıdaki dosya seçme bölümünü kullan.',true);showCodManualImport(record,e.message);imp.textContent='Yeniden dene';}
   finally{imp.disabled=false;}
  });
- actions.append(fav,imp);return actions;
+ const local=codButton('Dosyadan','lib-import',()=>showCodManualImport(record,'İçe aktarmak için yerel dosya seçildi.'));
+ actions.append(fav,imp,local);return actions;
 }
 function codTable(entries){
  const table=codPlainNode('table',undefined,'lib-table'),thead=document.createElement('thead'),head=document.createElement('tr');
@@ -2758,13 +2806,27 @@ async function runCodSearch(){
  codSetLoading(true);codSearchMessage('COD veritabanında aranıyor. Sonuçlar yüklenene kadar bekleyin…',false,true);
  const requestId=++codGeneration,controller=new AbortController();codAbort=controller;
  try{
-  const body=await fetchCodText(url,{mode:$('codConnection').value,signal:controller.signal,limit:6500000});
-  const payload=JSON.parse(body),all=normalizeCodResults(payload);
+  const urls=codSearchUrls(params,$('codConnection').value),failures=[];
+  let all=null,used='';
+  for(const endpoint of urls){
+   try{
+    const body=await fetchCodText(endpoint,{signal:controller.signal,limit:6500000});
+    const payload=JSON.parse(body);
+    if(payload?.errors?.length)throw Error(payload.errors[0]?.detail||'API sorgusu reddedildi.');
+    all=normalizeCodResults(payload);
+    used=endpoint.includes('/optimade/')?'OPTIMADE':'COD klasik';
+    break;
+   }catch(error){
+    if(controller.signal.aborted)throw error;
+    failures.push(error.message);
+   }
+  }
+  if(!all)throw Error(failures.join(' / '));
   if(requestId!==codGeneration)return;
   codResults=all.slice(0,COD_MAX_VISIBLE);codPage=0;
   renderCodResults();
   const suffix=all.length>COD_MAX_VISIBLE?' İlk '+COD_MAX_VISIBLE+' sonuç gösterildi; daha dar filtre önerilir.':'';
-  codSearchMessage(all.length?'COD üzerinde '+all.length.toLocaleString('tr-TR')+' kayıt bulundu.'+suffix:'Bu ölçütlerle COD kaydı bulunamadı.');
+  codSearchMessage(all.length?used+' üzerinden '+all.length.toLocaleString('tr-TR')+' kayıt alındı.'+suffix:'Bu ölçütlerle COD kaydı bulunamadı.');
  }catch(e){
   if(requestId!==codGeneration)return;
   codSearchMessage('Arama tamamlanamadı: '+e.message+'. İstersen aramayı COD sitesinde açıp CIF dosyasını elle yükleyebilirsin.',true);
@@ -2772,17 +2834,113 @@ async function runCodSearch(){
   if(requestId===codGeneration){codAbort=null;codSetLoading(false);}
  }
 }
-async function importCodEntry(record){
- const url=codCifUrl(record.codId);
- const content=await fetchCodText(url,{mode:$('codConnection').value,limit:4000000});
- if(!/^\s*(?:data_|#)/i.test(content))throw Error('Yanıt geçerli CIF içeriğine benzemiyor.');
- const file=new File([content],record.codId+'.cif',{type:'chemical/x-cif'});
+/* No public CORS proxy: the browser cannot read a download from a server
+   without CORS. Cache previous successful imports; provide a real file picker
+   if neither official COD endpoint permits cross-origin fetch. */
+function codCacheKey(id){
+ codCifUrl(id);
+ const url=new URL(window.location.href);url.hash='';url.search='?cod-cif-cache='+id;
+ return url.href;
+}
+async function codCachedCif(id){
+ if(!('caches' in window))return null;
+ try{const cache=await window.caches.open(COD_CACHE_NAME);
+  const response=await cache.match(codCacheKey(id));
+  if(!response)return null;
+  const content=await response.text();
+  return content.length<=4000000&&/^\s*(?:data_|#)/i.test(content)?content:null;
+ }catch(e){return null;}
+}
+async function codRememberCif(id,content){
+ if(!('caches' in window)||content.length>4000000)return;
+ try{
+  const cache=await window.caches.open(COD_CACHE_NAME);
+  await cache.put(codCacheKey(id),new Response(content,{headers:{'Content-Type':'chemical/x-cif'}}));
+  const keys=await cache.keys();
+  if(keys.length>40)await Promise.all(keys.slice(0,keys.length-40).map(key=>cache.delete(key)));
+ }catch(e){console.warn('COD çevrimdışı önbelleğe alınamadı:',e);}
+}
+function codOptimadeToCif(payload,id){
+ const entry=Array.isArray(payload?.data)?payload.data.find(x=>String(x.id)===String(id)):payload?.data;
+ if(!entry||String(entry.id)!==String(id))throw Error('OPTIMADE yanıtında istenen COD kaydı bulunamadı.');
+ const a=entry.attributes||{},vectors=a.lattice_vectors,coords=a.cartesian_site_positions,names=a.species_at_sites;
+ if(!Array.isArray(vectors)||vectors.length!==3||vectors.some(v=>!Array.isArray(v)||v.length!==3||v.some(x=>!Number.isFinite(x))))
+  throw Error('OPTIMADE yanıtında tam örgü vektörleri bulunmuyor.');
+ if(!Array.isArray(coords)||!Array.isArray(names)||coords.length!==names.length||!coords.length||coords.length>1000)
+  throw Error('OPTIMADE yanıtında atom koordinatları eksik veya sınırın üzerinde.');
+ const B=vectors.map(v=>new THREE.Vector3(...v)),cell=validateCell(metric(B));
+ const species=new Map((a.species||[]).map(x=>[x.name,x]));
+ let count=0;
+ const lines=['data_COD_'+id,"_symmetry_space_group_name_H-M 'P 1'",'_symmetry_Int_Tables_number 1',
+  ...['a','b','c'].map(k=>'_cell_length_'+k+' '+cell[k].toFixed(8)),
+  ...['alpha','beta','gamma'].map(k=>'_cell_angle_'+k+' '+cell[k].toFixed(8)),
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy'];
+ coords.forEach((position,i)=>{
+  if(!Array.isArray(position)||position.length!==3||position.some(x=>!Number.isFinite(x)))throw Error('Geçersiz OPTIMADE atom koordinatı.');
+  const f=toFrac(new THREE.Vector3(...position),B);
+  const sp=species.get(names[i]);
+  if(!sp||!Array.isArray(sp.chemical_symbols)||!Array.isArray(sp.concentration))throw Error('OPTIMADE tür bilgisi eksik.');
+  sp.chemical_symbols.forEach((symbol,j)=>{
+   if(symbol==='vacancy'||symbol==='X')return;
+   const element=codCleanSymbol(symbol),occupancy=Number(sp.concentration[j]);
+   if(!Number.isFinite(occupancy)||occupancy<0||occupancy>1)throw Error('Geçersiz OPTIMADE doluluk oranı.');
+   if(occupancy===0)return;
+   count++;
+   if(count>1000)throw Error('Çok sayıda atom: OPTIMADE üst sınırı 1000.');
+   lines.push(element+count+' '+element+' '+f.map(n=>frac(n).toFixed(9)).join(' ')+' '+occupancy.toFixed(6));
+  });
+ });
+ if(!count)throw Error('OPTIMADE kaydı kullanılabilir atom içermiyor.');
+ return lines.join('\n')+'\n';
+}
+async function codOpenCif(record,cif,originalName){
+ if(!/^\s*(?:data_|#)/i.test(cif))throw Error('Dosya CIF biçiminde değil.');
+ const file=new File([cif],record.codId+'.cif',{type:'chemical/x-cif'});
  await importFile(file);
- if(record.codId){state.name=(record.formula||'COD '+record.codId)+' · COD '+record.codId;state.detail=(state.detail||'')+' · COD '+record.codId;build();}
+ state.name=(record.formula||'COD '+record.codId)+' · COD '+record.codId;
+ state.detail=(state.detail||'')+' · COD '+record.codId;
+ build();
+ await codRememberCif(record.codId,cif);
+ $('codImportHelp').hidden=true;
  window.location.hash='kristal';
  syncLibraryNavigation();
- inform('COD '+record.codId+' kristal çalışma alanına aktarıldı.');
+ inform('COD '+record.codId+' aktarıldı'+(originalName?' · '+originalName:'')+'.');
 }
+async function importCodEntry(record){
+ const id=String(record.codId),cached=await codCachedCif(id);
+ if(cached){
+  try{await codOpenCif(record,cached,'çevrimdışı önbellek');return;}catch(e){console.warn('Önbellek CIF geçersiz:',e);}
+ }
+ const mode=$('codConnection').value,failures=[];
+ if(mode!=='direct'){
+  try{
+   const content=await fetchCodText(codOptimadeItemUrl(id),{limit:4000000});
+   const cif=codOptimadeToCif(JSON.parse(content),id);
+   await codOpenCif(record,cif,'OPTIMADE');
+   return;
+  }catch(e){failures.push('OPTIMADE: '+e.message);}
+ }
+ if(mode!=='optimade'){
+  try{
+   const cif=await fetchCodText(codCifUrl(id),{limit:4000000});
+   await codOpenCif(record,cif,'COD CIF');
+   return;
+  }catch(e){failures.push('COD CIF: '+e.message);}
+ }
+ throw Error(failures.join(' / '));
+}
+let codPendingLocalRecord=null;
+function showCodManualImport(record,error){
+ codPendingLocalRecord=record;
+ $('codImportHelpTitle').textContent='COD '+record.codId+' · dosyadan içe aktar';
+ $('codImportHelpText').textContent='Tarayıcı, COD sunucusunun çapraz kaynak yanıtını okuyamadı: '+error+
+   ' CIF bağlantısını açıp dosyayı indir; ardından aşağıdan seç. Bu yöntem CORS gerektirmez.';
+ const link=$('codImportDownload');link.href=codCifUrl(record.codId);link.removeAttribute('download');
+ $('codImportLocalFile').value='';
+ $('codImportHelp').hidden=false;
+ $('codImportHelp').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 function initLibrary(){
  const store=codStore();
  codBookmarks=store?loadCodBookmarks(store):[];
@@ -2804,6 +2962,20 @@ function initLibrary(){
  };
  $('codSearchForm').onreset=()=>{if(codAbort){codAbort.abort();codAbort=null;}codGeneration++;codSetLoading(false);codResults=[];codPage=0;$('codExternalSearch').hidden=true;setTimeout(()=>{renderCodResults();codSearchMessage('Filtreler temizlendi. Yeni bir arama yapabilirsin.');},0);};
  $('bookmarkExport').onclick=()=>download('kristalyapi_cod_yer_imleri.json',JSON.stringify({format:'kristalyapi-cod-bookmarks-v1',entries:codBookmarks.map(codRecordForStorage)},null,2),'application/json');
+ $('codImportHelpClose').onclick=()=>{$('codImportHelp').hidden=true;codPendingLocalRecord=null;};
+ $('codImportLocalFile').onchange=async e=>{
+  const selected=e.target.files?.[0],record=codPendingLocalRecord;
+  if(!selected||!record)return;
+  try{
+   if(!/\.(?:cif|mcif)$/.test(selected.name.toLowerCase()))throw Error('Lütfen .cif veya .mcif dosyası seç.');
+   if(selected.size>4000000)throw Error('CIF 4 MB sınırını aşıyor.');
+   const namedId=selected.name.match(/(?:^|_)(\d{6,9})\.(?:cif|mcif)$/i)?.[1];
+   if(namedId&&namedId!==record.codId)throw Error('Seçilen dosyanın COD numarası beklenen kayıttan farklı.');
+   const cif=await selected.text();
+   await codOpenCif(record,cif,selected.name);
+  }catch(error){$('codImportHelpText').textContent='Dosya açılamadı: '+error.message+'. Doğru CIF dosyasını yeniden seçebilirsin.';}
+  finally{e.target.value='';}
+ };
  window.addEventListener('hashchange',syncLibraryNavigation);
  syncLibraryNavigation();
 }
