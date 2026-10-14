@@ -1448,7 +1448,7 @@ async function loadVolumeFile(file,asPotential=false){
   $('volumePotential').checked=false;
   if(parsed.crystal&&$('volumeLoadAtoms').checked){
    state={...state,name:parsed.crystal.name,detail:parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
-    sites:parsed.crystal.sites,sgNumber:1,sgSetting:'1',symmetryEnabled:false,rep:[1,1,1],
+    sites:parsed.crystal.sites,cifMeta:{},adpVisible:false,sgNumber:1,sgSetting:'1',symmetryEnabled:false,rep:[1,1,1],
     poly:'',bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2}};
    syncControls();build();
   }
@@ -1534,7 +1534,8 @@ function expandSites(sites,key,limit=1800){
   const f=values.map((v,i)=>frac(v+offset[i]));
   const tag=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join(':');
   if(seen.has(tag))continue;seen.add(tag);
-  out.push({...site,x:f[0],y:f[1],z:f[2]});
+  out.push({...site,x:f[0],y:f[1],z:f[2],
+   ...(site.adp?{adp:adpRotateBySymmetry(site.adp,state.cell,op)}:{})});
   if(out.length>limit)throw Error('Simetri genişletmesi '+limit+' atom sınırını aşıyor.');
  }
  return out;
@@ -1805,7 +1806,8 @@ function createSurfaceSlab(cell,sites,plane,vacuum){
    const q=toFrac(xyz,nextBasis);
    if(q[0]<-1e-7||q[0]>=1-1e-7||q[1]<-1e-7||q[1]>=1-1e-7||q[2]<start-1e-7||q[2]>end+1e-7)continue;
    const x=frac(q[0]),y=frac(q[1]),z=q[2],key=site.symbol+'|'+[x,y,z].map(v=>Math.round(v*1e5)).join('/');
-   if(seen.has(key))continue;seen.add(key);out.push({...site,x,y,z});
+   if(seen.has(key))continue;seen.add(key);
+   out.push({...site,x,y,z,...(site.adp?{adp:adpFromCartesian(adpToCartesian(site.adp,cell),newCell)}:{})});
    if(out.length>1000)throw Error('Yeni yüzey hücresinde 1000 atom sınırı aşıldı.');
   }
  }
@@ -1857,7 +1859,8 @@ function transformCrystal(cell,sites,P){
    if(q.some(v=>v< -1e-7||v>=1-1e-7))continue;
    const f=q.map(frac),key=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join('/');
    if(seen.has(key))continue;seen.add(key);
-   next.push({...site,x:f[0],y:f[1],z:f[2]});
+   next.push({...site,x:f[0],y:f[1],z:f[2],
+    ...(site.adp?{adp:adpFromCartesian(adpToCartesian(site.adp,cell),nextCell)}:{})});
    if(next.length>1000)throw Error('Yeni hücrede 1000 atom sınırı aşıldı.');
   }
  }
@@ -2279,6 +2282,7 @@ function loadPreset(key){
  if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
+ state.cifMeta={};state.adpVisible=false;state.adpLevel=50;
  state.cut=ex.cut;state.warning='';state.poly='';state.polyCut=0;state.polyNeighbors=12;state.rep=[1,1,1];
  state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
@@ -2289,6 +2293,7 @@ function loadPreset(key){
 function createEmptyStructure(){
  if(densityGrid)resetVolume();
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
+ state.cifMeta={};state.adpVisible=false;state.adpLevel=50;
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
  state.poly='';state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
@@ -2366,9 +2371,10 @@ function adpEigen(m){
 }
 function adpEllipsoid(site,cell,level=50){
  if(!ADP_LEVELS[level])throw Error('Geçersiz ADP olasılığı.');
- const u=site.adp||(Number.isFinite(site.uIso)?[site.uIso,site.uIso,site.uIso,0,0,0]:null);
- if(!u)return null;
- const e=adpEigen(adpToCartesian(u,cell));
+ const tensor=site.adp?adpToCartesian(site.adp,cell):
+   Number.isFinite(site.uIso)?[[site.uIso,0,0],[0,site.uIso,0],[0,0,site.uIso]]:null;
+ if(!tensor)return null;
+ const e=adpEigen(tensor);
  if(e.values.some(v=>!Number.isFinite(v)||v<=1e-10))throw Error('ADP pozitif tanımlı değil: '+site.label);
  const axes=[0,1,2].map(i=>new THREE.Vector3(e.vectors[0][i],e.vectors[1][i],e.vectors[2][i]));
  if(new THREE.Vector3().crossVectors(axes[0],axes[1]).dot(axes[2])<0)axes[2].negate();
