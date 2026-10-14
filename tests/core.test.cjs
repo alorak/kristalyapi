@@ -30,7 +30,7 @@ const script = moduleScript
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} } };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,SPACE_GROUPS,sgKeys,settingOps,expandSites,validateSymmetryMetric,loadProject,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -211,4 +211,41 @@ test('project JSON validates and restores new settings',()=>{
 test('project JSON rejects forged spacegroup settings / invalid atom coords',()=>{
   const obj={cell:cubic,sites:[{symbol:'O',x:null,y:0,z:0}],sgNumber:999};
   assert.throws(()=>api.loadProject(JSON.stringify(obj)));
+});
+
+test('Wyckoff labels distinguish 4a, 4b and general sites in Fm-3m',()=>{
+  assert.equal(api.identifyWyckoff({x:0,y:0,z:0},'225').matches[0],'4a');
+  assert.equal(api.identifyWyckoff({x:.5,y:.5,z:.5},'225').matches[0],'4b');
+  assert.equal(api.identifyWyckoff({x:.137,y:.231,z:.345},'225').matches[0],'192l');
+});
+test('diamond structure Wyckoff 8a (Fd-3m setting 1)',()=>{
+  assert.equal(api.identifyWyckoff({x:0,y:0,z:0},'227-1').matches[0],'8a');
+});
+test('Miller slab surface vectors form primitive orientation',()=>{
+  const cell=api.examples('fcc').cell,B=api.basis(cell);
+  const surface=api.surfaceVectors(1,1,1,B);
+  const u=surface.u,v=surface.v;
+  const cross=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  cross.forEach(x=>assert.equal(x,1));
+});
+test('FCC 100 slab forms vacuum-separated periodic slab along normal',()=>{
+  const cu=api.examples('fcc');
+  const slab=api.createSurfaceSlab(cu.cell,cu.sites,{h:1,k:0,l:0,offset:1,thickness:7},12);
+  approx(slab.cell.c,19);
+  approx(slab.area,cu.cell.a**2);
+  assert.ok(slab.sites.length>0);
+  assert.ok(slab.sites.every(x=>x.z>0&&x.z<1));
+  approx(slab.cell.alpha,90);approx(slab.cell.beta,90);
+});
+test('Si and NaCl (111) oriented slabs produce atom positions and vacuum',()=>{
+  for(const id of ['silicon','nacl']){
+    const c=api.examples(id),slab=api.createSurfaceSlab(c.cell,c.sites,{h:1,k:1,l:1,offset:1,thickness:7},12);
+    assert.ok(slab.sites.length>=4);
+    assert.ok(slab.sites.every(x=>x.z>0&&x.z<1));
+  }
+});
+test('Miller slab rejects zero plane and insufficient vacuum',()=>{
+  const cu=api.examples('fcc');
+  assert.throws(()=>api.createSurfaceSlab(cu.cell,cu.sites,{h:0,k:0,l:0,offset:1,thickness:5},12));
+  assert.throws(()=>api.createSurfaceSlab(cu.cell,cu.sites,{h:1,k:0,l:0,offset:1,thickness:5},1));
 });
