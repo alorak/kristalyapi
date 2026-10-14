@@ -184,7 +184,7 @@ function toCart(f,B){return B[0].clone().multiplyScalar(f[0]).addScaledVector(B[
 function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));if(Math.abs(den)<1e-12)throw Error('Tekil örgü matrisi.');return [p.dot(new THREE.Vector3().crossVectors(B[1],B[2]))/den,p.dot(new THREE.Vector3().crossVectors(B[2],B[0]))/den,p.dot(new THREE.Vector3().crossVectors(B[0],B[1]))/den];}
 function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
 function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
-let state={...examples('silicon'),rep:[2,2,2],style:'ball',bonds:true,cellVisible:true,boundary:true,labels:false,axes:true,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
+let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,cellVisible:true,boundary:true,labels:false,axes:true,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
 const MAX_ATOMS=1800,MAX_BONDS=6500;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
@@ -224,13 +224,104 @@ function addCellLines(B,r){
  if(state.cellVisible)root.add(line(segments,0x63d8eb,.92));
 }
 function makeCylinder(a,b,radius,mat){const d=new THREE.Vector3().subVectors(b,a),m=new THREE.Mesh(bondGeometry,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());m.scale.set(radius,d.length(),radius);return m;}
+
+function sgKeys(n){return Object.keys(SPACE_GROUPS).filter(k=>k===String(n)||k.startsWith(n+'-'));}
+function preferredSetting(n){const a=sgKeys(n);return a.find(k=>k===String(n))||a.find(k=>k.endsWith('-b'))||a.find(k=>k.endsWith('-hexagonal'))||a.find(k=>k.endsWith('-1'))||a[0];}
+function settingData(key){const data=SPACE_GROUPS[key];if(!data)throw Error('Uzay grubu bulunamadı: '+key);return data;}
+function settingOps(key){const [cent,ops]=settingData(key);return ops.flatMap(op=>cent.map(shift=>[op,shift]));}
+function expandSites(sites,key,limit=1800){
+ const out=[],seen=new Set(),ops=settingOps(key);
+ for(const site of sites)for(const [op,shift] of ops){
+  const values=applySymmetry(op,[+site.x,+site.y,+site.z]),offset=shift.split(',').map(rational);
+  const f=values.map((v,i)=>frac(v+offset[i]));
+  const tag=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join(':');
+  if(seen.has(tag))continue;seen.add(tag);
+  out.push({...site,x:f[0],y:f[1],z:f[2]});
+  if(out.length>limit)throw Error('Simetri genişletmesi '+limit+' atom sınırını aşıyor.');
+ }
+ return out;
+}
+function parseBondRules(str){
+ const rules=new Map();if(!str.trim())return rules;
+ for(const part of str.split(';').map(x=>x.trim()).filter(Boolean)){
+  const m=part.match(/^([A-Za-z]{1,2})\s*-\s*([A-Za-z]{1,2})\s*:\s*([0-9]*\.?[0-9]+)\s*-\s*([0-9]*\.?[0-9]+)$/);
+  if(!m)throw Error('Bağ kuralı hatalı: '+part+'. Örn: Si-O:1.4-2.0');
+  const min=+m[3],max=+m[4];if(min<0||max<=min||max>15)throw Error('Bağ aralığı geçersiz: '+part);
+  rules.set([cleanSymbol(m[1]),cleanSymbol(m[2])].sort().join('-'),[min,max]);
+ }return rules;
+}
+function bondRange(a,b,rules,cut){return rules.get([a,b].sort().join('-'))||[.35,cut];}
+function minimumPeriodicImage(fa,fb,B){
+ let distance=Infinity,shift=[0,0,0],delta=null;
+ for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+  const d=[fb[0]-fa[0]+x,fb[1]-fa[1]+y,fb[2]-fa[2]+z],len=toCart(d,B).length();
+  if(len<distance){distance=len;shift=[x,y,z];delta=d;}
+ }return {distance,shift,delta};
+}
+function planeNormal(h,k,l,B){
+ if(![h,k,l].every(Number.isInteger)||Math.max(Math.abs(h),Math.abs(k),Math.abs(l))>8||(!h&&!k&&!l))throw Error('Miller indisleri −8…8 arasında olmalı; (000) geçersizdir.');
+ const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
+ const g=new THREE.Vector3().crossVectors(B[1],B[2]).multiplyScalar(h/det)
+ .addScaledVector(new THREE.Vector3().crossVectors(B[2],B[0]),k/det)
+ .addScaledVector(new THREE.Vector3().crossVectors(B[0],B[1]),l/det);
+ return {g,normal:g.clone().normalize(),d:1/g.length()};
+}
+function planeIntersections(h,k,l,t,rep,B){
+ const corners=[];for(let a=0;a<=1;a++)for(let b=0;b<=1;b++)for(let c=0;c<=1;c++)corners.push([a*rep[0],b*rep[1],c*rep[2]]);
+ const points=new Map(),value=p=>h*p[0]+k*p[1]+l*p[2]-t;
+ for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){
+  if(corners[i].filter((x,n)=>Math.abs(x-corners[j][n])>1e-9).length!==1)continue;
+  const a=corners[i],b=corners[j],fa=value(a),fb=value(b);
+  if(Math.abs(fa)<1e-7)points.set(a.join('/'),a);
+  if(Math.abs(fb)<1e-7)points.set(b.join('/'),b);
+  if(fa*fb<0){const u=fa/(fa-fb),p=a.map((v,n)=>v+u*(b[n]-v));points.set(p.map(v=>v.toFixed(7)).join('/'),p);}
+ }
+ return [...points.values()].map(p=>toCart(p,B));
+}
+function planePolygon(points,normal){
+ if(points.length<3)return [];
+ const c=points.reduce((a,p)=>a.add(p),new THREE.Vector3()).multiplyScalar(1/points.length);
+ const x=points[0].clone().sub(c).normalize(),y=new THREE.Vector3().crossVectors(normal,x).normalize();
+ return points.slice().sort((a,b)=>Math.atan2(a.clone().sub(c).dot(y),a.clone().sub(c).dot(x))-Math.atan2(b.clone().sub(c).dot(y),b.clone().sub(c).dot(x)));
+}
+function drawMillerPlane(B){
+ if(!state.plane.visible)return;
+ const {h,k,l,offset}=state.plane,n=planeNormal(h,k,l,B),p=planePolygon(planeIntersections(h,k,l,offset,state.rep,B),n.normal);
+ if(p.length<3)return;const vertices=[];
+ for(let i=1;i<p.length-1;i++)for(const v of [p[0],p[i],p[i+1]])vertices.push(v.x,v.y,v.z);
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();
+ root.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x40d5ea,transparent:true,opacity:.26,depthWrite:false,side:THREE.DoubleSide})));
+ root.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:0x55f0ff})));
+}
+function previewPlane(){
+ const h=+$('h').value,k=+$('k').value,l=+$('l').value,t=+$('planeOffset').value,thickness=+$('slabThickness').value;
+ if(!Number.isFinite(t)||!Number.isFinite(thickness)||thickness<=0||thickness>100)throw Error('Düzlem konumu/kalınlığı geçersiz.');
+ const p=planeNormal(h,k,l,basis(state.cell));
+ state.plane={h,k,l,offset:t,visible:$('showPlane').checked,slab:$('slabFilter').checked,thickness};
+ $('planeInfo').textContent='('+h+' '+k+' '+l+') · dₕₖₗ = '+p.d.toFixed(4)+' Å · |G| = '+p.g.length().toFixed(4)+' Å⁻¹';
+ return p;
+}
+function syncSgControls(){
+ const sel=$('spaceGroup');
+ if(!sel.options.length)for(let n=1;n<=230;n++){const o=document.createElement('option');o.value=n;o.textContent=n+' · '+(SPACE_NAMES[n]||'SG '+n);sel.append(o);}
+ sel.value=String(state.sgNumber);const settings=$('sgSetting');settings.replaceChildren();const keys=sgKeys(state.sgNumber);
+ for(const k of keys){const o=document.createElement('option');o.value=k;o.textContent=k===String(state.sgNumber)?'Standart ayar':k.replace(/^\d+-/,'');settings.append(o);}
+ if(!keys.includes(state.sgSetting))state.sgSetting=preferredSetting(state.sgNumber);
+ settings.value=state.sgSetting;$('useSymmetry').checked=state.symmetryEnabled;
+ const w=settingData(state.sgSetting)[2],ops=settingOps(state.sgSetting);
+ $('sgSummary').textContent=(SPACE_NAMES[state.sgNumber]||'SG '+state.sgNumber)+' · '+ops.length+' simetri işlemi · '+(state.symmetryEnabled?'Asimetrik atomlar genişletiliyor.':'Mevcut P1 atomları doğrudan gösteriliyor.');
+ const wy=$('wyckoff');wy.replaceChildren();for(const site of w){const o=document.createElement('option');o.value=site[0];o.textContent=site[1]+site[0]+' · '+site[2]+' · '+site[3];wy.append(o);}
+ $('wyckoffInfo').textContent=w.length+' Wyckoff sınıfı; konum eşleştirmesi otomatik değildir.';
+}
+
 function build(){
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
  const B=basis(state.cell);const center=toCart(state.rep.map(v=>v/2),B);clearRoot();root.position.copy(center).multiplyScalar(-1);
+ const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
  const positions=new Set(),entry=[];
- for(let s=0;s<state.sites.length;s++){
-  const site=state.sites[s];site.symbol=cleanSymbol(site.symbol);for(const k of ['x','y','z'])if(!Number.isFinite(Number(site[k])))throw Error('Atom koordinatları sayısal olmalıdır.');
+ for(let s=0;s<physical.length;s++){
+  const site=physical[s];site.symbol=cleanSymbol(site.symbol);for(const k of ['x','y','z'])if(!Number.isFinite(Number(site[k])))throw Error('Atom koordinatları sayısal olmalıdır.');
   const f=[frac(+site.x),frac(+site.y),frac(+site.z)];
   const ranges=f.map((v,i)=>state.rep[i]+(state.boundary&&near(v,0)?1:0));
   for(let i=0;i<ranges[0];i++)for(let j=0;j<ranges[1];j++)for(let k=0;k<ranges[2];k++){
@@ -241,14 +332,16 @@ function build(){
   }
  }
  atomData=entry;
+ const activePlane=state.plane.slab?planeNormal(state.plane.h,state.plane.k,state.plane.l,B):null;
+ const visibleAtom=item=>!activePlane||Math.abs((state.plane.h*item.frac[0]+state.plane.k*item.frac[1]+state.plane.l*item.frac[2]-state.plane.offset)*activePlane.d)<=state.plane.thickness/2+1e-7;
  const radiusScale=state.style==='space'?1.0:state.style==='stick'?.20:state.style==='wire'?.11:.52;
  const atomOpacity=state.style==='wire'?.72:1;
  for(let i=0;i<entry.length;i++){
   const item=entry[i],baseR=RADII[item.site.symbol]||1.1;
   const size=(state.style==='space'?baseR:Math.min(baseR,.9))*state.atomScale*radiusScale;
-  const m=new THREE.Mesh(sphereGeometry,materialFor(item.site.symbol));m.position.copy(item.pos);m.scale.setScalar(size);m.userData.atomIndex=i;root.add(m);atomMesh.push(m);
+  const m=new THREE.Mesh(sphereGeometry,materialFor(item.site.symbol));m.position.copy(item.pos);m.scale.setScalar(size);m.userData.atomIndex=i;m.visible=visibleAtom(item);root.add(m);atomMesh.push(m);
  }
- const buckets=new Map(),size=state.cut;const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
+ const rules=parseBondRules(state.bondRules);const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
  const key=(x,y,z)=>x+','+y+','+z;
  for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
  const adjacency=Array.from({length:entry.length},()=>[]);
@@ -258,7 +351,7 @@ function build(){
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
    for(const j of buckets.get(key(b[0]+x,b[1]+y,b[2]+z))||[]){
     if(j<=i)continue;
-    const d=p.distanceTo(entry[j].pos);if(d<.35||d>state.cut+1e-6)continue;
+    const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
     if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
     bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
    }
@@ -267,11 +360,11 @@ function build(){
  if(state.bonds&&state.style!=='space'){
   const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x89a8c7:0x8ba7c6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
   const radius=state.style==='wire'?.014:state.style==='stick'?.13:.075;
-  for(const [i,j] of bondPairs)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
+  for(const [i,j] of bondPairs)if(atomMesh[i].visible&&atomMesh[j].visible)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
  }
- addCellLines(B,state.rep);
+ addCellLines(B,state.rep);drawMillerPlane(B);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));root.add(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})));}}
- if(state.labels&&entry.length<=160)for(const item of entry){const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;root.add(sprite);}
+ if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;root.add(sprite);}
  if(state.poly){
   const mat=new THREE.MeshPhongMaterial({color:COLORS[state.poly]||'#54a1db',side:THREE.DoubleSide,transparent:true,opacity:.24,depthWrite:false,shininess:70});
   let count=0;
@@ -284,8 +377,8 @@ function build(){
  }
  drawSelection();
  $('viewTitle').textContent=state.name;$('viewSubtitle').textContent=state.detail||'Özel yapı · P1';
- $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.length+' atom · '+bondPairs.length+' mesafe-eşleşmesi';
- $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=state.sites.length;
+ $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
+ $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=COLORS[el]||'#afbfcf';x.append(sw,document.createTextNode(el));return x;}));
  report([state.warning,capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
  }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));}
@@ -317,10 +410,11 @@ function drawSelection(){
 }
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
- ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);
+ ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncSgControls();$('bondRules').value=state.bondRules;
  for(const k of ['style','bonds','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
- fillPoly();renderSites();
+ for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('slabFilter').checked=state.plane.slab;
+ try{previewPlane();}catch(e){}fillPoly();renderSites();
 }
 function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
 function renderSites(){
@@ -330,7 +424,7 @@ function renderSites(){
 }
 function applyCell(){try{const c={};for(const k of ['a','b','c','alpha','beta','gamma'])c[k]=Number($(k).value);state.cell=validateCell(c);state.warning='';build();fit();}catch(e){inform(e.message);}}
 function applyRepeat(){const r=['ra','rb','rc'].map(x=>Number($(x).value));if(r.some(x=>!Number.isInteger(x)||x<1||x>6)){inform('Her eksende tekrar sayısı 1 ile 6 arasında tam sayı olmalıdır.');return;}state.rep=r;build();fit();}
-function loadPreset(key){const ex=examples(key);state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;state.cut=ex.cut;state.warning='';state.poly='';syncControls();build();fit();}
+function loadPreset(key){const ex=examples(key);state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;state.cut=ex.cut;state.warning='';state.poly='';state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;syncControls();build();fit();}
 function stripCifComment(line){let quote='';for(let k=0;k<line.length;k++){const c=line[k];if(quote){if(c===quote)quote='';}else if(c==='\''||c==='"')quote=c;else if(c==='#')return line.slice(0,k);}return line;}
 function tokenizeCif(src){
  const lines=src.replace(/\r\n?/g,'\n').split('\n'),tokens=[];
