@@ -177,6 +177,15 @@ body.library-open #app{display:none}
 .lib-actions{display:flex;gap:9px}
 .lib-actions button{min-width:95px}.lib-actions #codExample{white-space:nowrap;background:#f2f8fe;color:#3573a9}
 .lib-privacy{font-size:11px;line-height:1.6;color:#8190a3;margin:14px 0 0}
+.cod-worker-settings{padding:15px 20px}
+.cod-worker-settings h3{font-size:14px;margin:0 0 6px}
+.cod-worker-settings p{margin:0 0 11px;color:#6f8195;font-size:12px;line-height:1.6}
+.cod-worker-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cod-worker-controls input{border:1px solid #ccd7e4;border-radius:8px;padding:10px 12px;flex:1 1 320px;min-width:0;font-size:13px}
+.cod-worker-controls button{padding:10px 13px}
+.cod-worker-status{font-size:12px;margin-top:8px;color:#6b7e91}
+.cod-worker-status.error{color:#a63d36}
+.cod-worker-status.ready{color:#266b48}
 .cod-import-help[hidden]{display:none!important}
 .cod-import-help{border-color:#bfd8ed;background:#f7fbff}
 .cod-import-help p{font-size:13px;line-height:1.6;color:#526980}
@@ -821,15 +830,27 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <div class="lib-panel-footer">
       <div class="lib-field lib-connection"><span>Bağlantı yöntemi</span>
         <select id="codConnection" aria-label="COD bağlantı yöntemi">
-          <option value="auto">Otomatik (OPTIMADE → COD, aracısız)</option>
-          <option value="optimade">Yalnız OPTIMADE API</option>
-          <option value="direct">Yalnız COD klasik API / CIF</option>
+          <option value="auto">Otomatik (Worker ayarlıysa önce Worker)</option>
+          <option value="worker">Yalnız kendi Cloudflare Worker API</option>
+          <option value="optimade">Yalnız doğrudan OPTIMADE API</option>
+          <option value="direct">Yalnız doğrudan COD klasik API / CIF</option>
         </select>
       </div>
       <div class="lib-actions"><button id="codReset" type="reset">Sıfırla</button><button id="codExample" type="button">La–Mn–Ge–In örneği</button><button id="codSubmit" type="submit" class="primary">⌕ COD'da ara</button></div>
     </div>
-    <p class="lib-privacy">Aramalar COD'un resmî API uç noktalarına doğrudan yapılır; üçüncü taraf CORS proxy kullanılmaz. Kaydedilen yer imleri yalnızca metadata içerir. Başarıyla açılan CIF verileri, desteklenen tarayıcılarda bu cihaza önbelleğe alınır. COD CORS izni vermezse CIF bağlantısından indirip yerel dosyayı içe aktarabilirsin.</p>
+    <p class="lib-privacy">Worker ayarlandıysa otomatik mod istekleri önce kendi Cloudflare API'ne yönlendirir; COD sunucusunun CORS izni gerekmez. Workers.dev adresini kaydetmen yeterlidir. Yer imlerindeki CIF önbelleği ve CORS bağımsız dosyadan içe aktarma kullanılabilir.</p>
    </form>
+   <section class="lib-panel cod-worker-settings" aria-label="Cloudflare Worker bağlantı ayarları">
+    <h3>Cloudflare Worker · COD API bağlantısı</h3>
+    <p>Worker dağıtıldıktan sonra HTTPS adresini kaydet. Adres yalnızca bu tarayıcıda tutulur; API anahtarı gerekmez.</p>
+    <div class="cod-worker-controls">
+     <input id="codWorkerUrl" type="url" spellcheck="false" autocomplete="off" aria-label="Cloudflare Worker HTTPS adresi" placeholder="https://kristalyapi-cod-api.hesabiniz.workers.dev">
+     <button id="codWorkerSave" type="button">Kaydet</button>
+     <button id="codWorkerTest" type="button">Bağlantıyı test et</button>
+     <button id="codWorkerClear" type="button">Temizle</button>
+    </div>
+    <div id="codWorkerStatus" class="cod-worker-status" role="status">Worker tanımlı değil. COD'a doğrudan bağlanılır.</div>
+   </section>
    <section id="codResultsBox" class="lib-panel lib-results" aria-live="polite">
     <div class="lib-results-head"><h3>Arama sonuçları <span id="codResultCount"></span></h3><div id="codResultsActions" class="lib-pager"></div></div>
     <div id="codSearchStatus" class="lib-status">Bir malzeme, formül, element veya COD numarası girerek aramaya başlayabilirsin.</div>
@@ -2483,6 +2504,8 @@ const COD_PAGE_SIZE=30;
 const COD_MAX_VISIBLE=600;
 const COD_OPTIMADE_BASE=COD_BASE+'/optimade/v1/structures';
 const COD_CACHE_NAME='kristalyapi.cod.cif.v1';
+const COD_WORKER_KEY='kristalyapi.cod.worker-url.v1';
+let codWorkerBase='';
 let codBookmarks=[],codResults=[],codPage=0,codPane='search',codBusy=false,codAbort=null,codGeneration=0;
 function codCifUrl(id){
  const safe=String(id||'').trim();
@@ -2573,12 +2596,38 @@ function codSearchUrls(params,mode='auto'){
  if(mode==='direct')return [classic];
  return standard?[standard,classic]:[classic];
 }
+function codValidateWorkerBase(value){
+ const candidate=String(value||'').trim();
+ if(!candidate)return '';
+ const url=new URL(candidate);
+ if(url.username||url.password||url.search||url.hash||!['','/'].includes(url.pathname)||
+    !(url.protocol==='https:'||(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname))))
+  throw Error('Worker adresi kök HTTPS URL olmalıdır (yerel testte localhost HTTP kullanılabilir).');
+ return url.origin;
+}
+function codWorkerUrlFor(url,base=codWorkerBase){
+ if(!base)throw Error('Önce Cloudflare Worker adresini kaydedin.');
+ const remote=new URL(url);
+ if(remote.origin!==new URL(COD_BASE).origin)throw Error('COD dışı adresler desteklenmiyor.');
+ const root='/cod/';
+ let path;
+ if(remote.pathname===root+'result.php')path='/api/search';
+ else if(remote.pathname===root+'optimade/v1/structures')path='/api/structures';
+ else if(/^\/cod\/optimade\/v1\/structures\/\d{6,9}$/.test(remote.pathname))path='/api/structures/'+remote.pathname.split('/').pop();
+ else if(/^\/cod\/\d{6,9}\.cif$/.test(remote.pathname))path='/api/cif/'+remote.pathname.split('/').pop().slice(0,-4);
+ else throw Error('Worker yalnızca COD araması, OPTIMADE ve CIF yollarını kabul eder.');
+ return codValidateWorkerBase(base)+path+remote.search;
+}
 function codRequestUrls(url,mode='auto'){
  const target=new URL(url);
- if(target.origin!==new URL(COD_BASE).origin||!target.pathname.startsWith('/cod/')||
-    (target.username||target.password))throw Error('Yalnızca COD kayıtları sorgulanabilir.');
- if(!['auto','direct','optimade'].includes(mode))throw Error('Geçersiz bağlantı yöntemi.');
- return [target.href];
+ if(target.origin!==new URL(COD_BASE).origin||target.username||target.password||
+    !(/^\/cod\/\d{6,9}\.cif$/.test(target.pathname)||
+     target.pathname==='/cod/result.php'||
+     /^\/cod\/optimade\/v1\/structures(?:\/\d{6,9})?$/.test(target.pathname)))
+  throw Error('Yalnızca tanımlı COD kayıtları sorgulanabilir.');
+ if(!['auto','direct','optimade','worker'].includes(mode))throw Error('Geçersiz bağlantı yöntemi.');
+ if(mode==='worker')return [codWorkerUrlFor(target.href)];
+ return mode==='auto'&&codWorkerBase?[codWorkerUrlFor(target.href),target.href]:[target.href];
 }
 
 async function codReadResponse(url,signal,limit=6500000){
@@ -2598,12 +2647,13 @@ async function codReadResponse(url,signal,limit=6500000){
  }finally{clearTimeout(timer);if(signal)signal.removeEventListener('abort',cancel);}
 }
 async function fetchCodText(url,{mode='auto',signal,limit}={}){
- const [target]=codRequestUrls(url,mode);
- try{return await codReadResponse(target,signal,limit);}
- catch(e){
+ const targets=codRequestUrls(url,mode),failures=[];
+ for(const target of targets){
   if(signal?.aborted)throw Error('İstek iptal edildi.');
-  throw Error('COD bağlantısı başarısız ('+(e.message||'Ağ hatası')+'). Sunucu CORS izni vermiyor veya erişilemiyor olabilir.');
+  try{return await codReadResponse(target,signal,limit);}
+  catch(e){if(signal?.aborted)throw Error('İstek iptal edildi.');failures.push((target===url?'COD':'Worker')+': '+(e.message||'Ağ hatası'));}
  }
+ throw Error('COD verisi alınamadı ('+failures.join(' / ')+'). Worker bağlantısını test et veya dosyadan içe aktar.');
 }
 function codFirst(o,names){
  for(const name of names){const value=o?.[name];if(value!==undefined&&value!==null&&String(value).trim()!=='')return String(value).trim();}
@@ -2810,7 +2860,7 @@ async function runCodSearch(){
   let all=null,used='';
   for(const endpoint of urls){
    try{
-    const body=await fetchCodText(endpoint,{signal:controller.signal,limit:6500000});
+    const body=await fetchCodText(endpoint,{mode:$('codConnection').value,signal:controller.signal,limit:6500000});
     const payload=JSON.parse(body);
     if(payload?.errors?.length)throw Error(payload.errors[0]?.detail||'API sorgusu reddedildi.');
     all=normalizeCodResults(payload);
@@ -2914,7 +2964,7 @@ async function importCodEntry(record){
  const mode=$('codConnection').value,failures=[];
  if(mode!=='direct'){
   try{
-   const content=await fetchCodText(codOptimadeItemUrl(id),{limit:4000000});
+   const content=await fetchCodText(codOptimadeItemUrl(id),{mode,limit:4000000});
    const cif=codOptimadeToCif(JSON.parse(content),id);
    await codOpenCif(record,cif,'OPTIMADE');
    return;
@@ -2922,7 +2972,7 @@ async function importCodEntry(record){
  }
  if(mode!=='optimade'){
   try{
-   const cif=await fetchCodText(codCifUrl(id),{limit:4000000});
+   const cif=await fetchCodText(codCifUrl(id),{mode,limit:4000000});
    await codOpenCif(record,cif,'COD CIF');
    return;
   }catch(e){failures.push('COD CIF: '+e.message);}
@@ -2943,6 +2993,10 @@ function showCodManualImport(record,error){
 
 function initLibrary(){
  const store=codStore();
+ try{codWorkerBase=codValidateWorkerBase(store?.getItem(COD_WORKER_KEY)||'');}
+ catch(e){codWorkerBase='';}
+ $('codWorkerUrl').value=codWorkerBase;
+ $('codWorkerStatus').textContent=codWorkerBase?'Worker ayarlı. Otomatik modda ilk bağlantı Worker üzerinden yapılır.':'Worker tanımlı değil. COD\'a doğrudan bağlanılır.';
  codBookmarks=store?loadCodBookmarks(store):[];
  codBookmarkCount();renderCodBookmarks();renderCodResults();
  $('libSearchTab').onclick=()=>setLibraryPane('search');
@@ -2963,6 +3017,38 @@ function initLibrary(){
  $('codSearchForm').onreset=()=>{if(codAbort){codAbort.abort();codAbort=null;}codGeneration++;codSetLoading(false);codResults=[];codPage=0;$('codExternalSearch').hidden=true;setTimeout(()=>{renderCodResults();codSearchMessage('Filtreler temizlendi. Yeni bir arama yapabilirsin.');},0);};
  $('bookmarkExport').onclick=()=>download('kristalyapi_cod_yer_imleri.json',JSON.stringify({format:'kristalyapi-cod-bookmarks-v1',entries:codBookmarks.map(codRecordForStorage)},null,2),'application/json');
  $('codImportHelpClose').onclick=()=>{$('codImportHelp').hidden=true;codPendingLocalRecord=null;};
+ function codWorkerStatus(message,kind=''){
+  $('codWorkerStatus').textContent=message;$('codWorkerStatus').className='cod-worker-status'+(kind?' '+kind:'');
+ }
+ $('codWorkerSave').onclick=()=>{
+  try{
+   const base=codValidateWorkerBase($('codWorkerUrl').value);
+   if(!base)throw Error('Worker URL girin veya Temizle seçeneğini kullanın.');
+   const storage=codStore();if(!storage)throw Error('Tarayıcı yerel depolaması kapalı.');
+   storage.setItem(COD_WORKER_KEY,base);
+   codWorkerBase=base;$('codWorkerUrl').value=base;
+   codWorkerStatus('Worker URL kaydedildi. Otomatik mod Worker üzerinden başlayacak.','ready');
+  }catch(e){codWorkerStatus(e.message,'error');}
+ };
+ $('codWorkerClear').onclick=()=>{
+  try{codStore()?.removeItem(COD_WORKER_KEY);}catch(e){}
+  codWorkerBase='';$('codWorkerUrl').value='';
+  codWorkerStatus('Worker kaldırıldı. Doğrudan COD erişimi kullanılacak.');
+ };
+ $('codWorkerTest').onclick=async()=>{
+  let base;
+  try{base=codValidateWorkerBase($('codWorkerUrl').value);if(!base)throw Error('Worker URL girin.');}
+  catch(e){codWorkerStatus(e.message,'error');return;}
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);
+  $('codWorkerTest').disabled=true;codWorkerStatus('Worker bağlantısı deneniyor…');
+  try{
+   const response=await fetch(base+'/health',{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal:controller.signal});
+   const data=await response.json();
+   if(!response.ok||data.status!=='ok'||data.service!=='kristalyapi-cod-worker')throw Error('Beklenen Worker sağlık yanıtı gelmedi.');
+   codWorkerStatus('Worker erişilebilir. İçe aktarma için adresi Kaydet ile etkinleştirin.','ready');
+  }catch(e){codWorkerStatus('Worker bağlantısı kurulamadı: '+e.message,'error');}
+  finally{clearTimeout(timer);$('codWorkerTest').disabled=false;}
+ };
  $('codImportLocalFile').onchange=async e=>{
   const selected=e.target.files?.[0],record=codPendingLocalRecord;
   if(!selected||!record)return;
