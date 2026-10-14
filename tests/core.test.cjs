@@ -39,7 +39,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -828,4 +828,117 @@ test('short-term VESTA controls exist for coordination, measurement history and 
   'saveMeasurement','exportMeasurements','addMillerLayer','clearMillerLayers','millerLayerList']){
   assert.ok(html.includes('id="'+id+'"'),id);
  }
+});
+
+
+test('Undo/Redo: record, replay and new edits clear the redo branch',()=>{
+ const h=api.createEditorHistory(5,1000);
+ assert.equal(h.current(),null);
+ assert.equal(h.canUndo(),false);
+ assert.equal(h.record('first'),true); // snapshot created, no history step yet
+ assert.equal(h.canUndo(),false);
+ assert.equal(h.current(),'first');
+ assert.equal(h.record('first'),false); // idempotent render must not make a step
+ h.record('second');h.record('third');
+ assert.deepEqual(Array.from(Object.values(h.counts())),[2,0]);
+ assert.equal(h.undo(),'second');
+ assert.equal(h.undo(),'first');
+ assert.equal(h.canUndo(),false);
+ assert.equal(h.canRedo(),true);
+ assert.equal(h.redo(),'second');
+ h.record('branch');
+ assert.equal(h.canRedo(),false);
+ assert.equal(h.current(),'branch');
+});
+test('Undo/Redo: cap previous snapshots and reset safely when snapshot is too large',()=>{
+ const h=api.createEditorHistory(2,100);
+ for(const name of ['a','b','c','d'])h.record(name);
+ assert.equal(h.counts().undo,2);
+ assert.equal(h.undo(),'c');
+ assert.equal(h.undo(),'b');
+ assert.equal(h.undo(),null); // 'a' discarded
+ h.record('x'.repeat(101)); // oversize state should invalidate stale history
+ assert.deepEqual(Array.from(Object.values(h.counts())),[0,0]);
+ assert.equal(h.current(),null);
+ assert.throws(()=>api.createEditorHistory(0,200));
+});
+test('Undo/Redo: complete CIF + display state snapshot can round-trip through loadProject',()=>{
+ const sample=api.examples('silicon');
+ const state={...sample,name:'edited',detail:'undo fixture',rep:[2,1,1],sgNumber:227,sgSetting:'227-1',
+  symmetryEnabled:false,bondRules:'Si-O:1.5-2.0',autoBond:true,bonds:false,
+  cellVisible:false,boundary:true,labels:true,axes:false,autoRotate:true,atomScale:.6,
+  cut:2.65,style:'wire',poly:'Si',polyCut:2.7,polyNeighbors:6,
+  plane:{h:1,k:1,l:1,offset:.75,visible:true,repeat:false,thickness:2,slab:false},
+  planeLayers:[{h:1,k:0,l:0,offset:.5,repeat:true,visible:true,color:'#ff9900'}]};
+ const h=api.createEditorHistory();
+ const snapshot=JSON.stringify(api.lastCrystalPayload(state));
+ h.record(snapshot);
+ h.record(JSON.stringify(api.lastCrystalPayload({...state,name:'second',sites:state.sites.slice(0,3)})));
+ const saved=api.loadProject(h.undo());
+ assert.equal(saved.name,'edited');
+ assert.deepEqual(Array.from(saved.rep),[2,1,1]);
+ assert.equal(saved.sites.length,state.sites.length);
+ assert.equal(saved.bonds,false);
+ assert.equal(saved.style,'wire');
+ assert.equal(saved.polyNeighbors,6);
+ assert.equal(saved.plane.repeat,false);
+ assert.equal(saved.planeLayers[0].color,'#ff9900');
+ const redone=api.loadProject(h.redo());
+ assert.equal(redone.name,'second');
+ assert.equal(redone.sites.length,3);
+});
+test('Undo/Redo: icons have accessible labels, stay disabled initially and are only in workspace',()=>{
+ for(const [id,label] of [['undoBtn','Geri al'],['redoBtn','Yinele']]){
+  const re=new RegExp('<button id="'+id+'"[^>]*aria-label="'+label+'"[^>]*disabled>');
+  assert.match(html,re);
+ }
+ assert.match(html,/recordHistoryChange\(\);\s*persistLastCrystal\(\)/);
+ assert.ok(html.includes("$('undoBtn').onclick="));
+ assert.ok(html.includes("$('redoBtn').onclick="));
+ assert.ok(html.includes('if(historyShortcut(e))return'));
+});
+test('Undo/Redo: keyboard interception ignores text editors and unrelated key chords',()=>{
+ assert.equal(api.isEditableHistoryTarget({closest:s=>s.includes('input')?{}:null}),true);
+ assert.equal(api.isEditableHistoryTarget({closest:()=>null}),false);
+ let prevented=false;
+ const evt=(key,opts={})=>({key,ctrlKey:true,metaKey:false,shiftKey:false,altKey:false,
+  target:{closest:()=>null},preventDefault(){prevented=true;},...opts});
+ assert.equal(api.historyShortcut(evt('z',{target:{closest:()=>({})}})),false);
+ assert.equal(api.historyShortcut(evt('k')),false);
+ assert.equal(api.historyShortcut(evt('z',{altKey:true})),false);
+ assert.equal(api.historyShortcut(evt('z')),true);
+ assert.equal(prevented,true);
+});
+
+test('Undo/Redo: controller restores editor snapshots without recording replay as new edits',()=>{
+ const mockButtons={};
+ const isolated={
+  THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
+  URLSearchParams,
+  document:{getElementById(id){return mockButtons[id]??(mockButtons[id]={disabled:true});}}
+ };
+ vm.createContext(isolated);
+ const operations=[
+  'build=function(){recordHistoryChange();return true;};',
+  'syncControls=function(){};',
+  'fit=function(){};',
+  'recordHistoryChange();',
+  "state={...state,name:'Second crystal',sites:state.sites.slice(0,3)};",
+  'recordHistoryChange();',
+  'this.editorView=()=>({name:state.name,sites:state.sites.length,history:editorHistory.counts()});',
+  "this.editorUndo=()=>applyHistory('undo');",
+  "this.editorRedo=()=>applyHistory('redo');"
+ ].join('\n');
+ vm.runInContext(script+'\n'+operations,isolated);
+ assert.equal(isolated.editorView().name,'Second crystal');
+ assert.equal(isolated.editorView().sites,3);
+ assert.equal(isolated.editorUndo(),true);
+ assert.equal(isolated.editorView().name,api.examples('silicon').name);
+ assert.equal(isolated.editorView().sites,8);
+ assert.deepEqual(JSON.parse(JSON.stringify(isolated.editorView().history)),{undo:0,redo:1});
+ assert.equal(isolated.editorRedo(),true);
+ assert.equal(isolated.editorView().name,'Second crystal');
+ assert.equal(isolated.editorView().sites,3);
+ assert.deepEqual(JSON.parse(JSON.stringify(isolated.editorView().history)),{undo:1,redo:0});
+ assert.equal(isolated.editorRedo(),false);
 });
