@@ -35,10 +35,10 @@ const moduleScript = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[
 assert.ok(moduleScript, 'HTML must contain the inline module script');
 const script = moduleScript
   .replace(/^import .*?;\s*$/gm, '')
-  .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
+  .replace(/try\{(?:restoreInitialCrystal\(\);)?initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -520,4 +520,158 @@ test('mobile layout hides closed tabbed sidebar and preserves bottom navigation'
  assert.match(html,/\.left-tabbar\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(html,/\.left-tab-content\{[\s\S]*?overflow-y:auto/);
  assert.match(html,/\.left-tab-panel\[hidden\]\{display:none!important\}/);
+});
+
+test('layout: Görünüm first; Miller exclusively in right Miller tab; no redundant on-canvas help',()=>{
+ const left=html.slice(html.indexOf('id="leftGeneralPane"'),html.indexOf('id="leftAtomsPane"'));
+ assert.ok(left.indexOf('<h2>Görünüm')<left.indexOf('<h2>Birim hücre'));
+ assert.ok(!left.includes('Miller düzlemleri (hkl)'));
+ const right=html.slice(html.indexOf('id="rightMillerPane"'),html.indexOf('id="rightMillerTab"'));
+ assert.ok(right.includes('Miller düzlemleri (hkl)'));
+ assert.ok(!html.includes('class="view-help"'));
+ assert.ok(!html.includes('class="gizmo-caption"'));
+ assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
+ assert.ok(!html.includes('class="floating footbar"'));
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['structure','miller']);
+});
+test('right sidebar tabs expose independent scroll and ARIA states',()=>{
+ const nodes={};const get=id=>nodes[id] ||= {
+  hidden:false,scrollTop:0,tabIndex:0,
+  classList:{toggle(){}},setAttribute(name,value){this[name]=value}
+ };
+ const old=context.document.getElementById;context.document.getElementById=get;
+ try{
+  get('rightTabContent').scrollTop=53;
+  api.setRightSidebarTab('miller');
+  assert.equal(get('rightStructurePane').hidden,true);
+  assert.equal(get('rightMillerPane').hidden,false);
+  assert.equal(get('rightMillerTab')['aria-selected'],'true');
+  get('rightTabContent').scrollTop=87;
+  api.setRightSidebarTab('structure');
+  assert.equal(get('rightTabContent').scrollTop,53);
+  api.setRightSidebarTab('miller');
+  assert.equal(get('rightTabContent').scrollTop,87);
+  assert.throws(()=>api.setRightSidebarTab('wrong'));
+  api.setRightSidebarTab('structure');
+ }finally{context.document.getElementById=old;}
+});
+test('Gaussian CUBE parses bohr units, origin, counts and z-fastest scalar data',()=>{
+ const input=[
+  'Water scalar test','electron density',
+  '1 0 0 0','2 1 0 0','2 0 1 0','2 0 0 1',
+  '8 0 0 0 0',
+  '0 1 2 3','4 5 6 7'
+ ].join('\n');
+ const g=api.readCube(input);
+ assert.deepEqual(Array.from(g.dims),[2,2,2]);
+ approx(g.axes[0][0],.529177210903,1e-11);
+ approx(g.values[api.gridIndex(g,1,0,1)],5);
+ approx(api.volumeSample(g,[1,1,1]),7);
+ approx(api.volumeSample(g,[.5,.5,.5]),3.5);
+ const world=api.volumeWorld(g,1,1,1),back=api.volumeCoord(g,world);
+ back.forEach(v=>approx(v,1));
+ assert.equal(api.readVolumetric(input,'charge.cube').kind,'CUBE');
+});
+test('CHGCAR parses x-fastest VASP storage and correct charge density scaling',()=>{
+ const data=['Grid example','1.0','2 0 0','0 2 0','0 0 2','H','1','Direct','0 0 0',
+  '','2 2 2','0 1 2 3','4 5 6 7'].join('\n');
+ const g=api.readChgcar(data);
+ assert.deepEqual(Array.from(g.dims),[2,2,2]);
+ approx(g.axes[0][0],1);approx(g.values[api.gridIndex(g,1,0,0)],1/8);
+ approx(g.values[api.gridIndex(g,0,1,0)],2/8);
+ approx(g.values[api.gridIndex(g,0,0,1)],4/8);
+ assert.equal(g.units,'e/Å³ (CHGCAR / V)');
+});
+test('XSF DATAGRID uses x-fastest data and n-1 spacings to include endpoints',()=>{
+ const data=['BEGIN_BLOCK_DATAGRID_3D','scalar',
+ 'BEGIN_DATAGRID_3D_density','2 2 2','0 0 0','2 0 0','0 2 0','0 0 2',
+ '0 1 2 3','4 5 6 7','END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ const g=api.readXsf(data);
+ approx(g.axes[0][0],2);
+ approx(g.values[api.gridIndex(g,0,0,1)],4);
+ approx(g.values[api.gridIndex(g,1,1,1)],7);
+ assert.equal(api.readVolumetric(data,'scalar.xsf').kind,'XSF');
+});
+test('volume readers reject invalid/oversized data and incompatible grid frames',()=>{
+ assert.throws(()=>api.volumeGrid([500,500,500],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],[],'bad',''));
+ assert.throws(()=>api.readCube('incomplete'));
+ const a=api.volumeGrid([2,2,2],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],Array(8).fill(0),'a','');
+ const b=api.volumeGrid([2,2,2],[.01,0,0],[[1,0,0],[0,1,0],[0,0,1]],Array(8).fill(1),'b','');
+ assert.ok(!api.volumesSameFrame(a,b));
+ assert.ok(api.volumesSameFrame(a,a));
+});
+test('isosurface geometry generates finite triangle coordinates in world Å',()=>{
+ const v=[0,0,0,0,0,1,1,1];
+ const g=api.volumeGrid([2,2,2],[1,2,3],[[1,0,0],[0,1,0],[0,0,1]],v,'synthetic','');
+ const iso=api.isoTriangles(g,.5,null,'thermal',5000);
+ assert.ok(iso.triangles>0);
+ assert.equal(iso.positions.length,iso.triangles*9);
+ assert.ok(Array.from(iso.positions).every(Number.isFinite));
+ assert.equal(iso.colors,null);
+ const pot=api.volumeGrid([2,2,2],[1,2,3],[[1,0,0],[0,1,0],[0,0,1]],v,'potential','');
+ const colored=api.isoTriangles(g,.5,pot,'viridis',5000);
+ assert.equal(colored.colors.length,colored.positions.length);
+ assert.ok(Array.from(colored.colors).every(v=>v>=0&&v<=1));
+});
+test('localStorage state round trip preserves last imported structure and selected display options',()=>{
+ const example=api.examples('nacl');
+ const item={...example,name:'Imported NaCl',sgNumber:225,sgSetting:'225',symmetryEnabled:false,
+  bondRules:'',plane:{h:1,k:1,l:1,offset:1,thickness:2,visible:false,slab:false},
+  rep:[2,1,1],style:'wire',cut:2.65,autoBond:true,bonds:true,
+  cellVisible:true,boundary:false,labels:true,axes:false,autoRotate:false,atomScale:.75,poly:'Na'};
+ const stored=new Map(),storage={getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)};
+ api.storeLastCrystal(storage,item);
+ const restored=api.restoreLastCrystal(storage);
+ assert.equal(restored.name,'Imported NaCl');
+ assert.equal(restored.sites.length,item.sites.length);
+ assert.deepEqual(Array.from(restored.rep),[2,1,1]);
+ assert.equal(restored.style,'wire');
+ assert.equal(restored.boundary,false);
+ assert.equal(restored.labels,true);
+ assert.equal(restored.atomScale,.75);
+ assert.equal(restored.poly,'Na');
+ assert.equal(api.restoreLastCrystal({getItem(){return null;}}),null);
+});
+
+test('CHGCAR can extract and align atomic sites and triclinic cell metadata',()=>{
+ const txt=['CHGCAR structure','1.0','4 0 0','0 4 0','0 0 4','Fe O','1 1','Direct',
+  '0.0 0.0 0.0','0.5 0.5 0.5','','2 2 2','0 0 0 0 0 0 0 0'].join('\n');
+ const g=api.readChgcar(txt);
+ assert.ok(g.crystal);
+ assert.equal(g.crystal.sites.length,2);
+ assert.equal(g.crystal.sites[0].symbol,'Fe');
+ assert.equal(g.crystal.sites[1].symbol,'O');
+ approx(g.crystal.cell.a,4);
+ approx(g.crystal.sites[1].x,.5);
+});
+test('XSF PRIMVEC/PRIMCOORD atom list is correctly placed in volume coordinates',()=>{
+ const txt=['CRYSTAL','PRIMVEC','2 0 0','0 2 0','0 0 2','PRIMCOORD','1 1',
+  'Si 1 1 1','BEGIN_BLOCK_DATAGRID_3D','density','BEGIN_DATAGRID_3D_density',
+  '2 2 2','0 0 0','2 0 0','0 2 0','0 0 2','0 0 0 0 0 0 0 0','END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ const g=api.readXsf(txt);
+ assert.equal(g.crystal.sites.length,1);
+ approx(g.crystal.sites[0].x,.5);
+ approx(g.crystal.cell.a,2);
+});
+
+test('fitting volume returns correctly offset physical Cartesian bounds',()=>{
+ const g=api.volumeGrid([2,2,2],[10,20,30],[[2,0,0],[0,3,0],[0,0,4]],Array(8).fill(0),'demo','');
+ const result=api.volumeBounds(g);
+ assert.deepEqual(Array.from(result.center),[11,21.5,32]);
+ approx(result.span,Math.sqrt(29));
+});
+
+test('VASP periodic grid closes at unit-cell boundary without duplicating stored voxels',()=>{
+ const data=['Periodicity','1.0','2 0 0','0 2 0','0 0 2','H','1','Direct','0 0 0',
+  '','2 2 2','0 1 2 3','4 5 6 7'].join('\n');
+ const g=api.readChgcar(data);
+ assert.equal(g.periodic,true);
+ assert.deepEqual(Array.from(api.volumeShape(g)),[3,3,3]);
+ approx(api.volumeSample(g,[2,0,0]),api.volumeSample(g,[0,0,0]));
+ approx(api.volumeSample(g,[2,1,0]),api.volumeSample(g,[0,1,0]));
+ approx(api.volumeWorld(g,2,0,0)[0],2);
+ approx(api.volumeBounds(g).max[0],2);
+ const iso=api.isoTriangles(g,.2);
+ assert.ok(iso.triangles>=0);
+ assert.ok(Array.from(iso.positions).every(Number.isFinite));
 });
