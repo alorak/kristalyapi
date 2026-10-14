@@ -39,7 +39,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -371,12 +371,32 @@ test('COD connection modes use official COD endpoints only (no public proxy)',()
  assert.equal(api.codRequestUrls(url,'direct').length,1);
  assert.equal(api.codRequestUrls(url,'auto').length,1);
  assert.equal(api.codRequestUrls(url,'optimade').length,1);
+ assert.throws(()=>api.codRequestUrls(url,'worker')); // Worker mode requires configuration.
  assert.throws(()=>api.codRequestUrls(url,'proxy'));
  assert.throws(()=>api.codRequestUrls('https://example.com/secrets','auto'));
  assert.throws(()=>api.codRequestUrls('https://www.crystallography.net/other/file','auto'));
  assert.equal(api.codOptimadeItemUrl('4335507'),'https://www.crystallography.net/cod/optimade/v1/structures/4335507');
  assert.equal(api.isLibraryHash('#kutuphane'),true);
  assert.equal(api.isLibraryHash('#kristal'),false);
+});
+test('Cloudflare Worker rewrites only allowlisted COD routes to a configured HTTPS origin',()=>{
+ const worker='https://kristalyapi-cod-api.example.workers.dev';
+ assert.equal(api.codValidateWorkerBase(worker+'/'),worker);
+ assert.equal(api.codWorkerUrlFor(api.codCifUrl('4335507'),worker),
+   worker+'/api/cif/4335507');
+ assert.equal(api.codWorkerUrlFor(api.codOptimadeItemUrl('4335507'),worker),
+   worker+'/api/structures/4335507');
+ assert.equal(api.codWorkerUrlFor(api.codSearchUrl(new URLSearchParams({id:'4335507',format:'json'})),worker),
+   worker+'/api/search?id=4335507&format=json');
+ assert.equal(api.codWorkerUrlFor(api.codOptimadeSearchUrl(new URLSearchParams({id:'4335507'})),worker).startsWith(worker+'/api/structures?'),true);
+ assert.throws(()=>api.codValidateWorkerBase('http://untrusted.example'));
+ assert.throws(()=>api.codValidateWorkerBase('https://example.com/path'));
+ assert.throws(()=>api.codValidateWorkerBase('https://foo:pass@example.com'));
+ assert.throws(()=>api.codValidateWorkerBase('https://example.com/?url=attacker'));
+ assert.throws(()=>api.codWorkerUrlFor('https://untrusted.example/index.cif',worker));
+ assert.match(html,/id="codWorkerTest"/);
+ assert.match(html,/id="codWorkerSave"/);
+ assert.match(html,/id="codWorkerClear"/);
 });
 test('COD OPTIMADE search preserves standardized element and count constraints',()=>{
  const p=new URLSearchParams({format:'json',el1:'Si',el2:'O',nel1:'Fe',strictmin:'2',strictmax:'3'});

@@ -1,0 +1,9 @@
+{
+  "name": "kristalyapi-cod-api",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-15",
+  "workers_dev": true,
+  "vars": {
+    "CORS_ORIGINS": "https://alorak.github.io"
+  }
+}
