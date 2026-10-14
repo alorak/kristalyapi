@@ -9,6 +9,23 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## COD Kütüphane (yalnızca frontend)
+
+Üst navigasyonda **Kristal Yapı** yazısına tıklamak 3B editöre, **Kütüphane** bağlantısına tıklamak aynı `index.html` içindeki COD arama sayfasına gider. Logo ve `3B Studio` rozeti kaldırılmıştır.
+
+- **Gelişmiş COD filtreleri**: metin, COD numarası, kimyasal formül (Hill notasyonu), uzay grubu, dergi, yayın yılı, cilt, sayı, DOI; bulunması gereken 8 ve bulunmaması gereken 4 element; farklı element sayısı, hücre hacmi, Z, Z′ aralıkları; Fobs, tekrar kayıtları, hatalı/teorik kayıt seçenekleri.
+- Örnek **La–Mn–Ge–In** aramasını tek düğmeyle doldurabilir, sonuçları COD kimliği, formül, uzay grubu, hücre, hacim, yayın bilgisi ve CIF bağlantısı üzerinden inceleyebilirsin. Sonuçların ilk 600 kaydı, sayfa başına 30 kayıt gösterilir. COD REST API geniş sorgularda çok büyük cevap döndürebilir; filtreleri daraltmak gerekir.
+- Her sonuç için **↧ İçe aktar**, uzak CIF dosyasını çalışma belleğine alıp mevcut CIF ayrıştırıcısıyla 3B editörde açmayı dener. İçe aktarım sadece başarılı olduğunda editöre geçilir. Hata halinde COD sayfasından CIF'i elle indirip **Kristal Yapı → Aç** üzerinden içe aktarabilirsin.
+- **☆ Yer imleri** düğmesi `localStorage` içinde **yalnızca üstverileri** (`codId`, formül, hücre/uzay grubu, bibliyografi, `cifUrl`, `entryUrl`, ekleme zamanı) saklar. CIF metni, atom koordinatları ya da CIF dosyasının kendisi saklanmaz. Yer imlerine yeniden girişte uzak CIF yeniden alınır. Ayrıca yer imleri JSON olarak dışa aktarılabilir. Kayıtlar tarayıcı/profil bazlıdır; diğer cihazlara kendiliğinden eşitlenmez.
+
+### COD erişimi ve CORS sınırları
+
+COD'nin resmî arama uç noktası `https://www.crystallography.net/cod/result?format=json`, CIF erişimi `https://www.crystallography.net/cod/<COD-ID>.cif` biçimindedir; belgeler: https://wiki.crystallography.net/RESTful_API/ .
+
+**COD API tarayıcıdaki CORS isteklerine izin vermeyebilir.** Bu nedenle bağlantı ayarlarında `Yalnız doğrudan`, `Otomatik` ve `Harici aracı` seçenekleri vardır. Otomatikte önce doğrudan COD'ye, bu olmazsa `proxy.cors.dev` ve `api.allorigins.win` açık CORS aracılarına başvurulur. Bu, uygulamanın kendi backend'i değildir; ancak **harici servis bağımlılığıdır** ve bu servisler kesintiye uğrayabilir veya oran sınırları koyabilir.
+
+**Gizlilik:** Harici aracı aktifse COD arama URL'si, arama ölçütleri ve indirilecek CIF bağlantısı aracı sağlayıcısına gönderilir. COD dosyasının içeriği aracı üzerinden akar. Bu sınırlama form içinde de belirtilir. Özel/veri gizliliği gerektiren sorgular için `Yalnız doğrudan` seçilmeli veya CIF manuel yüklenmelidir. Gerçek COD sunucusuna bu çalışma ortamından uçtan uca tarayıcı/CORS doğrulaması yapılamamıştır; her zaman manuel açma yolu sunulur.
+
 ## Özellikler
 
 - Si (diamond cubic), C (elmas), NaCl, CsCl, Cu (FCC), BaTiO₃ (ideal kübik), grafit örnekleri
