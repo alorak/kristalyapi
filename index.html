@@ -1090,6 +1090,204 @@ function volumesSameFrame(a,b){
  return aa.every((v,i)=>Math.abs(v-bb[i])<1e-3);
 }
 
+
+let densityGrid=null,potentialGrid=null,volumeLayer=null;
+const volumeView={mode:'off',iso:0,opacity:.62,axis:2,position:50,palette:'thermal',contours:false,potential:false};
+function colorFromScalar(value,min,max,palette){
+ const v=Math.max(0,Math.min(1,(value-min)/Math.max(1e-12,max-min)));
+ if(palette==='viridis'){
+  const stops=[[0.267,.005,.329],[.229,.322,.545],[.128,.566,.551],[.369,.789,.383],[.993,.906,.144]];
+  const n=Math.min(3,Math.floor(v*4)),t=v*4-n;
+  return stops[n].map((x,i)=>x*(1-t)+stops[n+1][i]*t);
+ }
+ if(v<.5){const t=v*2;return [.15+.85*t,.32+.68*t,.88+.12*t];}
+ const t=(v-.5)*2;return [1,1-.83*t,1-.86*t];
+}
+function scalarColor(value,g,palette){
+ if(palette==='thermal'){
+  const r=Math.max(Math.abs(g.min),Math.abs(g.max),1e-12);
+  return colorFromScalar(value,-r,r,'thermal');
+ }
+ return colorFromScalar(value,g.min,g.max,palette);
+}
+function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=75000){
+ const d=g.dims,stride=Math.max(1,...d.map(n=>Math.ceil((n-1)/40)));
+ const vertices=[],colors=[];
+ const corner=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+ const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+ const emit=(arr)=>{for(const p of arr){vertices.push(...volumeWorld(g,...p));if(potential){
+  const world=volumeWorld(g,...p),sample=volumeAtWorld(potential,world);
+  colors.push(...scalarColor(sample,potential,palette));
+ }}};
+ function edge(a,b){
+  const va=a[3],vb=b[3],t=Math.abs(vb-va)>1e-14?Math.max(0,Math.min(1,(level-va)/(vb-va))):.5;
+  return [0,1,2].map(n=>a[n]+(b[n]-a[n])*t);
+ }
+ outer:for(let i=0;i<d[0]-1;i+=stride)for(let j=0;j<d[1]-1;j+=stride)for(let k=0;k<d[2]-1;k+=stride){
+  const dx=Math.min(stride,d[0]-1-i),dy=Math.min(stride,d[1]-1-j),dz=Math.min(stride,d[2]-1-k);
+  const points=corner.map(([a,b,c])=>{
+   const xyz=[i+a*dx,j+b*dy,k+c*dz];
+   return [...xyz,g.values[gridIndex(g,...xyz)]];
+  });
+  for(const tet of tetra){
+   const inside=tet.map(q=>points[q]).filter(p=>p[3]>=level);
+   const outside=tet.map(q=>points[q]).filter(p=>p[3]<level);
+   if(!inside.length||!outside.length)continue;
+   if(inside.length===1){
+    emit(outside.map(p=>edge(inside[0],p)));
+   }else if(inside.length===3){
+    emit(inside.map(p=>edge(outside[0],p)).reverse());
+   }else{
+    const [a,b]=inside,[c,d]=outside;
+    const p=edge(a,c),q=edge(a,d),r=edge(b,c),t=edge(b,d);
+    emit([p,q,r]);emit([q,t,r]);
+   }
+   if(vertices.length/9>=maxTriangles)break outer;
+  }
+ }
+ return {positions:new Float32Array(vertices),colors:potential?new Float32Array(colors):null,
+  triangles:vertices.length/9,decimation:stride,truncated:vertices.length/9>=maxTriangles};
+}
+function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null){
+ const canvas=document.createElement('canvas'),size=192;canvas.width=size;canvas.height=size;
+ const ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
+ const floating=[0,1,2].filter(n=>n!==axis);
+ const values=new Float32Array(size*size);
+ for(let j=0;j<size;j++)for(let i=0;i<size;i++){
+  const coord=[0,0,0];coord[axis]=(g.dims[axis]-1)*pos/100;
+  coord[floating[0]]=(g.dims[floating[0]]-1)*i/(size-1);
+  coord[floating[1]]=(g.dims[floating[1]]-1)*j/(size-1);
+  const value=volumeSample(g,coord);values[j*size+i]=value;
+  const sample=colorGrid?volumeAtWorld(colorGrid,volumeWorld(g,...coord)):value;
+  const rgb=scalarColor(sample,colorGrid||g,palette),idx=(j*size+i)*4;
+  for(let n=0;n<3;n++)img.data[idx+n]=Math.round(rgb[n]*255);
+  img.data[idx+3]=206;
+ }
+ ctx.putImageData(img,0,0);
+ if(contours){
+  ctx.strokeStyle='rgba(25,36,52,.9)';ctx.lineWidth=1.2;ctx.beginPath();
+  const edge=(x1,y1,v1,x2,y2,v2)=>{
+   const t=Math.abs(v2-v1)>1e-12?(level-v1)/(v2-v1):.5;
+   return [x1+(x2-x1)*t,y1+(y2-y1)*t];
+  };
+  for(let y=0;y<size-1;y+=2)for(let x=0;x<size-1;x+=2){
+   const v=[values[y*size+x],values[y*size+x+2],values[(y+2)*size+x+2],values[(y+2)*size+x]];
+   if(!v.every(Number.isFinite))continue;
+   const coords=[[x,y],[x+2,y],[x+2,y+2],[x,y+2]],segments=[];
+   for(let n=0;n<4;n++){
+    const next=(n+1)%4;if((v[n]<level)!==(v[next]<level))
+     segments.push(edge(...coords[n],v[n],...coords[next],v[next]));
+   }
+   if(segments.length===2){ctx.moveTo(...segments[0]);ctx.lineTo(...segments[1]);}
+   if(segments.length===4){ctx.moveTo(...segments[0]);ctx.lineTo(...segments[1]);ctx.moveTo(...segments[2]);ctx.lineTo(...segments[3]);}
+  }
+  ctx.stroke();
+ }
+ return canvas;
+}
+function sliceWorldCorners(g,axis,pos){
+ const floating=[0,1,2].filter(n=>n!==axis);
+ const at=(a,b)=>{const xyz=[0,0,0];xyz[axis]=(g.dims[axis]-1)*pos/100;
+  xyz[floating[0]]=a*(g.dims[floating[0]]-1);
+  xyz[floating[1]]=b*(g.dims[floating[1]]-1);
+  return volumeWorld(g,...xyz);
+ };
+ return [at(0,0),at(1,0),at(1,1),at(0,1)];
+}
+function volumeSliceMesh(g){
+ const canvas=sliceImage(g,volumeView.axis,volumeView.position,volumeView.iso,volumeView.palette,
+   volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null);
+ const corners=sliceWorldCorners(g,volumeView.axis,volumeView.position);
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute([...corners[0],...corners[1],...corners[2],...corners[0],...corners[2],...corners[3]],3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute([0,1,1,1,1,0,0,1,1,0,0,0],2));
+ geometry.computeVertexNormals();
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+ const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,opacity:.85,depthWrite:false});
+ return new THREE.Mesh(geometry,material);
+}
+function clearVolumeLayer(){
+ if(!volumeLayer)return;
+ if(volumeLayer.parent)volumeLayer.parent.remove(volumeLayer);
+ volumeLayer.traverse(o=>{
+  if(o.geometry)o.geometry.dispose();
+  if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material]){
+   if(m.map)m.map.dispose();m.dispose();
+  }}
+ });
+ volumeLayer=null;
+}
+function drawVolume(){
+ clearVolumeLayer();
+ if(!root||!densityGrid||volumeView.mode==='off')return;
+ volumeLayer=new THREE.Group();volumeLayer.name='Volumetric data';
+ const g=densityGrid,pot=volumeView.potential&&potentialGrid?potentialGrid:null;
+ if(volumeView.mode==='iso'||volumeView.mode==='both'){
+  const surface=isoTriangles(g,volumeView.iso,pot,volumeView.palette);
+  if(surface.triangles>0){
+   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
+   if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
+   geo.computeVertexNormals();
+   const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:0x307cba,vertexColors:!!pot,
+    side:THREE.DoubleSide,transparent:true,opacity:volumeView.opacity,depthWrite:false,shininess:45});
+   volumeLayer.add(new THREE.Mesh(geo,mat));
+  }
+  if(surface.truncated)$('volumeInfo').textContent+=' · Yüzey üçgen limiti uygulandı';
+ }
+ if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(g));
+ root.add(volumeLayer);
+}
+function updateVolumeInfo(){
+ if(!densityGrid){$('volumeInfo').textContent='Henüz veri yüklenmedi.';return;}
+ const g=densityGrid;
+ $('volumeInfo').textContent=g.kind+' · '+g.dims.join('×')+' ('+g.values.length.toLocaleString('tr-TR')+' nokta) · min '+g.min.toPrecision(4)+' · max '+g.max.toPrecision(4)+' · '+g.units+(potentialGrid?' · Potansiyel: '+potentialGrid.kind:'');
+}
+function volumeControlChanged(){
+ if(!densityGrid)return;
+ volumeView.mode=$('volumeMode').value;volumeView.iso=Number($('volumeIso').value);
+ volumeView.opacity=Number($('volumeOpacity').value);volumeView.axis=Number($('volumeAxis').value);
+ volumeView.position=Number($('volumePosition').value);volumeView.palette=$('volumePalette').value;
+ volumeView.contours=$('volumeContours').checked;volumeView.potential=$('volumePotential').checked;
+ if(!Number.isFinite(volumeView.iso))return;
+ updateVolumeInfo();try{drawVolume();}catch(e){inform('Hacimsel çizim: '+e.message);clearVolumeLayer();}
+}
+async function loadVolumeFile(file,asPotential=false){
+ if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
+ const parsed=readVolumetric(await file.text(),file.name);
+ if(asPotential){
+  if(!densityGrid)throw Error('Önce ana hacimsel veri dosyasını yükleyin.');
+  if(!volumesSameFrame(densityGrid,parsed))throw Error('Potansiyel ızgarası, yoğunluğun uzaysal sınırlarıyla uyumsuz.');
+  potentialGrid=parsed;$('volumePotential').checked=true;
+ }else{
+  densityGrid=parsed;potentialGrid=null;
+  $('volumePotential').checked=false;
+  volumeView.iso=parsed.min+(parsed.max-parsed.min)*.7;
+  $('volumeIso').value=Number(volumeView.iso.toPrecision(5));
+  $('volumeMode').value='both';
+ }
+ updateVolumeInfo();volumeControlChanged();
+}
+function resetVolume(){
+ clearVolumeLayer();densityGrid=null;potentialGrid=null;
+ volumeView.mode='off';$('volumeMode').value='off';$('volumePotential').checked=false;
+ updateVolumeInfo();
+}
+function initVolumeControls(){
+ $('openVolume').onclick=()=>$('volumeFile').click();
+ $('openPotential').onclick=()=>$('potentialFile').click();
+ for(const [id,secondary] of [['volumeFile',false],['potentialFile',true]]){
+  $(id).onchange=async e=>{
+   const file=e.target.files?.[0];if(!file)return;
+   try{await loadVolumeFile(file,secondary);}
+   catch(err){inform('Hacimsel dosya: '+err.message);}
+   finally{e.target.value='';}
+  };
+ }
+ for(const id of ['volumeMode','volumeIso','volumeOpacity','volumeAxis','volumePosition','volumePalette','volumeContours','volumePotential'])
+  $(id).addEventListener(id==='volumePosition'||id==='volumeOpacity'?'change':'change',volumeControlChanged);
+ $('clearVolume').onclick=resetVolume;
+}
+
 function initScene(){
  scene=new THREE.Scene();
  perspective=true;camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
@@ -1500,6 +1698,7 @@ function build(){
   }
  }
  drawSelection();
+ drawVolume();
  $('viewTitle').textContent=state.name;$('viewSubtitle').textContent=state.detail||'Özel yapı · P1';
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
@@ -2205,6 +2404,7 @@ function initRightSidebarTabs(){
 function bind(){
  initLibrary();
  initRightSidebarTabs();
+ initVolumeControls();
  initLeftSidebarTabs();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
