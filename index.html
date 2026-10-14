@@ -612,6 +612,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <div class="stack">
      <button id="openVolume" class="primary">Hacimsel veri yükle</button>
      <div class="note" id="volumeInfo">Henüz veri yüklenmedi.</div>
+     <label class="check"><input id="volumeLoadAtoms" type="checkbox" checked> Varsa dosyadaki atomları ve hücreyi kullan</label>
      <label class="field"><span>Görselleştirme</span><select id="volumeMode">
        <option value="iso">3B izoyüzey</option><option value="slice">2B kesit / yoğunluk haritası</option>
        <option value="both">İzoyüzey + kesit</option><option value="off">Gizle</option>
@@ -1024,14 +1025,17 @@ function readChgcar(src){
  const factor=scale>0?scale:Math.cbrt(Math.abs(scale)/originalVolume);
  B=B.map(v=>v.map(n=>n*factor));
  const cellVolume=Math.abs(volumeDot(B[0],volumeCross(B[1],B[2])));
- let p=5,first=lines[p++].split(/\s+/);
- if(!first.every(x=>/^\d+$/.test(x)))first=lines[p++].split(/\s+/);
+ let p=5,first=lines[p++].split(/\s+/),symbols=null;
+ if(!first.every(x=>/^\d+$/.test(x))){symbols=first;first=lines[p++].split(/\s+/);}
  const counts=first.map(Number);
  if(!counts.length||counts.some(n=>!Number.isInteger(n)||n<0)||counts.reduce((a,b)=>a+b,0)>15000)
   throw Error('CHGCAR atom sayıları geçersiz.');
  if(/^s/i.test(lines[p]||''))p++;
- if(!/^(direct|cartesian|kpoints)/i.test(lines[p]||''))throw Error('CHGCAR koordinat modu okunamadı.');
- p+=1+counts.reduce((a,b)=>a+b,0);
+ const mode=lines[p]||'';
+ if(!/^(direct|cartesian|kpoints)/i.test(mode))throw Error('CHGCAR koordinat modu okunamadı.');
+ p++;
+ const atomRows=lines.slice(p,p+counts.reduce((a,b)=>a+b,0));
+ p+=counts.reduce((a,b)=>a+b,0);
  while(p<lines.length&&!lines[p])p++;
  if(p>=lines.length)throw Error('CHGCAR yük yoğunluğu ızgarası eksik.');
  const dims=lines[p++].split(/\s+/).map(Number);
@@ -1048,6 +1052,18 @@ function readChgcar(src){
  const axes=B.map((v,d)=>v.map(x=>x/dims[d]));
  const g=volumeGrid(dims,[0,0,0],axes,values,'CHGCAR','e/Å³ (CHGCAR / V)');
  g.title=lines[0]||'VASP CHGCAR';
+ if(symbols&&symbols.length===counts.length&&counts.reduce((a,b)=>a+b,0)<=1000){
+  const sites=[],vectors=B.map(v=>new THREE.Vector3(...v));let rowIndex=0;
+  for(let e=0;e<symbols.length;e++)for(let i=0;i<counts[e];i++){
+   const text=atomRows[rowIndex++]||'',raw=text.split(/\s+/).slice(0,3);
+   const xyz=raw.map(volumeNumber);
+   if(xyz.length!==3)throw Error('CHGCAR atom konumları eksik.');
+   const fracCoord=/^d/i.test(mode)?xyz:toFrac(new THREE.Vector3(...xyz).multiplyScalar(factor),vectors);
+   const symbol=cleanSymbol(symbols[e]);
+   sites.push({symbol,label:symbol+(i+1),x:frac(fracCoord[0]),y:frac(fracCoord[1]),z:frac(fracCoord[2]),occupancy:1});
+  }
+  g.crystal={cell:metric(vectors),sites,name:g.title};
+ }
  return g;
 }
 function readXsf(src){
@@ -1072,7 +1088,26 @@ function readXsf(src){
  // XSF DATAGRID is stored x-fastest.
  for(let k=0;k<dims[2];k++)for(let j=0;j<dims[1];j++)for(let i=0;i<dims[0];i++)
   raw[(i*dims[1]+j)*dims[2]+k]=volumeNumber(body[(k*dims[1]+j)*dims[0]+i]);
- return volumeGrid(dims,origin,spans.map((row,d)=>row.map(x=>x/(dims[d]-1))),raw,'XSF','kaynak birim');
+ const g=volumeGrid(dims,origin,spans.map((row,d)=>row.map(x=>x/(dims[d]-1))),raw,'XSF','kaynak birim');
+ const pv=lines.findIndex(x=>/^PRIMVEC$/i.test(x)),pc=lines.findIndex(x=>/^PRIMCOORD$/i.test(x));
+ if(pv>=0&&pc>=0){
+  const vectors=lines.slice(pv+1,pv+4).map(x=>x.split(/\s+/).map(volumeNumber));
+  if(vectors.length===3&&vectors.every(v=>v.length===3)){
+   const atomCount=Number((lines[pc+1]||'').split(/\s+/)[0]),sites=[];
+   if(Number.isInteger(atomCount)&&atomCount>0&&atomCount<=1000){
+    const B=vectors.map(v=>new THREE.Vector3(...v));
+    for(let i=0;i<atomCount;i++){
+     const row=(lines[pc+2+i]||'').split(/\s+/),symbol=cleanSymbol(row[0]);
+     const xyz=row.slice(1,4).map(volumeNumber);
+     if(xyz.length!==3)throw Error('XSF atom koordinatı eksik.');
+     const f=toFrac(new THREE.Vector3(...xyz),B);
+     sites.push({symbol,label:symbol+(i+1),x:frac(f[0]),y:frac(f[1]),z:frac(f[2]),occupancy:1});
+    }
+    g.crystal={cell:metric(B),sites,name:'XSF kristali'};
+   }
+  }
+ }
+ return g;
 }
 function readVolumetric(src,filename){
  if(src.length>24000000)throw Error('Hacimsel dosya 24 MB sınırını aşıyor.');
@@ -1261,6 +1296,12 @@ async function loadVolumeFile(file,asPotential=false){
  }else{
   densityGrid=parsed;potentialGrid=null;
   $('volumePotential').checked=false;
+  if(parsed.crystal&&$('volumeLoadAtoms').checked){
+   state={...state,name:parsed.crystal.name,detail:parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
+    sites:parsed.crystal.sites,sgNumber:1,sgSetting:'1',symmetryEnabled:false,rep:[1,1,1],
+    poly:'',bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2}};
+   syncControls();build();
+  }
   volumeView.iso=parsed.min+(parsed.max-parsed.min)*.7;
   $('volumeIso').value=Number(volumeView.iso.toPrecision(5));
   $('volumeMode').value='both';
