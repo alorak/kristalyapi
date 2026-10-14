@@ -18,280 +18,320 @@
       "kind": "real",
       "path": "fixtures/real/AgO_kpath_test.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/AgO_kpath_test.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/AgO_kpath_test.cif",
+      "git_blob_sha1": "dadde773b9bea5146084aaee0eee70b6ae22d1b6"
     },
     {
       "id": "real-02",
       "kind": "real",
       "path": "fixtures/real/Co8.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Co8.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Co8.cif",
+      "git_blob_sha1": "bb2864816123fa9d6c05521125d23546cb027eb8"
     },
     {
       "id": "real-03",
       "kind": "real",
       "path": "fixtures/real/CoO19128.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/CoO19128.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/CoO19128.cif",
+      "git_blob_sha1": "fc5ca3bb8fbd976e38cc0ad54b9014858322ded2"
     },
     {
       "id": "real-04",
       "kind": "real",
       "path": "fixtures/real/Cod_2100513.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Cod_2100513.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Cod_2100513.cif",
+      "git_blob_sha1": "c2ef9cdb2fb09b0a3f28b14ded59c39e623e6262"
     },
     {
       "id": "real-05",
       "kind": "real",
       "path": "fixtures/real/Cod_4115344.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Cod_4115344.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Cod_4115344.cif",
+      "git_blob_sha1": "fc6be42834da8e51e5881b20a6772b8b5f184e66"
     },
     {
       "id": "real-06",
       "kind": "real",
       "path": "fixtures/real/CsI3Pb.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/CsI3Pb.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/CsI3Pb.cif",
+      "git_blob_sha1": "70c6aef544efd6d8f9586455426575bdb6f9e0f6"
     },
     {
       "id": "real-07",
       "kind": "real",
       "path": "fixtures/real/CsSnI3.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/CsSnI3.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/CsSnI3.cif",
+      "git_blob_sha1": "9ddd2f5c5a3e359b47983c0edba75225a1f82d07"
     },
     {
       "id": "real-08",
       "kind": "real",
       "path": "fixtures/real/Cu7Te5.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Cu7Te5.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Cu7Te5.cif",
+      "git_blob_sha1": "2e852dc95b57632ca1a49a3783c9c1d594aea941"
     },
     {
       "id": "real-09",
       "kind": "real",
       "path": "fixtures/real/CuCl.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/CuCl.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/CuCl.cif",
+      "git_blob_sha1": "006d032cc442002d47b390e9696b96e881816854"
     },
     {
       "id": "real-10",
       "kind": "real",
       "path": "fixtures/real/Fe.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Fe.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Fe.cif",
+      "git_blob_sha1": "c3d8eb21e362569d87db0855feedd5490dd9bd45"
     },
     {
       "id": "real-11",
       "kind": "real",
       "path": "fixtures/real/Fe3O4.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Fe3O4.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Fe3O4.cif",
+      "git_blob_sha1": "70a8301a2a576ee552573381e8845b47b3ad8cab"
     },
     {
       "id": "real-12",
       "kind": "real",
       "path": "fixtures/real/FePO4.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/FePO4.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/FePO4.cif",
+      "git_blob_sha1": "39c49de4f65498d755c213781e17f931bf5ef615"
     },
     {
       "id": "real-13",
       "kind": "real",
       "path": "fixtures/real/Graphite.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Graphite.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Graphite.cif",
+      "git_blob_sha1": "354f144fea6a906b49561fe7aa60f6d3bcff166b"
     },
     {
       "id": "real-14",
       "kind": "real",
       "path": "fixtures/real/H6PbCI3N_mp-977013_symmetrized.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/H6PbCI3N_mp-977013_symmetrized.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/H6PbCI3N_mp-977013_symmetrized.cif",
+      "git_blob_sha1": "19d5957e0302405e428669e0e24333b299c9de74"
     },
     {
       "id": "real-15",
       "kind": "real",
       "path": "fixtures/real/ICSD59959.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/ICSD59959.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/ICSD59959.cif",
+      "git_blob_sha1": "1c494f441eb996bdb33173624e47eebfb1d2bdae"
     },
     {
       "id": "real-16",
       "kind": "real",
       "path": "fixtures/real/La2CoO4.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/La2CoO4.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/La2CoO4.cif",
+      "git_blob_sha1": "c8b400c159f259141b6a883a5ff0d7189bfff63d"
     },
     {
       "id": "real-17",
       "kind": "real",
       "path": "fixtures/real/La4Fe4O12.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/La4Fe4O12.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/La4Fe4O12.cif",
+      "git_blob_sha1": "cb965ba653065b995c644252b4535620f7a0a984"
     },
     {
       "id": "real-18",
       "kind": "real",
       "path": "fixtures/real/Li.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Li.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Li.cif",
+      "git_blob_sha1": "5b8721353f7b1f98074434263fe82cd83be025d6"
     },
     {
       "id": "real-19",
       "kind": "real",
       "path": "fixtures/real/Li10GeP2S12.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Li10GeP2S12.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Li10GeP2S12.cif",
+      "git_blob_sha1": "45746ee6cc2b4b3ac2b7da0b06aa5695f55a3f30"
     },
     {
       "id": "real-20",
       "kind": "real",
       "path": "fixtures/real/Li2O.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Li2O.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Li2O.cif",
+      "git_blob_sha1": "8737c0b85f6b55ed359cd89d935af4e72545ecfe"
     },
     {
       "id": "real-21",
       "kind": "real",
       "path": "fixtures/real/Li4Fe3Mn1(PO4)4.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Li4Fe3Mn1(PO4)4.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Li4Fe3Mn1(PO4)4.cif",
+      "git_blob_sha1": "ea78bb15f2e53f1d631452a6f215f263885c2e1b"
     },
     {
       "id": "real-22",
       "kind": "real",
       "path": "fixtures/real/Li8Fe2NiCoO8.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/Li8Fe2NiCoO8.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/Li8Fe2NiCoO8.cif",
+      "git_blob_sha1": "042334b18a9208e73aef05a394147d844b5ea30d"
     },
     {
       "id": "real-23",
       "kind": "real",
       "path": "fixtures/real/LiFePO4.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/LiFePO4.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/LiFePO4.cif",
+      "git_blob_sha1": "aeb48bb3c9b6eeef04da38ed0a926c429254da02"
     },
     {
       "id": "real-24",
       "kind": "real",
       "path": "fixtures/real/MgNiF6.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/MgNiF6.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/MgNiF6.cif",
+      "git_blob_sha1": "730163fa9d82c750916e902161e1d8a618ee4728"
     },
     {
       "id": "real-25",
       "kind": "real",
       "path": "fixtures/real/OneLineSymmP1.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/OneLineSymmP1.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/OneLineSymmP1.cif",
+      "git_blob_sha1": "80e8fd135a3ae60f9363e863dca3af8dc286775a"
     },
     {
       "id": "real-26",
       "kind": "real",
       "path": "fixtures/real/V2O3.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/V2O3.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/V2O3.cif",
+      "git_blob_sha1": "aa42ea930ed8714248c2e4d4cee90acc548ae094"
     },
     {
       "id": "real-27",
       "kind": "real",
       "path": "fixtures/real/bcc_1927.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/bcc_1927.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/bcc_1927.cif",
+      "git_blob_sha1": "51c932a1becc23a40b314e07b2dec3a732fe3225"
     },
     {
       "id": "real-28",
       "kind": "real",
       "path": "fixtures/real/hex_1170.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/hex_1170.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/hex_1170.cif",
+      "git_blob_sha1": "40dc56949e62669bf8489aa47486e191885904d5"
     },
     {
       "id": "real-29",
       "kind": "real",
       "path": "fixtures/real/monoc_1028.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/monoc_1028.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/monoc_1028.cif",
+      "git_blob_sha1": "8e00255d8c56b4d1218513a70548ee6d642f0429"
     },
     {
       "id": "real-30",
       "kind": "real",
       "path": "fixtures/real/srycoo.cif",
       "expect": "compare",
-      "source": "https://github.com/materialsproject/pymatgen/blob/master/test-files/cif/srycoo.cif"
+      "source": "https://github.com/materialsproject/pymatgen/blob/main/test-files/cif/srycoo.cif",
+      "git_blob_sha1": "5fb0125b1f8517b7ad2b79d23812cbf41a437b28"
     },
     {
       "id": "synthetic-01",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s01_p1_cubic.cif",
       "expect": "compare",
-      "purpose": "simple P1 cubic"
+      "purpose": "simple P1 cubic",
+      "git_blob_sha1": "db88de16f90d721f959348a7d3098d45a8339f6c"
     },
     {
       "id": "synthetic-02",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s02_pminus1_general.cif",
       "expect": "compare",
-      "purpose": "inversion generic orbit"
+      "purpose": "inversion generic orbit",
+      "git_blob_sha1": "d7d7c83483fa9eb2257a1fe026e80fefe8153c80"
     },
     {
       "id": "synthetic-03",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s03_pminus1_special.cif",
       "expect": "compare",
-      "purpose": "inversion special positions"
+      "purpose": "inversion special positions",
+      "git_blob_sha1": "1bb49db2847216757f4fb9c9912beb05d2c69f2b"
     },
     {
       "id": "synthetic-04",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s04_p21_monoclinic.cif",
       "expect": "compare",
-      "purpose": "non-symmorphic screw axis"
+      "purpose": "non-symmorphic screw axis",
+      "git_blob_sha1": "186ee1be37cd1520edd932b4e848ab725e9e7f37"
     },
     {
       "id": "synthetic-05",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s05_triclinic_skew.cif",
       "expect": "compare",
-      "purpose": "nonorthogonal basis"
+      "purpose": "nonorthogonal basis",
+      "git_blob_sha1": "ecd3bcdbe446292dd3b3f54bc523ac08e86bbaa3"
     },
     {
       "id": "synthetic-06",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s06_periodic_wrapping.cif",
       "expect": "compare",
-      "purpose": "wrapped fractional coordinates"
+      "purpose": "wrapped fractional coordinates",
+      "git_blob_sha1": "96e8d18883307dd0269f6eea576c19386bce2208"
     },
     {
       "id": "synthetic-07",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s07_mixed_occupancy.cif",
       "expect": "compare",
-      "purpose": "two atom types on same site"
+      "purpose": "two atom types on same site",
+      "git_blob_sha1": "1d42f61c6e605980353a47b780f0382204d8f1f0"
     },
     {
       "id": "synthetic-08",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s08_fm3m_fallback.cif",
       "expect": "compare",
-      "purpose": "space group name with absent operators"
+      "purpose": "space group name with absent operators",
+      "git_blob_sha1": "429bad2027fd18db026654ee6da9bf204e73bcc4"
     },
     {
       "id": "synthetic-09",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s09_invalid_cell.cif",
       "expect": "reject",
-      "purpose": "invalid zero cell edge"
+      "purpose": "invalid zero cell edge",
+      "git_blob_sha1": "0744cc3deb63c2d1a2ec6cb5afe0b5bcb1f61b5d"
     },
     {
       "id": "synthetic-10",
       "kind": "synthetic",
       "path": "fixtures/synthetic/s10_missing_z.cif",
       "expect": "reject",
-      "purpose": "missing fractional z tag"
+      "purpose": "missing fractional z tag",
+      "git_blob_sha1": "ab0f2cfcceb38883399092074318e6b769db6a2b"
     }
   ]
 }
