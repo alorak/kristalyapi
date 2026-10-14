@@ -41,6 +41,7 @@ async function sample(page){
  });
 }
 async function save(page,name,metrics){
+ await page.waitForTimeout(200); // allow WebGL animation loop to draw the latest scene
  await page.screenshot({path:path.join(artifacts,name+'.png'),animations:'disabled'});
  metrics[name]=await sample(page);
  assert.ok(metrics[name].ink>20,name+': canvas may be blank '+JSON.stringify(metrics[name]));
@@ -55,17 +56,17 @@ try{
  const errors=[];
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),{timeout:45000});
+ await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await save(page,'01-silicon-perspective',metrics);
  await page.getByRole('button',{name:'Üstten görünüm'}).click();
  await page.waitForTimeout(650);
  await save(page,'02-silicon-top',metrics);
  assert.notEqual(metrics['01-silicon-perspective'].sum,metrics['02-silicon-top'].sum,'camera view should change canvas pixels');
  await page.locator('#fileInput').setInputFiles(path.join(base,'tests/validation/fixtures/real/COD_4335507.cif'));
- await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('COD'),{timeout:20000});
+ await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('4335507'),null,{timeout:20000});
  await save(page,'03-cod-4335507',metrics);
  await page.locator('#fileInput').setInputFiles(path.join(base,'tests/browser/adp_visual.cif'));
- await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('adp visual'),{timeout:20000});
+ await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('adp visual'),null,{timeout:20000});
  await page.locator('#adpVisible').check();
  await page.locator('#adpLevel').selectOption('90');
  await save(page,'04-adp-90',metrics);
