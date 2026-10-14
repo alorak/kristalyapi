@@ -783,8 +783,8 @@ function build(){
   }
  }
  if(state.bonds&&state.style!=='space'){
-  const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x8792a0:0x8d99a6,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
-  const radius=state.style==='wire'?.014:state.style==='stick'?.13:.075;
+  const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x96a2ae:0x98a5b0,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
+  const radius=state.style==='wire'?.012:state.style==='stick'?.095:.055;
   const periodic=state.plane.slab?null:periodicBondSegments(physical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
   if(periodic){for(const [a,b] of periodic.segments)root.add(makeCylinder(a,b,radius,bondMat));if(periodic.truncated)capReached=true;}
   else for(const [i,j] of bondPairs)if(atomMesh[i].visible&&atomMesh[j].visible)root.add(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat));
