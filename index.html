@@ -1166,7 +1166,340 @@ function exportPoscar(){
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane},null,2),'application/json');}
+
+const COD_BASE='https://www.crystallography.net/cod';
+const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
+const COD_PAGE_SIZE=30;
+const COD_MAX_VISIBLE=600;
+let codBookmarks=[],codResults=[],codPage=0,codPane='search',codBusy=false,codAbort=null,codGeneration=0;
+function codCifUrl(id){
+ const safe=String(id||'').trim();
+ if(!/^\d{6,9}$/.test(safe))throw Error('Geçersiz COD numarası: '+safe);
+ return COD_BASE+'/'+safe+'.cif';
+}
+function codEntryUrl(id){return codCifUrl(id).replace(/\.cif$/,'.html');}
+function codCleanSymbol(symbol){
+ const s=String(symbol||'').trim();
+ if(!/^[A-Za-z]{1,2}$/.test(s))throw Error('Geçersiz element simgesi: '+s);
+ const normalized=s[0].toUpperCase()+s.slice(1).toLowerCase();
+ if(!PERIODIC_SYMBOLS.includes(normalized))throw Error('Bilinmeyen element simgesi: '+s);
+ return normalized;
+}
+function codRange(params,fromId,toId,fromKey,toKey,opts={}){
+ const min=$(fromId).value.trim(),max=$(toId).value.trim();
+ const parse=(v,label)=>{
+  if(!v)return null;
+  if(!/^\d+(?:\.\d+)?$/.test(v))throw Error(label+' için pozitif sayı girin.');
+  const x=Number(v);if(!Number.isFinite(x)||x<0)throw Error(label+' geçersiz.');
+  if(opts.integer&&!Number.isInteger(x))throw Error(label+' tam sayı olmalıdır.');
+  return x;
+ };
+ const lo=parse(min,fromId),hi=parse(max,toId);
+ if(lo!==null&&hi!==null&&lo>hi)throw Error('Aralık minimumu maksimumdan büyük olamaz.');
+ if(lo!==null)params.set(fromKey,String(lo));
+ if(hi!==null)params.set(toKey,String(hi));
+}
+function codSearchParamsFromForm(){
+ const p=new URLSearchParams();p.set('format','json');
+ const fields={codText:'text',codId:'id',codFormula:'formula',codSpacegroup:'spacegroup',codJournal:'journal',codYear:'year',codVolume:'volume',codIssue:'issue',codDoi:'doi'};
+ let filled=0;
+ for(const [id,key] of Object.entries(fields)){
+  const v=$(id).value.trim();
+  if(v){
+   if(v.length>150)throw Error('Arama alanı fazla uzun: '+id);
+   if(key==='id'&&!/^\d{6,9}$/.test(v))throw Error('COD numarası 6–9 rakam olmalıdır.');
+   if(key==='year'&&!/^\d{4}$/.test(v))throw Error('Yıl dört rakam olmalıdır.');
+   p.set(key,v);filled++;
+  }
+ }
+ for(const [container,prefix] of [['codMustElements','el'],['codNotElements','nel']]){
+  const values=[...$(container).querySelectorAll('input')].map(x=>x.value.trim()).filter(Boolean).map(codCleanSymbol);
+  if(new Set(values).size!==values.length)throw Error('Aynı element birden fazla kez girildi.');
+  values.forEach((value,i)=>p.set(prefix+(i+1),value));
+  filled+=values.length;
+ }
+ const ranges=[
+  ['codDistinctMin','codDistinctMax','strictmin','strictmax',{integer:true}],
+  ['codVolMin','codVolMax','vmin','vmax',{}],
+  ['codZMin','codZMax','minZ','maxZ',{}],
+  ['codZpMin','codZpMax','minZprime','maxZprime',{}]
+ ];
+ for(const [min,max,keyMin,keyMax,opts] of ranges){
+  const before=p.size;codRange(p,min,max,keyMin,keyMax,opts);filled+=p.size-before;
+ }
+ if(filled===0)throw Error('Çok geniş sorguları önlemek için en az bir filtre girin.');
+ for(const [id,param] of [['codFobs','has_fobs'],['codDuplicates','include_duplicates'],['codErrors','include_errors'],['codTheoretical','include_theoretical']]){
+  if($(id).checked)p.set(param,'1');
+ }
+ return p;
+}
+function codSearchUrl(params){return COD_BASE+'/result?'+params.toString();}
+function codRequestUrls(url,mode){
+ if(!url.startsWith(COD_BASE+'/'))throw Error('Yalnızca COD kayıtları sorgulanabilir.');
+ const urls={direct:url,proxy:'https://proxy.cors.dev/'+url,mirror:'https://api.allorigins.win/raw?url='+encodeURIComponent(url)};
+ return mode==='direct'?[urls.direct]:mode==='proxy'?[urls.proxy,urls.mirror]:[urls.direct,urls.proxy,urls.mirror];
+}
+async function codReadResponse(url,signal,limit=6500000){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),12500);
+ const cancel=()=>controller.abort();
+ if(signal){if(signal.aborted)controller.abort();else signal.addEventListener('abort',cancel,{once:true});}
+ try{
+  const response=await fetch(url,{method:'GET',mode:'cors',credentials:'omit',signal:controller.signal});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const size=Number(response.headers.get('content-length')||0);
+  if(size>limit)throw Error('COD yanıtı çok büyük, daha dar arama kullanın.');
+  const text=await response.text();
+  if(text.length>limit)throw Error('COD yanıtı çok büyük, filtreleri daraltın.');
+  if(/^\s*<!doctype html|^\s*<html/i.test(text))throw Error('COD beklenmedik HTML yanıtı döndürdü.');
+  return text;
+ }finally{clearTimeout(timer);if(signal)signal.removeEventListener('abort',cancel);}
+}
+async function fetchCodText(url,{mode='auto',signal,limit}={}){
+ const urls=codRequestUrls(url,mode),errors=[];
+ for(const target of urls){
+  if(signal?.aborted)throw Error('İstek iptal edildi.');
+  try{return await codReadResponse(target,signal,limit);}catch(e){
+   if(signal?.aborted)throw Error('İstek iptal edildi.');
+   errors.push(e.message||'Bağlantı sorunu');
+  }
+ }
+ throw Error('COD verisi alınamadı ('+errors.join(' / ')+'). CORS veya COD sunucusuna erişim kısıtlı olabilir.');
+}
+function codFirst(o,names){
+ for(const name of names){const value=o?.[name];if(value!==undefined&&value!==null&&String(value).trim()!=='')return String(value).trim();}
+ return '';
+}
+function normalizeCodRecord(raw,idHint=''){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+ const codId=codFirst(raw,['file','cod_id','codId','id','entry_id'])||String(idHint);
+ if(!/^\d{6,9}$/.test(codId))return null;
+ const record={
+  codId,
+  formula:codFirst(raw,['formula','calcformula','chemical_formula_sum','chemical_formula','sum_formula']),
+  spacegroup:codFirst(raw,['sg','spacegroup','space_group','space_group_name_H-M']),
+  cellA:codFirst(raw,['a','cell_length_a']),cellB:codFirst(raw,['b','cell_length_b']),
+  cellC:codFirst(raw,['c','cell_length_c']),volume:codFirst(raw,['vol','volume','cell_volume']),
+  alpha:codFirst(raw,['alpha','cell_angle_alpha']),beta:codFirst(raw,['beta','cell_angle_beta']),gamma:codFirst(raw,['gamma','cell_angle_gamma']),
+  year:codFirst(raw,['year','publication_year']),journal:codFirst(raw,['journal','journal_name_full']),
+  authors:codFirst(raw,['authors','author','publ_author_name']),title:codFirst(raw,['title','publication_title']),
+  doi:codFirst(raw,['doi','journal_paper_doi']),elements:codFirst(raw,['nel']),
+  cifUrl:codCifUrl(codId),entryUrl:codEntryUrl(codId)
+ };
+ return record;
+}
+function normalizeCodResults(payload){
+ let rows;
+ if(Array.isArray(payload))rows=payload.map(x=>[x?.file||x?.id||'',x]);
+ else if(payload&&typeof payload==='object'){
+  if(Array.isArray(payload.results))rows=payload.results.map(x=>[x?.file||x?.id||'',x]);
+  else if(Array.isArray(payload.data))rows=payload.data.map(x=>[x?.file||x?.id||'',x]);
+  else if(payload.file||payload.cod_id||payload.id)rows=[['',payload]];
+  else rows=Object.entries(payload).filter(([k,v])=>/^\d{6,9}$/.test(k)&&v&&typeof v==='object');
+ }else throw Error('COD yanıtı beklenen JSON nesnesi veya listesi değil.');
+ if(!rows)throw Error('COD yanıt biçimi tanınmadı.');
+ const result=[],seen=new Set();
+ for(const [id,row] of rows){const r=normalizeCodRecord(row,id);if(!r||seen.has(r.codId))continue;seen.add(r.codId);result.push(r);}
+ return result;
+}
+function codRecordForStorage(r){
+ if(!r||!r.codId)return null;
+ const codId=String(r.codId);
+ if(!/^\d{6,9}$/.test(codId))return null;
+ const names=['formula','spacegroup','cellA','cellB','cellC','volume','alpha','beta','gamma','year','journal','authors','title','doi','elements'];
+ const saved={codId,cifUrl:codCifUrl(codId),entryUrl:codEntryUrl(codId)};
+ for(const key of names)saved[key]=String(r[key]??'').slice(0,800);
+ saved.savedAt=Number(r.savedAt)||Date.now();
+ return saved;
+}
+function loadCodBookmarks(storage){
+ try{
+  const raw=storage.getItem(COD_BOOKMARK_KEY);
+  const value=raw?JSON.parse(raw):[];
+  if(!Array.isArray(value))return [];
+  const map=new Map();
+  for(const item of value.slice(0,1000)){const saved=codRecordForStorage(item);if(saved)map.set(saved.codId,saved);}
+  return [...map.values()];
+ }catch(e){return [];}
+}
+function saveCodBookmarks(storage,entries){storage.setItem(COD_BOOKMARK_KEY,JSON.stringify(entries.map(codRecordForStorage).filter(Boolean)));}
+function codStore(){
+ try{return window.localStorage;}catch(e){return null;}
+}
+function codIsFavorite(id){return codBookmarks.some(x=>x.codId===id);}
+function codBookmarkCount(){
+ $('libBookmarkCount').textContent=codBookmarks.length;
+ $('bookmarksTotal').textContent='('+codBookmarks.length+')';
+}
+function codToggleBookmark(record){
+ const previous=codBookmarks.slice(),id=String(record.codId);
+ if(codIsFavorite(id))codBookmarks=codBookmarks.filter(r=>r.codId!==id);
+ else {const meta=codRecordForStorage(record);if(!meta){codSearchMessage('Geçersiz COD kayıt numarası.',true);return;}codBookmarks.unshift(meta);}
+ const store=codStore();
+ try{
+  if(!store)throw Error('Bu tarayıcı yerel depolamaya izin vermiyor.');
+  saveCodBookmarks(store,codBookmarks);
+  codBookmarkCount();renderCodResults();renderCodBookmarks();
+ }catch(e){
+  codBookmarks=previous;codBookmarkCount();
+  codSearchMessage('Yer imi kaydedilemedi: '+e.message,true);
+ }
+}
+function codPlainNode(tag,text,cls){
+ const el=document.createElement(tag);
+ if(cls)el.className=cls;
+ if(text!==undefined)el.textContent=String(text);
+ return el;
+}
+function codLink(url,label){
+ const a=codPlainNode('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;
+}
+function codButton(label,cls,callback){
+ const b=codPlainNode('button',label,cls);b.type='button';b.addEventListener('click',callback);return b;
+}
+function codSearchMessage(message,isError=false,isLoading=false){
+ const el=$('codSearchStatus');el.textContent=message;el.className='lib-status'+(isError?' error':isLoading?' loading':'');
+ el.hidden=false;
+}
+function codCell(row,content,cls){
+ const cell=document.createElement('td');if(cls)cell.className=cls;
+ if(content instanceof Node)cell.append(content);else cell.textContent=String(content??'');
+ row.append(cell);return cell;
+}
+function codCellDescription(r){
+ const lengths=[r.cellA,r.cellB,r.cellC].filter(Boolean).join(' · ');
+ return lengths?(lengths+' Å'):'—';
+}
+function codActions(record){
+ const actions=codPlainNode('div',undefined,'lib-row-actions');
+ const fav=codButton(codIsFavorite(record.codId)?'★':'☆','lib-star'+(codIsFavorite(record.codId)?' on':''),()=>codToggleBookmark(record));
+ fav.title=codIsFavorite(record.codId)?'Yer imlerinden çıkar':'Yer imlerine ekle';
+ fav.setAttribute('aria-label',fav.title);
+ const imp=codButton('↧ İçe aktar','lib-import',async()=>{
+  imp.disabled=true;imp.textContent='Alınıyor…';
+  try{await importCodEntry(record);imp.textContent='↧ İçe aktar';}
+  catch(e){codSearchMessage('CIF içe aktarılamadı: '+e.message+'. CIF bağlantısından dosyayı indirip Kristal Yapı → Aç ile içe aktarabilirsin.',true);imp.textContent='Yeniden dene';}
+  finally{imp.disabled=false;}
+ });
+ actions.append(fav,imp);return actions;
+}
+function codTable(entries){
+ const table=codPlainNode('table',undefined,'lib-table'),thead=document.createElement('thead'),head=document.createElement('tr');
+ for(const k of ['COD ID','Formül','Uzay grubu','Hücre (a · b · c)','Hacim Å³','Yayın / DOI','CIF','İşlemler'])head.append(codPlainNode('th',k));
+ thead.append(head);table.append(thead);
+ const tbody=document.createElement('tbody');
+ for(const r of entries){
+  const tr=document.createElement('tr');
+  codCell(tr,codLink(r.entryUrl,r.codId));
+  const form=codPlainNode('strong',r.formula||'Formül bilinmiyor');codCell(tr,form,'lib-formula');
+  codCell(tr,r.spacegroup||'—');
+  codCell(tr,codCellDescription(r),'lib-cell-data');
+  codCell(tr,r.volume||'—','lib-cell-data');
+  const bib=codPlainNode('div');bib.append(codPlainNode('strong',[r.journal,r.year].filter(Boolean).join(' · ')||'Yayın bilgisi yok'));
+  if(r.authors||r.title)bib.append(codPlainNode('small',[r.authors,r.title].filter(Boolean).join(' — ').slice(0,240)));
+  if(r.doi)bib.append(codLink('https://doi.org/'+encodeURIComponent(r.doi),'DOI ↗'));
+  codCell(tr,bib,'lib-bib');
+  codCell(tr,codLink(r.cifUrl,'CIF ↗'));
+  codCell(tr,codActions(r));
+  tbody.append(tr);
+ }
+ table.append(tbody);return table;
+}
+function renderCodResults(){
+ const view=$('codResults');view.replaceChildren();
+ $('codResultCount').textContent=codResults.length?'('+codResults.length.toLocaleString('tr-TR')+')':'';
+ if(!codResults.length){$('codPager').replaceChildren();return;}
+ const start=codPage*COD_PAGE_SIZE,page=codResults.slice(start,start+COD_PAGE_SIZE);
+ view.append(codTable(page));
+ const pages=Math.ceil(codResults.length/COD_PAGE_SIZE);
+ const pager=$('codPager');pager.replaceChildren();
+ if(pages>1){
+  const previous=codButton('‹ Önceki','small',()=>{if(codPage>0){codPage--;renderCodResults();}});previous.disabled=codPage===0;
+  const next=codButton('Sonraki ›','small',()=>{if(codPage<pages-1){codPage++;renderCodResults();}});next.disabled=codPage===pages-1;
+  pager.append(previous,codPlainNode('span',(codPage+1)+' / '+pages+' sayfa'),next);
+ }
+}
+function renderCodBookmarks(){
+ const list=$('libBookmarksList');list.replaceChildren();codBookmarkCount();
+ $('bookmarkEmpty').hidden=codBookmarks.length>0;
+ if(codBookmarks.length)list.append(codTable(codBookmarks));
+}
+function setLibraryPane(mode){
+ codPane=mode;
+ $('libSearchPane').hidden=mode!=='search';
+ $('libBookmarksPane').hidden=mode!=='bookmarks';
+ for(const [id,selected] of [['libSearchTab',mode==='search'],['libBookmarksTab',mode==='bookmarks']]){
+  $(id).classList.toggle('selected',selected);$(id).setAttribute('aria-selected',String(selected));
+ }
+ if(mode==='bookmarks')renderCodBookmarks();
+}
+function isLibraryHash(hash){return hash==='#kutuphane';}
+function syncLibraryNavigation(){
+ const library=isLibraryHash(window.location.hash);
+ document.body.classList.toggle('library-open',library);
+ $('app').hidden=library;
+ $('libraryPage').hidden=!library;
+ $('libraryNav').classList.toggle('active',library);
+ $('homeLink').setAttribute('aria-current',library?'false':'page');
+ $('libraryNav').setAttribute('aria-current',library?'page':'false');
+ if(!library){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');requestAnimationFrame(()=>resize());}
+ else {window.scrollTo?.(0,0);}
+}
+function codSetLoading(busy){
+ codBusy=busy;
+ $('codSubmit').disabled=busy;
+ $('codSubmit').textContent=busy?'Aranıyor…':'⌕ COD’da ara';
+}
+async function runCodSearch(){
+ if(codBusy)return;
+ let params,url;
+ try{params=codSearchParamsFromForm();url=codSearchUrl(params);}
+ catch(e){codSearchMessage(e.message,true);return;}
+ $('codExternalSearch').href=url;$('codExternalSearch').hidden=false;
+ codResults=[];codPage=0;renderCodResults();
+ codSetLoading(true);codSearchMessage('COD veritabanında aranıyor. Sonuçlar yüklenene kadar bekleyin…',false,true);
+ const requestId=++codGeneration,controller=new AbortController();codAbort=controller;
+ try{
+  const body=await fetchCodText(url,{mode:$('codConnection').value,signal:controller.signal,limit:6500000});
+  const payload=JSON.parse(body),all=normalizeCodResults(payload);
+  if(requestId!==codGeneration)return;
+  codResults=all.slice(0,COD_MAX_VISIBLE);codPage=0;
+  renderCodResults();
+  const suffix=all.length>COD_MAX_VISIBLE?' İlk '+COD_MAX_VISIBLE+' sonuç gösterildi; daha dar filtre önerilir.':'';
+  codSearchMessage(all.length?'COD üzerinde '+all.length.toLocaleString('tr-TR')+' kayıt bulundu.'+suffix:'Bu ölçütlerle COD kaydı bulunamadı.');
+ }catch(e){
+  if(requestId!==codGeneration)return;
+  codSearchMessage('Arama tamamlanamadı: '+e.message+'. İstersen aramayı COD sitesinde açıp CIF dosyasını elle yükleyebilirsin.',true);
+ }finally{
+  if(requestId===codGeneration){codAbort=null;codSetLoading(false);}
+ }
+}
+async function importCodEntry(record){
+ const url=codCifUrl(record.codId);
+ const content=await fetchCodText(url,{mode:$('codConnection').value,limit:4000000});
+ if(!/^\s*(?:data_|#)/i.test(content))throw Error('Yanıt geçerli CIF içeriğine benzemiyor.');
+ const file=new File([content],record.codId+'.cif',{type:'chemical/x-cif'});
+ await importFile(file);
+ if(record.codId){state.name=(record.formula||'COD '+record.codId)+' · COD '+record.codId;state.detail=(state.detail||'')+' · COD '+record.codId;build();}
+ window.location.hash='kristal';
+ syncLibraryNavigation();
+ inform('COD '+record.codId+' kristal çalışma alanına aktarıldı.');
+}
+function initLibrary(){
+ const store=codStore();
+ codBookmarks=store?loadCodBookmarks(store):[];
+ codBookmarkCount();renderCodBookmarks();renderCodResults();
+ $('libSearchTab').onclick=()=>setLibraryPane('search');
+ $('libBookmarksTab').onclick=()=>setLibraryPane('bookmarks');
+ $('codSearchForm').onsubmit=e=>{e.preventDefault();runCodSearch();};
+ $('codSearchForm').onreset=()=>{if(codAbort){codAbort.abort();codAbort=null;}codGeneration++;codSetLoading(false);codResults=[];codPage=0;$('codExternalSearch').hidden=true;setTimeout(()=>{renderCodResults();codSearchMessage('Filtreler temizlendi. Yeni bir arama yapabilirsin.');},0);};
+ $('bookmarkExport').onclick=()=>download('kristalyapi_cod_yer_imleri.json',JSON.stringify({format:'kristalyapi-cod-bookmarks-v1',entries:codBookmarks.map(codRecordForStorage)},null,2),'application/json');
+ window.addEventListener('hashchange',syncLibraryNavigation);
+ syncLibraryNavigation();
+}
+
 function bind(){
+ initLibrary();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('useSymmetry').onchange=e=>{if(e.target.checked&&!validateSymmetryMetric(state.cell,state.sgSetting)){e.target.checked=false;inform('Uzay grubu seçili hücre parametreleriyle uyumsuz.');return;}state.symmetryEnabled=e.target.checked;syncSgControls();renderSites();build();fit();};
