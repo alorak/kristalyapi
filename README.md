@@ -26,7 +26,7 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 
 - **230 uzay grubu, 274 referans/alternatif setting**, HTML içine gömülü simetri operatörleri ve Wyckoff referans konumları.
 - Belirlenen uzay grubunun **asimetrik atom konumlarını tam birim hücreye** genişletme; eşdeğer atomları koordinat toleransıyla tekilleştirme.
-- Önemli: VESTA'daki otomatik Wyckoff konum teşhisi/yerleştirme algoritması henüz yok; mevcut tabloda Wyckoff harfi, çokluğu ve referans konumu listelenir.
+- Simetri modu açıkken, en çok 60 bağımsız konum için site çokluğu ve Wyckoff sınıfı **atom koordinatlarından otomatik olarak** eşleştirilir (affine pozisyon kısıtları ve simetri eşdeğerleri). Wyckoff konumlarını otomatik *oluşturma* ve koordinatları simetrik ideal konuma zorlama özelliği yoktur.
 - Hücre metriğiyle uyumsuz simetri operatörlerinin uygulanmasını engelleyen doğrulama.
 - Tür bazlı bağ kuralları; görünür hücre sınırını geçen periyodik bağların çizimi (100 veya daha az temel atom için tam yöntem, büyük yapılarda mevcut uzaysal eşik yöntemi).
 - Mesafe ölçümünde doğrudan uzaklığın yanında **minimum periyodik görüntü uzaklığı** (komşu 27 görüntünün taranması).
@@ -37,7 +37,7 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 
 - Tam örgü metriğinden **Miller (hkl) düzlemi** ve **d(hkl)** düzlemler arası uzaklık hesaplaması (kübik ile sınırlı değildir).
 - Gerçek 3B örgü üzerinde birim/süperhücreyle kesişen saydam düzlem poligonu.
-- Seçili düzlem etrafında Å cinsinden kalınlıkla **görsel atom-merkezi kesiti** (slab filtreleme). Bu özellik atomları yüzey doğrultusunda yeniden hücrelemez, vakum bırakmaz ve yüzey relaksasyonu yapmaz; dolayısıyla DFT'ye doğrudan girdi sağlayan fiziksel slab üreticisi değildir.
+- Seçili düzlem etrafında Å cinsinden kalınlıkla **görsel atom-merkezi kesiti** (slab filtreleme), ayrıca **vakumlu slab hücresi oluşturma**: (hkl) yüzeyinin iki primitive 2B örgü vektörü, yüzeye dik üçüncü hücre ekseni, belirtilen Å kalınlığı ve vakum boşluğu. Oluşturulan P1 slab CIF/POSCAR olarak dışa aktarılabilir. Yüzey relaksasyonu, yeniden yapılanma, pasivasyon, dipol düzeltmesi ve DFT çalıştırma bu uygulamanın kapsamı dışındadır.
 - Pozitif determinantlı özel **3×3 örgü dönüşümü**, atomların koordinatlarına uygun baz değişikliği ve dönüştürülen hücrede atomların yeniden bulunması.
 - FCC/BCC conventional → primitive, FCC primitive → conventional, eksen değişimi ve bir yönde çoğaltma örnek dönüşüm matrisleri.
 - Dönüştürülmüş hücre P1 olarak atanır; özgün simetri grubu otomatik olarak tekrar çözümlenmez.
@@ -62,5 +62,7 @@ node --test tests/core.test.cjs
 ```
 
 Veriler: https://github.com/anoopkcn/wyckoff (MIT; Anoop K. Chandran) ile https://github.com/spglib/spglib (BSD-3-Clause; Spglib team) kaynaklarından türetilen referans tabloları HTML içinde taşınır; telif/lisans bildirimleri de HTML içinde yer alır.
+
+Vakumlu slab üreticisi, atom merkezlerini kesen ideal geometrik yüzey üretir. Fiziksel yüzey kararlılığı / kutupluluk değerlendirmesi yapmaz; DFT hesabı öncesinde doğrulanmalıdır.
 
 Uygulamanın kaynak dosyası tek başına `index.html` dosyasıdır. Testler ve GitHub Actions yalnızca geliştirme/deploy içindir.
