@@ -9,7 +9,7 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
-## İlk sürümün özellikleri
+## Özellikler
 
 - Si (diamond cubic), C (elmas), NaCl, CsCl, Cu (FCC), BaTiO₃ (ideal kübik), grafit örnekleri
 - Birim hücre parametreleri (**a, b, c, α, β, γ**); triklinik hücre desteği
@@ -22,16 +22,37 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - **Dışa aktarma:** CIF, POSCAR, XYZ, proje JSON ve PNG
 - Node.js'in yerleşik test çalıştırıcısıyla kristal geometri ve temel dosya ayrıştırma regresyon testleri
 
+## Kristalografik temel (Aşama 1)
+
+- **230 uzay grubu, 274 referans/alternatif setting**, HTML içine gömülü simetri operatörleri ve Wyckoff referans konumları.
+- Belirlenen uzay grubunun **asimetrik atom konumlarını tam birim hücreye** genişletme; eşdeğer atomları koordinat toleransıyla tekilleştirme.
+- Önemli: VESTA'daki otomatik Wyckoff konum teşhisi/yerleştirme algoritması henüz yok; mevcut tabloda Wyckoff harfi, çokluğu ve referans konumu listelenir.
+- Hücre metriğiyle uyumsuz simetri operatörlerinin uygulanmasını engelleyen doğrulama.
+- Tür bazlı bağ kuralları; görünür hücre sınırını geçen periyodik bağların çizimi (100 veya daha az temel atom için tam yöntem, büyük yapılarda mevcut uzaysal eşik yöntemi).
+- Mesafe ölçümünde doğrudan uzaklığın yanında **minimum periyodik görüntü uzaklığı** (komşu 27 görüntünün taranması).
+- CIF içe aktarımı: Dosyada verilen simetri operatörlerini uygular; operatör yoksa tanınan uzay grubu ve referans ayarıyla genişletir, setting/orijin varsayımını uyarıyla bildirir.
+- CIF dışa aktarımı: Asimetrik konumlara simetri uygulanıyorsa seçilen grup ve operatörler korunur; önceden genişletilmiş (P1) atomlar P1 olarak yazılır.
+
+## Miller düzlemleri ve dönüşümler (Aşama 2)
+
+- Tam örgü metriğinden **Miller (hkl) düzlemi** ve **d(hkl)** düzlemler arası uzaklık hesaplaması (kübik ile sınırlı değildir).
+- Gerçek 3B örgü üzerinde birim/süperhücreyle kesişen saydam düzlem poligonu.
+- Seçili düzlem etrafında Å cinsinden kalınlıkla **görsel atom-merkezi kesiti** (slab filtreleme). Bu özellik atomları yüzey doğrultusunda yeniden hücrelemez, vakum bırakmaz ve yüzey relaksasyonu yapmaz; dolayısıyla DFT'ye doğrudan girdi sağlayan fiziksel slab üreticisi değildir.
+- Pozitif determinantlı özel **3×3 örgü dönüşümü**, atomların koordinatlarına uygun baz değişikliği ve dönüştürülen hücrede atomların yeniden bulunması.
+- FCC/BCC conventional → primitive, FCC primitive → conventional, eksen değişimi ve bir yönde çoğaltma örnek dönüşüm matrisleri.
+- Dönüştürülmüş hücre P1 olarak atanır; özgün simetri grubu otomatik olarak tekrar çözümlenmez.
+- Dar ekranda üst araç çubuğunun başlığa taşması engellendi; gereksiz alt başlık kaldırılarak 3B çalışma alanı büyütüldü.
+
 ## Bilimsel kapsam ve sınırlar
 
-- **Bu bir VESTA eşdeğeri değildir.** Elektron yoğunluğu / potansiyel alanları, CHGCAR/CUBE/XSF hacimsel izoyüzeyleri, manyetik yapı, çok fazlı görselleştirme, termal elipsoitler, Wyckoff veri tabanı ve tam 230 uzay grubu çözümlemesi bu sürümde yoktur.
-- CIF'de uzay grubu adı olup simetri operasyonları verilmemişse, tüm simetri eşdeğer atomları üretilemez. Uygulama bunu açıkça bildirir ve yalnızca verilen atom konumlarını kullanır.
+- **Bu bir VESTA eşdeğeri değildir.** Elektron yoğunluğu / potansiyel alanları, CHGCAR/CUBE/XSF hacimsel izoyüzeyleri, manyetik yapı, çok fazlı görselleştirme, termal elipsoitler, Wyckoff veri tabanı ve otomatik uzay grubu belirleme bu sürümde yoktur.
+- CIF'de simetri operasyonları verilmemişse, tanınan uzay grubunun referans ayarı/orijini varsayılır. Alternatif orijin ve eksen ayarlarında fiziksel doğruluğu bağımsız olarak kontrol etmek gerekir.
 - CIF okuyucu yaygın CIF 1.x metinsel altkümesini hedefler; tüm CIF/mCIF standartlarını uygulamaz. mCIF manyetik verileri dikkate alınmaz.
-- İçe aktarılan CIF simetrisi açık P1 atom konumlarına genişletilir; dışa aktarılan CIF, **P1** olarak yazılır. Özgün uzay grubu/meta verileri korunmaz.
+- CIF içe aktarımı atomları görünür P1 konumlarına genişletir. **Simetri modu açık ise** dışa aktarma seçilen uzay grubunu açık operatörlerle korur; simetri modu kapalı ise P1 yazılır. Her iki durumda da kaynak dosyanın bütün kristalografik meta verileri korunmaz.
 - XYZ periyodik kafes bilgisi taşımaz; program atomları suni bir dik kutuya yerleştirir.
 - Bağlar, kullanıcı tarafından belirlenen mesafe eşiğine göre çizilir. Kimyasal bağların varlığı, bağ mertebesi veya koordinasyon kimyası doğrulanmaz.
-- Mesafe/açı ölçümü, görselde seçilen belirli atom görüntüleri arasında yapılır. Otomatik minimum-görüntü (minimum image) hesabı yapılmaz.
-- Sahne koruması için görüntülenen atom sayısı 1800, bağ sayısı 6500 ile sınırlıdır.
+- Mesafe/açı ölçümü seçilen görüntüler arasında yapılır; buna ek olarak iki atom için 27 komşu görüntü taranarak periyodik minimum mesafe sunulur. Açı için minimum-görüntüye dayalı yeniden seçim yapılmaz.
+- Sahne koruması için görüntülenen atom sayısı 1800, bağ sayısı 6500 ile sınırlıdır. 100'den fazla temel atom içeren yapılarda periyodik bağların dış sınırda tam çizilmesi yerine yalnızca uzaysal eşik yaklaşımı kullanılır.
 - Editör ağırlıklı olarak yapısal görselleştirmeye odaklanır; deneysel parametreler ve kristalografik sonuçlar bilimsel kaynaklarla ayrıca doğrulanmalıdır.
 
 ## Geliştirici testi
@@ -39,5 +60,7 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 ```sh
 node --test tests/core.test.cjs
 ```
+
+Veriler: https://github.com/anoopkcn/wyckoff (MIT; Anoop K. Chandran) ile https://github.com/spglib/spglib (BSD-3-Clause; Spglib team) kaynaklarından türetilen referans tabloları HTML içinde taşınır; telif/lisans bildirimleri de HTML içinde yer alır.
 
 Uygulamanın kaynak dosyası tek başına `index.html` dosyasıdır. Testler ve GitHub Actions yalnızca geliştirme/deploy içindir.
