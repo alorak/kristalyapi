@@ -159,7 +159,7 @@ function initScene(){
 }
 function resize(){const r=$('stage').getBoundingClientRect();if(r.width<1||r.height<1)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;if(camera.isPerspectiveCamera)camera.updateProjectionMatrix();else{const scale=r.width/r.height;camera.left=-currentSpan*scale/2;camera.right=currentSpan*scale/2;camera.top=currentSpan/2;camera.bottom=-currentSpan/2;camera.updateProjectionMatrix();}}
 function loop(){requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();renderer.render(scene,camera);}
-function clearRoot(){for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==bondGeometry)x.geometry.dispose();if(x.material&&x.userData.disposableMaterial){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(m.map)m.map.dispose();m.dispose();});}});}atomMesh=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
+function clearRoot(){const freed=new Set(),shared=new Set(atomMaterials.values());for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==bondGeometry&&!freed.has(x.geometry)){freed.add(x.geometry);x.geometry.dispose();}if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(!shared.has(m)&&!freed.has(m)){freed.add(m);if(m.map)m.map.dispose();m.dispose();}});}});}atomMesh=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
 function line(points,color,opacity=1){return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false}));}
 function addCellLines(B,r){
  const pts=[],OUT=[];
@@ -168,7 +168,7 @@ function addCellLines(B,r){
  if(state.cellVisible){for(let i=0;i<r[0];i++)for(let j=0;j<r[1];j++)for(let k=0;k<r[2];k++)edges(i,j,k,pts);root.add(line(pts,0x587793,.36));edges(0,0,0,OUT); /* major boundary drawn separately below */}
  const cornersAll=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)cornersAll.push([x*r[0],y*r[1],z*r[2]]);
  const segments=[];for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){if(cornersAll[i].filter((v,n)=>v!==cornersAll[j][n]).length===1)segments.push(toCart(cornersAll[i],B),toCart(cornersAll[j],B));}
- root.add(line(segments,0x63d8eb,.92));
+ if(state.cellVisible)root.add(line(segments,0x63d8eb,.92));
 }
 function makeCylinder(a,b,radius,mat){const d=new THREE.Vector3().subVectors(b,a),m=new THREE.Mesh(bondGeometry,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());m.scale.set(radius,d.length(),radius);return m;}
 function build(){
@@ -278,10 +278,11 @@ function renderSites(){
 function applyCell(){try{const c={};for(const k of ['a','b','c','alpha','beta','gamma'])c[k]=Number($(k).value);state.cell=validateCell(c);state.warning='';build();fit();}catch(e){inform(e.message);}}
 function applyRepeat(){const r=['ra','rb','rc'].map(x=>Number($(x).value));if(r.some(x=>!Number.isInteger(x)||x<1||x>6)){inform('Her eksende tekrar sayısı 1 ile 6 arasında tam sayı olmalıdır.');return;}state.rep=r;build();fit();}
 function loadPreset(key){const ex=examples(key);state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;state.cut=ex.cut;state.warning='';state.poly='';syncControls();build();fit();}
+function stripCifComment(line){let quote='';for(let k=0;k<line.length;k++){const c=line[k];if(quote){if(c===quote)quote='';}else if(c==='\''||c==='"')quote=c;else if(c==='#')return line.slice(0,k);}return line;}
 function tokenizeCif(src){
  const lines=src.replace(/\r\n?/g,'\n').split('\n'),tokens=[];
  for(let i=0;i<lines.length;i++){
-  const line=lines[i];if(line.startsWith(';')){const out=[];i++;while(i<lines.length&&!lines[i].startsWith(';'))out.push(lines[i++]);tokens.push(out.join('\n'));continue;}
+  const line=stripCifComment(lines[i]);if(line.startsWith(';')){const out=[];i++;while(i<lines.length&&!lines[i].startsWith(';'))out.push(lines[i++]);tokens.push(out.join('\n'));continue;}
   const re=/'(?:[^']|'')*'|"(?:[^"]|"")*"|[^\s#]+/g;let m;while((m=re.exec(line))){let v=m[0];if(v.startsWith('#'))break;if((v[0]==="'"&&v.endsWith("'"))||(v[0]==='"'&&v.endsWith('"')))v=v.slice(1,-1);tokens.push(v);}
  }
  return tokens;
@@ -382,7 +383,7 @@ function exportPoscar(){
  download('POSCAR',rows.join('\n')+'\n');
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
-function screenshot(){renderer.render(scene,camera);renderer.domElement.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
+function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#0a1729';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut},null,2),'application/json');}
 function bind(){
  $('openBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{if(!e.target.files?.[0])return;try{await importFile(e.target.files[0]);}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
