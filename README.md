@@ -22,6 +22,15 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - **Dışa aktarma:** CIF, POSCAR, XYZ, proje JSON ve PNG
 - Node.js'in yerleşik test çalıştırıcısıyla kristal geometri ve temel dosya ayrıştırma regresyon testleri
 
+## Beyaz tema ve VESTA benzeri görünüm
+
+- Tüm uygulamada **beyaz/açık tema**: başlık, sol/sağ paneller, formlar, tablolar, menüler, ölçüm panelleri ve 3B çalışma alanı.
+- Atomlar **elementlerine göre Jmol/CPK-esinli farklı renklerle** gösterilir (118 element için kararlı renkler); beyaz fondaki kontrast için nötr ışıklandırma kullanılır.
+- 3B sahnenin sol altında kamerayla birlikte dönen **XYZ yön göstergesi** vardır: X kırmızı, Y yeşil, Z mavi. Bu gösterge Kartezyen eksenlerdir; triklinik yapılarda birim hücrenin a/b/c örgü vektörleriyle karıştırılmamalıdır.
+- **Otomatik bağ uzunluğu (elemente göre)** varsayılan açıktır. Bağ uzunluğu, genel eşik ile yaklaşık kovalan yarıçapları toplamının (1,2×) küçüğüyle sınırlandırılır. Özel element-çifti kuralları bu otomatik sınırı geçersiz kılar. Bu yalnızca geometrik bir görselleştirme sezgisidir; VESTA dosyalarındaki kullanıcı tanımlı bağ kurallarını yeniden üretmez.
+- Bağ çubukları inceltildi, hücre çizgileri beyaz fonda okunacak gri tona getirildi ve PNG dışa aktarımı beyaz zeminle yapılıyor.
+- Orijinal 3B sahnedeki renkli kristal ekseni çizgileri varsayılan olarak kapalıdır; **Görünüm → Kristal eksenlerini yapı içinde göster** ile tekrar açılabilir. Sol alt XYZ göstergesi sabit görünür.
+
 ## Kristalografik temel (Aşama 1)
 
 - **230 uzay grubu, 274 referans/alternatif setting**, HTML içine gömülü simetri operatörleri ve Wyckoff referans konumları.
@@ -45,12 +54,12 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 
 ## Bilimsel kapsam ve sınırlar
 
-- **Bu bir VESTA eşdeğeri değildir.** Elektron yoğunluğu / potansiyel alanları, CHGCAR/CUBE/XSF hacimsel izoyüzeyleri, manyetik yapı, çok fazlı görselleştirme, termal elipsoitler, Wyckoff veri tabanı ve otomatik uzay grubu belirleme bu sürümde yoktur.
+- **Bu bir VESTA eşdeğeri değildir.** Elektron yoğunluğu / potansiyel alanları, CHGCAR/CUBE/XSF hacimsel izoyüzeyleri, manyetik yapı, çok fazlı görselleştirme, termal elipsoitler ve otomatik uzay grubu belirleme bu sürümde yoktur.
 - CIF'de simetri operasyonları verilmemişse, tanınan uzay grubunun referans ayarı/orijini varsayılır. Alternatif orijin ve eksen ayarlarında fiziksel doğruluğu bağımsız olarak kontrol etmek gerekir.
 - CIF okuyucu yaygın CIF 1.x metinsel altkümesini hedefler; tüm CIF/mCIF standartlarını uygulamaz. mCIF manyetik verileri dikkate alınmaz.
 - CIF içe aktarımı atomları görünür P1 konumlarına genişletir. **Simetri modu açık ise** dışa aktarma seçilen uzay grubunu açık operatörlerle korur; simetri modu kapalı ise P1 yazılır. Her iki durumda da kaynak dosyanın bütün kristalografik meta verileri korunmaz.
 - XYZ periyodik kafes bilgisi taşımaz; program atomları suni bir dik kutuya yerleştirir.
-- Bağlar, kullanıcı tarafından belirlenen mesafe eşiğine göre çizilir. Kimyasal bağların varlığı, bağ mertebesi veya koordinasyon kimyası doğrulanmaz.
+- Bağlar, kullanıcı eşiğiyle element yarıçapına dayalı otomatik sınırlama (ve varsa özel çift kuralları) kullanılarak çizilir. Kimyasal bağların varlığı, bağ mertebesi veya koordinasyon kimyası doğrulanmaz.
 - Mesafe/açı ölçümü seçilen görüntüler arasında yapılır; buna ek olarak iki atom için 27 komşu görüntü taranarak periyodik minimum mesafe sunulur. Açı için minimum-görüntüye dayalı yeniden seçim yapılmaz.
 - Sahne koruması için görüntülenen atom sayısı 1800, bağ sayısı 6500 ile sınırlıdır. 100'den fazla temel atom içeren yapılarda periyodik bağların dış sınırda tam çizilmesi yerine yalnızca uzaysal eşik yaklaşımı kullanılır.
 - Editör ağırlıklı olarak yapısal görselleştirmeye odaklanır; deneysel parametreler ve kristalografik sonuçlar bilimsel kaynaklarla ayrıca doğrulanmalıdır.
