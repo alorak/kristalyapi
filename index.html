@@ -649,7 +649,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <label class="field compact"><span>l</span><input id="l" type="number" step="1" min="-8" max="8" value="1"></label>
    </div>
    <label class="field" style="margin-top:8px"><span>Düzlem konumu (h·x+k·y+l·z = t)</span><input id="planeOffset" type="number" step=".25" value="1"></label>
-   <label class="check" style="margin-top:8px"><input id="showPlane" type="checkbox"> Miller düzlemini görüntüle</label>
+   <label class="check" style="margin-top:8px"><input id="showPlane" type="checkbox"> Miller düzlemlerini görüntüle</label>
+   <label class="check" style="margin-top:8px"><input id="repeatMillerPlanes" type="checkbox" checked> Süperhücredeki tüm paralel düzlemleri göster</label>
+   <p class="hint">Tek düzlem seçiliyse yalnızca t düzlemi; tümü seçiliyse h·x+k·y+l·z = t+n (n tam sayı) ailesi çizilir.</p>
    <label class="check" style="margin-top:8px"><input id="slabFilter" type="checkbox"> Sonlu kalınlıklı yüzey kesitini göster</label>
    <label class="field" style="margin-top:8px"><span>Kesit kalınlığı (Å)</span><input id="slabThickness" type="number" step=".25" min=".1" max="100" value="2"></label>
    <div class="note" id="planeInfo" style="margin-top:8px">Miller indislerini girin.</div>
@@ -887,7 +889,7 @@ function toCart(f,B){return B[0].clone().multiplyScalar(f[0]).addScaledVector(B[
 function toFrac(p,B){const den=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));if(Math.abs(den)<1e-12)throw Error('Tekil örgü matrisi.');return [p.dot(new THREE.Vector3().crossVectors(B[1],B[2]))/den,p.dot(new THREE.Vector3().crossVectors(B[2],B[0]))/den,p.dot(new THREE.Vector3().crossVectors(B[0],B[1]))/den];}
 function volume(B){return Math.abs(B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2])));}
 function metric(B){const ang=(a,b)=>Math.acos(clamp(a.dot(b)/(a.length()*b.length()),-1,1))*180/Math.PI;return {a:B[0].length(),b:B[1].length(),c:B[2].length(),alpha:ang(B[1],B[2]),beta:ang(B[0],B[2]),gamma:ang(B[0],B[1])};}
-let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
+let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:[2,2,2],style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer;
 const MAX_ATOMS=1800,MAX_BONDS=6500;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
@@ -1308,7 +1310,7 @@ async function loadVolumeFile(file,asPotential=false){
   if(parsed.crystal&&$('volumeLoadAtoms').checked){
    state={...state,name:parsed.crystal.name,detail:parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
     sites:parsed.crystal.sites,sgNumber:1,sgSetting:'1',symmetryEnabled:false,rep:[1,1,1],
-    poly:'',bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2}};
+    poly:'',bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2}};
    syncControls();build();
   }
   volumeView.iso=parsed.min+(parsed.max-parsed.min)*.7;
@@ -1483,21 +1485,44 @@ function planePolygon(points,normal){
  const x=points[0].clone().sub(c).normalize(),y=new THREE.Vector3().crossVectors(normal,x).normalize();
  return points.slice().sort((a,b)=>Math.atan2(a.clone().sub(c).dot(y),a.clone().sub(c).dot(x))-Math.atan2(b.clone().sub(c).dot(y),b.clone().sub(c).dot(x)));
 }
+function millerPlaneOffsets(h,k,l,offset,rep,repeat){
+ if(!Number.isFinite(offset))throw Error('Miller düzlemi konumu sonlu olmalıdır.');
+ if(!repeat)return [offset];
+ // A finite supercell intersects only those reciprocal-lattice translates
+ // whose h*u+k*v+l*w is between the minimum and maximum box corners.
+ const values=[];for(const x of [0,rep[0]])for(const y of [0,rep[1]])for(const z of [0,rep[2]])
+  values.push(h*x+k*y+l*z);
+ const first=Math.ceil(Math.min(...values)-offset-1e-8);
+ const last=Math.floor(Math.max(...values)-offset+1e-8);
+ if(last-first>192)throw Error('Süperhücrede çok fazla Miller düzlemi var.');
+ return Array.from({length:Math.max(0,last-first+1)},(_,n)=>offset+first+n);
+}
 function drawMillerPlane(B){
  if(!state.plane.visible)return;
- const {h,k,l,offset}=state.plane,n=planeNormal(h,k,l,B),p=planePolygon(planeIntersections(h,k,l,offset,state.rep,B),n.normal);
- if(p.length<3)return;const vertices=[];
- for(let i=1;i<p.length-1;i++)for(const v of [p[0],p[i],p[i+1]])vertices.push(v.x,v.y,v.z);
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();
- root.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x40d5ea,transparent:true,opacity:.26,depthWrite:false,side:THREE.DoubleSide})));
- root.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:0x55f0ff})));
+ const {h,k,l,offset}=state.plane,n=planeNormal(h,k,l,B);
+ const offsets=millerPlaneOffsets(h,k,l,offset,state.rep,state.plane.repeat!==false);
+ for(const t of offsets){
+  const p=planePolygon(planeIntersections(h,k,l,t,state.rep,B),n.normal);
+  if(p.length<3)continue;
+  const vertices=[];for(let i=1;i<p.length-1;i++)
+   for(const v of [p[0],p[i],p[i+1]])vertices.push(v.x,v.y,v.z);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();
+  const selected=Math.abs(t-offset)<1e-7;
+  root.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x40d5ea,transparent:true,
+   opacity:selected?.27:.14,depthWrite:false,side:THREE.DoubleSide})));
+  root.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(p),
+   new THREE.LineBasicMaterial({color:selected?0x1aaac3:0x66d4e7,transparent:true,opacity:selected?.93:.62})));
+ }
 }
 function previewPlane(){
  const h=+$('h').value,k=+$('k').value,l=+$('l').value,t=+$('planeOffset').value,thickness=+$('slabThickness').value;
  if(!Number.isFinite(t)||!Number.isFinite(thickness)||thickness<=0||thickness>100)throw Error('Düzlem konumu/kalınlığı geçersiz.');
  const p=planeNormal(h,k,l,basis(state.cell));
- state.plane={h,k,l,offset:t,visible:$('showPlane').checked,slab:$('slabFilter').checked,thickness};
- $('planeInfo').textContent='('+h+' '+k+' '+l+') · dₕₖₗ = '+p.d.toFixed(4)+' Å · |G| = '+p.g.length().toFixed(4)+' Å⁻¹';
+ state.plane={h,k,l,offset:t,visible:$('showPlane').checked,repeat:$('repeatMillerPlanes').checked,slab:$('slabFilter').checked,thickness};
+ const count=millerPlaneOffsets(h,k,l,t,state.rep,state.plane.repeat)
+  .filter(at=>planeIntersections(h,k,l,at,state.rep,basis(state.cell)).length>=3).length;
+ $('planeInfo').textContent='('+h+' '+k+' '+l+') · dₕₖₗ = '+p.d.toFixed(4)+' Å · |G| = '+p.g.length().toFixed(4)+' Å⁻¹'
+   +' · '+count+' görünür düzlem';
  return p;
 }
 
@@ -1807,7 +1832,7 @@ function syncControls(){
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncSgControls();$('bondRules').value=state.bondRules;
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
- for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('slabFilter').checked=state.plane.slab;
+ for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
  try{previewPlane();}catch(e){}fillPoly();renderSites();
 }
 function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
@@ -1840,7 +1865,7 @@ function loadPreset(key){
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
  state.cut=ex.cut;state.warning='';state.poly='';state.rep=[1,1,1];
  state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
- state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};
  state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
  state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;
  syncControls();build();fit();
@@ -1852,7 +1877,7 @@ function createEmptyStructure(){
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
  state.poly='';state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
  state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
- state.plane={h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2};
+ state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};
  syncControls();build();fit();
 }
 function importSelectedPreset(){
@@ -1976,7 +2001,7 @@ function loadProject(json){
  const cut=Number(obj.cut??2.65);
  if(!Number.isFinite(cut)||cut<.8||cut>5)throw Error('Kaydedilen bağ eşiği geçersiz.');
  const style=['ball','space','stick','wire'].includes(obj.style)?obj.style:'ball';
- const plane={h,k,l,offset,thickness,visible:!!source.visible,slab:!!source.slab};
+ const plane={h,k,l,offset,thickness,visible:!!source.visible,repeat:source.repeat!==false,slab:!!source.slab};
  return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane};
 }
 
@@ -2025,7 +2050,7 @@ async function importFile(file){
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
  if(densityGrid)resetVolume();
- state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],poly:'',boundary:true};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function exportCif(){
