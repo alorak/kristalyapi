@@ -128,7 +128,9 @@ header{height:54px}.brand h1{font-size:16px}.brand .gem{width:32px;height:32px}#
    <label class="field" style="margin-top:8px"><span>Kesit kalınlığı (Å)</span><input id="slabThickness" type="number" step=".25" min=".1" max="100" value="2"></label>
    <div class="note" id="planeInfo" style="margin-top:8px">Miller indislerini girin.</div>
    <button id="applyPlane" class="primary" style="width:100%;margin-top:9px">Düzlem / kesiti uygula</button>
-   <p class="hint">Kesit seçimi, atom merkezlerini geometrik olarak filtreler. Yüzey yeniden yapılandırması veya vakum eklemez.</p>
+   <label class="field" style="margin-top:12px"><span>Slab için vakum boşluğu (Å)</span><input id="vacuumThickness" type="number" step="1" min="2" max="80" value="12"></label>
+   <button id="createSlab" style="width:100%;margin-top:9px">Vakumlu yüzey hücresi oluştur</button>
+   <p class="hint">Kesit görünümü atom-merkezi filtresidir. Aşağıdaki oluşturma aracı ayrıca gerçek 2B periyodik yüzey vektörleriyle yeni 3B hücre ve vakum üretir; yüzey relaksasyonu yapmaz.</p>
   </div>
   <div class="section"><h2>Örgü dönüşümü <span class="stage">Aşama 2</span></h2>
    <label class="field"><span>Hazır dönüşüm</span><select id="matrixPreset">
@@ -405,6 +407,80 @@ function previewPlane(){
  state.plane={h,k,l,offset:t,visible:$('showPlane').checked,slab:$('slabFilter').checked,thickness};
  $('planeInfo').textContent='('+h+' '+k+' '+l+') · dₕₖₗ = '+p.d.toFixed(4)+' Å · |G| = '+p.g.length().toFixed(4)+' Å⁻¹';
  return p;
+}
+
+
+function intGcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t;}return a;}
+function crossInt(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function surfaceVectors(h,k,l,B){
+ const n=planeNormal(h,k,l,B),g=intGcd(intGcd(h,k),l),H=[h/g,k/g,l/g];
+ const bound=Math.min(10,Math.max(4,Math.max(...H.map(Math.abs))+2)),candidates=[];
+ for(let i=-bound;i<=bound;i++)for(let j=-bound;j<=bound;j++)for(let k=-bound;k<=bound;k++){
+  if(!i&&!j&&!k)continue;
+  const v=[i,j,k];if(H[0]*i+H[1]*j+H[2]*k!==0)continue;
+  if(intGcd(intGcd(i,j),k)!==1)continue;
+  const length=toCart(v,B).length();
+  candidates.push({v,length});
+ }
+ candidates.sort((a,b)=>a.length-b.length);
+ let best=null;
+ for(const first of candidates.slice(0,160))for(const second of candidates.slice(0,160)){
+  const cr=crossInt(first.v,second.v),forward=cr.every((v,i)=>v===H[i]),backward=cr.every((v,i)=>v===-H[i]);
+  if(!forward&&!backward)continue;
+  const v=backward?second.v.map(x=>-x):second.v;
+  const score=first.length**2+second.length**2;
+  if(!best||score<best.score)best={u:first.v,v,score};
+ }
+ if(!best)throw Error('Bu Miller düzlemi için küçük tam sayılı 2B yüzey vektörleri bulunamadı. Daha küçük hkl indisleri kullanın.');
+ return {...best,normal:n.normal,d:n.d};
+}
+function createSurfaceSlab(cell,sites,plane,vacuum){
+ const {h,k,l,offset,thickness}=plane;
+ if(!Number.isFinite(vacuum)||vacuum<2||vacuum>80)throw Error('Vakum 2–80 Å aralığında olmalı.');
+ if(!Number.isFinite(thickness)||thickness<=0||thickness>100)throw Error('Slab kalınlığı 0–100 Å aralığında olmalı.');
+ const B=basis(cell),surface=surfaceVectors(h,k,l,B),n=surface.normal;
+ const A=toCart(surface.u,B),Bb=toCart(surface.v,B),L=thickness+vacuum,C=n.clone().multiplyScalar(L),nextBasis=[A,Bb,C];
+ if(new THREE.Vector3().crossVectors(A,Bb).dot(C)<=0)throw Error('Yüzey vektörlerinin yönelimi geçersiz.');
+ const newCell=validateCell(metric(nextBasis));
+ const origin=n.clone().multiplyScalar(offset*surface.d-thickness/2-vacuum/2);
+ const corners=[];for(let a=0;a<=1;a++)for(let b=0;b<=1;b++)for(let c=0;c<=1;c++){
+  const p=origin.clone().addScaledVector(A,a).addScaledVector(Bb,b).addScaledVector(C,c);
+  corners.push(toFrac(p,B));
+ }
+ const lo=[0,1,2].map(j=>Math.min(...corners.map(p=>p[j]))),hi=[0,1,2].map(j=>Math.max(...corners.map(p=>p[j])));
+ const estimate=sites.length*(hi[0]-lo[0]+4)*(hi[1]-lo[1]+4)*(hi[2]-lo[2]+4);
+ if(estimate>1e6)throw Error('Yüzey atom araması çok büyük. Kesit kalınlığını küçültün.');
+ const start=vacuum/(2*L),end=(vacuum/2+thickness)/L,out=[],seen=new Set();
+ for(const site of sites){
+  const p=[+site.x,+site.y,+site.z].map(frac);
+  for(let i=Math.floor(lo[0]-p[0])-1;i<=Math.ceil(hi[0]-p[0])+1;i++)
+  for(let j=Math.floor(lo[1]-p[1])-1;j<=Math.ceil(hi[1]-p[1])+1;j++)
+  for(let k=Math.floor(lo[2]-p[2])-1;k<=Math.ceil(hi[2]-p[2])+1;k++){
+   const xyz=toCart([p[0]+i,p[1]+j,p[2]+k],B).sub(origin);
+   const q=toFrac(xyz,nextBasis);
+   if(q[0]<-1e-7||q[0]>=1-1e-7||q[1]<-1e-7||q[1]>=1-1e-7||q[2]<start-1e-7||q[2]>end+1e-7)continue;
+   const x=frac(q[0]),y=frac(q[1]),z=q[2],key=site.symbol+'|'+[x,y,z].map(v=>Math.round(v*1e5)).join('/');
+   if(seen.has(key))continue;seen.add(key);out.push({...site,x,y,z});
+   if(out.length>1000)throw Error('Yeni yüzey hücresinde 1000 atom sınırı aşıldı.');
+  }
+ }
+ if(!out.length)throw Error('Bu düzlem ve kalınlıkta atom seçilemedi. Düzlem konumunu veya kalınlığı değiştirin.');
+ return {cell:newCell,sites:out,normal:n,area:new THREE.Vector3().crossVectors(A,Bb).length(),vacuum,thickness};
+}
+function applySurfaceSlab(){
+ try{
+  previewPlane();
+  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+  const result=createSurfaceSlab(state.cell,physical,state.plane,+$('vacuumThickness').value);
+  const {h,k,l}=state.plane;
+  state.name=state.name+' · slab ('+h+k+l+')';
+  state.detail='(' + [h,k,l].join(' ') + ') yüzey · geometrik, relakse edilmemiş P1 slab';
+  state.cell=result.cell;state.sites=result.sites;state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
+  state.rep=[1,1,1];state.plane={...state.plane,visible:false,slab:false};
+  state.warning='Vakumlu yüzey hücresi üretildi. Yüzey atomları relakse edilmemiştir; fiziksel hesaplama öncesi kontrol edin.';
+  syncControls();build();fit();
+  inform('Slab: '+result.sites.length+' atom · yüzey alanı '+result.area.toFixed(2)+' Å² · vakum '+result.vacuum+' Å');
+ }catch(e){inform(e.message);}
 }
 
 function matrixDet(P){return P[0][0]*(P[1][1]*P[2][2]-P[1][2]*P[2][1])-P[0][1]*(P[1][0]*P[2][2]-P[1][2]*P[2][0])+P[0][2]*(P[1][0]*P[2][1]-P[1][1]*P[2][0]);}
@@ -785,6 +861,7 @@ function bind(){
  $('wyckoff').onchange=e=>{const w=settingData(state.sgSetting)[2].find(x=>x[0]===e.target.value);if(w)$('wyckoffInfo').textContent=w[1]+w[0]+' · site symmetry '+w[2]+' · örnek koordinat: '+w[3];};
  $('applyBondRules').onclick=()=>{try{const value=$('bondRules').value;parseBondRules(value);state.bondRules=value;build();inform('Bağ türü kuralları uygulandı.');}catch(e){inform(e.message);}};
  $('applyPlane').onclick=()=>{try{previewPlane();build();}catch(e){inform(e.message);}};
+ $('createSlab').onclick=applySurfaceSlab;
  $('matrixPreset').onchange=e=>{
   const m={custom:[[1,0,0],[0,1,0],[0,0,1]],fccp:[[0,.5,.5],[.5,0,.5],[.5,.5,0]],bccp:[[-.5,.5,.5],[.5,-.5,.5],[.5,.5,-.5]],fcctype:[[-1,1,1],[1,-1,1],[1,1,-1]],swap:[[0,1,0],[1,0,0],[0,0,-1]],double:[[2,0,0],[0,1,0],[0,0,1]]};setMatrix(m[e.target.value]||m.custom);
  };
