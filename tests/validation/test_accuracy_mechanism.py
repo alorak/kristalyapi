@@ -59,6 +59,15 @@ class AccuracyMechanismTest(unittest.TestCase):
         browser["result"]="parsed"
         self.assertEqual(validate.measure(entry,browser,ref,TOL)["status"],"fail")
 
+    def test_nonfinite_gemmi_reference_is_inconclusive(self):
+        entry={"id":"real-invalid","kind":"real","path":"real-invalid.cif","expect":"compare"}
+        browser={"result":"error","sha256":"same","error":"missing atom coordinates"}
+        reference={"result":"error","sha256":"same",
+                   "error":"ValueError: Reference has unspecified/nonfinite atom positions"}
+        result=validate.measure(entry,browser,reference,TOL)
+        self.assertEqual(result["status"],"inconclusive")
+        self.assertIn("unspecified",result["issues"][0])
+
     def test_fixture_manifest_is_complete_and_pinned(self):
         manifest=json.loads((ROOT/"manifest.json").read_text())
         cases=manifest["cases"]
