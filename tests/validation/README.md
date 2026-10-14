@@ -8,6 +8,18 @@ Bu test hattı, **`index.html` içinde çalışan gerçek CIF ayrıştırıcıs�
 - **10 sentetik zorlayıcı CIF:** P1, P-1, screw, triklinik metrik, sınırı aşan koordinatlar, karma/kısmi doluluk, simetri işlemi verilmeyen Fm-3m ve iki kasıtlı geçersiz dosya. Geçersiz iki örneğin **hem Gemmi hem tarayıcı tarafından reddedilmesi** beklenir.
 - Dosyalar ağdan test sırasında indirilmez. `git_blob_sha1` değişirse doğrulama ölçüm dışı altyapı hatası verir. Raporlarda her dosyanın SHA-256 özeti bulunur.
 
+## Yeni ölçüm bulguları (2026-10-14)
+
+GitHub Actions [38632658918](https://github.com/alorak/kristalyapi/actions/runs/38632658918) çalışmasında **35 başarılı, 3 başarısız, 1 belirsiz, 1 ölçüm hatası** görülmüştü. Bu PR ile:
+
+- **Fe.cif:** `z+.5` gibi başında sıfır olmayan kesirli simetri kaydırmaları okunuyor.
+- **FePO4.cif:** Tek sütunlu `loop_ _cell_angle_alpha 91.0` hücre etiketi de okunuyor.
+- **Graphite.cif:** Dört ondalıklı Wyckoff koordinatlarında birbirine yakın periyodik eşdeğerler **0,001 Å** eşiğinde, aynı element ve doluluk korunarak birleştiriliyor.
+- **ICSD59959.cif:** Tanımsız `.` atom koordinatları keyfi biçimde 0 alınmıyor veya sessizce atılmıyor. Gemmi'nin bu alanları NaN olarak vermesi **inconclusive** (belirsiz kaynak), **pass** değil. Bu durumda normal ölçüm modunda CI'ın `exit code 2` ile çökmesi önleniyor.
+- **srycoo.cif:** Kaynağın sonlandırılmamış çok satırlı metni nedeniyle Gemmi referansı yok; **inconclusive** kalıyor, değiştirilmiş/geçerli CIF gibi gösterilmiyor.
+
+Düzeltmeler sonrasında beklenen dağılım **38 pass, 2 inconclusive, 0 fail, 0 error**. Bu sayılar henüz yeni bir Actions koşusuyla teyit edilmemiştir. Ölçüm modunda bilimsel belirsizlikler raporlanır; **strict** modda belirsizlik dahil her uyumsuzluk işi başarısız yapar.
+
 ## Nasıl ölçüyor?
 
 1. Node.js (harici npm paketi kullanmadan) mevcut `index.html` içindeki `cifData()` fonksiyonunu alır ve 40 CIF'yi okuyarak `browser.json` üretir.
