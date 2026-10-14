@@ -24,9 +24,13 @@ function parserFromHtml(filename) {
   const html=fs.readFileSync(filename,'utf8');
   const match=html.match(/<script type="module">([\s\S]*?)<\/script>/);
   if(!match)throw Error('Inline module script missing from index.html');
-  const source=match[1]
-    .replace(/^import .*?;\s*$/gm,'')
-    .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/,'');
+  // Separate pure data routines from browser UI startup using a stable marker.
+  // The previous exact-match startup regexp silently stopped matching when
+  // restoreInitialCrystal() was added, crashing the headless validation job.
+  const marker='// @kristalyapi/browser-bootstrap:';
+  const boundary=match[1].indexOf(marker);
+  if(boundary<0)throw Error('Browser bootstrap marker missing: CIF runner must not execute the UI');
+  const source=match[1].slice(0,boundary).replace(/^import .*?;\s*$/gm,'');
   const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,document:{getElementById(){return null;}}};
   vm.createContext(context);
   vm.runInContext(source+'\nthis.__cifParser = cifData;',context,{timeout:15000,filename:'browser-index-inline.js'});
