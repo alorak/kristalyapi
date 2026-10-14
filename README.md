@@ -20,13 +20,35 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 
 Bu hat **uyumsuzlukları ölçer**, CIF parser'ındaki hataları otomatik düzeltmez. Referans üretimi ve bilimsel ölçümler yalnızca CI/test ortamında yapılır; frontend uygulamasına Python veya backend eklenmez.
 
+## Hacimsel fizik verileri: izoyüzeyler, kesitler ve potansiyel
+
+**Yapı (sağ panel) → Hacimsel fizik verileri** bölümünden bilgisayarındaki hacimsel veriyi ekleyebilirsin. Uygulama bütün işlemeyi tarayıcının JavaScript/WebGL ortamında yapar; yeni bir backend, veritabanı veya harici sayısal hesaplama servisi gerekmez.
+
+- **Gaussian CUBE (.cube, .cub):** Atom başlığı, üç boyutlu ızgara, orijin ve gerçek Kartezyen eksenler okunur. Pozitif ızgara sayısı Bohr, negatif ızgara sayısı Å olarak işlenir. Çoklu moleküler orbital / negatif atom sayılı CUBE bu sürümde desteklenmez.
+- **VASP CHGCAR / CHG:** POSCAR hücresi/koordinatları ve ilk yoğunluk bloğu okunur; x indeksi en hızlı değişen veri sıralaması uygulanır. VASP'ın [CHGCAR tanımına](https://vasp.at/wiki/CHGCAR) göre ızgara değerleri **hücre hacmine bölünerek** yük yoğunluğuna dönüştürülür (Å⁻³). PAW augmentation ve ikinci/sonraki spin–manyetizasyon blokları henüz işlenmez.
+- **XCrySDen XSF DATAGRID_3D:** XSF alan orijini, gerçek uzaysal grid vektörleri, x-en-hızlı sıralama ve datagrid uç noktaları kullanılır; varsa PRIMVEC/PRIMCOORD atom/hücre bilgileri alınır. Diğer XSF veri blokları uygulanmaz.
+- **3B izoyüzeyler:** Marching tetrahedra algoritması, tek saydam 3B yüzey ve seçilebilir izodeğer. Büyük veri performansı için üç eksende adaptif altörnekleme ve maksimum 75.000 üçgen uygulanır. Seyreltme küçük ayrıntıları gizleyebilir; sonuç sayısal analiz değildir.
+- **2B kesitler:** X/Y/Z doğrultularında ızgara düzlemi, kesit konumu (%), trilineer örnekleme, mavi–beyaz–kırmızı veya viridis-benzeri renk şeması, isteğe bağlı izodeğer konturu. Kesit gerçek grid vektörleri boyunca geometrik olarak yerleştirilir (eğik/triklinik ızgaralar desteklenir).
+- **Potansiyel ile yüzey renklendirme:** Uyumlu uzaysal kapsamı olan **ikinci CUBE/CHGCAR/XSF ızgarası** yüklenirse, yoğunluk izoyüzeylerinin köşeleri ikinci alanın interpolasyon değerleriyle renklendirilir; aynı seçenek 2B kesitte kullanılabilir. Seçilen ikinci dosya gerçekten elektrostatik potansiyel değilse renkler fiziksel potansiyel olarak yorumlanmamalıdır.
+- **Kaynak atomları:** CHGCAR ve XSF içinde atom/hücre bilgisi varsa ve **Dosyadaki atomları ve hücreyi kullan** seçilmişse, bunlar kristal çalışma alanına aktarılır. CUBE dosyalarının molekül atomları bu sürümde otomatik olarak mevcut kristalle birleştirilmez; CUBE ızgarası dosyanın kendi Kartezyen koordinatlarında gösterilir.
+
+**Sınırlar:** Tek dosya 24 MB, ızgara 2,5 milyon voksel ile sınırlandırılır. Veriler yoğunluk/potansiyel *hesaplamaz*; dosyada önceden hesaplanmış skaler alanı gösterir. Eş yüzey oluşturma, XSF ve VASP'ın tüm varyantlarını veya büyük verilerde tam çözünürlüğü karşılamaz. CUBE kaynağındaki atom konumları ile başka bir CIF modelinin uzaysal referansı farklı olabilir. Grid uyumu doğrulanmadan iki alan birlikte kullanılmaz.
+
+## Arayüz ve son kristalin geri yüklenmesi
+
+- **Sol Genel** sekmesinin ilk bölümü artık **Görünüm**. Hücre, simetri, bağlar, süperhücre ve örgü dönüşümü aşağıda yer alır.
+- **Sağ panelin altında sabit Yapı/Miller sekmeleri** bulunur. Miller (hkl) düzlemleri, kesit kalınlığı ve vakumlu slab üretimi tamamen sağdaki Miller sekmesine taşınmıştır.
+- Üstten alta tekrar eden **WebGL durumu**, **tarayıcıda çalışma alt yazısı** ve sahnedeki fare kullanım talimatları kaldırılmıştır. Sol alt yön göstergesi X/Y/Z oklarını korur; tekrarlanan harf açıklaması kaldırılmıştır.
+- **Son görüntülenen/düzenlenen kristal** (CIF'den gelen hücre ve atom konumları dahil) `localStorage` içinde `kristalyapi.last-structure.v2` anahtarıyla saklanır. Sayfa yenilendiğinde son yapı otomatik açılır. Kaydedilemeyen/bozuk kayıt uygulamayı kilitlemez; yerleşik Si örneği yedek olarak kullanılır.
+- Hacimsel alan dizilerinin kendisi `localStorage`'a yazılmaz (büyük dosya boyutları nedeniyle); yenilemeden sonra hacimsel veri yeniden seçilmelidir. Yalnız kristal modeli/ayarları geri yüklenir.
+
 ## Çalışma alanı ve sol panel sekmeleri
 
 Beyaz tema, **3B model görünümünü saf beyaz**, sol düzenleme panelini hafif mavi-gri, sağ yapı/ölçüm panelini daha açık gri, üst menüyü ayrı kırık beyaz yüzey olarak kullanır. Bölümlerin kart sınırları, araç çubuğu ve alt durum çubuğu düşük yoğunluklu çizgi/gölgeyle ayrılır. Bu düzen yalnızca görünüme etki eder; kristal hesaplamalarının sonucu değişmez.
 
 Sol sidebar'ın en altında **her zaman görünür iki sekme** bulunur:
 
-- **Genel**: birim hücre, uzay grubu, bağ kuralları, süperhücre, Miller düzlemleri, örgü dönüşümü ve 3B görünüm ayarları.
+- **Genel**: en üstte görünüm; ardından birim hücre, uzay grubu, bağ kuralları, süperhücre ve örgü dönüşümü.
 - **Atomlar**: daha önce sol panelin en sonunda bulunan **Asimetrik konumlar / atomlar** tablosu, kesirli koordinatlar, Wyckoff eşleşmeleri ve atom ekleme/silme işlevleri. Sekme başlığında mevcut yapının bağımsız atom/konum sayısı gösterilir.
 
 Tab çubuğu sol panelin kaydırılabilir kısmının **dışında** tutulur; içerik uzasa da kaybolmaz. Sekmeler ayrı kaydırma konumlarını hatırlar. CIF/POSCAR/XYZ veya yerleşik örnek içe aktarımından sonra Atomlar tablosu ve sayaç, `state.sites` üzerinden yeniden çizilir. Mobilde sol panel kapalı kalır, menü düğmesiyle açıldığında iki sekme de görünür.
@@ -114,7 +136,7 @@ COD'nin resmî arama uç noktası `https://www.crystallography.net/cod/result?fo
 
 ## Bilimsel kapsam ve sınırlar
 
-- **Bu bir VESTA eşdeğeri değildir.** Elektron yoğunluğu / potansiyel alanları, CHGCAR/CUBE/XSF hacimsel izoyüzeyleri, manyetik yapı, çok fazlı görselleştirme, termal elipsoitler ve otomatik uzay grubu belirleme bu sürümde yoktur.
+- **VESTA'nın bütün özellikleri henüz yoktur:** Hacimsel veri okuyucuları ve izoyüzeyler eklenmiştir; manyetik yapı, çok fazlı görselleştirme, termal elipsoitler, tam hacimsel veri varyantları ve otomatik uzay grubu belirleme eksiktir.
 - CIF'de simetri operasyonları verilmemişse, tanınan uzay grubunun referans ayarı/orijini varsayılır. Alternatif orijin ve eksen ayarlarında fiziksel doğruluğu bağımsız olarak kontrol etmek gerekir.
 - CIF okuyucu yaygın CIF 1.x metinsel altkümesini hedefler; tüm CIF/mCIF standartlarını uygulamaz. mCIF manyetik verileri dikkate alınmaz.
 - CIF içe aktarımı atomları görünür P1 konumlarına genişletir. **Simetri modu açık ise** dışa aktarma seçilen uzay grubunu açık operatörlerle korur; simetri modu kapalı ise P1 yazılır. Her iki durumda da kaynak dosyanın bütün kristalografik meta verileri korunmaz.
