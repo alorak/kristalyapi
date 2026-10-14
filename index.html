@@ -2962,6 +2962,16 @@ async function importCodEntry(record){
   try{await codOpenCif(record,cached,'çevrimdışı önbellek');return;}catch(e){console.warn('Önbellek CIF geçersiz:',e);}
  }
  const mode=$('codConnection').value,failures=[];
+ // Prefer the authoritative CIF when our own Worker is available: this
+ // preserves original symmetry, bibliographic fields and asymmetric sites.
+ const workerCif=mode==='worker'||(mode==='auto'&&!!codWorkerBase);
+ if(workerCif){
+  try{
+   const cif=await fetchCodText(codCifUrl(id),{mode:'worker',limit:4000000});
+   await codOpenCif(record,cif,'Cloudflare Worker · COD CIF');
+   return;
+  }catch(e){failures.push('Worker CIF: '+e.message);}
+ }
  if(mode!=='direct'){
   try{
    const content=await fetchCodText(codOptimadeItemUrl(id),{mode,limit:4000000});
@@ -2970,7 +2980,7 @@ async function importCodEntry(record){
    return;
   }catch(e){failures.push('OPTIMADE: '+e.message);}
  }
- if(mode!=='optimade'){
+ if(mode!=='optimade'&&!workerCif){
   try{
    const cif=await fetchCodText(codCifUrl(id),{mode,limit:4000000});
    await codOpenCif(record,cif,'COD CIF');
@@ -3033,6 +3043,7 @@ function initLibrary(){
  $('codWorkerClear').onclick=()=>{
   try{codStore()?.removeItem(COD_WORKER_KEY);}catch(e){}
   codWorkerBase='';$('codWorkerUrl').value='';
+  if($('codConnection').value==='worker')$('codConnection').value='auto';
   codWorkerStatus('Worker kaldırıldı. Doğrudan COD erişimi kullanılacak.');
  };
  $('codWorkerTest').onclick=async()=>{
@@ -3045,7 +3056,11 @@ function initLibrary(){
    const response=await fetch(base+'/health',{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal:controller.signal});
    const data=await response.json();
    if(!response.ok||data.status!=='ok'||data.service!=='kristalyapi-cod-worker')throw Error('Beklenen Worker sağlık yanıtı gelmedi.');
-   codWorkerStatus('Worker erişilebilir. İçe aktarma için adresi Kaydet ile etkinleştirin.','ready');
+   const cifResponse=await fetch(base+'/api/cif/4335507',{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal:controller.signal});
+   if(!cifResponse.ok)throw Error('COD CIF isteği HTTP '+cifResponse.status+' döndürdü.');
+   const cif=await cifResponse.text();
+   if(!/(^|\n)data_[^\r\n]+/im.test(cif))throw Error('COD yanıtı CIF verisi içermiyor.');
+   codWorkerStatus('Worker ve canlı COD CIF erişimi başarılı. Bağlantıyı Kaydet ile etkinleştirebilirsin.','ready');
   }catch(e){codWorkerStatus('Worker bağlantısı kurulamadı: '+e.message,'error');}
   finally{clearTimeout(timer);$('codWorkerTest').disabled=false;}
  };
