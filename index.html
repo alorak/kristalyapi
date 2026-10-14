@@ -2544,6 +2544,7 @@ function bind(){
  $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
 }
+// @kristalyapi/browser-bootstrap: browser UI entry point, not part of the CIF parser
 try{restoreInitialCrystal();initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
 </script>
 </body>
