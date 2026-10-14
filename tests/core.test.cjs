@@ -20,6 +20,14 @@ class Vector3 {
   }
   sub(v) { this.x -= v.x; this.y -= v.y; this.z -= v.z; return this; }
   normalize() { return this.multiplyScalar(1 / (this.length() || 1)); }
+  applyQuaternion(q) {
+    const {x,y,z}=this;
+    const ix=q.w*x+q.y*z-q.z*y,iy=q.w*y+q.z*x-q.x*z,iz=q.w*z+q.x*y-q.y*x,iw=-q.x*x-q.y*y-q.z*z;
+    this.x=ix*q.w+iw*-q.x+iy*-q.z-iz*-q.y;
+    this.y=iy*q.w+iw*-q.y+iz*-q.x-ix*-q.z;
+    this.z=iz*q.w+iw*-q.z+ix*-q.y-iy*-q.x;
+    return this;
+  }
   toArray() { return [this.x, this.y, this.z]; }
 }
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
@@ -30,7 +38,7 @@ const script = moduleScript
   .replace(/try\{initScene\(\);bind\(\);syncControls\(\);build\(\);fit\(\);\}catch\(err\)\{[\s\S]*?\}\s*$/, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} } };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -248,4 +256,40 @@ test('Miller slab rejects zero plane and insufficient vacuum',()=>{
   const cu=api.examples('fcc');
   assert.throws(()=>api.createSurfaceSlab(cu.cell,cu.sites,{h:0,k:0,l:0,offset:1,thickness:5},12));
   assert.throws(()=>api.createSurfaceSlab(cu.cell,cu.sites,{h:1,k:0,l:0,offset:1,thickness:5},1));
+});
+
+test('all 118 periodic table elements have stable, nonempty colors', () => {
+  assert.equal(api.PERIODIC_SYMBOLS.length,118);
+  for(const symbol of api.PERIODIC_SYMBOLS){
+    const color=api.elementColor(symbol);
+    assert.ok(/^#[0-9a-f]{6}$/i.test(color)||/^hsl\(/.test(color),'missing '+symbol);
+    assert.equal(api.elementColor(symbol),color);
+  }
+  assert.ok(api.elementColor('O')!==api.elementColor('Fe'));
+  assert.ok(api.elementColor('Fe')!==api.elementColor('Cl'));
+  assert.ok(api.elementColor('Ba')!==api.elementColor('La'));
+});
+test('automatic bond threshold is element-aware and obeys explicit rules', () => {
+  const rules=new Map();
+  approx(api.bondRange('O','O',rules,3,true)[1],1.2*(.66+.66));
+  approx(api.bondRange('Si','O',rules,3,true)[1],1.2*(1.11+.66));
+  approx(api.bondRange('Si','O',rules,1.7,true)[1],1.7);
+  approx(api.bondRange('Si','O',rules,3,false)[1],3);
+  rules.set('O-Si',[1.5,3.4]);
+  approx(api.bondRange('Si','O',rules,2,true)[1],3.4);
+});
+test('XYZ orientation gizmo projects world axes into the camera plane', () => {
+  const q={x:0,y:0,z:0,w:1,clone(){return {...this,invert(){this.x=-this.x;this.y=-this.y;this.z=-this.z;return this}}}};
+  const axes=api.gizmoProjection(q);
+  assert.equal(axes.length,3);
+  approx(axes[0].x,1);approx(axes[0].y,0);
+  approx(axes[1].x,0);approx(axes[1].y,-1);
+  approx(axes[2].depth,1);
+});
+test('light theme and axis widget are present in single HTML', () => {
+  assert.match(html,/#viewport\{background:#fff\}/);
+  assert.match(html,/<div id="axisGizmo"/);
+  assert.match(html,/id="axisGizmoSvg"/);
+  assert.match(html,/id="autoBond"/);
+  assert.ok(!html.includes('Kristalografi ve yapı görselleştirme laboratuvarı'));
 });
