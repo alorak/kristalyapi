@@ -4,7 +4,7 @@ Bu test hattı, **`index.html` içinde çalışan gerçek CIF ayrıştırıcıs�
 
 ## Veri kümesi
 
-- **30 gerçek CIF:** [pymatgen](https://github.com/materialsproject/pymatgen/tree/main/test-files/cif) açık kaynaklı CIF test koleksiyonundan, değiştirilmeden depoya kopyalanmıştır. Kaynak bağlantıları ve dosya başına Git blob SHA-1 `manifest.json` içindedir. [MIT lisansı](fixtures/PYMATGEN_LICENSE.txt) da korunur. Bazıları COD/ICSD kökenli test örnekleridir; 30 dosyanın tamamı COD indirmesi olarak sunulmamaktadır.
+- **30 gerçek CIF:** 29 örnek [pymatgen test koleksiyonundan](https://github.com/materialsproject/pymatgen/tree/main/test-files/cif) (MIT, [lisans](fixtures/PYMATGEN_LICENSE.txt)), ayrıca VESTA ekran görüntüsünde karşılaştırılan **[COD 4335507](https://www.crystallography.net/cod/4335507.cif)** (COD kaydında kamu malı/public-domain ibaresi). COD dosyası açık kaynak GitHub aynasından sabitlenmiştir. Her dosyanın kaynak adresi ve Git blob SHA-1 özeti `manifest.json` içinde kayıtlıdır.
 - **10 sentetik zorlayıcı CIF:** P1, P-1, screw, triklinik metrik, sınırı aşan koordinatlar, karma/kısmi doluluk, simetri işlemi verilmeyen Fm-3m ve iki kasıtlı geçersiz dosya. Geçersiz iki örneğin **hem Gemmi hem tarayıcı tarafından reddedilmesi** beklenir.
 - Dosyalar ağdan test sırasında indirilmez. `git_blob_sha1` değişirse doğrulama ölçüm dışı altyapı hatası verir. Raporlarda her dosyanın SHA-256 özeti bulunur.
 
