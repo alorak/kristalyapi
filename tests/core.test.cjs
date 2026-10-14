@@ -39,7 +39,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -734,4 +734,98 @@ test('Miller family checkbox and project round-trip retain the chosen display mo
  delete obj.plane.repeat;
  const oldProject=api.loadProject(JSON.stringify(obj));
  assert.equal(oldProject.plane.repeat,true);
+});
+
+test('viewport removes duplicate structure title and shows five accessible icon-only camera controls',()=>{
+ assert.ok(!html.includes('id="viewTitle"'));
+ assert.ok(!html.includes('id="viewSubtitle"'));
+ for(const id of ['fitBtn','topBtn','frontBtn','sideBtn','projectionBtn']){
+  const tag=html.match(new RegExp('<button id="'+id+'"[^>]*>[^<]*<svg[^>]*>'));
+  assert.ok(tag,'icon missing for '+id);
+  assert.match(tag[0],/aria-label="/);
+  assert.match(tag[0],/title="/);
+ }
+ assert.match(html,/id="projectionBtn"[^>]*aria-pressed="false"/);
+});
+test('bond pair editor can add and remove an independent distance interval',()=>{
+ const txt=api.setPairBondRule('Si-O:1.4-2.0','Fe','O',1.6,2.4);
+ assert.deepEqual(Array.from(api.parseBondRules(txt).get('Fe-O')),[1.6,2.4]);
+ assert.deepEqual(Array.from(api.parseBondRules(txt).get('O-Si')),[1.4,2.0]);
+ const revised=api.setPairBondRule(txt,'O','Fe',1.5,2.25);
+ assert.equal(api.parseBondRules(revised).size,2);
+ assert.deepEqual(Array.from(api.parseBondRules(revised).get('Fe-O')),[1.5,2.25]);
+ assert.equal(api.parseBondRules(api.removePairBondRule(revised,'Fe-O')).size,1);
+ assert.throws(()=>api.setPairBondRule('','Si','O',2,1));
+ assert.throws(()=>api.setPairBondRule('','Si','O',0,16));
+});
+test('geometric bond radius suggestion produces increasing finite thresholds',()=>{
+ const [min,max]=api.coordinateBondSuggestion('Si','O');
+ assert.ok(Number.isFinite(min)&&Number.isFinite(max));
+ assert.ok(min<max&&max<=15);
+});
+test('periodic CsCl center finds eight distinct Cl images, including beyond cell boundary',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90},B=api.basis(cell);
+ const sites=[{symbol:'Cs',x:0,y:0,z:0},{symbol:'Cl',x:.5,y:.5,z:.5}];
+ const rules=api.parseBondRules('Cs-Cl:3.1-3.9; Cs-Cs:4.4-4.5');
+ const neighbors=api.coordinationNeighbors(sites,0,B,rules,5,false,24);
+ assert.equal(neighbors.length,8);
+ assert.ok(neighbors.every(item=>item.element==='Cl'));
+ neighbors.forEach(item=>approx(item.distance,Math.sqrt(12),1e-5));
+ assert.equal(new Set(neighbors.map(item=>item.shift.join('/'))).size,8);
+});
+test('coordination analysis retains separate overlapping species and respects max count',()=>{
+ const B=api.basis({a:5,b:5,c:5,alpha:90,beta:90,gamma:90});
+ const sites=[{symbol:'Fe',x:0,y:0,z:0},{symbol:'O',x:.5,y:0,z:0},{symbol:'N',x:.5,y:0,z:0}];
+ const r=api.parseBondRules('Fe-O:2-3; Fe-N:2-3; Fe-Fe:4.9-5.1');
+ const result=api.coordinationNeighbors(sites,0,B,r,5,false,24);
+ assert.equal(result.filter(i=>i.element==='O').length,2);
+ assert.equal(result.filter(i=>i.element==='N').length,2);
+ assert.equal(api.coordinationNeighbors(sites,0,B,r,5,false,2).length,2);
+});
+test('dihedral angle uses four atoms and protects against collinear degeneracy',()=>{
+ const d=api.dihedralDegrees([0,1,0],[0,0,0],[1,0,0],[1,0,1]);
+ approx(Math.abs(d),90,1e-6);
+ assert.throws(()=>api.dihedralDegrees([0,0,0],[1,0,0],[2,0,0],[3,0,0]));
+});
+test('measurement CSV quotes atom labels, exports 2/3/4-atom values safely',()=>{
+ const csv=api.measurementCsv([{structure:'A,"B"',atoms:['Si1','O2'],values:{distance_A:2.12,periodic_A:2.01,angle_deg:109.5,dihedral_deg:-90}}]);
+ assert.match(csv,/"A,""B"""/);
+ assert.match(csv,/2.12/);
+ assert.match(csv,/-90/);
+ assert.match(csv,/Dihedral/);
+});
+test('Miller layer validation accepts independent color and rejects malformed geometry',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const layers=api.normalizedMillerLayers([{h:1,k:1,l:1,offset:.5,color:'#ff8800',visible:false}],cell);
+ assert.equal(layers.length,1);
+ assert.equal(layers[0].repeat,true);
+ assert.equal(layers[0].visible,false);
+ assert.equal(layers[0].color,'#ff8800');
+ assert.equal(api.millerLayerKey(layers[0]),'1/1/1/0.5/true');
+ assert.throws(()=>api.normalizedMillerLayers([{h:0,k:0,l:0,offset:1,color:'#abcdef'}],cell));
+ assert.throws(()=>api.normalizedMillerLayers([{h:1,k:0,l:0,offset:1,color:'red'}],cell));
+ assert.throws(()=>api.normalizedMillerLayers(Array.from({length:9},()=>layers[0]),cell));
+});
+test('standalone Miller layers and polyhedron settings survive project and last-crystal save/restore',()=>{
+ const source={name:'Layered structure',detail:'test',cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90},
+ sites:[{symbol:'Si',x:0,y:0,z:0,occupancy:1}],
+ rep:[1,1,1],sgNumber:1,sgSetting:'1',poly:'Si',polyCut:3.5,polyNeighbors:8,
+ planeLayers:[{h:1,k:1,l:0,offset:.2,repeat:true,visible:true,color:'#ff9900'}]};
+ const loaded=api.loadProject(JSON.stringify(source));
+ assert.equal(loaded.planeLayers.length,1);
+ assert.equal(loaded.planeLayers[0].color,'#ff9900');
+ assert.equal(loaded.poly,'Si');assert.equal(loaded.polyCut,3.5);assert.equal(loaded.polyNeighbors,8);
+ const storage=new Map(),db={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
+ api.storeLastCrystal(db,loaded);
+ const restored=api.restoreLastCrystal(db);
+ assert.equal(restored.planeLayers[0].offset,.2);
+ assert.equal(restored.polyNeighbors,8);
+ assert.equal(restored.polyCut,3.5);
+});
+test('short-term VESTA controls exist for coordination, measurement history and Miller layers',()=>{
+ for(const id of ['bondPairA','bondPairB','bondMin','bondMax','bondSuggest','bondRuleAdd','bondRuleList',
+  'polyCut','polyNeighbors','torsionResult','coordinationInfo','measurementHistory',
+  'saveMeasurement','exportMeasurements','addMillerLayer','clearMillerLayers','millerLayerList']){
+  assert.ok(html.includes('id="'+id+'"'),id);
+ }
 });
