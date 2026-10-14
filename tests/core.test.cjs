@@ -39,7 +39,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codRequestUrls,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -709,4 +709,29 @@ test('COD 4335507 keeps all 22 crystallographic sites',()=>{
  const p=fs.readFileSync(path.join(__dirname,'validation','fixtures','real','COD_4335507.cif'),'utf8');
  const c=api.cifData(p);
  assert.equal(c.sites.length,22);
+});
+
+test('(111) Miller family repeats at integer offsets across a 2×2×2 supercell',()=>{
+ const values=Array.from(api.millerPlaneOffsets(1,1,1,1,[2,2,2],true));
+ assert.deepEqual(values,[0,1,2,3,4,5,6]);
+ const B=api.basis({a:5.431,b:5.431,c:5.431,alpha:90,beta:90,gamma:90});
+ const polygons=values.map(t=>api.planeIntersections(1,1,1,t,[2,2,2],B)).filter(p=>p.length>=3);
+ assert.equal(polygons.length,5);
+});
+test('Miller single-plane mode preserves requested t and signed indices are supported',()=>{
+ assert.deepEqual(Array.from(api.millerPlaneOffsets(1,1,1,1,[2,2,2],false)),[1]);
+ assert.deepEqual(Array.from(api.millerPlaneOffsets(-1,0,1,.5,[2,2,2],true)),
+  [-1.5,-.5,.5,1.5]);
+ assert.throws(()=>api.millerPlaneOffsets(1,1,1,NaN,[2,2,2],true));
+});
+test('Miller family checkbox and project round-trip retain the chosen display mode',()=>{
+ assert.match(html,/id="repeatMillerPlanes" type="checkbox" checked/);
+ const obj={name:'family',detail:'test',cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90},
+  sites:[{symbol:'Si',x:0,y:0,z:0,occupancy:1}],
+  plane:{h:1,k:1,l:1,offset:1,visible:true,repeat:false,slab:false,thickness:2}};
+ const restored=api.loadProject(JSON.stringify(obj));
+ assert.equal(restored.plane.repeat,false);
+ delete obj.plane.repeat;
+ const oldProject=api.loadProject(JSON.stringify(obj));
+ assert.equal(oldProject.plane.repeat,true);
 });

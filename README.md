@@ -20,6 +20,15 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 
 Bu hat **uyumsuzlukları ölçer**, CIF parser'ındaki hataları otomatik düzeltmez. Referans üretimi ve bilimsel ölçümler yalnızca CI/test ortamında yapılır; frontend uygulamasına Python veya backend eklenmez.
 
+## Miller düzlem aileleri
+
+**Sağ panel → Miller** bölümünde artık **Süperhücredeki tüm paralel düzlemleri göster** seçeneği bulunur (varsayılan açık).
+
+- Belirli bir `(h,k,l)` için normal yön ve aralık `dₕₖₗ` değişmez. Gösterim, `h u + k v + l w = t+n` (tam sayı `n`) koşulunu sağlayan, seçili sonlu süperhücre ile kesişen **tüm paralel düzlemleri** çizer. Seçilen `t` düzlemi daha belirgin renktedir.
+- Örneğin 2×2×2 birim hücrede **(111)** için `t=1`, 0–6 aralığında 7 potansiyel düzlem düzeyine karşılık gelir; iki dış düzlem yalnız köşelere değdiği için 3B yüzey olarak çizilebilen **5 adet** düzlem oluşur.
+- Seçenek kapatıldığında yalnızca `t` düzlemi çizilir. Son kaydedilen proje ve `localStorage` geri yüklemesi bu seçimi korur.
+- **Sonlu kalınlıkla atom filtreleme ve vakumlu slab oluşturma**, tek bir seçili `t` kesitini esas almaya devam eder. Paralel düzlemleri çoğaltmak fiziksel yüzey üretimi veya kristalografik {hkl} yön ailesindeki farklı normal yönleri üretmek anlamına gelmez.
+
 ## Hacimsel fizik verileri: izoyüzeyler, kesitler ve potansiyel
 
 **Yapı (sağ panel) → Hacimsel fizik verileri** bölümünden bilgisayarındaki hacimsel veriyi ekleyebilirsin. Uygulama bütün işlemeyi tarayıcının JavaScript/WebGL ortamında yapar; yeni bir backend, veritabanı veya harici sayısal hesaplama servisi gerekmez.
