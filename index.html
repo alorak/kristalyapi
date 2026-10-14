@@ -1752,7 +1752,7 @@ function applySurfaceSlab(){
   state.detail='(' + [h,k,l].join(' ') + ') yüzey · geometrik, relakse edilmemiş P1 slab';
   if(densityGrid)resetVolume();
   state.cell=result.cell;state.sites=result.sites;state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
-  state.rep=[1,1,1];state.plane={...state.plane,visible:false,slab:false};state.planeLayers=[];state.planeLayers=[];
+  state.rep=[1,1,1];state.plane={...state.plane,visible:false,slab:false};state.planeLayers=[];
   state.warning='Vakumlu yüzey hücresi üretildi. Yüzey atomları relakse edilmemiştir; fiziksel hesaplama öncesi kontrol edin.';
   syncControls();build();fit();
   inform('Slab: '+result.sites.length+' atom · yüzey alanı '+result.area.toFixed(2)+' Å² · vakum '+result.vacuum+' Å');
@@ -1806,7 +1806,7 @@ function applyTransformation(){
   const next=transformCrystal(state.cell,physical,matrixFromControls());
   if(densityGrid)resetVolume();
   state.cell=next.cell;state.sites=next.sites;state.rep=[1,1,1];state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
-  state.plane={...state.plane,visible:false,slab:false};
+  state.plane={...state.plane,visible:false,slab:false};state.planeLayers=[];
   state.warning='Dönüşümden sonra özgün uzay grubu P1 oldu; simetri isterseniz yeniden atayın.';
   state.detail='Dönüştürülmüş örgü · P1';state.name=state.name+' · dönüşüm';
   syncControls();build();fit();
