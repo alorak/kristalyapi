@@ -2271,7 +2271,7 @@ function transformCrystal(cell,sites,P){
   for(let k=Math.floor(min[2]-old[2])-1;k<=Math.ceil(max[2]-old[2])+1;k++){
    const q=matTimes(inv,[old[0]+i,old[1]+j,old[2]+k]);
    if(q.some(v=>v< -1e-7||v>=1-1e-7))continue;
-   const f=q.map(frac),key=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join('/');
+   const f=q.map(frac),key=cleanSymbol(site.symbol)+'|'+Number(site.occupancy??1).toFixed(5)+'|'+f.map(v=>Math.round(v*1e5)).join('/');
    if(seen.has(key))continue;seen.add(key);
    next.push({...site,x:f[0],y:f[1],z:f[2],
     ...(site.adp?{adp:adpFromCartesian(adpToCartesian(site.adp,cell),nextCell)}:{})});
