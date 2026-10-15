@@ -9,6 +9,32 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## VESTA Aşama 3 — Primitive / kısa baz dönüşümleri
+
+Sol **Örgü dönüşümü → Primitive hücre / kısa baz** bölümünde iki güvenli işlem vardır:
+
+- **Merkezlemeden primitive hücreye:** Seçili uzay grubu ayarındaki
+  F, I, A, B veya C merkezleme çevirilerini belirler; öncelikle bütün
+  P1 atomlarının eşdeğer çevirilerinin element ve dolulukla uyuştuğunu
+  Kartezyen toleranslı biçimde denetler. Eksik atom/uyumsuz doluluk
+  varsa sessiz dönüştürmez. Primitive dönüşüm sonucu atom sayısı ve
+  hücre hacim oranını doğrular; ADP tensörleri yeni hücre metriğine
+  taşınır. Örnek: konvansiyonel NaCl 8 atom → primitive 2 atom,
+  hacim 1/4. BCC 2 atom → primitive 1 atom, hacim 1/2.
+- **Unimodüler kısa baz dönüşümü:** Tam sayı katsayılı sağ elli
+  unimodüler (det=+1) baz sıralama ve uzunluk kısaltma uygular.
+  Atom sayısı ve hacim invariantları denetlenir; kristalografik
+  geometri korunur.
+
+Her iki işlemden sonra **P1 hücre** üretilir; kaynak uzay grubu
+setting/orijin otomatik eşdeğer olarak yeniden tanımlanmaz.
+Miller düzlemleri, hacimsel veri ve diğer faz üst üste bindirmeleri
+artık aynı referans bazını temsil etmeyebileceğinden sıfırlanır.
+Tam spglib `standardize_cell` / `niggli_reduce` eşdeğerliği
+uygulanmadı: R-merkezleme, genel setting/orijin dönüşümü,
+uzay grubu tayini ve Niggli algoritması **eksik**.
+Referans: https://spglib.readthedocs.io/en/stable/api/autodoc/spglib.cell.html
+ve https://spglib.readthedocs.io/en/stable/api/autodoc/spglib.reduce.html
 ## VESTA Aşama 3 — Kristalografik analiz (BVS, düzlem, XRD)
 
 - **Bağ-değerliği / BVS:** Açıkça seçilmiş katyon, oksidasyon durumu ve anyon

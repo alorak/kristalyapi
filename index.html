@@ -669,6 +669,14 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <p class="hint">Sütunlar yeni a′, b′, c′ vektörlerini eski kesirli eksenlerde tanımlar. Atomları Kartezyen konumları koruyarak yeni hücreye taşır.</p>
    <button id="transformCell" style="width:100%" class="primary">Hücreyi ve atomları dönüştür</button>
+   <div class="bond-rule-list" style="margin-top:14px">
+    <strong class="measure-subheading">Primitive hücre / kısa baz</strong>
+    <p class="hint">Seçili uzay grubunun F, I, A, B veya C merkezlemesine göre primitive dönüşümü önce atom koordinatlarında doğrular. Eksik çeviri eşdeğerliği varsa dönüşüm reddedilir.</p>
+    <button id="autoPrimitive" type="button" class="primary">Simetriden primitive hücreye</button>
+    <button id="reduceBasis" type="button">Kısa baz dönüşümünü uygula</button>
+    <p id="standardizationInfo" class="note">Kısa baz tam Niggli indirgemesi değildir; genel setting/orijin ve uzay grubu otomatik tayinini yapmaz.</p>
+    <p class="hint">Bu işlemler atom koordinatlarını, doluluk oranlarını ve varsa ADP tensörlerini yeni hücreye dönüştürür; sonuç açık P1 olarak saklanır. Uygun olmayan merkezlenme reddedilir.</p>
+   </div>
   </div>
 
    </div>
@@ -758,7 +766,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <div class="triple">
     <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
     <label class="field compact"><span>2θ üst sınır (°)</span><input id="xrdAngle" type="number" min="15" max="150" step="5" value="90"></label>
-    <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMaxIndex" type="number" min="1" max="9" step="1" value="5"></label>
+    <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMaxIndex" type="number" min="1" max="7" step="1" value="5"></label>
    </div>
    <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
    <div id="xrdSummary" class="note">Hesaplama bekleniyor.</div>
@@ -2263,7 +2271,7 @@ function transformCrystal(cell,sites,P){
   for(let k=Math.floor(min[2]-old[2])-1;k<=Math.ceil(max[2]-old[2])+1;k++){
    const q=matTimes(inv,[old[0]+i,old[1]+j,old[2]+k]);
    if(q.some(v=>v< -1e-7||v>=1-1e-7))continue;
-   const f=q.map(frac),key=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join('/');
+   const f=q.map(frac),key=cleanSymbol(site.symbol)+'|'+Number(site.occupancy??1).toFixed(5)+'|'+f.map(v=>Math.round(v*1e5)).join('/');
    if(seen.has(key))continue;seen.add(key);
    next.push({...site,x:f[0],y:f[1],z:f[2],
     ...(site.adp?{adp:adpFromCartesian(adpToCartesian(site.adp,cell),nextCell)}:{})});
@@ -2273,6 +2281,129 @@ function transformCrystal(cell,sites,P){
  if(!next.length)throw Error('Dönüştürülen hücrede atom bulunamadı.');
  return {cell:nextCell,sites:next,det};
 }
+
+/* Verified I/F/A/B/C centering to primitive only. This does not identify
+   arbitrary space groups, solve origin shifts, or perform Niggli reduction. */
+const PRIMITIVE_TRANSFORMS={
+ F:[[0,.5,.5],[.5,0,.5],[.5,.5,0]],
+ I:[[-.5,.5,.5],[.5,-.5,.5],[.5,.5,-.5]],
+ C:[[.5,-.5,0],[.5,.5,0],[0,0,1]],
+ A:[[1,0,0],[0,.5,-.5],[0,.5,.5]],
+ B:[[.5,0,-.5],[0,1,0],[.5,0,.5]]
+};
+const CENTER_TRANSLATIONS={
+ F:[[0,.5,.5],[.5,0,.5],[.5,.5,0]],
+ I:[[.5,.5,.5]],
+ C:[[.5,.5,0]],
+ A:[[0,.5,.5]],
+ B:[[.5,0,.5]]
+};
+function centeringFromSetting(key){
+ const centering=settingData(key)[0].map(c=>c.split(',').map(rational).map(frac));
+ const canonical=x=>x.map(v=>v.toFixed(6)).join(',');
+ const sorted=rows=>rows.map(canonical).sort().join(';');
+ const source=centering.filter(x=>x.some(v=>v>1e-7));
+ for(const [kind,values] of Object.entries(CENTER_TRANSLATIONS)){
+  if(sorted(source)===sorted(values))return kind;
+ }
+ return source.length?'unsupported':'P';
+}
+function verifyCenteringTranslations(sites,cell,kind,tolerance=.006){
+ if(!CENTER_TRANSLATIONS[kind]||!Array.isArray(sites)||sites.length<2||sites.length>1000)
+  throw Error('Primitive merkezleme kontrolü için 2–1000 P1 atom gerekli.');
+ const B=basis(cell),translations=CENTER_TRANSLATIONS[kind];
+ const coords=sites.map(s=>[s.x,s.y,s.z].map(frac));
+ for(let i=0;i<sites.length;i++)for(const shift of translations){
+  const target=coords[i].map((v,j)=>v+shift[j]);
+  const same=sites.some((s,j)=>cleanSymbol(s.symbol)===cleanSymbol(sites[i].symbol)&&
+   Math.abs(Number(s.occupancy??1)-Number(sites[i].occupancy??1))<.001&&
+   minimumPeriodicImage(target,coords[j],B).distance<=tolerance);
+  if(!same)throw Error('Merkezleme çevirisi atomlarla doğrulanamadı: '+sites[i].symbol+' '+i+
+   ' → '+shift.join(',')+'; primitive dönüşümü iptal edildi.');
+ }
+ return true;
+}
+function primitiveFromSetting(cell,sites,key){
+ const kind=centeringFromSetting(key);
+ if(kind==='P')throw Error('Seçili uzay grubu primitive (P): hacim küçültme yok.');
+ if(kind==='unsupported')throw Error('Bu merkezleme (ör. R) henüz otomatik primitive dönüşüme dahil değil.');
+ verifyCenteringTranslations(sites,cell,kind);
+ const transformed=transformCrystal(cell,sites,PRIMITIVE_TRANSFORMS[kind]);
+ if(Math.abs(transformed.det-1/(CENTER_TRANSLATIONS[kind].length+1))>1e-8)
+  throw Error('Primitive hacim oranı merkezleme türüyle uyuşmuyor.');
+ const expected=sites.length/(CENTER_TRANSLATIONS[kind].length+1);
+ if(Math.abs(transformed.sites.length-expected)>1e-8)
+  throw Error('Primitive atom sayısı beklenen azaltma oranıyla uyuşmuyor; dönüşüm iptal edildi.');
+ return {...transformed,kind,checked:true};
+}
+/* A right-handed GL(3,Z) basis shortening/ordering, not canonical Niggli.
+   Each column is a new lattice vector as integer coefficients of the old basis. */
+function shortBasisTransform(cell){
+ const B=basis(cell),cols=[[1,0,0],[0,1,0],[0,0,1]];
+ const vec=c=>toCart(c,B);
+ const len=c=>vec(c).length();
+ const det=c=>matrixDet([0,1,2].map(i=>[c[0][i],c[1][i],c[2][i]]));
+ let steps=0;
+ const sort=()=>{
+  const old=cols.map(c=>c.slice()),sorted=old.sort((a,b)=>len(a)-len(b));
+  for(let i=0;i<3;i++)cols[i]=sorted[i];
+  if(det(cols)<0)cols[2]=cols[2].map(v=>-v);
+ };
+ for(let round=0;round<36;round++){
+  sort();let changed=false;
+  outer:for(let j=1;j<3;j++)for(let i=0;i<j;i++){
+   const vj=vec(cols[j]),vi=vec(cols[i]),projection=Math.round(vj.dot(vi)/(vi.dot(vi)||1));
+   if(!projection)continue;
+   const replacement=cols[j].map((n,q)=>n-projection*cols[i][q]);
+   if(replacement.some(n=>Math.abs(n)>8))continue;
+   if(len(replacement)<len(cols[j])-1e-7){
+    cols[j]=replacement;changed=true;steps++;break outer;
+   }
+  }
+  if(!changed)break;
+  if(round===35)throw Error('Kısa baz dönüşümü yakınsamadı.');
+ }
+ sort();
+ const P=[0,1,2].map(i=>cols.map(c=>c[i]));
+ if(Math.abs(matrixDet(P)-1)>1e-8)throw Error('Kısa baz unimodüler değil.');
+ if(P.some(row=>row.some(n=>Math.abs(n)>8)))throw Error('Kısa baz katsayı sınırı aşıldı.');
+ return {P,steps,cell:metric(cols.map(vec))};
+}
+function applyStandardizedCell(result,description){
+ if(densityGrid)resetVolume();
+ state.cell=result.cell;state.sites=result.sites;state.rep=[1,1,1];
+ state.sgNumber=1;state.sgSetting='1';state.symmetryEnabled=false;
+ state.plane={...state.plane,visible:false,slab:false};state.planeLayers=[];
+ state.morphology=[];state.morphVisible=false;state.overlays=[];
+ stage3Planes=[];lastBvs=null;lastXrd=null;renderStage3Planes();
+ state.name=state.name+' · '+description;state.detail=description+' · sağ elli P1 baz';
+ state.warning='Hücre değiştirildi; orijinal uzay grubu orijin/setting eşdeğerliği otomatik belirlenmedi. XRD ve ek faz analizlerini yeniden yapın.';
+ syncControls();build();fit();
+}
+function initStandardizationControls(){
+ $('autoPrimitive').onclick=()=>{
+  try{
+   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+   const result=primitiveFromSetting(state.cell,sites,state.sgSetting);
+   applyStandardizedCell(result,result.kind+' merkezli primitive');
+   $('standardizationInfo').textContent=result.kind+' → P1 · atom '+sites.length+' → '+result.sites.length+
+    ' · hacim oranı '+result.det.toFixed(4)+'. Özgün space-group setting korunmadı.';
+  }catch(error){inform('Primitive: '+error.message);}
+ };
+ $('reduceBasis').onclick=()=>{
+  try{
+   const reduction=shortBasisTransform(state.cell);
+   const source=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+   const result=transformCrystal(state.cell,source,reduction.P);
+   if(result.sites.length!==source.length||Math.abs(result.det-1)>1e-8)
+    throw Error('Atom sayısı/hacim koruma kontrolü başarısız.');
+   applyStandardizedCell(result,'unimodüler kısa baz');
+   $('standardizationInfo').textContent='Baz kısaltıldı · '+reduction.steps+' iterasyon · hacim sabit '+
+    volume(basis(result.cell)).toFixed(4)+' Å³. Bu genel Niggli indirgemesi değildir.';
+  }catch(error){inform('Kısa baz: '+error.message);}
+ };
+}
+
 function matrixFromControls(){
  const P=[0,1,2].map(i=>[0,1,2].map(j=>+$('m'+i+j).value));
  if(P.some(r=>r.some(v=>!Number.isFinite(v))))throw Error('Matris değerleri sayısal olmalı.');
@@ -4207,6 +4338,7 @@ function bind(){
  initRightSidebarTabs();
  initVolumeControls();
  initStage3Analyses();
+ initStandardizationControls();
  initLeftSidebarTabs();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};

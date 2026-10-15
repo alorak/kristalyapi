@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1308,4 +1308,49 @@ test('stage3 structure factor: anomalous scattering omitted; occupancy and Biso 
  assert.ok(thermal<half);
  assert.throws(()=>api.powderPattern(cell,[atom],{wavelength:0,maxIndex:2}));
  assert.throws(()=>api.structureFactor(0,0,0,[atom],cell));
+});
+
+test('stage3 F-centered NaCl conventional -> primitive conserves two atomic species and quarter volume',()=>{
+ const nacl=api.examples('nacl');
+ const primitive=api.primitiveFromSetting(nacl.cell,nacl.sites,api.preferredSetting(225));
+ assert.equal(primitive.kind,'F');
+ assert.equal(primitive.sites.length,2);
+ approx(primitive.det,.25);
+ approx(api.volume(api.basis(primitive.cell)),api.volume(api.basis(nacl.cell))*.25,1e-6);
+ assert.deepEqual([...primitive.sites.map(s=>s.symbol)].sort(),['Cl','Na']);
+ assert.ok(primitive.sites.every(s=>s.occupancy===1));
+});
+test('stage3 I-centered BCC conventional -> primitive produces one atom and half volume',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Fe',x:0,y:0,z:0},{symbol:'Fe',x:.5,y:.5,z:.5}];
+ const result=api.primitiveFromSetting(cell,sites,api.preferredSetting(229));
+ assert.equal(result.kind,'I');assert.equal(result.sites.length,1);
+ approx(result.det,.5);
+ approx(api.volume(api.basis(result.cell)),32,1e-6);
+});
+test('stage3 C-centered primitive translation and absent equivalent site fails closed',()=>{
+ const cell={a:4,b:5,c:6,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Na',x:0,y:0,z:0,occupancy:1},{symbol:'Na',x:.5,y:.5,z:0,occupancy:1}];
+ const result=api.primitiveFromSetting(cell,sites,api.preferredSetting(63));
+ assert.equal(result.kind,'C');assert.equal(result.sites.length,1);
+ const incomplete=sites.slice(0,1);
+ assert.throws(()=>api.primitiveFromSetting(cell,incomplete,api.preferredSetting(63)));
+ const different=[sites[0],{...sites[1],symbol:'K'}];
+ assert.throws(()=>api.primitiveFromSetting(cell,different,api.preferredSetting(63)));
+ assert.equal(api.centeringFromSetting(api.preferredSetting(166)),'unsupported');
+});
+test('stage3 noncanonical short-basis: unimodular right-handed, preserves volume and atom count',()=>{
+ const cell={a:10,b:4,c:5,alpha:90,beta:90,gamma:90},atom=[{symbol:'Si',x:.1,y:.2,z:.3}];
+ const reduction=api.shortBasisTransform(cell);
+ approx(api.matrixDet(reduction.P),1);
+ approx(reduction.cell.a,4);
+ approx(reduction.cell.b,5);
+ const changed=api.transformCrystal(cell,atom,reduction.P);
+ assert.equal(changed.sites.length,1);
+ approx(api.volume(api.basis(changed.cell)),api.volume(api.basis(cell)),1e-6);
+ const oblique={a:4,b:5,c:6,alpha:90,beta:90,gamma:35};
+ const short=api.shortBasisTransform(oblique);
+ const transformed=api.transformCrystal(oblique,atom,short.P);
+ approx(api.volume(api.basis(transformed.cell)),api.volume(api.basis(oblique)),1e-6);
+ assert.ok(short.steps>=1);
 });
