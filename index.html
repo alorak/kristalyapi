@@ -2619,6 +2619,7 @@ function build(){
  }
  drawSelection();
  drawVolume();
+ drawStage3Planes();
  applyLayerAppearance();
  renderLayerManager();
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
@@ -2919,7 +2920,11 @@ function initStage3Analyses(){
   try{
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
    const index=Number($('analysisCenter').value);
-   lastBvs=bondValenceSum(sites,index,state.cell,pair.value,Number($('bvsCutoff').value));
+   const input=state.sites[index];if(!input)throw Error('Analiz merkezi seçilmedi.');
+   const physIndex=state.symmetryEnabled?sites.findIndex(s=>s.symbol===input.symbol&&
+    ['x','y','z'].every(k=>Math.abs(frac(s[k])-frac(input[k]))<1e-5)):index;
+   if(physIndex<0)throw Error('Simetri genişletilmiş koordinasyon merkezi bulunamadı.');
+   lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,Number($('bvsCutoff').value));
    $('bvsResult').textContent='CN='+lastBvs.count+' · BVS='+lastBvs.sum.toFixed(4)+' v.u.'+
     ' · referans yükseltgenme +'+lastBvs.referenceCharge+
     ' · ort. bağ='+lastBvs.mean.toFixed(4)+' Å'+
@@ -3024,6 +3029,7 @@ function renderBondRuleEditor(){
 }
 
 function renderSites(){
+ refreshStage3Atoms();
  const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
  state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);tr.append(td);}
   const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#55718e;white-space:nowrap';
@@ -4200,6 +4206,7 @@ function bind(){
  initLibrary();
  initRightSidebarTabs();
  initVolumeControls();
+ initStage3Analyses();
  initLeftSidebarTabs();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
