@@ -9,6 +9,16 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## VESTA Aşama 2 — Çoklu hacimsel alan, izoyüzey ve nicel 2B kesit
+
+**Hacimsel veriler** ekranından en fazla **dört** CUBE / CHGCAR / XSF alanı yüklenebilir. Ek alanlar yalnızca fiziksel Kartezyen orijin ve üç boyutlu kapsama vektörleri uyumluysa kabul edilir; farklı çözünürlükteki eşkapsamlı ızgaralarda trilineer interpolasyon kullanılır.
+
+- Her alanda **en fazla dört ayrı izoyüzey**: izodeğer, renk, görünürlük, saydamlık ve kaldırma. Toplam etkin izoyüzey sayısı performans için sekiz ile sınırlıdır; ızgaralar bellekte tutulur.
+- Aktif alan seçilerek 2B kesit alınır; ikinci uyumlu alan seçilirse mevcut izoyüzeyler ve kesit onun skaler değerleriyle renklendirilebilir. Veri türleri otomatik olarak gerçek elektrostatik potansiyel diye etiketlenmez.
+- 2B kesit için fiziksel boyut (Å), min/maks/ortalama alan değeri, sayısal renk skalası, **64×64 örneklemeli CSV** (u,v,x,y,z koordinatları Å) ve PNG dışa aktarma eklendi. Kesit, dosyanın gerçek eğik ızgara vektörlerinde örneklenir.
+- Çoklu alanların baytları hâlen tarayıcı belleğindedir; proje JSON veya localStorage içine kopyalanmaz. Sayfa yenilenince hacimsel dosyaların yeniden açılması gerekir.
+- Bu paket **keyfî (hkl) yönlü kesit, hacimsel veri toplama/çıkarma ve VESTA eş görüntü kıyası** yapmaz. Yalnız mevcut fiziksel ızgara eksenlerine paralel kesitler desteklenir. Aynı koordinat çerçevesinde olmayan alanlar sessizce birleştirilmez.
+
 ## VESTA Aşama 1 — CIF / WebGL / katmanlar / termal elipsoitler
 
 - **CIF doğruluğu:** CIF anizotropik `_atom_site_aniso_U_ij` / `_atom_site_aniso_B_ij`
