@@ -29,6 +29,7 @@ class Vector3 {
     return this;
   }
   toArray() { return [this.x, this.y, this.z]; }
+  negate() { this.x = -this.x; this.y = -this.y; this.z = -this.z; return this; }
 }
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const moduleScript = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
@@ -39,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1007,4 +1008,150 @@ test('Undo/Redo: controller restores editor snapshots without recording replay a
  assert.equal(isolated.editorView().sites,3);
  assert.deepEqual(JSON.parse(JSON.stringify(isolated.editorView().history)),{undo:1,redo:0});
  assert.equal(isolated.editorRedo(),false);
+});
+
+
+test('CIF ADP: reads Uij, rotates anisotropic tensors with the symmetry operation',()=>{
+ const cif=[
+  'data_adp',
+  '_cell_length_a 5','_cell_length_b 5','_cell_length_c 5',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_journal_name_full 'Test Journal'",
+  "loop_","_space_group_symop_operation_xyz","'x,y,z'","'y,x,z'",
+  "loop_","_atom_site_label","_atom_site_type_symbol",
+  "_atom_site_fract_x","_atom_site_fract_y","_atom_site_fract_z",
+  "_atom_site_occupancy","_atom_site_U_iso_or_equiv",
+  "Si1 Si 0.1 0.2 0.3 1 0.025",
+  "loop_","_atom_site_aniso_label",...['11','22','33','23','13','12'].map(v=>'_atom_site_aniso_U_'+v),
+  "Si1 0.04 0.01 0.02 0 0 0"
+ ].join('\n')+'\n';
+ const parsed=api.cifData(cif);
+ assert.equal(parsed.sites.length,2);
+ assert.equal(parsed.cifMeta._journal_name_full,'Test Journal');
+ const first=parsed.sites.find(s=>Math.abs(s.x-.1)<1e-8);
+ const second=parsed.sites.find(s=>Math.abs(s.x-.2)<1e-8);
+ approx(first.adp[0],.04);
+ approx(first.adp[1],.01);
+ approx(second.adp[0],.01);
+ approx(second.adp[1],.04);
+ assert.equal(first.uIso,.025);
+ const stored=api.loadProject(JSON.stringify({...parsed,format:'kristalyapi-v1'}));
+ assert.equal(stored.sites[1].adp.length,6);
+ const output=api.cifExportText({...stored,name:'ADP test'});
+ assert.match(output,/_atom_site_aniso_U_11/);
+ assert.match(output,/_atom_site_U_iso_or_equiv/);
+ assert.match(output,/_journal_name_full 'Test Journal'/);
+ const again=api.cifData(output);
+ assert.equal(again.sites.length,2);
+ approx(again.sites[0].adp[0],first.adp[0],1e-6);
+});
+test('ADP: triclinic tensor roundtrip and non-positive ellipsoids rejected',()=>{
+ const cell={a:6,b:7,c:8,alpha:76,beta:84,gamma:101};
+ const tensor=[.04,.025,.03,.001,.003,-.002];
+ const cart=api.adpToCartesian(tensor,cell);
+ const again=api.adpFromCartesian(cart,cell);
+ tensor.forEach((v,i)=>approx(v,again[i],1e-7));
+ const e=api.adpEllipsoid({label:'Si1',adp:tensor},cell,90);
+ assert.equal(e.scales.length,3);
+ assert.ok(e.scales.every(v=>v>0&&Number.isFinite(v)));
+ assert.throws(()=>api.adpEllipsoid({label:'Invalid',adp:[-1,.02,.02,0,0,0]},cell,90));
+ assert.throws(()=>api.loadProject(JSON.stringify({cell,sites:[{symbol:'Si',x:0,y:0,z:0,adp:[.01,.02]}]})));
+});
+test('CIF selected publication metadata survives project and P1 CIF export',()=>{
+ const input=[
+  'data_metadata',
+  '_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_journal_name_full 'Nature Materials'",
+  "_journal_paper_doi '10.1234/sample'",
+  "_publ_section_title 'A test with phase'",
+  "loop_","_atom_site_label","_atom_site_type_symbol",
+  "_atom_site_fract_x","_atom_site_fract_y","_atom_site_fract_z",
+  'C1 C 0 0 0'
+ ].join('\n');
+ const parsed=api.cifData(input);
+ const stored=api.loadProject(JSON.stringify(parsed));
+ assert.equal(stored.cifMeta._journal_paper_doi,'10.1234/sample');
+ const roundtrip=api.cifData(api.cifExportText({...stored,name:'Test'}));
+ assert.equal(roundtrip.cifMeta._publ_section_title,'A test with phase');
+ assert.equal(roundtrip.cifMeta._journal_name_full,'Nature Materials');
+ assert.equal(roundtrip.sites[0].symbol,'C');
+});
+test('Layer manager: canonical order, visibility, opacity and color are bounded',()=>{
+ const layers=api.normalizedLayerState({bonds:{visible:false,opacity:50,color:'#ab12cd'},
+  atoms:{opacity:-1,color:'javascript:alert(1)'}});
+ assert.equal(layers.bonds.visible,false);
+ assert.equal(layers.bonds.opacity,1);
+ assert.equal(layers.bonds.color,'#ab12cd');
+ assert.equal(layers.atoms.opacity,.1);
+ assert.equal(layers.atoms.color,'');
+ const order=Array.from(api.normalizedLayerOrder(['volume','atoms','volume','invalid']));
+ assert.deepEqual(order.slice(0,2),['volume','atoms']);
+ assert.equal(order.length,9);
+ assert.match(html,/id="layerManager"/);
+ assert.match(html,/id="adpVisible"/);
+ assert.match(html,/id="adpLevel"/);
+});
+
+
+test('CIF scientific roundtrip: five diverse real structures preserve P1 geometry',()=>{
+ const paths=['COD_4335507.cif','Fe3O4.cif','Graphite.cif','LiFePO4.cif','CuCl.cif'];
+ for(const name of paths){
+  const content=fs.readFileSync(path.join(__dirname,'validation','fixtures','real',name),'utf8');
+  const one=api.cifData(content),two=api.cifData(api.cifExportText({...one,name:'Roundtrip'}));
+  assert.equal(two.sites.length,one.sites.length,name+' site count');
+  for(let i=0;i<one.sites.length;i++){
+   const a=one.sites[i],b=two.sites[i];
+   assert.equal(b.symbol,a.symbol,name+' atom '+i+' element');
+   approx(b.occupancy,a.occupancy,.001);
+   for(const k of ['x','y','z'])approx(b[k],a[k],.00001);
+  }
+  for(const k of ['a','b','c'])approx(one.cell[k],two.cell[k],.00001);
+  for(const k of ['alpha','beta','gamma'])approx(one.cell[k],two.cell[k],.00001);
+ }
+});
+test('CIF source formula is dropped after composition change, while bibliography remains',()=>{
+ const source=[
+  'data_formula','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_chemical_formula_sum 'Na Cl'","_journal_name_full 'Example Journal'",
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x',
+  '_atom_site_fract_y','_atom_site_fract_z',
+  'Na1 Na 0 0 0','Cl1 Cl 0.5 0.5 0.5'
+ ].join('\n');
+ const crystal=api.cifData(source);
+ assert.match(api.cifExportText(crystal),/_chemical_formula_sum/);
+ crystal.sites[0].symbol='K';
+ const edited=api.cifExportText(crystal);
+ assert.doesNotMatch(edited,/_chemical_formula_sum/);
+ assert.match(edited,/_journal_name_full/);
+});
+test('Isotropic Uiso gives spherical Cartesian ellipsoid even in triclinic cell',()=>{
+ const cell={a:5,b:6,c:7,alpha:78,beta:84,gamma:98};
+ const e=api.adpEllipsoid({label:'Iso',uIso:.03},cell,90);
+ e.scales.forEach(v=>approx(v,Math.sqrt(.03*6.251388631),1e-8));
+});
+
+
+test('Layer visibility, opacity and order survive snapshot restore and project roundtrip',()=>{
+ const source=api.examples('silicon');
+ const input={...source,rep:[1,1,1],sgNumber:1,sgSetting:'1',plane:{h:1,k:1,l:1,offset:1,thickness:2},
+  layers:api.normalizedLayerState({bonds:{visible:false,opacity:.4,color:'#225588'}}),
+  layerOrder:api.normalizedLayerOrder(['volume','bonds','atoms'])};
+ const snapshot=api.lastCrystalPayload(input);
+ assert.equal(snapshot.layers.bonds.visible,false);
+ assert.equal(snapshot.layers.bonds.opacity,.4);
+ assert.equal(snapshot.layerOrder[0],'volume');
+ const restored=api.loadProject(JSON.stringify(snapshot));
+ assert.equal(restored.layers.bonds.visible,false);
+ assert.equal(restored.layers.bonds.color,'#225588');
+ assert.equal(restored.layers.bonds.opacity,.4);
+ assert.equal(restored.layerOrder[0],'volume');
+ const history=api.createEditorHistory(5,100000);
+ history.record(JSON.stringify(snapshot));
+ const next={...snapshot,layers:api.normalizedLayerState({...snapshot.layers,bonds:{visible:true,opacity:1,color:''}})};
+ history.record(JSON.stringify(next));
+ const undo=api.loadProject(history.undo());
+ assert.equal(undo.layers.bonds.visible,false);
+ assert.equal(undo.layers.bonds.opacity,.4);
 });

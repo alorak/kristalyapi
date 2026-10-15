@@ -1,0 +1,37 @@
+name: Real browser WebGL visual smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'tests/browser/**'
+      - '.github/workflows/browser-visual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Render real WebGL scenes and compare screenshots
+        run: node tests/browser/visual.test.mjs
+      - name: Upload screenshots and pixel metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webgl-visual-smoke
+          path: tests/browser/artifacts/
+          if-no-files-found: warn
+          retention-days: 14
