@@ -2398,7 +2398,7 @@ function niggliReduceCell(cell,epsilon=1e-5){
  const near=(a,b)=>Math.abs(a-b)<=eps;
  let iter=0;
  for(;iter<1000;iter++){
-  const p=d(),{A,B,C,xi,eta,zeta}=p;
+  let p=d(),{A,B,C,xi,eta,zeta}=p;
   let l=Math.abs(xi)<=eps?0:Math.sign(xi),
       m=Math.abs(eta)<=eps?0:Math.sign(eta),
       n=Math.abs(zeta)<=eps?0:Math.sign(zeta);
@@ -2413,16 +2413,16 @@ function niggliReduceCell(cell,epsilon=1e-5){
   // Step 3: sign convention, product positive
   if(l*m*n===1){
    apply(diag(l===-1?-1:1,m===-1?-1:1,n===-1?-1:1));
-   // Unlike reduction steps 2 and 5-8, continue evaluating 4-8 on updated values
-   continue;
   }
   // Step 4: sign convention, product nonpositive
-  if(!(l===-1&&m===-1&&n===-1)&&(l*m*n===0||l*m*n===-1)){
+  else if(!(l===-1&&m===-1&&n===-1)&&(l*m*n===0||l*m*n===-1)){
    let signs=[l===1?-1:1,m===1?-1:1,n===1?-1:1],zero=-1;
    if(l===0)zero=0;if(m===0)zero=1;if(n===0)zero=2;
    if(signs[0]*signs[1]*signs[2]===-1&&zero>=0)signs[zero]*=-1;
-   apply(diag(...signs));continue;
+   apply(diag(...signs));
   }
+  // Proceed with fresh metric after step 3 or 4 as in spglib.
+  ({A,B,C,xi,eta,zeta}=d());
   // Step 5: |xi| <= B, with boundary conditions
   if(Math.abs(xi)>B+eps||(near(B,xi)&&2*eta<zeta-eps)||
     (near(B,-xi)&&zeta< -eps)){
