@@ -760,6 +760,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      <button id="openPotential">Elektrostatik potansiyel yükle (renklendir)</button>
      <label class="check"><input type="checkbox" id="volumePotential"> İzoyüzeyi potansiyele göre renklendir</label>
      <div id="volumeColorLegend" class="volume-color-legend" aria-label="Mavi düşük, beyaz orta, kırmızı yüksek skaler alan"></div>
+     <div id="volumeColorScale" class="hint" aria-live="polite">Renk ölçeği veri yüklenince hesaplanır.</div>
      <div class="actionrow"><button id="volumeSlicePng" type="button">2B kesiti PNG kaydet</button><button id="volumeSliceCsv" type="button">Kesit sayısal CSV</button></div>
      <div class="note" id="volumeSliceStats">Henüz sayısal kesit yok.</div>
      <button id="clearVolume">Hacimsel veriyi temizle</button>
@@ -1586,7 +1587,7 @@ function volumeSliceCsv(slice){
 }
 function updateVolumeSliceStats(){
  const info=$('volumeSliceStats'),g=densityGrid;
- if(!g){info.textContent='Henüz sayısal kesit yok.';return;}
+ if(!g){info.textContent='Henüz sayısal kesit yok.';$('volumeColorScale').textContent='Renk ölçeği veri yüklenince hesaplanır.';return;}
  const slice=sliceSampleMatrix(g,volumeView.axis,volumeView.position,32);
  const formatted=n=>Number(n).toPrecision(4);
  info.textContent='Kesit '+slice.width.toFixed(2)+' × '+slice.height.toFixed(2)+' Å · '+
@@ -1597,6 +1598,7 @@ function updateVolumeSliceStats(){
  $('volumeColorLegend').setAttribute('aria-label',
   'Renk skalası: '+formatted(lower)+' → '+formatted(upper)+' '+color.units+' ('+color.kind+')');
  $('volumeColorLegend').title=$('volumeColorLegend').getAttribute('aria-label');
+ $('volumeColorScale').textContent=formatted(lower)+' ← '+color.kind+' ('+color.units+') → '+formatted(upper);
 }
 async function loadVolumeFile(file,asPotential=false,additional=false){
  if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
