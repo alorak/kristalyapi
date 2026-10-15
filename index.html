@@ -795,6 +795,25 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <p class="hint">Kesit görünümü atom-merkezi filtresidir. Aşağıdaki oluşturma aracı ayrıca gerçek 2B periyodik yüzey vektörleriyle yeni 3B hücre ve vakum üretir; yüzey relaksasyonu yapmaz.</p>
   </div>
+  <div class="section"><h2>Kristal morfolojisi · {hkl} yüz aileleri</h2>
+   <p class="hint">Yüzey normaline olan merkez uzaklığını Å cinsinden belirleyerek kapalı bir kristal şekli oluştur. Kübik hücrelerde eşdeğer indis permütasyonları uygulanır; diğer hücrelerde yalnız ±(hkl) üretilir.</p>
+   <label class="check"><input type="checkbox" id="morphVisible"> Morfolojiyi göster</label>
+   <div class="triple">
+    <label class="field compact"><span>h</span><input type="number" id="morphH" min="-6" max="6" step="1" value="1"></label>
+    <label class="field compact"><span>k</span><input type="number" id="morphK" min="-6" max="6" step="1" value="0"></label>
+    <label class="field compact"><span>l</span><input type="number" id="morphL" min="-6" max="6" step="1" value="0"></label>
+   </div>
+   <div class="triple">
+    <label class="field compact"><span>Merkez uzaklığı (Å)</span><input type="number" id="morphDistance" min=".1" max="500" step=".1" value="3"></label>
+    <label class="field compact"><span>Yüz rengi</span><input type="color" id="morphColor" value="#67a6d5"></label>
+   </div>
+   <label class="check"><input type="checkbox" id="morphFamily" checked> Kübik eşdeğer indisleri birlikte üret (varsa)</label>
+   <div class="actionrow"><button type="button" id="morphAdd" class="primary">+ Yüz ailesi ekle</button><button type="button" id="morphPreset">Kübik {100} örneği</button><button type="button" id="morphClear">Temizle</button></div>
+   <div id="morphList" class="volume-layer-list" aria-live="polite"></div>
+   <div id="morphSummary" class="note">Henüz yüz ailesi eklenmedi.</div>
+   <p class="hint">Bu bir **geometrik morfoloji modelidir**; yüzey enerjisi, termodinamik Wulff denge şekli veya yüzey relaksasyonu hesaplanmaz.</p>
+  </div>
+  </div>
    </div>
   </div>
   <nav class="right-tabbar" role="tablist" aria-label="Sağ panel sekmeleri">
@@ -2157,6 +2176,7 @@ function syncSgControls(){
 const LAYER_TYPES=[
  ['atoms','Atomlar','#467bb9'],['ellipsoids','Termal elipsoitler','#568bc5'],
  ['bonds','Bağlar','#98a5b0'],['polyhedra','Koordinasyon çokyüzlüleri','#54a1db'],
+ ['morphology','Kristal morfolojisi','#67a6d5'],
  ['cell','Birim hücre','#74869a'],['miller','Miller düzlemleri','#40b7d5'],
  ['volume','Hacimsel veri','#307cba'],['labels','Atom etiketleri','#7189a5'],
  ['axes','Kristal eksenleri','#598dbd']
@@ -2296,7 +2316,7 @@ function build(){
   if(periodic){for(const [a,b] of periodic.segments)addLayerObject(makeCylinder(a,b,radius,bondMat),'bonds');if(periodic.truncated)capReached=true;}
   else for(const [i,j] of bondPairs)if(atomMesh[i].visible&&atomMesh[j].visible)addLayerObject(makeCylinder(entry[i].pos,entry[j].pos,radius,bondMat),'bonds');
  }
- addCellLines(B,state.rep);drawMillerPlane(B);
+ addCellLines(B,state.rep);drawMillerPlane(B);drawMorphology(B,center);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
  if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');}
  if(state.poly){
@@ -2442,7 +2462,7 @@ function syncControls(){
  $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
- try{previewPlane();}catch(e){}fillPoly();renderSites();renderBondRuleEditor();renderMillerLayerList();renderLayerManager();
+ try{previewPlane();}catch(e){}fillPoly();renderSites();renderBondRuleEditor();renderMillerLayerList();renderMorphList();renderLayerManager();
 }
 function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
 
@@ -2498,6 +2518,7 @@ function loadPreset(key){
  state.cut=ex.cut;state.warning='';state.poly='';state.polyCut=0;state.polyNeighbors=12;state.rep=[1,1,1];
  state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
+ state.morphology=[];state.morphVisible=false;
  state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
  state.sgSetting=preferredSetting(state.sgNumber);state.symmetryEnabled=false;
  syncControls();build();fit();
@@ -2511,6 +2532,7 @@ function createEmptyStructure(){
  state.poly='';state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
  state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
+ state.morphology=[];state.morphVisible=false;
  syncControls();build();fit();
 }
 function importSelectedPreset(){
@@ -2742,11 +2764,12 @@ function loadProject(json){
  if(!Number.isFinite(cut)||cut<.8||cut>5)throw Error('Kaydedilen bağ eşiği geçersiz.');
  const style=['ball','space','stick','wire'].includes(obj.style)?obj.style:'ball';
  const planeLayers=normalizedMillerLayers(obj.planeLayers,obj.cell);
+ const morphology=normalizedMorphology(obj.morphology,obj.cell);
  const poly=typeof obj.poly==='string'&&obj.poly.length<=2?obj.poly:'';
  const polyCut=Number(obj.polyCut??0),polyNeighbors=Number(obj.polyNeighbors??12);
  if(!Number.isFinite(polyCut)||polyCut<0||polyCut>12||!Number.isInteger(polyNeighbors)||polyNeighbors<4||polyNeighbors>24)throw Error('Kaydedilen koordinasyon ayarları geçersiz.');
  const plane={h,k,l,offset,thickness,visible:!!source.visible,repeat:source.repeat!==false,slab:!!source.slab};
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,poly,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,morphology,morphVisible:!!obj.morphVisible,poly,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
   adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
   layers:normalizedLayerState(obj.layers),layerOrder:normalizedLayerOrder(obj.layerOrder),
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
@@ -2853,6 +2876,7 @@ function lastCrystalPayload(current){
   cut:current.cut,autoBond:current.autoBond,sgNumber:current.sgNumber,
   sgSetting:current.sgSetting,symmetryEnabled:current.symmetryEnabled,
   bondRules:current.bondRules,plane:current.plane,planeLayers:current.planeLayers||[],
+  morphology:current.morphology||[],morphVisible:!!current.morphVisible,
   cifMeta:cifMetaValid(current.cifMeta),cifComposition:current.cifComposition||'',adpVisible:!!current.adpVisible,adpLevel:current.adpLevel||50,
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
@@ -2936,7 +2960,8 @@ function exportPoscar(){
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
-function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
+function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
+ morphology:state.morphology||[],morphVisible:!!state.morphVisible,poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
 
@@ -3649,6 +3674,22 @@ function bind(){
  $('applyPlane').onclick=()=>{try{previewPlane();build();}catch(e){inform(e.message);}};
  $('createSlab').onclick=applySurfaceSlab;
  $('addMillerLayer').onclick=()=>{try{addMillerLayer();}catch(e){inform(e.message);}};
+ $('morphVisible').onchange=e=>{state.morphVisible=e.target.checked;build();};
+ $('morphAdd').onclick=()=>{
+  try{
+   if((state.morphology||[]).length>=8)throw Error('En fazla sekiz yüz ailesi eklenebilir.');
+   const rec={h:+$('morphH').value,k:+$('morphK').value,l:+$('morphL').value,
+    distance:+$('morphDistance').value,color:$('morphColor').value,visible:true,
+    cubic:$('morphFamily').checked};
+   state.morphology=normalizedMorphology([...(state.morphology||[]),rec],state.cell);
+   state.morphVisible=true;renderMorphList();build();
+  }catch(e){inform(e.message);}
+ };
+ $('morphPreset').onclick=()=>{
+  state.morphology=normalizedMorphology([{h:1,k:0,l:0,distance:3,color:'#67a6d5',visible:true,cubic:true}],state.cell);
+  state.morphVisible=true;renderMorphList();build();
+ };
+ $('morphClear').onclick=()=>{state.morphology=[];state.morphVisible=false;renderMorphList();build();};
  $('clearMillerLayers').onclick=()=>{state.planeLayers=[];renderMillerLayerList();build();};
  $('matrixPreset').onchange=e=>{
   const m={custom:[[1,0,0],[0,1,0],[0,0,1]],fccp:[[0,.5,.5],[.5,0,.5],[.5,.5,0]],bccp:[[-.5,.5,.5],[.5,-.5,.5],[.5,.5,-.5]],fcctype:[[-1,1,1],[1,-1,1],[1,1,-1]],swap:[[0,1,0],[1,0,0],[0,0,-1]],double:[[2,0,0],[0,1,0],[0,0,1]]};setMatrix(m[e.target.value]||m.custom);
