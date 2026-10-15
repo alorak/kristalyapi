@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1256,4 +1256,56 @@ test('phase2 multi-CIF comparison stays in project, last structure and undo snap
  history.record(JSON.stringify(last));
  assert.equal(JSON.parse(history.undo()).overlays.length,0);
  assert.match(html,/id="overlayAdd"/);
+});
+
+test('stage3 BVS: rock salt NaCl has six 2.82 Å Cl neighbors and valence close to +1',()=>{
+ const structure=api.examples('nacl');
+ const index=structure.sites.findIndex(site=>site.symbol==='Na');
+ const result=api.bondValenceSum(structure.sites,index,structure.cell,'Na1-Cl',3.5);
+ assert.equal(result.count,6);
+ approx(result.mean,2.82,1e-5);
+ assert.ok(Math.abs(result.sum-1)<.025);
+ assert.equal(result.neighbors.every(x=>x.label.includes('Cl')),true);
+ assert.match(api.bvsCsv(result),/bond_valence/);
+ assert.throws(()=>api.bondValenceSum(structure.sites,index,structure.cell,'Fe3-O',3.5),/Merkez atom/);
+});
+test('stage3 BVS: partial ligand occupancy scales contributions, no oxidation inference',()=>{
+ const cell={a:5.64,b:5.64,c:5.64,alpha:90,beta:90,gamma:90};
+ const atoms=[{symbol:'Na',x:0,y:0,z:0},{symbol:'Cl',x:.5,y:0,z:0,occupancy:.5}];
+ const result=api.bondValenceSum(atoms,0,cell,'Na1-Cl',3.5);
+ assert.equal(result.count,2);
+ approx(result.sum,Math.exp((2.15-2.82)/.37),1e-6);
+});
+test('stage3 best-fit plane: zero RMS for exact plane and stable tilted plane',()=>{
+ const plane=api.leastSquaresPlane([[0,0,3],[1,0,3],[0,1,3],[1,1,3]]);
+ approx(plane.rms,0,1e-10);
+ approx(plane.max,0,1e-10);
+ assert.ok(Math.abs(plane.normal[2])>.999999);
+ const tilted=api.leastSquaresPlane([[0,0,0],[1,0,1],[0,1,1],[2,2,4],[.5,2,2.5]]);
+ approx(tilted.rms,0,1e-8);
+ approx(api.angleBetweenPlanes(plane,tilted),Math.acos(1/Math.sqrt(3))*180/Math.PI,1e-6);
+ assert.throws(()=>api.leastSquaresPlane([[0,0,0],[1,0,0],[2,0,0]]),/doğrusal/);
+ assert.throws(()=>api.leastSquaresPlane([[0,0,0],[1,1,0]]));
+});
+test('stage3 structure factor: BCC 100 extinction, 110 allowed and P1 100 allowed',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ const pair=[{symbol:'Fe',x:0,y:0,z:0},{symbol:'Fe',x:.5,y:.5,z:.5}];
+ assert.ok(api.structureFactor(1,0,0,pair,cell).intensity<1e-20);
+ approx(api.structureFactor(1,1,0,pair,cell).intensity,4*26*26,1e-6);
+ approx(api.structureFactor(1,0,0,pair.slice(0,1),cell).intensity,26*26,1e-6);
+ const pattern=api.powderPattern(cell,pair,{wavelength:1.5406,maxIndex:2,maxAngle:90});
+ assert.ok(pattern.groups.length>0);
+ assert.ok(pattern.extinctions>0);
+ assert.ok(pattern.groups[0].angle>30&&pattern.groups[0].angle<33);
+ assert.match(api.xrdCsv(pattern),/2theta_deg/);
+});
+test('stage3 structure factor: anomalous scattering omitted; occupancy and Biso attenuate F',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const atom={symbol:'Si',x:0,y:0,z:0,occupancy:.5};
+ const half=api.structureFactor(1,0,0,[atom],cell).intensity;
+ approx(half,49,1e-7);
+ const thermal=api.structureFactor(1,0,0,[{...atom,uIso:.05}],cell).intensity;
+ assert.ok(thermal<half);
+ assert.throws(()=>api.powderPattern(cell,[atom],{wavelength:0,maxIndex:2}));
+ assert.throws(()=>api.structureFactor(0,0,0,[atom],cell));
 });
