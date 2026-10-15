@@ -2492,17 +2492,19 @@ function moyoInputCell(cell,sites){
   })),numbers};
 }
 function moyoMatrix(flat){
- if(!Array.isArray(flat)||flat.length!==9||flat.some(x=>!Number.isFinite(x)))
+ const values=Array.isArray(flat)||ArrayBuffer.isView(flat)?Array.from(flat):[];
+ if(values.length!==9||values.some(x=>!Number.isFinite(x)))
   throw Error('Moyo dönüşüm matrisinde hatalı veri.');
- return [0,1,2].map(i=>[0,1,2].map(j=>Number(flat[i+3*j])));
+ return [0,1,2].map(i=>[0,1,2].map(j=>Number(values[i+3*j])));
 }
 function moyoTransformDetails(dataset,primitive=false){
  if(!dataset||!Number.isInteger(dataset.number)||dataset.number<1||dataset.number>230||
   !Number.isInteger(dataset.hall_number)||dataset.hall_number<1||dataset.hall_number>530)
   throw Error('Uzay grubu/Hall numarası bilimsel aralığın dışında.');
  const matrix=moyoMatrix(primitive?dataset.prim_std_linear:dataset.std_linear);
- const origin=primitive?dataset.prim_std_origin_shift:dataset.std_origin_shift;
- if(!Array.isArray(origin)||origin.length!==3||origin.some(x=>!Number.isFinite(x)))
+ const originSource=primitive?dataset.prim_std_origin_shift:dataset.std_origin_shift;
+ const origin=Array.isArray(originSource)||ArrayBuffer.isView(originSource)?Array.from(originSource):[];
+ if(origin.length!==3||origin.some(x=>!Number.isFinite(x)))
   throw Error('Moyo orijin kayması geçersiz.');
  const det=matrixDet(matrix);
  if(det<=1e-9||det>36||matrix.some(row=>row.some(x=>Math.abs(x)>8)))
