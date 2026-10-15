@@ -1949,7 +1949,8 @@ function isCubicCell(cell){
   [alpha,beta,gamma].every(v=>Math.abs(v-90)<.01);
 }
 function morphologyOrbit(h,k,l,cubic){
- const source=cubic?[[h,k,l],[h,l,k],[k,h,l],[k,l,h],[l,h,k],[l,k,h]]:[[h,k,l]];
+ if(!cubic)return [[h,k,l],[-h,-k,-l]];
+ const source=[[h,k,l],[h,l,k],[k,h,l],[k,l,h],[l,h,k],[l,k,h]];
  const seen=new Set(),out=[];
  for(const xyz of source)for(const a of [-1,1])for(const b of [-1,1])for(const c of [-1,1]){
   const x=xyz[0]*a,y=xyz[1]*b,z=xyz[2]*c;
@@ -2016,7 +2017,10 @@ function morphologyPolyhedron(planes){
  return {faces,vertices:points,area,volume:Math.abs(volume),closed:faces.length>=4&&Math.abs(volume)>1e-8};
 }
 function drawMorphology(B,center){
- const info=$('morphSummary');if(!state.morphVisible||!state.morphology?.length)return;
+ const info=$('morphSummary');if(!state.morphVisible||!state.morphology?.length){
+  if(info)info.textContent=state.morphology?.length?'Morfoloji görünümü kapalı.':'Henüz yüz ailesi eklenmedi.';
+  return;
+ }
  try{
   const planes=morphologyHalfspaces(state.cell,state.morphology),solid=morphologyPolyhedron(planes);
   if(!solid.closed){info.textContent='Kapalı yüzey oluşmadı. En az üç bağımsız {hkl} aile ekleyin.';return;}
