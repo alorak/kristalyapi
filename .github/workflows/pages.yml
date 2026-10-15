@@ -49,6 +49,8 @@ jobs:
           cp index.html public/index.html
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js public/vendor/moyo_wasm.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm public/vendor/moyo_wasm_bg.wasm
+          cp licenses/LICENSE-MOYO-MIT.txt public/vendor/LICENSE-MIT.txt
+          cp licenses/LICENSE-MOYO-APACHE.txt public/vendor/LICENSE-APACHE.txt
           test -s public/vendor/moyo_wasm_bg.wasm
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
