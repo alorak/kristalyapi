@@ -1294,6 +1294,26 @@ function volumesSameFrame(a,b){
 
 
 let densityGrid=null,potentialGrid=null,volumeLayer=null;
+let volumeDatasets=[],activeVolumeIndex=0,volumeColorIndex='';
+const VOLUME_DATASET_LIMIT=4,VOLUME_ISO_LIMIT=4,VOLUME_TOTAL_SURFACE_LIMIT=8;
+const VOLUME_ISO_COLORS=['#307cba','#d97d45','#32a98b','#9567c2'];
+function defaultVolumeIso(grid){return {value:grid.min+(grid.max-grid.min)*.7,visible:true,opacity:.62,color:VOLUME_ISO_COLORS[0]};}
+function validateVolumeIsoLayer(layer,grid){
+ if(!layer||!Number.isFinite(Number(layer.value))||!Number.isFinite(Number(layer.opacity))||
+   Number(layer.opacity)<.1||Number(layer.opacity)>1||!/^#[a-f\d]{6}$/i.test(layer.color||''))
+  throw Error('İzoyüzey eşik, renk veya opaklık değerleri geçersiz.');
+ return {value:Number(layer.value),visible:layer.visible!==false,opacity:Number(layer.opacity),color:layer.color};
+}
+function activeVolumeDataset(){return volumeDatasets[activeVolumeIndex]||null;}
+function volumeGridCompatible(a,b){return volumesSameFrame(a,b);}
+function addVolumeDataset(grid,name){
+ if(volumeDatasets.length>=VOLUME_DATASET_LIMIT)throw Error('En fazla dört hacimsel veri katmanı yüklenebilir.');
+ if(volumeDatasets.length&&!volumeGridCompatible(volumeDatasets[0].grid,grid))
+  throw Error('Eklenen alanın orijini ve üç boyutlu ızgara sınırları ilk alanla uyuşmuyor. Birbiri üzerine yerleştirilemez.');
+ const entry={grid,name:String(name||grid.title||grid.kind).slice(0,120),visible:true,layers:[defaultVolumeIso(grid)]};
+ volumeDatasets.push(entry);activeVolumeIndex=volumeDatasets.length-1;densityGrid=entry.grid;
+ return entry;
+}
 const volumeView={mode:'off',iso:0,opacity:.62,axis:2,position:50,palette:'thermal',contours:false,potential:false};
 function colorFromScalar(value,min,max,palette){
  const v=Math.max(0,Math.min(1,(value-min)/Math.max(1e-12,max-min)));
@@ -1423,27 +1443,110 @@ function drawVolume(){
  clearVolumeLayer();
  if(!root||!densityGrid||volumeView.mode==='off')return;
  volumeLayer=new THREE.Group();volumeLayer.name='Volumetric data';
- const g=densityGrid,pot=volumeView.potential&&potentialGrid?potentialGrid:null;
+ const pot=volumeView.potential&&potentialGrid?potentialGrid:null;
  if(volumeView.mode==='iso'||volumeView.mode==='both'){
-  const surface=isoTriangles(g,volumeView.iso,pot,volumeView.palette);
-  if(surface.triangles>0){
-   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
-   if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
-   geo.computeVertexNormals();
-   const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:0x307cba,vertexColors:!!pot,
-    side:THREE.DoubleSide,transparent:true,opacity:volumeView.opacity,depthWrite:false,shininess:45});
-   volumeLayer.add(new THREE.Mesh(geo,mat));
+  let drawn=0,truncated=false;
+  for(const dataset of volumeDatasets){
+   if(!dataset.visible||!volumeGridCompatible(densityGrid,dataset.grid))continue;
+   for(const item of dataset.layers){
+    if(!item.visible)continue;
+    if(++drawn>VOLUME_TOTAL_SURFACE_LIMIT){truncated=true;break;}
+    const surface=isoTriangles(dataset.grid,item.value,pot,volumeView.palette,Math.floor(75000/VOLUME_TOTAL_SURFACE_LIMIT)*2);
+    if(surface.triangles){
+     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
+     if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
+     geo.computeVertexNormals();
+     const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:item.color,vertexColors:!!pot,
+      side:THREE.DoubleSide,transparent:true,opacity:item.opacity,depthWrite:false,shininess:45});
+     const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
+    }
+    if(surface.truncated)truncated=true;
+   }
   }
-  if(surface.truncated)$('volumeInfo').textContent+=' · Yüzey üçgen limiti uygulandı';
+  if(truncated)$('volumeInfo').textContent+=' · Yüzey/üçgen sınırı uygulandı';
  }
- if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(g));
- addLayerObject(volumeLayer,'volume');
- applyLayerAppearance();
+ if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(densityGrid));
+ addLayerObject(volumeLayer,'volume');applyLayerAppearance();
 }
+
 function updateVolumeInfo(){
  if(!densityGrid){$('volumeInfo').textContent='Henüz veri yüklenmedi.';return;}
  const g=densityGrid;
- $('volumeInfo').textContent=g.kind+' · '+g.dims.join('×')+' ('+g.values.length.toLocaleString('tr-TR')+' nokta) · min '+g.min.toPrecision(4)+' · max '+g.max.toPrecision(4)+' · '+g.units+(potentialGrid?' · Potansiyel: '+potentialGrid.kind:'');
+ $('volumeInfo').textContent=volumeDatasets.length+' hacimsel alan · '+g.kind+' · '+g.dims.join('×')+
+ ' ('+g.values.length.toLocaleString('tr-TR')+' nokta) · min '+g.min.toPrecision(4)+
+ ' · max '+g.max.toPrecision(4)+' · '+g.units+
+ (potentialGrid?' · Renklendirme: '+potentialGrid.kind:'');
+}
+function volumeRefreshDatasetUi(){
+ const picker=$('volumeActiveDataset'),colorPicker=$('volumeColorDataset');
+ picker.replaceChildren();colorPicker.replaceChildren();
+ const no=document.createElement('option');no.value='';no.textContent='Yok';colorPicker.append(no);
+ volumeDatasets.forEach((item,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=(i+1)+' · '+item.name;picker.append(option);
+  if(i!==activeVolumeIndex){
+   const colorOption=option.cloneNode(true);colorPicker.append(colorOption);
+  }
+ });
+ picker.value=String(activeVolumeIndex);
+ if(volumeColorIndex!==''&&!volumeDatasets[Number(volumeColorIndex)])volumeColorIndex='';
+ if(volumeColorIndex===String(activeVolumeIndex))volumeColorIndex='';
+ colorPicker.value=volumeColorIndex;
+ const host=$('volumeDatasets');host.replaceChildren();
+ for(const [i,item] of volumeDatasets.entries()){
+  const line=document.createElement('div');line.className='volume-layer-row';
+  const visible=document.createElement('input');visible.type='checkbox';visible.checked=item.visible;
+  visible.setAttribute('aria-label',item.name+' görünür');
+  visible.onchange=()=>{item.visible=visible.checked;drawVolume();};
+  const name=document.createElement('label');name.textContent=item.name;name.title=item.name+' · '+item.grid.units;
+  const count=document.createElement('small');count.textContent=String(item.layers.length)+' iso';
+  const select=document.createElement('button');select.type='button';select.textContent='Seç';
+  select.disabled=i===activeVolumeIndex;
+  select.onclick=()=>{activeVolumeIndex=i;densityGrid=item.grid;volumeRefreshDatasetUi();volumeSyncIsoControls();volumeControlChanged();};
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Alanı kaldır';
+  remove.onclick=()=>{
+   volumeDatasets.splice(i,1);
+   if(!volumeDatasets.length){resetVolume();return;}
+   activeVolumeIndex=Math.min(Math.max(0,activeVolumeIndex-(i<=activeVolumeIndex?1:0)),volumeDatasets.length-1);
+   volumeColorIndex='';potentialGrid=null;volumeView.potential=false;$('volumePotential').checked=false;
+   densityGrid=activeVolumeDataset().grid;volumeRefreshDatasetUi();volumeSyncIsoControls();volumeControlChanged();
+  };
+  line.append(visible,name,count,select,remove);host.append(line);
+ }
+ const compatible=volumeDatasets.length<=1||volumeDatasets.every(item=>volumeGridCompatible(volumeDatasets[0].grid,item.grid));
+ $('volumeFrameStatus').textContent=compatible
+  ?'Alanların Kartezyen orijin ve 3B sınırları uyuşuyor; farklı grid çözünürlüklerinde trilineer interpolasyon uygulanabilir.'
+  :'Uyuşmayan uzaysal koordinat çerçevesi: birlikte çizim kapalı.';
+ volumeRefreshIsoUi();
+}
+function volumeSyncIsoControls(){
+ const layer=activeVolumeDataset()?.layers[0];if(!layer)return;
+ $('volumeIso').value=layer.value;$('volumeOpacity').value=layer.opacity;
+}
+function volumeRefreshIsoUi(){
+ const host=$('volumeIsoLayers');host.replaceChildren();
+ const dataset=activeVolumeDataset();if(!dataset)return;
+ dataset.layers.forEach((layer,i)=>{
+  const row=document.createElement('div');row.className='volume-layer-row';
+  const visible=document.createElement('input');visible.type='checkbox';visible.checked=layer.visible;
+  visible.setAttribute('aria-label','İzoyüzey '+(i+1)+' görünürlük');
+  visible.onchange=()=>{layer.visible=visible.checked;drawVolume();};
+  const caption=document.createElement('label');caption.textContent='Iso '+(i+1);caption.title=dataset.grid.units;
+  const level=document.createElement('input');level.type='number';level.step='any';level.value=String(layer.value);
+  level.setAttribute('aria-label','İzoyüzey '+(i+1)+' değeri');
+  level.onchange=()=>{const value=Number(level.value);if(!Number.isFinite(value)){inform('Geçersiz izodeğer.');return;}layer.value=value;volumeSyncIsoControls();drawVolume();};
+  const color=document.createElement('input');color.type='color';color.value=layer.color;
+  color.setAttribute('aria-label','İzoyüzey '+(i+1)+' rengi');
+  color.onchange=()=>{layer.color=color.value;drawVolume();};
+  const opacity=document.createElement('input');opacity.type='range';opacity.min='.1';opacity.max='1';opacity.step='.05';opacity.value=layer.opacity;
+  opacity.setAttribute('aria-label','İzoyüzey '+(i+1)+' saydamlık');
+  opacity.onchange=()=>{layer.opacity=Number(opacity.value);volumeSyncIsoControls();drawVolume();};
+  row.append(visible,caption,level,color,opacity);
+  if(i){const del=document.createElement('button');del.textContent='×';del.type='button';
+   del.setAttribute('aria-label','İzoyüzey '+(i+1)+' sil');
+   del.onclick=()=>{dataset.layers.splice(i,1);volumeRefreshIsoUi();drawVolume();};row.append(del);}
+  host.append(row);
+ });
 }
 function volumeControlChanged(){
  if(!densityGrid)return;
@@ -1451,8 +1554,11 @@ function volumeControlChanged(){
  volumeView.opacity=Number($('volumeOpacity').value);volumeView.axis=Number($('volumeAxis').value);
  volumeView.position=Number($('volumePosition').value);volumeView.palette=$('volumePalette').value;
  volumeView.contours=$('volumeContours').checked;volumeView.potential=$('volumePotential').checked;
- if(!Number.isFinite(volumeView.iso))return;
- updateVolumeInfo();try{drawVolume();}catch(e){inform('Hacimsel çizim: '+e.message);clearVolumeLayer();}
+ if(!Number.isFinite(volumeView.iso)||!Number.isFinite(volumeView.opacity))return;
+ const first=activeVolumeDataset()?.layers[0];
+ if(first){first.value=volumeView.iso;first.opacity=Math.max(.1,Math.min(1,volumeView.opacity));}
+ updateVolumeInfo();volumeRefreshIsoUi();
+ try{drawVolume();updateVolumeSliceStats();}catch(e){inform('Hacimsel çizim: '+e.message);clearVolumeLayer();}
 }
 async function loadVolumeFile(file,asPotential=false){
  if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
