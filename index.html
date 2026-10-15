@@ -1926,6 +1926,138 @@ function normalizedMillerLayers(input,cell){
  });
 }
 function millerLayerKey(p){return [p.h,p.k,p.l,Number(p.offset.toFixed(6)),!!p.repeat].join('/');}
+
+/* Morphology is a clipped intersection of Cartesian half-spaces n·r <= d,
+   NOT a Wulff energy minimization. General cells generate only Friedel ±hkl;
+   full signed permutations are valid only for cubic metrics. */
+function normalizedMorphology(faces,cell){
+ if(!Array.isArray(faces))return [];
+ if(faces.length>8)throw Error('Morfoloji en çok sekiz yüz ailesini destekler.');
+ return faces.map(x=>{
+  const h=Number(x.h),k=Number(x.k),l=Number(x.l),distance=Number(x.distance);
+  planeNormal(h,k,l,basis(cell));
+  if(!Number.isInteger(h)||!Number.isInteger(k)||!Number.isInteger(l)||
+   Math.max(Math.abs(h),Math.abs(k),Math.abs(l))>6||!Number.isFinite(distance)||
+   distance<.1||distance>500||!/^#[a-f0-9]{6}$/i.test(String(x.color||'')))
+   throw Error('Geçersiz morfoloji (hkl), merkez mesafesi veya rengi.');
+  return {h,k,l,distance,color:x.color,visible:x.visible!==false,cubic:x.cubic!==false};
+ });
+}
+function isCubicCell(cell){
+ const {a,b,c,alpha,beta,gamma}=cell;
+ return Math.max(Math.abs(a-b),Math.abs(b-c),Math.abs(c-a))<Math.max(a,b,c)*1e-4&&
+  [alpha,beta,gamma].every(v=>Math.abs(v-90)<.01);
+}
+function morphologyOrbit(h,k,l,cubic){
+ const source=cubic?[[h,k,l],[h,l,k],[k,h,l],[k,l,h],[l,h,k],[l,k,h]]:[[h,k,l]];
+ const seen=new Set(),out=[];
+ for(const xyz of source)for(const a of [-1,1])for(const b of [-1,1])for(const c of [-1,1]){
+  const x=xyz[0]*a,y=xyz[1]*b,z=xyz[2]*c;
+  if(!x&&!y&&!z)continue;
+  const key=[x,y,z].join(',');
+  if(!seen.has(key)){seen.add(key);out.push([x,y,z]);}
+ }
+ return out;
+}
+function morphologyHalfspaces(cell,faces){
+ const B=basis(cell),planes=[],seen=new Set(),cubic=isCubicCell(cell);
+ for(const face of normalizedMorphology(faces,cell)){
+  if(!face.visible)continue;
+  for(const hkl of morphologyOrbit(face.h,face.k,face.l,cubic&&face.cubic)){
+   const key=hkl.join(',');
+   if(seen.has(key))continue;seen.add(key);
+   const n=planeNormal(...hkl,B).normal;
+   planes.push({normal:[n.x,n.y,n.z],distance:face.distance,color:face.color,hkl});
+   if(planes.length>72)throw Error('Morfoloji 72 yüzey düzlemi sınırını aşıyor. Daha az {hkl} ailesi seçin.');
+  }
+ }
+ return planes;
+}
+function morphologyPolyhedron(planes){
+ const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+ const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+ const points=[],seen=new Set(),eps=1e-5*Math.max(1,...planes.map(x=>x.distance));
+ for(let i=0;i<planes.length;i++)for(let j=i+1;j<planes.length;j++)for(let k=j+1;k<planes.length;k++){
+  const A=planes[i],B=planes[j],C=planes[k],bc=cross(B.normal,C.normal),
+   ca=cross(C.normal,A.normal),ab=cross(A.normal,B.normal),det=dot(A.normal,bc);
+  if(Math.abs(det)<1e-8)continue;
+  const p=[0,1,2].map(q=>(A.distance*bc[q]+B.distance*ca[q]+C.distance*ab[q])/det);
+  if(!p.every(Number.isFinite)||planes.some(plane=>dot(plane.normal,p)>plane.distance+eps))continue;
+  const key=p.map(v=>Math.round(v/eps)).join(',');
+  if(!seen.has(key)){seen.add(key);points.push(p);}
+ }
+ const faces=[];let area=0;
+ for(const plane of planes){
+  const f=points.filter(v=>Math.abs(dot(plane.normal,v)-plane.distance)<=eps*2);
+  if(f.length<3)continue;
+  const center=[0,1,2].map(i=>f.reduce((s,v)=>s+v[i],0)/f.length),n=plane.normal;
+  let ref=Math.abs(n[0])<.85?[1,0,0]:[0,1,0];
+  const u=cross(n,ref),l=Math.hypot(...u);if(l<1e-12)continue;
+  const U=u.map(v=>v/l),V=cross(n,U);
+  const ordered=f.sort((a,b)=>{
+   const angle=p=>Math.atan2(dot(p.map((x,i)=>x-center[i]),V),dot(p.map((x,i)=>x-center[i]),U));
+   return angle(a)-angle(b);
+  });
+  let surface=0;
+  for(let i=1;i<ordered.length-1;i++){
+   const a=ordered[0],b=ordered[i],c=ordered[i+1];
+   surface+=Math.abs(dot(cross(b.map((v,q)=>v-a[q]),c.map((v,q)=>v-a[q])),n))*.5;
+  }
+  faces.push({vertices:ordered,normal:n,hkl:plane.hkl,color:plane.color,area:surface});
+  area+=surface;
+ }
+ // Reject open surfaces: only a bounded polyhedron enclosing the origin
+ // has at least four non-coplanar faces and a strictly positive volume.
+ const volume=faces.reduce((sum,f)=>{
+  const v=f.vertices;
+  for(let i=1;i<v.length-1;i++)sum+=dot(v[0],cross(v[i],v[i+1]))/6;
+  return sum;
+ },0);
+ return {faces,vertices:points,area,volume:Math.abs(volume),closed:faces.length>=4&&Math.abs(volume)>1e-8};
+}
+function drawMorphology(B,center){
+ const info=$('morphSummary');if(!state.morphVisible||!state.morphology?.length)return;
+ try{
+  const planes=morphologyHalfspaces(state.cell,state.morphology),solid=morphologyPolyhedron(planes);
+  if(!solid.closed){info.textContent='Kapalı yüzey oluşmadı. En az üç bağımsız {hkl} aile ekleyin.';return;}
+  const group=new THREE.Group();group.name='Kristal morfolojisi';
+  for(const face of solid.faces){
+   const vertices=[];
+   for(let i=1;i<face.vertices.length-1;i++)for(const p of [face.vertices[0],face.vertices[i],face.vertices[i+1]])
+    vertices.push(...[0,1,2].map(q=>p[q]+center.toArray()[q]));
+   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geo.computeVertexNormals();
+   const mat=new THREE.MeshPhongMaterial({color:face.color,side:THREE.DoubleSide,transparent:true,opacity:.24,depthWrite:false});
+   group.add(new THREE.Mesh(geo,mat));
+   const pts=face.vertices.map(v=>new THREE.Vector3(v[0]+center.x,v[1]+center.y,v[2]+center.z));
+   group.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:face.color,transparent:true,opacity:.9})));
+  }
+  addLayerObject(group,'morphology');
+  info.textContent=solid.faces.length+' yüz · '+solid.vertices.length+' köşe · kapalı hacim '+
+   solid.volume.toFixed(2)+' Å³ · yüzey alanı '+solid.area.toFixed(2)+' Å²';
+ }catch(error){info.textContent='Morfoloji: '+error.message;}
+}
+function renderMorphList(){
+ const input=$('morphVisible'),host=$('morphList');if(!input||!host)return;
+ input.checked=!!state.morphVisible;host.replaceChildren();
+ (state.morphology||[]).forEach((item,i)=>{
+  const line=document.createElement('div');line.className='volume-layer-row';
+  const visible=document.createElement('input');visible.type='checkbox';visible.checked=item.visible;
+  visible.setAttribute('aria-label','{'+[item.h,item.k,item.l].join(' ')+'} yüz ailesi görünürlük');
+  visible.onchange=()=>{item.visible=visible.checked;build();};
+  const label=document.createElement('label');label.textContent='{'+[item.h,item.k,item.l].join(' ')+'}'+(item.cubic?' · kübik aile':' · ±');
+  const distance=document.createElement('input');distance.type='number';distance.min='.1';distance.max='500';distance.step='.1';distance.value=item.distance;
+  distance.setAttribute('aria-label','{'+[item.h,item.k,item.l].join(' ')+'} merkez mesafesi');
+  distance.onchange=()=>{const value=Number(distance.value);if(!(value>=.1&&value<=500))return inform('Uzaklık 0,1–500 Å olmalı.');item.distance=value;build();};
+  const color=document.createElement('input');color.type='color';color.value=item.color;
+  color.setAttribute('aria-label',label.textContent+' renk');
+  color.onchange=()=>{item.color=color.value;build();};
+  const del=document.createElement('button');del.type='button';del.textContent='×';del.title='Yüz ailesini sil';
+  del.onclick=()=>{state.morphology.splice(i,1);renderMorphList();build();};
+  line.append(visible,label,distance,color,del);host.append(line);
+ });
+ if(!state.morphology?.length)$('morphSummary').textContent='Henüz yüz ailesi eklenmedi.';
+}
+
 function drawMillerPlane(B){
  const layers=[{...state.plane,color:'#40b7d5'},...(state.planeLayers||[])];
  for(const [index,layer] of layers.entries()){
