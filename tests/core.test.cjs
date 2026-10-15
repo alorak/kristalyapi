@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1087,7 +1087,7 @@ test('Layer manager: canonical order, visibility, opacity and color are bounded'
  assert.equal(layers.atoms.color,'');
  const order=Array.from(api.normalizedLayerOrder(['volume','atoms','volume','invalid']));
  assert.deepEqual(order.slice(0,2),['volume','atoms']);
- assert.equal(order.length,9);
+ assert.equal(order.length,10);
  assert.match(html,/id="layerManager"/);
  assert.match(html,/id="adpVisible"/);
  assert.match(html,/id="adpLevel"/);
@@ -1189,4 +1189,38 @@ test('phase2 quantitative slice: correct physical axes, mean and CSV values for 
  assert.equal(csv.trim().split('\n').length,10);
  assert.throws(()=>api.sliceSampleMatrix(g,8,50,3));
  assert.throws(()=>api.sliceSampleMatrix(g,2,101,3));
+});
+
+test('phase2 cubic morphology {100} produces a closed cube with correct metric volume and area',()=>{
+ const cube={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const families=[{h:1,k:0,l:0,distance:3,color:'#4488cc',visible:true,cubic:true}];
+ const planes=api.morphologyHalfspaces(cube,families);
+ assert.equal(planes.length,6);
+ const solid=api.morphologyPolyhedron(planes);
+ assert.ok(solid.closed);
+ assert.equal(solid.faces.length,6);
+ assert.equal(solid.vertices.length,8);
+ approx(solid.volume,216);
+ approx(solid.area,216);
+});
+test('phase2 non-cubic morphology only generates inversion-related ±hkl, not false cubic symmetry',()=>{
+ const nonCubic={a:5,b:6,c:7,alpha:75,beta:85,gamma:102};
+ const face={h:1,k:0,l:0,distance:3,color:'#4488cc',visible:true,cubic:true};
+ const planes=api.morphologyHalfspaces(nonCubic,[face]);
+ assert.equal(planes.length,2);
+ assert.equal(api.morphologyPolyhedron(planes).closed,false);
+ assert.throws(()=>api.normalizedMorphology([{...face,distance:-1}],nonCubic));
+ assert.throws(()=>api.normalizedMorphology(Array(9).fill(face),nonCubic));
+});
+test('phase2 morphology geometry is restored after a project state roundtrip',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const original={...api.examples('silicon'),cell,sgNumber:1,sgSetting:'1',
+   morphology:[{h:1,k:0,l:0,distance:3,color:'#4488cc',visible:true,cubic:true}],morphVisible:true};
+ const snapshot=api.lastCrystalPayload(original);
+ const restored=api.loadProject(JSON.stringify(snapshot));
+ assert.equal(restored.morphology[0].distance,3);
+ assert.equal(restored.morphVisible,true);
+ const solid=api.morphologyPolyhedron(api.morphologyHalfspaces(restored.cell,restored.morphology));
+ approx(solid.volume,216);
+ assert.match(html,/id="morphPreset"/);
 });
