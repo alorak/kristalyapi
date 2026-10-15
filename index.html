@@ -669,6 +669,14 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <p class="hint">Sütunlar yeni a′, b′, c′ vektörlerini eski kesirli eksenlerde tanımlar. Atomları Kartezyen konumları koruyarak yeni hücreye taşır.</p>
    <button id="transformCell" style="width:100%" class="primary">Hücreyi ve atomları dönüştür</button>
+   <div class="bond-rule-list" style="margin-top:14px">
+    <strong class="measure-subheading">Primitive hücre / kısa baz</strong>
+    <p class="hint">Seçili uzay grubunun F, I, A, B veya C merkezlemesine göre primitive dönüşümü önce atom koordinatlarında doğrular. Eksik çeviri eşdeğerliği varsa dönüşüm reddedilir.</p>
+    <button id="autoPrimitive" type="button" class="primary">Simetriden primitive hücreye</button>
+    <button id="reduceBasis" type="button">Kısa baz dönüşümünü uygula</button>
+    <p id="standardizationInfo" class="note">Kısa baz tam Niggli indirgemesi değildir; genel setting/orijin ve uzay grubu otomatik tayinini yapmaz.</p>
+    <p class="hint">Bu işlemler atom koordinatlarını, doluluk oranlarını ve varsa ADP tensörlerini yeni hücreye dönüştürür; sonuç açık P1 olarak saklanır. Uygun olmayan merkezlenme reddedilir.</p>
+   </div>
   </div>
 
    </div>
