@@ -78,6 +78,31 @@ try{
  await page.locator('#applyPlane').click();
  await save(page,'06-miller',metrics);
  assert.notEqual(metrics['05-adp-hidden'].sum,metrics['06-miller'].sum,'Miller layer should change canvas');
+ await page.locator('#morphPreset').click();
+ await save(page,'07-cubic-morphology',metrics);
+ assert.notEqual(metrics['06-miller'].sum,metrics['07-cubic-morphology'].sum,'morphology should affect rendering');
+ await page.locator('#rightStructureTab').click();
+ await page.locator('#overlayFile').setInputFiles(path.join(base,'tests/validation/fixtures/real/COD_4335507.cif'));
+ await page.waitForFunction(()=>document.querySelector('#overlaySummary')?.textContent?.includes('1 ek'),null,{timeout:10000});
+ await save(page,'08-two-crystals',metrics);
+ assert.notEqual(metrics['07-cubic-morphology'].sum,metrics['08-two-crystals'].sum,'second CIF should change rendering');
+ // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
+ const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
+  values.push(Math.exp(-((i-1.5)**2+(j-1.5)**2+(k-1.5)**2)));
+ const xsf=['BEGIN_BLOCK_DATAGRID_3D','density','BEGIN_DATAGRID_3D_density',
+  '4 4 4','0 0 0','3 0 0','0 3 0','0 0 3',values.join(' '),
+  'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ await page.locator('#volumeFile').setInputFiles({name:'density.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf)});
+ await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1,null,{timeout:10000});
+ await page.locator('#volumeIsoAdd').click();
+ assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
+ const xsf2=['BEGIN_BLOCK_DATAGRID_3D','density2','BEGIN_DATAGRID_3D_density',
+  '2 2 2','0 0 0','3 0 0','0 3 0','0 0 3','0 1 1 0 1 0 0 1',
+  'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ await page.locator('#volumeAdditionalFile').setInputFiles({name:'second.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf2)});
+ await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===2,null,{timeout:10000});
+ await save(page,'09-two-volume-fields',metrics);
+ assert.match(await page.locator('#volumeSliceStats').textContent(),/Å/);
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);

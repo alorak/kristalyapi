@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1087,7 +1087,7 @@ test('Layer manager: canonical order, visibility, opacity and color are bounded'
  assert.equal(layers.atoms.color,'');
  const order=Array.from(api.normalizedLayerOrder(['volume','atoms','volume','invalid']));
  assert.deepEqual(order.slice(0,2),['volume','atoms']);
- assert.equal(order.length,10);
+ assert.equal(order.length,11);
  assert.match(html,/id="layerManager"/);
  assert.match(html,/id="adpVisible"/);
  assert.match(html,/id="adpLevel"/);
@@ -1223,4 +1223,37 @@ test('phase2 morphology geometry is restored after a project state roundtrip',()
  const solid=api.morphologyPolyhedron(api.morphologyHalfspaces(restored.cell,restored.morphology));
  approx(solid.volume,216);
  assert.match(html,/id="morphPreset"/);
+});
+
+test('phase2 independent CIF structure overlay accepts distinct cell metrics and safe positioning',()=>{
+ const a=api.examples('silicon'),b=api.examples('nacl');
+ const sample=[{name:'NaCl comparison',cell:b.cell,sites:b.sites,offset:[2,0,-1],
+   align:'center',color:'#8c5bba',opacity:.45,visible:true}];
+ const overlays=api.normalizedOverlays(sample);
+ assert.equal(overlays[0].sites.length,8);
+ assert.deepEqual(Array.from(overlays[0].offset),[2,0,-1]);
+ const metric=api.comparisonMetrics(a.cell,overlays[0]);
+ assert.equal(metric.sameMetric,false);
+ assert.equal(metric.sites,8);
+ assert.throws(()=>api.normalizedOverlays([{...sample[0],offset:[Infinity,0,0]}]));
+ assert.throws(()=>api.normalizedOverlays([{...sample[0],color:'javascript:bad()'}]));
+ assert.throws(()=>api.normalizedOverlays(Array(4).fill(sample[0])));
+});
+test('phase2 multi-CIF comparison stays in project, last structure and undo snapshots',()=>{
+ const a=api.examples('silicon'),b=api.examples('cscl');
+ const overlay={name:'CsCl',cell:b.cell,sites:b.sites,offset:[0,0,0],align:'origin',
+  color:'#cc7711',opacity:.6,visible:true};
+ const project={...a,sgNumber:1,sgSetting:'1',overlays:[overlay]};
+ const normalized=api.loadProject(JSON.stringify(project));
+ assert.equal(normalized.overlays.length,1);
+ assert.equal(normalized.overlays[0].name,'CsCl');
+ const last=api.lastCrystalPayload(normalized);
+ assert.equal(last.overlays[0].sites.length,2);
+ const again=api.loadProject(JSON.stringify(last));
+ assert.equal(again.overlays[0].color,'#cc7711');
+ const history=api.createEditorHistory(5,380000);
+ history.record(JSON.stringify({...last,overlays:[]}));
+ history.record(JSON.stringify(last));
+ assert.equal(JSON.parse(history.undo()).overlays.length,0);
+ assert.match(html,/id="overlayAdd"/);
 });

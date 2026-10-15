@@ -9,6 +9,19 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## VESTA Aşama 2 — Çoklu CIF yapı/faz karşılaştırması
+
+Sağ **Yapı → Çoklu yapı/faz karşılaştırması** bölümünden ana kristali değiştirmeden
+en fazla **üç ek CIF/mCIF** yüklenebilir (her biri en çok **400 genişletilmiş P1 atom**).
+Diğer fazlar kendi hücre metriğiyle ve renk/saydamlık seçenekleriyle aynı
+Kartezyen Å sahnesinde çizilir. Kullanıcı her faz için orijin veya hücre merkezini
+hizalama ve X/Y/Z ofsetlerini Å cinsinden düzenleme seçeneğine sahiptir.
+Birim hücre sınırları da ayrı gösterilir.
+
+Faz modelleri proje JSON, son kristal ve Undo/Redo durumunda saklanır.
+**Sınır:** Bu kullanıcı kontrollü yapısal üst üste bindirmedir; otomatik atom
+eşleştirme, minimum-RMSD hizalaması, strain/dislokasyon analizi veya
+mCIF manyetik momentleri desteklenmez.
 ## VESTA Aşama 2 — Geometrik kristal morfolojisi
 
 Sağ **Miller** sekmesindeki **Kristal morfolojisi** bölümünde `{hkl}` yüz aileleri, merkezden Å cinsinden uzaklık, renk ve görünürlük seçilebilir. Kübik hücre metriklerinde, istenirse eşdeğer `{hkl}` indis permütasyonları kullanılır; diğer sistemlerde yalnız iki zıt normal `±(hkl)` doğrudan desteklenir. Geometri, Kartezyen `n·r ≤ d` yarı uzaylarının kesişiminden oluşturulur; açık/sonsuz şekil üretilemezse yüzey çizilmez. Kapalı hacim (Å³) ve yüzey alanı (Å²) raporlanır.
