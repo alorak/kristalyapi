@@ -185,6 +185,14 @@ body.library-open #app{display:none}
 .layer-item button{border:0;background:transparent;color:#657b91;padding:2px 5px;min-width:18px;min-height:24px}
 .layer-item button:disabled{opacity:.3}
 .layer-item .layer-opacity{min-width:25px;font-size:10px;color:#70859a}
+
+.volume-layer-list{display:flex;flex-direction:column;gap:6px;min-width:0}
+.volume-layer-row{display:flex;align-items:center;gap:5px;background:#f8fbfe;border:1px solid #dbe5ef;padding:6px;border-radius:8px;min-width:0}
+.volume-layer-row label{font-size:11px;color:#4c6277;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.volume-layer-row input[type=number]{width:73px;min-width:0;font-size:11px}
+.volume-layer-row input[type=color]{width:27px;height:25px;border:0;background:none;padding:0}
+.volume-layer-row input[type=range]{width:52px;min-width:34px}
+.volume-layer-row button{padding:3px 6px;font-size:11px}
 .cod-worker-settings{padding:15px 20px}
 .cod-worker-settings h3{font-size:14px;margin:0 0 6px}
 .cod-worker-settings p{margin:0 0 11px;color:#6f8195;font-size:12px;line-height:1.6}
@@ -725,6 +733,12 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <input type="file" id="potentialFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
    <div class="stack">
      <button id="openVolume" class="primary">Hacimsel veri yükle</button>
+     <input id="volumeAdditionalFile" type="file" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
+     <button id="openAdditionalVolume" type="button">+ Bir alan daha yükle (en fazla 4)</button>
+     <div id="volumeDatasets" class="volume-layer-list" aria-label="Hacimsel veri katmanları"></div>
+     <label class="field"><span>Aktif alan (kesit ve izodeğer kaynağı)</span><select id="volumeActiveDataset"></select></label>
+     <label class="field"><span>İkinci alan (renklendirme için)</span><select id="volumeColorDataset"><option value="">Yok</option></select></label>
+     <p id="volumeFrameStatus" class="hint">İkinci alan yüklenmedi. Eşleştirme aynı uzaysal koordinat çerçevesine göre denetlenir.</p>
      <div class="note" id="volumeInfo">Henüz veri yüklenmedi.</div>
      <label class="check"><input id="volumeLoadAtoms" type="checkbox" checked> Varsa dosyadaki atomları ve hücreyi kullan</label>
      <label class="field"><span>Görselleştirme</span><select id="volumeMode">
@@ -733,6 +747,8 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      </select></label>
      <label class="field"><span>İzodeğer</span><input type="number" id="volumeIso" step="0.01" value="0.1"></label>
      <label class="field"><span>İzoyüzey saydamlığı</span><input type="range" id="volumeOpacity" min=".15" max="1" step=".05" value=".62"></label>
+     <div class="actionrow"><button type="button" id="volumeIsoAdd">+ İzoyüzey ekle</button><button type="button" id="volumeIsoClear">Ek izoyüzeyleri kaldır</button></div>
+     <div id="volumeIsoLayers" class="volume-layer-list" aria-label="Çoklu izoyüzey katmanları"></div>
      <label class="field"><span>Kesit yönü</span><select id="volumeAxis">
        <option value="2">Z / c doğrultusu</option><option value="1">Y / b doğrultusu</option><option value="0">X / a doğrultusu</option>
      </select></label>
@@ -744,6 +760,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      <button id="openPotential">Elektrostatik potansiyel yükle (renklendir)</button>
      <label class="check"><input type="checkbox" id="volumePotential"> İzoyüzeyi potansiyele göre renklendir</label>
      <div id="volumeColorLegend" class="volume-color-legend" aria-label="Mavi düşük, beyaz orta, kırmızı yüksek skaler alan"></div>
+     <div id="volumeColorScale" class="hint" aria-live="polite">Renk ölçeği veri yüklenince hesaplanır.</div>
+     <div class="actionrow"><button id="volumeSlicePng" type="button">2B kesiti PNG kaydet</button><button id="volumeSliceCsv" type="button">Kesit sayısal CSV</button></div>
+     <div class="note" id="volumeSliceStats">Henüz sayısal kesit yok.</div>
      <button id="clearVolume">Hacimsel veriyi temizle</button>
    </div>
    <p class="hint">Izoyüzeyler marching tetrahedra ile oluşturulur. Büyük ızgaralar seyreltilir; kesit gerçek fiziksel koordinatlarda yerleştirilir. Yüzey renkleri ancak uyumlu ikinci potansiyel ızgarası yüklendiğinde potansiyeli temsil eder.</p>
@@ -1276,6 +1295,26 @@ function volumesSameFrame(a,b){
 
 
 let densityGrid=null,potentialGrid=null,volumeLayer=null;
+let volumeDatasets=[],activeVolumeIndex=0,volumeColorIndex='';
+const VOLUME_DATASET_LIMIT=4,VOLUME_ISO_LIMIT=4,VOLUME_TOTAL_SURFACE_LIMIT=8;
+const VOLUME_ISO_COLORS=['#307cba','#d97d45','#32a98b','#9567c2'];
+function defaultVolumeIso(grid){return {value:grid.min+(grid.max-grid.min)*.7,visible:true,opacity:.62,color:VOLUME_ISO_COLORS[0]};}
+function validateVolumeIsoLayer(layer,grid){
+ if(!layer||!Number.isFinite(Number(layer.value))||!Number.isFinite(Number(layer.opacity))||
+   Number(layer.opacity)<.1||Number(layer.opacity)>1||!/^#[a-f\d]{6}$/i.test(layer.color||''))
+  throw Error('İzoyüzey eşik, renk veya opaklık değerleri geçersiz.');
+ return {value:Number(layer.value),visible:layer.visible!==false,opacity:Number(layer.opacity),color:layer.color};
+}
+function activeVolumeDataset(){return volumeDatasets[activeVolumeIndex]||null;}
+function volumeGridCompatible(a,b){return volumesSameFrame(a,b);}
+function addVolumeDataset(grid,name){
+ if(volumeDatasets.length>=VOLUME_DATASET_LIMIT)throw Error('En fazla dört hacimsel veri katmanı yüklenebilir.');
+ if(volumeDatasets.length&&!volumeGridCompatible(volumeDatasets[0].grid,grid))
+  throw Error('Eklenen alanın orijini ve üç boyutlu ızgara sınırları ilk alanla uyuşmuyor. Birbiri üzerine yerleştirilemez.');
+ const entry={grid,name:String(name||grid.title||grid.kind).slice(0,120),visible:true,layers:[defaultVolumeIso(grid)]};
+ volumeDatasets.push(entry);activeVolumeIndex=volumeDatasets.length-1;densityGrid=entry.grid;
+ return entry;
+}
 const volumeView={mode:'off',iso:0,opacity:.62,axis:2,position:50,palette:'thermal',contours:false,potential:false};
 function colorFromScalar(value,min,max,palette){
  const v=Math.max(0,Math.min(1,(value-min)/Math.max(1e-12,max-min)));
@@ -1405,27 +1444,110 @@ function drawVolume(){
  clearVolumeLayer();
  if(!root||!densityGrid||volumeView.mode==='off')return;
  volumeLayer=new THREE.Group();volumeLayer.name='Volumetric data';
- const g=densityGrid,pot=volumeView.potential&&potentialGrid?potentialGrid:null;
+ const pot=volumeView.potential&&potentialGrid?potentialGrid:null;
  if(volumeView.mode==='iso'||volumeView.mode==='both'){
-  const surface=isoTriangles(g,volumeView.iso,pot,volumeView.palette);
-  if(surface.triangles>0){
-   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
-   if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
-   geo.computeVertexNormals();
-   const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:0x307cba,vertexColors:!!pot,
-    side:THREE.DoubleSide,transparent:true,opacity:volumeView.opacity,depthWrite:false,shininess:45});
-   volumeLayer.add(new THREE.Mesh(geo,mat));
+  let drawn=0,truncated=false;
+  for(const dataset of volumeDatasets){
+   if(!dataset.visible||!volumeGridCompatible(densityGrid,dataset.grid))continue;
+   for(const item of dataset.layers){
+    if(!item.visible)continue;
+    if(++drawn>VOLUME_TOTAL_SURFACE_LIMIT){truncated=true;break;}
+    const surface=isoTriangles(dataset.grid,item.value,pot,volumeView.palette,Math.floor(75000/VOLUME_TOTAL_SURFACE_LIMIT)*2);
+    if(surface.triangles){
+     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
+     if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
+     geo.computeVertexNormals();
+     const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:item.color,vertexColors:!!pot,
+      side:THREE.DoubleSide,transparent:true,opacity:item.opacity,depthWrite:false,shininess:45});
+     const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
+    }
+    if(surface.truncated)truncated=true;
+   }
   }
-  if(surface.truncated)$('volumeInfo').textContent+=' · Yüzey üçgen limiti uygulandı';
+  if(truncated)$('volumeInfo').textContent+=' · Yüzey/üçgen sınırı uygulandı';
  }
- if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(g));
- addLayerObject(volumeLayer,'volume');
- applyLayerAppearance();
+ if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(densityGrid));
+ addLayerObject(volumeLayer,'volume');applyLayerAppearance();
 }
+
 function updateVolumeInfo(){
  if(!densityGrid){$('volumeInfo').textContent='Henüz veri yüklenmedi.';return;}
  const g=densityGrid;
- $('volumeInfo').textContent=g.kind+' · '+g.dims.join('×')+' ('+g.values.length.toLocaleString('tr-TR')+' nokta) · min '+g.min.toPrecision(4)+' · max '+g.max.toPrecision(4)+' · '+g.units+(potentialGrid?' · Potansiyel: '+potentialGrid.kind:'');
+ $('volumeInfo').textContent=volumeDatasets.length+' hacimsel alan · '+g.kind+' · '+g.dims.join('×')+
+ ' ('+g.values.length.toLocaleString('tr-TR')+' nokta) · min '+g.min.toPrecision(4)+
+ ' · max '+g.max.toPrecision(4)+' · '+g.units+
+ (potentialGrid?' · Renklendirme: '+potentialGrid.kind:'');
+}
+function volumeRefreshDatasetUi(){
+ const picker=$('volumeActiveDataset'),colorPicker=$('volumeColorDataset');
+ picker.replaceChildren();colorPicker.replaceChildren();
+ const no=document.createElement('option');no.value='';no.textContent='Yok';colorPicker.append(no);
+ volumeDatasets.forEach((item,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=(i+1)+' · '+item.name;picker.append(option);
+  if(i!==activeVolumeIndex){
+   const colorOption=option.cloneNode(true);colorPicker.append(colorOption);
+  }
+ });
+ picker.value=String(activeVolumeIndex);
+ if(volumeColorIndex!==''&&!volumeDatasets[Number(volumeColorIndex)])volumeColorIndex='';
+ if(volumeColorIndex===String(activeVolumeIndex))volumeColorIndex='';
+ colorPicker.value=volumeColorIndex;
+ const host=$('volumeDatasets');host.replaceChildren();
+ for(const [i,item] of volumeDatasets.entries()){
+  const line=document.createElement('div');line.className='volume-layer-row';
+  const visible=document.createElement('input');visible.type='checkbox';visible.checked=item.visible;
+  visible.setAttribute('aria-label',item.name+' görünür');
+  visible.onchange=()=>{item.visible=visible.checked;drawVolume();};
+  const name=document.createElement('label');name.textContent=item.name;name.title=item.name+' · '+item.grid.units;
+  const count=document.createElement('small');count.textContent=String(item.layers.length)+' iso';
+  const select=document.createElement('button');select.type='button';select.textContent='Seç';
+  select.disabled=i===activeVolumeIndex;
+  select.onclick=()=>{activeVolumeIndex=i;densityGrid=item.grid;volumeRefreshDatasetUi();volumeSyncIsoControls();volumeControlChanged();};
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Alanı kaldır';
+  remove.onclick=()=>{
+   volumeDatasets.splice(i,1);
+   if(!volumeDatasets.length){resetVolume();return;}
+   activeVolumeIndex=Math.min(Math.max(0,activeVolumeIndex-(i<=activeVolumeIndex?1:0)),volumeDatasets.length-1);
+   volumeColorIndex='';potentialGrid=null;volumeView.potential=false;$('volumePotential').checked=false;
+   densityGrid=activeVolumeDataset().grid;volumeRefreshDatasetUi();volumeSyncIsoControls();volumeControlChanged();
+  };
+  line.append(visible,name,count,select,remove);host.append(line);
+ }
+ const compatible=volumeDatasets.length<=1||volumeDatasets.every(item=>volumeGridCompatible(volumeDatasets[0].grid,item.grid));
+ $('volumeFrameStatus').textContent=compatible
+  ?'Alanların Kartezyen orijin ve 3B sınırları uyuşuyor; farklı grid çözünürlüklerinde trilineer interpolasyon uygulanabilir.'
+  :'Uyuşmayan uzaysal koordinat çerçevesi: birlikte çizim kapalı.';
+ volumeRefreshIsoUi();
+}
+function volumeSyncIsoControls(){
+ const layer=activeVolumeDataset()?.layers[0];if(!layer)return;
+ $('volumeIso').value=layer.value;$('volumeOpacity').value=layer.opacity;
+}
+function volumeRefreshIsoUi(){
+ const host=$('volumeIsoLayers');host.replaceChildren();
+ const dataset=activeVolumeDataset();if(!dataset)return;
+ dataset.layers.forEach((layer,i)=>{
+  const row=document.createElement('div');row.className='volume-layer-row';
+  const visible=document.createElement('input');visible.type='checkbox';visible.checked=layer.visible;
+  visible.setAttribute('aria-label','İzoyüzey '+(i+1)+' görünürlük');
+  visible.onchange=()=>{layer.visible=visible.checked;drawVolume();};
+  const caption=document.createElement('label');caption.textContent='Iso '+(i+1);caption.title=dataset.grid.units;
+  const level=document.createElement('input');level.type='number';level.step='any';level.value=String(layer.value);
+  level.setAttribute('aria-label','İzoyüzey '+(i+1)+' değeri');
+  level.onchange=()=>{const value=Number(level.value);if(!Number.isFinite(value)){inform('Geçersiz izodeğer.');return;}layer.value=value;volumeSyncIsoControls();drawVolume();};
+  const color=document.createElement('input');color.type='color';color.value=layer.color;
+  color.setAttribute('aria-label','İzoyüzey '+(i+1)+' rengi');
+  color.onchange=()=>{layer.color=color.value;drawVolume();};
+  const opacity=document.createElement('input');opacity.type='range';opacity.min='.1';opacity.max='1';opacity.step='.05';opacity.value=layer.opacity;
+  opacity.setAttribute('aria-label','İzoyüzey '+(i+1)+' saydamlık');
+  opacity.onchange=()=>{layer.opacity=Number(opacity.value);volumeSyncIsoControls();drawVolume();};
+  row.append(visible,caption,level,color,opacity);
+  if(i){const del=document.createElement('button');del.textContent='×';del.type='button';
+   del.setAttribute('aria-label','İzoyüzey '+(i+1)+' sil');
+   del.onclick=()=>{dataset.layers.splice(i,1);volumeRefreshIsoUi();drawVolume();};row.append(del);}
+  host.append(row);
+ });
 }
 function volumeControlChanged(){
  if(!densityGrid)return;
@@ -1433,18 +1555,66 @@ function volumeControlChanged(){
  volumeView.opacity=Number($('volumeOpacity').value);volumeView.axis=Number($('volumeAxis').value);
  volumeView.position=Number($('volumePosition').value);volumeView.palette=$('volumePalette').value;
  volumeView.contours=$('volumeContours').checked;volumeView.potential=$('volumePotential').checked;
- if(!Number.isFinite(volumeView.iso))return;
- updateVolumeInfo();try{drawVolume();}catch(e){inform('Hacimsel çizim: '+e.message);clearVolumeLayer();}
+ if(!Number.isFinite(volumeView.iso)||!Number.isFinite(volumeView.opacity))return;
+ const first=activeVolumeDataset()?.layers[0];
+ if(first){first.value=volumeView.iso;first.opacity=Math.max(.1,Math.min(1,volumeView.opacity));}
+ updateVolumeInfo();volumeRefreshIsoUi();
+ try{drawVolume();updateVolumeSliceStats();}catch(e){inform('Hacimsel çizim: '+e.message);clearVolumeLayer();}
 }
-async function loadVolumeFile(file,asPotential=false){
+
+function sliceSampleMatrix(grid,axis,position,resolution=64){
+ if(!grid||![0,1,2].includes(Number(axis))||!Number.isFinite(position)||position<0||position>100||
+    !Number.isInteger(resolution)||resolution<2||resolution>256)
+  throw Error('Geçersiz 2B kesit örnekleme parametreleri.');
+ const floating=[0,1,2].filter(i=>i!==Number(axis)),shape=volumeShape(grid);
+ const corners=sliceWorldCorners(grid,Number(axis),position);
+ const width=Math.hypot(...corners[1].map((v,i)=>v-corners[0][i]));
+ const height=Math.hypot(...corners[3].map((v,i)=>v-corners[0][i]));
+ const rows=[],values=new Float32Array(resolution*resolution);let min=Infinity,max=-Infinity,sum=0;
+ for(let j=0;j<resolution;j++)for(let i=0;i<resolution;i++){
+  const coords=[0,0,0];coords[axis]=(shape[axis]-1)*position/100;
+  coords[floating[0]]=(shape[floating[0]]-1)*i/(resolution-1);
+  coords[floating[1]]=(shape[floating[1]]-1)*j/(resolution-1);
+  const value=volumeSample(grid,coords),world=volumeWorld(grid,...coords);
+  values[j*resolution+i]=value;min=Math.min(min,value);max=Math.max(max,value);sum+=value;
+  rows.push({u:i/(resolution-1),v:j/(resolution-1),x:world[0],y:world[1],z:world[2],value});
+ }
+ return {rows,values,min,max,mean:sum/rows.length,width,height,units:grid.units,resolution};
+}
+function volumeSliceCsv(slice){
+ const cols=['u','v','x_A','y_A','z_A','value_'+String(slice.units).replace(/[^a-zA-Z0-9]/g,'_')];
+ return [cols.join(','),...slice.rows.map(row=>[row.u,row.v,row.x,row.y,row.z,row.value].map(v=>Number(v).toPrecision(9)).join(','))].join('\n')+'\n';
+}
+function updateVolumeSliceStats(){
+ const info=$('volumeSliceStats'),g=densityGrid;
+ if(!g){info.textContent='Henüz sayısal kesit yok.';$('volumeColorScale').textContent='Renk ölçeği veri yüklenince hesaplanır.';return;}
+ const slice=sliceSampleMatrix(g,volumeView.axis,volumeView.position,32);
+ const formatted=n=>Number(n).toPrecision(4);
+ info.textContent='Kesit '+slice.width.toFixed(2)+' × '+slice.height.toFixed(2)+' Å · '+
+ 'min '+formatted(slice.min)+' · max '+formatted(slice.max)+' · ortalama '+formatted(slice.mean)+' '+g.units;
+ const color=volumeView.potential&&potentialGrid?potentialGrid:g;
+ const lower=volumeView.palette==='thermal'?-Math.max(Math.abs(color.min),Math.abs(color.max)):color.min;
+ const upper=volumeView.palette==='thermal'?-lower:color.max;
+ $('volumeColorLegend').setAttribute('aria-label',
+  'Renk skalası: '+formatted(lower)+' → '+formatted(upper)+' '+color.units+' ('+color.kind+')');
+ $('volumeColorLegend').title=$('volumeColorLegend').getAttribute('aria-label');
+ $('volumeColorScale').textContent=formatted(lower)+' ← '+color.kind+' ('+color.units+') → '+formatted(upper);
+}
+async function loadVolumeFile(file,asPotential=false,additional=false){
  if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
  const parsed=readVolumetric(await file.text(),file.name);
  if(asPotential){
   if(!densityGrid)throw Error('Önce ana hacimsel veri dosyasını yükleyin.');
-  if(!volumesSameFrame(densityGrid,parsed))throw Error('Potansiyel ızgarası, yoğunluğun uzaysal sınırlarıyla uyumsuz.');
-  potentialGrid=parsed;$('volumePotential').checked=true;
+  if(!volumeGridCompatible(densityGrid,parsed))throw Error('Potansiyel alanı uzaysal koordinat sınırlarıyla uyumsuz.');
+  potentialGrid=parsed;volumeColorIndex='';$('volumePotential').checked=true;
+ }else if(additional){
+  if(!densityGrid)throw Error('Önce ana alanı yükleyin.');
+  addVolumeDataset(parsed,file.name);
+  volumeColorIndex='';potentialGrid=null;$('volumePotential').checked=false;
+  volumeSyncIsoControls();
  }else{
-  densityGrid=parsed;potentialGrid=null;
+  clearVolumeLayer();volumeDatasets=[];densityGrid=null;potentialGrid=null;volumeColorIndex='';
+  addVolumeDataset(parsed,file.name);
   $('volumePotential').checked=false;
   if(parsed.crystal&&$('volumeLoadAtoms').checked){
    state={...state,name:parsed.crystal.name,detail:parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
@@ -1452,30 +1622,72 @@ async function loadVolumeFile(file,asPotential=false){
     poly:'',bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2}};
    syncControls();build();
   }
-  volumeView.iso=parsed.min+(parsed.max-parsed.min)*.7;
-  $('volumeIso').value=Number(volumeView.iso.toPrecision(5));
   $('volumeMode').value='both';
+  volumeSyncIsoControls();
  }
- updateVolumeInfo();volumeControlChanged();if(!asPotential)fit();
+ volumeRefreshDatasetUi();updateVolumeInfo();volumeControlChanged();
+ if(!asPotential&&!additional)fit();
 }
 function resetVolume(){
- clearVolumeLayer();densityGrid=null;potentialGrid=null;
+ clearVolumeLayer();densityGrid=null;potentialGrid=null;volumeDatasets=[];activeVolumeIndex=0;volumeColorIndex='';
  volumeView.mode='off';$('volumeMode').value='off';$('volumePotential').checked=false;
- updateVolumeInfo();if(root&&orbit)fit();
+ $('volumeIsoLayers').replaceChildren();$('volumeDatasets').replaceChildren();
+ $('volumeActiveDataset').replaceChildren();$('volumeColorDataset').replaceChildren();
+ $('volumeFrameStatus').textContent='Henüz veri yüklenmedi.';
+ updateVolumeInfo();updateVolumeSliceStats();if(root&&orbit)fit();
 }
 function initVolumeControls(){
  $('openVolume').onclick=()=>$('volumeFile').click();
+ $('openAdditionalVolume').onclick=()=>$('volumeAdditionalFile').click();
  $('openPotential').onclick=()=>$('potentialFile').click();
- for(const [id,secondary] of [['volumeFile',false],['potentialFile',true]]){
+ for(const [id,secondary,additional] of [['volumeFile',false,false],['volumeAdditionalFile',false,true],['potentialFile',true,false]]){
   $(id).onchange=async e=>{
    const file=e.target.files?.[0];if(!file)return;
-   try{await loadVolumeFile(file,secondary);}
+   try{await loadVolumeFile(file,secondary,additional);}
    catch(err){inform('Hacimsel dosya: '+err.message);}
    finally{e.target.value='';}
   };
  }
+ $('volumeActiveDataset').onchange=e=>{
+  const i=Number(e.target.value);if(!volumeDatasets[i])return;
+  activeVolumeIndex=i;densityGrid=volumeDatasets[i].grid;
+  potentialGrid=null;volumeColorIndex='';$('volumePotential').checked=false;
+  volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
+ };
+ $('volumeColorDataset').onchange=e=>{
+  volumeColorIndex=e.target.value;
+  potentialGrid=volumeColorIndex===''?null:volumeDatasets[Number(volumeColorIndex)]?.grid||null;
+  if(potentialGrid&&!volumeGridCompatible(densityGrid,potentialGrid)){
+   inform('Alanlar uzaysal olarak uyumsuz.');potentialGrid=null;volumeColorIndex='';}
+  $('volumePotential').checked=!!potentialGrid;
+  volumeView.potential=!!potentialGrid;updateVolumeInfo();volumeControlChanged();
+ };
+ $('volumeIsoAdd').onclick=()=>{
+  const active=activeVolumeDataset();if(!active)return inform('Önce hacimsel veri yükleyin.');
+  if(active.layers.length>=VOLUME_ISO_LIMIT)return inform('Bir alan için en fazla dört izoyüzey.');
+  const fraction=active.layers.length/(VOLUME_ISO_LIMIT+1);
+  const value=active.grid.min+(active.grid.max-active.grid.min)*(.2+fraction*.6);
+  active.layers.push(validateVolumeIsoLayer({value,color:VOLUME_ISO_COLORS[active.layers.length],opacity:.5,visible:true},active.grid));
+  volumeRefreshIsoUi();drawVolume();
+ };
+ $('volumeIsoClear').onclick=()=>{
+  const active=activeVolumeDataset();if(!active)return;
+  active.layers.splice(1);volumeRefreshIsoUi();drawVolume();
+ };
  for(const id of ['volumeMode','volumeIso','volumeOpacity','volumeAxis','volumePosition','volumePalette','volumeContours','volumePotential'])
-  $(id).addEventListener(id==='volumePosition'||id==='volumeOpacity'?'change':'change',volumeControlChanged);
+  $(id).addEventListener('change',volumeControlChanged);
+ $('volumeSliceCsv').onclick=()=>{
+  if(!densityGrid)return inform('Önce alan yükleyin.');
+  const result=sliceSampleMatrix(densityGrid,volumeView.axis,volumeView.position,64);
+  download('kristalyapi_slice_'+volumeView.axis+'.csv',
+   '# x,y,z koordinatlari Angstrom; alan: '+result.units+'\n'+volumeSliceCsv(result),'text/csv');
+ };
+ $('volumeSlicePng').onclick=()=>{
+  if(!densityGrid)return inform('Önce alan yükleyin.');
+  const canvas=sliceImage(densityGrid,volumeView.axis,volumeView.position,volumeView.iso,
+    volumeView.palette,volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null);
+  canvas.toBlob(blob=>{if(blob)download('kristalyapi_slice_'+volumeView.axis+'.png',blob,'image/png');},'image/png');
+ };
  $('clearVolume').onclick=resetVolume;
 }
 

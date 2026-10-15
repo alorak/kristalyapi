@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1154,4 +1154,39 @@ test('Layer visibility, opacity and order survive snapshot restore and project r
  const undo=api.loadProject(history.undo());
  assert.equal(undo.layers.bonds.visible,false);
  assert.equal(undo.layers.bonds.opacity,.4);
+});
+
+
+test('phase2 multi-volume: validates compatible Cartesian frames despite different grid sampling',()=>{
+ const g=api.volumeGrid([2,2,2],[1,2,3],[[2,0,0],[0,3,0],[0,0,4]],
+  Array(8).fill(0),'density','e/Å³');
+ const compatible=api.volumeGrid([3,3,3],[1,2,3],[[1,0,0],[0,1.5,0],[0,0,2]],
+  Array(27).fill(1),'potential','V');
+ assert.equal(api.volumeGridCompatible(g,compatible),true);
+ const incompatible=api.volumeGrid([2,2,2],[1.01,2,3],[[2,0,0],[0,3,0],[0,0,4]],
+  Array(8).fill(0),'shifted','V');
+ assert.equal(api.volumeGridCompatible(g,incompatible),false);
+});
+test('phase2 isosurfaces reject invalid opacities, colors and NaN levels',()=>{
+ const g=api.volumeGrid([2,2,2],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],
+  Array(8).fill(1),'field','');
+ const iso=api.validateVolumeIsoLayer({value:0.5,visible:false,opacity:.35,color:'#33aabb'},g);
+ assert.equal(iso.visible,false);
+ assert.equal(iso.opacity,.35);
+ assert.throws(()=>api.validateVolumeIsoLayer({value:NaN,opacity:.5,color:'#334455'},g));
+ assert.throws(()=>api.validateVolumeIsoLayer({value:.5,opacity:4,color:'#334455'},g));
+ assert.throws(()=>api.validateVolumeIsoLayer({value:.5,opacity:.5,color:'red'},g));
+});
+test('phase2 quantitative slice: correct physical axes, mean and CSV values for a linear field',()=>{
+ const vals=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)vals.push(i+2*j+3*k);
+ const g=api.volumeGrid([3,3,3],[10,20,30],[[2,0,0],[0,1,0],[0,0,3]],vals,'linear','e/Å³');
+ const slice=api.sliceSampleMatrix(g,2,50,3);
+ approx(slice.width,4);approx(slice.height,2);
+ approx(slice.min,3);approx(slice.max,9);approx(slice.mean,6);
+ approx(slice.rows[0].z,33);approx(slice.rows[0].x,10);
+ const csv=api.volumeSliceCsv(slice);
+ assert.match(csv,/x_A,y_A,z_A/);
+ assert.equal(csv.trim().split('\n').length,10);
+ assert.throws(()=>api.sliceSampleMatrix(g,8,50,3));
+ assert.throws(()=>api.sliceSampleMatrix(g,2,101,3));
 });
