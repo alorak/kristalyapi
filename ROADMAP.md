@@ -32,6 +32,14 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
 - Otomatik CI yalnızca **main merge** sonrası çalışsın; hata veya `inconclusive` kayıtlar raporda açık kalsın. Eşik düzeltmeleri gerçek sapmaları gizlememeli.
 - Mobil ve masaüstünde gerçek WebGL screenshot/duman testi, GPU bellek/çizim sınırı ve yükleme hatası deneyleri ekle.
 
+## Aşama 2 — hacimsel geliştirmeler
+
+- **O2 (çoklu izoyüzey):** her dosyada dört katmana kadar ayrı izodeğer/renk/opacity, toplam 8 aktif yüzey sınırı.
+- **O3 (çoklu alan):** dört eş uzaysal kapsamlı dosya; farklı grid çözünürlükleri için world-coordinate interpolasyon; ayrı alanla renklendirme.
+- **O4 ilk bölüm (nicel kesit):** fiziksel boyut, min/maks/ortalama, sayısal renk aralığı, PNG ve koordinatlı CSV. Keyfî hkl yönleri ve kapsamlı nicel kontur çıktısı sonraki iş.
+- **O5 / çoklu yapı bindirme:** ayrı takip PR'ında planlanıyor.
+- Bu değişiklikler GitHub Pages üzerinde ana dala merge sonrası CI çalıştırılmadan görsel olarak doğrulanmış sayılmaz.
+
 ## Orta vade · önerilen uygulama sırası
 
 | Öncelik | Paket | Kabul kriteri |
