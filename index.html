@@ -735,6 +735,38 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <div class="actionrow"><button id="exportMeasurements" type="button">CSV dışa aktar</button><button id="clearHistory" type="button">Geçmişi temizle</button></div>
    </div>
    <p class="hint">2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.</p></div>
+
+  <div class="section"><h2>İleri koordinasyon / BVS</h2>
+   <p class="hint">Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/0,37 Å]. Komşular periyodik görüntülerden bulunur; kısmi doluluk ağırlıklandırılır.</p>
+   <label class="field"><span>Merkez atom (asimetrik / P1 liste)</span><select id="analysisCenter"></select></label>
+   <label class="field"><span>Cation–anion referans çifti</span><select id="bvsPair"></select></label>
+   <label class="field"><span>BVS komşu mesafesi (Å)</span><input id="bvsCutoff" type="number" min="1" max="5" step=".1" value="3.5"></label>
+   <button class="primary" id="analyzeBvs" type="button">Koordinasyon / BVS hesapla</button>
+   <div id="bvsResult" class="note">Atom ve referans parametresi seçin.</div>
+   <div class="actionrow"><button id="exportBvs" type="button">Komşu CSV</button></div>
+   <p class="hint">Brese–O’Keeffe (1991) R₀ parametreleri kullanılır. BVS koordinasyon/eşdeğer oksidasyon durumu kanıtı değildir. Özellikle farklı katyon-valans türlerinde sınırlıdır.</p>
+  </div>
+  <div class="section"><h2>Best-fit plane · düzlemsellik</h2>
+   <p class="hint">Aşağıya atomların 1-tabanlı satır indislerini yaz. Örn. 1,2,3,4. Üçten fazla, doğrusal olmayan atom gerekir. Atomlar mevcut hücrenin Kartezyen Å bazında değerlendirilir; sınır aşan atomlar otomatik unwrap edilmez.</p>
+   <label class="field"><span>Atom indisleri (virgülle)</span><input id="planeFitAtoms" placeholder="1,2,3,4" maxlength="500"></label>
+   <div class="actionrow"><button id="planeFitAdd" type="button" class="primary">Düzlem hesapla + göster</button><button id="planeFitClear" type="button">Düzlemleri temizle</button></div>
+   <div id="planeFitResult" class="note">Henüz düzlem hesaplanmadı.</div>
+   <p class="hint">En küçük kovaryans özvektörü düzlem normalini verir. RMS ortogonal sapma ve iki düzlem arasındaki dar açı raporlanır.</p>
+  </div>
+  <div class="section"><h2>Yapı faktörü / toz XRD (öğretici)</h2>
+   <p class="hint">Kinematik F(hkl)=Σ occ·Z·exp(2πi h·r) ile noktasal elektron saçıcı yaklaşımı; sıcaklık faktörü Uiso/Uij varsa eklenir. Elementlere özgü açısal f₀(q), anomal saçılma, Lorentz-polarizasyon, tekstür ve cihaz profili henüz uygulanmaz.</p>
+   <div class="triple">
+    <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
+    <label class="field compact"><span>2θ üst sınır (°)</span><input id="xrdAngle" type="number" min="15" max="150" step="5" value="90"></label>
+    <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMaxIndex" type="number" min="1" max="9" step="1" value="5"></label>
+   </div>
+   <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
+   <div id="xrdSummary" class="note">Hesaplama bekleniyor.</div>
+   <svg id="xrdChart" viewBox="0 0 440 180" role="img" aria-label="Hesaplanan toz kırınımı çubuk grafiği" style="display:block;width:100%;min-height:150px;border:1px solid #dce5f1;border-radius:8px;background:white"></svg>
+   <div id="xrdResults" class="bond-rule-list" style="max-height:235px;overflow:auto"></div>
+   <button id="xrdExport" type="button">Yansıma CSV</button>
+   <p class="hint">Bu grafik fiziksel Bragg konumları ve yaklaşık göreli genlikler içindir; deneysel XRD şiddeti ya da Rietveld analizi olarak kullanılmamalıdır.</p>
+  </div>
   <div class="section volumetric-panel"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
    <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
