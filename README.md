@@ -9,6 +9,17 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## P0 — Kanonik Niggli hücre indirgemesi
+
+Sol **Örgü dönüşümü → Primitive hücre / kısa baz → Niggli indirgemesi**.
+Křivý–Gruber'in sekiz adımlı Niggli indirgeme algoritması (spglib
+BSD-3-Clause uygulaması temel alınmıştır) gerçek unimodüler baz matrisiyle
+atom konumlarını dönüştürür. ADP bileşenleri yeni metrikte yeniden ifade
+edilir. Determinant/hacim/atom sayısı denetlenir; başarısız yakınsama
+atomlara uygulanmaz. Referans karşılaştırmaları Gemmi 0.7.4 ile
+kübik, ortorombik ve 3 triklinik/eğik hücre için eklendi.
+Bu işlem merkezleme veya simetri grubunu **bulmaz**; merkezi bir hücre
+önce doğrulanarak primitive hale getirilmelidir.
 ## VESTA Aşama 3 — Primitive / kısa baz dönüşümleri
 
 Sol **Örgü dönüşümü → Primitive hücre / kısa baz** bölümünde iki güvenli işlem vardır:
