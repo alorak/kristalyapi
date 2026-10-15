@@ -32,6 +32,13 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
 - Otomatik CI yalnızca **main merge** sonrası çalışsın; hata veya `inconclusive` kayıtlar raporda açık kalsın. Eşik düzeltmeleri gerçek sapmaları gizlememeli.
 - Mobil ve masaüstünde gerçek WebGL screenshot/duman testi, GPU bellek/çizim sınırı ve yükleme hatası deneyleri ekle.
 
+## Aşama 2 — çoklu CIF/faz karşılaştırması
+
+- **O9 ilk kapsam:** bir ana kristal + en fazla üç ek faz, bağımsız hücre metriği,
+  renk/görünürlük/saydamlık, Å ofseti ve merkez/orijin hizalaması.
+- Karşılaştırma fazları proje, son kristal ve Undo/Redo'da saklanır.
+- Otomatik atom eşleme / rijit en düşük RMSD / örgü uyumu sonraki geliştirme.
+- Node regresyonları ve Chromium WebGL smoke senaryoları genişletildi.
 ## Aşama 2 — hacimsel geliştirmeler
 
 - **O2 (çoklu izoyüzey):** her dosyada dört katmana kadar ayrı izodeğer/renk/opacity, toplam 8 aktif yüzey sınırı.
