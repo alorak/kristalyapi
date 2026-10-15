@@ -39,6 +39,16 @@ cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/
 python3 -m http.server 8000
 ```
 
+GitHub Pages dağıtımında iki eşzamanlı yayın yöntemini çalıştırmayın:
+depo **Settings → Pages → Build and deployment → Source** alanından
+**GitHub Actions** seçilmeli. Aksi durumda GitHub'ın otomatik
+`pages build and deployment` işi, özel `Validate and deploy crystal studio`
+işiyle çakışabilir ve yerel WASM dosyalarını da içermeyebilir.
+
+Moyo kaynak kodunun MIT / Apache-2.0 lisans metinleri
+`licenses/LICENSE-MOYO-MIT.txt` ve
+`licenses/LICENSE-MOYO-APACHE.txt` dosyalarında tutulur; Pages paketine dahil edilir.
+
 Temel kaynak: https://github.com/spglib/moyo/tree/main/moyo-wasm
 ## P0 — Kanonik Niggli hücre indirgemesi
 
