@@ -2317,6 +2317,110 @@ function syncSgControls(){
 }
 
 
+
+/* Independent phase overlays: no fictitious atom mapping or lattice fit.
+   Coordinates stay in Cartesian Angstrom, optionally aligning cell centers. */
+function normalizedOverlays(raw){
+ if(raw===undefined||raw===null)return [];
+ if(!Array.isArray(raw)||raw.length>3)throw Error('En fazla üç ek karşılaştırma kristali.');
+ return raw.map(item=>{
+  const cell=validateCell(item.cell);
+  if(!Array.isArray(item.sites)||!item.sites.length||item.sites.length>400)
+   throw Error('Karşılaştırma fazı 1–400 atom içermelidir.');
+  const sites=item.sites.map((s,i)=>{
+   const atom={symbol:cleanSymbol(s.symbol),label:String(s.label||'Atom '+(i+1)).slice(0,80),
+    x:Number(s.x),y:Number(s.y),z:Number(s.z),occupancy:Number(s.occupancy??1)};
+   if(![atom.x,atom.y,atom.z,atom.occupancy].every(Number.isFinite)||atom.occupancy<0||atom.occupancy>1)
+    throw Error('Karşılaştırma atom koordinatları veya doluluk geçersiz.');
+   return atom;
+  });
+  const offset=Array.isArray(item.offset)&&item.offset.length===3?item.offset.map(Number):[0,0,0];
+  if(offset.some(x=>!Number.isFinite(x)||Math.abs(x)>100))
+   throw Error('Karşılaştırma fazı ofseti en fazla ±100 Å olabilir.');
+  const opacity=Number(item.opacity??.55),color=String(item.color||'#8c5bba');
+  if(opacity<.1||opacity>1||!Number.isFinite(opacity)||!/^#[0-9a-f]{6}$/i.test(color))
+   throw Error('Karşılaştırma fazı saydamlık/rengi geçersiz.');
+  return {name:String(item.name||'Ek yapı').slice(0,120),cell,sites,offset,
+   align:item.align==='center'?'center':'origin',visible:item.visible!==false,
+   opacity,color};
+ });
+}
+function comparisonMetrics(primary,overlay){
+ const distance=(a,b)=>Math.abs(a-b);
+ return {sites:overlay.sites.length,
+  cellA:overlay.cell.a,
+  deviations:[distance(primary.a,overlay.cell.a),distance(primary.b,overlay.cell.b),
+   distance(primary.c,overlay.cell.c)],
+  sameMetric:['a','b','c','alpha','beta','gamma'].every(k=>Math.abs(primary[k]-overlay.cell[k])<1e-3)};
+}
+function drawOverlayStructures(B,center){
+ if(!state.overlays?.length)return;
+ const base=new THREE.Group();base.name='Karşılaştırma fazları';
+ for(const overlay of normalizedOverlays(state.overlays)){
+  if(!overlay.visible)continue;
+  const A=basis(overlay.cell),refCenter=toCart([.5,.5,.5],A);
+  const shift=new THREE.Vector3(...overlay.offset);
+  if(overlay.align==='center')shift.add(center.clone().sub(refCenter));
+  const g=new THREE.Group();g.name=overlay.name;g.position.copy(shift);
+  const material=new THREE.MeshPhongMaterial({color:overlay.color,roughness:.45,transparent:true,
+   opacity:overlay.opacity,depthWrite:false});
+  for(const s of overlay.sites){
+   const m=new THREE.Mesh(sphereGeometry,material);m.position.copy(toCart([s.x,s.y,s.z],A));m.scale.setScalar(.27);
+   g.add(m);
+  }
+  const edgePairs=[[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
+  const corners=[];
+  for(let i=0;i<2;i++)for(let j=0;j<2;j++)for(let k=0;k<2;k++)corners.push(toCart([i,j,k],A));
+  const segments=edgePairs.flatMap(([a,b])=>[corners[a],corners[b]]);
+  g.add(line(segments,overlay.color,.68));
+  base.add(g);
+ }
+ if(base.children.length)addLayerObject(base,'overlays');
+ $('overlaySummary').textContent=state.overlays.length+' ek faz · toplam '+
+  state.overlays.reduce((n,r)=>n+r.sites.length,0)+' atom · model otomatik hizalama yapmaz.';
+}
+function renderOverlayList(){
+ const host=$('overlayList');if(!host)return;
+ host.replaceChildren();
+ const overlays=state.overlays||[];
+ $('overlaySummary').textContent=overlays.length
+  ?overlays.length+' ek yapı · dosyadaki hücre ve atom bilgileri korunur.':'Henüz ek karşılaştırma yapısı yok.';
+ overlays.forEach((item,i)=>{
+  const wrapper=document.createElement('div');wrapper.className='bond-rule-list';
+  const row=document.createElement('div');row.className='volume-layer-row';
+  const check=document.createElement('input');check.type='checkbox';check.checked=item.visible;
+  check.setAttribute('aria-label',item.name+' karşılaştırmasını göster');
+  check.onchange=()=>{item.visible=check.checked;build();};
+  const label=document.createElement('label');label.textContent=item.name+' · '+item.sites.length+' atom';
+  const color=document.createElement('input');color.type='color';color.value=item.color;
+  color.setAttribute('aria-label',item.name+' rengi');
+  color.onchange=()=>{item.color=color.value;build();};
+  const del=document.createElement('button');del.textContent='×';del.title='Ek fazı kaldır';del.type='button';
+  del.onclick=()=>{state.overlays.splice(i,1);build();renderOverlayList();};
+  row.append(check,label,color,del);wrapper.append(row);
+  const options=document.createElement('div');options.className='volume-layer-row';
+  const align=document.createElement('select');align.setAttribute('aria-label',item.name+' hizalama');
+  for(const [value,text] of [['origin','Orijin'],['center','Hücre merkezi']]){
+   const option=document.createElement('option');option.value=value;option.textContent=text;align.append(option);
+  }
+  align.value=item.align;
+  align.onchange=()=>{item.align=align.value;build();};
+  options.append(align);
+  for(let ax=0;ax<3;ax++){
+   const field=document.createElement('input');field.type='number';field.step='.1';field.min='-100';field.max='100';
+   field.style.width='48px';field.value=item.offset[ax];
+   field.setAttribute('aria-label',item.name+' ofset '+['X','Y','Z'][ax]+' Å');
+   field.onchange=()=>{const v=Number(field.value);if(!Number.isFinite(v)||Math.abs(v)>100)return inform('Ofset ±100 Å sınırında.');
+    item.offset[ax]=v;build();};
+   options.append(field);
+  }
+  const opacity=document.createElement('input');opacity.type='range';opacity.min='.1';opacity.max='1';opacity.step='.05';opacity.value=item.opacity;
+  opacity.setAttribute('aria-label',item.name+' opaklık');
+  opacity.onchange=()=>{item.opacity=Number(opacity.value);build();};
+  options.append(opacity);wrapper.append(options);host.append(wrapper);
+ });
+}
+
 const LAYER_TYPES=[
  ['atoms','Atomlar','#467bb9'],['ellipsoids','Termal elipsoitler','#568bc5'],
  ['bonds','Bağlar','#98a5b0'],['polyhedra','Koordinasyon çokyüzlüleri','#54a1db'],
