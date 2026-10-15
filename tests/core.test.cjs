@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1353,4 +1353,43 @@ test('stage3 noncanonical short-basis: unimodular right-handed, preserves volume
  const transformed=api.transformCrystal(oblique,atom,short.P);
  approx(api.volume(api.basis(transformed.cell)),api.volume(api.basis(oblique)),1e-6);
  assert.ok(short.steps>=1);
+});
+
+test('P0 Niggli canonical metrics match independent Gemmi GruberVector fixtures',()=>{
+ // Baseline generated with gemmi 0.7.4: GruberVector(UnitCell(...),None).niggli_reduce()
+ const fixtures=[
+ [[5,5,5,90,90,90],[5,5,5,90,90,90]],
+ [[10,4,5,90,90,90],[4,5,10,90,90,90]],
+ [[6,7,8,76,84,101],[6,7,8,104,96,101]],
+ [[4,5,6,90,90,35],[2.869480480581864,4,6,90,90,91.91242822046347]],
+ [[7,6,5,62,78,89],[5,5.729895830889647,7,80.61010230027725,78,67.60349269215772]]
+ ];
+ for(const [values,expected] of fixtures){
+  const cell=Object.fromEntries(['a','b','c','alpha','beta','gamma'].map((key,i)=>[key,values[i]]));
+  const r=api.niggliReduceCell(cell);
+  const actual=['a','b','c','alpha','beta','gamma'].map(k=>r.cell[k]);
+  actual.forEach((v,i)=>approx(v,expected[i],2e-5));
+  approx(api.matrixDet(r.P),1);
+  approx(api.volume(api.basis(r.cell)),api.volume(api.basis(cell)),1e-5);
+  const again=api.niggliReduceCell(r.cell);
+  assert.equal(again.iterations,0);
+ }
+});
+test('P0 Niggli change-of-basis preserves fractional positions and displacement tensors',()=>{
+ const cell={a:4,b:5,c:6,alpha:90,beta:90,gamma:35};
+ const site={symbol:'Si',x:.13,y:.21,z:.34,occupancy:1,adp:[.03,.02,.04,.001,.002,-.001]};
+ const result=api.niggliReduceCell(cell);
+ const transformed=api.transformCrystal(cell,[site],result.P);
+ assert.equal(transformed.sites.length,1);
+ // Distances from a site to its images remain identical after unimodular change.
+ const next=[transformed.sites[0].x,transformed.sites[0].y,transformed.sites[0].z];
+ const old=[site.x,site.y,site.z];
+ for(let i=0;i<3;i++){
+  const mapped=next.reduce((total,v,j)=>total+result.P[i][j]*v,0);
+  approx(mapped-old[i],Math.round(mapped-old[i]),1e-6);
+ }
+ // A re-oriented conventional Cartesian basis rotates ADP; compare its invariants.
+ const before=api.adpToCartesian(site.adp,cell),after=api.adpToCartesian(transformed.sites[0].adp,transformed.cell);
+ const invariants=m=>[m[0][0]+m[1][1]+m[2][2],m.flat().reduce((total,v)=>total+v*v,0)];
+ invariants(before).forEach((v,i)=>approx(v,invariants(after)[i],1e-6));
 });

@@ -673,7 +673,8 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <strong class="measure-subheading">Primitive hücre / kısa baz</strong>
     <p class="hint">Seçili uzay grubunun F, I, A, B veya C merkezlemesine göre primitive dönüşümü önce atom koordinatlarında doğrular. Eksik çeviri eşdeğerliği varsa dönüşüm reddedilir.</p>
     <button id="autoPrimitive" type="button" class="primary">Simetriden primitive hücreye</button>
-    <button id="reduceBasis" type="button">Kısa baz dönüşümünü uygula</button>
+    <button id="niggliReduce" type="button" class="primary">Niggli indirgemesi</button>
+    <button id="reduceBasis" type="button">Kısa baz (alternatif)</button>
     <p id="standardizationInfo" class="note">Kısa baz tam Niggli indirgemesi değildir; genel setting/orijin ve uzay grubu otomatik tayinini yapmaz.</p>
     <p class="hint">Bu işlemler atom koordinatlarını, doluluk oranlarını ve varsa ADP tensörlerini yeni hücreye dönüştürür; sonuç açık P1 olarak saklanır. Uygun olmayan merkezlenme reddedilir.</p>
    </div>
@@ -2369,6 +2370,84 @@ function shortBasisTransform(cell){
  if(P.some(row=>row.some(n=>Math.abs(n)>8)))throw Error('Kısa baz katsayı sınırı aşıldı.');
  return {P,steps,cell:metric(cols.map(vec))};
 }
+
+/* Křivý–Gruber 8-step Niggli reduction, ported from spglib/src/niggli.c
+   (BSD-3-Clause, copyright Atsushi Togo, spglib contributors).
+   Input/output basis is column-wise. T is an exact unimodular integer
+   matrix. Fail closed when convergence/size bounds are exceeded. */
+function niggliReduceCell(cell,epsilon=1e-5){
+ const B=basis(cell),dot=(a,b)=>a.dot(b);
+ const I=[[1,0,0],[0,1,0],[0,0,1]];
+ let P=I.map(row=>row.slice());
+ const matMul=(a,b)=>a.map(row=>b[0].map((_,j)=>row.reduce((sum,v,k)=>sum+v*b[k][j],0)));
+ const columns=m=>[0,1,2].map(j=>B[0].clone().multiplyScalar(m[0][j])
+  .addScaledVector(B[1],m[1][j]).addScaledVector(B[2],m[2][j]));
+ const d=()=>{const v=columns(P);return {
+  A:dot(v[0],v[0]),B:dot(v[1],v[1]),C:dot(v[2],v[2]),
+  xi:2*dot(v[1],v[2]),eta:2*dot(v[0],v[2]),zeta:2*dot(v[0],v[1])
+ };};
+ const sq=[cell.a*cell.a,cell.b*cell.b,cell.c*cell.c];
+ const eps=epsilon*Math.max(...sq);
+ if(!Number.isFinite(eps)||eps<=0)throw Error('Niggli eps pozitif olmalı.');
+ const diag=(a,b,c)=>[[a,0,0],[0,b,0],[0,0,c]];
+ const apply=T=>{
+  P=matMul(P,T);
+  if(Math.abs(matrixDet(P)-1)>1e-8||P.some(row=>row.some(n=>!Number.isInteger(n)||Math.abs(n)>8)))
+   throw Error('Niggli katsayıları güvenli sınırı aştı; hücre değiştirilmedi.');
+ };
+ const near=(a,b)=>Math.abs(a-b)<=eps;
+ let iter=0;
+ for(;iter<1000;iter++){
+  let p=d(),{A,B,C,xi,eta,zeta}=p;
+  let l=Math.abs(xi)<=eps?0:Math.sign(xi),
+      m=Math.abs(eta)<=eps?0:Math.sign(eta),
+      n=Math.abs(zeta)<=eps?0:Math.sign(zeta);
+  // Step 1: sort A,B
+  if(A>B+eps||(near(A,B)&&Math.abs(xi)>Math.abs(eta)+eps)){
+   apply([[0,-1,0],[-1,0,0],[0,0,-1]]);continue;
+  }
+  // Step 2: sort B,C
+  if(B>C+eps||(near(B,C)&&Math.abs(eta)>Math.abs(zeta)+eps)){
+   apply([[-1,0,0],[0,0,-1],[0,-1,0]]);continue;
+  }
+  // Step 3: sign convention, product positive
+  if(l*m*n===1){
+   apply(diag(l===-1?-1:1,m===-1?-1:1,n===-1?-1:1));
+  }
+  // Step 4: sign convention, product nonpositive
+  else if(!(l===-1&&m===-1&&n===-1)&&(l*m*n===0||l*m*n===-1)){
+   let signs=[l===1?-1:1,m===1?-1:1,n===1?-1:1],zero=-1;
+   if(l===0)zero=0;if(m===0)zero=1;if(n===0)zero=2;
+   if(signs[0]*signs[1]*signs[2]===-1&&zero>=0)signs[zero]*=-1;
+   apply(diag(...signs));
+  }
+  // Proceed with fresh metric after step 3 or 4 as in spglib.
+  ({A,B,C,xi,eta,zeta}=d());
+  // Step 5: |xi| <= B, with boundary conditions
+  if(Math.abs(xi)>B+eps||(near(B,xi)&&2*eta<zeta-eps)||
+    (near(B,-xi)&&zeta< -eps)){
+   apply([[1,0,0],[0,1,xi>0?-1:xi<0?1:0],[0,0,1]]);continue;
+  }
+  // Step 6: |eta| <= A
+  if(Math.abs(eta)>A+eps||(near(A,eta)&&2*xi<zeta-eps)||
+    (near(A,-eta)&&zeta< -eps)){
+   apply([[1,0,eta>0?-1:eta<0?1:0],[0,1,0],[0,0,1]]);continue;
+  }
+  // Step 7: |zeta| <= A
+  if(Math.abs(zeta)>A+eps||(near(A,zeta)&&2*xi<eta-eps)||
+    (near(A,-zeta)&&eta< -eps)){
+   apply([[1,zeta>0?-1:zeta<0?1:0,0],[0,1,0],[0,0,1]]);continue;
+  }
+  // Step 8: A+B+xi+eta+zeta >= 0
+  if(xi+eta+zeta+A+B< -eps||(near(xi+eta+zeta+A+B,0)&&2*(A+eta)+zeta>eps)){
+   apply([[1,0,1],[0,1,1],[0,0,1]]);continue;
+  }
+  const result=transformCrystal(cell,[{symbol:'Si',x:0,y:0,z:0}],P);
+  return {P,cell:result.cell,iterations:iter,eps};
+ }
+ throw Error('Niggli 1000 yinelemede yakınsamadı; dönüşüm yapılmadı.');
+}
+
 function applyStandardizedCell(result,description){
  if(densityGrid)resetVolume();
  state.cell=result.cell;state.sites=result.sites;state.rep=[1,1,1];
@@ -2381,6 +2460,18 @@ function applyStandardizedCell(result,description){
  syncControls();build();fit();
 }
 function initStandardizationControls(){
+ $('niggliReduce').onclick=()=>{
+  try{
+   const reduction=niggliReduceCell(state.cell);
+   const source=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+   const result=transformCrystal(state.cell,source,reduction.P);
+   if(result.sites.length!==source.length||Math.abs(result.det-1)>1e-8)
+    throw Error('Niggli indirgemesi hücre hacmi veya atom sayısını korumadı.');
+   applyStandardizedCell(result,'Niggli reduced');
+   $('standardizationInfo').textContent='Kanonik Niggli metriği · '+reduction.iterations+' iterasyon; '+
+    'hacim '+volume(basis(result.cell)).toFixed(4)+' Å³. Kaynak SG P1 olarak kaydedildi.';
+  }catch(error){inform('Niggli: '+error.message);}
+ };
  $('autoPrimitive').onclick=()=>{
   try{
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
