@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - '.github/workflows/pages.yml'
       - 'tests/browser/**'
       - '.github/workflows/browser-visual.yml'
   workflow_dispatch:
@@ -25,6 +26,12 @@ jobs:
         run: |
           npm install --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
+      - name: Add local Moyo WASM bundle
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1 @spglib/moyo-wasm@0.21.0
+          mkdir -p vendor
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
       - name: Render real WebGL scenes and compare screenshots
         run: node tests/browser/visual.test.mjs
       - name: Upload screenshots and pixel metrics

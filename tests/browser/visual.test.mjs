@@ -103,6 +103,11 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===2,null,{timeout:10000});
  await save(page,'09-two-volume-fields',metrics);
  assert.match(await page.locator('#volumeSliceStats').textContent(),/Å/);
+ await page.locator('#moyoDetect').click();
+ await page.waitForFunction(()=>document.getElementById('moyoResult')?.textContent?.startsWith('SG #'),null,{timeout:60000});
+ assert.match(await page.locator('#moyoResult').textContent(),/Hall \d+/);
+ assert.equal(await page.locator('#moyoApplyConventional').isEnabled(),true);
+ await save(page,'10-moyo-space-group',metrics);
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);

@@ -101,6 +101,19 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
   otomatik SG tespiti, R-merkezleme.
 - Bunlar için spglib Niggli/standardize ile bağımsız referans
   eşdeğerlik testleri gereklidir; 'kısa baz' Niggli değildir.
+## P0 doğrulama ve bilimsel standardizasyon · Ekim 2026
+
+| İş | Bu PR zincirinde yapılan | Kalan doğrulama/sınır |
+| --- | --- | --- |
+| Regresyon CI | Eksik test-VM `preferredSetting` dışa aktarımı düzeltildi (#22) | İlk main-merge CI sonucunu doğrula |
+| Kanonik Niggli | spglib Křivý–Gruber 8-adım JS uygulaması; Gemmi 0.7.4 ile 5 hücre metrik testi, ADP invariant kontrolü (#23) | Sınır koşullarında daha geniş random/ref veri testi; iterasyon/katsayı sınırı |
+| Otomatik SG | Tarayıcı içi yerel `@spglib/moyo-wasm` 0.21.0, 230 uzay grubu/Hall numarası, tolerans ve iki standart setting seçimi (#24) | WASM tarayıcı E2E/CI doğrulaması; kısmi doluluk güvenli reddedilir |
+| Setting ve orijin | Moyo `std_linear` / `std_origin_shift`, primitive alternatif; orijinal koordinatı rafine etmeden açık P1'e dönüştürme; atom/occupancy/hacim kontrolü (#24) | Kullanıcıya tam 530 Hall seçimi, manyetik uzay grupları ve otomatik P1 dışı yeni setting ataması eklenmedi |
+
+**Bütün bu işler merge-only CI başarılı olana kadar tamamlanmış kabul edilmez.**
+Geleneksel `P1` olarak kaydedilen dönüştürülmüş yapı ile `moyo` tarafından tanınan
+uzay grubu ayrı gösterilir; eşdeğerliği bilinmeyen uygulama-içi setting
+operasyonları otomatik etkinleştirilmez.
 ## Aşama 3 — İleri kristalografi ve analiz
 
 | Paket | Uygulanan | Sınır / sonraki çalışma |

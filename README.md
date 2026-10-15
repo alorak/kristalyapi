@@ -9,6 +9,37 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## P0 — Otomatik uzay grubu ve orijin / setting dönüşümleri
+
+**Moyo WASM** (spglib projesi, @spglib/moyo-wasm 0.21.0) GitHub Pages
+CI sırasında derleme gerektirmeden npm paketinden kopyalanarak
+**yerel /vendor** altına eklenir. Çalışan uygulama kristal verilerini
+sunucuya göndermez; yalnız tarayıcı içindeki WASM hesaplama kullanılır.
+Seçilen tolerans (10⁻⁵–0,05 Å) ile 230 uzay grubu ve Hall setting
+belirlenir; kullanıcı ITA Standard / Spglib uyumlu setting seçebilir.
+Konvansiyonel/primitive için Moyo'nun gerçek 3×3 dönüşüm matrisi ve
+input-bazındaki orijin kayması raporlanıp atomlara uygulanır.
+
+**Bilimsel güvenlik:** kısmi doluluklu veri için SG otomatik tayini
+desteklenmez. Dönüşüm yalnız sonuçtaki atom/occupancy sayısı ve
+hücre hacmi beklenen oranda korunuyorsa uygulanır; simetriyle rafine
+edilmiş atom konumlarıyla kaynak deneysel atom koordinatları
+karıştırılmaz. Yeni hücre açık **P1** olarak kaydedilir; otomatik
+olarak eski uzay grubunu yanlış setting ile etkinleştirmez.
+Bu, mümkün olan 530 Hall setting'in kullanıcı arayüzünde serbest
+seçilmesi ya da özel mCIF manyetik uzay grubu desteği **değildir**.
+
+Dağıtım dışı yerel geliştirmede WASM paketini yüklemek için:
+
+```sh
+npm install --no-save --ignore-scripts @spglib/moyo-wasm@0.21.0
+mkdir -p vendor
+cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/
+cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/
+python3 -m http.server 8000
+```
+
+Temel kaynak: https://github.com/spglib/moyo/tree/main/moyo-wasm
 ## P0 — Kanonik Niggli hücre indirgemesi
 
 Sol **Örgü dönüşümü → Primitive hücre / kısa baz → Niggli indirgemesi**.

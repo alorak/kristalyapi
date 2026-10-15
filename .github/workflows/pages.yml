@@ -35,12 +35,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned local Moyo WASM science library
+        run: npm install --no-save --ignore-scripts @spglib/moyo-wasm@0.21.0
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Stage single-file site
+      - name: Stage local scientific engine and site
         run: |
-          mkdir -p public
+          mkdir -p public/vendor
           cp index.html public/index.html
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm.js public/vendor/moyo_wasm.js
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm public/vendor/moyo_wasm_bg.wasm
+          test -s public/vendor/moyo_wasm_bg.wasm
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
