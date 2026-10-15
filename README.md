@@ -9,6 +9,14 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## VESTA Aşama 2 — Geometrik kristal morfolojisi
+
+Sağ **Miller** sekmesindeki **Kristal morfolojisi** bölümünde `{hkl}` yüz aileleri, merkezden Å cinsinden uzaklık, renk ve görünürlük seçilebilir. Kübik hücre metriklerinde, istenirse eşdeğer `{hkl}` indis permütasyonları kullanılır; diğer sistemlerde yalnız iki zıt normal `±(hkl)` doğrudan desteklenir. Geometri, Kartezyen `n·r ≤ d` yarı uzaylarının kesişiminden oluşturulur; açık/sonsuz şekil üretilemezse yüzey çizilmez. Kapalı hacim (Å³) ve yüzey alanı (Å²) raporlanır.
+
+Morfoloji katmanı mevcut nesne yöneticisinden yönetilir; yüz aileleri proje/son kristal kaydında ve geri alma geçmişinde saklanır. Kübik `{100}`, merkezden 3 Å örneğinde altı yüz / sekiz köşe / 216 Å³ hacim / 216 Å² toplam alan elde edilir.
+
+**Sınır:** Bu Wulff denge şekli değildir: yüzey enerjisi, adatom, fiziksel büyüme kinetiği veya yüzey relaksasyonu hesaplanmaz. Kübik olmayan sistemlerde tüm kristal nokta grubu eşdeğerleri otomatik türetilmez; ek yüz aileleri kullanıcı tarafından girilmelidir.
+
 ## VESTA Aşama 2 — Çoklu hacimsel alan, izoyüzey ve nicel 2B kesit
 
 **Hacimsel veriler** ekranından en fazla **dört** CUBE / CHGCAR / XSF alanı yüklenebilir. Ek alanlar yalnızca fiziksel Kartezyen orijin ve üç boyutlu kapsama vektörleri uyumluysa kabul edilir; farklı çözünürlükteki eşkapsamlı ızgaralarda trilineer interpolasyon kullanılır.
