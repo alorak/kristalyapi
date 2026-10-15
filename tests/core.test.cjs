@@ -1382,13 +1382,14 @@ test('P0 Niggli change-of-basis preserves fractional positions and displacement 
  const transformed=api.transformCrystal(cell,[site],result.P);
  assert.equal(transformed.sites.length,1);
  // Distances from a site to its images remain identical after unimodular change.
- const orig=api.toCart([site.x,site.y,site.z],api.basis(cell));
- const newp=api.toCart([transformed.sites[0].x,transformed.sites[0].y,transformed.sites[0].z],api.basis(transformed.cell));
- const delta=orig.clone().sub(newp);
- const frac=api.toFrac(delta,api.basis(cell));
- assert.ok(frac.every(x=>Math.abs(x-Math.round(x))<1e-6));
- // ADP Cartesian tensor invariant up to numerical tolerance.
- const before=api.adpToCartesian(site.adp,cell);
- const after=api.adpToCartesian(transformed.sites[0].adp,transformed.cell);
- for(let i=0;i<3;i++)for(let j=0;j<3;j++)approx(before[i][j],after[i][j],1e-6);
+ const next=[transformed.sites[0].x,transformed.sites[0].y,transformed.sites[0].z];
+ const old=[site.x,site.y,site.z];
+ for(let i=0;i<3;i++){
+  const mapped=next.reduce((total,v,j)=>total+result.P[i][j]*v,0);
+  approx(mapped-old[i],Math.round(mapped-old[i]),1e-6);
+ }
+ // A re-oriented conventional Cartesian basis rotates ADP; compare its invariants.
+ const before=api.adpToCartesian(site.adp,cell),after=api.adpToCartesian(transformed.sites[0].adp,transformed.cell);
+ const invariants=m=>[m[0][0]+m[1][1]+m[2][2],m.flat().reduce((total,v)=>total+v*v,0)];
+ invariants(before).forEach((v,i)=>approx(v,invariants(after)[i],1e-6));
 });
