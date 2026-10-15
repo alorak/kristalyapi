@@ -9,6 +9,34 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
+## VESTA Aşama 3 — Kristalografik analiz (BVS, düzlem, XRD)
+
+- **Bağ-değerliği / BVS:** Açıkça seçilmiş katyon, oksidasyon durumu ve anyon
+  için Brese–O'Keeffe (1991) R₀ sabitleri ve B=0,37 Å kullanılır. Komşular
+  kristal metriğinde periyodik görüntülerden bulunur; çoklu görüntüler ayrı
+  komşu olarak raporlanır. Kısmi doluluk bağ katkısını ağırlıklandırır.
+  NaCl (a=5,64 Å, Na–Cl=2,82 Å) modelinde CN=6 ve BVS≈0,981.
+  Atom ve oksidasyon durumları otomatik tayin edilmez; desteklenmeyen çiftlerde
+  sonuç uydurulmaz. Parametre kaynağı:
+  https://doi.org/10.1107/S0108768190011041 .
+- **Best-fit plane:** 1-tabanlı atom indislerinden 3B kartezyen koordinatları
+  hesaplar; kovaryans özvektör ayrışımıyla en düşük RMS dik sapmalı düzlemi
+  belirler. Normal vektörü, RMS/maks sapma, iki düzlem arası dar açıyı ve
+  düzlem çizimini üretir. Kısmi periyodik koordinat unwrap yapmaz.
+- **Yapı faktörü / öğretici XRD:** P1 konumları veya simetriyle tam genişletilmiş
+  konumlardan F(hkl), faz, |F|² ve 2θ Bragg konumlarını hesaplar.
+  Kullanıcı λ, maksimum hkl, 2θ üst sınırını düzenler. Noktasal X-ışını
+  elektron saçıcı f=Z yaklaşımı, doluluk ve mevcut Debye–Waller Uiso/Uij
+  sönümü kullanılır. ±hkl çiftleri ve eş 2θ çizgileri gruplanır;
+  spektrum ve yansıma CSV dışa verilir. BCC (100) sistematik söner;
+  (110) izinlidir. **Deneysel XRD veya tam saçılma simülasyonu değildir:**
+  f₀(q) Cromer–Mann, anomal saçılma, Lorentz/polarizasyon, geometrik
+  düzeltmeler, pik profili ve tercihli yönlenme bulunmaz. Bağlantı:
+  https://dictionary.iucr.org/Structure_determination .
+- **Testler:** NaCl BVS, kısmi doluluk, kollinear best-fit hata yakalama,
+  BCC sönümleri ve Bragg açıları Node regresyonlarına eklendi. Bu modüller
+  gerçek tarayıcı E2E ve bütün 230 uzay grubu için bilimsel referans
+  doğrulaması olmadan tam VESTA eşdeğeri kabul edilmemelidir.
 ## VESTA Aşama 2 — Çoklu CIF yapı/faz karşılaştırması
 
 Sağ **Yapı → Çoklu yapı/faz karşılaştırması** bölümünden ana kristali değiştirmeden

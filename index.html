@@ -735,6 +735,38 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <div class="actionrow"><button id="exportMeasurements" type="button">CSV dışa aktar</button><button id="clearHistory" type="button">Geçmişi temizle</button></div>
    </div>
    <p class="hint">2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.</p></div>
+
+  <div class="section"><h2>İleri koordinasyon / BVS</h2>
+   <p class="hint">Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/0,37 Å]. Komşular periyodik görüntülerden bulunur; kısmi doluluk ağırlıklandırılır.</p>
+   <label class="field"><span>Merkez atom (asimetrik / P1 liste)</span><select id="analysisCenter"></select></label>
+   <label class="field"><span>Cation–anion referans çifti</span><select id="bvsPair"></select></label>
+   <label class="field"><span>BVS komşu mesafesi (Å)</span><input id="bvsCutoff" type="number" min="1" max="5" step=".1" value="3.5"></label>
+   <button class="primary" id="analyzeBvs" type="button">Koordinasyon / BVS hesapla</button>
+   <div id="bvsResult" class="note">Atom ve referans parametresi seçin.</div>
+   <div class="actionrow"><button id="exportBvs" type="button">Komşu CSV</button></div>
+   <p class="hint">Brese–O’Keeffe (1991) R₀ parametreleri kullanılır. BVS koordinasyon/eşdeğer oksidasyon durumu kanıtı değildir. Özellikle farklı katyon-valans türlerinde sınırlıdır.</p>
+  </div>
+  <div class="section"><h2>Best-fit plane · düzlemsellik</h2>
+   <p class="hint">Aşağıya atomların 1-tabanlı satır indislerini yaz. Örn. 1,2,3,4. Üçten fazla, doğrusal olmayan atom gerekir. Atomlar mevcut hücrenin Kartezyen Å bazında değerlendirilir; sınır aşan atomlar otomatik unwrap edilmez.</p>
+   <label class="field"><span>Atom indisleri (virgülle)</span><input id="planeFitAtoms" placeholder="1,2,3,4" maxlength="500"></label>
+   <div class="actionrow"><button id="planeFitAdd" type="button" class="primary">Düzlem hesapla + göster</button><button id="planeFitClear" type="button">Düzlemleri temizle</button></div>
+   <div id="planeFitResult" class="note">Henüz düzlem hesaplanmadı.</div>
+   <p class="hint">En küçük kovaryans özvektörü düzlem normalini verir. RMS ortogonal sapma ve iki düzlem arasındaki dar açı raporlanır.</p>
+  </div>
+  <div class="section"><h2>Yapı faktörü / toz XRD (öğretici)</h2>
+   <p class="hint">Kinematik F(hkl)=Σ occ·Z·exp(2πi h·r) ile noktasal elektron saçıcı yaklaşımı; sıcaklık faktörü Uiso/Uij varsa eklenir. Elementlere özgü açısal f₀(q), anomal saçılma, Lorentz-polarizasyon, tekstür ve cihaz profili henüz uygulanmaz.</p>
+   <div class="triple">
+    <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
+    <label class="field compact"><span>2θ üst sınır (°)</span><input id="xrdAngle" type="number" min="15" max="150" step="5" value="90"></label>
+    <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMaxIndex" type="number" min="1" max="9" step="1" value="5"></label>
+   </div>
+   <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
+   <div id="xrdSummary" class="note">Hesaplama bekleniyor.</div>
+   <svg id="xrdChart" viewBox="0 0 440 180" role="img" aria-label="Hesaplanan toz kırınımı çubuk grafiği" style="display:block;width:100%;min-height:150px;border:1px solid #dce5f1;border-radius:8px;background:white"></svg>
+   <div id="xrdResults" class="bond-rule-list" style="max-height:235px;overflow:auto"></div>
+   <button id="xrdExport" type="button">Yansıma CSV</button>
+   <p class="hint">Bu grafik fiziksel Bragg konumları ve yaklaşık göreli genlikler içindir; deneysel XRD şiddeti ya da Rietveld analizi olarak kullanılmamalıdır.</p>
+  </div>
   <div class="section volumetric-panel"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
    <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
@@ -2587,6 +2619,7 @@ function build(){
  }
  drawSelection();
  drawVolume();
+ drawStage3Planes();
  applyLayerAppearance();
  renderLayerManager();
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
@@ -2653,6 +2686,267 @@ function describeMeasurement(){
  if(atoms.length>=4)values.dihedral_deg=dihedralDegrees(...atoms.map(a=>a.pos.toArray()));
  return {structure:state.name,atoms:labels,values};
 }
+
+/* Stage 3: geometrically distinct periodic neighbor images with occupancy-aware
+   bond-valence estimates. Oxidation-state/parameter selection is EXPLICIT. */
+const BVS_PARAMETERS=[
+ {key:'Na1-Cl',cation:'Na',anion:'Cl',charge:1,r0:2.15,label:'Na(I)–Cl(-I)  R₀ 2.150 Å'},
+ {key:'Na1-O',cation:'Na',anion:'O',charge:1,r0:1.80,label:'Na(I)–O(-II)  R₀ 1.800 Å'},
+ {key:'Fe2-O',cation:'Fe',anion:'O',charge:2,r0:1.734,label:'Fe(II)–O(-II)  R₀ 1.734 Å'},
+ {key:'Fe3-O',cation:'Fe',anion:'O',charge:3,r0:1.759,label:'Fe(III)–O(-II)  R₀ 1.759 Å'},
+ {key:'Si4-O',cation:'Si',anion:'O',charge:4,r0:1.624,label:'Si(IV)–O(-II)  R₀ 1.624 Å'},
+ {key:'Al3-O',cation:'Al',anion:'O',charge:3,r0:1.651,label:'Al(III)–O(-II)  R₀ 1.651 Å'}
+];
+function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
+ const parameter=BVS_PARAMETERS.find(p=>p.key===key);
+ if(!parameter)throw Error('Bu katyon/anyon ve oksidasyon durumu için R₀ parametresi yok.');
+ if(!Number.isFinite(cutoff)||cutoff<1||cutoff>5)throw Error('BVS mesafe sınırı 1–5 Å olmalı.');
+ if(!Array.isArray(sites)||sites.length>1000||!sites[centerIndex])throw Error('Geçersiz koordinasyon merkezi.');
+ const center=sites[centerIndex];
+ if(cleanSymbol(center.symbol)!==parameter.cation)throw Error('Merkez atom '+parameter.cation+' değil; referans çiftiyle eşleştirin.');
+ const B=basis(cell),c=[Number(center.x),Number(center.y),Number(center.z)];
+ const neighbors=[];const cutoff2=cutoff*cutoff;
+ for(let j=0;j<sites.length;j++){
+  if(cleanSymbol(sites[j].symbol)!==parameter.anion)continue;
+  const s=sites[j],site=[Number(s.x),Number(s.y),Number(s.z)];
+  const occupation=Number(s.occupancy??1);
+  if(![...site,occupation].every(Number.isFinite)||occupation<0||occupation>1)throw Error('Atom doluluğu veya koordinatı geçersiz.');
+  for(let x=-2;x<=2;x++)for(let y=-2;y<=2;y++)for(let z=-2;z<=2;z++){
+   const dist=toCart([site[0]-c[0]+x,site[1]-c[1]+y,site[2]-c[2]+z],B).length();
+   if(dist<1e-6||dist>cutoff+1e-8)continue;
+   const value=Math.exp((parameter.r0-dist)/.37)*occupation;
+   neighbors.push({index:j,label:s.label||parameter.anion+(j+1),shift:[x,y,z],distance:dist,
+    occupancy:occupation,contribution:value});
+  }
+ }
+ neighbors.sort((a,b)=>a.distance-b.distance||a.index-b.index);
+ const sum=neighbors.reduce((total,n)=>total+n.contribution,0);
+ const mean=neighbors.length?neighbors.reduce((total,n)=>total+n.distance,0)/neighbors.length:0;
+ return {pair:key,r0:parameter.r0,b:.37,referenceCharge:parameter.charge,centerIndex,
+  count:neighbors.length,sum,mean,min:neighbors[0]?.distance??null,
+  max:neighbors.length?neighbors.at(-1).distance:null,neighbors};
+}
+function bvsCsv(result){
+ return ['neighbor,shift_x,shift_y,shift_z,distance_A,occupancy,bond_valence',
+  ...result.neighbors.map(n=>[n.label,...n.shift,n.distance.toFixed(8),n.occupancy,n.contribution.toFixed(8)].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n')+'\n';
+}
+function leastSquaresPlane(points){
+ if(!Array.isArray(points)||points.length<3||points.length>1000||
+    points.some(p=>!Array.isArray(p)||p.length!==3||p.some(v=>!Number.isFinite(v))))
+  throw Error('Düzlem hesabı için 3–1000 sonlu XYZ konumu gerekli.');
+ const center=[0,1,2].map(k=>points.reduce((v,p)=>v+p[k],0)/points.length);
+ const covariance=[0,1,2].map(i=>[0,1,2].map(j=>
+  points.reduce((v,p)=>v+(p[i]-center[i])*(p[j]-center[j]),0)/points.length));
+ const eigen=adpEigen(covariance);
+ const order=[0,1,2].sort((a,b)=>eigen.values[a]-eigen.values[b]);
+ if(eigen.values[order[1]]<1e-12*Math.max(1,eigen.values[order[2]]))
+  throw Error('Seçilen noktalar doğrusal veya çakışık: tekil düzlem normalı.');
+ let normal=[0,1,2].map(k=>eigen.vectors[k][order[0]]);
+ const length=Math.hypot(...normal);normal=normal.map(v=>v/length);
+ const distances=points.map(p=>p.reduce((v,n,i)=>v+n*normal[i],0)-center.reduce((v,n,i)=>v+n*normal[i],0));
+ const rms=Math.sqrt(distances.reduce((v,d)=>v+d*d,0)/distances.length);
+ const max=Math.max(...distances.map(Math.abs));
+ return {center,normal,rms,max,distances,points:points.length};
+}
+function angleBetweenPlanes(a,b){
+ const dot=a.normal.reduce((v,x,i)=>v+x*b.normal[i],0);
+ return Math.acos(clamp(Math.abs(dot),0,1))*180/Math.PI;
+}
+let stage3Planes=[],lastBvs=null,lastXrd=null;
+function drawStage3Planes(){
+ for(const [i,plane] of stage3Planes.entries()){
+  try{
+   const points=plane.indices.map(n=>state.sites[n-1]);
+   if(points.some(x=>!x))continue;
+   const result=leastSquaresPlane(points.map(s=>toCart([s.x,s.y,s.z],basis(state.cell)).toArray()));
+   const n=new THREE.Vector3(...result.normal),u=new THREE.Vector3(1,0,0);
+   if(Math.abs(n.dot(u))>.95)u.set(0,1,0);
+   u.addScaledVector(n,-u.dot(n)).normalize();
+   const v=new THREE.Vector3().crossVectors(n,u).normalize();
+   const coords=points.map(s=>new THREE.Vector3(...toCart([s.x,s.y,s.z],basis(state.cell)).toArray()));
+   const center=new THREE.Vector3(...result.center);
+   const size=Math.max(1,Math.max(...coords.map(p=>p.distanceTo(center)))*1.3);
+   const corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>center.clone().addScaledVector(u,x*size).addScaledVector(v,y*size));
+   const pos=[];
+   for(const indices of [[0,1,2],[0,2,3]])for(const index of indices)pos.push(...corners[index].toArray());
+   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.computeVertexNormals();
+   root.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:i%2===0?0xe09d55:0x7b77d7,
+    transparent:true,opacity:.23,side:THREE.DoubleSide,depthWrite:false})));
+   root.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(corners),
+    new THREE.LineBasicMaterial({color:i%2===0?0xe09d55:0x7b77d7})));
+  }catch(err){console.warn('Düzlem önizleme:',err.message);}
+ }
+}
+function stage3FitFromIndices(indices,sites,cell){
+ if(!Array.isArray(indices)||indices.length<3||indices.length>100||
+  new Set(indices).size!==indices.length||indices.some(i=>!Number.isInteger(i)||i<1||i>sites.length))
+  throw Error('Tekrarsız 3–100 geçerli atom satır numarası seçin.');
+ return leastSquaresPlane(indices.map(i=>toCart([sites[i-1].x,sites[i-1].y,sites[i-1].z],basis(cell)).toArray()));
+}
+function renderStage3Planes(){
+ const node=$('planeFitResult');if(!node)return;
+ if(!stage3Planes.length){node.textContent='Henüz düzlem hesaplanmadı.';return;}
+ const details=stage3Planes.map((entry,i)=>{
+  const fit=stage3FitFromIndices(entry.indices,state.sites,state.cell);
+  return {fit,index:i,sites:entry.indices};
+ });
+ node.textContent=details.map(({fit,index,sites})=>
+  'Düzlem '+(index+1)+' ('+sites.join(',')+') · normal '+fit.normal.map(v=>v.toFixed(4)).join(', ')+
+  ' · RMS '+fit.rms.toFixed(5)+' Å · maks '+fit.max.toFixed(5)+' Å').join('\n')+
+  (details.length>=2?'\nİlk iki düzlem arası dar açı: '+angleBetweenPlanes(details[0].fit,details[1].fit).toFixed(3)+'°':'');
+ node.style.whiteSpace='pre-line';
+}
+/* X-ray point-electron-scatterer approximation: NOT tabulated f0(s).
+   Valid for systematic phase interference / Bragg peak positions, not quantitative diffraction. */
+function structureFactor(h,k,l,sites,cell){
+ if(![h,k,l].every(Number.isInteger)||!Array.isArray(sites)||sites.length>1800)
+  throw Error('Geçersiz hkl veya atom listesi.');
+ if(!h&&!k&&!l)throw Error('000 yapı faktörü Bragg yansıması değildir.');
+ const B=basis(cell),d=planeNormal(h,k,l,B).d;
+ const reciprocal=[new THREE.Vector3().crossVectors(B[1],B[2]),new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])].map(v=>v.length()/volume(B));
+ let real=0,imag=0;
+ for(const site of sites){
+  const Z=PERIODIC_SYMBOLS.indexOf(cleanSymbol(site.symbol))+1;
+  if(Z<1)throw Error('Bilinmeyen atomun X-ışını elektron sayısı: '+site.symbol);
+  const occ=Number(site.occupancy??1);
+  if(!Number.isFinite(occ)||occ<0||occ>1)throw Error('Geçersiz atom doluluğu.');
+  let dw=1;
+  if(site.adp){
+   const u=adpMatrix(site.adp),q=[h*reciprocal[0],k*reciprocal[1],l*reciprocal[2]];
+   let qUq=0;for(let i=0;i<3;i++)for(let j=0;j<3;j++)qUq+=q[i]*u[i][j]*q[j];
+   dw=Math.exp(-2*Math.PI*Math.PI*Math.max(0,qUq));
+  }else if(Number.isFinite(site.uIso)&&site.uIso>0){
+   dw=Math.exp(-2*Math.PI*Math.PI*site.uIso/(d*d));
+  }
+  const phase=2*Math.PI*(h*site.x+k*site.y+l*site.z),amp=occ*Z*dw;
+  real+=amp*Math.cos(phase);imag+=amp*Math.sin(phase);
+ }
+ return {h,k,l,d,real,imag,intensity:real*real+imag*imag};
+}
+function powderPattern(cell,sites,{wavelength=1.5406,maxIndex=5,maxAngle=90}={}){
+ if(!Number.isFinite(wavelength)||wavelength<.2||wavelength>5||
+  !Number.isInteger(maxIndex)||maxIndex<1||maxIndex>7||
+  !Number.isFinite(maxAngle)||maxAngle<15||maxAngle>150)
+  throw Error('XRD: λ, maksimum indis veya 2θ sınırı geçersiz.');
+ if(sites.length>1000)throw Error('XRD için en fazla 1000 P1 atom kullanılabilir.');
+ const reflections=[];let extinctions=0;
+ for(let h=-maxIndex;h<=maxIndex;h++)for(let k=-maxIndex;k<=maxIndex;k++)for(let l=-maxIndex;l<=maxIndex;l++){
+  if(!(h||k||l))continue;
+  // A Bragg vector and its opposite produce identical nonresonant powder intensity.
+  if(h<0||h===0&&k<0||h===0&&k===0&&l<0)continue;
+  const F=structureFactor(h,k,l,sites,cell),arg=wavelength/(2*F.d);
+  if(arg<=0||arg>=1)continue;
+  const angle=360/Math.PI*Math.asin(arg);
+  if(angle>maxAngle)continue;
+  if(F.intensity<1e-8){extinctions++;continue;}
+  reflections.push({...F,angle,multiplicity:2});
+ }
+ reflections.sort((a,b)=>a.angle-b.angle);
+ const groups=[];
+ for(const reflection of reflections){
+  const last=groups.at(-1);
+  if(last&&Math.abs(last.angle-reflection.angle)<.012){
+   last.intensity+=reflection.intensity*reflection.multiplicity;
+   last.members++;if(reflection.intensity>last.strongestIntensity){
+    last.hkl=[reflection.h,reflection.k,reflection.l];last.strongestIntensity=reflection.intensity;
+   }
+  }else groups.push({angle:reflection.angle,intensity:reflection.intensity*reflection.multiplicity,
+    members:1,hkl:[reflection.h,reflection.k,reflection.l],d:reflection.d,strongestIntensity:reflection.intensity});
+ }
+ const top=Math.max(...groups.map(g=>g.intensity),0);
+ for(const group of groups)group.relative=top?group.intensity/top*100:0;
+ return {reflections,groups,extinctions,wavelength,maxAngle,maxIndex,scattering:'f=Z',approximate:true};
+}
+function xrdCsv(result){
+ return ['h,k,l,d_A,2theta_deg,F_real,F_imag,F_squared',
+ ...result.reflections.map(r=>[r.h,r.k,r.l,r.d,r.angle,r.real,r.imag,r.intensity].map(v=>Number(v).toPrecision(9)).join(','))].join('\n')+'\n';
+}
+function renderPowderChart(result){
+ const svg=$('xrdChart');if(!svg)return;svg.replaceChildren();
+ const ns='http://www.w3.org/2000/svg', W=440,H=180,left=36,top=12,right=12,bottom=29;
+ const line=(x1,y1,x2,y2,color,width=1)=>{
+  const el=document.createElementNS(ns,'line');for(const [k,v] of Object.entries({x1,y1,x2,y2}))el.setAttribute(k,v);
+  el.setAttribute('stroke',color);el.setAttribute('stroke-width',width);svg.append(el);
+ };
+ const txt=(x,y,value)=>{
+  const el=document.createElementNS(ns,'text');el.textContent=value;
+  el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('font-size','10');
+  el.setAttribute('fill','#596a82');svg.append(el);
+ };
+ line(left,top,left,H-bottom,'#73849b');line(left,H-bottom,W-right,H-bottom,'#73849b');
+ for(let i=0;i<=4;i++){const angle=result.maxAngle*i/4,x=left+angle/result.maxAngle*(W-left-right);
+  line(x,H-bottom,x,H-bottom+4,'#73849b');txt(x-8,H-bottom+16,angle.toFixed(0));}
+ txt(W/2-12,H-4,'2θ (°)');txt(3,16,'100%');
+ for(const peak of result.groups){
+  const x=left+peak.angle/result.maxAngle*(W-left-right);
+  const y=H-bottom-peak.relative/100*(H-top-bottom);
+  line(x,H-bottom,x,y,'#2b74af',1.4);
+ }
+}
+function runPowderAnalysis(){
+ try{
+  const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+  lastXrd=powderPattern(state.cell,sites,{
+   wavelength:Number($('xrdLambda').value),maxAngle:Number($('xrdAngle').value),
+   maxIndex:Number($('xrdMaxIndex').value)});
+  renderPowderChart(lastXrd);
+  $('xrdSummary').textContent=lastXrd.groups.length+' hesaplanan çizgi · '+
+   lastXrd.extinctions+' faz sönümlemesi (< 10⁻⁸) · f=Z sabit yaklaşıklık · nicel şiddet değil';
+  const host=$('xrdResults');host.replaceChildren();
+  for(const p of lastXrd.groups.slice(0,35)){
+   const line=document.createElement('div');line.className='bond-rule-row';
+   line.textContent='('+p.hkl.join(' ')+') · '+p.angle.toFixed(3)+'° · d='+p.d.toFixed(4)+' Å · '+p.relative.toFixed(1)+'%';
+   host.append(line);
+  }
+ }catch(error){inform('Yapı faktörü: '+error.message);}
+}
+function refreshStage3Atoms(){
+ const picker=$('analysisCenter');if(!picker)return;
+ const prev=picker.value;
+ picker.replaceChildren();
+ state.sites.forEach((site,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=(i+1)+' · '+site.symbol+' '+(site.label||'')+' ('+[site.x,site.y,site.z].map(v=>Number(v).toFixed(3)).join(',')+')';
+  picker.append(option);
+ });
+ if([...picker.options].some(option=>option.value===prev))picker.value=prev;
+}
+function initStage3Analyses(){
+ const pair=$('bvsPair');pair.replaceChildren();
+ for(const p of BVS_PARAMETERS){
+  const option=document.createElement('option');option.value=p.key;option.textContent=p.label;pair.append(option);
+ }
+ $('analyzeBvs').onclick=()=>{
+  try{
+   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+   const index=Number($('analysisCenter').value);
+   const input=state.sites[index];if(!input)throw Error('Analiz merkezi seçilmedi.');
+   const physIndex=state.symmetryEnabled?sites.findIndex(s=>s.symbol===input.symbol&&
+    ['x','y','z'].every(k=>Math.abs(frac(s[k])-frac(input[k]))<1e-5)):index;
+   if(physIndex<0)throw Error('Simetri genişletilmiş koordinasyon merkezi bulunamadı.');
+   lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,Number($('bvsCutoff').value));
+   $('bvsResult').textContent='CN='+lastBvs.count+' · BVS='+lastBvs.sum.toFixed(4)+' v.u.'+
+    ' · referans yükseltgenme +'+lastBvs.referenceCharge+
+    ' · ort. bağ='+lastBvs.mean.toFixed(4)+' Å'+
+    ' · min/maks='+String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å';
+  }catch(err){lastBvs=null;inform('BVS: '+err.message);}
+ };
+ $('exportBvs').onclick=()=>{if(lastBvs)download('bvs_komsular.csv',bvsCsv(lastBvs),'text/csv');else inform('Önce BVS hesaplayın.');};
+ $('planeFitAdd').onclick=()=>{
+  try{
+   const values=$('planeFitAtoms').value.split(/[,\s;]+/).filter(Boolean).map(Number);
+   stage3FitFromIndices(values,state.sites,state.cell);
+   if(stage3Planes.length>=2)stage3Planes.shift();
+   stage3Planes.push({indices:values});
+   renderStage3Planes();build();
+  }catch(err){inform('Best-fit plane: '+err.message);}
+ };
+ $('planeFitClear').onclick=()=>{stage3Planes=[];renderStage3Planes();build();};
+ $('analyzeXrd').onclick=runPowderAnalysis;
+ $('xrdExport').onclick=()=>{if(lastXrd)download('xrd_hkl.csv',xrdCsv(lastXrd),'text/csv');else inform('Önce XRD hesaplayın.');};
+ refreshStage3Atoms();
+}
+
 function renderCoordinationSummary(){
  const node=$('coordinationInfo');node.replaceChildren();
  if(!selected.length||!atomData[selected[0]]){node.textContent='Koordinasyon çevresini görmek için bir atom seçin.';return;}
@@ -2735,6 +3029,7 @@ function renderBondRuleEditor(){
 }
 
 function renderSites(){
+ refreshStage3Atoms();
  const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
  state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);tr.append(td);}
   const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#55718e;white-space:nowrap';
@@ -3911,6 +4206,7 @@ function bind(){
  initLibrary();
  initRightSidebarTabs();
  initVolumeControls();
+ initStage3Analyses();
  initLeftSidebarTabs();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};

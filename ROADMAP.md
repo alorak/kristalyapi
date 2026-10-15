@@ -91,6 +91,14 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
 - Eklenecek her fiziksel hesap için referans fixture, ölçülebilir tolerans ve bilinen bilimsel sınırlama gerekir.
 - Çalışma yapılırken tek dosya düzeni, harici Three.js CDN bağımlılığı ve çevrimdışı kullanım hedefi birlikte değerlendirilmelidir.
 
+## Aşama 3 — İleri kristalografi ve analiz
+
+| Paket | Uygulanan | Sınır / sonraki çalışma |
+| --- | --- | --- |
+| A3.2 Koordinasyon ve BVS | Seçili valanslı katyon/anyon için deneysel R₀/B ve periyodik komşuluk, CN, dağılım ve CSV | Çift/valans parametre kapsamını genişletme, karışık yerleşimler |
+| A3.3 Best-fit plane | En küçük kareler normal vektörü, RMS/maks sapma, iki düzlem açısı ve 3B çizim | PBC atom unwrap ve çok düzlem kaydı |
+| A3.4 Yapı faktörü ve öğretici toz XRD | P1/simetri genişletilmiş F(hkl), Bragg açısı, Debye–Waller, pik/CSV; BCC/FCC sönüm testleri | Tam f₀(q), LP, anomal saçılma ve Rietveld yok |
+| A3.1 Hücre standardizasyonu | Sonraki ayrı PR | Niggli, origin/setting ve primitive otomasyonu tamamlanmadı |
 ## VESTA referansları
 
 - [VESTA resmî kullanım kılavuzu](https://www.jp-minerals.org/vesta/archives/VESTA_Manual.pdf)
