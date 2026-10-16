@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'crystal-app.js'
+      - 'styles.css'
+      - 'translations.js'
+      - 'vendor/three/**'
       - '.github/workflows/pages.yml'
       - 'tests/browser/**'
       - '.github/workflows/browser-visual.yml'
@@ -22,13 +26,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install pinned Playwright and Chromium
+      - name: Install Playwright and local Moyo WASM bundle
         run: |
-          npm install --no-save playwright@1.56.1 three@0.182.0
+          npm install --no-save --ignore-scripts playwright@1.56.1 @spglib/moyo-wasm@0.21.0
           npx playwright install --with-deps chromium
-      - name: Add local Moyo WASM bundle
-        run: |
-          npm install --no-save --ignore-scripts playwright@1.56.1 @spglib/moyo-wasm@0.21.0 three@0.182.0
           mkdir -p vendor
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm

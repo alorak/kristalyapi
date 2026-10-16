@@ -18,21 +18,34 @@ const server=http.createServer(async(request,response)=>{
  try{
   let content=await fs.readFile(absolute);
   if(name==='/index.html'){
-   // The application may use a CDN, but its CI visual oracle must be
-   // deterministic and must not depend on a third-party network response.
-   let html=content.toString('utf8');
-   const cdn='https://cdn.jsdelivr.net/npm/three@0.182.0/';
-   assert.ok(html.includes(cdn),'Expected pinned Three.js import map');
-   html=html.replaceAll(cdn,'/node_modules/three/');
-   content=Buffer.from(html);
+   const html=content.toString('utf8');
+   assert.match(html,/"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
+   assert.doesNotMatch(html,/cdn\.jsdelivr\.net|unpkg\.com/,'the deployed page must resolve Three.js locally');
   }
   if(name==='/crystal-app.js'){
    let source=content.toString('utf8');
    // Test-only hooks inserted into the served module, not the distributed file.
    const bootstrapMarker='// @kristalyapi/browser-bootstrap:';
    assert.ok(source.includes(bootstrapMarker),'Expected app bootstrap marker');
-   source=source.replace(bootstrapMarker,
-    'window.__visualTest={select:ids=>{selected=[...ids];drawSelection();},repeat:()=>[...state.rep],instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==="bonds").length}),bounds:()=>state.bounds.map(a=>[...a]),stressAtoms:()=>{resetVolume();state.sites=Array.from({length:60},(_,i)=>({symbol:"Si",label:"Si"+i,x:(i%5)/5,y:(Math.floor(i/5)%4)/4,z:Math.floor(i/20)/3,occupancy:1}));state.rep=[6,6,6];state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;state.bonds=false;state.poly="";state.style="ball";state.labels=false;state.morphology=[];state.overlays=[];state.plane.visible=false;state.plane.slab=false;state.adpVisible=false;build();return {atoms:atomData.length,meshes:atomMesh.length,instances:atomMesh.reduce((n,m)=>n+m.count,0)};}};\n'+bootstrapMarker);
+   source=source.replace(bootstrapMarker,`
+window.__visualTest={
+ select:ids=>{selected=[...ids];drawSelection();},
+ repeat:()=>[...state.rep],
+ instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==='bonds').length}),
+ bounds:()=>state.bounds.map(a=>[...a]),
+ polyStats:()=>({center:state.poly,meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
+  edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
+  count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
+  notice:document.getElementById('notice').textContent}),
+ perovskitePolys:()=>{resetVolume();loadPreset('perovskite');state.rep=[5,5,5];state.style='poly';state.poly='';
+  state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
+ perovskiteWithoutNeighbors:()=>{state.poly='Ba';build();return window.__visualTest.polyStats();},
+ stressAtoms:()=>{resetVolume();state.sites=Array.from({length:60},(_,i)=>({symbol:'Si',label:'Si'+i,x:(i%5)/5,y:(Math.floor(i/5)%4)/4,z:Math.floor(i/20)/3,occupancy:1}));
+  state.rep=[6,6,6];state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;state.bonds=false;state.poly='';state.style='ball';
+  state.labels=false;state.morphology=[];state.overlays=[];state.plane.visible=false;state.plane.slab=false;state.adpVisible=false;build();
+  return {atoms:atomData.length,meshes:atomMesh.length,instances:atomMesh.reduce((n,m)=>n+m.count,0)};}
+};
+`+bootstrapMarker);
    content=Buffer.from(source);
   }
   // Chromium refuses native ES modules served as application/octet-stream.
@@ -105,15 +118,21 @@ try{
   '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
  ]});
  const page=await browser.newPage({viewport:{width:1480,height:920},deviceScaleFactor:1});
- const errors=[],consoleErrors=[];
+ const errors=[],consoleErrors=[],cdnRequests=[];
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
+ page.on('request',request=>{if(/cdn\.jsdelivr\.net|unpkg\.com/.test(request.url()))cdnRequests.push(request.url());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  // English is the default; Turkish remains selectable and persisted.
  await page.waitForFunction(()=>document.documentElement.lang==='en');
  assert.equal(await page.locator('#libraryNav').textContent(),'Library');
  assert.equal(await page.locator('#languageEnglish').getAttribute('aria-pressed'),'true');
+ await page.locator('#openBtn').click();
+ assert.equal(await page.locator('[data-open-tab="examples"]').getAttribute('aria-selected'),'true',
+  'with no favorites the Open dialog must start on populated sample structures');
+ assert.equal(await page.locator('#openList .open-item').count(),7);
+ await page.locator('#openModalClose').click();
  await page.locator('#languageTurkish').click();
  assert.equal(await page.locator('#libraryNav').textContent(),'Kütüphane');
  assert.equal(await page.locator('html').getAttribute('lang'),'tr');
@@ -604,6 +623,19 @@ try{
  await page.locator('#pngScale').selectOption('2');
  const [pngDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="png"]').click()]);
  assert.match(pngDownload.suggestedFilename(),/\d+x\d+\.png$/);
+ const output=await fs.readFile(await pngDownload.path());
+ const [,exportWidth,exportHeight]=pngDownload.suggestedFilename().match(/_(\d+)x(\d+)\.png$/)||[];
+ assert.equal(output.readUInt32BE(16),Number(exportWidth),'the PNG IHDR width must match requested buffer size');
+ assert.equal(output.readUInt32BE(20),Number(exportHeight),'the PNG IHDR height must match requested buffer size');
+ await page.setViewportSize({width:1024,height:768});
+ await page.locator('#saveBtn').click();
+ await page.locator('#pngScale').selectOption('4');
+ const rect4=await page.locator('#stage').boundingBox();
+ const [png4]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="png"]').click()]);
+ const output4=await fs.readFile(await png4.path());
+ assert.equal(output4.readUInt32BE(16),Math.round(rect4.width*4),'4× screenshot width must not be clamped');
+ assert.equal(output4.readUInt32BE(20),Math.round(rect4.height*4),'4× screenshot height must not be clamped');
+ await page.setViewportSize({width:1480,height:920});
  await save(page,'26-polyhedron-per-site-instanced',metrics);
  await page.locator('[data-right-tool="xrd"]').click();
  assert.equal(await page.locator('#fcfMapAdd').isVisible(),true);
@@ -615,10 +647,23 @@ try{
  await page.locator('#fcfMapAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeActiveDataset option').length===1);
  assert.match(await page.locator('#fcfStatus').textContent(),/yansıma kullanıldı/);
+ const polyhedra=await page.evaluate(()=>window.__visualTest.perovskitePolys());
+ assert.deepEqual({center:polyhedra.center,count:polyhedra.count,meshes:polyhedra.meshes,edges:polyhedra.edges},
+  {center:'Ti',count:125,meshes:1,edges:1},'5×5×5 BaTiO3 should render all 125 Ti octahedra in two draw objects');
+ await page.waitForFunction(()=>document.querySelector('#polyElement option:checked')?.textContent.includes('centered polyhedron'));
+ await page.evaluate(()=>window.__visualTest.select([0]));
+ await page.waitForFunction(()=>document.querySelector('#measureList .measure-item .muted')?.textContent.includes('Fractional:'));
+ assert.match(await page.locator('#measureList .measure-item .muted').textContent(),/occupancy:/);
+ await save(page,'28-perovskite-125-polyhedra',metrics);
+ const emptyPoly=await page.evaluate(()=>window.__visualTest.perovskiteWithoutNeighbors());
+ assert.equal(emptyPoly.count,0);
+ await page.waitForFunction(()=>document.getElementById('notice')?.textContent.includes('has no polyhedron'));
+ assert.match(await page.locator('#notice').textContent(),/Ba has no polyhedron/);
  const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
  assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
   'thousands of displayed atoms should occupy one instanced draw group');
  assert.deepEqual(errors,[],'uncaught browser exceptions');
+ assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);
 } finally {
