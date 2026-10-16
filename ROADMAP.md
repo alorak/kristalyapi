@@ -19,10 +19,10 @@ Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirm
 
 | Başlık | Eklenen kapsam | Bilimsel ve teknik sınır |
 | --- | --- | --- |
-| Hacimsel matematik | Kaynak fiziksel tür/birim seçimiyle CUBE/XSF yoğunluk/potansiyel normalizasyonu; güvenli `A+k·B`, farklı çözünürlükte trilineer örnekleme ve işaretli maksimum/minimum eşikleri | Kaynağın gerçekten seçilen niceliği taşıdığını kullanıcı doğrular; belirsiz tür aritmetiğe alınmaz; 2,5 milyon voksel sınırı geçerli |
+| Hacimsel matematik | Kaynak fiziksel tür/birim seçimiyle CUBE/XSF yoğunluk/potansiyel normalizasyonu; tek adımda `A + k₁B + k₂C`, farklı çözünürlükte trilineer örnekleme ve işaretli maksimum/minimum eşikleri | Kaynağın gerçekten seçilen niceliği taşıdığını kullanıcı doğrular; belirsiz tür aritmetiğe alınmaz; 2,5 milyon voksel sınırı geçerli |
 | Miller kesitleri | Kristalin gerçek karşı-örgü metriğiyle `(hkl)` yönlü 2B sayısal kesit, ızgara sınırlarına kırpma, PNG/CSV ve kontur | Hesaplanan kesit veri olmayan alanda extrapolasyon yapmaz; inceleme çözünürlüğü sınırlıdır |
-| Kinematik saçılma | 98 nötr element için IT92 X-ışını form faktörü; 90 element için koherent nötron uzunluğu, tam Kartezyen ADP, isteğe bağlı Bragg–Brentano LP | İyonik form faktörleri, anomal katkı, özel izotoplar, pik profili/absorpsiyon ve Rietveld yok |
-| Türetilmiş model haritası | Hesaplanan `F(hkl)` ile 16³/24³ periyodik Fourier/Patterson ters dönüşümü | Fobs/Fo−Fc değildir; sonlu yansıma kesimi ve Gibbs artefaktları vardır |
+| Kinematik saçılma | 98 nötr element için IT92 X-ışını form faktörü; 90 element için koherent nötron uzunluğu, tam Kartezyen ADP, isteğe bağlı X-ışını LP / sabit-λ nötron Lorentz ve güçlü absorplayıcı uyarısı | İyonik form faktörleri, anomal katkı, özel izotoplar, kompleks nötron düzeltmesi, pik profili/absorpsiyon ve Rietveld yok |
+| Türetilmiş model haritası | `d_min` Å çözünürlük küresi ve 16³/32³/64³ radix-2 FFT ile model `F(hkl)` Fourier/Patterson | Fobs/Fo−Fc değildir; Nyquist/hesaplama bütçesi ve Gibbs artefaktları sınırlayıcıdır |
 | Voronoi | E/Å³ periyodik elektron yoğunluğunda en yakın çekirdeğe sayısal integral ve CSV | Bader sıfır-akı havzaları değildir; örnekleme ve site limiti nedeniyle yakınsama gerektirir |
 | Madelung | Açık iyon yükleriyle nötr P1 hücrede gerçek/karşı-uzay + self terimli Ewald, site potansiyeli ve eV/cell | Noktasal iyon modeli; kısmi doluluk, polarizasyon/dielektrik etki ve elektronik yapı yok |
 | Dosya kapsamı | PDB/ENT CRYST1 hücre+Hermann–Mauguin grup eşleme, ATOM/HETATM element hizalaması, ilk MODEL, ANISOU; PDB P1 dışa aktarımı | Tanınmayan space group güvenli uyarıyla P1 kalır; geniş biyomoleküler topoloji ve `.vesta` tamamlanmadı |
@@ -36,7 +36,14 @@ Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirm
 - **Simetri/site kimliği:** Genişletilmiş atomlarda asimetrik kaynak site ve simetri işlemi indeksi; Madelung yük ve Voronoi raporlarını kullanıcıdaki kaynak atom etiketiyle eşleme.
 - **Arayüz:** Görünür kesirli sınırlar, birim hücre ve süperhücre gibi ayrı başlıklı bölüm.
 
-**Paket B sonraki aşamadır:** Nötron Lorentz/absorpsiyon, Fourier `d_min` + FFT/64³, üç kaynaklı Δρ, PAW/AECCAR uyarıları ve PDB element alanı dışa aktarım uyumu.
+### Paket B · sayısal modeller ve arayüz (Ekim 2026)
+
+- Sabit dalga boylu nötron için polarizasyonsuz Lorentz; B, Cd, Sm, Eu, Gd'de kompleks koherent b ve absorpsiyon ihmal uyarısı. Gerçek absorpsiyon düzeltmesi yapılmaz.
+- Fourier/Patterson için karşı-uzay `d_min` küresi ve radix-2 FFT ile 16³, 32³, 64³ örnekleme; Nyquist hatası ve hesaplama bütçesi koruması.
+- Fark alanı için isteğe bağlı C kaynağıyla `A + k₁B + k₂C`, tek örnekleme geçişi ve fiziksel birim/çerçeve kontrolü.
+- PAW/CHGCAR ve AECCAR0 + AECCAR2 sınırlama uyarısı; PDB 77–78 element sütununda iki harfli büyük element sembolü.
+- **Görünür kesirli sınırlar** sayı kutuları, kompakt yuvarlatılmış/focus vurgulu stile geçirildi.
+- CIF doğrulama çalıştırıcısı, modüler `crystal-app.js` kaynak dosyasından tarayıcı başlangıç sınırına kadar ayrıştırıcıyı alacak şekilde güncellendi; kapalı-sınır davranışı korunuyor.
 
 **Kalan P1 önceliği:** deneysel Fobs/MTZ kaynağı ve doğrulaması; özgül izotop/anomal saçılma; yüksek performanslı büyük-ızgara analizi; gelişmiş CIF/mCIF/PDB ve VESTA proje biçimi; manyetik moment vektörleri; ayrıntılı Hall setting/orijin dönüşümleri.
 

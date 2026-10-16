@@ -368,7 +368,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
     <label class="field compact"><span>2θ üst sınır (°)</span><input id="xrdAngle" type="number" min="15" max="150" step="5" value="90"></label>
    </div>
-   <label class="check"><input id="xrdLp" type="checkbox"> Bragg–Brentano Lorentz–polarizasyon düzeltmesi (yalnız X-ışını)</label>
+   <label class="check"><input id="xrdLp" type="checkbox"> Sabit dalga boylu toz düzeltmesi (X-ışını: LP; nötron: Lorentz)</label>
    <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
    <div id="xrdSummary" class="note">Hesaplama bekleniyor.</div>
    <svg id="xrdChart" viewBox="0 0 440 180" role="img" aria-label="Hesaplanan toz kırınımı çubuk grafiği" style="display:block;width:100%;min-height:150px;border:1px solid #dce5f1;border-radius:8px;background:white"></svg>
@@ -377,11 +377,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="note"><strong>Model Fourier / Patterson haritası</strong>
     <div class="triple">
      <label class="field compact"><span>Hesap türü</span><select id="xrdMapKind"><option value="density">Model yoğunluğu</option><option value="patterson">Patterson (|F|²)</option></select></label>
-     <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMapIndex" type="number" min="1" max="3" step="1" value="2"></label>
-     <label class="field compact"><span>Izgara N³</span><select id="xrdMapSize"><option value="16">16³</option><option value="24">24³</option></select></label>
+     <label class="field compact"><span>Çözünürlük d_min (Å)</span><input id="xrdMapResolution" type="number" min="0.35" max="50" step="0.1" value="1.2"></label>
+     <label class="field compact"><span>Izgara N³</span><select id="xrdMapSize"><option value="16">16³</option><option value="32" selected>32³</option><option value="64">64³</option></select></label>
     </div>
     <button type="button" id="xrdMapAdd">Hacimsel katman olarak hesapla</button>
-    <p class="hint">Bu harita yalnızca mevcut modelin hesaplanan F(hkl) değerlerinden, sınırlı indis aralığında ters Fourier toplamıdır. Ölçülmüş Fobs veya deneysel fark yoğunluğu değildir; halkalanma ve sınırlı çözünürlük artefaktları oluşabilir.</p>
+    <p class="hint">d_min Å cinsinden küresel yansıma sınırıdır. FFT ile 16³–64³ periyodik ızgara hesaplanır; Nyquist çözünürlüğü aşılırsa işlem durur. Bu harita model F(hkl) değerlerinden üretilir; Fobs veya deneysel fark yoğunluğu değildir.</p>
    </div>
    <p class="hint">Gösterilen çizgiler ideal kinematik yansımalardır; gerçek toz difraktogramının pik genişliğini, izotop oranı belirsizliğini veya ölçüm geometrisini tam olarak modellemez.</p>
   </div>
@@ -403,19 +403,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="stack">
      <button id="openVolume" class="primary">Hacimsel veri yükle</button>
      <input id="volumeAdditionalFile" type="file" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
-     <button id="openAdditionalVolume" type="button">+ Bir alan daha yükle (en fazla 4)</button>
+     <button id="openAdditionalVolume" type="button">+ Bir alan daha yükle (en fazla 5)</button>
      <div id="volumeDatasets" class="volume-layer-list" aria-label="Hacimsel veri katmanları"></div>
      <label class="field"><span>Aktif alan (kesit ve izodeğer kaynağı)</span><select id="volumeActiveDataset"></select></label>
      <label class="field"><span>İkinci alan (renklendirme için)</span><select id="volumeColorDataset"><option value="">Yok</option></select></label>
      <p id="volumeFrameStatus" class="hint">İkinci alan yüklenmedi. Eşleştirme aynı uzaysal koordinat çerçevesine göre denetlenir.</p>
-     <div class="note"><strong>Türetilmiş alan · A + k·B</strong>
-      <div class="triple">
+     <div class="note"><strong>Türetilmiş alan · A + k₁B + k₂C</strong>
+      <div class="volume-math-grid">
        <label class="field compact"><span>A alanı</span><select id="volumeMathA"></select></label>
        <label class="field compact"><span>B alanı</span><select id="volumeMathB"></select></label>
-       <label class="field compact"><span>k katsayısı</span><input id="volumeMathK" type="number" step="0.1" min="-10" max="10" value="-1"></label>
+       <label class="field compact"><span>k₁ katsayısı</span><input id="volumeMathK" type="number" step="0.1" min="-10" max="10" value="-1"></label>
+       <label class="field compact"><span>C alanı (isteğe bağlı)</span><select id="volumeMathC"><option value="">Yok</option></select></label>
+       <label class="field compact"><span>k₂ katsayısı</span><input id="volumeMathK2" type="number" step="0.1" min="-10" max="10" value="-1" disabled></label>
       </div>
       <button type="button" id="volumeMathAdd">Türetilmiş alan oluştur</button>
-      <p class="hint">Fark yoğunluğu için k = −1. Yalnız aynı birim ve uzaysal kapsamdaki alanlarda, B alanı A noktalarına trilineer örneklenir. Sonuç bağımsız bir katmandır.</p>
+      <p class="hint">Δρ için k₁ = k₂ = −1 seçin; C boşsa A + k₁B hesaplanır. Aynı fiziksel nicelik, birim ve uzaysal kapsama gerekir. B ve C gerektiğinde A ızgarasına örneklenir; ara alan oluşturulmaz.</p>
      </div>
      <div class="note"><strong>3B tepe / çukur araması</strong>
       <div class="triple">
@@ -428,6 +430,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      </div>
      <div class="note"><strong>Sayısal Voronoi integrali</strong>
       <p class="hint">Periyodik, hücreyle hizalı elektron yoğunluğunu en yakın çekirdeğe böler. Yükler e birimindedir; bu yöntem Bader analizi değildir. Büyük ızgaralar en fazla 12.000 örnek noktasıyla yaklaşık integrallenir.</p>
+      <p class="volume-science-warning">PAW / VASP notu: CHGCAR genellikle valans yoğunluğudur; çekirdek bölgesinde tüm-elektron yoğunluğunu temsil etmez. AECCAR0 + AECCAR2 referansı Bader analizleri için önemlidir. Buradaki Voronoi yüklerini Bader yükleriyle eşdeğer saymayın.</p>
       <div class="actionrow"><button type="button" id="volumeVoronoi">Site başına yükü hesapla</button><button type="button" id="volumeVoronoiCsv">CSV indir</button></div>
       <div id="volumeVoronoiResults" class="hint" aria-live="polite">İşlem bekleniyor.</div>
      </div>
