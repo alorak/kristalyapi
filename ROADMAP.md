@@ -45,7 +45,16 @@ Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirm
 - **Görünür kesirli sınırlar** sayı kutuları, kompakt yuvarlatılmış/focus vurgulu stile geçirildi.
 - CIF doğrulama çalıştırıcısı, modüler `crystal-app.js` kaynak dosyasından tarayıcı başlangıç sınırına kadar ayrıştırıcıyı alacak şekilde güncellendi; kapalı-sınır davranışı korunuyor.
 
-**Kalan P1 önceliği:** deneysel Fobs/MTZ kaynağı ve doğrulaması; özgül izotop/anomal saçılma; yüksek performanslı büyük-ızgara analizi; gelişmiş CIF/mCIF/PDB ve VESTA proje biçimi; manyetik moment vektörleri; ayrıntılı Hall setting/orijin dönüşümleri.
+### Paket B sonrası · P1 açığı kapatma (Ekim 2026)
+
+- **PDB güvenilirlik uyarısı:** CRYST1 grubu eşlenemediğinde XRD/Fourier/Ewald sonuçlarının bağımsız doğrulama olmadan güvenilir sayılamayacağı TR/EN olarak belirtildi.
+- **VASP CHGCAR spin:** İlk toplam-yük bloğundan sonra augmentation kayıtları arasından tekrar eden ızgara başlıkları okunarak kollineer `m_z` veya nonkollineer `m_x/m_y/m_z` alanları ayrı veri kaynakları olarak gösterilir; hücre hacmi normalizasyonu ve fiziksel nicelik türü korunur. VASP'ın spinor ekseni `SAXIS` bilgisi CHGCAR tek başına içinden elde edilemez.
+- **Δρ integral kontrolü:** `A + k₁B + k₂C` sonucu için periyodik örneklem toplamı veya uç noktası dahil ızgarada 3B trapezle `∫Δρ dV` ve birim yazdırılır; nicelik/birim uyuşmazlığı engellenir.
+- **Tepe bulma:** Ayrı `f=(u,v,w)` çıktısı ve CSV; komşu örneklerden üç eksenli parabolik alt-voksel tahmin; hücreyle hizalı periyodik veride tanınan simetri setting'inden eşdeğer tepe eleme. Tam Hessian yaklaşımı veya rastgele uzay grupları için otomatik hacim simetrileştirmesi değildir.
+- **SHELX `.fcf`:** Hkl + gözlenen `F²/F` + hesaplanan faz ile deneysel genlikten model-fazlı Fo; hesaplanan `F²/F` varsa Fo−Fc FFT katmanı. Fazı olmayan FCF, hücre/simetri/ölçek bakımından şüpheli veri veya Nyquist dışı istemler için güvenli sınırlamalar ve uyarılar.
+- **Manyetik mCIF:** `Cartn` ve `crystalaxis` moment üçlüleri; `_space_group_symop_magn_operation.xyz` / `_space_group_symop_magn_centering.xyz` ile 3B eksenel dönüşüm ve zaman tersleme. 600 ok sınırıyla manyetik moment katmanı; proje kaydı ve P1 açık site-moment `.mcif` dışa aktarımı. Kapsam **manyetik kırınım / BNS katalog / modüle yapı / superspace / SAXIS dönüşümünü içermez**.
+
+**Kalan P1 önceliği:** deneysel `.mtz` (ve fazsız FCF için faz çözümü değil, dışarıdan model-faz eşleme) ve nicel FCF ölçek/doğrulama; özgül izotop/anomal saçılma; geniş referans testleri, tam BNS manyetik gruplar, spinor ekseni/SAXIS dönüşümü, Hall setting/orijin ve VESTA proje biçimi.
 
 Bu plan gerçek VESTA özellikleriyle statik HTML/CSS/JavaScript tabanlı tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a; 3B görüntü Three.js CDN'ine bağlıdır.
 

@@ -263,8 +263,20 @@ function readChgcar(src){
  if(dims.length!==3||dims.some(n=>!Number.isInteger(n)||n<2))throw Error('CHGCAR ızgara boyutu geçersiz.');
  const count=dims.reduce((a,b)=>a*b,1);
  if(count>VOLUME_MAX_VOXELS)throw Error('CHGCAR ızgarası çok büyük.');
- const numbers=lines.slice(p).join(' ').trim().split(/\s+/);
- if(numbers.length<count)throw Error('CHGCAR ızgara verisi eksik.');
+ const readBlock=start=>{
+  const numbers=[];let cursor=start;
+  while(numbers.length<count&&cursor<lines.length){
+   const row=lines[cursor++];if(!row)continue;
+   const tokens=row.split(/\s+/);
+   if(tokens.some(t=>!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?$/.test(t)))
+    throw Error('CHGCAR sayısal yoğunluk bloğu eksik veya kesintili.');
+   if(numbers.length+tokens.length>count)throw Error('CHGCAR yoğunluk bloğu boyutu geçersiz.');
+   numbers.push(...tokens);
+  }
+  if(numbers.length!==count)throw Error('CHGCAR ızgara verisi eksik.');
+  return {numbers,next:cursor};
+ };
+ const primary=readBlock(p),numbers=primary.numbers;
  // VASP order: x fastest; physical charge density is raw CHGCAR / cell volume.
  const values=new Float32Array(count);
  for(let k=0;k<dims[2];k++)for(let j=0;j<dims[1];j++)for(let i=0;i<dims[0];i++){
@@ -273,6 +285,30 @@ function readChgcar(src){
  const axes=B.map((v,d)=>v.map(x=>x/dims[d]));
  const g=volumeGrid(dims,[0,0,0],axes,values,'CHGCAR','e/Å³ (CHGCAR / V)');
  g.title=lines[0]||'VASP CHGCAR';g.periodic=true;
+ // VASP may insert PAW augmentation occupancies between the total-density
+ // grid and one collinear / three noncollinear magnetization grids. Only an
+ // exact, standalone repeat of the grid dimensions starts a new grid.
+ const magnetic=[];let cursor=primary.next;
+ for(let row=cursor;row<lines.length&&magnetic.length<3;row++){
+  const candidate=lines[row].split(/\s+/).map(Number);
+  if(candidate.length!==3||candidate.some((n,i)=>n!==dims[i]))continue;
+  try{
+   const block=readBlock(row+1),data=new Float32Array(count);
+   for(let k=0;k<dims[2];k++)for(let j=0;j<dims[1];j++)for(let i=0;i<dims[0];i++)
+    data[(i*dims[1]+j)*dims[2]+k]=volumeNumber(block.numbers[(k*dims[1]+j)*dims[0]+i])/cellVolume;
+   magnetic.push(data);row=block.next-1;
+  }catch(error){if(/sayısal yoğunluk bloğu|ızgara verisi/.test(error.message))continue;throw error;}
+ }
+ if(magnetic.length===2)throw Error('CHGCAR nonkollineer manyetizasyon üç bileşen (m_x,m_y,m_z) gerektirir; eksik blok bulundu.');
+ if(magnetic.length){
+  const axesNames=magnetic.length===1?['z']:['x','y','z'];
+  g.spinComponents=magnetic.map((data,i)=>{
+   const spin=volumeGrid(dims,[0,0,0],axes,data,'CHGCAR-SPIN','μB/Å³');
+   spin.quantity='magnetization';spin.periodic=true;spin.component=axesNames[i];
+   return {axis:axesNames[i],grid:spin};
+  });
+  g.spinMode=magnetic.length===1?'collinear':'noncollinear';
+ }
  if(symbols&&symbols.length===counts.length&&counts.reduce((a,b)=>a+b,0)<=1000){
   const sites=[],vectors=B.map(v=>new THREE.Vector3(...v));let rowIndex=0;
   for(let e=0;e<symbols.length;e++)for(let i=0;i<counts[e];i++){
@@ -426,9 +462,22 @@ function linearVolumeCombination3(a,b,c,k1=-1,k2=-1){
  result.derivation={coefficients:[k1,k2],resampled:[!sameB,!sameC]};
  return result;
 }
+/* Integrate sampled scalar fields over Cartesian volume. Periodic arrays do
+   not repeat the endpoint; nonperiodic endpoint grids use trapezoid weights. */
+function volumeIntegral(g){
+ if(!g||!g.values||g.values.length!==g.dims.reduce((x,n)=>x*n,1))throw Error('İntegral için geçerli 3B veri gerekli.');
+ const dV=Math.abs(volumeDot(g.axes[0],volumeCross(g.axes[1],g.axes[2])));
+ let sum=0;
+ for(let i=0;i<g.dims[0];i++)for(let j=0;j<g.dims[1];j++)for(let k=0;k<g.dims[2];k++){
+  const weight=g.periodic?1:[i,j,k].reduce((w,n,a)=>w*((n===0||n===g.dims[a]-1)?0.5:1),1);
+  sum+=g.values[gridIndex(g,i,j,k)]*weight;
+ }
+ return {value:sum*dV,voxelVolume:dV,method:g.periodic?'periyodik voksel toplamı':'3B trapez integrali',
+  units:g.quantity==='density'?'e':g.quantity==='magnetization'?'μB':g.units+'·Å³'};
+}
 /* Strict 26-neighbour local extrema, periodic wrapped only when the input grid
    is periodic. Flat plateaus yield one deterministic representative. */
-function volumeFindPeaks(g,{mode='max',threshold=0,limit=12}={}){
+function volumeFindPeaks(g,{mode='max',threshold=0,limit=12,refine=true,mergeSymmetry=false,cell=null,sgSetting=null}={}){
  if(!g||!['max','min'].includes(mode)||!Number.isFinite(threshold)||
   !Number.isInteger(limit)||limit<1||limit>50)throw Error('Geçersiz tepe arama parametresi.');
  const d=g.dims,periodic=!!g.periodic,peaks=[];
@@ -449,15 +498,47 @@ function volumeFindPeaks(g,{mode='max',threshold=0,limit=12}={}){
    if(mode==='max'?value>other:value<other)strict=true;
   }
   if(!extremum||!strict)continue;
-  const world=volumeWorld(g,i,j,k);
-  peaks.push({i,j,k,x:world[0],y:world[1],z:world[2],value});
+  // Independent three-point parabolic vertex along each grid direction. It
+  // captures a sub-voxel extremum without falsely claiming a 3D Hessian fit.
+  const shift=[0,1,2].map(axis=>{
+   if(!refine)return 0;
+   const n=d[axis],atAxis=[i,j,k][axis];
+   if(!periodic&&(atAxis===0||atAxis===n-1))return 0;
+   const neighbours=[-1,1].map(delta=>{
+    const xyz=[i,j,k];xyz[axis]=(atAxis+delta+n)%n;
+    return g.values[gridIndex(g,...xyz)];
+   });
+   const denom=neighbours[0]-2*value+neighbours[1];
+   return Math.abs(denom)>1e-10?clamp(.5*(neighbours[0]-neighbours[1])/denom,-.5,.5):0;
+  });
+  const pos=[i+shift[0],j+shift[1],k+shift[2]],world=volumeWorld(g,...pos);
+  const gridFraction=pos.map((n,a)=>periodic?frac(n/d[a]):n/(d[a]-1));
+  peaks.push({i,j,k,x:world[0],y:world[1],z:world[2],value,
+   gridFraction,shift,refined:!!refine});
  }
  peaks.sort((a,b)=>mode==='max'?b.value-a.value:a.value-b.value);
- return peaks.slice(0,limit);
+ if(!mergeSymmetry)return peaks.slice(0,limit);
+ if(!periodic||!cell||!sgSetting)throw Error('Simetri eşdeğerleri için hücreyle hizalı periyodik veri gerekli.');
+ const B=basis(cell),tol=1e-4;
+ if(g.origin.some(v=>Math.abs(v)>tol)||g.axes.some((axis,i)=>axis.some((v,j)=>
+  Math.abs(v*d[i]-B[i].toArray()[j])>tol)))
+  throw Error('Tepe simetrisi için hacimsel alan ile hücre metriği eşleşmeli.');
+ const ops=settingOps(sgSetting),minDistance=Math.max(...g.axes.map(a=>Math.hypot(...a)))*.6;
+ const accepted=[];
+ for(const peak of peaks){
+  if(accepted.some(first=>ops.some(([op,shiftText])=>{
+   const target=applySymmetry(op,first.gridFraction).map((x,i)=>frac(x+rational(shiftText.split(',')[i])));
+   const delta=target.map((x,i)=>{const v=x-peak.gridFraction[i];return v-Math.round(v);});
+   return toCart(delta,B).length()<minDistance;
+  })))continue;
+  accepted.push(peak);if(accepted.length>=limit)break;
+ }
+ return accepted;
 }
 function volumePeaksCsv(peaks,units){
- return ['i,j,k,x_A,y_A,z_A,value_'+String(units).replace(/[^a-zA-Z0-9]/g,'_'),
-  ...peaks.map(p=>[p.i,p.j,p.k,p.x,p.y,p.z,p.value].map(v=>Number(v).toPrecision(10)).join(','))].join('\n')+'\n';
+ return ['i,j,k,x_A,y_A,z_A,value_'+String(units).replace(/[^a-zA-Z0-9]/g,'_')+',frac_u,frac_v,frac_w,offset_i,offset_j,offset_k',
+  ...peaks.map(p=>[p.i,p.j,p.k,p.x,p.y,p.z,p.value,...p.gridFraction,...p.shift]
+   .map(v=>Number(v).toPrecision(10)).join(','))].join('\n')+'\n';
 }
 /* Numerical nearest-nucleus Voronoi partition on a periodic density grid.
    Not a Bader topology partition; block samples retain physical voxel weights. */
@@ -906,6 +987,11 @@ async function loadVolumeFile(file,asPotential=false,additional=false){
  const parsed=interpretVolumeUnits(raw,$('volumeImportUnits').value,
   {periodic:$('volumeImportPeriodic').checked});
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen yeniden yükleyin.');
+ const incomingFields=1+(parsed.spinComponents?.length||0);
+ if(!asPotential&&incomingFields+(additional?volumeDatasets.length:0)>VOLUME_DATASET_LIMIT)
+  throw Error('CHGCAR spin bileşenleri için en fazla beş alan sınırı aşıldı.');
+ if(additional&&parsed.spinComponents?.some(item=>!volumeGridCompatible(densityGrid,item.grid)))
+  throw Error('CHGCAR spin bileşenlerinin ızgara çerçevesi uyuşmuyor.');
  if(asPotential){
   if(!densityGrid)throw Error('Önce ana hacimsel veri dosyasını yükleyin.');
   if(!volumeGridCompatible(densityGrid,parsed))throw Error('Potansiyel alanı uzaysal koordinat sınırlarıyla uyumsuz.');
@@ -913,11 +999,17 @@ async function loadVolumeFile(file,asPotential=false,additional=false){
  }else if(additional){
   if(!densityGrid)throw Error('Önce ana alanı yükleyin.');
   addVolumeDataset(parsed,file.name);
+  if(parsed.spinComponents){
+   parsed.spinComponents.forEach(component=>addVolumeDataset(component.grid,file.name+' · m_'+component.axis));
+  }
   volumeColorIndex='';potentialGrid=null;$('volumePotential').checked=false;
   volumeSyncIsoControls();
  }else{
   clearVolumeLayer();volumeDatasets=[];densityGrid=null;potentialGrid=null;volumeColorIndex='';
   addVolumeDataset(parsed,file.name);
+  if(parsed.spinComponents){
+   parsed.spinComponents.forEach(component=>addVolumeDataset(component.grid,'CHGCAR · m_'+component.axis));
+  }
   $('volumePotential').checked=false;
   if(parsed.crystal&&$('volumeLoadAtoms').checked){
    state={...state,name:parsed.crystal.name,detail:parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
@@ -933,6 +1025,7 @@ async function loadVolumeFile(file,asPotential=false,additional=false){
 }
 function resetVolume(){
  clearVolumeLayer();densityGrid=null;potentialGrid=null;volumeDatasets=[];activeVolumeIndex=0;volumeColorIndex='';
+ $('volumeMathIntegral').textContent='Hacim integrali henüz hesaplanmadı.';
  lastVolumePeaks=null;$('volumePeakResults').textContent='Önce bir alan yükleyin.';
  lastVoronoi=null;$('volumeVoronoiResults').textContent='İşlem bekleniyor.';
  volumeView.mode='off';$('volumeMode').value='off';$('volumePotential').checked=false;
@@ -982,6 +1075,9 @@ function initVolumeControls(){
    const label=a.name+(k<0?' − ':' + ')+Math.abs(k)+'×'+b.name+
     (c?(k2<0?' − ':' + ')+Math.abs(k2)+'×'+c.name:'');
    addVolumeDataset(derived,label);lastVolumePeaks=null;
+   const integral=volumeIntegral(derived);
+   $('volumeMathIntegral').textContent='∫(A + k₁B'+(c?' + k₂C':'')+') dV = '+
+    integral.value.toPrecision(7)+' '+integral.units+' · '+integral.method;
    $('volumePeakResults').textContent='Yeni alan için tepe araması yapılmadı.';
    volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
   }catch(error){inform('Alan aritmetiği: '+error.message);}
@@ -992,11 +1088,12 @@ function initVolumeControls(){
    if(!densityGrid)throw Error('Önce hacimsel alan yükleyin.');
    const mode=$('volumePeakMode').value;
    const peaks=volumeFindPeaks(densityGrid,{mode,threshold:Number($('volumePeakThreshold').value),
-    limit:Number($('volumePeakCount').value)});
+    limit:Number($('volumePeakCount').value),refine:$('volumePeakRefine').checked,
+    mergeSymmetry:$('volumePeakMerge').checked,cell:state.cell,sgSetting:state.sgSetting});
    lastVolumePeaks={peaks,grid:densityGrid};
    $('volumePeakResults').textContent=peaks.length?
     peaks.map((p,i)=>(i+1)+'. '+p.value.toPrecision(5)+' '+densityGrid.units+' · ('+
-     [p.x,p.y,p.z].map(v=>v.toFixed(3)).join(', ')+') Å').join('\n'):
+     [p.x,p.y,p.z].map(v=>v.toFixed(3)).join(', ')+') Å · f=('+p.gridFraction.map(v=>v.toFixed(4)).join(', ')+')').join('\n'):
     'Bu eşikte iç ızgara noktalarında yerel ekstremum bulunamadı.';
    $('volumePeakResults').style.whiteSpace='pre-line';
   }catch(error){inform('Tepe araması: '+error.message);}
@@ -2135,6 +2232,7 @@ function renderOverlayList(){
 
 const LAYER_TYPES=[
  ['atoms','Atomlar','#467bb9'],['ellipsoids','Termal elipsoitler','#568bc5'],
+ ['magnetic','Manyetik momentler','#da7591'],
  ['bonds','Bağlar','#98a5b0'],['polyhedra','Koordinasyon çokyüzlüleri','#54a1db'],
  ['morphology','Kristal morfolojisi','#67a6d5'],['overlays','Diğer kristal fazları','#8c5bba'],
  ['cell','Birim hücre','#74869a'],['miller','Miller düzlemleri','#40b7d5'],
@@ -2271,6 +2369,16 @@ function build(){
   instances.forEach((item,i)=>{instanceDummy.position.copy(item.pos);instanceDummy.quaternion.identity();instanceDummy.scale.setScalar(item.size);instanceDummy.updateMatrix();mesh.setMatrixAt(i,instanceDummy.matrix);mesh.setColorAt(i,new THREE.Color(item.color));});
   mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
   addLayerObject(mesh,'atoms');atomMesh.push(mesh);
+ }
+ let magneticArrows=0;
+ for(let i=0;i<entry.length&&magneticArrows<600;i++){
+  const item=entry[i],moment=item.site.magneticMoment;
+  if(!atomRender[i].visible||!Array.isArray(moment))continue;
+  const m=new THREE.Vector3(...moment),norm=m.length();
+  if(norm<1e-7)continue;
+  const length=Math.min(1.8,.4+.28*norm),dir=m.normalize();
+  const arrow=new THREE.ArrowHelper(dir,item.pos.clone(),length,0xd7698b,length*.28,Math.max(.07,length*.13));
+  addLayerObject(arrow,'magnetic');magneticArrows++;
  }
  const rules=parseBondRules(state.bondRules);const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
  const key=(x,y,z)=>x+','+y+','+z;
@@ -2569,6 +2677,7 @@ function angleBetweenPlanes(a,b){
  return Math.acos(clamp(Math.abs(dot),0,1))*180/Math.PI;
 }
 let stage3Planes=[],lastBvs=null,lastXrd=null;
+const fcfByWorkspace=new Map();
 function drawStage3Planes(){
  for(const [i,plane] of stage3Planes.entries()){
   try{
@@ -2743,6 +2852,19 @@ function inverseModelFourierLine(re,im){
   }
  }
 }
+function fourierGridFromCoefficients(cell,size,re,im,kind,units){
+ const lineRe=new Float64Array(size),lineIm=new Float64Array(size);
+ for(let axis=0;axis<3;axis++)for(let a=0;a<size;a++)for(let b=0;b<size;b++){
+  const idx=t=>axis===0?(t*size+a)*size+b:axis===1?(a*size+t)*size+b:(a*size+b)*size+t;
+  for(let t=0;t<size;t++){const n=idx(t);lineRe[t]=re[n];lineIm[t]=im[n];}
+  inverseModelFourierLine(lineRe,lineIm);
+  for(let t=0;t<size;t++){const n=idx(t);re[n]=lineRe[t];im[n]=lineIm[t];}
+ }
+ const B=basis(cell),V=volume(B),values=new Float32Array(size**3);
+ for(let i=0;i<values.length;i++)values[i]=re[i]/V;
+ const result=volumeGrid([size,size,size],[0,0,0],B.map(v=>v.toArray().map(x=>x/size)),values,kind,units);
+ result.periodic=true;return result;
+}
 function modelFourierMap(cell,sites,{kind='density',scattering='xray',dMin=1.2,size=32}={}){
  if(!['density','patterson'].includes(kind)||!['xray','neutron'].includes(scattering)||
   !Number.isFinite(dMin)||dMin<.35||dMin>50||![16,32,64].includes(size)||
@@ -2777,23 +2899,76 @@ function modelFourierMap(cell,sites,{kind='density',scattering='xray',dMin=1.2,s
    re[plus]=re[minus]=kind==='patterson'?F.intensity:F.real;
    im[plus]=kind==='patterson'?0:F.imag;im[minus]=-im[plus];reflectionCount+=2;
   }
- const lineRe=new Float64Array(size),lineIm=new Float64Array(size);
- for(let axis=0;axis<3;axis++)for(let a=0;a<size;a++)for(let b=0;b<size;b++){
-  const idx=t=>axis===0?(t*size+a)*size+b:axis===1?(a*size+t)*size+b:(a*size+b)*size+t;
-  for(let t=0;t<size;t++){const n=idx(t);lineRe[t]=re[n];lineIm[t]=im[n];}
-  inverseModelFourierLine(lineRe,lineIm);
-  for(let t=0;t<size;t++){const n=idx(t);re[n]=lineRe[t];im[n]=lineIm[t];}
- }
- const values=new Float32Array(size**3);
- for(let i=0;i<values.length;i++)values[i]=re[i]/V;
- const result=volumeGrid([size,size,size],[0,0,0],B.map(v=>v.toArray().map(x=>x/size)),values,
+ const result=fourierGridFromCoefficients(cell,size,re,im,
   kind==='patterson'?'PATTERSON':'FOURIER',
   kind==='patterson'?(scattering==='neutron'?'fm²/Å³ (model)':'e²/Å³ (model)'):
    (scattering==='neutron'?'fm/Å³ (model)':'e/Å³ (model)'));
- result.periodic=true;
  result.modelFourier={kind,scattering,dMin,size,reflectionCount,
   source:'calculated model F; no Fobs; radix-2 FFT'};
  return result;
+}
+/* SHELXL LIST 6 .fcf is CIF reflection data, not a structure file. Fobs alone
+   provides no phases: use explicitly supplied calculated phases for a map. */
+function readFcf(text){
+ if(typeof text!=='string'||text.length>8000000)throw Error('FCF dosyası 8 MB sınırını aşıyor.');
+ const tokens=tokenizeCif(text),reflections=[];let i=0;
+ while(i<tokens.length){
+  const token=tokens[i++];if(token.toLowerCase()!=='loop_')continue;
+  const keys=[];while(i<tokens.length&&tokens[i].startsWith('_'))keys.push(tokens[i++].toLowerCase().replace(/\./g,'_'));
+  const field=names=>keys.findIndex(k=>names.includes(k));
+  const h=field(['_refln_index_h']),k=field(['_refln_index_k']),l=field(['_refln_index_l']);
+  const fo2=field(['_refln_f_squared_meas']),fc2=field(['_refln_f_squared_calc']);
+  const fo=field(['_refln_f_meas']),fc=field(['_refln_f_calc']);
+  const phase=field(['_refln_phase_calc']);
+  if([h,k,l].some(v=>v<0)||fo2<0&&fo<0)continue;
+  while(i+keys.length<=tokens.length&&!tokens[i].startsWith('_')&&
+   !/^(loop_|data_|save_|stop_)$/i.test(tokens[i])&&!/^data_/i.test(tokens[i])){
+   const row=tokens.slice(i,i+keys.length);i+=keys.length;
+   const indices=[h,k,l].map(pos=>Number(row[pos]));
+   if(indices.some(v=>!Number.isInteger(v)||Math.abs(v)>1000))throw Error('FCF hkl indisleri geçersiz.');
+   if(!indices.some(Boolean))continue;
+   const observed=fo2>=0?Math.sqrt(Math.max(0,number(row[fo2]))):number(row[fo]);
+   const calculated=fc2>=0?Math.sqrt(Math.max(0,number(row[fc2]))):fc>=0?number(row[fc]):NaN;
+   const phaseDeg=phase>=0?number(row[phase]):NaN;
+   if(!Number.isFinite(observed)||observed<0)throw Error('FCF gözlenen genlik geçersiz.');
+   reflections.push({h:indices[0],k:indices[1],l:indices[2],fo:observed,fc:calculated,phase:phaseDeg});
+   if(reflections.length>150000)throw Error('FCF 150.000 yansıma sınırını aşıyor.');
+  }
+ }
+ if(!reflections.length)throw Error('FCF içinde _refln_index_h/k/l ve F²obs / Fobs döngüsü bulunamadı.');
+ return {reflections,hasPhases:reflections.every(r=>Number.isFinite(r.phase)),
+  hasCalc:reflections.every(r=>Number.isFinite(r.fc)),source:'SHELXL / IUCr reflection CIF'};
+}
+function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2}={}){
+ if(!['difference','observed'].includes(kind)||![16,32,64].includes(size)||
+  !Number.isFinite(dMin)||dMin<.35||dMin>50||!fcf?.reflections?.length)
+  throw Error('FCF harita parametreleri geçersiz.');
+ if(!fcf.hasPhases)throw Error('FCF faz bilgisi (_refln_phase_calc) yok; Fobs tek başına Fourier haritası üretmez.');
+ if(kind==='difference'&&!fcf.hasCalc)throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
+ const B=basis(cell),re=new Float64Array(size**3),im=new Float64Array(size**3);
+ const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
+ const reciprocal=[new THREE.Vector3().crossVectors(B[1],B[2]),
+  new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])]
+  .map(v=>v.multiplyScalar(1/det));
+ const idx=(h,k,l)=>((h+size)%size*size+(k+size)%size)*size+(l+size)%size;
+ const seen=new Set();let used=0,skipped=0;
+ for(const r of fcf.reflections){
+  let {h,k,l}=r;const neg=h<0||h===0&&k<0||h===0&&k===0&&l<0;
+  if(neg){h=-h;k=-k;l=-l;}
+  const key=[h,k,l].join(','),inverseD=new THREE.Vector3().addScaledVector(reciprocal[0],h)
+   .addScaledVector(reciprocal[1],k).addScaledVector(reciprocal[2],l).length();
+  if(seen.has(key))continue;
+  seen.add(key);
+  if(inverseD>1/dMin+1e-10||[h,k,l].some(n=>Math.abs(n)>=size/2)){skipped++;continue;}
+  const amp=kind==='difference'?r.fo-r.fc:r.fo;
+  const radians=r.phase*Math.PI/180*(neg?-1:1),a=idx(h,k,l),b=idx(-h,-k,-l);
+  re[a]=re[b]=amp*Math.cos(radians);im[a]=amp*Math.sin(radians);im[b]=-im[a];used++;
+ }
+ if(!used)throw Error('Seçilen d_min/ızgarada kullanılabilir FCF yansıması yok.');
+ const grid=fourierGridFromCoefficients(cell,size,re,im,kind==='difference'?'FO-FC':'FOBS','göreli F/Å³');
+ grid.experimental={kind,used,skipped,observed:fcf.reflections.length,modelPhased:true,
+  warning:'Fobs genlikleri Fcalc fazlarıyla eşlendi. FCF ölçüm ölçeği, eksik Friedel/eşdeğer yansımalar ve simetri kapsamı doğrulanmalı.'};
+ return grid;
 }
 function xrdCsv(result){
  return ['h,k,l,d_A,2theta_deg,F_real,F_imag,F_squared,LP,powder_intensity',
@@ -2920,6 +3095,36 @@ function initStage3Analyses(){
    volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
    setRightSidebarTab('volume');
   }catch(error){inform('Model Fourier/Patterson: '+error.message);}
+ };
+ $('fcfImport').onclick=()=>$('fcfFile').click();
+ $('fcfFile').onchange=async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  const workspace=activeWorkspaceId;
+  try{
+   if(file.size>8000000)throw Error('FCF dosyası 8 MB sınırını aşıyor.');
+   const fcf=readFcf(await file.text());
+   if(workspace!==activeWorkspaceId)throw Error('FCF yüklenirken çalışma alanı değişti.');
+   fcfByWorkspace.set(workspace,fcf);
+   $('fcfStatus').textContent=fcf.reflections.length+' yansıma yüklendi · Fcalc '+
+    (fcf.hasCalc?'var':'yok')+' · faz '+(fcf.hasPhases?'var':'yok')+
+    ' · deneysel genlikler yalnızca mevcut hücreyle eşleştirilerek haritalanır.';
+  }catch(error){inform('SHELX FCF: '+error.message);}
+  finally{e.target.value='';}
+ };
+ $('fcfMapAdd').onclick=()=>{
+  try{
+   const fcf=fcfByWorkspace.get(activeWorkspaceId);
+   if(!fcf)throw Error('Önce SHELX .fcf dosyası yükleyin.');
+   const kind=$('fcfMapKind').value;
+   const g=observedFourierMap(state.cell,fcf,{kind,
+    dMin:Number($('xrdMapResolution').value),size:Number($('xrdMapSize').value)});
+   addVolumeDataset(g,kind==='difference'?'SHELX Fo−Fc (model fazlı)':'SHELX Fo (model fazlı)');
+   if($('volumeMode').value==='off')$('volumeMode').value='both';
+   volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
+   $('fcfStatus').textContent=g.experimental.used+' yansıma kullanıldı, '+g.experimental.skipped+
+    ' çözünürlük/ızgara dışında. '+g.experimental.warning;
+   setRightSidebarTab('volume');
+  }catch(error){inform('FCF haritası: '+error.message);}
  };
  refreshStage3Atoms();
 }
@@ -3267,7 +3472,7 @@ function cifCompositionSignature(sites){
 function cifScientificFingerprint(current){
  return JSON.stringify({
   name:current.name,cell:current.cell,
-  sites:current.sites.map(s=>[s.symbol,s.label,s.x,s.y,s.z,s.occupancy??1,s.uIso??null,s.adp||null]),
+  sites:current.sites.map(s=>[s.symbol,s.label,s.x,s.y,s.z,s.occupancy??1,s.uIso??null,s.adp||null,s.magneticMoment||null]),
   sgNumber:current.sgNumber,sgSetting:current.sgSetting,
   symmetryEnabled:!!current.symmetryEnabled,cifMeta:cifMetaValid(current.cifMeta)
  });
@@ -3279,6 +3484,27 @@ function originalCifRecord(current,text){
 function cifMetaFromTags(tags){const result={};for(const k of CIF_META_TAGS)if(typeof tags[k]==='string'&&!['?','.'].includes(tags[k]))result[k]=tags[k].slice(0,600);return result;}
 function cifMetaValid(raw){if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};const result={};for(const k of CIF_META_TAGS)if(typeof raw[k]==='string')result[k]=raw[k].slice(0,600);return result;}
 function cifQuoted(value){const s=String(value).replace(/[\r\n]+/g,' ').trim().slice(0,600);return /^[a-z0-9.,+/_():-]+$/i.test(s)&&!/^(data_|loop_|save_)/i.test(s)?s:"'"+s.replace(/'/g,"''")+"'";}
+/* magCIF operation: three fractional position expressions and ±1 time
+   reversal. Superspace/propagation-vector formats intentionally fail closed. */
+function parseMagneticOperation(source){
+ const parts=String(source).replace(/[\s'\"]/g,'').split(',');
+ if(parts.length!==4||!/^\+?1$|^-1$/.test(parts[3]))
+  throw Error('Desteklenmeyen mCIF manyetik simetri işlemi: '+source);
+ const xyz=parts.slice(0,3).join(',');
+ const zero=applySymmetry(xyz,[0,0,0]);
+ const columns=[[1,0,0],[0,1,0],[0,0,1]].map(unit=>
+  applySymmetry(xyz,unit).map((n,i)=>n-zero[i]));
+ const R=[0,1,2].map(row=>columns.map(col=>col[row]));
+ const det=matrixDet(R);
+ if(Math.abs(Math.abs(det)-1)>1e-8||R.flat().some(v=>Math.abs(v-Math.round(v))>1e-8))
+  throw Error('mCIF manyetik dönüşüm 3B tamsayı kristal simetrisi değil.');
+ return {xyz,time:parts[3]==='-1'?-1:1,R,det};
+}
+function rotateMagneticMoment(moment,operation,cell){
+ const B=basis(cell),local=toFrac(new THREE.Vector3(...moment),B);
+ const rotated=operation.R.map(row=>row.reduce((sum,v,i)=>sum+v*local[i],0));
+ return toCart(rotated,B).multiplyScalar(operation.det*operation.time).toArray();
+}
 
 function cifData(src){
  // Mixing two data_ blocks could silently combine one crystal's cell
@@ -3293,7 +3519,28 @@ function cifData(src){
  const get=(...ks)=>{for(const k of ks)if(tags[k]!==undefined)return tags[k];return undefined;};
  const c={a:number(get('_cell_length_a')),b:number(get('_cell_length_b')),c:number(get('_cell_length_c')),alpha:number(get('_cell_angle_alpha')),beta:number(get('_cell_angle_beta')),gamma:number(get('_cell_angle_gamma'))};validateCell(c);
  const sites=[];let sym=['x,y,z'];let explicitSymmetry=false;const adpByLabel=new Map();
+ const moments=new Map(),magOps=[],magCenter=[];let hasMagnetism=false;
  for(const lp of loops){
+  const momentLabel=lp.cols.findIndex(k=>['_atom_site_moment.label','_atom_site_moment_label'].includes(k));
+  if(momentLabel>=0){
+   const fields=(prefix)=>['x','y','z'].map(ax=>lp.cols.findIndex(k=>k===prefix+ax));
+   const cart=fields('_atom_site_moment.cartn_'),crystal=fields('_atom_site_moment.crystalaxis_');
+   const chosen=cart.every(n=>n>=0)?cart:crystal.every(n=>n>=0)?crystal:null;
+   if(chosen){
+    hasMagnetism=true;
+    for(const row of lp.rows){
+     const value=chosen.map(n=>number(row[n]));
+     if(value.some(v=>!Number.isFinite(v)))throw Error('mCIF manyetik moment bileşenleri eksik: '+row[momentLabel]);
+     const cartesian=chosen===cart?value:
+      toCart(value.map((n,i)=>n/basis(c)[i].length()),basis(c)).toArray();
+     moments.set(row[momentLabel],cartesian);
+    }
+   }
+  }
+  const magnetic=lp.cols.indexOf('_space_group_symop_magn_operation.xyz');
+  const center=lp.cols.indexOf('_space_group_symop_magn_centering.xyz');
+  if(magnetic>=0)magOps.push(...lp.rows.map(row=>parseMagneticOperation(row[magnetic])));
+  if(center>=0)magCenter.push(...lp.rows.map(row=>parseMagneticOperation(row[center])));
   const anisoLabel=lp.cols.indexOf('_atom_site_aniso_label');
   if(anisoLabel>=0){
    const u=ADP_COMPONENTS.map(k=>lp.cols.indexOf('_atom_site_aniso_u_'+k));
@@ -3319,6 +3566,7 @@ function cifData(src){
  }
  if(!sites.length)throw Error('CIF içinde _atom_site_fract_* koordinat döngüsü bulunamadı.');
  for(const s of sites)if(adpByLabel.has(s.label))s.adp=adpByLabel.get(s.label);
+ if(hasMagnetism){for(const s of sites)if(moments.has(s.label))s.magneticMoment=moments.get(s.label);}
  const opTag=get('_space_group_symop_operation_xyz','_symmetry_equiv_pos_as_xyz');if(opTag){sym=[opTag];explicitSymmetry=true;}
  const sg=get('_space_group_name_h-m_alt','_symmetry_space_group_name_h-m','_space_group_it_number','_symmetry_int_tables_number')||'P 1';
  const numeric=+get('_space_group_it_number','_symmetry_int_tables_number');
@@ -3327,7 +3575,16 @@ function cifData(src){
  const sgNumber=Number.isInteger(numeric)&&numeric>=1&&numeric<=230?numeric:(byName?+byName[0]:1);
  const key=preferredSetting(sgNumber);
  let operations=sym.map(op=>[op,'0,0,0']),assumption='';
- if(!explicitSymmetry&&sgNumber!==1){
+ if(hasMagnetism){
+  if(magOps.length){
+   const centering=magCenter.length?magCenter:[parseMagneticOperation('x,y,z,+1')];
+   operations=magOps.flatMap(op=>centering.map(center=>({op,center})));
+   assumption='mCIF manyetik simetri işlemleri ve zaman tersleme işaretleri uygulandı. Manyetik kırınım/Fobs hesaplanmıyor.';
+  }else{
+   operations=[["x,y,z","0,0,0"]];
+   assumption='mCIF momentleri okundu, ancak manyetik simetri işlemleri yok; yalnız verilen atom/moment listesi gösteriliyor.';
+  }
+ }else if(!explicitSymmetry&&sgNumber!==1){
   operations=settingOps(key);
   assumption='CIF simetri işlemlerini içermediği için grup '+sgNumber+' / '+key+' referans ayarı ve orijin seçimi varsayıldı; özel ayarlardaki sonuçları doğrulayın.';
  }else if(!explicitSymmetry&&sgNumber===1&&canon(sg)!==canon('P 1')){
@@ -3346,20 +3603,31 @@ function cifData(src){
   return Math.hypot(X,Y,Z);
  };
  for(const site of sites)for(let j=0;j<operations.length;j++){
-  const [op,offset]=operations[j],shift=offset.split(',').map(rational);
-  const xyz=applySymmetry(op,[site.x,site.y,site.z]).map((v,i)=>frac(v+shift[i]));
+  const item=operations[j],magneticOp=hasMagnetism&&magOps.length?item:null;
+  const [op,offset]=magneticOp?[magneticOp.op.xyz,'0,0,0']:item;
+  const shift=offset.split(',').map(rational);
+  let xyz=applySymmetry(op,[site.x,site.y,site.z]).map((v,i)=>frac(v+shift[i]));
+  if(magneticOp)xyz=applySymmetry(magneticOp.center.xyz,xyz).map(frac);
+  const magneticMoment=site.magneticMoment?
+   (magneticOp?rotateMagneticMoment(rotateMagneticMoment(site.magneticMoment,magneticOp.op,c),magneticOp.center,c):site.magneticMoment):null;
   // Mixed-occupancy species on a shared site must never be collapsed.
   const group=site.symbol+'|'+Math.round(site.occupancy*10000);
   let present=grouped.get(group);
   if(!present){present=[];grouped.set(group,present);}
-  if(present.some(other=>symmetryDistance(xyz,other)<.001))continue;
+  const duplicate=present.find(other=>symmetryDistance(xyz,other)<.001);
+  if(duplicate){
+   if(magneticMoment&&duplicate.magneticMoment&&magneticMoment.some((v,i)=>Math.abs(v-duplicate.magneticMoment[i])>1e-3))
+    throw Error('mCIF manyetik simetri aynı siteye çelişkili moment veriyor: '+site.label);
+   continue;
+  }
   const next={...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(operations.length>1?'_'+(j+1):'')};
+  if(magneticMoment)next.magneticMoment=magneticMoment;
   if(site.adp)next.adp=adpRotateBySymmetry(site.adp,c,op);
   present.push(next);out.push(next);
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
  const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
- return {name:label,detail:'CIF içe aktarma · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,warning:assumption,cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
+ return {name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,warning:assumption,cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){
  let sum=0;const terms=expr.replace(/\s+/g,'').replace(/−/g,'-').match(/[+-]?[^+-]+/g)||[];
@@ -3435,7 +3703,7 @@ function pdbData(text){
   cell=validateCell({a:nums[0],b:nums[1],c:nums[2],alpha:nums[3],beta:nums[4],gamma:nums[5]});
   const name=cryst.slice(55,66).trim();spaceGroup=pdbSpaceGroup(name);
   if(!spaceGroup)spaceGroupWarning='PDB CRYST1 uzay grubu '+(name||'(boş)')+
-   ' eşlenemedi: asimetrik birim P1 olarak gösteriliyor; XRD/Fourier/Ewald sonuçlarını doğrulamayın.';
+   ' eşlenemedi: asimetrik birim P1 olarak gösteriliyor; XRD/Fourier/Ewald sonuçlarına güvenmeyin, bağımsız olarak doğrulayın.';
   else if(spaceGroup.sgNumber>1&&!validateSymmetryMetric(cell,spaceGroup.sgSetting)){
    spaceGroupWarning='PDB CRYST1 uzay grubu hücre metriğiyle uyumsuz; simetri uygulanmadı.';
    spaceGroup=null;
@@ -3508,6 +3776,12 @@ function loadProject(json){
   Object.assign(s,validatedVisualSite(v));
   if(v.adp!==undefined){adpMatrix(v.adp);s.adp=v.adp.slice();}
   if(v.uIso!==undefined){s.uIso=Number(v.uIso);if(!Number.isFinite(s.uIso)||s.uIso<=0)throw Error('Geçersiz izotropik ADP.');}
+  if(v.magneticMoment!==undefined){
+   if(!Array.isArray(v.magneticMoment)||v.magneticMoment.length!==3||
+    v.magneticMoment.some(n=>!Number.isFinite(n)||Math.abs(n)>1000))
+    throw Error('Manyetik momentler üç sonlu Kartezyen μB bileşeni içermeli.');
+   s.magneticMoment=v.magneticMoment.slice();
+  }
   return s;
  });
  if(sites.some(v=>![v.x,v.y,v.z,v.occupancy].every(Number.isFinite)||v.occupancy<0||v.occupancy>1))throw Error('Atom koordinatları / doluluk oranı geçersiz.');
@@ -3886,7 +4160,8 @@ async function importFile(file){
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function cifExportText(state){
- const symmetry=state.symmetryEnabled&&state.sgNumber>1;
+ const hasMagnetism=state.sites.some(s=>Array.isArray(s.magneticMoment));
+ const symmetry=!hasMagnetism&&state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
  for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta))){
@@ -3913,6 +4188,12 @@ function cifExportText(state){
   q.push('loop_','_atom_site_aniso_label',...ADP_COMPONENTS.map(k=>'_atom_site_aniso_U_'+k));
   for(const s of aniso){adpMatrix(s.adp);q.push(safeName(s.label)+' '+s.adp.map(v=>v.toFixed(8)).join(' '));}
  }
+ const moments=outSites.filter(s=>Array.isArray(s.magneticMoment));
+ if(moments.length){
+  q.push('loop_','_atom_site_moment.label','_atom_site_moment.Cartn_x',
+   '_atom_site_moment.Cartn_y','_atom_site_moment.Cartn_z');
+  for(const s of moments)q.push((safeName(s.label)||'Atom')+' '+s.magneticMoment.map(v=>Number(v).toFixed(7)).join(' '));
+ }
   return q.join('\n')+'\n';
 }
 function cifExportPreservingSource(current){
@@ -3922,7 +4203,7 @@ function cifExportPreservingSource(current){
 }
 function exportCif(){
  const output=cifExportPreservingSource(state);
- download(safeName(state.name)+'.cif',output.text);
+ download(safeName(state.name)+(state.sites.some(s=>s.magneticMoment)?'.mcif':'.cif'),output.text);
  if(state.cifOriginal&&!output.original)
   inform('Kristal değişti: CIF yeniden üretildi (P1 / desteklenen alanlar). Kaynaktaki tüm CIF meta verileri korunmayabilir.');
 }

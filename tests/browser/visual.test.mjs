@@ -588,6 +588,10 @@ try{
  assert.equal(await page.locator('#xrdMapIndex').count(),0);
  assert.equal(await page.locator('#xrdMapResolution').getAttribute('min'),'0.35');
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
+ assert.equal(await page.locator('#fcfMapKind option').count(),2);
+ assert.equal(await page.locator('#volumePeakRefine').isChecked(),true);
+ assert.equal(await page.locator('#volumePeakMerge').isChecked(),false);
+ assert.match(await page.locator('#volumeMathIntegral').textContent(),/Volume integral/);
  await page.locator('#boundXMin').fill('-0.1');await page.locator('#boundXMax').fill('1.1');
  await page.locator('#applyBounds').click();
  assert.deepEqual((await page.evaluate(()=>window.__visualTest.bounds()))[0],[-.1,1.1]);
@@ -601,6 +605,16 @@ try{
  const [pngDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="png"]').click()]);
  assert.match(pngDownload.suggestedFilename(),/\d+x\d+\.png$/);
  await save(page,'26-polyhedron-per-site-instanced',metrics);
+ await page.locator('[data-right-tool="xrd"]').click();
+ assert.equal(await page.locator('#fcfMapAdd').isVisible(),true);
+ const fcfFixture=['data_smoke','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 64 0','0 1 0 25 16 90'].join('\n');
+ await page.locator('#fcfFile').setInputFiles({name:'smoke.fcf',mimeType:'text/plain',buffer:Buffer.from(fcfFixture)});
+ await page.waitForFunction(()=>document.getElementById('fcfStatus')?.textContent.includes('2 yansıma'));
+ await page.locator('#fcfMapAdd').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#volumeActiveDataset option').length===1);
+ assert.match(await page.locator('#fcfStatus').textContent(),/yansıma kullanıldı/);
  const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
  assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
   'thousands of displayed atoms should occupy one instanced draw group');
