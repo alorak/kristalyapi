@@ -40,7 +40,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -1392,4 +1392,46 @@ test('P0 Niggli change-of-basis preserves fractional positions and displacement 
  const before=api.adpToCartesian(site.adp,cell),after=api.adpToCartesian(transformed.sites[0].adp,transformed.cell);
  const invariants=m=>[m[0][0]+m[1][1]+m[2][2],m.flat().reduce((total,v)=>total+v*v,0)];
  invariants(before).forEach((v,i)=>approx(v,invariants(after)[i],1e-6));
+});
+
+test('P0 Moyo cell encoding uses column-major A/B/C, fractional sites and atomic numbers',()=>{
+ const cell={a:5,b:6,c:7,alpha:90,beta:90,gamma:90};
+ const data=api.moyoInputCell(cell,[{symbol:'Si',x:.25,y:.5,z:.75,occupancy:1}]);
+ assert.deepEqual(Array.from(data.numbers),[14]);
+ assert.deepEqual(Array.from(data.positions[0]),[.25,.5,.75]);
+ Array.from(data.lattice.basis).forEach((v,i)=>approx(v,[5,0,0,0,6,0,0,0,7][i],1e-10));
+ assert.throws(()=>api.moyoInputCell(cell,[{symbol:'Si',x:0,y:0,z:0,occupancy:.5}]),/Kısmi/);
+ assert.throws(()=>api.moyoInputCell(cell,[{symbol:'X',x:0,y:0,z:0}]),/Bilinmeyen/);
+});
+test('P0 Moyo standardization matrix is column-major and explicit input origin shift is applied',()=>{
+ const c={a:4,b:6,c:7,alpha:90,beta:90,gamma:90};
+ const rowMajor=[[0,1,0],[0,0,1],[1,0,0]];
+ const flat=[0,0,1,1,0,0,0,1,0]; // column-major encoding
+ const ds={
+  number:1,hall_number:1,hm_symbol:'P1',std_linear:flat,
+  std_origin_shift:[.25,0,0],prim_std_linear:flat,prim_std_origin_shift:[.25,0,0]
+ };
+ assert.deepEqual(Array.from(api.moyoMatrix(flat)[0]),rowMajor[0]);
+ const orig=[{symbol:'Si',label:'Si1',x:.35,y:.15,z:.45,occupancy:1}];
+ const out=api.moyoApplyCell(ds,false,c,orig);
+ assert.equal(out.sites.length,1);
+ approx(out.det,1);
+ // P maps new coordinates [x',y',z'] to old [y',z',x'].
+ const newFrac=[out.sites[0].x,out.sites[0].y,out.sites[0].z];
+ approx(newFrac[0],.45,1e-6);
+ approx(newFrac[1],.10,1e-6);
+ approx(newFrac[2],.15,1e-6);
+ assert.throws(()=>api.moyoTransformDetails({...ds,std_linear:Array(9).fill(0)},false));
+});
+test('P0 Moyo transform does not invent occupancy equivalence or crystal volume',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const flatF=[0,.5,.5,.5,0,.5,.5,.5,0];
+ const ds={number:225,hall_number:523,hm_symbol:'Fm-3m',std_linear:[1,0,0,0,1,0,0,0,1],
+  std_origin_shift:[0,0,0],prim_std_linear:flatF,prim_std_origin_shift:[0,0,0]};
+ const sites=[{symbol:'Cu',x:0,y:0,z:0},{symbol:'Cu',x:0,y:.5,z:.5},
+  {symbol:'Cu',x:.5,y:0,z:.5},{symbol:'Cu',x:.5,y:.5,z:0}];
+ const result=api.moyoApplyCell(ds,true,cell,sites);
+ assert.equal(result.sites.length,1);
+ approx(result.det,.25);
+ assert.throws(()=>api.moyoApplyCell(ds,true,cell,sites.slice(0,3)),/atom sayısı|doluluk/i);
 });

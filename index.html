@@ -675,7 +675,15 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <button id="autoPrimitive" type="button" class="primary">Simetriden primitive hücreye</button>
     <button id="niggliReduce" type="button" class="primary">Niggli indirgemesi</button>
     <button id="reduceBasis" type="button">Kısa baz (alternatif)</button>
-    <p id="standardizationInfo" class="note">Kısa baz tam Niggli indirgemesi değildir; genel setting/orijin ve uzay grubu otomatik tayinini yapmaz.</p>
+    <p id="standardizationInfo" class="note">Niggli ve primitive dönüşümleri gerçek baz dönüşümü yapar. Uzay grubunu otomatik tayin etmek için aşağıdaki analiz kullanılır.</p>
+    <strong class="measure-subheading" style="display:block;margin-top:12px">Otomatik uzay grubu (moyo / WASM)</strong>
+    <label class="field"><span>Simetri toleransı (Å)</span><input id="moyoTolerance" type="number" min=".00001" max=".05" step=".0001" value=".001"></label>
+    <label class="field"><span>Uluslararası tablo setting seçimi</span><select id="moyoSetting"><option value="Standard">Standard (ITA)</option><option value="Spglib">Spglib uyumlu (Hall)</option></select></label>
+    <button type="button" id="moyoDetect" class="primary">Uzay grubunu otomatik belirle</button>
+    <div id="moyoResult" class="note" aria-live="polite">Moyo WASM analizi henüz çalıştırılmadı.</div>
+    <div class="actionrow"><button type="button" id="moyoApplyConventional" disabled>Konvansiyonel hücreye dönüştür</button>
+     <button type="button" id="moyoApplyPrimitive" disabled>Primitive hücreye dönüştür</button></div>
+    <p class="hint">Moyo, 230 uzay grubu ve Hall setting'i üzerinde simetri arar; matris/orijin kayması raporlanır. Dönüşüm, atomları simetrik idealize etmeden geometrik olarak yeniden ifade eder ve açık P1 kaydeder. Tam eşleştirme yapı uyuşmazlığında reddedilir. WASM paketi GitHub Pages dağıtımına yerel eklenir.</p>
     <p class="hint">Bu işlemler atom koordinatlarını, doluluk oranlarını ve varsa ADP tensörlerini yeni hücreye dönüştürür; sonuç açık P1 olarak saklanır. Uygun olmayan merkezlenme reddedilir.</p>
    </div>
   </div>
@@ -2459,7 +2467,126 @@ function applyStandardizedCell(result,description){
  state.warning='Hücre değiştirildi; orijinal uzay grubu orijin/setting eşdeğerliği otomatik belirlenmedi. XRD ve ek faz analizlerini yeniden yapın.';
  syncControls();build();fit();
 }
+
+/* Moyo WASM: spglib project, robust cell symmetry search.
+   Dataset's std_linear is column-major and maps selected basis as
+   A_std = A_input * P; positions are x_std=P^-1(x_input-origin_shift).
+   We deliberately apply a passive matrix and origin change WITHOUT
+   replacing original sites by symmetry-refined sites. A resulting crystal
+   is explicit P1 until compatible Hall-setting operations are re-mapped. */
+let moyoLibraryPromise=null,moyoCache=null;
+function moyoInputCell(cell,sites){
+ if(!Array.isArray(sites)||!sites.length||sites.length>1000)throw Error('Simetri araması 1–1000 atom gerektirir.');
+ const B=basis(cell);
+ const numbers=sites.map(s=>{
+  const number=PERIODIC_SYMBOLS.indexOf(cleanSymbol(s.symbol))+1;
+  if(number<1)throw Error('Bilinmeyen element: '+s.symbol);
+  if(!Number.isFinite(Number(s.occupancy??1))||Number(s.occupancy??1)<.999)
+   throw Error('Kısmi doluluklu atomlar için otomatik SG tayini kapalıdır; önce dolulukları fiziksel olarak değerlendirin.');
+  return number;
+ });
+ return {lattice:{basis:B.flatMap(v=>v.toArray())},
+  positions:sites.map(s=>[s.x,s.y,s.z].map((v,i)=>{
+   if(!Number.isFinite(Number(v)))throw Error('Geçersiz atom kesirli koordinatı.');
+   return frac(Number(v));
+  })),numbers};
+}
+function moyoMatrix(flat){
+ const values=Array.isArray(flat)||ArrayBuffer.isView(flat)?Array.from(flat):[];
+ if(values.length!==9||values.some(x=>!Number.isFinite(x)))
+  throw Error('Moyo dönüşüm matrisinde hatalı veri.');
+ return [0,1,2].map(i=>[0,1,2].map(j=>Number(values[i+3*j])));
+}
+function moyoTransformDetails(dataset,primitive=false){
+ if(!dataset||!Number.isInteger(dataset.number)||dataset.number<1||dataset.number>230||
+  !Number.isInteger(dataset.hall_number)||dataset.hall_number<1||dataset.hall_number>530)
+  throw Error('Uzay grubu/Hall numarası bilimsel aralığın dışında.');
+ const matrix=moyoMatrix(primitive?dataset.prim_std_linear:dataset.std_linear);
+ const originSource=primitive?dataset.prim_std_origin_shift:dataset.std_origin_shift;
+ const origin=Array.isArray(originSource)||ArrayBuffer.isView(originSource)?Array.from(originSource):[];
+ if(origin.length!==3||origin.some(x=>!Number.isFinite(x)))
+  throw Error('Moyo orijin kayması geçersiz.');
+ const det=matrixDet(matrix);
+ if(det<=1e-9||det>36||matrix.some(row=>row.some(x=>Math.abs(x)>8)))
+  throw Error('Moyo dönüşümü sağ elli veya dönüşüm boyutu açısından desteklenmiyor.');
+ return {matrix,origin:origin.slice(),det,number:dataset.number,
+  hall:dataset.hall_number,symbol:String(dataset.hm_symbol||'?'),
+  setting:primitive?'primitive':'conventional'};
+}
+function moyoApplyCell(dataset,primitive,cell,sites){
+ const tr=moyoTransformDetails(dataset,primitive);
+ const shifted=sites.map(site=>({...site,x:site.x-tr.origin[0],y:site.y-tr.origin[1],z:site.z-tr.origin[2]}));
+ const result=transformCrystal(cell,shifted,tr.matrix);
+ const expected=sites.length*tr.det;
+ if(Math.abs(result.sites.length-expected)>1e-5)
+  throw Error('Standart hücre atom sayısı/çeviri eşdeğerliği uyuşmuyor: beklenen '+expected+
+   ', bulunan '+result.sites.length+'. Dönüşüm uygulanmadı.');
+ const before=sites.reduce((s,item)=>s+Number(item.occupancy??1),0);
+ const after=result.sites.reduce((s,item)=>s+Number(item.occupancy??1),0);
+ if(Math.abs(after-before*tr.det)>1e-5)
+  throw Error('Standartlaştırma doluluk/madde miktarını korumuyor.');
+ return {...result,transform:tr};
+}
+function moyoSnapshotKey(cell,sites){
+ return JSON.stringify([cell,sites.map(s=>[s.symbol,s.x,s.y,s.z,s.occupancy,s.adp,s.uIso])]);
+}
+async function moyoLibrary(){
+ if(!moyoLibraryPromise){
+  moyoLibraryPromise=(async()=>{
+   let mod;
+   try{mod=await import('./vendor/moyo_wasm.js');}
+   catch(err){throw Error('Yerel Moyo WASM paketi yüklenemedi. GitHub Pages deployment içinde vendor/ dosyalarını kontrol edin: '+err.message);}
+   await mod.default(new URL('./vendor/moyo_wasm_bg.wasm',window.location.href));
+   if(typeof mod.analyze_cell!=='function')throw Error('Moyo kütüphanesinde analyze_cell fonksiyonu yok.');
+   return mod;
+  })().catch(error=>{moyoLibraryPromise=null;throw error;});
+ }
+ return moyoLibraryPromise;
+}
+function moyoSiteList(){return state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;}
+async function analyzeMoyoCrystal(){
+ const button=$('moyoDetect');
+ button.disabled=true;
+ try{
+  const sites=moyoSiteList(),cell=validateCell(state.cell);
+  const tolerance=Number($('moyoTolerance').value),setting=$('moyoSetting').value;
+  if(!Number.isFinite(tolerance)||tolerance<1e-5||tolerance>.05)throw Error('Simetri toleransı 10⁻⁵–0,05 Å arasında olmalı.');
+  if(!['Standard','Spglib'].includes(setting))throw Error('Setting bilinmiyor.');
+  const mod=await moyoLibrary(),data=moyoInputCell(cell,sites);
+  const dataset=mod.analyze_cell(JSON.stringify(data),tolerance,setting);
+  const conventional=moyoTransformDetails(dataset,false),primitive=moyoTransformDetails(dataset,true);
+  moyoCache={dataset,snapshot:moyoSnapshotKey(cell,sites),setting,tolerance};
+  $('moyoResult').textContent='SG #'+dataset.number+' · '+dataset.hm_symbol+
+   ' · Hall '+dataset.hall_number+' · '+dataset.pearson_symbol+
+   ' · işlem '+dataset.operations.length+' · tol '+tolerance+' Å'+
+   '\nKonvansiyonel P='+JSON.stringify(conventional.matrix)+'; orijin='+conventional.origin.map(v=>v.toFixed(5)).join(',')+
+   '\nPrimitive P='+JSON.stringify(primitive.matrix)+'; orijin='+primitive.origin.map(v=>v.toFixed(5)).join(',');
+  $('moyoResult').style.whiteSpace='pre-line';
+  $('moyoApplyConventional').disabled=false;$('moyoApplyPrimitive').disabled=false;
+ }catch(error){
+  moyoCache=null;$('moyoApplyConventional').disabled=true;$('moyoApplyPrimitive').disabled=true;
+  $('moyoResult').textContent='SG tayini başarısız: '+error.message;inform(error.message);
+ }finally{button.disabled=false;}
+}
+function applyMoyoCell(primitive){
+ try{
+  if(!moyoCache)throw Error('Önce uzay grubunu hesaplayın.');
+  const sites=moyoSiteList(),snapshot=moyoSnapshotKey(state.cell,sites);
+  if(snapshot!==moyoCache.snapshot)throw Error('Kristal hesaplamadan sonra değişti; SG analizini yenileyin.');
+  const r=moyoApplyCell(moyoCache.dataset,primitive,state.cell,sites);
+  const sg=moyoCache.dataset.number,hm=moyoCache.dataset.hm_symbol,hall=moyoCache.dataset.hall_number;
+  applyStandardizedCell(r,primitive?'moyo primitive':'moyo conventional');
+  $('moyoResult').textContent='SG #'+sg+' '+hm+' (Hall '+hall+') · '+r.transform.setting+
+   ' hücreye gerçek matris ve orijin kayması uygulandı. Yeni atomlar P1 olarak saklandı.';
+  $('moyoApplyConventional').disabled=true;$('moyoApplyPrimitive').disabled=true;
+  moyoCache=null;
+ }catch(error){inform('SG dönüşümü: '+error.message);}
+}
+
 function initStandardizationControls(){
+ $('moyoDetect').onclick=analyzeMoyoCrystal;
+ $('moyoApplyConventional').onclick=()=>applyMoyoCell(false);
+ $('moyoApplyPrimitive').onclick=()=>applyMoyoCell(true);
  $('niggliReduce').onclick=()=>{
   try{
    const reduction=niggliReduceCell(state.cell);
