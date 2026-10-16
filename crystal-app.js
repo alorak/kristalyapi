@@ -187,7 +187,8 @@ function volumeGrid(dims,origin,axes,values,kind,units){
  if(!Number.isFinite(det)||Math.abs(det)<1e-14)throw Error('Izgara vektörleri tekil.');
  const arr=new Float32Array(count);let min=Infinity,max=-Infinity;
  for(let i=0;i<count;i++){const n=Number(values[i]);if(!Number.isFinite(n))throw Error('Izgara içinde NaN/Infinity bulundu.');arr[i]=n;min=Math.min(min,n);max=Math.max(max,n);}
- return {dims,origin,axes,values:arr,min,max,kind,units};
+ return {dims,origin,axes,values:arr,min,max,kind,units,
+  quantity:units.startsWith('e/Å³')?'density':units==='V'?'potential':'unknown'};
 }
 function volumeCross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
 function volumeDot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
@@ -339,6 +340,41 @@ function readVolumetric(src,filename){
  if(/^\s*(?:#.*\n){0,2}\s*-?\d+\s+[-+0-9.eEdD]+\s+[-+0-9.eEdD]+\s+[-+0-9.eEdD]+/m.test(src))return readCube(src);
  throw Error('Biçim tanınamadı. .cube, .chgcar/.chg veya .xsf yükleyin.');
 }
+const VOLUME_UNIT_CHOICES={
+ unknown:{quantity:'unknown',units:'bilinmiyor',factor:1},
+ 'density-bohr':{quantity:'density',units:'e/Å³',factor:1/VOLUME_BOHR**3,source:'e/bohr³'},
+ 'density-angstrom':{quantity:'density',units:'e/Å³',factor:1,source:'e/Å³'},
+ 'potential-hartree':{quantity:'potential',units:'V',factor:27.211386245988,source:'Hartree/e'},
+ 'potential-volt':{quantity:'potential',units:'V',factor:1,source:'V'}
+};
+function interpretVolumeUnits(grid,selection='unknown',{periodic=false}={}){
+ if(grid.kind==='CHGCAR')return grid; // CHGCAR already has known normalized charge-density units.
+ const choice=VOLUME_UNIT_CHOICES[selection];
+ if(!choice)throw Error('Hacimsel veri türü/birimi bilinmiyor.');
+ let source=grid;
+ if(periodic&&grid.kind==='XSF'){
+  // XSF DATAGRID_3D has duplicated end planes. Drop them for periodic voxel sums.
+  const dims=grid.dims.map(n=>n-1);
+  if(dims.some(n=>n<2))throw Error('Periyodik XSF için her eksende en az 3 nokta gerekir.');
+  const values=[];
+  for(let i=0;i<dims[0];i++)for(let j=0;j<dims[1];j++)for(let k=0;k<dims[2];k++)
+   values.push(grid.values[gridIndex(grid,i,j,k)]);
+  source={...grid,...volumeGrid(dims,grid.origin,grid.axes,values,grid.kind,grid.units)};
+ }
+ const result={...source,sourceUnits:choice.source||'belirtilmedi',
+  units:choice.units,quantity:choice.quantity,periodic:!!periodic,
+  sourceKind:grid.kind,conversionFactor:choice.factor};
+ if(choice.factor!==1){
+  const values=new Float32Array(source.values.length);let min=Infinity,max=-Infinity;
+  for(let i=0;i<values.length;i++){
+   const v=source.values[i]*choice.factor;
+   if(!Number.isFinite(v)||Math.abs(v)>3.4e38)throw Error('Hacimsel birim dönüşümü sayısal sınırı aşıyor.');
+   values[i]=v;min=Math.min(min,v);max=Math.max(max,v);
+  }
+  result.values=values;result.min=min;result.max=max;
+ }
+ return result;
+}
 function volumesSameFrame(a,b){
  if(!a||!b)return false;
  const spans=g=>g.axes.map((v,i)=>v.map(x=>x*(volumeShape(g)[i]-1)));
@@ -349,7 +385,8 @@ function volumesSameFrame(a,b){
    extent and units. Sample in Cartesian Å to support unequal resolutions. */
 function linearVolumeCombination(a,b,k=-1){
  if(!a||!b||!volumesSameFrame(a,b))throw Error('Alanların uzaysal kapsaması aynı olmalı.');
- if(a.units!==b.units)throw Error('Farklı fiziksel birimler toplanamaz/çıkarılamaz.');
+ if(!a.quantity||a.quantity==='unknown'||a.quantity!==b.quantity||a.units!==b.units)
+  throw Error('Farklı veya belirsiz fiziksel nicelik/birimler toplanamaz/çıkarılamaz.');
  if(!Number.isFinite(k)||Math.abs(k)>10)throw Error('k katsayısı −10 ile 10 arasında olmalı.');
  const sameLattice=a.dims.every((n,i)=>n===b.dims[i])&&
   a.origin.every((v,i)=>Math.abs(v-b.origin[i])<1e-9)&&
@@ -361,6 +398,7 @@ function linearVolumeCombination(a,b,k=-1){
   values[n]=a.values[n]+k*sample;
  }
  const result=volumeGrid([...a.dims],[...a.origin],a.axes.map(row=>[...row]),values,'DERIVED',a.units);
+ result.quantity=a.quantity;
  result.periodic=!!a.periodic&&!!b.periodic;
  result.derivation={coefficient:k,resampled:!sameLattice};
  return result;
@@ -368,14 +406,14 @@ function linearVolumeCombination(a,b,k=-1){
 /* Strict 26-neighbour local extrema, periodic wrapped only when the input grid
    is periodic. Flat plateaus yield one deterministic representative. */
 function volumeFindPeaks(g,{mode='max',threshold=0,limit=12}={}){
- if(!g||!['max','min'].includes(mode)||!Number.isFinite(threshold)||threshold<0||
+ if(!g||!['max','min'].includes(mode)||!Number.isFinite(threshold)||
   !Number.isInteger(limit)||limit<1||limit>50)throw Error('Geçersiz tepe arama parametresi.');
  const d=g.dims,periodic=!!g.periodic,peaks=[];
  for(let i=periodic?0:1;i<(periodic?d[0]:d[0]-1);i++)
  for(let j=periodic?0:1;j<(periodic?d[1]:d[1]-1);j++)
  for(let k=periodic?0:1;k<(periodic?d[2]:d[2]-1);k++){
   const at=gridIndex(g,i,j,k),value=g.values[at];
-  if(Math.abs(value)<threshold)continue;
+  if(mode==='max'?value<threshold:value>threshold)continue;
   let extremum=true,strict=false;
   adjacent:for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++)for(let dk=-1;dk<=1;dk++){
    if(!di&&!dj&&!dk)continue;
@@ -401,7 +439,7 @@ function volumePeaksCsv(peaks,units){
 /* Numerical nearest-nucleus Voronoi partition on a periodic density grid.
    Not a Bader topology partition; block samples retain physical voxel weights. */
 function volumeVoronoiIntegration(g,cell,sites,maxSamples=12000){
- if(!g?.periodic||!g.units.startsWith('e/Å³'))
+ if(!g?.periodic||g.quantity!=='density'||!g.units.startsWith('e/Å³'))
   throw Error('Voronoi için birimi e/Å³ olan periyodik yoğunluk ızgarası gerekli.');
  if(!Array.isArray(sites)||!sites.length||sites.length>64)
   throw Error('Voronoi için 1–64 atomlu bir P1 yapı gerekir.');
@@ -439,13 +477,15 @@ function volumeVoronoiIntegration(g,cell,sites,maxSamples=12000){
   const weight=ni*nj*nk*voxelVolume,charge=g.values[gridIndex(g,ii,jj,kk)]*weight;
   charges[index]+=charge;counts[index]+=ni*nj*nk;total+=charge;sampled++;
  }
- return {sites:sites.map((s,i)=>({index:i+1,symbol:s.symbol,label:s.label||'',charge:charges[i],
+ return {sites:sites.map((s,i)=>({index:(s.sourceSiteIndex??i)+1,expandedIndex:i+1,
+  symmetryOperation:(s.symmetryOperationIndex??0)+1,symbol:s.symbol,label:s.label||'',charge:charges[i],
   voxelFraction:counts[i]/g.values.length})),total,volume:V,sampled,stride,units:'electrons',
   method:'periodic nearest-nucleus sampled Voronoi (not Bader)'};
 }
 function volumeVoronoiCsv(result){
- return ['site,symbol,label,electrons,voxel_fraction',
-  ...result.sites.map(s=>[s.index,s.symbol,JSON.stringify(s.label),s.charge.toPrecision(9),s.voxelFraction.toPrecision(9)].join(','))].join('\n')+'\n';
+ return ['asymmetric_site,expanded_site,symmetry_operation,symbol,label,electrons,voxel_fraction',
+  ...result.sites.map(s=>[s.index,s.expandedIndex,s.symmetryOperation,s.symbol,JSON.stringify(s.label),
+   s.charge.toPrecision(9),s.voxelFraction.toPrecision(9)].join(','))].join('\n')+'\n';
 }
 
 
@@ -836,7 +876,9 @@ function updateVolumeSliceStats(){
 async function loadVolumeFile(file,asPotential=false,additional=false){
  if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
  const workspaceId=activeWorkspaceId;
- const parsed=readVolumetric(await file.text(),file.name);
+ const raw=readVolumetric(await file.text(),file.name);
+ const parsed=interpretVolumeUnits(raw,$('volumeImportUnits').value,
+  {periodic:$('volumeImportPeriodic').checked});
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen yeniden yükleyin.');
  if(asPotential){
   if(!densityGrid)throw Error('Önce ana hacimsel veri dosyasını yükleyin.');
@@ -938,7 +980,8 @@ function initVolumeControls(){
    const result=volumeVoronoiIntegration(densityGrid,state.cell,sites);
    lastVoronoi={grid:densityGrid,result};
    $('volumeVoronoiResults').textContent=result.sampled+' örnek · toplam '+result.total.toFixed(4)+' e\n'+
-    result.sites.map(s=>s.index+'. '+s.symbol+' '+s.label+': '+s.charge.toFixed(4)+' e').join('\n');
+    result.sites.map(s=>'ASU '+s.index+' · '+s.symbol+' '+s.label+' [simetri '+s.symmetryOperation+
+     ', atom '+s.expandedIndex+']: '+s.charge.toFixed(4)+' e').join('\n');
    $('volumeVoronoiResults').style.whiteSpace='pre-line';
   }catch(error){inform('Voronoi: '+error.message);}
  };
@@ -1047,12 +1090,12 @@ function validateSymmetryMetric(cell,key,tolerance=1e-4){
 
 function expandSites(sites,key,limit=1800){
  const out=[],seen=new Set(),ops=settingOps(key);
- for(const site of sites)for(const [op,shift] of ops){
+ for(const [sourceSiteIndex,site] of sites.entries())for(const [symmetryOperationIndex,[op,shift]] of ops.entries()){
   const values=applySymmetry(op,[+site.x,+site.y,+site.z]),offset=shift.split(',').map(rational);
   const f=values.map((v,i)=>frac(v+offset[i]));
   const tag=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join(':');
   if(seen.has(tag))continue;seen.add(tag);
-  out.push({...site,x:f[0],y:f[1],z:f[2],
+  out.push({...site,x:f[0],y:f[1],z:f[2],sourceSiteIndex,symmetryOperationIndex,
    ...(site.adp?{adp:adpRotateBySymmetry(site.adp,state.cell,op)}:{})});
   if(out.length>limit)throw Error('Simetri genişletmesi '+limit+' atom sınırını aşıyor.');
  }
@@ -2380,21 +2423,31 @@ function bvsCsv(result){
  return ['neighbor,shift_x,shift_y,shift_z,distance_A,occupancy,bond_valence',
   ...result.neighbors.map(n=>[n.label,...n.shift,n.distance.toFixed(8),n.occupancy,n.contribution.toFixed(8)].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n')+'\n';
 }
-function parseIonicCharges(text,sites){
- const rules=new Map(),tokens=String(text||'').split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
+function parseIonicCharges(text,sites,asymmetricSites=sites){
+ const indexRules=new Map(),elementRules=new Map(),labelRules=new Map();
+ const tokens=String(text||'').split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
  if(!tokens.length)throw Error('İyon yüklerini Na:+1, Cl:-1 biçiminde açıkça yazın.');
  for(const token of tokens){
-  const match=token.match(/^([A-Za-z]{1,2}|\d{1,3})\s*:\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
+  const match=token.match(/^([^:]{1,80})\s*:\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
   if(!match)throw Error('Yük biçimi geçersiz: '+token);
-  const key=/^\d+$/.test(match[1])?String(Number(match[1])):cleanSymbol(match[1]);
+  const raw=match[1].trim(),isIndex=/^\d+$/.test(raw);
+  const isElement=!isIndex&&/^[A-Za-z]{1,2}$/.test(raw)&&PERIODIC_SYMBOLS.includes(cleanSymbol(raw));
+  const key=isIndex?Number(raw):isElement?cleanSymbol(raw):raw;
+  const rules=isIndex?indexRules:isElement?elementRules:labelRules;
   const charge=Number(match[2]);
   if(!Number.isFinite(charge)||Math.abs(charge)>8||rules.has(key))throw Error('Geçersiz/tekrarlı iyon yükü: '+key);
   rules.set(key,charge);
  }
- for(const key of rules.keys())if(!sites.some((site,i)=>key===String(i+1)||key===cleanSymbol(site.symbol)))
+ for(const key of indexRules.keys())if(key<1||key>asymmetricSites.length)
   throw Error('Yük tanımı bu yapıda bulunamadı: '+key);
+ for(const key of elementRules.keys())if(!asymmetricSites.some(site=>cleanSymbol(site.symbol)===key))
+  throw Error('Yük tanımı bu yapıda bulunamadı: '+key);
+ for(const key of labelRules.keys())if(asymmetricSites.filter(site=>site.label===key).length!==1)
+  throw Error('Atom etiketi benzersiz değil veya bulunamadı: '+key);
  return sites.map((s,i)=>{
-  const charge=rules.get(String(i+1))??rules.get(cleanSymbol(s.symbol));
+  const origin=s.sourceSiteIndex??i,source=asymmetricSites[origin];
+  if(!source)throw Error('Simetri atomu asimetrik siteyle eşleşmiyor.');
+  const charge=indexRules.get(origin+1)??labelRules.get(source.label)??elementRules.get(cleanSymbol(source.symbol));
   if(charge===undefined)throw Error('Yük tanımlanmamış: '+(s.label||s.symbol+' '+(i+1)));
   return charge;
  });
@@ -2554,11 +2607,12 @@ function structureFactor(h,k,l,sites,cell,kind='xray'){
  if(![h,k,l].every(Number.isInteger)||!Array.isArray(sites)||sites.length>1800)
   throw Error('Geçersiz hkl veya atom listesi.');
  if(!h&&!k&&!l)throw Error('000 yapı faktörü Bragg yansıması değildir.');
- const B=basis(cell),d=planeNormal(h,k,l,B).d;
+ const B=basis(cell);
  const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
  const G=new THREE.Vector3().crossVectors(B[1],B[2]).multiplyScalar(h/det)
   .addScaledVector(new THREE.Vector3().crossVectors(B[2],B[0]),k/det)
   .addScaledVector(new THREE.Vector3().crossVectors(B[0],B[1]),l/det);
+ const d=1/G.length();
  let real=0,imag=0;const perElement=new Map();
  for(const site of sites){
   const symbol=cleanSymbol(site.symbol);
@@ -2579,18 +2633,32 @@ function structureFactor(h,k,l,sites,cell,kind='xray'){
  }
  return {h,k,l,d,real,imag,intensity:real*real+imag*imag,scattering:kind};
 }
-function powderPattern(cell,sites,{wavelength=1.5406,maxIndex=5,maxAngle=90,scattering='xray',lorentzPolarization=false}={}){
+function powderPattern(cell,sites,{wavelength=1.5406,maxAngle=90,scattering='xray',lorentzPolarization=false}={}){
  if(!Number.isFinite(wavelength)||wavelength<.2||wavelength>5||
-  !Number.isInteger(maxIndex)||maxIndex<1||maxIndex>7||
   !Number.isFinite(maxAngle)||maxAngle<15||maxAngle>150)
-  throw Error('XRD: λ, maksimum indis veya 2θ sınırı geçersiz.');
+  throw Error('XRD: λ veya 2θ sınırı geçersiz.');
  if(sites.length>1000)throw Error('XRD için en fazla 1000 P1 atom kullanılabilir.');
  if(!['xray','neutron','point'].includes(scattering))throw Error('Bilinmeyen saçılma türü.');
+ // Bound each Miller index by the reciprocal-sphere radius: h = G·a, etc.
+ // A fixed index cube is not invariant under hexagonal/trigonal rotations.
+ const B=basis(cell),dMin=wavelength/(2*Math.sin(maxAngle*Math.PI/360));
+ const bounds=B.map(v=>Math.floor(v.length()/dMin+1e-9));
+ const candidateCount=bounds.reduce((n,b)=>n*(2*b+1),1)-1;
+ if(candidateCount>250000||candidateCount*sites.length>30000000)
+  throw Error('XRD: hücre/2θ aralığı için yansıma sayısı çok yüksek; hesaplama bütçesi aşıldı.');
+ const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
+ const reciprocal=[new THREE.Vector3().crossVectors(B[1],B[2]),
+  new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])]
+  .map(v=>v.multiplyScalar(1/det));
+ const maxInverseD=1/dMin+1e-10;
  const reflections=[];let extinctions=0;
- for(let h=-maxIndex;h<=maxIndex;h++)for(let k=-maxIndex;k<=maxIndex;k++)for(let l=-maxIndex;l<=maxIndex;l++){
+ for(let h=-bounds[0];h<=bounds[0];h++)for(let k=-bounds[1];k<=bounds[1];k++)for(let l=-bounds[2];l<=bounds[2];l++){
   if(!(h||k||l))continue;
   // A Bragg vector and its opposite produce identical nonresonant powder intensity.
   if(h<0||h===0&&k<0||h===0&&k===0&&l<0)continue;
+  const invD=new THREE.Vector3().addScaledVector(reciprocal[0],h)
+   .addScaledVector(reciprocal[1],k).addScaledVector(reciprocal[2],l).length();
+  if(invD>maxInverseD)continue;
   const F=structureFactor(h,k,l,sites,cell,scattering),arg=wavelength/(2*F.d);
   if(arg<=0||arg>=1)continue;
   const angle=360/Math.PI*Math.asin(arg);
@@ -2615,7 +2683,7 @@ function powderPattern(cell,sites,{wavelength=1.5406,maxIndex=5,maxAngle=90,scat
  }
  const top=Math.max(...groups.map(g=>g.intensity),0);
  for(const group of groups)group.relative=top?group.intensity/top*100:0;
- return {reflections,groups,extinctions,wavelength,maxAngle,maxIndex,scattering,
+ return {reflections,groups,extinctions,wavelength,maxAngle,dMin,scanBounds:bounds,scattering,
   lorentzPolarization:!!lorentzPolarization&&scattering==='xray',approximate:true};
 }
 /* Finite inverse Fourier synthesis from MODEL structure factors. Friedel
@@ -2688,7 +2756,7 @@ function runPowderAnalysis(){
   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
   lastXrd=powderPattern(state.cell,sites,{
    wavelength:Number($('xrdLambda').value),maxAngle:Number($('xrdAngle').value),
-   maxIndex:Number($('xrdMaxIndex').value),scattering:$('xrdScattering').value,
+   scattering:$('xrdScattering').value,
    lorentzPolarization:$('xrdLp').checked});
   renderWorkspaceXrd();
  }catch(error){inform('Yapı faktörü: '+error.message);}
@@ -2746,11 +2814,13 @@ function initStage3Analyses(){
  $('madelungCalculate').onclick=()=>{
   try{
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,80):state.sites;
-   const charges=parseIonicCharges($('madelungCharges').value,sites);
+   const charges=parseIonicCharges($('madelungCharges').value,sites,state.sites);
    const result=madelungEwald(state.cell,sites,charges);
    $('madelungResults').textContent='Hücre enerjisi '+result.energy.toFixed(5)+' eV · yakınsama '+
     result.convergenceEv.toExponential(2)+' eV\n'+result.potentials.map((v,i)=>
-     (i+1)+'. '+sites[i].symbol+' '+(sites[i].label||'')+' (q='+charges[i]+'): '+v.toFixed(5)+' eV/e').join('\n');
+     'ASU '+((sites[i].sourceSiteIndex??i)+1)+' · '+sites[i].symbol+' '+(sites[i].label||'')+
+     ' [simetri '+((sites[i].symmetryOperationIndex??0)+1)+', atom '+(i+1)+'] (q='+charges[i]+'): '+
+     v.toFixed(5)+' eV/e').join('\n');
    $('madelungResults').style.whiteSpace='pre-line';
   }catch(error){inform('Madelung Ewald: '+error.message);}
  };
@@ -3261,14 +3331,43 @@ function xyzData(text){
 }
 /* PDB crystallographic subset: CRYST1, first MODEL, ATOM/HETATM and ANISOU.
    Residue/chain chemistry and macromolecular topology are not reconstructed. */
+function pdbSpaceGroup(symbol){
+ const canonical=s=>String(s||'').toUpperCase().replace(/[\s_]/g,'');
+ const query=canonical(symbol);
+ if(!query)return null;
+ const matching=[];
+ for(const [number,aliases] of Object.entries(SPACE_NAMES)){
+  if(String(aliases).split(/\s*=\s*/).some(alias=>canonical(alias)===query))matching.push(Number(number));
+ }
+ if(matching.length!==1)return null; // Never guess a crystallographic setting.
+ const sgNumber=matching[0],sgSetting=preferredSetting(sgNumber);
+ return {sgNumber,sgSetting};
+}
+function pdbFallbackElement(atomName,record,residue){
+ const name=String(atomName||''),first=name.trim().match(/[A-Za-z]/)?.[0];
+ if(!first)return '';
+ // In a standard ATOM record " CA " denotes protein C-alpha, not calcium.
+ const protein=/^(ALA|ARG|ASN|ASP|CYS|GLN|GLU|GLY|HIS|ILE|LEU|LYS|MET|PHE|PRO|SER|THR|TRP|TYR|VAL)$/i.test(residue);
+ if(name[0]===' '||record==='ATOM  '&&protein)return cleanSymbol(first);
+ const pair=name.match(/^[A-Za-z]{2}/)?.[0];
+ return pair&&PERIODIC_SYMBOLS.includes(cleanSymbol(pair))?cleanSymbol(pair):cleanSymbol(first);
+}
 function pdbData(text){
  const lines=String(text).replace(/\r/g,'').split('\n'),atomRows=[],anisou=new Map();
  let cell=null,inModel=false,seenModel=false;
+ let inferredElements=0,spaceGroup=null,spaceGroupWarning='';
  const extraModels=lines.filter(line=>line.startsWith('MODEL ')).length>1;
  const cryst=lines.find(line=>line.startsWith('CRYST1'));
  if(cryst){
   const nums=[[6,15],[15,24],[24,33],[33,40],[40,47],[47,54]].map(([a,b])=>Number(cryst.slice(a,b).trim()));
   cell=validateCell({a:nums[0],b:nums[1],c:nums[2],alpha:nums[3],beta:nums[4],gamma:nums[5]});
+  const name=cryst.slice(55,66).trim();spaceGroup=pdbSpaceGroup(name);
+  if(!spaceGroup)spaceGroupWarning='PDB CRYST1 uzay grubu '+(name||'(boş)')+
+   ' eşlenemedi: asimetrik birim P1 olarak gösteriliyor; XRD/Fourier/Ewald sonuçlarını doğrulamayın.';
+  else if(spaceGroup.sgNumber>1&&!validateSymmetryMetric(cell,spaceGroup.sgSetting)){
+   spaceGroupWarning='PDB CRYST1 uzay grubu hücre metriğiyle uyumsuz; simetri uygulanmadı.';
+   spaceGroup=null;
+  }
  }
  for(const line of lines){
   if(line.startsWith('MODEL ')){if(seenModel)break;seenModel=true;inModel=true;continue;}
@@ -3282,9 +3381,8 @@ function pdbData(text){
   const alt=line[16]||' ';
   if(alt!==' '&&alt!=='A')continue;
   const atomName=line.slice(12,16),rawSymbol=line.slice(76,78).trim();
-  const fallback=atomName[0]===' '?atomName.trim().match(/[A-Za-z]/)?.[0]:
-   atomName.trim().match(/^[A-Za-z][a-z]?/)?.[0];
-  const symbol=cleanSymbol(rawSymbol||fallback||'X');
+  if(!rawSymbol)inferredElements++;
+  const symbol=cleanSymbol(rawSymbol||pdbFallbackElement(atomName,line.slice(0,6),line.slice(17,20).trim())||'X');
   if(!PERIODIC_SYMBOLS.includes(symbol))throw Error('PDB element sembolü tanınmadı: '+symbol);
   const xyz=[[30,38],[38,46],[46,54]].map(([a,b])=>Number(line.slice(a,b).trim()));
   if(xyz.some(v=>!Number.isFinite(v)))throw Error('PDB atom koordinatı geçersiz.');
@@ -3308,7 +3406,9 @@ function pdbData(text){
   obj={name:'PDB yapı',cell,sites:atomRows.map(row=>{
    const f=toFrac(new THREE.Vector3(...row.xyz),B);
    return {...row.site,x:frac(f[0]),y:frac(f[1]),z:frac(f[2])};
-  }),warning:''};
+  }),warning:spaceGroupWarning,
+   sgNumber:spaceGroup?.sgNumber||1,sgSetting:spaceGroup?.sgSetting||'1',
+   symmetryEnabled:!!spaceGroup&&spaceGroup.sgNumber>1};
  }
  for(let i=0;i<atomRows.length;i++){
   const values=anisou.get(atomRows[i].serial);
@@ -3317,6 +3417,8 @@ function pdbData(text){
   obj.sites[i].adp=adpFromCartesian([[u11,u12,u13],[u12,u22,u23],[u13,u23,u33]],obj.cell);
  }
  obj.detail='PDB · '+atomRows.length+' atom · '+(cell?'CRYST1 birim hücresi':'yapay görüntüleme kutusu');
+ if(inferredElements)obj.warning+=(obj.warning?' ':'')+inferredElements+
+  ' atomda element sütunu boştu; atom adı/hizalamasından tahmin edildi, doğrulayın.';
  if(extraModels)obj.warning+=(obj.warning?' ':'')+'Yalnızca ilk MODEL içe aktarıldı.';
  return obj;
 }

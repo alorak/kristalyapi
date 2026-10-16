@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'crystal-app.js'
       - 'tests/validation/**'
       - '.github/workflows/cif-validation.yml'
   workflow_dispatch:
