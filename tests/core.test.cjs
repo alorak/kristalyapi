@@ -687,9 +687,22 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,12);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,13);
+ assert.match(rail,/data-right-tool="measurement"[\s\S]*?data-right-tool="history"/);
+ assert.match(html,/\.right-drawer-pane>\.section\[data-right-section\]>h2:first-child\{display:none\}/);
+ assert.ok(!html.includes('Bilimsel kapsam</h2>'),'redundant scientific scope block should be removed');
+ assert.ok(html.includes('id="notice"'),'dynamic scientific notices should still have an outlet');
+ const measurement=html.slice(html.indexOf('data-right-section="measurement"'),html.indexOf('data-right-section="history"'));
+ const measurementHistory=html.slice(html.indexOf('data-right-section="history"'),html.indexOf('data-right-section="bvs"'));
+ assert.ok(measurement.includes('id="measurementCount"'));
+ assert.ok(measurement.includes('id="openMeasurementHistory"'));
+ assert.ok(!measurement.includes('id="measurementHistory"'),'history records must not crowd the measurement pane');
+ assert.ok(measurementHistory.includes('id="measurementHistory"'));
+ assert.ok(measurementHistory.includes('id="exportMeasurements"'));
+ assert.match(html,/#distanceResult,#periodicResult/);
+ assert.match(html,/#angleResult,#torsionResult/);
  for(const key of ['bonds','lattice','symmetry'])assert.match(left,new RegExp('data-right-section="'+key+'"'));
  assert.match(html,/if\(name==='miller'\)while\(\$\('rightMillerPane'\)/);
  const quickbar=html.slice(html.indexOf('id="workbenchQuickbar"'),html.indexOf('id="toast"'));
@@ -1028,6 +1041,17 @@ test('short-term VESTA controls exist for coordination, measurement history and 
   'saveMeasurement','exportMeasurements','addMillerLayer','clearMillerLayers','millerLayerList']){
   assert.ok(html.includes('id="'+id+'"'),id);
  }
+});
+test('supercell multipliers use bounded plus/minus stepper controls',()=>{
+ const panel=html.slice(html.indexOf('<h2>Süperhücre</h2>'),html.indexOf('id="applyRepeat"'));
+ assert.equal((panel.match(/class="supercell-stepper"/g)||[]).length,3);
+ for(const name of ['ra','rb','rc']){
+  assert.match(panel,new RegExp('id="'+name+'" type="number" min="1" max="6" step="1"'));
+  for(const step of ['-1','1'])assert.match(panel,new RegExp('data-repeat-target="'+name+'" data-repeat-step="'+step+'"'));
+ }
+ assert.match(html,/function syncRepeatSteppers\(\)/);
+ assert.match(html,/function initRepeatSteppers\(\)/);
+ assert.match(html,/initRepeatSteppers\(\);/);
 });
 
 

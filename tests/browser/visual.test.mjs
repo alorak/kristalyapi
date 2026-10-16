@@ -24,6 +24,11 @@ const server=http.createServer(async(request,response)=>{
    const cdn='https://cdn.jsdelivr.net/npm/three@0.182.0/';
    assert.ok(html.includes(cdn),'Expected pinned Three.js import map');
    html=html.replaceAll(cdn,'/node_modules/three/');
+   // Test-only hooks inserted into the served module; the shipped app stays unchanged.
+   const bootstrapMarker='// @kristalyapi/browser-bootstrap:';
+   assert.ok(html.includes(bootstrapMarker),'Expected app bootstrap marker');
+   html=html.replace(bootstrapMarker,
+    'window.__visualTest={select:ids=>{selected=[...ids];drawSelection();},repeat:()=>[...state.rep]};\n'+bootstrapMarker);
    content=Buffer.from(html);
   }
   // Chromium refuses native ES modules served as application/octet-stream.
@@ -105,6 +110,21 @@ try{
  assert.equal(await page.locator('#adpLevel').isDisabled(),true,'ADP probability needs an enabled ellipsoid with Uij/Uiso');
  assert.equal(await page.locator('#polyCut').isDisabled(),true,'neighbor threshold needs a selected coordination center');
  assert.equal(await page.locator('#polyNeighbors').isDisabled(),true,'max neighbors needs a selected coordination center');
+ assert.equal(await page.locator('.supercell-stepper button').count(),6,'each repeat axis needs plus/minus buttons');
+ const repeatPlus=page.locator('[data-repeat-target="ra"][data-repeat-step="1"]');
+ const repeatMinus=page.locator('[data-repeat-target="ra"][data-repeat-step="-1"]');
+ await page.locator('#ra').fill('1');
+ assert.equal(await repeatMinus.isDisabled(),true,'the decrement button should stop at 1');
+ await repeatPlus.click();
+ assert.equal(await page.locator('#ra').inputValue(),'2');
+ assert.equal(await repeatMinus.isEnabled(),true);
+ await page.locator('#applyRepeat').click();
+ assert.equal(await page.evaluate(()=>window.__visualTest.repeat()[0]),2,'the stepper value should apply to the crystal');
+ await page.locator('#ra').fill('6');
+ assert.equal(await repeatPlus.isDisabled(),true,'the increment button should stop at 6');
+ await page.locator('#repeatOne').click();
+ assert.equal(await page.locator('#ra').inputValue(),'1');
+ assert.equal(await repeatMinus.isDisabled(),true,'reset should refresh the stepper controls');
  // Independent structures, per-workspace history and camera, the ten-workspace cap.
  assert.equal(await page.locator('#workspaceCount').textContent(),'1');
  await page.locator('#workspaceToggle').click();
@@ -211,7 +231,9 @@ try{
  assert.ok(Math.abs(restoredView.ink-originalView.ink)<originalView.ink*.22,
   'repeated projection switching must not gradually zoom the structure');
  const tools=page.locator('[data-right-tool]');
- assert.equal(await tools.count(),12,'Miller must have its own icon as well as the eleven analysis tools');
+ assert.equal(await tools.count(),13,'measurement history and Miller need independent analysis icons');
+ assert.equal(await page.locator('[data-right-tool="measurement"]').evaluate(el=>el.nextElementSibling?.dataset.rightTool),'history',
+  'measurement and history icons should be immediately adjacent');
  for(const [source,destination] of [
   ['bondRules','bonds'],['matrixPreset','lattice'],['spaceGroup','symmetry']
  ]){
@@ -222,6 +244,8 @@ try{
  await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width>300);
  assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
  assert.equal(await page.locator('[data-right-tool="info"]').getAttribute('aria-expanded'),'true');
+ assert.equal(await page.locator('#rightDrawerPane-info .section h2').isHidden(),true,'the repeated inner panel title should be hidden');
+ assert.equal(await page.locator('#rightDrawerPane-info').getByText('Bilimsel kapsam').count(),0);
  await assertHorizontalQuickbar(page,{drawerOpen:true});
  await page.screenshot({path:path.join(artifacts,'21-open-drawer-horizontal-toolbar.png'),animations:'disabled'});
  await page.setViewportSize({width:1100,height:800});
@@ -235,6 +259,35 @@ try{
  assert.ok((await page.locator('#quickBondCut').boundingBox()).width<=145,'bond cutoff slider must be compact');
  assert.ok((await page.locator('#polyElement').boundingBox()).width<=160,'coordination center selector must be compact');
  await page.screenshot({path:path.join(artifacts,'20-compact-lower-toolbar.png'),animations:'disabled'});
+ await page.locator('[data-right-tool="measurement"]').click();
+ assert.equal(await page.locator('#measurementCount').textContent(),'0');
+ assert.equal(await page.locator('#historyToolCount').textContent(),'0');
+ assert.equal(await page.locator('#rightDrawerPane-measurement #measurementHistory').count(),0,
+  'the saved history list should be in its own drawer');
+ assert.equal(await page.locator('#openMeasurementHistory').isVisible(),true,'the history shortcut should exist even with zero records');
+ await page.evaluate(()=>window.__visualTest.select([0,1,2]));
+ assert.equal(await page.locator('#measureList .measure-item').count(),3);
+ assert.equal(await page.locator('#angleResult').isVisible(),true);
+ const palette=await page.evaluate(()=>[
+  '#measureList .measure-item','#distanceResult','#angleResult'
+ ].map(selector=>getComputedStyle(document.querySelector(selector)).backgroundColor));
+ assert.deepEqual(palette,['rgb(237, 244, 254)','rgb(237, 248, 241)','rgb(255, 241, 240)'],
+  'atoms, distances and angles should have distinct gentle colors');
+ await page.screenshot({path:path.join(artifacts,'22-measurement-pastel-cards.png'),animations:'disabled'});
+ await page.locator('#saveMeasurement').click();
+ assert.equal(await page.locator('#measurementCount').textContent(),'1');
+ assert.equal(await page.locator('#historyToolCount').textContent(),'1');
+ await page.locator('#openMeasurementHistory').click();
+ assert.equal(await page.locator('#rightDrawerPane-history').isVisible(),true);
+ assert.equal(await page.locator('#measurementHistory .bond-rule-row').count(),1);
+ await page.screenshot({path:path.join(artifacts,'23-measurement-history-drawer.png'),animations:'disabled'});
+ await page.locator('#clearHistory').click();
+ assert.equal(await page.locator('#measurementCount').textContent(),'0');
+ assert.equal(await page.locator('#historyToolCount').textContent(),'0');
+ assert.match(await page.locator('#measurementHistory').textContent(),/Henüz kayıt yok/);
+ await page.locator('[data-right-tool="measurement"]').click();
+ await page.locator('#clearMeasure').click();
+ await page.locator('[data-right-tool="measurement"]').click();
  const dockBounds=await page.locator('#workbenchQuickbar').boundingBox();
  const polyBounds=await page.locator('#polyNeighbors').boundingBox();
  assert.ok(polyBounds.y+polyBounds.height<=dockBounds.y+dockBounds.height-2,

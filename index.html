@@ -577,11 +577,32 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 .right-drawer-close:hover{background:#e6f0fa}
 #app>.panel.right .right-drawer-pane>.section{background:transparent;border:0;border-bottom:1px solid #e3ecf5;border-radius:0;margin:0;padding:17px 15px 20px;box-shadow:none}
 #app>.panel.right .right-drawer-pane>.section h2{color:#47627e;font-weight:750}
+#app>.panel.right .right-drawer-pane>.section[data-right-section]>h2:first-child{display:none}
 #app>.panel.right .right-drawer-pane>.section .field span{color:#57728a}
 #app>.panel.right .right-drawer-pane>.section .note{color:#57728a}
 #app>.panel.right .right-drawer-pane>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea){background:#fbfdff;border-color:#cbd8e6;color:#263d55}
 #app>.panel.right .right-drawer-pane>.section :is(.info,.metric,.measure-item){background:#f5f8fc;border-color:#dfe8f1}
 #app>.panel.right .right-drawer-pane>.section :is(.info strong,.metric strong){color:#294562}
+#app>.panel.right .right-drawer-pane>.section #measureList .measure-item{background:#edf4fe;border-color:#cfdff2}
+#app>.panel.right .right-drawer-pane>.section :is(#distanceResult,#periodicResult){background:#edf8f1;border-color:#cce5d3}
+#app>.panel.right .right-drawer-pane>.section :is(#angleResult,#torsionResult){background:#fff1f0;border-color:#efd9d7}
+#app>.panel.right .right-drawer-pane>.section :is(#distanceResult,#periodicResult) strong{color:#296248}
+#app>.panel.right .right-drawer-pane>.section :is(#angleResult,#torsionResult) strong{color:#914b4a}
+.measurement-history-shortcut{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;font-size:11px;color:#607991}
+.measurement-history-shortcut button{padding:5px 9px;font-size:11px}
+.measurement-history-shortcut strong{font-variant-numeric:tabular-nums;color:#2c5e8b}
+#app>.panel.right .right-drawer-pane>.section #measurementHistory{max-height:none}
+.right-tool{position:relative}
+.right-tool-count{position:absolute;right:0;bottom:0;min-width:15px;height:15px;padding:1px 3px;border-radius:9px;background:#deecfb;border:1px solid #b5d3ed;color:#225f92;font-size:9px;line-height:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.supercell-stepper{display:flex;align-items:stretch;width:100%;height:34px;overflow:hidden;border:1px solid #c8d8e8;border-radius:8px;background:#f8fbff}
+#app>.panel.left .supercell-stepper input{flex:1;min-width:0;width:100%;height:100%;padding:3px 1px;text-align:center;border:0;border-radius:0;background:transparent;color:#284968;font-size:12px;font-variant-numeric:tabular-nums;appearance:textfield;-moz-appearance:textfield}
+.supercell-stepper input::-webkit-outer-spin-button,.supercell-stepper input::-webkit-inner-spin-button{appearance:none;margin:0}
+.supercell-stepper button{flex:0 0 23px;min-width:0;padding:0;border:0;border-radius:0;background:#eaf3fc;box-shadow:none;color:#276b9f;font-size:16px;font-weight:700;line-height:1}
+.supercell-stepper button:first-child{border-right:1px solid #d4e1ee}
+.supercell-stepper button:last-child{border-left:1px solid #d4e1ee}
+.supercell-stepper button:hover:not(:disabled){background:#dceeff;color:#13588a}
+.supercell-stepper button:disabled{opacity:.38}
+.supercell-stepper:focus-within{outline:2px solid #7db6e4;outline-offset:1px}
 .right-tool-rail{flex:0 0 54px;width:54px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 5px;background:#f7faff;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;border-left:1px solid #d6e2ef}
 .right-tool{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;padding:8px;border-radius:10px;border:1px solid transparent;background:transparent;box-shadow:none;color:#58738d;transition:background .15s,color .15s}
 .right-tool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -814,9 +835,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <p class="hint">Element çiftine özel min–maks eşikleri diğer bağlardan bağımsızdır. Öneriler atom yarıçaplarına dayalı görsel başlangıç değerleridir, deneysel bağ doğrulaması değildir.</p>
   </div>
   <div class="section"><h2>Süperhücre</h2><div class="triple">
-   <label class="field compact"><span>a ×</span><input id="ra" type="number" min="1" max="6" value="2"></label>
-   <label class="field compact"><span>b ×</span><input id="rb" type="number" min="1" max="6" value="2"></label>
-   <label class="field compact"><span>c ×</span><input id="rc" type="number" min="1" max="6" value="2"></label>
+   <label class="field compact"><span>a ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="ra" data-repeat-step="-1" aria-label="a tekrar sayısını azalt">−</button><input id="ra" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="ra" data-repeat-step="1" aria-label="a tekrar sayısını artır">+</button></div></label>
+   <label class="field compact"><span>b ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="rb" data-repeat-step="-1" aria-label="b tekrar sayısını azalt">−</button><input id="rb" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="rb" data-repeat-step="1" aria-label="b tekrar sayısını artır">+</button></div></label>
+   <label class="field compact"><span>c ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="rc" data-repeat-step="-1" aria-label="c tekrar sayısını azalt">−</button><input id="rc" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="rc" data-repeat-step="1" aria-label="c tekrar sayısını artır">+</button></div></label>
   </div><div class="actionrow" style="margin-top:10px"><button id="applyRepeat" class="primary">Çoğalt</button><button id="repeatOne">1 × 1 × 1</button></div></div>
   <div class="section" data-right-section="lattice"><h2>Örgü dönüşümü <span class="stage">Aşama 2</span></h2>
    <label class="field"><span>Hazır dönüşüm</span><select id="matrixPreset">
@@ -949,7 +970,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>
    <div id="layerManager" class="layer-manager" aria-label="Kristal görünüm katmanları"></div>
   </div>
-  <div class="section" data-right-section="info"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
+  <div class="section" data-right-section="info"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div><div id="notice" class="notice"></div></div>
   <div class="section" data-right-section="comparison"><h2>Çoklu yapı / faz karşılaştırması</h2>
    <p class="hint">En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.</p>
    <input type="file" id="overlayFile" accept=".cif,.mcif" hidden>
@@ -966,12 +987,15 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <button class="small" id="clearMeasure">Seçimi temizle</button>
     <button class="small primary" id="saveMeasurement" type="button">Ölçümü kaydet</button>
    </div>
-   <div class="bond-rule-list" style="margin-top:12px">
-    <strong class="measure-subheading">Ölçüm geçmişi</strong>
-    <div id="measurementHistory" aria-live="polite"></div>
-    <div class="actionrow"><button id="exportMeasurements" type="button">CSV dışa aktar</button><button id="clearHistory" type="button">Geçmişi temizle</button></div>
+   <div class="measurement-history-shortcut">
+    <span>Kayıtlı ölçüm: <strong id="measurementCount" aria-live="polite">0</strong></span>
+    <button id="openMeasurementHistory" type="button">Ölçüm geçmişi →</button>
    </div>
    <p class="hint">2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.</p></div>
+  <div class="section" data-right-section="history"><h2>Ölçüm geçmişi</h2>
+   <div id="measurementHistory" class="bond-rule-list" aria-live="polite"></div>
+   <div class="actionrow" style="margin-top:10px"><button id="exportMeasurements" type="button">CSV dışa aktar</button><button id="clearHistory" type="button">Geçmişi temizle</button></div>
+  </div>
 
   <div class="section" data-right-section="bvs"><h2>İleri koordinasyon / BVS</h2>
    <p class="hint">Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/0,37 Å]. Komşular periyodik görüntülerden bulunur; kısmi doluluk ağırlıklandırılır.</p>
@@ -1044,7 +1068,6 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <p class="hint">Izoyüzeyler marching tetrahedra ile oluşturulur. Büyük ızgaralar seyreltilir; kesit gerçek fiziksel koordinatlarda yerleştirilir. Yüzey renkleri ancak uyumlu ikinci potansiyel ızgarası yüklendiğinde potansiyeli temsil eder.</p>
   </div>
-  <div class="section" data-right-section="info"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kristal koordinatları, örgü vektörleri ve ölçümler gerçek hücre metriğini kullanır. Bağlar geometrik eşikle çizilir. İzoyüzeyler fiziksel hesaplama yapmaz; dosyadaki örneklenmiş alanı gösterir.</p></div>
    </div>
    <div id="rightMillerPane">
   <div class="section"><h2>Miller düzlemleri (hkl) <span class="stage">Aşama 2</span></h2>
@@ -1096,6 +1119,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <button type="button" class="right-tool" data-right-tool="info" aria-label="Yapı bilgileri" title="Yapı bilgileri" aria-controls="rightDrawerPane-info" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="comparison" aria-label="Çoklu yapı / faz karşılaştırması" title="Çoklu yapı / faz karşılaştırması" aria-controls="rightDrawerPane-comparison" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="12" height="12" rx="2"/><path d="M9 2h10a2 2 0 0 1 2 2v13m-4 4H7a2 2 0 0 1-2-2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="measurement" aria-label="Atom seçimi ve ölçüm" title="Atom seçimi ve ölçüm" aria-controls="rightDrawerPane-measurement" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="1" transform="rotate(-32 12 12)"/><path d="m8 8 2 3m2-6 2 3m1 8 2 3"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="history" aria-label="Ölçüm geçmişi" title="Ölçüm geçmişi" aria-controls="rightDrawerPane-history" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5"/></svg><span id="historyToolCount" class="right-tool-count" aria-hidden="true">0</span></button>
    <button type="button" class="right-tool" data-right-tool="bvs" aria-label="İleri koordinasyon / BVS" title="İleri koordinasyon / BVS" aria-controls="rightDrawerPane-bvs" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 5v9l-8 4-8-4V8zM12 3v7m8-2-8 2m-8-2 8 2m0 0v11"/><circle cx="12" cy="10" r="2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="plane" aria-label="Best-fit plane · düzlemsellik" title="Best-fit plane · düzlemsellik" aria-controls="rightDrawerPane-plane" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 7-10h11l-7 10zM5 20h14"/><circle cx="10" cy="6" r="1"/><circle cx="14" cy="16" r="1"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="xrd" aria-label="Yapı faktörü / toz XRD (öğretici)" title="Yapı faktörü / toz XRD (öğretici)" aria-controls="rightDrawerPane-xrd" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M6 18v-3m3 3V7m3 11v-6m3 6V4m3 14v-8"/></svg></button>
@@ -3615,6 +3639,11 @@ function measurementCsv(rows){
 }
 function renderMeasurementHistory(){
  const node=$('measurementHistory');node.replaceChildren();
+ const count=String(measurementHistory.length);
+ $('measurementCount').textContent=count;
+ $('historyToolCount').textContent=count;
+ $('openMeasurementHistory').setAttribute('aria-label','Ölçüm geçmişi ('+count+' kayıt)');
+ document.querySelector('[data-right-tool="history"]').setAttribute('title','Ölçüm geçmişi · '+count+' kayıt');
  for(const row of measurementHistory){
   const item=document.createElement('div');item.className='bond-rule-row';
   const label=document.createElement('span');const last=Object.entries(row.values).at(-1);
@@ -3635,9 +3664,31 @@ function drawSelection(){
  if(selected.length===4){const coords=selected.map(k=>atomData[k].pos.toArray());try{t.querySelector('strong').textContent=dihedralDegrees(...coords).toFixed(2);}catch(e){t.querySelector('strong').textContent='Tanımsız';}}
  renderCoordinationSummary();
 }
+function syncRepeatSteppers(){
+ for(const name of ['ra','rb','rc']){
+  const value=Number($(name).value);
+  for(const button of document.querySelectorAll('[data-repeat-target="'+name+'"]')){
+   const next=value+Number(button.dataset.repeatStep);
+   button.disabled=!Number.isInteger(value)||next<1||next>6;
+  }
+ }
+}
+function initRepeatSteppers(){
+ for(const button of document.querySelectorAll('[data-repeat-target]')){
+  button.onclick=()=>{
+   const input=$(button.dataset.repeatTarget);
+   const current=Number(input.value);
+   if(!Number.isInteger(current)||current<1||current>6)return;
+   input.value=String(Math.min(6,Math.max(1,current+Number(button.dataset.repeatStep))));
+   syncRepeatSteppers();
+  };
+ }
+ for(const name of ['ra','rb','rc'])$(name).addEventListener('input',syncRepeatSteppers);
+ syncRepeatSteppers();
+}
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
- ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncSgControls();$('bondRules').value=state.bondRules;
+ ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncRepeatSteppers();syncSgControls();$('bondRules').value=state.bondRules;
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
  $('adpLevel').value=String(state.adpLevel||50);
  $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
@@ -5190,7 +5241,7 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry'];
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -5257,6 +5308,7 @@ function bind(){
  initStage3Analyses();
  initStandardizationControls();
  initLeftSidebarTabs();
+ initRepeatSteppers();
  $('spaceGroup').onchange=e=>{state.sgNumber=+e.target.value;state.sgSetting=preferredSetting(state.sgNumber);if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni uzay grubu mevcut hücre metriğiyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('sgSetting').onchange=e=>{state.sgSetting=e.target.value;if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting)){state.symmetryEnabled=false;inform('Yeni ayar mevcut hücreyle uyumsuz; simetri modu kapatıldı.');}syncSgControls();renderSites();build();};
  $('useSymmetry').onchange=e=>{if(e.target.checked&&!validateSymmetryMetric(state.cell,state.sgSetting)){e.target.checked=false;inform('Uzay grubu seçili hücre parametreleriyle uyumsuz.');return;}state.symmetryEnabled=e.target.checked;syncSgControls();renderSites();build();fit();};
@@ -5325,6 +5377,7 @@ function bind(){
  initExportModal();
  $('clearMeasure').onclick=()=>{selected=[];drawSelection();};
  $('saveMeasurement').onclick=recordMeasurement;
+ $('openMeasurementHistory').onclick=()=>setRightSidebarTab('history');
  $('exportMeasurements').onclick=()=>{if(!measurementHistory.length){inform('Kaydedilmiş ölçüm yok.');return;}
   download('kristal_olcumler.csv','\ufeff'+measurementCsv(measurementHistory),'text/csv;charset=utf-8');};
  $('clearHistory').onclick=()=>{measurementHistory=[];renderMeasurementHistory();};
