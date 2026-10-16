@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-/* Extracts the same embedded CIF parser used by the browser, without a backend,
-   package dependencies, or a separate copy of the crystallography logic. */
+/* Extracts the browser CIF parser from the module referenced by index.html,
+   without a backend, external dependencies or duplicating parser logic. */
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -22,18 +22,29 @@ class Vector3 {
 }
 function parserFromHtml(filename) {
   const html=fs.readFileSync(filename,'utf8');
-  const match=html.match(/<script type="module">([\s\S]*?)<\/script>/);
-  if(!match)throw Error('Inline module script missing from index.html');
+  const match=html.match(/<script\b[^>]*\btype=["']module["'][^>]*>([\s\S]*?)<\/script>/i);
+  if(!match)throw Error('Module script missing from index.html');
+  const src=match[0].match(/\bsrc=["']([^"']+)["']/i);
+  let script=match[1];
+  if(src){
+    // Fail closed on external or path-traversing sources; this runner only
+    // executes the app's checked-in, local JavaScript before the bootstrap.
+    const relative=src[1];
+    if(!/^\.\/[\w./-]+\.js$/.test(relative)||relative.split('/').includes('..'))
+      throw Error('CIF runner only accepts a relative local module script');
+    const modulePath=path.resolve(path.dirname(filename),relative);
+    script=fs.readFileSync(modulePath,'utf8');
+  }
   // Separate pure data routines from browser UI startup using a stable marker.
   // The previous exact-match startup regexp silently stopped matching when
   // restoreInitialCrystal() was added, crashing the headless validation job.
   const marker='// @kristalyapi/browser-bootstrap:';
-  const boundary=match[1].indexOf(marker);
+  const boundary=script.indexOf(marker);
   if(boundary<0)throw Error('Browser bootstrap marker missing: CIF runner must not execute the UI');
-  const source=match[1].slice(0,boundary).replace(/^import .*?;\s*$/gm,'');
+  const source=script.slice(0,boundary).replace(/^import .*?;\s*$/gm,'');
   const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,document:{getElementById(){return null;}}};
   vm.createContext(context);
-  vm.runInContext(source+'\nthis.__cifParser = cifData;',context,{timeout:15000,filename:'browser-index-inline.js'});
+  vm.runInContext(source+'\nthis.__cifParser = cifData;',context,{timeout:15000,filename:src?'browser-crystal-app.js':'browser-index-inline.js'});
   if(typeof context.__cifParser!=='function')throw Error('cifData() not found');
   return context.__cifParser;
 }
@@ -69,7 +80,7 @@ function main(){
   }
   const dest=process.argv[2]||path.join(root,'validation-results','browser.json');
   fs.mkdirSync(path.dirname(path.resolve(dest)),{recursive:true});
-  fs.writeFileSync(dest,JSON.stringify({target:'embedded index.html CIF parser',cases:output},null,2)+'\n');
+  fs.writeFileSync(dest,JSON.stringify({target:'browser module CIF parser',cases:output},null,2)+'\n');
   console.log('Browser parser measured '+output.length+' CIF fixtures. Output: '+dest);
 }
 if(require.main===module)main();
