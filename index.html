@@ -607,64 +607,68 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 
 /* The lower workbench is a persistent control surface, not a floating overlay
    over the crystal. The WebGL stage reserves its full height. */
-#viewport{--quickbar-height:148px}
+#viewport{--quickbar-height:98px}
 #viewport #stage{bottom:var(--quickbar-height)}
-#viewport .axis-gizmo{bottom:calc(var(--quickbar-height) + 16px)}
-#viewport #toast{bottom:calc(var(--quickbar-height) + 12px)}
-.workbench-quickbar{position:absolute;z-index:5;left:0;right:0;bottom:0;height:var(--quickbar-height);display:grid;grid-template-columns:minmax(0,1.35fr) minmax(305px,.85fr);gap:15px;align-items:stretch;padding:10px 15px 12px;background:#f7fbff;border-top:1px solid #ccdce9;box-shadow:0 -4px 15px #294a6910;color:#3a5673}
-.quickbar-group{display:flex;flex-direction:column;min-width:0;gap:9px;justify-content:center}
-.quickbar-group+.quickbar-group{border-left:1px solid #dbe6f0;padding-left:14px}
-.quickbar-topline{display:flex;align-items:end;min-width:0;gap:10px}
-.quickbar-field{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:10px;font-weight:700;color:#607b96;letter-spacing:.2px}
-.quickbar-select{width:145px;max-width:100%;min-height:34px;padding:6px 24px 6px 8px;font-size:12px;border:1px solid #bfcfe1;border-radius:8px;background:#fff;color:#264b6b}
-.quickbar-flags{display:flex;gap:4px;flex-wrap:nowrap;align-items:center;min-width:0}
-.quick-toggle{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;padding:6px;border:1px solid #c4d3e4;border-radius:8px;background:#fff;color:#7188a1;box-shadow:0 1px 2px #1c42600a}
-.quick-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+#viewport .axis-gizmo{bottom:calc(var(--quickbar-height) + 10px)}
+#viewport #toast{bottom:calc(var(--quickbar-height) + 8px)}
+.workbench-quickbar{position:absolute;z-index:5;left:0;right:0;bottom:0;height:var(--quickbar-height);display:grid;grid-template-columns:minmax(355px,1.1fr) minmax(320px,.9fr);gap:8px;align-items:center;padding:4px 9px;background:#f7fbff;border-top:1px solid #ccdce9;box-shadow:0 -4px 15px #294a6910;color:#3a5673}
+.quickbar-group{display:flex;flex-direction:column;min-width:0;gap:2px;justify-content:center}
+.quickbar-group+.quickbar-group{border-left:1px solid #dbe6f0;padding-left:9px}
+.quickbar-topline{display:flex;align-items:center;min-width:0;gap:6px}
+.quickbar-field{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:9px;line-height:1.1;font-weight:700;color:#607b96;letter-spacing:.1px}
+.quickbar-select,.quickbar-analysis select{min-height:29px;padding:4px 19px 4px 6px;font-size:11px;border:1px solid #bfcfe1;border-radius:6px;background:#fff;color:#264b6b}
+.quickbar-select{width:143px;max-width:100%}
+.quickbar-flags{display:flex;gap:3px;flex-wrap:nowrap;align-items:center;min-width:0}
+.quick-toggle{display:grid;place-items:center;flex:0 0 29px;width:29px;height:29px;padding:4px;border:1px solid #c4d3e4;border-radius:6px;background:#fff;color:#7188a1;box-shadow:0 1px 2px #1c42600a}
+.quick-toggle svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
 .quick-toggle:hover{background:#eaf4fd;color:#286b9d;border-color:#9ac3e2}
 .quick-toggle[aria-pressed="true"]{background:#dcebff;color:#176ba8;border-color:#79b2de;box-shadow:inset 0 0 0 1px #90c4eb,0 2px 4px #216aa41c}
-.quickbar-ranges{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
-.quickbar-range{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:3px;align-items:center}
-.quickbar-range .quickbar-field-label{grid-column:1/-1;font-size:10px;color:#65809a;font-weight:700}
+.quickbar-ranges{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+.quickbar-range{display:grid;grid-template-columns:auto minmax(20px,1fr) 29px;column-gap:5px;align-items:center;min-width:0}
+.quickbar-range .quickbar-field-label{font-size:9px;white-space:nowrap;color:#65809a;font-weight:700}
 .quickbar-range input{width:100%;min-width:0;accent-color:#39a1d4;cursor:pointer;margin:0}
-.quickbar-range output{font-size:11px;font-weight:700;color:#30658e;min-width:32px;text-align:right;font-variant-numeric:tabular-nums}
-.quickbar-hkl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(72px,1.7fr);gap:8px}
-.quickbar-hkl input{width:100%;min-width:0;height:34px;padding:5px 7px;background:#fff;color:#294a67;border:1px solid #c3d3e3;border-radius:8px;font-variant-numeric:tabular-nums}
-.quickbar-miller-options{display:flex;align-items:center;flex-wrap:wrap;column-gap:13px;row-gap:6px}
-.quickbar-check{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:650;color:#416482;cursor:pointer;line-height:1.2}
-.quickbar-check input{margin:0;accent-color:#287ab7;width:15px;height:15px;cursor:pointer}
-.quickbar-check:has(input:checked){color:#176ba8}
+.quickbar-range output{font-size:10px;font-weight:700;color:#30658e;text-align:right;font-variant-numeric:tabular-nums}
+.quickbar-miller-line{display:flex;align-items:end;gap:7px;min-width:0}
+.quickbar-hkl{display:flex;align-items:end;gap:4px;flex:none}
+.quickbar-hkl .quickbar-field{flex:0 0 41px;width:41px}
+.quickbar-hkl .quickbar-field:last-child{flex-basis:53px;width:53px}
+.quickbar-hkl input,.quickbar-analysis input{box-sizing:border-box;width:100%;height:23px;padding:2px 4px;text-align:center;background:#fff;color:#294a67;border:1px solid #c3d3e3;border-radius:6px;font-size:11px;font-variant-numeric:tabular-nums}
+.quickbar-hkl input[type=number],.quickbar-analysis input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.quickbar-hkl input::-webkit-inner-spin-button,.quickbar-analysis input::-webkit-inner-spin-button{appearance:none;margin:0}
+.quickbar-miller-options{display:flex;align-items:end;gap:4px}
+.quick-miller-toggle{flex-basis:28px;width:28px;height:28px}
+.quickbar-analysis{display:flex;align-items:end;gap:6px;min-width:0}
+.quickbar-analysis .quickbar-field{flex:0 0 52px}
+.quickbar-analysis .quickbar-field:first-child{flex-basis:64px}
+.quickbar-analysis .quickbar-poly{flex:1 1 105px;min-width:82px}
+.quickbar-analysis select{width:100%;min-height:23px;padding:2px 16px 2px 5px}
 @media(max-width:1330px){
- #viewport{--quickbar-height:174px}
- .workbench-quickbar{grid-template-columns:minmax(0,1fr) minmax(275px,.78fr);gap:9px;padding:9px 10px}
- .quickbar-topline{flex-wrap:wrap;gap:7px}
- .quickbar-select{width:150px}
- .quickbar-group+.quickbar-group{padding-left:9px}
+ .workbench-quickbar{grid-template-columns:minmax(350px,1fr) minmax(305px,.95fr);gap:5px;padding:4px 7px}
+ .quickbar-group+.quickbar-group{padding-left:7px}
+ .quickbar-range .quickbar-field-label{font-size:8px}
 }
 @media(max-width:1180px){
  .workbench-quickbar{padding-right:64px}
  #viewport .topbar{right:62px}
 }
-@media(min-width:1331px){
- #app.right-drawer-open #viewport{--quickbar-height:190px}
- #app.right-drawer-open .quickbar-topline{flex-wrap:wrap}
- #app.right-drawer-open .workbench-quickbar{grid-template-columns:minmax(0,1fr) minmax(240px,.7fr)}
+@media(min-width:851px){
+ #app.right-drawer-open #viewport{--quickbar-height:156px}
+ #app.right-drawer-open .workbench-quickbar{grid-template-columns:minmax(0,1fr);align-content:center;gap:7px}
+ #app.right-drawer-open .quickbar-group+.quickbar-group{border-left:0;border-top:1px solid #dbe6f0;padding:7px 0 0}
 }
 @media(max-width:850px){
- #viewport{--quickbar-height:248px}
- .workbench-quickbar{grid-template-columns:minmax(0,1fr);gap:7px;overflow-y:auto;align-content:start}
- .quickbar-group{gap:7px}
- .quickbar-group+.quickbar-group{border-left:0;border-top:1px solid #dbe6f0;padding:8px 0 0}
- .quickbar-topline{flex-wrap:nowrap}
- .quickbar-select{width:155px}
- .quick-toggle{flex-basis:31px;width:31px;height:31px}
- .quickbar-miller-options{flex-direction:column;align-items:flex-start;gap:5px}
+ #viewport{--quickbar-height:158px}
+ .workbench-quickbar{grid-template-columns:minmax(0,1fr);gap:5px;overflow-y:auto;align-content:center}
+ .quickbar-group+.quickbar-group{border-left:0;border-top:1px solid #dbe6f0;padding:5px 0 0}
 }
 @media(max-width:540px){
- #viewport{--quickbar-height:266px}
- .quickbar-topline{flex-wrap:wrap}
- .quickbar-flags{gap:3px}
- .quickbar-select{width:100%;min-width:135px}
- .quickbar-check{font-size:10px}
+ #viewport{--quickbar-height:196px}
+ .quickbar-topline{flex-wrap:wrap;gap:4px}
+ .quickbar-select{width:118px}
+ .quickbar-flags{gap:2px}
+ .quick-toggle{flex-basis:27px;width:27px;height:27px}
+ .quickbar-analysis{flex-wrap:wrap;gap:4px}
+ .quickbar-analysis .quickbar-poly{flex-grow:1}
 }
 
 
@@ -742,16 +746,8 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <label class="check"><input id="axes" type="checkbox"> Kristal eksenlerini yapı içinde göster</label>
    <label class="check"><input id="autoRotate" type="checkbox"> Otomatik döndürme</label>
    <label class="check"><input id="adpVisible" type="checkbox"> Termal elipsoitleri (ADP) göster</label>
-   <label class="field"><span>Elipsoit olasılık düzeyi</span><select id="adpLevel"><option value="50">50%</option><option value="90">90%</option><option value="99">99%</option></select></label>
-   <p class="hint">CIF Uij/Bij veya Uiso/Biso alanlarından hesaplanır. Uij kristal eksenlerine göre Kartezyen tensöre çevrilir; geçersiz tensörler çizilmez.</p>
    <div class="field"><span>Atom boyutu</span><div class="slider"><input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output></div></div>
    <div class="field"><span>Bağ uzunluğu eşiği (Å)</span><div class="slider"><input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output></div></div>
-   <label class="field"><span>Koordinasyon çokyüzlüsü (merkez atom)</span><select id="polyElement"><option value="">Kapalı</option></select></label>
-   <div class="triple">
-     <label class="field compact"><span>Komşu sınırı (Å)</span><input id="polyCut" type="number" min="0" max="12" step="0.1" value="0" title="0: bağ kurallarını kullan"></label>
-     <label class="field compact"><span>En fazla komşu</span><input id="polyNeighbors" type="number" min="4" max="24" step="1" value="12"></label>
-   </div>
-   <p class="hint">0 Å: etkin bağ kuralları. Çokyüzlüler periyodik komşularla oluşturulur; kimyasal koordinasyon yorumunu kullanıcı doğrulamalıdır.</p>
   </div></div>
   <div class="section"><h2>Birim hücre <span>Å / °</span></h2>
    <div class="triple">
@@ -866,8 +862,8 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   <section id="workbenchQuickbar" class="workbench-quickbar" aria-label="Hızlı görünüm ve Miller kontrolleri">
    <div class="quickbar-group" role="group" aria-label="Hızlı görünüm kontrolleri">
     <div class="quickbar-topline">
-     <label class="quickbar-field">Model
-      <select id="quickStyle" class="quickbar-select" aria-label="Hızlı model seçimi">
+     <label class="quickbar-field">
+      <select id="quickStyle" class="quickbar-select" aria-label="Hızlı model seçimi" title="Model gösterimi">
        <option value="ball">Küre ve çubuk</option><option value="space">Uzay dolduran</option>
        <option value="stick">Çubuk</option><option value="wire">Tel model</option>
       </select>
@@ -888,16 +884,32 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      <label class="quickbar-range"><span class="quickbar-field-label">Bağ uzunluğu eşiği (Å)</span><input id="quickBondCut" aria-label="Hızlı bağ uzunluğu eşiği" type="range" min=".8" max="5" step=".05" value="2.65"><output id="quickBondCutVal" for="quickBondCut">2.65</output></label>
     </div>
    </div>
-   <div class="quickbar-group" role="group" aria-label="Miller düzlemleri hızlı kontrolleri">
+   <div class="quickbar-group" role="group" aria-label="Miller düzlemleri ve analiz kontrolleri">
+    <div class="quickbar-miller-line">
     <div class="quickbar-hkl">
      <label class="quickbar-field">h<input id="quickH" aria-label="Miller h" type="number" step="1" min="-8" max="8" value="1"></label>
      <label class="quickbar-field">k<input id="quickK" aria-label="Miller k" type="number" step="1" min="-8" max="8" value="1"></label>
      <label class="quickbar-field">l<input id="quickL" aria-label="Miller l" type="number" step="1" min="-8" max="8" value="1"></label>
      <label class="quickbar-field" title="Kalınlık, Miller ayrıntılarındaki sonlu kesit filtresi açıkken kullanılır.">Kesit (Å)<input id="quickSlabThickness" aria-label="Miller kesit kalınlığı (Å)" type="number" step=".25" min=".1" max="100" value="2"></label>
     </div>
-    <div class="quickbar-miller-options">
-     <label class="quickbar-check"><input id="quickShowPlane" type="checkbox"> Miller düzlemlerini görüntüle</label>
-     <label class="quickbar-check"><input id="quickRepeatMillerPlanes" type="checkbox" checked> Süperhücredeki tüm paralel düzlemleri göster</label>
+    <div class="quickbar-miller-options" role="group" aria-label="Miller görünürlüğü">
+     <button id="quickShowPlane" type="button" class="quick-toggle quick-miller-toggle" aria-label="Miller düzlemlerini görüntüle" title="Miller düzlemlerini görüntüle" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 17 9-13 9 13-9 4zM3 17l9-5 9 5M12 4v8" /><path d="m7 15 11-6" stroke-dasharray="2 2"/></svg></button>
+     <button id="quickRepeatMillerPlanes" type="button" class="quick-toggle quick-miller-toggle" aria-label="Süperhücredeki tüm paralel düzlemleri göster" title="Süperhücredeki tüm paralel düzlemleri göster" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 7-3 6 4-7 3zM3 12l7-3 6 4-7 3zM3 18l7-3 6 4-7 3zM17 7l4 3v8" /></svg></button>
+    </div>
+    </div>
+    <div class="quickbar-analysis" role="group" aria-label="Termal elipsoit ve koordinasyon ayarları">
+     <label class="quickbar-field" title="Termal elipsoitlerin (ADP) olasılık düzeyi">ADP
+      <select id="adpLevel" aria-label="Elipsoit olasılık düzeyi"><option value="50">50%</option><option value="90">90%</option><option value="99">99%</option></select>
+     </label>
+     <label class="quickbar-field quickbar-poly" title="Koordinasyon çokyüzlüsü için merkez atom; Kapalı ile gizlenir">Merkez atom
+      <select id="polyElement" aria-label="Koordinasyon çokyüzlüsü merkez atomu"><option value="">Kapalı</option></select>
+     </label>
+     <label class="quickbar-field" title="0 Å: etkin bağ kurallarını kullan. Kimyasal koordinasyon yorumunu doğrulayın.">Komşu (Å)
+      <input id="polyCut" type="number" min="0" max="12" step="0.1" value="0" aria-label="Komşu sınırı (Å)">
+     </label>
+     <label class="quickbar-field" title="Koordinasyonda dikkate alınacak en fazla komşu sayısı">Maks.
+      <input id="polyNeighbors" type="number" min="4" max="24" step="1" value="12" aria-label="En fazla komşu">
+     </label>
     </div>
    </div>
   </section>
@@ -3225,10 +3237,31 @@ function fit(){
  resize();orbit.update();
 }
 function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);camera.lookAt(orbit.target);orbit.update();}
+function projectionVisibleHeight(view,distance){
+ if(view.isPerspectiveCamera)return 2*distance*Math.tan(view.getEffectiveFOV()*Math.PI/360);
+ if(view.isOrthographicCamera)return (view.top-view.bottom)/view.zoom;
+ throw Error('Desteklenmeyen kamera izdüşümü.');
+}
+function perspectiveFovForHeight(height,distance){
+ if(!Number.isFinite(height)||height<=0||!Number.isFinite(distance)||distance<=0)throw Error('Geçersiz kamera ölçeği.');
+ return Math.max(.01,Math.min(170,2*Math.atan(height/(2*distance))*180/Math.PI));
+}
 function toggleProjection(){
- const old=camera,p=old.position.clone(),t=orbit.target.clone();perspective=!perspective;
- if(perspective){camera=new THREE.PerspectiveCamera(44,1,.01,10000);}else{camera=new THREE.OrthographicCamera(-10,10,10,-10,.01,10000);}
- camera.up.set(0,0,1);camera.position.copy(p);orbit.object=camera;orbit.target.copy(t);resize();orbit.update();$('projectionBtn').setAttribute('aria-pressed',String(!perspective));$('projectionBtn').setAttribute('aria-label',perspective?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
+ const old=camera,p=old.position.clone(),t=orbit.target.clone(),distance=Math.max(p.distanceTo(t),.001);
+ // Match apparent size at the orbit target without moving the camera.
+ // An orthographic zoom changes zoom, whereas a perspective zoom changes distance.
+ const height=projectionVisibleHeight(old,distance);
+ perspective=!old.isPerspectiveCamera;
+ if(perspective){
+  camera=new THREE.PerspectiveCamera(perspectiveFovForHeight(height,distance),1,old.near,old.far);
+ }else{
+  currentSpan=height;
+  camera=new THREE.OrthographicCamera(-height/2,height/2,height/2,-height/2,old.near,old.far);
+ }
+ camera.up.copy(old.up);camera.position.copy(p);camera.quaternion.copy(old.quaternion);
+ orbit.object=camera;orbit.target.copy(t);resize();orbit.update();
+ $('projectionBtn').setAttribute('aria-pressed',String(!perspective));
+ $('projectionBtn').setAttribute('aria-label',perspective?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
 }
 function pickAtom(e){
  if(!lastPointer||Math.hypot(e.clientX-lastPointer.x,e.clientY-lastPointer.y)>4||e.button!==0)return;
@@ -4866,8 +4899,8 @@ function syncQuickbar(){
   $(quick).value=$(source).value;$(output).value=Number($(source).value).toFixed(2);
  }
  for(const [quick,source] of QUICKBAR_MILLER_FIELDS)$(quick).value=$(source).value;
- $('quickShowPlane').checked=$('showPlane').checked;
- $('quickRepeatMillerPlanes').checked=$('repeatMillerPlanes').checked;
+ $('quickShowPlane').setAttribute('aria-pressed',String($('showPlane').checked));
+ $('quickRepeatMillerPlanes').setAttribute('aria-pressed',String($('repeatMillerPlanes').checked));
 }
 function applyQuickMiller(){
  const hkl=['quickH','quickK','quickL'].map(id=>Number($(id).value));
@@ -4880,8 +4913,8 @@ function applyQuickMiller(){
  const originals=QUICKBAR_MILLER_FIELDS.map(([,id])=>[id,$(id).value]);
  const checkboxes=[['showPlane',$('showPlane').checked],['repeatMillerPlanes',$('repeatMillerPlanes').checked]];
  for(const [quick,source] of QUICKBAR_MILLER_FIELDS)$(source).value=$(quick).value;
- $('showPlane').checked=$('quickShowPlane').checked;
- $('repeatMillerPlanes').checked=$('quickRepeatMillerPlanes').checked;
+ $('showPlane').checked=$('quickShowPlane').getAttribute('aria-pressed')==='true';
+ $('repeatMillerPlanes').checked=$('quickRepeatMillerPlanes').getAttribute('aria-pressed')==='true';
  try{previewPlane();build();}
  catch(error){
   state.plane=previousPlane;
@@ -4905,7 +4938,8 @@ function initQuickbar(){
  }
  for(const [quick,source] of QUICKBAR_MILLER_FIELDS){$(quick).addEventListener('change',applyQuickMiller);$(source).addEventListener('change',syncQuickbar);}
  for(const [quick,source] of [['quickShowPlane','showPlane'],['quickRepeatMillerPlanes','repeatMillerPlanes']]){
-  $(quick).addEventListener('change',applyQuickMiller);$(source).addEventListener('change',syncQuickbar);
+  $(quick).onclick=()=>{$(quick).setAttribute('aria-pressed',String($(quick).getAttribute('aria-pressed')!=='true'));applyQuickMiller();};
+  $(source).addEventListener('change',syncQuickbar);
  }
  syncQuickbar();
 }

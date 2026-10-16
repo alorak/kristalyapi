@@ -111,6 +111,21 @@ try{
  await page.locator('#presetList .preset-choice').filter({hasText:'Silisyum'}).click();
  await page.locator('#importPreset').click();
  assert.match(await page.locator('#infoName').textContent(),/Silisyum/);
+ await page.waitForTimeout(250);
+ const originalView=await sample(page);
+ await page.locator('#projectionBtn').click();
+ assert.equal(await page.locator('#projectionBtn').getAttribute('aria-pressed'),'true');
+ await page.waitForTimeout(180);
+ const orthoView=await sample(page);
+ await page.screenshot({path:path.join(artifacts,'17-orthographic-projection.png'),animations:'disabled'});
+ assert.ok(orthoView.ink>originalView.ink*.55&&orthoView.ink<originalView.ink*1.85,
+  'orthographic projection must keep roughly the same magnification');
+ await page.locator('#projectionBtn').click();
+ assert.equal(await page.locator('#projectionBtn').getAttribute('aria-pressed'),'false');
+ await page.waitForTimeout(180);
+ const restoredView=await sample(page);
+ assert.ok(Math.abs(restoredView.ink-originalView.ink)<originalView.ink*.22,
+  'repeated projection switching must not gradually zoom the structure');
  const tools=page.locator('[data-right-tool]');
  assert.equal(await tools.count(),12,'Miller must have its own icon as well as the eleven analysis tools');
  for(const [source,destination] of [
@@ -126,6 +141,11 @@ try{
  await page.locator('[data-right-tool="info"]').click();
  await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width<60);
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'active icon must close its own drawer');
+ assert.ok((await page.locator('#workbenchQuickbar').boundingBox()).height<=100,'closed-drawer desktop dock should be under 100 px');
+ const dockBounds=await page.locator('#workbenchQuickbar').boundingBox();
+ const polyBounds=await page.locator('#polyNeighbors').boundingBox();
+ assert.ok(polyBounds.y+polyBounds.height<=dockBounds.y+dockBounds.height-2,
+  'coordination settings must not clip beneath the dock');
  await save(page,'01-silicon-perspective',metrics);
  await page.getByRole('button',{name:'Üstten görünüm'}).click();
  await page.waitForTimeout(650);
@@ -190,6 +210,22 @@ try{
  await save(page,'10-moyo-space-group',metrics);
  // The dock mirrors the original left controls and updates the same state.
  assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
+ const dockSize=await page.locator('#workbenchQuickbar').boundingBox();
+ assert.ok(dockSize.height<=160,'dock with open analysis drawer should remain compact');
+ for(const id of ['adpLevel','polyElement','polyCut','polyNeighbors']){
+  assert.equal(await page.locator('#leftGeneralPane #'+id).count(),0,id+' must leave the left sidebar');
+  assert.equal(await page.locator('#workbenchQuickbar #'+id).count(),1,id+' must appear in the dock');
+ }
+ assert.ok((await page.locator('#adpLevel').boundingBox()).width>=60,'ADP percentage must remain readable');
+ assert.ok((await page.locator('#quickH').boundingBox()).width<=50,'Miller index inputs should fit three characters');
+ await page.locator('#adpLevel').selectOption('50');
+ const polyCenter=await page.locator('#polyElement option').nth(1).getAttribute('value');
+ await page.locator('#polyElement').selectOption(polyCenter);
+ await page.locator('#polyCut').fill('3');await page.locator('#polyCut').press('Tab');
+ await page.locator('#polyNeighbors').fill('8');await page.locator('#polyNeighbors').press('Tab');
+ assert.equal(await page.locator('#polyElement').inputValue(),polyCenter);
+ assert.equal(await page.locator('#polyNeighbors').inputValue(),'8');
+ await page.locator('#polyElement').selectOption('');
  await page.locator('#quickStyle').selectOption('space');
  assert.equal(await page.locator('#style').inputValue(),'space');
  await page.locator('#quickStyle').selectOption('ball');
@@ -204,8 +240,12 @@ try{
  await page.locator('#quickK').fill('0');await page.locator('#quickK').press('Tab');
  await page.locator('#quickL').fill('0');await page.locator('#quickL').press('Tab');
  await page.locator('#quickSlabThickness').fill('3');await page.locator('#quickSlabThickness').press('Tab');
- await page.locator('#quickShowPlane').check();
- await page.locator('#quickRepeatMillerPlanes').uncheck();
+ if(await page.locator('#quickShowPlane').getAttribute('aria-pressed')==='true')await page.locator('#quickShowPlane').click();
+ await page.locator('#quickShowPlane').click();
+ if(await page.locator('#quickRepeatMillerPlanes').getAttribute('aria-pressed')==='false')await page.locator('#quickRepeatMillerPlanes').click();
+ await page.locator('#quickRepeatMillerPlanes').click();
+ assert.equal(await page.locator('#quickShowPlane').getAttribute('aria-pressed'),'true');
+ assert.equal(await page.locator('#quickRepeatMillerPlanes').getAttribute('aria-pressed'),'false');
  assert.equal(await page.locator('#h').inputValue(),'1');
  assert.equal(await page.locator('#k').inputValue(),'0');
  assert.equal(await page.locator('#l').inputValue(),'0');
@@ -218,6 +258,7 @@ try{
  await page.locator('[data-right-tool="miller"]').click();
  await page.setViewportSize({width:650,height:760});
  assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
+ assert.ok((await page.locator('#workbenchQuickbar').boundingBox()).height<=165,'mobile dock should be compact');
  assert.equal(await page.evaluate(()=>document.getElementById('stage').getBoundingClientRect().bottom<=document.getElementById('workbenchQuickbar').getBoundingClientRect().top+1),true,'mobile dock must not cover WebGL drawing surface');
  await page.locator('[data-right-tool="symmetry"]').click();
  assert.equal(await page.locator('#rightDrawerPane-symmetry').isVisible(),true,'mobile drawer must open');
