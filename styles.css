@@ -783,3 +783,57 @@ header .actions .header-io svg{width:15px;height:15px;stroke:currentColor;stroke
 @media(max-width:580px){.workspace-current{display:none}.open-dialog-head,.open-tabs,.open-list,.open-dialog-foot{padding-left:14px;padding-right:14px}.open-tabs button{flex:1;padding:8px 5px}.open-dialog{max-height:92dvh}}
 @media(max-width:700px){.cod-detail-dialog{max-height:95dvh}.cod-detail-header,.cod-detail-footer{padding:14px}.cod-detail-groups{padding:12px;gap:9px}.cod-detail-fields{grid-template-columns:1fr}.cod-detail-pair.wide dt{flex-basis:45%}.cod-detail-status{margin:10px 12px 0}.language-switch button{padding:4px 5px}header .actions>.tag{display:none}}
 @media(max-width:540px){header .actions>.history-toolbar,header #inspectorToggle{display:none}header .actions{gap:3px}header .actions .language-switch{margin-left:2px}header .brand{gap:5px}}
+
+/* ===== Karşı Uzay ve Kırınım (reciprocal-space concept page) ===== */
+body.reciprocal-open .workspace-action:not(.workspace-launcher){display:none!important}
+body.reciprocal-open #app{display:none}
+#reciprocalPage[hidden],#reciprocalPage .rs-pane[hidden]{display:none!important}
+#reciprocalPage{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f7f9fc;color:#27384c}
+.rs-source{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin:-6px 0 14px;padding:10px 14px;background:#fff;border:1px solid #dde6ef;border-radius:11px;font-size:12px;color:#5e7085}
+.rs-source strong{font-size:14px;color:#223750}
+.rs-source-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#7c8ea3}
+.rs-grid{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:18px;align-items:start;margin-bottom:20px}
+.rs-grid>.lib-panel{margin-bottom:0}
+.rs-controls{display:flex;flex-direction:column;gap:12px}
+.rs-controls .lib-panel-head{margin-bottom:4px}
+.rs-hkl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.rs-hkl input{width:100%;min-width:0;border:1px solid #ccd7e4;border-radius:8px;color:#273c53;background:#fff;font-size:13px;padding:9px 10px}
+#reciprocalPage .check{color:#3a4f66}
+#reciprocalPage .lib-field output{font-size:12px;color:#526881;font-variant-numeric:tabular-nums}
+#reciprocalPage input[type=range]{accent-color:#2879d0}
+#reciprocalPage input:disabled{opacity:.5}
+.rs-readout{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;padding:12px;border:1px solid #e3eaf2;border-radius:10px;background:#f9fbfd;font-size:12px}
+.rs-readout:empty{display:none}
+.rs-readout dt{color:#5e7085}
+.rs-readout dd{margin:0;text-align:right;color:#1d3048;font-weight:620;font-variant-numeric:tabular-nums}
+.rs-status{margin:0;font-size:12px;line-height:1.5;color:#557089;min-height:1em}
+.rs-status.error{color:#b23a2a}
+.rs-concept{font-size:12px;line-height:1.6;color:#435a73;background:#f1f6fc;border:1px solid #d6e4f3;border-radius:10px;padding:11px 13px;margin-top:4px}
+.rs-concept strong{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.1px;color:#2a6aa6;margin-bottom:4px}
+.rs-concept.rs-warning{background:#fbf6ee;border-color:#ecdcc0;color:#6a5631}
+.rs-concept.rs-warning strong{color:#a4651a}
+.rs-hint{font-size:11px;color:#7a8ca1;margin:10px 0 0}
+.rs-views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rs-figure{margin:0;display:flex;flex-direction:column;gap:7px;min-width:0}
+.rs-figure figcaption{font-size:12px;font-weight:620;color:#4a5f78}
+.rs-view{position:relative;height:clamp(300px,46vh,500px);border:1px solid #dde6ef;border-radius:13px;background:radial-gradient(ellipse at 50% 40%,#ffffff 0%,#eef3f9 100%);overflow:hidden}
+.rs-view-tall{height:clamp(340px,58vh,600px)}
+.rs-view canvas{display:block;width:100%;height:100%;touch-action:none}
+.rs-figure-panel{display:flex;flex-direction:column;gap:12px}
+.rs-svg{display:block;width:100%;height:auto;background:#fff;border:1px solid #e3eaf2;border-radius:10px}
+.rs-svg text{font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+.rs-square{max-width:640px;align-self:center}
+.rs-dark{background:#070d18;border-color:#1d2a3d}
+.rs-phasor-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.rs-phasor-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rs-powder-layout{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:16px;align-items:center}
+.rs-band-controls{display:grid;grid-template-columns:repeat(2,minmax(0,180px));gap:12px;margin-bottom:12px}
+.rs-table-wrap{max-height:300px;overflow:auto;border-radius:9px}
+.rs-table-wrap:empty{display:none}
+.rs-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.rs-table th{position:sticky;top:0;background:#eef3f9;color:#4a5f78;font-weight:650;text-align:left;padding:6px 8px}
+.rs-table td{padding:5px 8px;border-top:1px solid #edf1f6;color:#26394f}
+@media(max-width:1100px){.rs-grid{grid-template-columns:1fr}.rs-phasor-layout,.rs-powder-layout{grid-template-columns:1fr}}
+@media(max-width:700px){.rs-views{grid-template-columns:1fr}.rs-view{height:300px}#reciprocalPage .lib-tabs{overflow-x:auto;flex-wrap:nowrap}#reciprocalPage .lib-tabs button{white-space:nowrap}}
+.rs-button{align-self:flex-start;background:#fff;color:#1a67a9;border:1px solid #c9dbee;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:650}
+.rs-button:hover:not(:disabled){background:#edf4fb;border-color:#9fc1e2}

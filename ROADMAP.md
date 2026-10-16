@@ -13,6 +13,17 @@
 
 Bu pakette bildirilen atom/bağ sayıları **koruyucu uygulama sınırlarıdır, ölçülmüş performans hızlanması değildir**. Canlı COD ve Three.js CDN'i ağ gerektirmeye devam eder.
 
+## Kavram laboratuvarı · Karşı Uzay ve Kırınım (Ekim 2026)
+
+VESTA'da karşılığı olmayan, öğretim ve araştırma amaçlı ayrı sayfa (`#karsi-uzay`).
+
+| Başlık | Uygulanan kapsam | Kalan geliştirme |
+| --- | --- | --- |
+| Gerçek ↔ karşı örgü | `(hkl)` düzlem ailesi ve `G(hkl)`, karşı hücre parametreleri, `|F|²` ağırlıklı karşı örgü, yapı faktörü fazör diyagramı | Gerçek ve karşı görünüm kameralarını eşleme; düzlem ailesini karşı örgüde vurgulayan animasyon |
+| Ewald ve toz | Ewald kesiti, `ω` dönüşü ve sonraki Bragg konumu, toz kabukları, Debye–Scherrer halkaları, LP'li toz deseni | 3B Ewald küresi, Laue (beyaz ışın) deseni, eğik/2B alan dedektörü geometrisi |
+| SAED | Relativistik λ, Mott–Bethe, uyarılma hatası, `sinc²` biçim çarpanı, sönük konumlar | HOLZ halkaları, Kikuchi çizgileri, çift kırınım yolları, dinamik (Bloch dalgası) hesap |
+| Brillouin bölgesi | Saf ötelemelerden primitive örgü, Wigner–Seitz bölgesi, Setyawan–Curtarolo yolu (CUB/FCC/BCC/TET/ORC/HEX), boş örgü bantları | BCT, RHL, ORCF/ORCI/ORCC, MCL, TRI yolları; sıkı bağ veya ampirik psödopotansiyel bantları (ör. Si/GaAs) |
+
 ## P1 ilerleme · Ekim 2026
 
 Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirme dalında gerçekleştirildi ve regresyonlarla sınanıyor:
