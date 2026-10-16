@@ -5,6 +5,10 @@
     "version": "0.7.4"
   },
   "target": "kristalyapi index.html CIF parser",
+  "known_inconclusive": {
+    "real-15": "Reference has unspecified/nonfinite atom positions or occupancy",
+    "real-30": "unterminated 'string'"
+  },
   "tolerances": {
     "cell_length_A": 0.001,
     "cell_angle_deg": 0.01,

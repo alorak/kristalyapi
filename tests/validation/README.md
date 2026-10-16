@@ -18,7 +18,12 @@ GitHub Actions [38632658918](https://github.com/alorak/kristalyapi/actions/runs/
 - **ICSD59959.cif:** Tanımsız `.` atom koordinatları keyfi biçimde 0 alınmıyor veya sessizce atılmıyor. Gemmi'nin bu alanları NaN olarak vermesi **inconclusive** (belirsiz kaynak), **pass** değil. Bu durumda normal ölçüm modunda CI'ın `exit code 2` ile çökmesi önleniyor.
 - **srycoo.cif:** Kaynağın sonlandırılmamış çok satırlı metni nedeniyle Gemmi referansı yok; **inconclusive** kalıyor, değiştirilmiş/geçerli CIF gibi gösterilmiyor.
 
-Düzeltmeler sonrasında beklenen dağılım **38 pass, 2 inconclusive, 0 fail, 0 error**. Bu sayılar henüz yeni bir Actions koşusuyla teyit edilmemiştir. Ölçüm modunda bilimsel belirsizlikler raporlanır; **strict** modda belirsizlik dahil her uyumsuzluk işi başarısız yapar.
+2026-10-16 yerel Gemmi 0.7.4 testi: **38 pass, 2 inconclusive, 0 fail, 0 error**.
+FePO4 dosyasındaki tek elemanlı `_cell_angle_alpha` döngüsü, Gemmi üst seviye küçük-yapı
+okuyucusunu yanlışlıkla 1 Å varsayılan hücreye düşürüyordu. Referans hücre artık
+Gemmi'nin düşük seviye CIF etiketlerinden bağımsız okunuyor; referansın simetri
+genişletmesi de korunuyor. İki belirsiz kaynak (`real-15`, `real-30`) manifestte
+beklenen hata nedeniyle açıkça kayıtlıdır; başarılı kabul edilmez.
 
 ## Nasıl ölçüyor?
 
@@ -48,10 +53,10 @@ Düzeltmeler sonrasında beklenen dağılım **38 pass, 2 inconclusive, 0 fail, 
 ```bash
 python -m pip install gemmi==0.7.4
 node --version   # Node.js 22 önerilir
-python tests/validation/validate.py --out-dir validation-results
+python tests/validation/validate.py --out-dir validation-results --gate
 ```
 
-Gerektiğinde hata veren CIF'lerin otomatik test kapısı olması için:
+Bilinen bozuk kaynaklar dahil **her** belirsizliği başarısız saymak için:
 
 ```bash
 python tests/validation/validate.py --strict --out-dir validation-results
@@ -61,7 +66,9 @@ python tests/validation/validate.py --strict --out-dir validation-results
 
 [**CIF crystal accuracy · Gemmi reference**](../../.github/workflows/cif-validation.yml) iş akışı **yalnızca `main` dalına ilgili dosyalar merge/push edildiğinde** veya elle `workflow_dispatch` ile çalışır. PR açılınca tetiklenmez. Sonuçlar GitHub Actions **Summary** görünümüne yazılır ve `browser.json`, `reference.json`, `report.json`, `report.md` dosyaları 30 günlük artifact olarak saklanır.
 
-- Varsayılan: **ölçüm modu**, bilimsel uyumsuzluklar raporlanır ama mevcut GitHub Pages dağıtımı bloke edilmez. Kaynak bütünlüğü veya ölçüm altyapısı hatası job'ı başarısız yapar.
+- Varsayılan: **scientific gate**, herhangi bir `fail` / `error` veya yeni/
+  nedeni değişen `inconclusive` CI işini başarısız yapar. Yalnız manifestte
+  sabitlenmiş iki hatalı kaynak belirtilen nedenleriyle belirsiz kalabilir.
 - **Run workflow → strict: true**: uyumsuz veya belirsiz test varsa job başarısız olur; artifact yine yüklenir.
 
 Bu ayrım, henüz düzeltilmemiş kristallerin "başarılı" sayıldığı anlamına gelmez; gerçek değerler raporda açıkça görünür.

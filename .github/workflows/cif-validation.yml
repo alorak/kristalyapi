@@ -47,7 +47,7 @@ jobs:
       - name: Validate headless CIF extraction against UI bootstrap changes
         run: node --test tests/validation/test_runner.cjs
 
-      - name: Run browser vs Gemmi CIF measurements
+      - name: Run browser vs Gemmi CIF scientific gate
         env:
           STRICT_MODE: ${{ inputs.strict || 'false' }}
         shell: bash
@@ -55,7 +55,7 @@ jobs:
           if [ "$STRICT_MODE" = 'true' ]; then
             python tests/validation/validate.py --out-dir validation-results --strict
           else
-            python tests/validation/validate.py --out-dir validation-results
+            python tests/validation/validate.py --out-dir validation-results --gate
           fi
 
       - name: Upload detailed reference, metrics and report
