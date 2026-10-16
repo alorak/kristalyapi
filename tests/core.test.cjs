@@ -45,6 +45,35 @@ const api = context.api;
 vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
+test('Workspaces: independent crystals persist and active selection restores with ten-item validation',()=>{
+ const sandbox={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,URL,
+  document:{getElementById(){return null;}},window:{localStorage:{data:{},getItem(key){return this.data[key]??null;},setItem(key,value){this.data[key]=value;}}}};
+ vm.createContext(sandbox);vm.runInContext(script,sandbox);
+ const initial=JSON.parse(vm.runInContext('JSON.stringify(lastCrystalPayload(state))',sandbox));
+ const another=JSON.parse(JSON.stringify(initial));another.name='Yapı B';another.cell.a=7.25;
+ const key='kristalyapi.workspaces.v1';
+ const valid={format:'kristalyapi-workspaces-v1',activeId:'ws-2',items:[
+  {id:'ws-1',label:'Örnek Si',crystal:initial,camera:null},
+  {id:'ws-2',label:'Yeni model',crystal:another,camera:null}
+ ]};
+ sandbox.window.localStorage.setItem(key,JSON.stringify(valid));
+ assert.equal(vm.runInContext('restoreWorkspaceSession(window.localStorage)',sandbox),true);
+ const recovered=JSON.parse(vm.runInContext('JSON.stringify({activeId:activeWorkspaceId,name:state.name,cell:state.cell,items:workspaces.map(x=>({label:x.label,name:x.state.name}))})',sandbox));
+ assert.equal(recovered.activeId,'ws-2');assert.equal(recovered.name,'Yapı B');
+ assert.equal(recovered.cell.a,7.25);assert.equal(recovered.items[0].name,initial.name);
+ vm.runInContext('persistWorkspaceSession()',sandbox);
+ const saved=JSON.parse(sandbox.window.localStorage.getItem(key));
+ assert.equal(saved.items.length,2);assert.equal(saved.items[0].crystal.cell.a,initial.cell.a);
+ assert.equal(saved.items[1].crystal.cell.a,7.25);
+ for(const malicious of [
+  {...valid,items:Array.from({length:11},(_,i)=>({id:'ws-'+(i+1),label:'Yapı',crystal:initial}))},
+  {...valid,items:[valid.items[0],valid.items[0]]},
+  {...valid,items:[{id:'invalid',label:'X',crystal:another}]}
+ ]){
+  sandbox.window.localStorage.setItem(key,JSON.stringify(malicious));
+  assert.throws(()=>vm.runInContext('restoreWorkspaceSession(window.localStorage)',sandbox),/geçersiz|kimliği/i);
+ }
+});
 test('unit cell: cubic volume', () => approx(api.volume(api.basis(cubic)), 125));
 test('unit cell: triclinic fractional/cartesian round-trip', () => {
   const B = api.basis({a: 3, b: 4, c: 5, alpha: 75, beta: 85, gamma: 95});

@@ -709,12 +709,44 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 .history-toolbar .history-button:focus-visible{outline:2px solid #2683d0;outline-offset:1px}
 .history-toolbar .history-button:disabled{color:#9eafc0;cursor:not-allowed;opacity:.55}
 @media(max-width:720px){.history-toolbar{gap:1px;padding:2px}.history-toolbar .history-button{min-width:31px;height:30px}}
+/* Independent crystal workspaces: a small launcher beside the brand and a left slide-out. */
+.workspace-launcher{position:relative;display:grid;place-items:center;flex:none;width:37px;height:37px;padding:7px;border-radius:10px;border:1px solid #d5e0ec;background:#fff;color:#315778}
+.workspace-launcher:hover:not(:disabled),.workspace-launcher[aria-expanded="true"]{background:#eaf4ff;border-color:#87b6e2;color:#1765a6}
+.workspace-launcher svg{width:21px;height:21px;display:block}
+.workspace-count{position:absolute;right:-6px;bottom:-5px;min-width:19px;height:19px;border:2px solid #fff;border-radius:999px;display:grid;place-items:center;padding:0 3px;background:#2576ca;color:#fff;font-size:10px;font-weight:800;line-height:1}
+.workspace-backdrop{position:fixed;inset:54px 0 0;z-index:19;background:rgba(24,43,65,.27)}
+.workspace-backdrop[hidden]{display:none}
+.workspace-drawer{position:fixed;z-index:20;left:0;top:54px;bottom:0;width:min(350px,calc(100vw - 20px));display:flex;flex-direction:column;gap:0;background:#fff;border-right:1px solid #d9e4ef;box-shadow:14px 6px 45px #1b365238;transform:translateX(-105%);visibility:hidden;pointer-events:none;transition:transform .22s ease,visibility .22s}
+.workspace-drawer.open{transform:translateX(0);visibility:visible;pointer-events:auto}
+.workspace-drawer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:21px 19px 12px;border-bottom:1px solid #e6edf5}
+.workspace-drawer-head strong{font-size:16px;color:#213c57}
+.workspace-drawer-head p{margin:5px 0 0;font-size:12px;line-height:1.5;color:#72869b}
+.workspace-close-drawer{padding:5px 9px;font-size:19px;border:0;background:transparent;color:#617990}
+.workspace-list{display:flex;flex-direction:column;gap:7px;overflow-y:auto;min-height:0;padding:13px}
+.workspace-entry{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid #e0e7f0;border-radius:11px;background:#fff}
+.workspace-entry.active{background:#eaf4ff;border-color:#8dbce6;box-shadow:inset 3px 0 #2779c8}
+.workspace-select{display:flex;gap:11px;align-items:center;flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:6px}
+.workspace-select:hover:not(:disabled){background:transparent}
+.workspace-number{flex:none;width:29px;height:29px;display:grid;place-items:center;border:1px solid #d6e3f1;border-radius:9px;background:#f2f6fb;color:#46708d;font-size:12px;font-weight:700}
+.workspace-entry.active .workspace-number{background:#2677ca;color:#fff;border-color:#2677ca}
+.workspace-entry-text{min-width:0;display:grid;gap:3px}
+.workspace-entry-text strong{font-size:12px;color:#27415d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-entry-text small{font-size:11px;color:#73889d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-entry-actions{display:flex;align-items:center;gap:1px;flex:none}
+.workspace-entry-actions button{width:29px;height:29px;padding:4px;border:0;background:transparent;color:#6c8297;font-size:16px}
+.workspace-entry-actions button:hover:not(:disabled){background:#d9eaf9;color:#185d9c}
+.workspace-entry-actions .workspace-remove:hover:not(:disabled){color:#b73d48;background:#fcebed}
+.workspace-drawer-footer{margin-top:auto;padding:13px 19px 20px;border-top:1px solid #e6edf5}
+.workspace-add{width:100%;text-align:center;font-size:13px;font-weight:700;background:#eaf4ff;color:#1769a9;border-color:#b5d4ec}
+.workspace-drawer-footer small{display:block;margin-top:9px;color:#7b8fa3;font-size:11px;line-height:1.45}
+@media(max-width:720px){.workspace-drawer,.workspace-backdrop{top:54px}.workspace-launcher{width:32px;height:32px;padding:5px}.workspace-launcher svg{width:19px;height:19px}header .brand{gap:8px}}
+@media(prefers-reduced-motion:reduce){.workspace-drawer{transition:none}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
 <body>
 <header>
- <div class="brand"><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a></nav></div>
+ <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a></nav></div>
  <div class="actions">
   <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
   <div class="history-toolbar workspace-action" role="group" aria-label="Kristal düzenleme geçmişi">
@@ -731,6 +763,12 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
  </div>
 </header>
+<div id="workspaceBackdrop" class="workspace-backdrop" hidden></div>
+<aside id="workspaceDrawer" class="workspace-drawer" role="dialog" aria-label="Kristal çalışma alanları" aria-modal="false" aria-hidden="true" inert>
+ <div class="workspace-drawer-head"><div><strong>Çalışma alanları</strong><p>Her yapıyı bağımsız düzenleyin ve aralarında geçiş yapın.</p></div><button id="workspaceDrawerClose" type="button" class="workspace-close-drawer" aria-label="Çalışma alanlarını kapat">×</button></div>
+ <div id="workspaceList" class="workspace-list" aria-label="Açık kristal yapıları"></div>
+ <div class="workspace-drawer-footer"><button id="workspaceAdd" class="workspace-add" type="button">+ Yeni yapı ekle</button><small id="workspaceLimitHint">En fazla 10 yapı · seçili yapının düzenlemeleri korunur.</small></div>
+</aside>
 <input id="fileInput" type="file" accept=".cif,.mcif,.vasp,.poscar,.contcar,.xyz,.json,.txt">
 <div id="app">
  <aside class="panel left" id="leftPanel" aria-label="Kristal yapı düzenleyicisi">
@@ -1885,7 +1923,9 @@ function updateVolumeSliceStats(){
 }
 async function loadVolumeFile(file,asPotential=false,additional=false){
  if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
+ const workspaceId=activeWorkspaceId;
  const parsed=readVolumetric(await file.text(),file.name);
+ if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen yeniden yükleyin.');
  if(asPotential){
   if(!densityGrid)throw Error('Önce ana hacimsel veri dosyasını yükleyin.');
   if(!volumeGridCompatible(densityGrid,parsed))throw Error('Potansiyel alanı uzaysal koordinat sınırlarıyla uyumsuz.');
@@ -3493,16 +3533,27 @@ function runPowderAnalysis(){
   lastXrd=powderPattern(state.cell,sites,{
    wavelength:Number($('xrdLambda').value),maxAngle:Number($('xrdAngle').value),
    maxIndex:Number($('xrdMaxIndex').value)});
-  renderPowderChart(lastXrd);
-  $('xrdSummary').textContent=lastXrd.groups.length+' hesaplanan çizgi · '+
-   lastXrd.extinctions+' faz sönümlemesi (< 10⁻⁸) · f=Z sabit yaklaşıklık · nicel şiddet değil';
-  const host=$('xrdResults');host.replaceChildren();
-  for(const p of lastXrd.groups.slice(0,35)){
-   const line=document.createElement('div');line.className='bond-rule-row';
-   line.textContent='('+p.hkl.join(' ')+') · '+p.angle.toFixed(3)+'° · d='+p.d.toFixed(4)+' Å · '+p.relative.toFixed(1)+'%';
-   host.append(line);
-  }
+  renderWorkspaceXrd();
  }catch(error){inform('Yapı faktörü: '+error.message);}
+}
+function renderWorkspaceXrd(){
+ const host=$('xrdResults');host.replaceChildren();
+ if(!lastXrd){$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
+ renderPowderChart(lastXrd);
+ $('xrdSummary').textContent=lastXrd.groups.length+' hesaplanan çizgi · '+
+  lastXrd.extinctions+' faz sönümlemesi (< 10⁻⁸) · f=Z sabit yaklaşıklık · nicel şiddet değil';
+ for(const p of lastXrd.groups.slice(0,35)){
+  const line=document.createElement('div');line.className='bond-rule-row';
+  line.textContent='('+p.hkl.join(' ')+') · '+p.angle.toFixed(3)+'° · d='+p.d.toFixed(4)+' Å · '+p.relative.toFixed(1)+'%';
+  host.append(line);
+ }
+}
+function renderWorkspaceBvs(){
+ $('bvsResult').textContent=lastBvs?'CN='+lastBvs.count+' · BVS='+lastBvs.sum.toFixed(4)+' v.u.'+
+  ' · referans yükseltgenme +'+lastBvs.referenceCharge+
+  ' · ort. bağ='+lastBvs.mean.toFixed(4)+' Å'+
+  ' · min/maks='+String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å':
+  'Atom ve referans parametresi seçin.';
 }
 function refreshStage3Atoms(){
  const picker=$('analysisCenter');if(!picker)return;
@@ -3529,10 +3580,7 @@ function initStage3Analyses(){
     ['x','y','z'].every(k=>Math.abs(frac(s[k])-frac(input[k]))<1e-5)):index;
    if(physIndex<0)throw Error('Simetri genişletilmiş koordinasyon merkezi bulunamadı.');
    lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,Number($('bvsCutoff').value));
-   $('bvsResult').textContent='CN='+lastBvs.count+' · BVS='+lastBvs.sum.toFixed(4)+' v.u.'+
-    ' · referans yükseltgenme +'+lastBvs.referenceCharge+
-    ' · ort. bağ='+lastBvs.mean.toFixed(4)+' Å'+
-    ' · min/maks='+String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å';
+   renderWorkspaceBvs();
   }catch(err){lastBvs=null;inform('BVS: '+err.message);}
  };
  $('exportBvs').onclick=()=>{if(lastBvs)download('bvs_komsular.csv',bvsCsv(lastBvs),'text/csv');else inform('Önce BVS hesaplayın.');};
@@ -4046,14 +4094,14 @@ function createEditorHistory(limit=60,maxSnapshot=380000){
   counts:()=>({undo:past.length,redo:future.length}),
  };
 }
-const editorHistory=createEditorHistory();
+let editorHistory=createEditorHistory();
 let historyApplying=false;
 function updateHistoryButtons(){
  $('undoBtn').disabled=!editorHistory.canUndo();
  $('redoBtn').disabled=!editorHistory.canRedo();
 }
 function recordHistoryChange(){
- if(historyApplying)return;
+ if(historyApplying||workspaceSwitching)return;
  editorHistory.record(JSON.stringify(lastCrystalPayload(state)));
  updateHistoryButtons();
 }
@@ -4140,15 +4188,212 @@ function restoreLastCrystal(storage){
 }
 function persistLastCrystal(){
  try{storeLastCrystal(window.localStorage,state);}catch(err){console.warn('Son kristal yerel olarak kaydedilemedi:',err.message);}
+ if(workspaces.length&&!workspaceSwitching)persistWorkspaceSession();
 }
 function restoreInitialCrystal(){
  try{const saved=restoreLastCrystal(window.localStorage);if(saved)state={...state,...saved,cifOriginal:null};}
  catch(err){console.warn('Son kristal geri yüklenemedi; yerleşik örnek açıldı:',err.message);}
 }
 
+const MAX_WORKSPACES=10,WORKSPACE_STORAGE_KEY='kristalyapi.workspaces.v1';
+let workspaces=[],activeWorkspaceId=null,workspaceSequence=0,workspaceSwitching=false,workspaceStorageWarned=false;
+function workspaceRecord(crystal,label,id){
+ return {id,label,state:crystal,history:createEditorHistory(),cameraView:null,measurements:[],volumeState:null,
+  fitPlanes:[],bvs:null,xrd:null};
+}
+function blankWorkspaceCrystal(){
+ // A new workspace starts with an independent P1 unit cell, never a reference
+ // to the previous workspace's atom/site arrays.
+ return {...loadProject(JSON.stringify({name:'Yeni kristal',detail:'P1 · yeni yapı',
+  cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90},sites:atoms('Si',[[0,0,0]]),
+  rep:[1,1,1],sgNumber:1,sgSetting:'1',style:'ball',cut:2.65})),cifOriginal:null};
+}
+function cameraWorkspaceSnapshot(){
+ if(!camera||!orbit)return null;
+ return {perspective:camera.isPerspectiveCamera,position:camera.position.toArray(),
+  target:orbit.target.toArray(),up:camera.up.toArray(),quaternion:camera.quaternion.toArray(),
+  near:camera.near,far:camera.far,fov:camera.isPerspectiveCamera?camera.fov:44,
+  span:camera.isOrthographicCamera?currentSpan:projectionVisibleHeight(camera,Math.max(.001,camera.position.distanceTo(orbit.target)))};
+}
+function validWorkspaceCamera(view){
+ if(!view||typeof view!=='object')return null;
+ if(![view.position,view.target,view.up].every(v=>Array.isArray(v)&&v.length===3&&v.every(Number.isFinite)))return null;
+ if(!Array.isArray(view.quaternion)||view.quaternion.length!==4||!view.quaternion.every(Number.isFinite))return null;
+ if(![view.near,view.far,view.fov,view.span].every(Number.isFinite)||view.near<=0||view.far<=view.near||view.fov<=0||view.fov>=175||view.span<=0)return null;
+ return view;
+}
+function restoreWorkspaceCamera(view){
+ if(!validWorkspaceCamera(view))return false;
+ currentSpan=view.span;
+ camera=view.perspective?new THREE.PerspectiveCamera(view.fov,1,view.near,view.far):
+  new THREE.OrthographicCamera(-currentSpan/2,currentSpan/2,currentSpan/2,-currentSpan/2,view.near,view.far);
+ camera.position.fromArray(view.position);camera.up.fromArray(view.up);camera.quaternion.fromArray(view.quaternion);
+ perspective=!!view.perspective;orbit.object=camera;orbit.target.fromArray(view.target);
+ resize();orbit.update();updateProjectionButton();return true;
+}
+function updateProjectionButton(){
+ $('projectionBtn').setAttribute('aria-pressed',String(!camera.isPerspectiveCamera));
+ $('projectionBtn').setAttribute('aria-label',camera.isPerspectiveCamera?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
+}
+function volumeWorkspaceSnapshot(){
+ return {datasets:volumeDatasets,activeIndex:activeVolumeIndex,colorIndex:volumeColorIndex,
+  potential:potentialGrid,view:{...volumeView}};
+}
+function restoreWorkspaceVolume(snapshot){
+ clearVolumeLayer();
+ volumeDatasets=snapshot?.datasets||[];activeVolumeIndex=snapshot?.activeIndex||0;
+ volumeColorIndex=snapshot?.colorIndex||'';
+ densityGrid=activeVolumeDataset()?.grid||null;potentialGrid=snapshot?.potential||null;
+ Object.assign(volumeView,{mode:'off',iso:0,opacity:.62,axis:2,position:50,palette:'thermal',contours:false,potential:false},snapshot?.view||{});
+ $('volumeMode').value=volumeView.mode;$('volumeAxis').value=String(volumeView.axis);
+ $('volumePosition').value=String(volumeView.position);$('volumePalette').value=volumeView.palette;
+ $('volumeContours').checked=volumeView.contours;$('volumePotential').checked=volumeView.potential;
+ volumeRefreshDatasetUi();volumeSyncIsoControls();
+ if(!densityGrid){$('volumeMode').value='off';$('volumeIsoLayers').replaceChildren();updateVolumeInfo();updateVolumeSliceStats();}
+ else{volumeControlChanged();}
+}
+function activeWorkspace(){return workspaces.find(item=>item.id===activeWorkspaceId)||null;}
+function captureWorkspace(){
+ const current=activeWorkspace();if(!current)return;
+ current.state=state;current.history=editorHistory;current.cameraView=cameraWorkspaceSnapshot();
+ current.measurements=measurementHistory;current.volumeState=volumeWorkspaceSnapshot();
+ current.fitPlanes=stage3Planes;current.bvs=lastBvs;current.xrd=lastXrd;
+}
+function workspaceStoragePayload(){
+ return {format:'kristalyapi-workspaces-v1',activeId:activeWorkspaceId,
+  items:workspaces.map(item=>({id:item.id,label:item.label,crystal:lastCrystalPayload(item.id===activeWorkspaceId?state:item.state),
+   camera:item.id===activeWorkspaceId?cameraWorkspaceSnapshot():item.cameraView}))};
+}
+function persistWorkspaceSession(){
+ if(workspaceSwitching)return;
+ const current=activeWorkspace();if(current)current.state=state;
+ try{
+  const snapshot=JSON.stringify(workspaceStoragePayload());
+  if(snapshot.length>3500000)throw Error('Çalışma alanları tarayıcı depolama sınırını aşıyor.');
+  window.localStorage.setItem(WORKSPACE_STORAGE_KEY,snapshot);workspaceStorageWarned=false;
+ }catch(err){
+  console.warn('Çalışma alanları yerel olarak kaydedilemedi:',err.message);
+  if(!workspaceStorageWarned){workspaceStorageWarned=true;inform('Çalışma alanları tarayıcıya kaydedilemedi. Önemli yapıları proje dosyası olarak dışa aktarın.');}
+ }
+}
+function restoreWorkspaceSession(storage){
+ const raw=storage.getItem(WORKSPACE_STORAGE_KEY);if(!raw)return false;
+ const stored=JSON.parse(raw);
+ if(stored?.format!=='kristalyapi-workspaces-v1'||!Array.isArray(stored.items)||!stored.items.length||stored.items.length>MAX_WORKSPACES)throw Error('Kaydedilen çalışma alanları geçersiz.');
+ const ids=new Set(),restored=[];
+ for(const item of stored.items){
+  if(!/^ws-\d+$/.test(item?.id)||ids.has(item.id))throw Error('Tekrarlanan / geçersiz çalışma alanı kimliği.');
+  ids.add(item.id);
+  const crystal=loadProject(JSON.stringify(item.crystal));
+  const label=String(item.label||'Yapı '+(restored.length+1)).trim().slice(0,60);
+  const entry=workspaceRecord(crystal,label,item.id);
+  entry.cameraView=validWorkspaceCamera(item.camera);restored.push(entry);
+ }
+ workspaces=restored;
+ workspaceSequence=Math.max(...workspaces.map(item=>Number(item.id.slice(3))));
+ activeWorkspaceId=ids.has(stored.activeId)?stored.activeId:restored[0].id;
+ const current=activeWorkspace();state=current.state;editorHistory=current.history;
+ return true;
+}
+function initWorkspaceState(){
+ try{if(restoreWorkspaceSession(window.localStorage))return;}
+ catch(err){console.warn('Çalışma alanları geri yüklenemedi, son kristal açılıyor:',err.message);}
+ workspaceSequence=1;activeWorkspaceId='ws-1';workspaces=[workspaceRecord(state,'Yapı 1','ws-1')];
+}
+function showWorkspaceDrawer(open){
+ const drawer=$('workspaceDrawer');drawer.classList.toggle('open',open);
+ drawer.inert=!open;drawer.setAttribute('aria-hidden',String(!open));
+ $('workspaceBackdrop').hidden=!open;$('workspaceToggle').setAttribute('aria-expanded',String(open));
+ if(open){renderWorkspaceList();drawer.querySelector('.workspace-select')?.focus();}
+ else if(drawer.contains(document.activeElement))$('workspaceToggle').focus();
+}
+function renderWorkspaceList(){
+ $('workspaceCount').textContent=String(workspaces.length);
+ $('workspaceToggle').setAttribute('aria-label','Çalışma alanları ('+workspaces.length+')');
+ const list=$('workspaceList');list.replaceChildren();
+ workspaces.forEach((item,index)=>{
+  const selected=item.id===activeWorkspaceId;
+  const row=document.createElement('div');row.className='workspace-entry'+(selected?' active':'');
+  const choose=document.createElement('button');choose.type='button';choose.className='workspace-select';
+  choose.setAttribute('aria-current',selected?'true':'false');
+  choose.setAttribute('aria-label',item.label+' çalışma alanını aç');
+  const number=document.createElement('span');number.className='workspace-number';number.textContent=String(index+1);
+  const text=document.createElement('span');text.className='workspace-entry-text';
+  const title=document.createElement('strong');title.textContent=item.label;
+  const crystal=document.createElement('small');const model=selected?state:item.state;
+  crystal.textContent=(model.name||'Yeni kristal')+' · '+(model.sites?.length||0)+' atom'+(selected?' · aktif':'');
+  text.append(title,crystal);choose.append(number,text);choose.onclick=()=>switchWorkspace(item.id);
+  const actions=document.createElement('div');actions.className='workspace-entry-actions';
+  const rename=document.createElement('button');rename.type='button';rename.textContent='✎';rename.title='Çalışma alanını yeniden adlandır';rename.setAttribute('aria-label',item.label+' adını değiştir');rename.onclick=()=>renameWorkspace(item.id);
+  const remove=document.createElement('button');remove.type='button';remove.className='workspace-remove';remove.textContent='×';remove.title='Çalışma alanını kapat';remove.setAttribute('aria-label',item.label+' çalışma alanını kapat');remove.disabled=workspaces.length===1;remove.onclick=()=>closeWorkspace(item.id);
+  actions.append(rename,remove);row.append(choose,actions);list.append(row);
+ });
+ $('workspaceAdd').disabled=workspaces.length>=MAX_WORKSPACES;
+ $('workspaceLimitHint').textContent=workspaces.length+' / '+MAX_WORKSPACES+' yapı açık · her yapının düzenlemeleri korunur.';
+}
+function switchWorkspace(id,{saveCurrent=true}={}){
+ const target=workspaces.find(item=>item.id===id);if(!target)return false;
+ if(id===activeWorkspaceId){showWorkspaceDrawer(false);return true;}
+ if(saveCurrent)captureWorkspace();
+ workspaceSwitching=true;
+ try{
+  activeWorkspaceId=id;state=target.state;editorHistory=target.history;measurementHistory=target.measurements;
+  stage3Planes=target.fitPlanes;lastBvs=target.bvs;lastXrd=target.xrd;
+  selected=[];restoreWorkspaceVolume(target.volumeState);syncControls();
+  if(build()===false)throw Error('Çalışma alanındaki kristal görüntülenemedi.');
+  if(!restoreWorkspaceCamera(target.cameraView)){
+   // An untouched workspace gets its own default perspective, regardless of
+   // the projection last used in another workspace.
+   camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
+   perspective=true;orbit.object=camera;fit();updateProjectionButton();
+  }
+  renderMeasurementHistory();
+  try{renderStage3Planes();}catch(err){$('planeFitResult').textContent='Önceki düzlem seçimi artık geçerli değil: '+err.message;}
+  renderWorkspaceBvs();renderWorkspaceXrd();updateHistoryButtons();
+ }finally{workspaceSwitching=false;}
+ recordHistoryChange();persistLastCrystal();renderWorkspaceList();showWorkspaceDrawer(false);
+ if(window.location.hash!=='#kristal'){window.location.hash='kristal';syncLibraryNavigation();}
+ return true;
+}
+function addWorkspace(){
+ if(workspaces.length>=MAX_WORKSPACES){inform('En fazla '+MAX_WORKSPACES+' çalışma alanı açılabilir.');return false;}
+ captureWorkspace();
+ const id='ws-'+(++workspaceSequence),label='Yapı '+workspaceSequence;
+ workspaces.push(workspaceRecord(blankWorkspaceCrystal(),label,id));
+ return switchWorkspace(id,{saveCurrent:false});
+}
+function renameWorkspace(id){
+ const item=workspaces.find(entry=>entry.id===id);if(!item)return;
+ const label=window.prompt('Çalışma alanı adı:',item.label);
+ if(label===null)return;
+ const clean=label.trim().slice(0,60);if(!clean)return inform('Çalışma alanı adı boş olamaz.');
+ item.label=clean;persistWorkspaceSession();renderWorkspaceList();
+}
+function closeWorkspace(id){
+ if(workspaces.length<=1)return inform('En az bir çalışma alanı açık kalmalı.');
+ const index=workspaces.findIndex(item=>item.id===id);if(index<0)return;
+ if(!window.confirm('"'+workspaces[index].label+'" kapatılsın mı? Bu yapının kayıtlı çalışma alanı ve geri alma geçmişi silinecek.'))return;
+ const wasActive=id===activeWorkspaceId;
+ workspaces.splice(index,1);
+ if(wasActive){
+  const next=workspaces[Math.min(index,workspaces.length-1)];
+  if(next)switchWorkspace(next.id,{saveCurrent:false});
+ }else{persistWorkspaceSession();renderWorkspaceList();}
+}
+function initWorkspaceUi(){
+ $('workspaceToggle').onclick=()=>showWorkspaceDrawer($('workspaceToggle').getAttribute('aria-expanded')!=='true');
+ $('workspaceDrawerClose').onclick=()=>showWorkspaceDrawer(false);
+ $('workspaceBackdrop').onclick=()=>showWorkspaceDrawer(false);
+ $('workspaceAdd').onclick=addWorkspace;
+ window.addEventListener('beforeunload',()=>{captureWorkspace();persistWorkspaceSession();});
+ renderWorkspaceList();
+}
+
 async function importFile(file){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
+ const workspaceId=activeWorkspaceId;
  const str=await file.text(),name=file.name.toLowerCase();let obj;
+ if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen içe aktarmayı yeniden başlatın.');
  const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
  if(name.endsWith('.json'))obj=loadProject(str);
  else if(isCif)obj=cifData(str);
@@ -4674,9 +4919,11 @@ async function codOpenCif(record,cif,originalName){
  inform('COD '+record.codId+' aktarıldı'+(originalName?' · '+originalName:'')+'.');
 }
 async function importCodEntry(record){
+ const workspaceId=activeWorkspaceId;
+ const verifyWorkspace=()=>{if(workspaceId!==activeWorkspaceId)throw Error('COD kaydı yüklenirken çalışma alanı değişti; lütfen yeniden deneyin.');};
  const id=String(record.codId),cached=await codCachedCif(id);
  if(cached){
-  try{await codOpenCif(record,cached,'çevrimdışı önbellek');return;}catch(e){console.warn('Önbellek CIF geçersiz:',e);}
+  try{verifyWorkspace();await codOpenCif(record,cached,'çevrimdışı önbellek');return;}catch(e){verifyWorkspace();console.warn('Önbellek CIF geçersiz:',e);}
  }
  const mode=$('codConnection').value,failures=[];
  // Prefer the authoritative CIF when our own Worker is available: this
@@ -4685,6 +4932,7 @@ async function importCodEntry(record){
  if(workerCif){
   try{
    const cif=await fetchCodText(codCifUrl(id),{mode:'worker',limit:4000000});
+   verifyWorkspace();
    await codOpenCif(record,cif,'Cloudflare Worker · COD CIF');
    return;
   }catch(e){failures.push('Worker CIF: '+e.message);}
@@ -4692,6 +4940,7 @@ async function importCodEntry(record){
  if(mode!=='direct'){
   try{
    const content=await fetchCodText(codOptimadeItemUrl(id),{mode,limit:4000000});
+   verifyWorkspace();
    const cif=codOptimadeToCif(JSON.parse(content),id);
    await codOpenCif(record,cif,'OPTIMADE');
    return;
@@ -4700,6 +4949,7 @@ async function importCodEntry(record){
  if(mode!=='optimade'&&!workerCif){
   try{
    const cif=await fetchCodText(codCifUrl(id),{mode,limit:4000000});
+   verifyWorkspace();
    await codOpenCif(record,cif,'COD CIF');
    return;
   }catch(e){failures.push('COD CIF: '+e.message);}
@@ -5004,6 +5254,7 @@ function initRightSidebarTabs(){
 }
 
 function bind(){
+ initWorkspaceUi();
  initRightSidebarTabs();
  initLibrary();
  initVolumeControls();
@@ -5084,10 +5335,10 @@ function bind(){
  renderMeasurementHistory();
  $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');setRightSidebarTab(null);};
  $('inspectorToggle').onclick=()=>{$('leftPanel').classList.remove('open');setRightSidebarTab(rightSidebarTab==='measurement'?null:'measurement');};
- document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);selected=[];drawSelection();}});
+ document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){if($('workspaceDrawer').classList.contains('open')){showWorkspaceDrawer(false);return;}$('leftPanel').classList.remove('open');setRightSidebarTab(null);selected=[];drawSelection();}});
 }
 // @kristalyapi/browser-bootstrap: browser UI entry point, not part of the CIF parser
-try{restoreInitialCrystal();initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
+try{restoreInitialCrystal();initWorkspaceState();initScene();bind();syncControls();build();if(!restoreWorkspaceCamera(activeWorkspace()?.cameraView))fit();persistWorkspaceSession();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
 </script>
 </body>
 </html>
