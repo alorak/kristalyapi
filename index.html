@@ -57,8 +57,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0c1426">
+<meta name="theme-color" content="#f5f8fc">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="manifest" href="./manifest.webmanifest">
 <title>Kristal Yapı — 3B Kristal Editörü</title>
 <script src="./translations.js" defer></script>
 <link rel="stylesheet" href="./styles.css">
@@ -889,5 +890,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </div>
 
 <script type="module" src="./crystal-app.js"></script>
+<script>
+if('serviceWorker' in navigator&&window.isSecureContext){
+ window.addEventListener('load',()=>{
+  navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(error=>{
+   console.warn('Çevrimdışı önbellek kurulamadı:',error);
+  });
+ },{once:true});
+}
+</script>
 </body>
 </html>

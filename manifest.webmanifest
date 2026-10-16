@@ -1,0 +1,13 @@
+{
+  "name": "Kristal Yapı",
+  "short_name": "Kristal Yapı",
+  "description": "Çevrimdışı çalışabilen kristal yapı ve kırınım laboratuvarı",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {"src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

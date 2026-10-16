@@ -39,6 +39,8 @@ window.__visualTest={
   notice:document.getElementById('notice').textContent}),
  perovskitePolys:()=>{resetVolume();loadPreset('perovskite');state.rep=[5,5,5];state.style='poly';state.poly='';
   state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
+ syncedPolyCenter:()=>{resetVolume();loadPreset('perovskite');state.style='poly';state.poly='';
+  syncControls();build();return window.__visualTest.polyStats();},
  perovskiteWithoutNeighbors:()=>{state.poly='Ba';build();return window.__visualTest.polyStats();},
  stressAtoms:()=>{resetVolume();state.sites=Array.from({length:60},(_,i)=>({symbol:'Si',label:'Si'+i,x:(i%5)/5,y:(Math.floor(i/5)%4)/4,z:Math.floor(i/20)/3,occupancy:1}));
   state.rep=[6,6,6];state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;state.bonds=false;state.poly='';state.style='ball';
@@ -687,6 +689,9 @@ try{
  assert.equal(emptyPoly.count,0);
  await page.waitForFunction(()=>document.getElementById('notice')?.textContent.includes('has no polyhedron'));
  assert.match(await page.locator('#notice').textContent(),/Ba has no polyhedron/);
+ const restoredPoly=await page.evaluate(()=>window.__visualTest.syncedPolyCenter());
+ assert.equal(restoredPoly.center,'Ti','syncControls must keep an empty polyhedron center for smart Ti selection');
+ assert.ok(restoredPoly.count>0,'the synced perovskite should show nonempty Ti polyhedra');
  const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
  assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
   'thousands of displayed atoms should occupy one instanced draw group');
@@ -699,6 +704,14 @@ try{
  await page.waitForFunction(()=>document.getElementById('openModal').hidden);
  await page.locator('#reciprocalNav').click();
  await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&document.getElementById('app').hidden);
+ const reciprocalPalette=await page.evaluate(()=>{
+  const color=selector=>getComputedStyle(document.querySelector(selector)).backgroundColor;
+  return {page:color('#reciprocalPage'),controls:color('#rsPaneLattice .rs-controls'),
+   viewerCard:color('#rsPaneLattice .rs-figure'),viewer:color('#rsRealView'),
+   concept:color('#rsPaneLattice .rs-concept'),readout:color('#rsLatticeReadout')};
+ });
+ assert.notEqual(reciprocalPalette.page,reciprocalPalette.viewerCard,'viewers must be distinct cards on the page');
+ assert.notEqual(reciprocalPalette.concept,reciprocalPalette.readout,'concept and numeric panels need different surfaces');
  await page.waitForFunction(()=>document.querySelectorAll('#rsLatticeReadout dd').length>5);
  assert.equal(await page.locator('#reciprocalNav').getAttribute('aria-current'),'page');
  assert.match(await page.locator('#rsLatticeReadout').textContent(),/3\.13559 Å/,'d(111) of silicon');
@@ -745,6 +758,27 @@ try{
  await page.locator('#homeLink').click();
  await page.waitForFunction(()=>document.getElementById('reciprocalPage').hidden&&!document.getElementById('app').hidden);
  assert.deepEqual(consoleErrors.slice(consoleBefore),[],'reciprocal page console errors');
+ // Fresh browser context, real Service Worker install and an actual offline
+ // reload: the complete editor and reciprocal laboratory must survive.
+ const offlineContext=await browser.newContext({viewport:{width:1280,height:800}});
+ try{
+  const offlinePage=await offlineContext.newPage();
+  await offlinePage.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'load'});
+  await offlinePage.waitForFunction(()=>navigator.serviceWorker?.controller!==null,null,{timeout:45000});
+  const savedFiles=await offlinePage.evaluate(async()=>{
+   const cacheNames=await caches.keys();
+   const shell=cacheNames.find(name=>name.startsWith('kristalyapi-shell-'));
+   return shell?(await (await caches.open(shell)).keys()).length:0;
+  });
+  assert.ok(savedFiles>=16,'Service Worker must cache all app modules including Moyo WASM');
+  await offlineContext.setOffline(true);
+  await offlinePage.reload({waitUntil:'domcontentloaded'});
+  await offlinePage.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
+  await offlinePage.locator('#reciprocalNav').click();
+  await offlinePage.waitForFunction(()=>document.querySelectorAll('#rsLatticeReadout dd').length>5);
+  assert.ok(await canvasInk(offlinePage,'#rsRealView canvas')>20,'offline reciprocal-space view must render');
+  await offlinePage.screenshot({path:path.join(artifacts,'rs-05-offline.png')});
+ }finally{await offlineContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
