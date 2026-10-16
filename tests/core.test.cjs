@@ -43,9 +43,9 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
-vm.runInContext('this.p1={linearVolumeCombination,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbExportText,parseIonicCharges,madelungEwald};',context);
+vm.runInContext('this.p1={linearVolumeCombination,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
@@ -1472,7 +1472,7 @@ test('P1 3D peak search finds interior maxima/minima, excludes boundaries and ex
  const troughs=p1.volumeFindPeaks(g,{mode:'min',threshold:4,limit:5});
  assert.equal(troughs.length,1);approx(troughs[0].value,-5);
  assert.match(p1.volumePeaksCsv(peaks,g.units),/11\.00000000,22\.00000000,34\.00000000/);
- assert.throws(()=>p1.volumeFindPeaks(g,{mode:'max',threshold:-1}));
+ assert.throws(()=>p1.volumeFindPeaks(g,{mode:'max',threshold:Infinity}));
 });
 test('P1 oblique Miller slice uses real unit-cell reciprocal normal and clips to the volume grid',()=>{
  const vals=[];for(let i=0;i<=4;i++)for(let j=0;j<=4;j++)for(let k=0;k<=4;k++)vals.push(i+j+k);
@@ -1701,6 +1701,88 @@ test('P1 Ewald reproduces NaCl Madelung lattice energy and rejects nonneutral io
  assert.throws(()=>p1.madelungEwald(nacl.cell,nacl.sites,charges.map(()=>1)),/nötr|Nötr/);
  assert.throws(()=>p1.parseIonicCharges('Na:+1',nacl.sites),/Yük tanımlanmamış/);
  assert.throws(()=>p1.madelungEwald(nacl.cell,[{...nacl.sites[0],occupancy:.5},...nacl.sites.slice(1)],charges),/Kısmi doluluk/);
+});
+
+test('Paket A powder XRD uses a reciprocal metric sphere and retains hexagonal reflection families',()=>{
+ const cell={a:3,b:3,c:5,alpha:90,beta:90,gamma:120};
+ const sites=[{symbol:'Si',x:0,y:0,z:0}];
+ const pattern=api.powderPattern(cell,sites,{wavelength:.5,maxAngle:150});
+ const family=pattern.groups.find(group=>Math.abs(group.d-1.5)<.00001);
+ assert.ok(family,'hexagonal (110) family should exist');
+ assert.equal(family.members,3,'three Friedel pairs must be retained');
+ approx(family.intensity,3*2*api.structureFactor(1,1,0,sites,cell).intensity,1e-6);
+ const large=api.powderPattern({...cell,a:10,b:10},sites,{wavelength:1.5406,maxAngle:90});
+ assert.ok(large.scanBounds[0]>=9&&large.scanBounds[1]>=9);
+ assert.ok(large.reflections.some(r=>Math.max(Math.abs(r.h),Math.abs(r.k))>7));
+ assert.ok(!('maxIndex' in large),'fixed Miller-index cutoff is removed');
+ assert.throws(()=>api.powderPattern({...cell,a:900,b:900,c:900},sites,{wavelength:.2,maxAngle:150}),/bütçe/);
+});
+test('Paket A signed threshold finds positive minima and negative extrema correctly',()=>{
+ const data=Array(5**3).fill(.5),g=api.volumeGrid([5,5,5],[0,0,0],
+  [[1,0,0],[0,1,0],[0,0,1]],data,'density','e/Å³');
+ g.values[api.gridIndex(g,2,2,2)]=.01;
+ assert.equal(p1.volumeFindPeaks(g,{mode:'min',threshold:.05}).length,1);
+ assert.equal(p1.volumeFindPeaks(g,{mode:'max',threshold:.6}).length,0);
+ const negative={...g,values:g.values.slice()};
+ negative.values[api.gridIndex(g,2,2,2)]=-.2;
+ assert.equal(p1.volumeFindPeaks(negative,{mode:'min',threshold:-.1}).length,1);
+});
+test('Paket A CUBE/XSF typed density units normalize values and block ambiguous arithmetic',()=>{
+ const source=api.volumeGrid([2,2,2],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],
+  Array(8).fill(1),'CUBE','dosya ölçeği');
+ const unknown=api.interpretVolumeUnits(source,'unknown');
+ assert.equal(unknown.quantity,'unknown');
+ assert.throws(()=>p1.linearVolumeCombination(unknown,unknown,-1),/nicelik/);
+ const rho=api.interpretVolumeUnits(source,'density-bohr',{periodic:true});
+ assert.equal(rho.quantity,'density');assert.equal(rho.units,'e/Å³');
+ approx(rho.values[0],1/.529177210903**3,1e-6);
+ const rho2=api.interpretVolumeUnits(source,'density-angstrom',{periodic:true});
+ assert.equal(rho2.values[0],1);
+ assert.throws(()=>p1.linearVolumeCombination(rho,
+  api.interpretVolumeUnits(source,'potential-volt',{periodic:true}),-1),/nicelik/);
+ const cell={a:1,b:1,c:1,alpha:90,beta:90,gamma:90};
+ const total=p1.volumeVoronoiIntegration(rho,cell,[{symbol:'H',x:0,y:0,z:0}]);
+ approx(total.total,1/.529177210903**3,1e-5);
+ const xsf=api.volumeGrid([3,3,3],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],
+  Array(27).fill(2),'XSF','kaynak birim');
+ const periodic=api.interpretVolumeUnits(xsf,'density-angstrom',{periodic:true});
+ assert.deepEqual(Array.from(periodic.dims),[2,2,2]);assert.equal(periodic.values.length,8);
+ approx(p1.volumeVoronoiIntegration(periodic,cell,[{symbol:'H',x:0,y:0,z:0}]).total,2,1e-6);
+});
+test('Paket A PDB aligns uppercase atom-name fallbacks and enables recognized CRYST1 symmetry',()=>{
+ const cell={a:5,b:6,c:7,alpha:90,beta:90,gamma:90};
+ const original=p1.pdbExportText(cell,[{symbol:'Fe',x:.2,y:.3,z:.4},{symbol:'Ca',x:.5,y:.6,z:.7}]);
+ const lines=original.split('\n').map(line=>{
+  if(line.startsWith('CRYST1'))return line.padEnd(80).slice(0,55)+'P 21 21 21'.padEnd(11)+line.padEnd(80).slice(66);
+  if(line.startsWith('HETATM'))return line.padEnd(80).slice(0,12)+
+   line.slice(12,16).toUpperCase()+line.padEnd(80).slice(16,76)+'  '+line.padEnd(80).slice(78);
+  return line;
+ });
+ const restored=p1.pdbData(lines.join('\n'));
+ assert.deepEqual(Array.from(restored.sites.map(s=>s.symbol)),['Fe','Ca']);
+ assert.equal(restored.sgNumber,19);assert.equal(restored.symmetryEnabled,true);
+ assert.match(restored.warning,/element sütunu boş/);
+ const protein=p1.pdbData(lines.join('\n').replace(/^HETATM/m,'ATOM  ')
+  .replace(/^(ATOM  .{6}).{4}/m,'$1 CA ').replace(/^(ATOM  .{11}).{3}/m,'$1ALA'));
+ assert.equal(protein.sites[0].symbol,'C','CA in aligned protein ATOM record is C-alpha');
+ const unrecognized=p1.pdbData(lines.join('\n').replace('P 21 21 21','X 99 99 99'));
+ assert.match(unrecognized.warning,/eşlenemedi/);assert.equal(unrecognized.symmetryEnabled,false);
+});
+test('Paket A symmetry-expanded charges and Voronoi labels refer to asymmetric sites',()=>{
+ const asymmetric=[{symbol:'Na',label:'Na1',x:.12,y:.21,z:.31},
+  {symbol:'Cl',label:'Cl1',x:.38,y:.27,z:.45}];
+ const expanded=api.expandSites(asymmetric,'2');
+ assert.equal(expanded.length,4);
+ assert.deepEqual(Array.from(expanded.map(s=>s.sourceSiteIndex)),[0,0,1,1]);
+ assert.deepEqual(Array.from(p1.parseIonicCharges('1:+1,2:-1',expanded,asymmetric)),[1,1,-1,-1]);
+ assert.deepEqual(Array.from(p1.parseIonicCharges('Na1:+2,Cl1:-2',expanded,asymmetric)),[2,2,-2,-2]);
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ const g=api.volumeGrid([8,8,8],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],
+  Array(512).fill(1),'density','e/Å³');g.periodic=true;
+ const charge=p1.volumeVoronoiIntegration(g,cell,expanded);
+ assert.deepEqual(Array.from(charge.sites.map(s=>s.index)),[1,1,2,2]);
+ assert.deepEqual(Array.from(charge.sites.map(s=>s.expandedIndex)),[1,2,3,4]);
+ assert.match(p1.volumeVoronoiCsv(charge),/^asymmetric_site,expanded_site/);
 });
 
 test('stage3 F-centered NaCl conventional -> primitive conserves two atomic species and quarter volume',()=>{
