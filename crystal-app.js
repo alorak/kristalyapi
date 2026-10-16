@@ -3932,6 +3932,287 @@ function symPart(expr,coord){
 }
 function rational(s){const bits=s.split('/');return Number(bits[0])/(bits[1]?Number(bits[1]):1);}
 function applySymmetry(s,coord){const parts=s.replace(/['"]/g,'').replace(/\s/g,'').split(',');if(parts.length!==3)throw Error('Desteklenmeyen CIF simetri işlemi: '+s);return parts.map(p=>symPart(p,coord));}
+/* SHELXL .res/.ins: fractional atoms in SFAC order. Expand LATT/SYMM to
+   explicit P1 sites, so imported atoms are not expanded a second time. */
+function shelxData(source){
+ const raw=String(source).replace(/\r/g,'').split('\n'),lines=[];
+ for(let i=0;i<raw.length;i++){
+  let line=raw[i].split('!')[0].trim();
+  while(/=\s*$/.test(line)){
+   if(++i>=raw.length)throw Error('SHELX devam satırı eksik.');
+   line=line.replace(/=\s*$/,' ')+' '+raw[i].split('!')[0].trim();
+  }
+  if(line)lines.push(line);
+ }
+ const numeric=s=>Number(String(s).replace(/[dD]/g,'e'));
+ const sfac=[],fvars=[],sym=['x,y,z'],atoms=[];
+ const instructions=new Set('UNIT ZERR L.S. CGLS PLAN LIST ACTA TEMP SIZE MERG FMAP OMIT SHEL BASF TWIN HKLF END REM AFIX PART RESI BIND FREE EXYZ EADP SADI DFIX DANG SAME FLAT CHIV SIMU DELU ISOR RIGU SUMP EADP EQIV WGHT ANIS CONN BOND CONF HTAB MORE TIME MOVE MATR SPEC CUMP BLOC DAMP STIR SWAT EXTI'.split(' '));
+ let cell=null,latt=null,title='SHELX kristali',part=false,finished=false;
+ for(const line of lines){
+  const t=line.split(/\s+/),command=t[0].toUpperCase();
+  if(command==='END'||command==='HKLF'){finished=true;continue;}
+  if(finished||command==='REM')continue;
+  if(command==='TITL'){title=line.slice(t[0].length).trim()||title;continue;}
+  if(command==='CELL'){
+   if(cell)throw Error('SHELX dosyasında birden fazla CELL satırı var.');
+   if(t.length<8)throw Error('SHELX CELL dalga boyu ve altı hücre parametresi içermeli.');
+   const v=t.slice(2,8).map(numeric);
+   cell=validateCell({a:v[0],b:v[1],c:v[2],alpha:v[3],beta:v[4],gamma:v[5]});continue;
+  }
+  if(command==='LATT'){
+   if(latt!==null)throw Error('Birden fazla SHELX LATT kaydı var.');
+   latt=numeric(t[1]);if(!Number.isInteger(latt)||Math.abs(latt)<1||Math.abs(latt)>7)throw Error('SHELX LATT değeri geçersiz.');continue;
+  }
+  if(command==='SYMM'){
+   const op=line.slice(4).trim();applySymmetry(op,[.1,.2,.3]);sym.push(op);continue;
+  }
+  if(command==='SFAC'){
+   const symbols=t.slice(1);
+   if(!symbols.length)throw Error('SHELX SFAC element listesi boş.');
+   const items=symbols.some(v=>Number.isFinite(numeric(v)))?symbols.slice(0,1):symbols;
+   for(const item of items){const symbol=cleanSymbol(item);if(!PERIODIC_SYMBOLS.includes(symbol))throw Error('SHELX SFAC elementi tanınmadı: '+item);sfac.push(symbol);}
+   continue;
+  }
+  if(command==='FVAR'){
+   fvars.push(...t.slice(1).map(numeric));
+   if(fvars.some(n=>!Number.isFinite(n)))throw Error('SHELX FVAR değeri geçersiz.');continue;
+  }
+  if(command==='PART'){part=true;continue;}
+  if(instructions.has(command))continue;
+  if(!/^[A-Za-z][A-Za-z0-9_']*$/.test(t[0])||t.length<6||!/^[1-9]\d*$/.test(t[1]))continue;
+  const index=Number(t[1]);
+  if(index>sfac.length)throw Error('SHELX atomu bilinmeyen SFAC dizinine başvuruyor: '+t[0]);
+  const coords=t.slice(2,5).map(numeric),sof=numeric(t[5]);
+  if(coords.some(v=>!Number.isFinite(v))||!Number.isFinite(sof))throw Error('SHELX atom koordinatı/doluluğu geçersiz: '+t[0]);
+  const variable=Math.floor(Math.abs(sof)/10+1e-7),factor=Math.abs(sof)-variable*10;
+  let occ=variable===0?Math.abs(sof):0;
+  if(variable>0){
+   const value=variable===1?1:fvars[variable-1];
+   if(!Number.isFinite(value))throw Error('SHELX doluluk FVAR '+variable+' tanımsız: '+t[0]);
+   occ=sof<0?1-factor*value:factor*value;
+  }else if(sof<0)throw Error('SHELX negatif doluluk geçersiz: '+t[0]);
+  if(!Number.isFinite(occ)||occ< -1e-6||occ>1+1e-6)throw Error('SHELX atom doluluğu 0–1 dışında: '+t[0]);
+  const atom={symbol:sfac[index-1],label:t[0],x:coords[0],y:coords[1],z:coords[2],occupancy:Math.max(0,Math.min(1,occ))};
+  if(t.length>=12){
+   const u=t.slice(6,12).map(numeric); // SHELXL and CIF: U11 U22 U33 U23 U13 U12
+   if(u.every(Number.isFinite)&&u.slice(0,3).every(v=>v>0))atom.adp=u;
+  }else if(t.length>=7){const u=numeric(t[6]);if(u>0&&Number.isFinite(u))atom.uIso=u;}
+  atoms.push(atom);
+  if(atoms.length>1000)throw Error('SHELX atom sınırı 1000 aşıldı.');
+ }
+ if(!cell||latt===null||!sfac.length||!atoms.length)throw Error('SHELX yapısı için CELL, LATT, SFAC ve atom satırları gerekli.');
+ const centering={1:[[0,0,0]],2:[[0,0,0],[.5,.5,.5]],
+  3:[[0,0,0],[2/3,1/3,1/3],[1/3,2/3,2/3]],
+  4:[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],
+  5:[[0,0,0],[0,.5,.5]],6:[[0,0,0],[.5,0,.5]],7:[[0,0,0],[.5,.5,0]]};
+ const operations=[];
+ for(const op of sym){
+  const zero=applySymmetry(op,[0,0,0]),cols=[0,1,2].map(j=>applySymmetry(op,[0,1,2].map(k=>k===j?1:0)));
+  for(const inversion of (latt>0?[-1,1]:[1]))for(const shift of centering[Math.abs(latt)]){
+   const xyz=[0,1,2].map(i=>{
+    const terms=[0,1,2].map(j=>{
+     const n=(cols[j][i]-zero[i])*inversion;
+     if(Math.abs(n-Math.round(n))>1e-8)throw Error('SHELX SYMM tamsayı katsayısı gerekli.');
+     return !n?'':(n>0?'+':'-')+(Math.abs(n)===1?'':Math.abs(n))+'xyz'[j];
+    }).join('').replace(/^\+/,'');
+    const offset=zero[i]*inversion+shift[i];
+    return terms+(offset>=0?'+':'')+offset;
+   });
+   operations.push(xyz.join(','));
+  }
+ }
+ const cif=['data_shelx','_cell_length_a '+cell.a,'_cell_length_b '+cell.b,'_cell_length_c '+cell.c,
+  '_cell_angle_alpha '+cell.alpha,'_cell_angle_beta '+cell.beta,'_cell_angle_gamma '+cell.gamma,
+  'loop_','_space_group_symop_operation_xyz',...operations.map(op=>"'"+op+"'"),
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy','_atom_site_u_iso_or_equiv',
+  ...atoms.map(a=>[cifQuoted(a.label),a.symbol,a.x,a.y,a.z,a.occupancy,a.uIso??'?'].join(' ')),
+  ...(atoms.some(a=>a.adp)?['loop_','_atom_site_aniso_label',...ADP_COMPONENTS.map(k=>'_atom_site_aniso_u_'+k),
+   ...atoms.filter(a=>a.adp).map(a=>[cifQuoted(a.label),...a.adp].join(' '))]:[])].join('\n');
+ const parsed=cifData(cif);
+ parsed.name=title.slice(0,150);parsed.detail='SHELXL .res/.ins · '+parsed.sites.length+' atom (P1 genişletmesi)';
+ parsed.warning='SHELX LATT/SYMM simetrisi P1 atomlarına açıldı; bağlar, rafinman kısıtları ve serbest değişkenler proje dosyasına aktarılmaz.'+
+  (part?' PART düzensizlik gruplarının ayrımı korunmaz.':'');
+ return parsed;
+}
+const BOHR_TO_ANGSTROM=.529177210903;
+function structureVectorRows(rows,format){
+ if(rows.length!==3||rows.some(row=>row.length!==3||row.some(v=>!Number.isFinite(v))))throw Error(format+' örgü vektörleri üç geçerli satır içermeli.');
+ const vectors=rows.map(row=>new THREE.Vector3(...row));
+ if(volume(vectors)<1e-7)throw Error(format+' örgü matrisi tekil.');
+ validateCell(metric(vectors));
+ return vectors;
+}
+function structureSites(rows,vectors,mode,multiplier,format){
+ if(!rows.length||rows.length>1000)throw Error(format+' atom sayısı 1–1000 olmalı.');
+ const count=new Map();return rows.map(row=>{
+  if(row.length<4||row.slice(1,4).some(v=>!Number.isFinite(v)))throw Error(format+' atom koordinatı eksik.');
+  const symbol=cleanSymbol(row[0]);
+  if(!PERIODIC_SYMBOLS.includes(symbol))throw Error(format+' bilinmeyen element: '+row[0]);
+  const k=(count.get(symbol)||0)+1;count.set(symbol,k);
+  const pos=mode==='fractional'?row.slice(1,4):toFrac(new THREE.Vector3(...row.slice(1,4)).multiplyScalar(multiplier),vectors);
+  return {symbol,label:symbol+k,x:frac(pos[0]),y:frac(pos[1]),z:frac(pos[2]),occupancy:1};
+ });
+}
+/* pw.x input syntax. Bravais axes below follow Quantum ESPRESSO's INPUT_PW,
+   including primitive (rather than conventional) centered cells. */
+function qeBravaisVectors(ibrav,p){
+ const a=p.a,b=p.b||a,c=p.c||a,ab=p.cosab,ac=p.cosac,bc=p.cosbc;
+ if([8,9,-9,91,10,11,12,-12,13,-13,14].includes(ibrav)&&!(p.b>0))throw Error('QE ibrav='+ibrav+' için b veya celldm(2) gerekli.');
+ if([4,6,7,8,9,-9,91,10,11,12,-12,13,-13,14].includes(ibrav)&&!(p.c>0))throw Error('QE ibrav='+ibrav+' için c veya celldm(3) gerekli.');
+ const sq=x=>{if(!(x>=0))throw Error('QE ibrav açıları geçersiz.');return Math.sqrt(x);};
+ let v;
+ switch(ibrav){
+ case 1:v=[[a,0,0],[0,a,0],[0,0,a]];break;
+ case 2:v=[[-a/2,0,a/2],[0,a/2,a/2],[-a/2,a/2,0]];break;
+ case 3:v=[[a/2,a/2,a/2],[-a/2,a/2,a/2],[-a/2,-a/2,a/2]];break;
+ case -3:v=[[-a/2,a/2,a/2],[a/2,-a/2,a/2],[a/2,a/2,-a/2]];break;
+ case 4:v=[[a,0,0],[-a/2,a*Math.sqrt(3)/2,0],[0,0,c]];break;
+ case 5:case -5:{
+  if(!Number.isFinite(bc))throw Error('QE ibrav=5 için celldm(4) veya cosBC gerekli.');
+  const tx=sq((1-bc)/2),ty=sq((1-bc)/6),tz=sq((1+2*bc)/3);
+  if(ibrav===5)v=[[a*tx,-a*ty,a*tz],[0,2*a*ty,a*tz],[-a*tx,-a*ty,a*tz]];
+  else{const u=tz-2*Math.sqrt(2)*ty,w=tz+Math.sqrt(2)*ty,scale=a/Math.sqrt(3);
+   v=[[u,w,w],[w,u,w],[w,w,u]].map(row=>row.map(n=>n*scale));}
+  break;
+ }
+ case 6:v=[[a,0,0],[0,a,0],[0,0,c]];break;
+ case 7:v=[[a/2,-a/2,c/2],[a/2,a/2,c/2],[-a/2,-a/2,c/2]];break;
+ case 8:v=[[a,0,0],[0,b,0],[0,0,c]];break;
+ case 9:v=[[a/2,b/2,0],[-a/2,b/2,0],[0,0,c]];break;
+ case -9:v=[[a/2,-b/2,0],[a/2,b/2,0],[0,0,c]];break;
+ case 91:v=[[a,0,0],[0,b/2,-c/2],[0,b/2,c/2]];break;
+ case 10:v=[[a/2,0,c/2],[a/2,b/2,0],[0,b/2,c/2]];break;
+ case 11:v=[[a/2,b/2,c/2],[-a/2,b/2,c/2],[-a/2,-b/2,c/2]];break;
+ case 12:case 13:{
+  if(!Number.isFinite(ab))throw Error('QE ibrav=12/13 için cosAB veya celldm(4) gerekli.');
+  const x=b*ab,y=b*sq(1-ab*ab);
+  v=ibrav===12?[[a,0,0],[x,y,0],[0,0,c]]:[[a/2,0,-c/2],[x,y,0],[a/2,0,c/2]];break;
+ }
+ case -12:case -13:{
+  if(!Number.isFinite(ac))throw Error('QE ibrav=-12/-13 için cosAC veya celldm(5) gerekli.');
+  const x=c*ac,z=c*sq(1-ac*ac);
+  v=ibrav===-12?[[a,0,0],[0,b,0],[x,0,z]]:[[a/2,b/2,0],[-a/2,b/2,0],[x,0,z]];break;
+ }
+ case 14:{
+  if(![ab,ac,bc].every(Number.isFinite))throw Error('QE ibrav=14 için üç kosinüs gerekli.');
+  v=basis({a,b,c,alpha:Math.acos(bc)*180/Math.PI,beta:Math.acos(ac)*180/Math.PI,gamma:Math.acos(ab)*180/Math.PI}).map(t=>t.toArray());break;
+ }
+ default:throw Error('QE ibrav='+ibrav+' desteklenmiyor; CELL_PARAMETERS içeren ibrav=0 girişi kullanın.');
+ }
+ return structureVectorRows(v,'QE');
+}
+function qeData(source){
+ const raw=String(source).replace(/\r/g,'').split('\n'),lines=raw.map(s=>s.replace(/[!#].*$/,'').trim());
+ const sys=String(source).match(/&SYSTEM\b([\s\S]*?)\//i)?.[1];
+ if(!sys)throw Error('QE &SYSTEM bloğu bulunamadı (pw.x girdi dosyası bekleniyor).');
+ const num=s=>Number(String(s).replace(/[dD]/g,'e'));
+ const param=key=>{
+  const escaped=key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const m=sys.match(new RegExp('(?:^|[\\s,])'+escaped+'\\s*=\\s*([+-]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eEdD][+-]?\\d+)?)','i'));
+  return m?num(m[1]):NaN;
+ };
+ const ibrav=param('ibrav'),nat=param('nat');
+ if(!Number.isInteger(ibrav))throw Error('QE &SYSTEM içinde ibrav gerekli.');
+ if(!Number.isInteger(nat)||nat<1||nat>1000)throw Error('QE nat değeri 1–1000 arasında olmalı.');
+ const aParam=param('A'),celldm=Array.from({length:6},(_,i)=>param('celldm('+(i+1)+')'));
+ if(Number.isFinite(aParam)&&celldm.some(Number.isFinite))throw Error('QE A/B/C ile celldm parametreleri birlikte verilemez.');
+ const alat=Number.isFinite(aParam)?aParam:Number.isFinite(celldm[0])?celldm[0]*BOHR_TO_ANGSTROM:NaN;
+ const cards=key=>lines.map((line,i)=>new RegExp('^'+key+'\\b','i').test(line)?i:-1).filter(i=>i>=0);
+ const cellCards=cards('CELL_PARAMETERS'),positionCards=cards('ATOMIC_POSITIONS');
+ if(positionCards.length!==1||cellCards.length>1)throw Error('QE tek bir ATOMIC_POSITIONS ve en fazla bir CELL_PARAMETERS kartı içermeli.');
+ const cardUnit=(line,key,allowed,fallback)=>{
+  const suffix=line.slice(key.length).trim(),match=suffix.match(/^[{(]\s*([a-z_]+)(?:\s*=\s*([\d.+\-eEdD]+))?\s*[})]$/i)||suffix.match(/^([a-z_]+)$/i);
+  if(suffix&&!match)throw Error('QE '+key+' birimi tanınmadı: '+suffix);
+  const unit=match?match[1].toLowerCase():fallback;
+  if(!allowed.includes(unit))throw Error('QE '+key+' birimi desteklenmiyor: '+unit);
+  return {unit,inlineAlat:match?.[2]?num(match[2])*BOHR_TO_ANGSTROM:NaN};
+ };
+ const parseVectors=i=>structureVectorRows(lines.slice(i+1,i+4).map(s=>s.split(/\s+/).slice(0,3).map(num)),'QE');
+ let vectors,realAlat=alat;
+ if(ibrav===0){
+  if(cellCards.length!==1)throw Error('QE ibrav=0 için CELL_PARAMETERS kartı gerekli.');
+  const {unit,inlineAlat}=cardUnit(lines[cellCards[0]],'CELL_PARAMETERS',['alat','bohr','angstrom'],'alat');
+  if(Number.isFinite(inlineAlat))realAlat=inlineAlat;
+  const rawVectors=parseVectors(cellCards[0]);
+  if(unit==='alat'&&!Number.isFinite(realAlat))throw Error('QE CELL_PARAMETERS alat birimi için A veya celldm(1) gerekli.');
+  const scale=unit==='angstrom'?1:unit==='bohr'?BOHR_TO_ANGSTROM:realAlat;
+  vectors=structureVectorRows(rawVectors.map(v=>v.toArray().map(n=>n*scale)),'QE');
+  if(!Number.isFinite(realAlat))realAlat=vectors[0].length();
+ }else{
+  if(cellCards.length)throw Error('QE ibrav≠0 ile CELL_PARAMETERS birlikte kullanılamaz.');
+  if(!Number.isFinite(alat)||alat<=0)throw Error('QE ibrav için A veya celldm(1) gerekli.');
+  const useCell=celldm.slice(1).some(Number.isFinite);
+  if(useCell&&[param('B'),param('C'),param('cosAB'),param('cosAC'),param('cosBC')].some(Number.isFinite))
+   throw Error('QE celldm ve A/B/C/kosinüs parametreleri karışık kullanılamaz.');
+  const p={a:alat,b:useCell?alat*celldm[1]:param('B'),c:useCell?alat*celldm[2]:param('C'),
+   cosbc:useCell?celldm[3]:param('cosBC'),cosac:useCell?celldm[4]:param('cosAC'),cosab:useCell?celldm[5]:param('cosAB')};
+  vectors=qeBravaisVectors(ibrav,p);
+ }
+ const {unit}=cardUnit(lines[positionCards[0]],'ATOMIC_POSITIONS',['crystal','crystal_sg','alat','bohr','angstrom'],'alat');
+ if(unit==='crystal_sg')throw Error('QE crystal_sg eşdeğer atomları eksik bırakır; önce tam kristal konumları (crystal) olarak dışa aktarın.');
+ const atomRows=lines.slice(positionCards[0]+1,positionCards[0]+1+nat).map(line=>{
+  const t=line.split(/\s+/);return [t[0],...t.slice(1,4).map(num)];
+ });
+ const mult=unit==='bohr'?BOHR_TO_ANGSTROM:unit==='alat'?realAlat:1;
+ if(!Number.isFinite(mult))throw Error('QE ATOMIC_POSITIONS alat referansı bilinmiyor.');
+ const sites=structureSites(atomRows,vectors,unit==='crystal'?'fractional':'cartesian',mult,'QE');
+ return {name:'Quantum ESPRESSO kristali',detail:'QE pw.x · ibrav='+ibrav+' · '+sites.length+' atom',cell:metric(vectors),sites,
+  warning:'QE atom türü etiketleri elemente indirgenir; pseudopotansiyel, manyetik momentler, kısıtlar ve hesaplama parametreleri aktarılmaz.'};
+}
+/* CASTEP .cell block format. No symmetry expansion: POSITIONS_* ordinarily
+   contains the explicitly listed cell contents. */
+function castepData(source){
+ const lines=String(source).replace(/\r/g,'').split('\n').map(line=>line.replace(/[#!].*$/,'').trim());
+ const blocks=new Map();let current=null,items=[];
+ for(const line of lines){
+  if(!line)continue;
+  const start=line.match(/^%block\s+(\w+)\s*$/i),end=line.match(/^%endblock\s+(\w+)\s*$/i);
+  if(start){
+   if(current)throw Error('CASTEP iç içe %BLOCK desteklenmiyor.');
+   current=start[1].toUpperCase();if(blocks.has(current))throw Error('CASTEP yinelenen %BLOCK: '+current);
+   items=[];continue;
+  }
+  if(end){
+   if(current!==end[1].toUpperCase())throw Error('CASTEP %ENDBLOCK eşleşmiyor: '+end[1]);
+   blocks.set(current,items);current=null;continue;
+  }
+  if(current)items.push(line);
+ }
+ if(current)throw Error('CASTEP %ENDBLOCK eksik: '+current);
+ const abc=blocks.get('LATTICE_ABC'),cart=blocks.get('LATTICE_CART');
+ const fracBlock=blocks.get('POSITIONS_FRAC'),absBlock=blocks.get('POSITIONS_ABS');
+ if(!!abc===!!cart||!!fracBlock===!!absBlock)throw Error('CASTEP bir LATTICE_CART/ABC ve bir POSITIONS_FRAC/ABS bloğu gerektirir.');
+ const unitValue=(text)=>{
+  const units={ang:1,angstrom:1,bohr:BOHR_TO_ANGSTROM,a0:BOHR_TO_ANGSTROM,nm:10};
+  if(!(text.toLowerCase() in units))throw Error('CASTEP uzunluk birimi desteklenmiyor: '+text);
+  return units[text.toLowerCase()];
+ };
+ const blockRows=(input)=>{
+  if(!input?.length)throw Error('CASTEP boş blok.');
+  const first=input[0].trim().split(/\s+/);
+  const scale=first.length===1&&/^[a-z][a-z0-9]*$/i.test(first[0])?unitValue(first[0]):1;
+  return {scale,rows:scale!==1||first.length===1&&/^[a-z]/i.test(first[0])?input.slice(1):input};
+ };
+ let vectors;
+ if(cart){
+  const {scale,rows}=blockRows(cart);
+  vectors=structureVectorRows(rows.map(line=>line.split(/\s+/).map(n=>Number(n)*scale)),'CASTEP');
+ }else{
+  const {scale,rows}=blockRows(abc);
+  if(rows.length!==2)throw Error('CASTEP LATTICE_ABC iki parametre satırı içermeli.');
+  const lengths=rows[0].split(/\s+/).map(n=>Number(n)*scale),angles=rows[1].split(/\s+/).map(Number);
+  if(lengths.length!==3||angles.length!==3)throw Error('CASTEP LATTICE_ABC uzunluk/açı sayısı geçersiz.');
+  vectors=basis(validateCell({a:lengths[0],b:lengths[1],c:lengths[2],alpha:angles[0],beta:angles[1],gamma:angles[2]}));
+ }
+ const positions=fracBlock||absBlock;
+ const {scale,rows}=fracBlock?{scale:1,rows:positions}:blockRows(positions);
+ const rawAtoms=rows.map(row=>{
+  const tokens=row.split(/\s+/);return [tokens[0],...tokens.slice(1,4).map(Number)];
+ });
+ const sites=structureSites(rawAtoms,vectors,fracBlock?'fractional':'cartesian',scale,'CASTEP');
+ return {name:'CASTEP kristali',detail:'CASTEP .cell · '+sites.length+' atom',cell:metric(vectors),sites,
+  warning:'CASTEP atom kısıtları, pseudopotansiyel, spin ve simetri üretim ayarları aktarılmaz; listedeki atomlar P1 olarak kullanılır.'};
+}
 function poscarData(text){
  const l=text.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
  if(l.length<8)throw Error('POSCAR içeriği eksik.');
@@ -4438,17 +4719,24 @@ function initWorkspaceUi(){
  renderWorkspaceList();
 }
 
+function structureImportData(source,filename){
+ const name=String(filename).toLowerCase(),str=String(source);
+ if(name.endsWith('.json'))return loadProject(str);
+ if(name.endsWith('.res')||name.endsWith('.ins')||/^(?=.*^CELL\s)(?=.*^SFAC\s)(?=.*^LATT\s)/ims.test(str))return shelxData(str);
+ if(name.endsWith('.cell')||/^\s*%BLOCK\s+LATTICE_(?:CART|ABC)\b/im.test(str))return castepData(str);
+ if(/\.(?:in|pwi|pw|qe)$/.test(name)||/&SYSTEM\b/i.test(str)&&/^\s*ATOMIC_POSITIONS\b/im.test(str))return qeData(str);
+ if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))return cifData(str);
+ if(name.endsWith('.pdb')||name.endsWith('.ent')||/^(?:HEADER|CRYST1|ATOM  |HETATM|MODEL )/m.test(str))return pdbData(str);
+ if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))return xyzData(str);
+ return poscarData(str);
+}
 async function importFile(file){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
  const workspaceId=activeWorkspaceId;
  const str=await file.text(),name=file.name.toLowerCase();let obj;
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen içe aktarmayı yeniden başlatın.');
  const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
- if(name.endsWith('.json'))obj=loadProject(str);
- else if(isCif)obj=cifData(str);
- else if(name.endsWith('.pdb')||name.endsWith('.ent')||/^(?:HEADER|CRYST1|ATOM  |HETATM|MODEL )/m.test(str))obj=pdbData(str);
- else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
- else obj=poscarData(str);
+ obj=structureImportData(str,name);
  if(densityGrid)resetVolume();
  state={...state,...obj,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  if(isCif&&name.endsWith('.json')===false)state.cifOriginal=originalCifRecord(state,str);
@@ -5408,7 +5696,7 @@ function renderOpenModal(){
   const zone=document.createElement('div');zone.className='open-local';
   const mark=document.createElement('span');mark.textContent='↥';mark.style.fontSize='30px';
   const heading=document.createElement('strong');heading.textContent='Bilgisayarından yapı dosyası seç';
-  const info=document.createElement('span');info.textContent='CIF · mCIF · POSCAR · XYZ · PDB · ENT · proje JSON';
+  const info=document.createElement('span');info.textContent='CIF · mCIF · SHELX RES/INS · QE IN · CASTEP CELL · POSCAR · XYZ · PDB · JSON';
   const choose=document.createElement('button');choose.type='button';choose.className='primary';choose.textContent='Dosyalara göz at';choose.onclick=()=>$('fileInput').click();
   zone.append(mark,heading,info,choose);host.append(zone);return;
  }

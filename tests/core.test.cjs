@@ -52,6 +52,7 @@ vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,me
 const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
+vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
@@ -222,6 +223,119 @@ test('POSCAR: Direct species/counts and positions', () => {
   assert.equal(d.sites.length, 2);
   assert.equal(d.sites[1].symbol, 'Cl');
   approx(d.sites[1].x, .5);
+});
+test('SHELXL .res: LATT inversion, SFAC species, FVAR occupancies and fractional coordinates',()=>{
+ const source=`TITL Mineral sample
+CELL 0.71073 6 7 8 90 90 90
+LATT 1
+SFAC C O
+FVAR 1.0 0.35
+C1 1 0.2 0.3 0.4 11.00000 0.04
+O1 2 0.1 0.2 0.3 21.00000 0.03
+HKLF 4
+Q1 1 .2 .3 .4 11 .05
+END`;
+ const result=api.shelxData(source);
+ assert.equal(result.name,'Mineral sample');assert.equal(result.sites.length,4);
+ const oxygen=result.sites.filter(s=>s.symbol==='O');assert.equal(oxygen.length,2);
+ oxygen.forEach(s=>approx(s.occupancy,.35));
+ assert.ok(result.sites.some(s=>s.symbol==='C'&&Math.abs(s.x-.8)<1e-6));
+ assert.match(result.warning,/LATT\/SYMM/);
+});
+test('SHELXL .ins: F-centered acentric and free-variable complement produce no double images',()=>{
+ const input=`CELL 0.7 5 5 5 90 90 90
+LATT -4
+SFAC O
+FVAR 1 .2
+O1 1 .1 .2 .3 -21.0 .06
+END`;
+ const result=api.structureImportData(input,'sample.ins');
+ assert.equal(result.sites.length,4);
+ result.sites.forEach(s=>approx(s.occupancy,.8));
+ assert.throws(()=>api.shelxData(input.replace('FVAR 1 .2','FVAR 1')),/FVAR 2/);
+ assert.throws(()=>api.shelxData(input.replace('LATT -4','LATT 0')),/LATT/);
+});
+test('SHELXL SYMM expressions expand correctly and duplicate special positions collapse',()=>{
+ const source='CELL .7 4 4 4 90 90 90\nLATT -1\nSYMM -X,Y,Z\nSFAC Si\nSi1 1 .25 .2 .3 11 .02';
+ const a=api.shelxData(source);assert.equal(a.sites.length,2);
+ approx(a.sites[1].x,.75);
+ assert.equal(api.shelxData(source.replace('.25 .2 .3','0 .2 .3')).sites.length,1);
+});
+test('SHELXL Uiso and anisotropic Uij survive symmetry-expanded import',()=>{
+ const iso=api.shelxData('CELL .7 4 4 4 90 90 90\nLATT 1\nSFAC C\nC1 1 .2 .3 .4 11 .05');
+ assert.equal(iso.sites.length,2);iso.sites.forEach(s=>approx(s.uIso,.05));
+ const adp=api.shelxData('CELL .7 4 4 4 90 90 90\nLATT 1\nSFAC C\nC1 1 .2 .3 .4 11 .03 .04 .05 .001 .002 .003');
+ assert.equal(adp.sites.length,2);adp.sites.forEach(s=>{
+  assert.equal(s.adp.length,6);approx(s.adp[0],.03);approx(s.adp[3],.001);
+ });
+});
+test('QE pw.x: ibrav=0 CELL_PARAMETERS angstrom and fractional atomic positions',()=>{
+ const text=`&CONTROL
+/
+&SYSTEM
+ ibrav=0, nat=2, ntyp=2
+/
+CELL_PARAMETERS (angstrom)
+3 0 0
+0 4 0
+0 0 5
+ATOMIC_SPECIES
+Na 22.99 Na.UPF
+Cl 35.4 Cl.UPF
+ATOMIC_POSITIONS {crystal}
+Na 0 0 0 1 1 1
+Cl .5 .5 .5 1 0 1
+K_POINTS gamma`;
+ const result=api.structureImportData(text,'qe.pwi');
+ assert.equal(result.sites.length,2);approx(result.cell.c,5);approx(result.sites[1].z,.5);
+ assert.throws(()=>api.qeData(text.replace('ATOMIC_POSITIONS {crystal}','ATOMIC_POSITIONS {crystal_sg}')),/crystal_sg/);
+ assert.throws(()=>api.qeData(text.replace('nat=2','nat=3')),/QE atom koordinatı/);
+});
+test('QE pw.x: Bohr and alat Cartesian units preserve off-axis fractional positions',()=>{
+ const p=`&SYSTEM ibrav=0, nat=1, celldm(1)=10.0 /\nCELL_PARAMETERS {alat}\n1 0 0\n0 1 0\n0 0 1\nATOMIC_POSITIONS {bohr}\nFe1 5 0 0`;
+ const d=api.qeData(p);approx(d.cell.a,10*.529177210903);approx(d.sites[0].x,.5);
+ const ang=`&SYSTEM ibrav=0, nat=1 /\nCELL_PARAMETERS (bohr)\n10 0 0\n0 10 0\n0 0 10\nATOMIC_POSITIONS alat\nSi 0 .5 0`;
+ approx(api.qeData(ang).sites[0].y,.5);
+ assert.throws(()=>api.qeData(p.replace('celldm(1)=10.0','')),/alat birimi/);
+});
+test('QE ibrav primitive Bravais axes: fcc, bcc, hexagonal, monoclinic and triclinic',()=>{
+ const sample=(ibrav,params='')=>api.qeData(`&SYSTEM ibrav=${ibrav}, nat=1, A=4 ${params} /\nATOMIC_POSITIONS crystal\nSi 0 0 0`);
+ approx(sample(2).cell.a,4/Math.sqrt(2));
+ approx(sample(3).cell.a,4*Math.sqrt(3)/2);
+ approx(sample(4,', C=6').cell.gamma,120);
+ approx(sample(12,', B=5, C=6, cosAB=0.5').cell.gamma,60);
+ approx(sample(14,', B=5, C=6, cosBC=.2, cosAC=.1, cosAB=-.15').cell.alpha,Math.acos(.2)*180/Math.PI);
+ assert.throws(()=>sample(14,', B=5, C=6'),/kosinüs/);
+ assert.throws(()=>sample(8,', C=6'),/b veya/);
+});
+test('CASTEP .cell: LATTICE_CART bohr with POSITIONS_ABS and comments',()=>{
+ const text=`%BLOCK LATTICE_CART
+bohr
+10 0 0 # a
+0 10 0
+0 0 10
+%ENDBLOCK LATTICE_CART
+%BLOCK POSITIONS_ABS
+bohr
+Si 5 0 0
+Si 0 5 0 ! second
+%ENDBLOCK POSITIONS_ABS`;
+ const d=api.structureImportData(text,'Si.cell');
+ approx(d.cell.a,10*.529177210903);approx(d.sites[0].x,.5);approx(d.sites[1].y,.5);
+});
+test('CASTEP LATTICE_ABC, fractional positions, reject ambiguous or unknown units',()=>{
+ const text=`%block lattice_abc
+ang
+4 5 6
+90 90 120
+%endblock lattice_abc
+%block positions_frac
+C .2 .4 .6
+%endblock positions_frac`;
+ const d=api.castepData(text);approx(d.cell.gamma,120);approx(d.sites[0].z,.6);
+ assert.throws(()=>api.castepData(text.replace('ang','furlong')),/birimi/);
+ assert.throws(()=>api.castepData(text+'\n%block positions_abs\nSi 0 0 0\n%endblock positions_abs'),/bir POSITIONS/);
+ assert.throws(()=>api.castepData(text.replace('%endblock lattice_abc','%endblock positions_frac')),/%ENDBLOCK/);
 });
 test('POSCAR: negative volume scale', () => {
   const poscar = 'negative\n-64\n2 0 0\n0 2 0\n0 0 2\nSi\n1\nDirect\n0 0 0';

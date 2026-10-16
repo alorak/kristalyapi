@@ -113,11 +113,17 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 
 | İşlem | Destek |
 | --- | --- |
-| **İçe aktar** | CIF / yaygın mCIF yapısal altkümesi, VASP POSCAR/CONTCAR, basit XYZ, **PDB/ENT** (CRYST1 + ilk MODEL, ATOM/HETATM, ANISOU), Kristal Yapı proje JSON'u. |
+| **İçe aktar** | CIF / yaygın mCIF yapısal altkümesi, **SHELXL `.res/.ins`**, **Quantum ESPRESSO `pw.x` `.in/.pwi`**, **CASTEP `.cell`**, VASP POSCAR/CONTCAR, basit XYZ, **PDB/ENT** (CRYST1 + ilk MODEL, ATOM/HETATM, ANISOU), Kristal Yapı proje JSON'u. |
 | **Dışa aktar** | Proje JSON, CIF, POSCAR, XYZ (görünür süperhücre atomları), **PDB** (birim hücrede P1 atomları), PNG. |
 | **Hacimsel alan** | Gaussian CUBE (`.cube`, `.cub`), VASP CHGCAR/CHG, XCrySDen XSF DATAGRID_3D. |
 
 İçe aktarılan ve **değiştirilmemiş** bir kaynak CIF, aynı oturumda dışa aktarılırken özgün metni koruyabilir. Kristal düzenlendiğinde CIF yeniden üretilir; tanınmayan CIF alanları, tüm loop blokları ve çoklu veri blokları için eksiksiz **round-trip garantisi yoktur**. Bilimsel arşiv için orijinal CIF'i de saklayın. XYZ dosyaları hücre verisi içermez; uygulama görüntüleme için yapay bir kutu kullanır. PDB desteği **kristalografik koordinat altkümesidir**: CRYST1 Hermann–Mauguin sembolü eşlenebiliyorsa asimetrik atomlara simetri uygulanır; sembol tanınmıyor veya metrikle uyuşmuyorsa açık uyarı verilir. Element sütunu boşsa atom adı/hizalama üzerinden tahmin yapılır ve uyarılır (özellikle protein `CA` atom adı kalsiyumla karıştırılmamalıdır). Zincir/rezidü topolojisi korunmaz. PDB'nin sabit ondalık sütunları nedeniyle koordinat, doluluk ve ANISOU aktarımında biçimin yuvarlama sınırları geçerlidir.
+
+**SHELXL yapı girişi:** `.res/.ins` dosyalarındaki `CELL`, `LATT`, `SYMM`, `SFAC`, `FVAR` ve atom satırları okunur. Merkezleme/tersinme dahil simetri işlemleri açık **P1** atomlarına genişletilir; kısmi doluluklar ve desteklenen `Uiso/Uij` alanları taşınır. `PART` düzensizlik grupları, bağ/restraint/rafine parametreleri proje nesnesine birebir aktarılmaz; `.fcf` yapı dosyası değil, ayrı Fourier veri girişidir. Tanınmayan doluluk değişkenlerinde yükleme hata verir.
+
+**Quantum ESPRESSO girişi:** `pw.x` `&SYSTEM` ve `ATOMIC_POSITIONS` kartı kullanılır; `ibrav=0` için `CELL_PARAMETERS` (`alat`, `bohr`, `angstrom`), ayrıca belgelenmiş `ibrav=1…14`, negatif eşdeğer ayarlar ve `91` desteklenir. `celldm` ve Å cinsinden `A/B/C` girdileri ayrıdır. Konumlar `crystal`, `alat`, `bohr`, `angstrom` birimlerinde dönüştürülür. `crystal_sg` yalnızca eşdeğer olmayan atomları tanımladığı ve uzay grubu ayarları olmadan tam hücre üretilemeyeceği için reddedilir. Bu okuyucu `pw.x` **girdi** dosyası içindir; çıktıda art arda yinelenen model kartları veya QE hesaplama ayarlarını saklamak amaçlanmaz.
+
+**CASTEP girişi:** `.cell` içindeki `%BLOCK LATTICE_CART` / `LATTICE_ABC` ve `%BLOCK POSITIONS_FRAC` / `POSITIONS_ABS` okunur; `ang`, `bohr` ve `nm` uzunluk birimleri işlenir. Simetri üretme anahtarları ve DFT kısıtları aktarılmaz. Üç okuyucuda da yalnızca tarayıcıda işlem yapılır; orijinal bilimsel dosya değiştirilmez.
 
 ## Kristalografi ve sayısal özellikler
 
