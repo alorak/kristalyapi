@@ -700,6 +700,10 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  for(const type of ['ball','space','stick','wire'])assert.match(quickbar,new RegExp('<option value="'+type+'"'));
  assert.match(html,/#viewport #stage\{bottom:var\(--quickbar-height\)\}/);
  assert.match(html,/#viewport\{--quickbar-height:80px\}/);
+ assert.match(html,/\.workbench-quickbar\{[^}]*grid-template-columns:minmax\(420px,1fr\) minmax\(345px,auto\)[^}]*overflow-x:auto/);
+ assert.match(html,/#app\.right-drawer-open \.quickbar-group:last-child\{justify-self:start\}/);
+ assert.doesNotMatch(html,/#app\.right-drawer-open #viewport\{--quickbar-height:142px\}/);
+ assert.match(html,/\.quickbar-ranges\{display:flex;gap:12px;justify-content:flex-start\}/);
  assert.match(html,/\.quickbar-range input\{[^}]*max-width:142px/);
  assert.match(html,/\.quickbar-analysis \.quickbar-poly\{[^}]*max-width:155px/);
  assert.match(html,/function syncAnalysisAvailability\(\)/);
