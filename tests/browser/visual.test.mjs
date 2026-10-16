@@ -73,6 +73,11 @@ try{
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ assert.equal(await page.locator('#leftGeneralPane').getByText('Görünüm',{exact:true}).count(),0);
+ assert.equal(await page.locator('#legacyViewControls').isHidden(),true);
+ assert.equal(await page.locator('#adpLevel').isDisabled(),true,'ADP probability needs an enabled ellipsoid with Uij/Uiso');
+ assert.equal(await page.locator('#polyCut').isDisabled(),true,'neighbor threshold needs a selected coordination center');
+ assert.equal(await page.locator('#polyNeighbors').isDisabled(),true,'max neighbors needs a selected coordination center');
  // Independent structures, per-workspace history and camera, the ten-workspace cap.
  assert.equal(await page.locator('#workspaceCount').textContent(),'1');
  await page.locator('#workspaceToggle').click();
@@ -193,11 +198,15 @@ try{
  await page.locator('[data-right-tool="info"]').click();
  await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width<60);
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'active icon must close its own drawer');
- assert.ok((await page.locator('#workbenchQuickbar').boundingBox()).height<=100,'closed-drawer desktop dock should be under 100 px');
+ assert.ok((await page.locator('#workbenchQuickbar').boundingBox()).height<=82,'closed-drawer desktop dock should be at most 82 px');
+ assert.ok((await page.locator('#quickAtomScale').boundingBox()).width<=145,'atom size slider must be compact');
+ assert.ok((await page.locator('#quickBondCut').boundingBox()).width<=145,'bond cutoff slider must be compact');
+ assert.ok((await page.locator('#polyElement').boundingBox()).width<=160,'coordination center selector must be compact');
+ await page.screenshot({path:path.join(artifacts,'20-compact-lower-toolbar.png'),animations:'disabled'});
  const dockBounds=await page.locator('#workbenchQuickbar').boundingBox();
  const polyBounds=await page.locator('#polyNeighbors').boundingBox();
  assert.ok(polyBounds.y+polyBounds.height<=dockBounds.y+dockBounds.height-2,
-  'coordination settings must not clip beneath the dock');
+  'coordination settings must not clip beneath the dock: '+JSON.stringify({dockBounds,polyBounds}));
  await save(page,'01-silicon-perspective',metrics);
  await page.getByRole('button',{name:'Üstten görünüm'}).click();
  await page.waitForTimeout(650);
@@ -208,7 +217,8 @@ try{
  await save(page,'03-cod-4335507',metrics);
  await page.locator('#fileInput').setInputFiles(path.join(base,'tests/browser/adp_visual.cif'));
  await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('adp visual'),null,{timeout:20000});
- await page.locator('#adpVisible').check();
+ await page.locator('[data-quick-flag="adpVisible"]').click();
+ assert.equal(await page.locator('#adpLevel').isEnabled(),true);
  await page.locator('#adpLevel').selectOption('90');
  await save(page,'04-adp-90',metrics);
  await page.locator('[data-right-tool="layers"]').click();
@@ -280,18 +290,21 @@ try{
  await page.locator('#adpLevel').selectOption('50');
  const polyCenter=await page.locator('#polyElement option').nth(1).getAttribute('value');
  await page.locator('#polyElement').selectOption(polyCenter);
+ assert.equal(await page.locator('#polyCut').isEnabled(),true);
+ assert.equal(await page.locator('#polyNeighbors').isEnabled(),true);
  await page.locator('#polyCut').fill('3');await page.locator('#polyCut').press('Tab');
  await page.locator('#polyNeighbors').fill('8');await page.locator('#polyNeighbors').press('Tab');
  assert.equal(await page.locator('#polyElement').inputValue(),polyCenter);
  assert.equal(await page.locator('#polyNeighbors').inputValue(),'8');
  await page.locator('#polyElement').selectOption('');
+ assert.equal(await page.locator('#polyCut').isDisabled(),true);
  await page.locator('#quickStyle').selectOption('space');
  assert.equal(await page.locator('#style').inputValue(),'space');
  await page.locator('#quickStyle').selectOption('ball');
  await page.locator('[data-quick-flag="labels"]').click();
  assert.equal(await page.locator('#labels').isChecked(),true);
  assert.equal(await page.locator('[data-quick-flag="labels"]').getAttribute('aria-pressed'),'true');
- await page.locator('#labels').uncheck();
+ await page.locator('[data-quick-flag="labels"]').click();
  assert.equal(await page.locator('[data-quick-flag="labels"]').getAttribute('aria-pressed'),'false');
  await page.locator('#quickAtomScale').evaluate(el=>{el.value='0.95';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
  assert.equal(await page.locator('#atomScale').inputValue(),'0.95');

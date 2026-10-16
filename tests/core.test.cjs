@@ -675,7 +675,11 @@ test('mobile layout hides closed tabbed sidebar and preserves bottom navigation'
 
 test('layout: independent Miller tool and docked quick controls with 12 icon buttons',()=>{
  const left=html.slice(html.indexOf('id="leftGeneralPane"'),html.indexOf('id="leftAtomsPane"'));
- assert.ok(left.indexOf('<h2>Görünüm')<left.indexOf('<h2>Birim hücre'));
+ assert.ok(!left.includes('<h2>Görünüm'),'old duplicate appearance section must be removed');
+ assert.ok(left.includes('<h2>Birim hücre'));
+ for(const id of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible','atomScale','bondCut'])
+  assert.ok(!left.includes('id="'+id+'"'),id+' should be controlled by the bottom bar');
+ assert.match(html,/id="legacyViewControls" hidden aria-hidden="true"/);
  assert.ok(!left.includes('Miller düzlemleri (hkl)'));
  const right=html.slice(html.indexOf('id="rightMillerPane"'),html.indexOf('id="rightToolRail"'));
  assert.ok(right.includes('Miller düzlemleri (hkl)'));
@@ -695,13 +699,15 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
   'adpLevel','polyElement','polyCut','polyNeighbors'])assert.ok(quickbar.includes('id="'+id+'"'),id);
  for(const type of ['ball','space','stick','wire'])assert.match(quickbar,new RegExp('<option value="'+type+'"'));
  assert.match(html,/#viewport #stage\{bottom:var\(--quickbar-height\)\}/);
- assert.match(html,/#viewport\{--quickbar-height:98px\}/);
+ assert.match(html,/#viewport\{--quickbar-height:80px\}/);
+ assert.match(html,/\.quickbar-range input\{[^}]*max-width:142px/);
+ assert.match(html,/\.quickbar-analysis \.quickbar-poly\{[^}]*max-width:155px/);
+ assert.match(html,/function syncAnalysisAvailability\(\)/);
  assert.match(html,/\.quickbar-hkl \.quickbar-field\{flex:0 0 41px;width:41px\}/);
  for(const id of ['quickShowPlane','quickRepeatMillerPlanes'])
   assert.match(quickbar,new RegExp('<button id="'+id+'"[^>]*aria-pressed="(?:true|false)"[^>]*><svg'));
- const leftView=html.slice(html.indexOf('<div class="section"><h2>Görünüm</h2>'),html.indexOf('<div class="section"><h2>Birim hücre'));
  for(const id of ['adpLevel','polyElement','polyCut','polyNeighbors'])
-  assert.ok(!leftView.includes('id="'+id+'"'),id+' must leave the left sidebar');
+  assert.ok(!left.includes('id="'+id+'"'),id+' must stay outside the left sidebar');
 });
 test('right tool rail toggles one drawer at a time, restores scroll and updates ARIA',()=>{
  const nodes={};const get=id=>nodes[id] ||= {
