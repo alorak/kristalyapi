@@ -563,6 +563,12 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 
 
 .volume-color-legend{height:9px;min-height:9px;border-radius:20px;background:linear-gradient(to right,rgb(38,82,224),#fff,rgb(255,43,36));border:1px solid #d8e3ef}
+.volume-map-panel{display:flex;flex-direction:column;gap:9px;padding:12px;background:#f5f8fc;border:1px solid #dce7f2;border-radius:12px;min-width:0}
+.volume-map-head{display:flex;flex-direction:column;gap:3px;color:#274768}
+.volume-map-head strong{font-size:13px}.volume-map-head span{font-size:11px;color:#657b91}
+#volumeSlicePreview{display:block;width:min(100%,310px);height:auto;aspect-ratio:1;align-self:center;border:1px solid #d5e3ef;border-radius:7px;cursor:crosshair;touch-action:none;image-rendering:auto;box-shadow:0 2px 9px #28496a14}
+#volumeLineChart{display:block;width:100%;height:auto;background:#fff;border:1px solid #d9e5f1;border-radius:7px}
+#volumeSlicePreview[hidden],#volumeLineChart[hidden]{display:none}
 #app>.panel.right .right-drawer-pane>.section .hint,#app>.panel.right .right-drawer-pane>.section .shortcuts,#app>.panel.right .right-drawer-pane>.section .empty{color:#647f99}
 
 /* The lower workbench is a persistent control surface, not a floating overlay

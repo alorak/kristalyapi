@@ -51,6 +51,7 @@ vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,pngExportLimits});',context);
+vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
@@ -84,6 +85,50 @@ test('PNG checks actual viewport and renderbuffer limits, not texture size alone
  assert.deepEqual(JSON.parse(JSON.stringify(api.pngExportLimits(gl,8192))),
   {width:3000,height:2100,maxPixels:24000000});
  assert.throws(()=>api.pngExportLimits({...gl,getParameter:()=>null},8192),/WebGL PNG/);
+});
+test('SVG vector export serializes projected atoms, bonds and polygon faces without raster images',()=>{
+ const shapes=[
+  {type:'circle',x:50,y:30,r:12,fill:'#cc3300',opacity:1,depth:2},
+  {type:'line',x1:5,y1:6,x2:60,y2:40,width:3,stroke:'#778899',opacity:.7,depth:5},
+  {type:'triangle',points:[[0,0],[30,0],[8,20]],fill:'#335577',opacity:.3,depth:8},
+  {type:'label',x:50,y:12,text:'C<&"',depth:1,opacity:1}
+ ];
+ const svg=api.crystalSvgText(shapes,320,200,'Quartz<&"',false);
+ assert.match(svg,/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+ assert.match(svg,/<radialGradient/);assert.match(svg,/<circle/);assert.match(svg,/<path/);
+ assert.match(svg,/Quartz&lt;&amp;&quot;/);assert.match(svg,/C&lt;&amp;&quot;/);
+ assert.doesNotMatch(svg,/<image|data:image|foreignObject/);
+ assert.ok(svg.indexOf('fill="#335577"')<svg.indexOf('<circle'),'distant face must paint behind atom');
+ assert.doesNotMatch(api.crystalSvgText([],10,10,'',true),/<rect/);
+ assert.throws(()=>api.crystalSvgText([{...shapes[0],fill:'url(javascript:alert(1))'}],10,10),/renk/);
+});
+test('2D contour levels are evenly spaced, finite, and include reference threshold',()=>{
+ const levels=api.sliceContourLevels(new Float32Array([0,2,4,NaN,6,8]),3,5);
+ assert.equal(levels.length,4);approx(levels[0],2);approx(levels[1],4);approx(levels[2],5);approx(levels[3],6);
+ assert.equal(api.sliceContourLevels(new Float32Array([1,1,1]),4).length,0);
+ assert.throws(()=>api.sliceContourLevels(new Float32Array([0,1]),21),/2–20/);
+});
+test('marching squares gives correct linear-field contours and preserves holes',()=>{
+ const values=new Float32Array([0,1,2,0,1,2,0,1,2]);
+ const linear=api.sliceContourSegments(values,3,[.5,1.5]);
+ assert.equal(linear.segments.length,4);
+ for(const s of linear.segments)approx(s.x1,s.level);
+ const hole=api.sliceContourSegments(new Float32Array([0,1,2,0,NaN,2,0,1,2]),3,[.5]);
+ assert.equal(hole.segments.length,0,'undefined Miller pixels must not be connected');
+ const saddle=api.sliceContourSegments(new Float32Array([1,0,0,1]),2,[.5]);
+ assert.equal(saddle.segments.length,2,'ambiguous saddle requires two disjoint arcs');
+});
+test('line profile reports real Cartesian Angstrom distance in a skew slice',()=>{
+ const slice={resolution:3,values:new Float32Array([0,1,2,0,1,2,0,1,2]),units:'e/Å³',
+  corners:[[0,0,0],[4,0,0],[6,3,0],[2,3,0]]};
+ const profile=api.sliceLineProfile(slice,[0,0],[1,1],5);
+ approx(profile.length,Math.sqrt(6*6+3*3));
+ approx(profile.rows[2].value,1);approx(profile.rows.at(-1).distance,profile.length);
+ approx(profile.rows.at(-1).world[0],6);
+ const csv=api.sliceLineProfileCsv(profile);
+ assert.match(csv,/distance_A,u,v,x_A,y_A,z_A,value_e___/);
+ assert.equal(csv.trim().split('\n').length,6);
+ assert.throws(()=>api.sliceLineProfile(slice,[0,0],[0,0]),/iki farklı/);
 });
 test('per-site atom/polyhedron styles and fractional bounds survive validated project roundtrip',()=>{
  const model=JSON.parse(vm.runInContext('JSON.stringify(lastCrystalPayload(state))',context));
@@ -813,10 +858,10 @@ test('preset favorites store only allowlisted structure keys',()=>{
  const broken=vm.runInContext('loadPresetFavorites({getItem(){return "invalid JSON";}})',context);
  assert.deepEqual(Array.from(broken),[]);
 });
-test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ, PDB and PNG choices',()=>{
+test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ, PDB, PNG and SVG choices',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','svg']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');
@@ -827,6 +872,7 @@ test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ, PDB and PN
  assert.equal(api.exportFunction('xyz').name,'exportXyz');
  assert.equal(api.exportFunction('pdb').name,'exportPdb');
  assert.equal(api.exportFunction('png').name,'screenshot');
+ assert.equal(api.exportFunction('svg').name,'exportSvg');
  assert.throws(()=>api.exportFunction('unsafe'));
  assert.ok(!html.includes('<h2>Dışa aktarma</h2>'));
  assert.ok(!html.includes('id="pngBtn"'));

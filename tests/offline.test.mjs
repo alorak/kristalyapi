@@ -20,7 +20,7 @@ function serviceWorkerHarness(){
   addEventListener(type,handler){listeners.set(type,handler);},
   clients:{async claim(){claimed++;}}};
  const caches={async open(name){assert.match(name,/^kristalyapi-shell-/);return cache;},
-  async keys(){return ['another-app-cache','kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1'];},
+  async keys(){return ['another-app-cache','kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2'];},
   async delete(name){deletes.push(name);return true;}};
  const fetch=async request=>{network.push(request.url);return 'network:'+request.url;};
  runInNewContext(source,{self,caches,fetch,URL});
@@ -59,6 +59,6 @@ test('offline fetch only handles declared, same-origin GET assets',async()=>{
 
 test('activation removes only old Kristal Yapı shell caches',async()=>{
  const sw=serviceWorkerHarness();await sw.dispatch('activate');
- assert.deepEqual(sw.deletes,['kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1']);
+ assert.deepEqual(sw.deletes,['kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2']);
  assert.equal(sw.claimed,1);
 });

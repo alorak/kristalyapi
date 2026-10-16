@@ -493,12 +493,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label class="field"><span>Renk haritası</span><select id="volumePalette">
        <option value="thermal">Mavi – beyaz – kırmızı</option><option value="viridis">Viridis-benzeri</option>
      </select></label>
-     <label class="check"><input type="checkbox" id="volumeContours"> Kesitte izodeğer konturu</label>
+     <label class="check"><input type="checkbox" id="volumeContours"> Kesitte çok seviyeli konturlar</label>
+     <label class="field"><span>Kontur seviye sayısı</span><input type="number" id="volumeContourCount" min="2" max="20" step="1" value="8"></label>
      <button id="openPotential">Elektrostatik potansiyel yükle (renklendir)</button>
      <label class="check"><input type="checkbox" id="volumePotential"> İzoyüzeyi potansiyele göre renklendir</label>
      <div id="volumeColorLegend" class="volume-color-legend" aria-label="Mavi düşük, beyaz orta, kırmızı yüksek skaler alan"></div>
      <div id="volumeColorScale" class="hint" aria-live="polite">Renk ölçeği veri yüklenince hesaplanır.</div>
      <div class="actionrow"><button id="volumeSlicePng" type="button">2B kesiti PNG kaydet</button><button id="volumeSliceCsv" type="button">Kesit sayısal CSV</button></div>
+     <div class="volume-map-panel" aria-label="Etkileşimli 2B kesit haritası">
+      <div class="volume-map-head"><strong>2B kesit haritası</strong><span>Üzerinde sürükleyerek çizgi profili seç</span></div>
+      <canvas id="volumeSlicePreview" width="192" height="192" aria-label="Yoğunluk kesiti, çizgi profili için sürükleyin" hidden></canvas>
+      <canvas id="volumeLineChart" width="640" height="240" aria-label="Çizgi boyunca alan değeri grafiği" hidden></canvas>
+      <div class="note" id="volumeLineStats" aria-live="polite">Yoğunluk haritası için hacimsel veri yükleyin.</div>
+      <div class="actionrow"><button id="volumeLineCsv" type="button" disabled>Çizgi profilini CSV indir</button><button id="volumeLineClear" type="button">Çizgiyi temizle</button></div>
+     </div>
      <div class="note" id="volumeSliceStats">Henüz sayısal kesit yok.</div>
      <button id="clearVolume">Hacimsel veriyi temizle</button>
    </div>
@@ -883,8 +891,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button type="button" data-export="png" class="export-option">
     <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünümün beyaz zeminli ekran görüntüsü</small></span><span class="export-option-arrow">↓</span>
    </button>
+   <button type="button" data-export="svg" class="export-option">
+    <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · atom, bağ, kafes ve çokyüzlü çizgileri</small></span><span class="export-option-arrow">↓</span>
+   </button>
   </div>
   <div class="export-png-controls"><strong>PNG</strong><label>Çözünürlük <select id="pngScale" aria-label="PNG çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label><input id="pngTransparent" type="checkbox"> Şeffaf arka plan</label></div>
+  <div class="export-png-controls"><strong>SVG</strong><label><input id="svgTransparent" type="checkbox"> Şeffaf arka plan</label><span>Vektör · yakınlaştırınca keskin kalır</span></div>
   <div class="export-dialog-foot"><span>Dosyalar tarayıcın üzerinden indirilir.</span><button type="button" id="exportModalCancel">Vazgeç</button></div>
  </div>
 </div>
