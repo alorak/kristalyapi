@@ -61,6 +61,33 @@ async function save(page,name,metrics){
  metrics[name]=await sample(page);
  assert.ok(metrics[name].ink>20,name+': canvas may be blank '+JSON.stringify(metrics[name]));
 }
+async function assertHorizontalQuickbar(page,{drawerOpen=false,mobile=false}={}){
+ const geometry=await page.locator('#workbenchQuickbar').evaluate(dock=>{
+  const [view,miller]=dock.querySelectorAll('.quickbar-group');
+  const rect=element=>{
+   const bounds=element.getBoundingClientRect();
+   return {left:bounds.left,right:bounds.right,top:bounds.top,bottom:bounds.bottom,
+    width:bounds.width,height:bounds.height};
+  };
+  return {
+   dock:rect(dock),view:rect(view),miller:rect(miller),
+   leftGap:rect(dock.querySelector('.quickbar-ranges')).top-rect(dock.querySelector('.quickbar-topline')).bottom,
+   rightGap:rect(dock.querySelector('.quickbar-analysis')).top-rect(dock.querySelector('.quickbar-miller-line')).bottom,
+   justifySelf:getComputedStyle(miller).justifySelf,
+   scrollWidth:dock.scrollWidth,clientWidth:dock.clientWidth
+  };
+ });
+ assert.ok(geometry.dock.height<=82,'the bottom dock must stay one compact row: '+JSON.stringify(geometry));
+ assert.ok(geometry.view.right<=geometry.miller.left+1,'the two control groups must stay side by side: '+JSON.stringify(geometry));
+ assert.ok(Math.abs((geometry.view.top+geometry.view.bottom)/2-(geometry.miller.top+geometry.miller.bottom)/2)<12,
+  'the control groups must share the same vertical row: '+JSON.stringify(geometry));
+ assert.ok(geometry.leftGap>=3&&geometry.rightGap>=3,'both control rows need breathing room: '+JSON.stringify(geometry));
+ assert.equal(geometry.justifySelf,drawerOpen?'start':'end','Miller controls should align right normally and left with the drawer open');
+ if(!drawerOpen&&!mobile)assert.ok(geometry.dock.right-geometry.miller.right<=20,
+  'Miller controls should sit at the right edge of the normal toolbar');
+ if(mobile)assert.ok(geometry.scrollWidth>geometry.clientWidth,
+  'narrow screens should allow horizontal scrolling instead of vertical stacking');
+}
 const metrics={};
 try{
  browser=await chromium.launch({headless:true,args:[
@@ -195,10 +222,15 @@ try{
  await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width>300);
  assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
  assert.equal(await page.locator('[data-right-tool="info"]').getAttribute('aria-expanded'),'true');
+ await assertHorizontalQuickbar(page,{drawerOpen:true});
+ await page.screenshot({path:path.join(artifacts,'21-open-drawer-horizontal-toolbar.png'),animations:'disabled'});
+ await page.setViewportSize({width:1100,height:800});
+ await assertHorizontalQuickbar(page,{drawerOpen:true});
+ await page.setViewportSize({width:1480,height:920});
  await page.locator('[data-right-tool="info"]').click();
  await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width<60);
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'active icon must close its own drawer');
- assert.ok((await page.locator('#workbenchQuickbar').boundingBox()).height<=82,'closed-drawer desktop dock should be at most 82 px');
+ await assertHorizontalQuickbar(page);
  assert.ok((await page.locator('#quickAtomScale').boundingBox()).width<=145,'atom size slider must be compact');
  assert.ok((await page.locator('#quickBondCut').boundingBox()).width<=145,'bond cutoff slider must be compact');
  assert.ok((await page.locator('#polyElement').boundingBox()).width<=160,'coordination center selector must be compact');
@@ -279,8 +311,7 @@ try{
  await save(page,'10-moyo-space-group',metrics);
  // The dock mirrors the original left controls and updates the same state.
  assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
- const dockSize=await page.locator('#workbenchQuickbar').boundingBox();
- assert.ok(dockSize.height<=160,'dock with open analysis drawer should remain compact');
+ await assertHorizontalQuickbar(page,{drawerOpen:true});
  for(const id of ['adpLevel','polyElement','polyCut','polyNeighbors']){
   assert.equal(await page.locator('#leftGeneralPane #'+id).count(),0,id+' must leave the left sidebar');
   assert.equal(await page.locator('#workbenchQuickbar #'+id).count(),1,id+' must appear in the dock');
@@ -330,10 +361,17 @@ try{
  await page.locator('[data-right-tool="miller"]').click();
  await page.setViewportSize({width:650,height:760});
  assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
- assert.ok((await page.locator('#workbenchQuickbar').boundingBox()).height<=165,'mobile dock should be compact');
+ await assertHorizontalQuickbar(page,{mobile:true});
+ await page.locator('#workbenchQuickbar').evaluate(dock=>{dock.scrollLeft=dock.scrollWidth;});
+ assert.equal(await page.locator('#workbenchQuickbar').evaluate(dock=>{
+  const miller=dock.querySelector('.quickbar-group:last-child').getBoundingClientRect();
+  const viewport=dock.getBoundingClientRect();
+  return miller.left>=viewport.left&&miller.right<=viewport.right;
+ }),true,'horizontal scrolling must reveal the Miller controls');
  assert.equal(await page.evaluate(()=>document.getElementById('stage').getBoundingClientRect().bottom<=document.getElementById('workbenchQuickbar').getBoundingClientRect().top+1),true,'mobile dock must not cover WebGL drawing surface');
  await page.locator('[data-right-tool="symmetry"]').click();
  assert.equal(await page.locator('#rightDrawerPane-symmetry').isVisible(),true,'mobile drawer must open');
+ await assertHorizontalQuickbar(page,{drawerOpen:true,mobile:true});
  assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
  await page.locator('[data-right-tool="symmetry"]').press('Escape');
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'Escape closes mobile drawer');
