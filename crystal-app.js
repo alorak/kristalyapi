@@ -377,6 +377,65 @@ function readVolumetric(src,filename){
  if(/^\s*(?:#.*\n){0,2}\s*-?\d+\s+[-+0-9.eEdD]+\s+[-+0-9.eEdD]+\s+[-+0-9.eEdD]+/m.test(src))return readCube(src);
  throw Error('Biçim tanınamadı. .cube, .chgcar/.chg veya .xsf yükleyin.');
 }
+/* Interchange formats carry scalar samples, not a guarantee about their
+   physical units. Keep units/quantity in comments without scaling values. */
+function volumeExportGeometry(grid){
+ const dims=grid?.dims,axes=grid?.axes,origin=grid?.origin;
+ const n=Array.isArray(dims)&&dims.length===3?dims.reduce((a,b)=>a*b,1):0;
+ if(!n||dims.some(d=>!Number.isInteger(d)||d<2)||n>VOLUME_MAX_VOXELS||
+  grid.values?.length!==n||!Array.isArray(origin)||origin.length!==3||
+  !Array.isArray(axes)||axes.length!==3||axes.some(v=>!Array.isArray(v)||v.length!==3)||
+  ![...origin,...axes.flat()].every(Number.isFinite)||
+  Math.abs(volumeDot(axes[0],volumeCross(axes[1],axes[2])))<1e-14)
+  throw Error('Dışa aktarılacak hacimsel ızgara geçersiz.');
+ return {dims,axes,origin,n};
+}
+function volumeExportNumber(value){
+ if(!Number.isFinite(value))throw Error('Hacimsel alanda NaN/Infinity bulunuyor.');
+ return Number(value).toExponential(9);
+}
+function volumeExportLabel(grid){
+ return String(grid.title||grid.kind||'scalar').replace(/[\r\n]+/g,' ').slice(0,100);
+}
+function volumeExportMeta(grid){
+ return 'Kristal Yapi | quantity='+String(grid.quantity||'unknown')+
+  ' | units='+String(grid.units||'unknown').replace(/[\r\n]+/g,' ').slice(0,90);
+}
+function volumeCubeText(grid){
+ const {dims,axes,origin,n}=volumeExportGeometry(grid);
+ // All three NEGATIVE counts explicitly select Cartesian Angstrom units.
+ // CUBE stores z fastest, identical to our gridIndex convention.
+ const rows=[volumeExportLabel(grid),volumeExportMeta(grid),
+  '0 '+origin.map(volumeExportNumber).join(' '),
+  ...axes.map((axis,i)=>'-'+dims[i]+' '+axis.map(volumeExportNumber).join(' '))];
+ let line=[];
+ for(let i=0;i<n;i++){
+  line.push(volumeExportNumber(grid.values[i]));
+  if(line.length===6){rows.push(line.join(' '));line=[];}
+ }
+ if(line.length)rows.push(line.join(' '));
+ return rows.join('\n')+'\n';
+}
+function volumeXsfText(grid){
+ const {dims,axes,origin}=volumeExportGeometry(grid),periodic=!!grid.periodic;
+ // XCrySDen DATAGRID is a *general* grid, not inherently periodic. For a
+ // periodic field explicitly duplicate the last planes at index n (= index 0).
+ const outDims=dims.map(n=>n+(periodic?1:0));
+ const span=axes.map((v,i)=>v.map(x=>x*(outDims[i]-1)));
+ const rows=['# '+volumeExportLabel(grid),'# '+volumeExportMeta(grid),
+  'BEGIN_BLOCK_DATAGRID_3D','scalar','BEGIN_DATAGRID_3D_scalar',
+  outDims.join(' '),origin.map(volumeExportNumber).join(' '),
+  ...span.map(v=>v.map(volumeExportNumber).join(' '))];
+ let line=[];
+ // XSF stores x fastest; our internal array stores z fastest.
+ for(let k=0;k<outDims[2];k++)for(let j=0;j<outDims[1];j++)for(let i=0;i<outDims[0];i++){
+  line.push(volumeExportNumber(volumeVoxel(grid,i,j,k)));
+  if(line.length===6){rows.push(line.join(' '));line=[];}
+ }
+ if(line.length)rows.push(line.join(' '));
+ rows.push('END_DATAGRID_3D','END_BLOCK_DATAGRID_3D');
+ return rows.join('\n')+'\n';
+}
 const VOLUME_UNIT_CHOICES={
  unknown:{quantity:'unknown',units:'bilinmiyor',factor:1},
  'density-bohr':{quantity:'density',units:'e/Å³',factor:1/VOLUME_BOHR**3,source:'e/bohr³'},
@@ -886,6 +945,7 @@ function volumeRefreshDatasetUi(){
   :'Uyuşmayan uzaysal koordinat çerçevesi: birlikte çizim kapalı.';
  volumeRefreshMathUi();
  volumeRefreshIsoUi();
+ $('volumeExport').disabled=!activeVolumeDataset();
 }
 function volumeSyncIsoControls(){
  const layer=activeVolumeDataset()?.layers[0];if(!layer)return;
@@ -1032,10 +1092,23 @@ function resetVolume(){
  volumeView.mode='off';$('volumeMode').value='off';$('volumePotential').checked=false;
  $('volumeIsoLayers').replaceChildren();$('volumeDatasets').replaceChildren();
  $('volumeActiveDataset').replaceChildren();$('volumeColorDataset').replaceChildren();
+ $('volumeExport').disabled=true;
  $('volumeFrameStatus').textContent='Henüz veri yüklenmedi.';
  updateVolumeInfo();updateVolumeSliceStats();if(root&&orbit)fit();
 }
 function initVolumeControls(){
+ $('volumeExport').disabled=!activeVolumeDataset();
+ $('volumeExport').onclick=()=>{
+  try{
+   const dataset=activeVolumeDataset();if(!dataset)throw Error('Önce hacimsel alan yükleyin.');
+   const format=$('volumeExportFormat').value;
+   if(!['cube','xsf'].includes(format))throw Error('Bilinmeyen dışa aktarım biçimi.');
+   const name=String(dataset.name||'volume').normalize('NFKD')
+    .replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,48)||'volume';
+   const content=format==='cube'?volumeCubeText(dataset.grid):volumeXsfText(dataset.grid);
+   download(name+'.'+format,content,'text/plain;charset=utf-8');
+  }catch(error){inform('Hacimsel dışa aktarım: '+error.message);}
+ };
  $('openVolume').onclick=()=>$('volumeFile').click();
  $('openAdditionalVolume').onclick=()=>$('volumeAdditionalFile').click();
  $('openPotential').onclick=()=>$('potentialFile').click();
@@ -2725,7 +2798,7 @@ function angleBetweenPlanes(a,b){
  const dot=a.normal.reduce((v,x,i)=>v+x*b.normal[i],0);
  return Math.acos(clamp(Math.abs(dot),0,1))*180/Math.PI;
 }
-let stage3Planes=[],lastBvs=null,lastXrd=null;
+let stage3Planes=[],lastBvs=null,lastXrd=null,lastXrdProfile=null,measuredXrd=null;
 const fcfByWorkspace=new Map();
 function drawStage3Planes(){
  for(const [i,plane] of stage3Planes.entries()){
@@ -2884,6 +2957,96 @@ function powderPattern(cell,sites,{wavelength=1.5406,maxAngle=90,scattering='xra
    (scattering==='neutron'?'neutron-Lorentz':scattering==='xray'?'xray-LP':'none'):'none',
   warnings,approximate:true};
 }
+/* Empirical, unit-area pseudo-Voigt instrumental profile. H is the FWHM in
+   degrees of 2theta, and H^2=U*tan(theta)^2+V*tan(theta)+W (degrees^2).
+   This does not fit microstructure or simulate axial-divergence asymmetry. */
+function pseudoVoigt(delta,fwhm,eta){
+ const gamma=fwhm/2,x=delta/gamma;
+ const lorentz=1/(Math.PI*gamma*(1+x*x));
+ const gaussian=Math.sqrt(4*Math.log(2)/Math.PI)/fwhm*
+  Math.exp(-4*Math.log(2)*(delta/fwhm)**2);
+ return eta*lorentz+(1-eta)*gaussian;
+}
+function cagliotiFwhm(angle,U,V,W){
+ const t=Math.tan(angle*Math.PI/360),squared=U*t*t+V*t+W;
+ if(!Number.isFinite(squared)||squared<=0||squared>400)
+  throw Error('Caglioti U/V/W seçilen 2θ için pozitif ve 20° altında FWHM üretmeli.');
+ return Math.sqrt(squared);
+}
+function powderProfile(result,{U=0,V=0,W=.01,eta=.5,step=.02,
+ kalpha2=false,lambda2=1.54443,ratio=.5}={}){
+ if(!result||!Array.isArray(result.reflections))throw Error('Önce toz yansımalarını hesaplayın.');
+ if(![U,V,W,eta,step,lambda2,ratio].every(Number.isFinite)||
+  [U,V,W].some(v=>Math.abs(v)>100)||eta<0||eta>1||step<.005||step>.2||
+  ratio<0||ratio>1||lambda2<.2||lambda2>5)
+  throw Error('Profil parametreleri geçersiz (η 0–1, adım 0.005–0.2°, Kα2 oranı 0–1).');
+ if(kalpha2&&result.scattering!=='xray')throw Error('Kα1/Kα2 ikilisi yalnız X-ışınları için kullanılabilir.');
+ if(kalpha2&&lambda2<=result.wavelength)
+  throw Error('Kα2 dalgaboyu Kα1 dalgaboyundan büyük olmalı.');
+ const n=Math.ceil(result.maxAngle/step)+1;
+ if(n>30001)throw Error('Profil örnekleme bütçesi aşıldı.');
+ const angles=Array.from({length:n},(_,i)=>Math.min(result.maxAngle,i*step));
+ const intensity=new Float64Array(n);let operations=0;
+ const addPeak=(center,weight)=>{
+  if(!(weight>0)||center<0||center>result.maxAngle)return;
+  const H=cagliotiFwhm(center,U,V,W);
+  if(H<step/2)throw Error('FWHM örnekleme adımından çok küçük; daha ince 2θ adımı seçin.');
+  const lo=Math.max(0,Math.ceil((center-20*H)/step));
+  const hi=Math.min(n-1,Math.floor((center+20*H)/step));
+  operations+=hi-lo+1;
+  if(operations>25000000)throw Error('Profil hesaplama bütçesi aşıldı; daha büyük adım seçin.');
+  for(let i=lo;i<=hi;i++)intensity[i]+=weight*pseudoVoigt(angles[i]-center,H,eta);
+ };
+ const doublet=!!kalpha2&&ratio>0;
+ const share1=doublet?1/(1+ratio):1,share2=doublet?ratio/(1+ratio):0;
+ for(const peak of result.reflections){
+  addPeak(peak.angle,peak.powderIntensity*share1);
+  if(!doublet)continue;
+  const arg=lambda2/(2*peak.d);
+  if(arg<=0||arg>=1)continue;
+  const angle2=360/Math.PI*Math.asin(arg);
+  if(angle2>result.maxAngle)continue;
+  const theta=angle2*Math.PI/360;
+  const lp2=result.lorentzPolarization?
+   (1+Math.cos(2*theta)**2)/(Math.sin(theta)**2*Math.cos(theta)):1;
+  addPeak(angle2,peak.powderIntensity*share2*lp2/peak.lp);
+ }
+ const max=Math.max(0,...intensity);
+ return {angles,intensity,relative:Array.from(intensity,v=>max?v/max*100:0),max,
+  maxAngle:result.maxAngle,step,U,V,W,eta,kalpha2:doublet,lambda2,ratio};
+}
+function parsePowderCsv(source){
+ if(typeof source!=='string'||source.length>4000000)throw Error('Ölçüm CSV dosyası en fazla 4 MB olmalı.');
+ const rows=[],lines=source.replace(/^\uFEFF/,'').split(/\r?\n/);
+ let separator=null,headerSkipped=false;
+ for(let i=0;i<lines.length;i++){
+  const row=lines[i].trim();if(!row||row.startsWith('#'))continue;
+  if(separator===null)separator=row.includes(';')?';':row.includes('\t')?'\t':',';
+  const cols=row.split(separator).map(x=>x.trim().replace(/^"|"$/g,''));
+  const number=s=>Number(separator===';'?s.replace(',','.'):s);
+  const x=number(cols[0]),y=number(cols[1]);
+  if(cols.length<2||cols[0]===''||cols[1]===''||!Number.isFinite(x)||!Number.isFinite(y)){
+   if(!headerSkipped&&!rows.length){headerSkipped=true;continue;}
+   throw Error('CSV satır '+(i+1)+': sayısal 2θ ve şiddet bekleniyor.');
+  }
+  if(x<0||x>180)throw Error('Ölçülen 2θ açısı 0–180° aralığında olmalı.');
+  rows.push({angle:x,intensity:y});
+  if(rows.length>50000)throw Error('En fazla 50.000 ölçüm noktası destekleniyor.');
+ }
+ if(rows.length<2)throw Error('CSV en az iki 2θ,şiddet noktası içermeli.');
+ rows.sort((a,b)=>a.angle-b.angle);
+ for(let i=1;i<rows.length;i++)if(rows[i].angle<=rows[i-1].angle)
+  throw Error('CSV içinde aynı 2θ açısı tekrarlanıyor.');
+ const max=Math.max(...rows.map(p=>p.intensity));
+ if(!(max>0))throw Error('Ölçüm şiddetinin pozitif bir maksimumu olmalı.');
+ return {rows,max};
+}
+function powderProfileCsv(profile){
+ if(!profile)throw Error('Önce profili hesaplayın.');
+ return '2theta_deg,simulated_intensity,simulated_relative_percent\n'+
+  profile.angles.map((x,i)=>[x,profile.intensity[i],profile.relative[i]]
+   .map(v=>Number(v).toPrecision(10)).join(',')).join('\n')+'\n';
+}
 /* Radix-2 1D DFT with exp(-2πikn/N), unnormalized, for exact finite MODEL
    Fourier synthesis on a 3D periodic grid. No Fobs or difference density. */
 function inverseModelFourierLine(re,im){
@@ -3023,6 +3186,12 @@ function xrdCsv(result){
  return ['h,k,l,d_A,2theta_deg,F_real,F_imag,F_squared,LP,powder_intensity',
  ...result.reflections.map(r=>[r.h,r.k,r.l,r.d,r.angle,r.real,r.imag,r.intensity,r.lp,r.powderIntensity].map(v=>Number(v).toPrecision(9)).join(','))].join('\n')+'\n';
 }
+function xrdProfileOptions(){
+ return {U:Number($('xrdU').value),V:Number($('xrdV').value),W:Number($('xrdW').value),
+  eta:Number($('xrdEta').value),step:Number($('xrdStep').value),
+  kalpha2:$('xrdKAlpha2').checked&&$('xrdScattering').value==='xray',
+  lambda2:Number($('xrdLambda2').value),ratio:Number($('xrdRatio').value)};
+}
 function renderPowderChart(result){
  const svg=$('xrdChart');if(!svg)return;svg.replaceChildren();
  const ns='http://www.w3.org/2000/svg', W=440,H=180,left=36,top=12,right=12,bottom=29;
@@ -3039,6 +3208,41 @@ function renderPowderChart(result){
  for(let i=0;i<=4;i++){const angle=result.maxAngle*i/4,x=left+angle/result.maxAngle*(W-left-right);
   line(x,H-bottom,x,H-bottom+4,'#73849b');txt(x-8,H-bottom+16,angle.toFixed(0));}
  txt(W/2-12,H-4,'2θ (°)');txt(3,16,'100%');
+ if($('xrdViewMode').value==='profile'&&lastXrdProfile){
+  const y=value=>H-bottom-Math.max(0,Math.min(100,value))/100*(H-top-bottom);
+  const x=angle=>left+angle/result.maxAngle*(W-left-right);
+  const addCurve=(points,color,strokeWidth)=>{
+   if(points.length<2)return;
+   // Keep the extremal samples in each display bin so narrow peaks survive
+   // decimation of large experimental CSV datasets.
+   const bins=new Map();
+   points.forEach((point,i)=>{
+    const bin=Math.floor(point[0]/result.maxAngle*1100);
+    if(bin<0||bin>1100)return;
+    const record=bins.get(bin);
+    if(!record)bins.set(bin,{first:i,last:i,min:i,max:i});
+    else{record.last=i;if(point[1]<points[record.min][1])record.min=i;
+     if(point[1]>points[record.max][1])record.max=i;}
+   });
+   let d='';
+   for(const b of [...bins.keys()].sort((a,b)=>a-b)){
+    const r=bins.get(b),idx=[...new Set([r.first,r.min,r.max,r.last])].sort((a,b)=>a-b);
+    for(const i of idx){const p=points[i];d+=(d?'L':'M')+x(p[0]).toFixed(2)+' '+y(p[1]).toFixed(2)+' ';}
+   }
+   const path=document.createElementNS(ns,'path');path.setAttribute('d',d);
+   path.setAttribute('fill','none');path.setAttribute('stroke',color);
+   path.setAttribute('stroke-width',strokeWidth);svg.append(path);
+  };
+  addCurve(lastXrdProfile.angles.map((a,i)=>[a,lastXrdProfile.relative[i]]),'#276fb3',1.65);
+  txt(left+5,top+10,'Hesaplanan');
+  if(measuredXrd){
+   addCurve(measuredXrd.rows.map(p=>[p.angle,p.intensity/measuredXrd.max*100]),'#ce5b37',1.2);
+   txt(W-right-79,top+10,'Ölçülen');
+  }
+  svg.setAttribute('aria-label','Pseudo-Voigt toz profili ve ölçülmüş CSV karşılaştırması');
+  return;
+ }
+ svg.setAttribute('aria-label','Hesaplanan toz kırınımı çubuk grafiği');
  for(const peak of result.groups){
   const x=left+peak.angle/result.maxAngle*(W-left-right);
   const y=H-bottom-peak.relative/100*(H-top-bottom);
@@ -3057,7 +3261,13 @@ function runPowderAnalysis(){
 }
 function renderWorkspaceXrd(){
  const host=$('xrdResults');host.replaceChildren();
- if(!lastXrd){$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
+ if(!lastXrd){lastXrdProfile=null;$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
+ try{
+  lastXrdProfile=powderProfile(lastXrd,xrdProfileOptions());
+  $('xrdProfileStatus').textContent='Pseudo-Voigt · '+lastXrdProfile.angles.length+
+   ' örnek · H² = U tan²θ + V tanθ + W'+(lastXrdProfile.kalpha2?' · Kα1/Kα2':'');
+ }catch(error){lastXrdProfile=null;
+  $('xrdProfileStatus').textContent='Profil hesaplanamadı: '+error.message+' · ideal çubuklar gösteriliyor.';}
  renderPowderChart(lastXrd);
  $('xrdSummary').textContent=lastXrd.groups.length+' hesaplanan çizgi · '+
   lastXrd.extinctions+' faz sönümlemesi (< 10⁻⁸) · '+
@@ -3132,6 +3342,39 @@ function initStage3Analyses(){
  $('planeFitClear').onclick=()=>{stage3Planes=[];renderStage3Planes();build();};
  $('analyzeXrd').onclick=runPowderAnalysis;
  $('xrdExport').onclick=()=>{if(lastXrd)download('xrd_hkl.csv',xrdCsv(lastXrd),'text/csv');else inform('Önce XRD hesaplayın.');};
+ $('xrdProfileExport').onclick=()=>{
+  if(!lastXrdProfile)return inform('Önce geçerli bir XRD profili hesaplayın.');
+  download('xrd_profile.csv',powderProfileCsv(lastXrdProfile),'text/csv');
+ };
+ $('xrdMeasuredLoad').onclick=()=>$('xrdMeasuredFile').click();
+ $('xrdMeasuredFile').onchange=async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  const workspace=activeWorkspaceId;
+  try{
+   if(file.size>4000000)throw Error('Ölçüm CSV dosyası en fazla 4 MB olmalı.');
+   const observed=parsePowderCsv(await file.text());
+   if(workspace!==activeWorkspaceId)throw Error('CSV yüklenirken çalışma alanı değişti.');
+   measuredXrd=observed;$('xrdViewMode').value='profile';
+   $('xrdMeasuredStatus').textContent=file.name+' · '+observed.rows.length+
+    ' ölçüm · maksimum %100 olacak şekilde görsel ölçeklendi; fit yapılmadı.';
+   if(lastXrd)renderWorkspaceXrd();
+  }catch(error){inform('Ölçüm CSV: '+error.message);}
+  finally{event.target.value='';}
+ };
+ $('xrdMeasuredClear').onclick=()=>{
+  measuredXrd=null;
+  $('xrdMeasuredStatus').textContent='Ölçüm yüklenmedi. CSV: 2theta_deg,intensity · karşılaştırma maksimuma göre %100\'e ölçeklenir; fit yapılmaz.';
+  if(lastXrd)renderWorkspaceXrd();
+ };
+ const updateXrdProfile=()=>{if(lastXrd)renderWorkspaceXrd();};
+ for(const id of ['xrdU','xrdV','xrdW','xrdEta','xrdStep','xrdKAlpha2','xrdLambda2','xrdRatio','xrdViewMode'])
+  $(id).addEventListener('change',updateXrdProfile);
+ $('xrdScattering').addEventListener('change',()=>{
+  const xray=$('xrdScattering').value==='xray';
+  $('xrdKAlpha2').disabled=!xray;
+  $('xrdLambda2').disabled=!xray;$('xrdRatio').disabled=!xray;
+  if(lastXrd)runPowderAnalysis();
+ });
  $('xrdMapAdd').onclick=()=>{
   try{
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
@@ -3999,7 +4242,7 @@ const MAX_WORKSPACES=10,WORKSPACE_STORAGE_KEY='kristalyapi.workspaces.v1';
 let workspaces=[],activeWorkspaceId=null,workspaceSequence=0,workspaceSwitching=false,workspaceStorageWarned=false;
 function workspaceRecord(crystal,label,id){
  return {id,label,state:crystal,history:createEditorHistory(),cameraView:null,measurements:[],volumeState:null,
-  fitPlanes:[],bvs:null,xrd:null};
+  fitPlanes:[],bvs:null,xrd:null,xrdObserved:null};
 }
 function blankWorkspaceCrystal(){
  // A new workspace starts with an independent P1 unit cell, never a reference
@@ -4057,7 +4300,7 @@ function captureWorkspace(){
  const current=activeWorkspace();if(!current)return;
  current.state=state;current.history=editorHistory;current.cameraView=cameraWorkspaceSnapshot();
  current.measurements=measurementHistory;current.volumeState=volumeWorkspaceSnapshot();
- current.fitPlanes=stage3Planes;current.bvs=lastBvs;current.xrd=lastXrd;
+ current.fitPlanes=stage3Planes;current.bvs=lastBvs;current.xrd=lastXrd;current.xrdObserved=measuredXrd;
 }
 function workspaceStoragePayload(){
  return {format:'kristalyapi-workspaces-v1',activeId:activeWorkspaceId,
@@ -4142,6 +4385,10 @@ function switchWorkspace(id,{saveCurrent=true}={}){
  try{
   activeWorkspaceId=id;state=target.state;editorHistory=target.history;measurementHistory=target.measurements;
   stage3Planes=target.fitPlanes;lastBvs=target.bvs;lastXrd=target.xrd;
+  measuredXrd=target.xrdObserved;lastXrdProfile=null;
+  $('xrdMeasuredStatus').textContent=measuredXrd?
+   measuredXrd.rows.length+' ölçüm · maksimum %100 ölçeğinde (fit yapılmadı).':
+   'Ölçüm yüklenmedi. CSV: 2theta_deg,intensity · karşılaştırma maksimuma göre %100\'e ölçeklenir; fit yapılmaz.';
   selected=[];restoreWorkspaceVolume(target.volumeState);syncControls();
   if(build()===false)throw Error('Çalışma alanındaki kristal görüntülenemedi.');
   if(!restoreWorkspaceCamera(target.cameraView)){

@@ -375,6 +375,16 @@ try{
  await page.locator('#xrdScattering').selectOption('xray');
  await page.locator('#analyzeXrd').click();
  assert.match(await page.locator('#xrdSummary').textContent(),/IT92/);
+ assert.match(await page.locator('#xrdProfileStatus').textContent(),/Pseudo-Voigt/);
+ assert.ok(await page.locator('#xrdChart path').count()>0,'profile needs a continuous curve');
+ await page.locator('#xrdMeasuredFile').setInputFiles({name:'measured.csv',mimeType:'text/csv',
+  buffer:Buffer.from('2theta_deg,intensity\n20,10\n30,50\n40,30\n')});
+ await page.waitForFunction(()=>document.getElementById('xrdMeasuredStatus')?.textContent?.includes('3 ölçüm'));
+ assert.match(await page.locator('#xrdMeasuredStatus').textContent(),/3 ölçüm/);
+ assert.ok(await page.locator('#xrdChart path').count()>=2,'measured curve overlays the simulated profile');
+ const [profileCsvDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#xrdProfileExport').click()]);
+ assert.match(await fs.readFile(await profileCsvDownload.path(),'utf8'),/^2theta_deg,simulated_intensity/);
+ await page.locator('#xrdMeasuredClear').click();
  await page.locator('#xrdMapAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1);
  assert.match(await page.locator('#volumeInfo').textContent(),/FOURIER/);
@@ -408,6 +418,12 @@ try{
  await page.locator('#volumeMathAdd').click();
  assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),4,
   'three-source A + k1B + k2C must produce one derived layer');
+ await page.locator('#volumeExportFormat').selectOption('xsf');
+ const [xsfDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#volumeExport').click()]);
+ assert.match(await fs.readFile(await xsfDownload.path(),'utf8'),/BEGIN_DATAGRID_3D_scalar/);
+ await page.locator('#volumeExportFormat').selectOption('cube');
+ const [cubeDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#volumeExport').click()]);
+ assert.match(await fs.readFile(await cubeDownload.path(),'utf8'),/Kristal Yapi \| quantity=/);
  await page.locator('#volumePeakFind').click();
  assert.ok((await page.locator('#volumePeakResults').textContent()).length>15);
  await page.locator('#volumeAxis').selectOption('hkl');
