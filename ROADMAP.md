@@ -1,5 +1,21 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## P1 ilerleme · Ekim 2026
+
+Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirme dalında gerçekleştirildi ve regresyonlarla sınanıyor:
+
+| Başlık | Eklenen kapsam | Bilimsel ve teknik sınır |
+| --- | --- | --- |
+| Hacimsel matematik | Eş birim/koordinat kontrolüyle `A+k·B`, farklı çözünürlükte trilineer örnekleme, 26 komşulu 3B ekstremum araması ve CSV | Birim etiketi bilinmeyen CUBE niceliklerini kimyasal olarak doğrulamaz; 2,5 milyon voksel sınırı geçerli |
+| Miller kesitleri | Kristalin gerçek karşı-örgü metriğiyle `(hkl)` yönlü 2B sayısal kesit, ızgara sınırlarına kırpma, PNG/CSV ve kontur | Hesaplanan kesit veri olmayan alanda extrapolasyon yapmaz; inceleme çözünürlüğü sınırlıdır |
+| Kinematik saçılma | 98 nötr element için IT92 X-ışını form faktörü; 90 element için koherent nötron uzunluğu, tam Kartezyen ADP, isteğe bağlı Bragg–Brentano LP | İyonik form faktörleri, anomal katkı, özel izotoplar, pik profili/absorpsiyon ve Rietveld yok |
+| Türetilmiş model haritası | Hesaplanan `F(hkl)` ile 16³/24³ periyodik Fourier/Patterson ters dönüşümü | Fobs/Fo−Fc değildir; sonlu yansıma kesimi ve Gibbs artefaktları vardır |
+| Voronoi | E/Å³ periyodik elektron yoğunluğunda en yakın çekirdeğe sayısal integral ve CSV | Bader sıfır-akı havzaları değildir; örnekleme ve site limiti nedeniyle yakınsama gerektirir |
+| Madelung | Açık iyon yükleriyle nötr P1 hücrede gerçek/karşı-uzay + self terimli Ewald, site potansiyeli ve eV/cell | Noktasal iyon modeli; kısmi doluluk, polarizasyon/dielektrik etki ve elektronik yapı yok |
+| Dosya kapsamı | PDB/ENT CRYST1, ATOM/HETATM, ilk MODEL, ANISOU; PDB P1 dışa aktarımı | `.vesta`, geniş biyomoleküler topoloji, manyetik mCIF/setting dönüşümleri tamamlanmadı |
+
+**Kalan P1 önceliği:** deneysel Fobs/MTZ kaynağı ve doğrulaması; özgül izotop/anomal saçılma; yüksek performanslı büyük-ızgara analizi; gelişmiş CIF/mCIF/PDB ve VESTA proje biçimi; manyetik moment vektörleri; ayrıntılı Hall setting/orijin dönüşümleri.
+
 Bu plan gerçek VESTA özellikleriyle mevcut tek-`index.html` tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a; 3B görüntü Three.js CDN'ine bağlıdır.
 
 ## VESTA Aşama 1 — bu dalda uygulanan kapsam

@@ -56,8 +56,8 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 | **Ölçüm geçmişi** | Ölçüm paneline bitişik ayrı ikon, kayıt sayacı, kayıtların görüntülenmesi ve CSV dışa aktarma. |
 | **İleri koordinasyon / BVS** | Periyodik komşular, koordinasyon ve parametreleri tanımlanmış iyon çiftleri için bağ-değerliği toplamı. |
 | **Best-fit plane · düzlemsellik** | Seçilen atomlardan en iyi uyan düzlem; normal, RMS/maksimum sapma ve düzlemler arası açı. |
-| **Yapı faktörü / toz XRD (öğretici)** | `F(hkl)`, `|F|²`, Bragg açıları, yaklaşık toz deseni ve CSV. |
-| **Hacimsel fizik verileri** | CUBE, CHGCAR, XSF; birden çok izoyüzey, 2B kesit, renk skalası ve aktarım. |
+| **Yapı faktörü / toz XRD ve nötron** | IT92 nötr atom X-ışını `f₀(s)` veya nötron koherent `b`; `F(hkl)`, Bragg açıları, seçilebilir Bragg–Brentano LP, model Fourier/Patterson haritaları. |
+| **Hacimsel fizik verileri** | CUBE, CHGCAR, XSF; çoklu izoyüzey, `A+k·B` fark alanı, 3B ekstremum araması, Miller `(hkl)` boyunca sayısal kesit ve yaklaşık Voronoi integrali. |
 | **Nesneler ve katmanlar** | Atom, bağ, hücre, etiket, Miller ve hacimsel katmanların görünürlük, opaklık ve sırası. |
 | **Atom türlerine göre bağlar** | Element çiftine özel min–maks bağ mesafeleri, geometrik öneriler. |
 | **Örgü dönüşümü** | 3×3 baz dönüşümleri, primitive/konvansiyonel hücre, Niggli ve kısa baz, Moyo simetri analizi. |
@@ -99,11 +99,11 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 
 | İşlem | Destek |
 | --- | --- |
-| **İçe aktar** | CIF / yaygın mCIF yapısal altkümesi, VASP POSCAR/CONTCAR, basit XYZ, Kristal Yapı proje JSON'u. |
-| **Dışa aktar** | Proje JSON, CIF, POSCAR, XYZ (görünür süperhücre atomları), PNG. |
+| **İçe aktar** | CIF / yaygın mCIF yapısal altkümesi, VASP POSCAR/CONTCAR, basit XYZ, **PDB/ENT** (CRYST1 + ilk MODEL, ATOM/HETATM, ANISOU), Kristal Yapı proje JSON'u. |
+| **Dışa aktar** | Proje JSON, CIF, POSCAR, XYZ (görünür süperhücre atomları), **PDB** (birim hücrede P1 atomları), PNG. |
 | **Hacimsel alan** | Gaussian CUBE (`.cube`, `.cub`), VASP CHGCAR/CHG, XCrySDen XSF DATAGRID_3D. |
 
-İçe aktarılan ve **değiştirilmemiş** bir kaynak CIF, aynı oturumda dışa aktarılırken özgün metni koruyabilir. Kristal düzenlendiğinde CIF yeniden üretilir; tanınmayan CIF alanları, tüm loop blokları ve çoklu veri blokları için eksiksiz **round-trip garantisi yoktur**. Bilimsel arşiv için orijinal CIF'i de saklayın. XYZ dosyaları hücre verisi içermez; uygulama görüntüleme için yapay bir kutu kullanır.
+İçe aktarılan ve **değiştirilmemiş** bir kaynak CIF, aynı oturumda dışa aktarılırken özgün metni koruyabilir. Kristal düzenlendiğinde CIF yeniden üretilir; tanınmayan CIF alanları, tüm loop blokları ve çoklu veri blokları için eksiksiz **round-trip garantisi yoktur**. Bilimsel arşiv için orijinal CIF'i de saklayın. XYZ dosyaları hücre verisi içermez; uygulama görüntüleme için yapay bir kutu kullanır. PDB desteği **kristalografik koordinat altkümesidir**; zincir/rezidü topolojisini korumaz. PDB'nin sabit ondalık sütunları nedeniyle koordinat, doluluk ve ANISOU aktarımında biçimin yuvarlama sınırları geçerlidir.
 
 ## Kristalografi ve sayısal özellikler
 
@@ -124,13 +124,18 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - **Best-fit plane**: en küçük kareler düzlemi, RMS/maksimum düzlemsellik sapması ve iki düzlemin açısı; seçili periyodik atom görüntülerini otomatik açma (`unwrap`) yapılmaz.
 - Tam hücre metriğinden **Miller `(hkl)` düzlemleri** ve `d(hkl)`; bağımsız düzlemler/katmanlar, sonlu süperhücreye düşen tüm paralel düzlemler, kalınlıklı görsel kesit ve vakumlu **P1 slab** üretimi. Slab üretimi yüzey relaksasyonu veya DFT değildir.
 - `{hkl}` yüz aileleri, kesişen yarı uzaylardan **geometrik kristal morfolojisi**; yüzey alanı ve hacim. Bu, yüzey enerjisine dayalı **Wulff hesaplaması değildir**.
-- **Öğretici XRD**: Bragg konumları, `F(hkl)`, `|F|²`, yaklaşık yoğunluk ve CSV. Atomik saçılmada yaklaşık `f≈Z`, mevcut doluluk/ADP ile sönüm kullanır; tam deneysel toz difraktogramı hesaplamaz.
+- **Model XRD ve nötron**: Bragg konumları, `F(hkl)`, `|F|²`, göreli ideal yansıma yoğunlukları ve CSV. X-ışınında **International Tables IT92 nötr atom 4-Gauss + sabit `f₀(s)`** (Z=1–98); nötronda doğal element koherent saçılma uzunlukları (bilinen 90 element, fm). Doluluk, Uiso ve eğik hücrelerde Kartezyen tensöre dönüştürülmüş Uij içerilir. Seçilebilir Bragg–Brentano Lorentz–polarizasyon çarpanı vardır. Anomal saçılma `f′/f″`, izotop-açık kompozisyon, absorpsiyon, cihaz pik profili ve Rietveld rafinmanı hesaplanmaz. Tablolar [Gemmi 0.7.4 / IT92 / Neutron92](https://gemmi.readthedocs.io/en/stable/scattering.html) üzerinden doğrulandı.
+- **Model Fourier/Patterson**: Hesaplanan model `F(hkl)` katsayılarının sonlu ters Fourier toplamıyla 16³ veya 24³ periyodik ızgara. Patterson `|F|²` katsayılarından üretilir. Bu haritalar **deneysel Fobs, Fo−Fc veya ölçülmüş yoğunluk değildir**; kesilen indis aralığı yüzünden çözünürlük/halkalanma etkileri vardır.
+- **Madelung/Ewald**: Kullanıcının açıkça yazdığı site/tür iyon yükleriyle nötr ve tam dolu P1 hücre için gerçek/karşı-uzay ve self düzeltmeli nokta-yük modeli; hücre enerjisi (eV) ve site potansiyelleri (eV/e). NaCl Madelung sabiti referansıyla testlidir. Polarizasyon, dielektrik perdeleme ve elektronik yapı hesaplaması değildir.
 
 ### Çoklu faz ve hacimsel veriler
 
 - Ana yapı ile **en fazla üç ek faz** aynı Kartezyen Å sahnesinde görüntülenebilir. Her faz için konum/hizalama, renk, saydamlık ve hücre sınırları seçilebilir. Otomatik atom eşleştirme ve gerinim analizi yapılmaz.
 - Aynı uzaysal çerçevede **en fazla dört hacimsel alan**; alan başına en fazla **dört izoyüzey** ve toplam en fazla **sekiz etkin izoyüzey**.
 - Eğik ızgara vektörlerinde trilineer örnekleme; 2B kesit ve renk skalası, CSV/PNG; uygun ikinci alanla yüzey/kesit renklendirme.
+- Uyumlu birim ve fiziksel kapsamda **`A+k·B`** ile fark/lineer birleşim haritaları; farklı ızgara çözünürlüklerinde Kartezyen interpolasyon. 3B komşulukta yerel maksimum/minimum listesi, eşik, atomik Å koordinatları ve CSV.
+- Görüntülenen kristalin `(hkl)` yönünde **eğik sayısal kesit** ve izodeğer konturu; kesit gerçek ızgara hacmine kırpılır ve CSV/PNG olarak aktarılır.
+- Periyodik, tam hücreye hizalı **`e/Å³`** yoğunlukta en yakın çekirdek bölüşümüyle örneklenmiş Voronoi yük integrali. Büyük ızgarada en fazla 12.000 örnek; bu **Bader (sıfır-akı) analizi değildir** ve çoğu zaman nicel yük değerleri için yeterli yakınsama testi ister.
 - Dosyadaki skaler alan **gösterilir**, kuantum kimyasal yoğunluk, elektrostatik potansiyel veya DFT **hesaplanmaz**. Farklı referans sistemindeki alanlar sessizce birleştirilmez.
 - Büyük verilerin sınırları: **24 MB dosya** ve **2,5 milyon voksel**; hacimsel dosyalar sayfa yenilenince yeniden açılmalıdır.
 
@@ -139,16 +144,16 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - **Bu araç tam VESTA eşdeğeri değildir.** Manyetik mCIF momentleri/uzay grupları, bütün CIF varyantları ve tüm Hall ayarlarının serbest seçimi yoktur.
 - Bir CIF açık simetri işlemleri vermiyorsa tanınan uzay grubunun referans setting/orijini kullanılabilir; alternatif setting/orijin durumlarında sonucu bağımsız doğrulayın.
 - Bağ çizgileri ve koordinasyon, geometrik eşiklere dayalı **yorumlayıcı görselleştirmedir**; gerçek kimyasal bağların varlığını/bağ mertebesini ispatlamaz.
-- Yüzey oluşturma, BVS ve öğretici XRD fiziksel modellerin sınırlı alt kümeleridir. **Yüzey enerjisi, Wulff dengesi, atomik relaksasyon, deneysel pik profili, anomal saçılma ve DFT** hesaplanmaz.
+- Yüzey oluşturma, BVS, model saçılma, Fourier/Patterson ve nokta-iyon Madelung fiziksel modellerin sınırlandırılmış alt kümeleridir. **Yüzey enerjisi, Wulff dengesi, atomik relaksasyon, deneysel pik profili, anomal saçılma ve DFT** hesaplanmaz.
 - CIF dosyasını düzenleyip tekrar dışa aktarmak kaynak deneysel üstverinin her etiketini korumayabilir. Kaynak CIF'le ve bağımsız bilimsel programlarla karşılaştırma önerilir.
 - Referans kontrolleri, sınırlar ve planlanan çalışmalar için [bilimsel CIF doğrulaması](tests/validation/README.md) ve [VESTA yol haritası](ROADMAP.md) sayfalarını inceleyin.
 
 ### VESTA ile güncel başlıca farklar
 
 - **P0 — Tam bağımsız çevrimdışı paket:** Three.js halen CDN'den geliyor; uygulamanın servis çalışanı (Service Worker), sürümlü önbelleği veya çevrimdışı PWA paketi yok.
-- **P1 — Hacimsel veri matematiği:** Çoklu ızgara görüntülenebilir ancak ızgaraları toplama/çıkarma, fark yoğunluğu, 3B ekstremum/peak araması ve keyfî Miller kesitinde sayısal kontur eksik.
-- **P1 — Fiziksel hesaplamalar:** Gerçek atomik saçılma katsayılarıyla XRD ve nötron yoğunluğu, Fourier/Patterson sentezi, Voronoi yük integrali ve Madelung potansiyeli/enerjisi yok.
-- **P1 — Dosya ve simetri kapsamı:** VESTA proje biçimi, geniş format desteği, atomlara bağlı manyetik moment vektörleri ve ayrıntılı setting/orijin dönüşümleri henüz tamamlanmadı. Manyetik mCIF işleme desteği de ayrıca geliştirilmelidir.
+- **P1 — Hacimsel veri (ilk paket uygulandı):** `A+k·B`, 3B peak araması ve eğik Miller sayısal kesitleri mevcut. **Kalan:** birimler arası güvenli dönüştürme, büyük ızgaralarda yüksek performanslı/FFT tabanlı hesap, çok konturlu 2B deneysel harita karşılaştırması.
+- **P1 — Fiziksel hesaplamalar (model kapsamı uygulandı):** IT92 ve doğal nötron `b`, model Fourier/Patterson, örneklenmiş Voronoi ve iyonik Ewald mevcut. **Kalan:** gerçek Fobs/MTZ veri kaynağı, anomal saçılma, izotop çözünürlüğü, deneysel XRD profili/RIETAN-FP eşdeğeri, Bader analizi ve geniş yakınsama benchmarkları.
+- **P1 — Dosya ve simetri kapsamı (PDB altkümesi uygulandı):** PDB/ENT kristal koordinatları ve ANISOU desteği eklendi. **Kalan:** `.vesta` projeleri, geniş biyomoleküler/kuantum kimyası biçimleri, atomlara bağlı manyetik moment vektörleri, mCIF manyetik uzay grupları ve ayrıntılı setting/orijin dönüşümleri.
 - **P2 — Morfoloji ve sahne:** Kübik olmayan `{hkl}` için tam nokta grubu eşdeğerleri, çoklu faz CIF dışa aktarımı ve VESTA düzeyinde nesne/per-site stil esnekliği eksik.
 - **P2 — Yayın/3B dışa aktarım:** Çok yüksek çözünürlüklü sayısal görseller, TIFF/SVG/STL/VRML gibi biçimler ve çok büyük atom/bağ sahneleri desteklenmiyor.
 

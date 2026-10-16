@@ -820,7 +820,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  <div id="workspaceList" class="workspace-list" aria-label="Açık kristal yapıları"></div>
  <div class="workspace-drawer-footer"><button id="workspaceAdd" class="workspace-add" type="button">+ Yeni yapı ekle</button><small id="workspaceLimitHint">En fazla 10 yapı · seçili yapının düzenlemeleri korunur.</small></div>
 </aside>
-<input id="fileInput" type="file" accept=".cif,.mcif,.vasp,.poscar,.contcar,.xyz,.json,.txt">
+<input id="fileInput" type="file" accept=".cif,.mcif,.vasp,.poscar,.contcar,.xyz,.pdb,.ent,.json,.txt">
 <!-- Kept off-screen as event-compatible state controls for the compact quickbar. -->
 <div id="legacyViewControls" hidden aria-hidden="true">
  <select id="style"><option value="ball">Küre ve çubuk</option><option value="space">Uzay dolduran</option><option value="stick">Çubuk</option><option value="wire">Tel model</option></select>
@@ -1044,6 +1044,12 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <div id="bvsResult" class="note">Atom ve referans parametresi seçin.</div>
    <div class="actionrow"><button id="exportBvs" type="button">Komşu CSV</button></div>
    <p class="hint">Brese–O’Keeffe (1991) R₀ parametreleri kullanılır. BVS koordinasyon/eşdeğer oksidasyon durumu kanıtı değildir. Özellikle farklı katyon-valans türlerinde sınırlıdır.</p>
+   <div class="note"><strong>Madelung potansiyeli · Ewald noktasal iyon modeli</strong>
+    <label class="field"><span>Açık iyon yükleri (e)</span><input id="madelungCharges" placeholder="Na:+1, Cl:-1 veya 1:+2, 2:-2"></label>
+    <button type="button" id="madelungCalculate">Elektrostatik enerji ve site potansiyelleri</button>
+    <div id="madelungResults" class="hint" aria-live="polite">Yükleri belirtip hesaplayın.</div>
+    <p class="hint">Elektriksel olarak nötr P1 hücre ve tam doluluk zorunlu. Ewald gerçek/karşı-uzay ve self terimlerini içerir. Bu noktasal iyon enerjisi bağ enerjisi, elektron yapısı, polarizasyon veya DFT sonucu değildir.</p>
+   </div>
   </div>
   <div class="section" data-right-section="plane"><h2>Best-fit plane · düzlemsellik</h2>
    <p class="hint">Aşağıya atomların 1-tabanlı satır indislerini yaz. Örn. 1,2,3,4. Üçten fazla, doğrusal olmayan atom gerekir. Atomlar mevcut hücrenin Kartezyen Å bazında değerlendirilir; sınır aşan atomlar otomatik unwrap edilmez.</p>
@@ -1052,19 +1058,30 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <div id="planeFitResult" class="note">Henüz düzlem hesaplanmadı.</div>
    <p class="hint">En küçük kovaryans özvektörü düzlem normalini verir. RMS ortogonal sapma ve iki düzlem arasındaki dar açı raporlanır.</p>
   </div>
-  <div class="section" data-right-section="xrd"><h2>Yapı faktörü / toz XRD (öğretici)</h2>
-   <p class="hint">Kinematik F(hkl)=Σ occ·Z·exp(2πi h·r) ile noktasal elektron saçıcı yaklaşımı; sıcaklık faktörü Uiso/Uij varsa eklenir. Elementlere özgü açısal f₀(q), anomal saçılma, Lorentz-polarizasyon, tekstür ve cihaz profili henüz uygulanmaz.</p>
+  <div class="section" data-right-section="xrd"><h2>Yapı faktörü / toz XRD ve nötron</h2>
+   <p class="hint">Kinematik F(hkl) hesabında X-ışınları için nötr atomlara ait IT92 f₀(s) katsayıları, nötron için doğal izotop karışımının bağıl koherent saçılma uzunluğu (fm) kullanılır. Doluluk ve izotropik/anizotropik ADP dahildir. Anomal saçılma, absorpsiyon, tekstür, deneysel cihaz profili ve Rietveld hesabı yoktur.</p>
+   <label class="field"><span>Saçılma türü</span><select id="xrdScattering"><option value="xray">X-ışını · IT92 f₀(s)</option><option value="neutron">Nötron · koherent b (fm)</option></select></label>
    <div class="triple">
     <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
     <label class="field compact"><span>2θ üst sınır (°)</span><input id="xrdAngle" type="number" min="15" max="150" step="5" value="90"></label>
     <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMaxIndex" type="number" min="1" max="7" step="1" value="5"></label>
    </div>
+   <label class="check"><input id="xrdLp" type="checkbox"> Bragg–Brentano Lorentz–polarizasyon düzeltmesi (yalnız X-ışını)</label>
    <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
    <div id="xrdSummary" class="note">Hesaplama bekleniyor.</div>
    <svg id="xrdChart" viewBox="0 0 440 180" role="img" aria-label="Hesaplanan toz kırınımı çubuk grafiği" style="display:block;width:100%;min-height:150px;border:1px solid #dce5f1;border-radius:8px;background:white"></svg>
    <div id="xrdResults" class="bond-rule-list" style="max-height:235px;overflow:auto"></div>
    <button id="xrdExport" type="button">Yansıma CSV</button>
-   <p class="hint">Bu grafik fiziksel Bragg konumları ve yaklaşık göreli genlikler içindir; deneysel XRD şiddeti ya da Rietveld analizi olarak kullanılmamalıdır.</p>
+   <div class="note"><strong>Model Fourier / Patterson haritası</strong>
+    <div class="triple">
+     <label class="field compact"><span>Hesap türü</span><select id="xrdMapKind"><option value="density">Model yoğunluğu</option><option value="patterson">Patterson (|F|²)</option></select></label>
+     <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMapIndex" type="number" min="1" max="3" step="1" value="2"></label>
+     <label class="field compact"><span>Izgara N³</span><select id="xrdMapSize"><option value="16">16³</option><option value="24">24³</option></select></label>
+    </div>
+    <button type="button" id="xrdMapAdd">Hacimsel katman olarak hesapla</button>
+    <p class="hint">Bu harita yalnızca mevcut modelin hesaplanan F(hkl) değerlerinden, sınırlı indis aralığında ters Fourier toplamıdır. Ölçülmüş Fobs veya deneysel fark yoğunluğu değildir; halkalanma ve sınırlı çözünürlük artefaktları oluşabilir.</p>
+   </div>
+   <p class="hint">Gösterilen çizgiler ideal kinematik yansımalardır; gerçek toz difraktogramının pik genişliğini, izotop oranı belirsizliğini veya ölçüm geometrisini tam olarak modellemez.</p>
   </div>
   <div class="section volumetric-panel" data-right-section="volume"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
@@ -1078,6 +1095,29 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      <label class="field"><span>Aktif alan (kesit ve izodeğer kaynağı)</span><select id="volumeActiveDataset"></select></label>
      <label class="field"><span>İkinci alan (renklendirme için)</span><select id="volumeColorDataset"><option value="">Yok</option></select></label>
      <p id="volumeFrameStatus" class="hint">İkinci alan yüklenmedi. Eşleştirme aynı uzaysal koordinat çerçevesine göre denetlenir.</p>
+     <div class="note"><strong>Türetilmiş alan · A + k·B</strong>
+      <div class="triple">
+       <label class="field compact"><span>A alanı</span><select id="volumeMathA"></select></label>
+       <label class="field compact"><span>B alanı</span><select id="volumeMathB"></select></label>
+       <label class="field compact"><span>k katsayısı</span><input id="volumeMathK" type="number" step="0.1" min="-10" max="10" value="-1"></label>
+      </div>
+      <button type="button" id="volumeMathAdd">Türetilmiş alan oluştur</button>
+      <p class="hint">Fark yoğunluğu için k = −1. Yalnız aynı birim ve uzaysal kapsamdaki alanlarda, B alanı A noktalarına trilineer örneklenir. Sonuç bağımsız bir katmandır.</p>
+     </div>
+     <div class="note"><strong>3B tepe / çukur araması</strong>
+      <div class="triple">
+       <label class="field compact"><span>Tür</span><select id="volumePeakMode"><option value="max">Maksimumlar</option><option value="min">Minimumlar</option></select></label>
+       <label class="field compact"><span>Mutlak eşik</span><input id="volumePeakThreshold" type="number" step="any" value="0"></label>
+       <label class="field compact"><span>En fazla</span><input id="volumePeakCount" type="number" min="1" max="50" step="1" value="12"></label>
+      </div>
+      <div class="actionrow"><button type="button" id="volumePeakFind">Yerel ekstremumları bul</button><button type="button" id="volumePeakCsv">CSV indir</button></div>
+      <div id="volumePeakResults" class="hint" aria-live="polite">Önce bir alan yükleyin.</div>
+     </div>
+     <div class="note"><strong>Sayısal Voronoi integrali</strong>
+      <p class="hint">Periyodik, hücreyle hizalı elektron yoğunluğunu en yakın çekirdeğe böler. Yükler e birimindedir; bu yöntem Bader analizi değildir. Büyük ızgaralar en fazla 12.000 örnek noktasıyla yaklaşık integrallenir.</p>
+      <div class="actionrow"><button type="button" id="volumeVoronoi">Site başına yükü hesapla</button><button type="button" id="volumeVoronoiCsv">CSV indir</button></div>
+      <div id="volumeVoronoiResults" class="hint" aria-live="polite">İşlem bekleniyor.</div>
+     </div>
      <div class="note" id="volumeInfo">Henüz veri yüklenmedi.</div>
      <label class="check"><input id="volumeLoadAtoms" type="checkbox" checked> Varsa dosyadaki atomları ve hücreyi kullan</label>
      <label class="field"><span>Görselleştirme</span><select id="volumeMode">
@@ -1090,7 +1130,13 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
      <div id="volumeIsoLayers" class="volume-layer-list" aria-label="Çoklu izoyüzey katmanları"></div>
      <label class="field"><span>Kesit yönü</span><select id="volumeAxis">
        <option value="2">Z / c doğrultusu</option><option value="1">Y / b doğrultusu</option><option value="0">X / a doğrultusu</option>
+       <option value="hkl">Miller (hkl) · eğik kesit</option>
      </select></label>
+     <div class="triple">
+      <label class="field compact"><span>Kesit h</span><input id="volumeH" type="number" min="-8" max="8" step="1" value="1"></label>
+      <label class="field compact"><span>Kesit k</span><input id="volumeK" type="number" min="-8" max="8" step="1" value="1"></label>
+      <label class="field compact"><span>Kesit l</span><input id="volumeL" type="number" min="-8" max="8" step="1" value="1"></label>
+     </div>
      <label class="field"><span>Kesit konumu (%)</span><input type="range" id="volumePosition" min="0" max="100" value="50"></label>
      <label class="field"><span>Renk haritası</span><select id="volumePalette">
        <option value="thermal">Mavi – beyaz – kırmızı</option><option value="viridis">Viridis-benzeri</option>
@@ -1352,6 +1398,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </button>
    <button type="button" data-export="xyz" class="export-option">
     <span class="export-option-icon">∴</span><span><strong>XYZ</strong><small>Görüntülenen süperhücredeki atom konumları</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="pdb" class="export-option">
+    <span class="export-option-icon">⌬</span><span><strong>PDB</strong><small>CRYST1 + ATOM/HETATM · bir hücre, P1</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="png" class="export-option">
     <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünümün beyaz zeminli ekran görüntüsü</small></span><span class="export-option-arrow">↓</span>
@@ -1679,10 +1728,114 @@ function volumesSameFrame(a,b){
  const aa=[...a.origin,...spans(a).flat()],bb=[...b.origin,...spans(b).flat()];
  return aa.every((v,i)=>Math.abs(v-bb[i])<1e-3);
 }
+/* Linear voxel arithmetic is only meaningful for grids with the same physical
+   extent and units. Sample in Cartesian Å to support unequal resolutions. */
+function linearVolumeCombination(a,b,k=-1){
+ if(!a||!b||!volumesSameFrame(a,b))throw Error('Alanların uzaysal kapsaması aynı olmalı.');
+ if(a.units!==b.units)throw Error('Farklı fiziksel birimler toplanamaz/çıkarılamaz.');
+ if(!Number.isFinite(k)||Math.abs(k)>10)throw Error('k katsayısı −10 ile 10 arasında olmalı.');
+ const sameLattice=a.dims.every((n,i)=>n===b.dims[i])&&
+  a.origin.every((v,i)=>Math.abs(v-b.origin[i])<1e-9)&&
+  a.axes.every((row,i)=>row.every((v,j)=>Math.abs(v-b.axes[i][j])<1e-9));
+ const values=new Float32Array(a.values.length);
+ for(let i=0;i<a.dims[0];i++)for(let j=0;j<a.dims[1];j++)for(let m=0;m<a.dims[2];m++){
+  const n=gridIndex(a,i,j,m);
+  const sample=sameLattice?b.values[n]:volumeAtWorld(b,volumeWorld(a,i,j,m));
+  values[n]=a.values[n]+k*sample;
+ }
+ const result=volumeGrid([...a.dims],[...a.origin],a.axes.map(row=>[...row]),values,'DERIVED',a.units);
+ result.periodic=!!a.periodic&&!!b.periodic;
+ result.derivation={coefficient:k,resampled:!sameLattice};
+ return result;
+}
+/* Strict 26-neighbour local extrema, periodic wrapped only when the input grid
+   is periodic. Flat plateaus yield one deterministic representative. */
+function volumeFindPeaks(g,{mode='max',threshold=0,limit=12}={}){
+ if(!g||!['max','min'].includes(mode)||!Number.isFinite(threshold)||threshold<0||
+  !Number.isInteger(limit)||limit<1||limit>50)throw Error('Geçersiz tepe arama parametresi.');
+ const d=g.dims,periodic=!!g.periodic,peaks=[];
+ for(let i=periodic?0:1;i<(periodic?d[0]:d[0]-1);i++)
+ for(let j=periodic?0:1;j<(periodic?d[1]:d[1]-1);j++)
+ for(let k=periodic?0:1;k<(periodic?d[2]:d[2]-1);k++){
+  const at=gridIndex(g,i,j,k),value=g.values[at];
+  if(Math.abs(value)<threshold)continue;
+  let extremum=true,strict=false;
+  adjacent:for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++)for(let dk=-1;dk<=1;dk++){
+   if(!di&&!dj&&!dk)continue;
+   const ii=periodic?(i+di+d[0])%d[0]:i+di;
+   const jj=periodic?(j+dj+d[1])%d[1]:j+dj;
+   const kk=periodic?(k+dk+d[2])%d[2]:k+dk;
+   const neighbourIndex=gridIndex(g,ii,jj,kk),other=g.values[neighbourIndex];
+   if(mode==='max'?(other>value||other===value&&neighbourIndex<at):
+     (other<value||other===value&&neighbourIndex<at)){extremum=false;break adjacent;}
+   if(mode==='max'?value>other:value<other)strict=true;
+  }
+  if(!extremum||!strict)continue;
+  const world=volumeWorld(g,i,j,k);
+  peaks.push({i,j,k,x:world[0],y:world[1],z:world[2],value});
+ }
+ peaks.sort((a,b)=>mode==='max'?b.value-a.value:a.value-b.value);
+ return peaks.slice(0,limit);
+}
+function volumePeaksCsv(peaks,units){
+ return ['i,j,k,x_A,y_A,z_A,value_'+String(units).replace(/[^a-zA-Z0-9]/g,'_'),
+  ...peaks.map(p=>[p.i,p.j,p.k,p.x,p.y,p.z,p.value].map(v=>Number(v).toPrecision(10)).join(','))].join('\n')+'\n';
+}
+/* Numerical nearest-nucleus Voronoi partition on a periodic density grid.
+   Not a Bader topology partition; block samples retain physical voxel weights. */
+function volumeVoronoiIntegration(g,cell,sites,maxSamples=12000){
+ if(!g?.periodic||!g.units.startsWith('e/Å³'))
+  throw Error('Voronoi için birimi e/Å³ olan periyodik yoğunluk ızgarası gerekli.');
+ if(!Array.isArray(sites)||!sites.length||sites.length>64)
+  throw Error('Voronoi için 1–64 atomlu bir P1 yapı gerekir.');
+ const B=basis(cell),d=g.dims,V=volume(B),tol=1e-4;
+ if(g.origin.some(x=>Math.abs(x)>tol)||g.axes.some((axis,i)=>axis.some((x,j)=>
+  Math.abs(x*d[i]-B[i].toArray()[j])>tol)))
+  throw Error('Yoğunluk ızgarası mevcut birim hücrenin orijini ve eksenleriyle uyuşmuyor.');
+ if(!Number.isInteger(maxSamples)||maxSamples<100||maxSamples>50000)
+  throw Error('Örnekleme sınırı geçersiz.');
+ let stride=1;
+ while(d.reduce((p,n)=>p*Math.ceil(n/stride),1)>maxSamples)stride++;
+ const atomCoords=sites.map((s,i)=>{
+  if(!['x','y','z'].every(k=>Number.isFinite(s[k])))throw Error('Geçersiz atom koordinatı: '+i);
+  return [frac(s.x),frac(s.y),frac(s.z)];
+ });
+ const charges=Array(sites.length).fill(0),counts=Array(sites.length).fill(0);
+ const Bv=B.map(v=>v.toArray()),voxelVolume=V/g.values.length;
+ let sampled=0,total=0;
+ for(let i=0;i<d[0];i+=stride)for(let j=0;j<d[1];j+=stride)for(let k=0;k<d[2];k+=stride){
+  const ni=Math.min(stride,d[0]-i),nj=Math.min(stride,d[1]-j),nk=Math.min(stride,d[2]-k);
+  const ii=Math.min(d[0]-1,i+Math.floor(ni/2)),jj=Math.min(d[1]-1,j+Math.floor(nj/2)),kk=Math.min(d[2]-1,k+Math.floor(nk/2));
+  const position=[ii/d[0],jj/d[1],kk/d[2]];
+  let best=Infinity,index=-1;
+  for(let site=0;site<atomCoords.length;site++){
+   const delta=position.map((v,t)=>v-atomCoords[site][t]);
+   for(let u=-1;u<=1;u++)for(let v=-1;v<=1;v++)for(let w=-1;w<=1;w++){
+    const x=delta[0]+u,y=delta[1]+v,z=delta[2]+w;
+    const px=x*Bv[0][0]+y*Bv[1][0]+z*Bv[2][0];
+    const py=x*Bv[0][1]+y*Bv[1][1]+z*Bv[2][1];
+    const pz=x*Bv[0][2]+y*Bv[1][2]+z*Bv[2][2];
+    const dist2=px*px+py*py+pz*pz;
+    if(dist2<best-1e-10){best=dist2;index=site;}
+   }
+  }
+  const weight=ni*nj*nk*voxelVolume,charge=g.values[gridIndex(g,ii,jj,kk)]*weight;
+  charges[index]+=charge;counts[index]+=ni*nj*nk;total+=charge;sampled++;
+ }
+ return {sites:sites.map((s,i)=>({index:i+1,symbol:s.symbol,label:s.label||'',charge:charges[i],
+  voxelFraction:counts[i]/g.values.length})),total,volume:V,sampled,stride,units:'electrons',
+  method:'periodic nearest-nucleus sampled Voronoi (not Bader)'};
+}
+function volumeVoronoiCsv(result){
+ return ['site,symbol,label,electrons,voxel_fraction',
+  ...result.sites.map(s=>[s.index,s.symbol,JSON.stringify(s.label),s.charge.toPrecision(9),s.voxelFraction.toPrecision(9)].join(','))].join('\n')+'\n';
+}
 
 
 let densityGrid=null,potentialGrid=null,volumeLayer=null;
 let volumeDatasets=[],activeVolumeIndex=0,volumeColorIndex='';
+let lastVolumePeaks=null;
+let lastVoronoi=null;
 const VOLUME_DATASET_LIMIT=4,VOLUME_ISO_LIMIT=4,VOLUME_TOTAL_SURFACE_LIMIT=8;
 const VOLUME_ISO_COLORS=['#307cba','#d97d45','#32a98b','#9567c2'];
 function defaultVolumeIso(grid){return {value:grid.min+(grid.max-grid.min)*.7,visible:true,opacity:.62,color:VOLUME_ISO_COLORS[0]};}
@@ -1702,7 +1855,7 @@ function addVolumeDataset(grid,name){
  volumeDatasets.push(entry);activeVolumeIndex=volumeDatasets.length-1;densityGrid=entry.grid;
  return entry;
 }
-const volumeView={mode:'off',iso:0,opacity:.62,axis:2,position:50,palette:'thermal',contours:false,potential:false};
+const volumeView={mode:'off',iso:0,opacity:.62,axis:2,hkl:[1,1,1],position:50,palette:'thermal',contours:false,potential:false};
 function colorFromScalar(value,min,max,palette){
  const v=Math.max(0,Math.min(1,(value-min)/Math.max(1e-12,max-min)));
  if(palette==='viridis'){
@@ -1758,17 +1911,63 @@ function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=7500
  return {positions:new Float32Array(vertices),colors:potential?new Float32Array(colors):null,
   triangles:vertices.length/9,decimation:stride,truncated:vertices.length/9>=maxTriangles};
 }
-function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null){
+/* A Miller slice is oriented by the DISPLAYED cell, then clipped to the actual
+   volumetric grid. Its slider traverses the entire grid along the hkl normal. */
+function sliceMillerFrame(g,cell,h,k,l,position){
+ if(!Number.isFinite(position)||position<0||position>100)throw Error('Kesit konumu 0–100 olmalı.');
+ const B=basis(cell),plane=planeNormal(h,k,l,B),normal=plane.normal.toArray();
+ const shape=volumeShape(g),nmax=shape.map(n=>n-1);
+ const cube=[];
+ for(let a=0;a<=1;a++)for(let b=0;b<=1;b++)for(let c=0;c<=1;c++)
+  cube.push({bits:[a,b,c],point:volumeWorld(g,a*nmax[0],b*nmax[1],c*nmax[2])});
+ const signed=cube.map(p=>volumeDot(p.point,normal));
+ const min=Math.min(...signed),max=Math.max(...signed),target=min+(max-min)*position/100;
+ const intersections=[];
+ const add=p=>{if(!intersections.some(q=>Math.hypot(...p.map((v,i)=>v-q[i]))<1e-7))intersections.push(p);};
+ for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){
+  if(cube[i].bits.filter((v,d)=>v!==cube[j].bits[d]).length!==1)continue;
+  const fa=signed[i]-target,fb=signed[j]-target;
+  if(Math.abs(fa)<1e-9)add(cube[i].point);
+  if(Math.abs(fb)<1e-9)add(cube[j].point);
+  if(fa*fb<0){const t=fa/(fa-fb);
+   add(cube[i].point.map((v,d)=>v+t*(cube[j].point[d]-v)));
+  }
+ }
+ if(intersections.length<3)throw Error('Bu konumda 2B kesit alanı yok. Konumu içeri alın.');
+ const nvec=new THREE.Vector3(...normal);
+ let uvec=null;
+ for(const vector of B){
+  const projected=vector.clone().addScaledVector(nvec,-vector.dot(nvec));
+  if(projected.length()>1e-8){uvec=projected.normalize();break;}
+ }
+ if(!uvec)throw Error('Miller düzlemi için düzlem bazı oluşturulamadı.');
+ const vvec=new THREE.Vector3().crossVectors(nvec,uvec).normalize();
+ const origin=intersections[0],u=uvec.toArray(),v=vvec.toArray();
+ const uv=intersections.map(p=>{const delta=p.map((x,i)=>x-origin[i]);return [volumeDot(delta,u),volumeDot(delta,v)];});
+ const umin=Math.min(...uv.map(p=>p[0])),umax=Math.max(...uv.map(p=>p[0]));
+ const vmin=Math.min(...uv.map(p=>p[1])),vmax=Math.max(...uv.map(p=>p[1]));
+ const at=(s,t)=>origin.map((x,i)=>x+u[i]*(umin+s*(umax-umin))+v[i]*(vmin+t*(vmax-vmin)));
+ const inside=world=>volumeCoord(g,world).every((x,i)=>x>=-1e-5&&x<=nmax[i]+1e-5);
+ return {corners:[at(0,0),at(1,0),at(1,1),at(0,1)],at,inside,
+  width:umax-umin,height:vmax-vmin,intersectionCount:intersections.length,hkl:[h,k,l]};
+}
+function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null,frame=null){
  const canvas=document.createElement('canvas'),size=192;canvas.width=size;canvas.height=size;
  const ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
- const floating=[0,1,2].filter(n=>n!==axis),shape=volumeShape(g);
+ const floating=frame?null:[0,1,2].filter(n=>n!==axis),shape=volumeShape(g);
  const values=new Float32Array(size*size);
  for(let j=0;j<size;j++)for(let i=0;i<size;i++){
-  const coord=[0,0,0];coord[axis]=(shape[axis]-1)*pos/100;
-  coord[floating[0]]=(shape[floating[0]]-1)*i/(size-1);
-  coord[floating[1]]=(shape[floating[1]]-1)*j/(size-1);
-  const value=volumeSample(g,coord);values[j*size+i]=value;
-  const sample=colorGrid?volumeAtWorld(colorGrid,volumeWorld(g,...coord)):value;
+  let world,coord;
+  if(frame){world=frame.at(i/(size-1),j/(size-1));
+   if(!frame.inside(world)){values[j*size+i]=NaN;continue;}
+  }else{
+   coord=[0,0,0];coord[axis]=(shape[axis]-1)*pos/100;
+   coord[floating[0]]=(shape[floating[0]]-1)*i/(size-1);
+   coord[floating[1]]=(shape[floating[1]]-1)*j/(size-1);
+   world=volumeWorld(g,...coord);
+  }
+  const value=frame?volumeAtWorld(g,world):volumeSample(g,coord);values[j*size+i]=value;
+  const sample=colorGrid?volumeAtWorld(colorGrid,world):value;
   const rgb=scalarColor(sample,colorGrid||g,palette),idx=(j*size+i)*4;
   for(let n=0;n<3;n++)img.data[idx+n]=Math.round(rgb[n]*255);
   img.data[idx+3]=206;
@@ -1805,9 +2004,11 @@ function sliceWorldCorners(g,axis,pos){
  return [at(0,0),at(1,0),at(1,1),at(0,1)];
 }
 function volumeSliceMesh(g){
+ const frame=volumeView.axis==='hkl'?sliceMillerFrame(g,state.cell,
+  ...volumeView.hkl,volumeView.position):null;
  const canvas=sliceImage(g,volumeView.axis,volumeView.position,volumeView.iso,volumeView.palette,
-   volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null);
- const corners=sliceWorldCorners(g,volumeView.axis,volumeView.position);
+   volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null,frame);
+ const corners=frame?frame.corners:sliceWorldCorners(g,volumeView.axis,volumeView.position);
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.Float32BufferAttribute([...corners[0],...corners[1],...corners[2],...corners[0],...corners[2],...corners[3]],3));
  geometry.setAttribute('uv',new THREE.Float32BufferAttribute([0,1,1,1,1,0,0,1,1,0,0,0],2));
@@ -1865,6 +2066,19 @@ function updateVolumeInfo(){
  ' · max '+g.max.toPrecision(4)+' · '+g.units+
  (potentialGrid?' · Renklendirme: '+potentialGrid.kind:'');
 }
+function volumeRefreshMathUi(){
+ const a=$('volumeMathA'),b=$('volumeMathB');
+ const previousA=a.value,previousB=b.value;
+ a.replaceChildren();b.replaceChildren();
+ volumeDatasets.forEach((item,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=(i+1)+' · '+item.name;
+  a.append(option);b.append(option.cloneNode(true));
+ });
+ a.value=previousA&&volumeDatasets[Number(previousA)]?previousA:'0';
+ b.value=previousB&&volumeDatasets[Number(previousB)]?previousB:String(Math.min(1,volumeDatasets.length-1));
+ $('volumeMathAdd').disabled=volumeDatasets.length<2||volumeDatasets.length>=VOLUME_DATASET_LIMIT;
+}
 function volumeRefreshDatasetUi(){
  const picker=$('volumeActiveDataset'),colorPicker=$('volumeColorDataset');
  picker.replaceChildren();colorPicker.replaceChildren();
@@ -1905,6 +2119,7 @@ function volumeRefreshDatasetUi(){
  $('volumeFrameStatus').textContent=compatible
   ?'Alanların Kartezyen orijin ve 3B sınırları uyuşuyor; farklı grid çözünürlüklerinde trilineer interpolasyon uygulanabilir.'
   :'Uyuşmayan uzaysal koordinat çerçevesi: birlikte çizim kapalı.';
+ volumeRefreshMathUi();
  volumeRefreshIsoUi();
 }
 function volumeSyncIsoControls(){
@@ -1939,7 +2154,9 @@ function volumeRefreshIsoUi(){
 function volumeControlChanged(){
  if(!densityGrid)return;
  volumeView.mode=$('volumeMode').value;volumeView.iso=Number($('volumeIso').value);
- volumeView.opacity=Number($('volumeOpacity').value);volumeView.axis=Number($('volumeAxis').value);
+ volumeView.opacity=Number($('volumeOpacity').value);
+ volumeView.axis=$('volumeAxis').value==='hkl'?'hkl':Number($('volumeAxis').value);
+ volumeView.hkl=['volumeH','volumeK','volumeL'].map(id=>Number($(id).value));
  volumeView.position=Number($('volumePosition').value);volumeView.palette=$('volumePalette').value;
  volumeView.contours=$('volumeContours').checked;volumeView.potential=$('volumePotential').checked;
  if(!Number.isFinite(volumeView.iso)||!Number.isFinite(volumeView.opacity))return;
@@ -1949,23 +2166,33 @@ function volumeControlChanged(){
  try{drawVolume();updateVolumeSliceStats();}catch(e){inform('Hacimsel çizim: '+e.message);clearVolumeLayer();}
 }
 
-function sliceSampleMatrix(grid,axis,position,resolution=64){
- if(!grid||![0,1,2].includes(Number(axis))||!Number.isFinite(position)||position<0||position>100||
+function sliceSampleMatrix(grid,axis,position,resolution=64,options={}){
+ if(!grid||!(axis==='hkl'||[0,1,2].includes(Number(axis)))||!Number.isFinite(position)||position<0||position>100||
     !Number.isInteger(resolution)||resolution<2||resolution>256)
   throw Error('Geçersiz 2B kesit örnekleme parametreleri.');
- const floating=[0,1,2].filter(i=>i!==Number(axis)),shape=volumeShape(grid);
- const corners=sliceWorldCorners(grid,Number(axis),position);
+ const miller=axis==='hkl'?sliceMillerFrame(grid,options.cell,
+  ...(options.hkl||[1,1,1]),position):null;
+ const floating=miller?null:[0,1,2].filter(i=>i!==Number(axis)),shape=volumeShape(grid);
+ const corners=miller?miller.corners:sliceWorldCorners(grid,Number(axis),position);
  const width=Math.hypot(...corners[1].map((v,i)=>v-corners[0][i]));
  const height=Math.hypot(...corners[3].map((v,i)=>v-corners[0][i]));
  const rows=[],values=new Float32Array(resolution*resolution);let min=Infinity,max=-Infinity,sum=0;
  for(let j=0;j<resolution;j++)for(let i=0;i<resolution;i++){
-  const coords=[0,0,0];coords[axis]=(shape[axis]-1)*position/100;
-  coords[floating[0]]=(shape[floating[0]]-1)*i/(resolution-1);
-  coords[floating[1]]=(shape[floating[1]]-1)*j/(resolution-1);
-  const value=volumeSample(grid,coords),world=volumeWorld(grid,...coords);
+  const s=i/(resolution-1),t=j/(resolution-1);
+  let coords,world;
+  if(miller){world=miller.at(s,t);
+   if(!miller.inside(world)){values[j*resolution+i]=NaN;continue;}
+  }else{
+   coords=[0,0,0];coords[axis]=(shape[axis]-1)*position/100;
+   coords[floating[0]]=(shape[floating[0]]-1)*s;
+   coords[floating[1]]=(shape[floating[1]]-1)*t;
+   world=volumeWorld(grid,...coords);
+  }
+  const value=miller?volumeAtWorld(grid,world):volumeSample(grid,coords);
   values[j*resolution+i]=value;min=Math.min(min,value);max=Math.max(max,value);sum+=value;
-  rows.push({u:i/(resolution-1),v:j/(resolution-1),x:world[0],y:world[1],z:world[2],value});
+  rows.push({u:s,v:t,x:world[0],y:world[1],z:world[2],value});
  }
+ if(!rows.length)throw Error('Kesit ızgarayla kesişmiyor. Konumu değiştirin.');
  return {rows,values,min,max,mean:sum/rows.length,width,height,units:grid.units,resolution};
 }
 function volumeSliceCsv(slice){
@@ -1975,9 +2202,11 @@ function volumeSliceCsv(slice){
 function updateVolumeSliceStats(){
  const info=$('volumeSliceStats'),g=densityGrid;
  if(!g){info.textContent='Henüz sayısal kesit yok.';$('volumeColorScale').textContent='Renk ölçeği veri yüklenince hesaplanır.';return;}
- const slice=sliceSampleMatrix(g,volumeView.axis,volumeView.position,32);
+ const slice=sliceSampleMatrix(g,volumeView.axis,volumeView.position,32,
+  {cell:state.cell,hkl:volumeView.hkl});
  const formatted=n=>Number(n).toPrecision(4);
- info.textContent='Kesit '+slice.width.toFixed(2)+' × '+slice.height.toFixed(2)+' Å · '+
+ info.textContent='Kesit '+(volumeView.axis==='hkl'?'('+volumeView.hkl.join(' ')+') · ':'')+
+  slice.width.toFixed(2)+' × '+slice.height.toFixed(2)+' Å · '+
  'min '+formatted(slice.min)+' · max '+formatted(slice.max)+' · ortalama '+formatted(slice.mean)+' '+g.units;
  const color=volumeView.potential&&potentialGrid?potentialGrid:g;
  const lower=volumeView.palette==='thermal'?-Math.max(Math.abs(color.min),Math.abs(color.max)):color.min;
@@ -2019,6 +2248,8 @@ async function loadVolumeFile(file,asPotential=false,additional=false){
 }
 function resetVolume(){
  clearVolumeLayer();densityGrid=null;potentialGrid=null;volumeDatasets=[];activeVolumeIndex=0;volumeColorIndex='';
+ lastVolumePeaks=null;$('volumePeakResults').textContent='Önce bir alan yükleyin.';
+ lastVoronoi=null;$('volumeVoronoiResults').textContent='İşlem bekleniyor.';
  volumeView.mode='off';$('volumeMode').value='off';$('volumePotential').checked=false;
  $('volumeIsoLayers').replaceChildren();$('volumeDatasets').replaceChildren();
  $('volumeActiveDataset').replaceChildren();$('volumeColorDataset').replaceChildren();
@@ -2051,6 +2282,53 @@ function initVolumeControls(){
   $('volumePotential').checked=!!potentialGrid;
   volumeView.potential=!!potentialGrid;updateVolumeInfo();volumeControlChanged();
  };
+ $('volumeMathAdd').onclick=()=>{
+  try{
+   const indexA=Number($('volumeMathA').value),indexB=Number($('volumeMathB').value);
+   if(indexA===indexB||!volumeDatasets[indexA]||!volumeDatasets[indexB])
+    throw Error('İki farklı kaynak alan seçin.');
+   const k=Number($('volumeMathK').value);
+   const a=volumeDatasets[indexA],b=volumeDatasets[indexB];
+   const derived=linearVolumeCombination(a.grid,b.grid,k);
+   const label=a.name+(k<0?' − ':' + ')+Math.abs(k)+'×'+b.name;
+   addVolumeDataset(derived,label);lastVolumePeaks=null;
+   $('volumePeakResults').textContent='Yeni alan için tepe araması yapılmadı.';
+   volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
+  }catch(error){inform('Alan aritmetiği: '+error.message);}
+ };
+ $('volumePeakFind').onclick=()=>{
+  try{
+   if(!densityGrid)throw Error('Önce hacimsel alan yükleyin.');
+   const mode=$('volumePeakMode').value;
+   const peaks=volumeFindPeaks(densityGrid,{mode,threshold:Number($('volumePeakThreshold').value),
+    limit:Number($('volumePeakCount').value)});
+   lastVolumePeaks={peaks,grid:densityGrid};
+   $('volumePeakResults').textContent=peaks.length?
+    peaks.map((p,i)=>(i+1)+'. '+p.value.toPrecision(5)+' '+densityGrid.units+' · ('+
+     [p.x,p.y,p.z].map(v=>v.toFixed(3)).join(', ')+') Å').join('\n'):
+    'Bu eşikte iç ızgara noktalarında yerel ekstremum bulunamadı.';
+   $('volumePeakResults').style.whiteSpace='pre-line';
+  }catch(error){inform('Tepe araması: '+error.message);}
+ };
+ $('volumePeakCsv').onclick=()=>{
+  if(!lastVolumePeaks||lastVolumePeaks.grid!==densityGrid)return inform('Önce bu alanın tepelerini hesaplayın.');
+  download('volume_peaks.csv',volumePeaksCsv(lastVolumePeaks.peaks,densityGrid.units),'text/csv');
+ };
+ $('volumeVoronoi').onclick=()=>{
+  try{
+   if(!densityGrid)throw Error('Önce hacimsel alan yükleyin.');
+   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,64):state.sites;
+   const result=volumeVoronoiIntegration(densityGrid,state.cell,sites);
+   lastVoronoi={grid:densityGrid,result};
+   $('volumeVoronoiResults').textContent=result.sampled+' örnek · toplam '+result.total.toFixed(4)+' e\n'+
+    result.sites.map(s=>s.index+'. '+s.symbol+' '+s.label+': '+s.charge.toFixed(4)+' e').join('\n');
+   $('volumeVoronoiResults').style.whiteSpace='pre-line';
+  }catch(error){inform('Voronoi: '+error.message);}
+ };
+ $('volumeVoronoiCsv').onclick=()=>{
+  if(!lastVoronoi||lastVoronoi.grid!==densityGrid)return inform('Önce bu alanın Voronoi integralini hesaplayın.');
+  download('voronoi_yuk.csv',volumeVoronoiCsv(lastVoronoi.result),'text/csv');
+ };
  $('volumeIsoAdd').onclick=()=>{
   const active=activeVolumeDataset();if(!active)return inform('Önce hacimsel veri yükleyin.');
   if(active.layers.length>=VOLUME_ISO_LIMIT)return inform('Bir alan için en fazla dört izoyüzey.');
@@ -2063,18 +2341,25 @@ function initVolumeControls(){
   const active=activeVolumeDataset();if(!active)return;
   active.layers.splice(1);volumeRefreshIsoUi();drawVolume();
  };
- for(const id of ['volumeMode','volumeIso','volumeOpacity','volumeAxis','volumePosition','volumePalette','volumeContours','volumePotential'])
+ for(const id of ['volumeMode','volumeIso','volumeOpacity','volumeAxis','volumePosition','volumePalette','volumeContours','volumePotential','volumeH','volumeK','volumeL'])
   $(id).addEventListener('change',volumeControlChanged);
  $('volumeSliceCsv').onclick=()=>{
   if(!densityGrid)return inform('Önce alan yükleyin.');
-  const result=sliceSampleMatrix(densityGrid,volumeView.axis,volumeView.position,64);
+  let result;
+  try{result=sliceSampleMatrix(densityGrid,volumeView.axis,volumeView.position,64,
+   {cell:state.cell,hkl:volumeView.hkl});}catch(error){return inform('Kesit: '+error.message);}
   download('kristalyapi_slice_'+volumeView.axis+'.csv',
    '# x,y,z koordinatlari Angstrom; alan: '+result.units+'\n'+volumeSliceCsv(result),'text/csv');
  };
  $('volumeSlicePng').onclick=()=>{
   if(!densityGrid)return inform('Önce alan yükleyin.');
-  const canvas=sliceImage(densityGrid,volumeView.axis,volumeView.position,volumeView.iso,
-    volumeView.palette,volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null);
+  let canvas;
+  try{
+   const frame=volumeView.axis==='hkl'?sliceMillerFrame(densityGrid,state.cell,
+    ...volumeView.hkl,volumeView.position):null;
+   canvas=sliceImage(densityGrid,volumeView.axis,volumeView.position,volumeView.iso,
+    volumeView.palette,volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null,frame);
+  }catch(error){return inform('Kesit: '+error.message);}
   canvas.toBlob(blob=>{if(blob)download('kristalyapi_slice_'+volumeView.axis+'.png',blob,'image/png');},'image/png');
  };
  $('clearVolume').onclick=resetVolume;
@@ -3440,6 +3725,87 @@ function bvsCsv(result){
  return ['neighbor,shift_x,shift_y,shift_z,distance_A,occupancy,bond_valence',
   ...result.neighbors.map(n=>[n.label,...n.shift,n.distance.toFixed(8),n.occupancy,n.contribution.toFixed(8)].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n')+'\n';
 }
+function parseIonicCharges(text,sites){
+ const rules=new Map(),tokens=String(text||'').split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
+ if(!tokens.length)throw Error('İyon yüklerini Na:+1, Cl:-1 biçiminde açıkça yazın.');
+ for(const token of tokens){
+  const match=token.match(/^([A-Za-z]{1,2}|\d{1,3})\s*:\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
+  if(!match)throw Error('Yük biçimi geçersiz: '+token);
+  const key=/^\d+$/.test(match[1])?String(Number(match[1])):cleanSymbol(match[1]);
+  const charge=Number(match[2]);
+  if(!Number.isFinite(charge)||Math.abs(charge)>8||rules.has(key))throw Error('Geçersiz/tekrarlı iyon yükü: '+key);
+  rules.set(key,charge);
+ }
+ for(const key of rules.keys())if(!sites.some((site,i)=>key===String(i+1)||key===cleanSymbol(site.symbol)))
+  throw Error('Yük tanımı bu yapıda bulunamadı: '+key);
+ return sites.map((s,i)=>{
+  const charge=rules.get(String(i+1))??rules.get(cleanSymbol(s.symbol));
+  if(charge===undefined)throw Error('Yük tanımlanmamış: '+(s.label||s.symbol+' '+(i+1)));
+  return charge;
+ });
+}
+function ewaldErfc(x){
+ const z=Math.abs(x),t=1/(1+.5*z);
+ let p=.17087277;
+ for(const c of [-.82215223,1.48851587,-1.13520398,.27886807,-.18628806,.09678418,.37409196,1.00002368])p=c+t*p;
+ const val=t*Math.exp(-z*z-1.26551223+t*p);
+ return x>=0?val:2-val;
+}
+/* Neutral periodic point charges; conducting-boundary Ewald summation.
+   Real + reciprocal + self terms, with two-shell convergence check. */
+function madelungEwald(cell,sites,charges,{realShell=3,recipShell=7}={}){
+ if(!Array.isArray(sites)||sites.length<2||sites.length>80||
+  !Array.isArray(charges)||charges.length!==sites.length||charges.some(q=>!Number.isFinite(q)||Math.abs(q)>8)||
+  !Number.isInteger(realShell)||realShell<2||realShell>4||
+  !Number.isInteger(recipShell)||recipShell<5||recipShell>9)
+  throw Error('Ewald atom, yük veya toplama sınırı geçersiz.');
+ if(Math.abs(charges.reduce((s,q)=>s+q,0))>1e-7)throw Error('Nötr olmayan hücre: toplam iyon yükü sıfır olmalı.');
+ if(sites.some(s=>!Number.isFinite(s.occupancy??1)||Math.abs(Number(s.occupancy??1)-1)>1e-8))
+  throw Error('Kısmi doluluklu noktalar Ewald iyon modelinde desteklenmiyor.');
+ const B=basis(cell),V=volume(B),lengths=B.map(v=>v.length());
+ if(Math.max(...lengths)/Math.min(...lengths)>5)
+  throw Error('Bu sabit Ewald kesimleri aşırı uzun/kısa örgü eksenlerinde güvenilir değil.');
+ const axes=B.map(v=>v.toArray()),alpha=5/Math.cbrt(V),
+  r=sites.map(s=>toCart([frac(s.x),frac(s.y),frac(s.z)],B).toArray());
+ const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
+ const astar=[new THREE.Vector3().crossVectors(B[1],B[2]),
+  new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])]
+  .map(g=>g.multiplyScalar(2*Math.PI/det).toArray());
+ const evaluate=(N,K)=>{
+  const potential=Array(sites.length).fill(0);
+  for(let i=0;i<sites.length;i++)for(let j=0;j<sites.length;j++)
+   for(let a=-N;a<=N;a++)for(let b=-N;b<=N;b++)for(let c=-N;c<=N;c++){
+    if(i===j&&!a&&!b&&!c)continue;
+    const delta=[0,1,2].map(t=>r[i][t]-r[j][t]+a*axes[0][t]+b*axes[1][t]+c*axes[2][t]);
+    const distance=Math.hypot(...delta);
+    if(distance<1e-8)throw Error('İki farklı iyon aynı koordinatta; nokta-yük enerjisi ıraksar.');
+    potential[i]+=charges[j]*ewaldErfc(alpha*distance)/distance;
+   }
+  for(let h=-K;h<=K;h++)for(let k=-K;k<=K;k++)for(let l=-K;l<=K;l++){
+   if(!(h||k||l))continue;
+   const G=[0,1,2].map(t=>h*astar[0][t]+k*astar[1][t]+l*astar[2][t]);
+   const G2=G.reduce((s,v)=>s+v*v,0),weight=(4*Math.PI/V)*Math.exp(-G2/(4*alpha*alpha))/G2;
+   if(weight<1e-16)continue;
+   let re=0,im=0;
+   for(let j=0;j<sites.length;j++){
+    const phase=2*Math.PI*(h*sites[j].x+k*sites[j].y+l*sites[j].z);
+    re+=charges[j]*Math.cos(phase);im+=charges[j]*Math.sin(phase);
+   }
+   for(let i=0;i<sites.length;i++){
+    const phase=2*Math.PI*(h*sites[i].x+k*sites[i].y+l*sites[i].z);
+    potential[i]+=weight*(re*Math.cos(phase)+im*Math.sin(phase));
+   }
+  }
+  const coulomb=14.3996454784255; // e²/(4π ε0) in eV Å
+  const ev=potential.map((p,i)=>(p-2*alpha/Math.sqrt(Math.PI)*charges[i])*coulomb);
+  return {potentials:ev,energy:ev.reduce((sum,p,i)=>sum+.5*p*charges[i],0)};
+ };
+ const result=evaluate(realShell+1,recipShell+1),base=evaluate(realShell,recipShell);
+ const convergenceEv=Math.abs(result.energy-base.energy);
+ if(convergenceEv>.02)throw Error('Ewald yakınsaması '+convergenceEv.toFixed(3)+' eV; bu hücre/şarjlar için sonuç güvenilir değil.');
+ return {...result,charges,alpha,realShell:realShell+1,recipShell:recipShell+1,convergenceEv,
+  method:'Ewald point ions; no polarization or dielectric screening'};
+}
 function leastSquaresPlane(points){
  if(!Array.isArray(points)||points.length<3||points.length>1000||
     points.some(p=>!Array.isArray(p)||p.length!==3||p.some(v=>!Number.isFinite(v))))
@@ -3506,70 +3872,139 @@ function renderStage3Planes(){
   (details.length>=2?'\nİlk iki düzlem arası dar açı: '+angleBetweenPlanes(details[0].fit,details[1].fit).toFixed(3)+'°':'');
  node.style.whiteSpace='pre-line';
 }
-/* X-ray point-electron-scatterer approximation: NOT tabulated f0(s).
-   Valid for systematic phase interference / Bragg peak positions, not quantitative diffraction. */
-function structureFactor(h,k,l,sites,cell){
+/* IT92 neutral-atom X-ray 4-Gaussian+c coefficients (Z=1–98), and
+   natural-element bound coherent neutron lengths in fm. Tabulated sources:
+   International Tables for Crystallography Vol C; Neutron News 3 (1992).
+   Numeric tables extracted from Gemmi 0.7.4 (project-gemmi/gemmi;
+   MPL-2.0, https://github.com/project-gemmi/gemmi). No runtime dependency. */
+const XRAY_IT92={"H":[0.493002,0.322912,0.140191,0.04081,10.5109,26.1257,3.14236,57.7997,0.003038],"He":[0.8734,0.6309,0.3112,0.178,9.1037,3.3568,22.9276,0.9821,0.0064],"Li":[1.1282,0.7508,0.6175,0.4653,3.9546,1.0524,85.3905,168.261,0.0377],"Be":[1.5919,1.1278,0.5391,0.7029,43.6427,1.8623,103.483,0.542,0.0385],"B":[2.0545,1.3326,1.0979,0.7068,23.2185,1.021,60.3498,0.1403,-0.1932],"C":[2.31,1.02,1.5886,0.865,20.8439,10.2075,0.5687,51.6512,0.2156],"N":[12.2126,3.1322,2.0125,1.1663,0.0057,9.8933,28.9975,0.5826,-11.529],"O":[3.0485,2.2868,1.5463,0.867,13.2771,5.7011,0.3239,32.9089,0.2508],"F":[3.5392,2.6412,1.517,1.0243,10.2825,4.2944,0.2615,26.1476,0.2776],"Ne":[3.9553,3.1125,1.4546,1.1251,8.4042,3.4262,0.2306,21.7184,0.3515],"Na":[4.7626,3.1736,1.2674,1.1128,3.285,8.8422,0.3136,129.424,0.676],"Mg":[5.4204,2.1735,1.2269,2.3073,2.8275,79.2611,0.3808,7.1937,0.8584],"Al":[6.4202,1.9002,1.5936,1.9646,3.0387,0.7426,31.5472,85.0886,1.1151],"Si":[6.2915,3.0353,1.9891,1.541,2.4386,32.3337,0.6785,81.6937,1.1407],"P":[6.4345,4.1791,1.78,1.4908,1.9067,27.157,0.526,68.1645,1.1149],"S":[6.9053,5.2034,1.4379,1.5863,1.4679,22.2151,0.2536,56.172,0.8669],"Cl":[11.4604,7.1964,6.2556,1.6455,0.0104,1.1662,18.5194,47.7784,-9.5574],"Ar":[7.4845,6.7723,0.6539,1.6442,0.9072,14.8407,43.8983,33.3929,1.4445],"K":[8.2186,7.4398,1.0519,0.8659,12.7949,0.7748,213.187,41.6841,1.4228],"Ca":[8.6266,7.3873,1.5899,1.0211,10.4421,0.6599,85.7484,178.437,1.3751],"Sc":[9.189,7.3679,1.6409,1.468,9.0213,0.5729,136.108,51.3531,1.3329],"Ti":[9.7595,7.3558,1.6991,1.9021,7.8508,0.5,35.6338,116.105,1.2807],"V":[10.2971,7.3511,2.0703,2.0571,6.8657,0.4385,26.8938,102.478,1.2199],"Cr":[10.6406,7.3537,3.324,1.4922,6.1038,0.392,20.2626,98.7399,1.1832],"Mn":[11.2819,7.3573,3.0193,2.2441,5.3409,0.3432,17.8674,83.7543,1.0896],"Fe":[11.7695,7.3573,3.5222,2.3045,4.7611,0.3072,15.3535,76.8805,1.0369],"Co":[12.2841,7.3409,4.0034,2.3488,4.2791,0.2784,13.5359,71.1692,1.0118],"Ni":[12.8376,7.292,4.4438,2.38,3.8785,0.2565,12.1763,66.3421,1.0341],"Cu":[13.338,7.1676,5.6158,1.6735,3.5828,0.247,11.3966,64.8126,1.191],"Zn":[14.0743,7.0318,5.1652,2.41,3.2655,0.2333,10.3163,58.7097,1.3041],"Ga":[15.2354,6.7006,4.3591,2.9623,3.0669,0.2412,10.7805,61.4135,1.7189],"Ge":[16.0816,6.3747,3.7068,3.683,2.8509,0.2516,11.4468,54.7625,2.1313],"As":[16.6723,6.0701,3.4313,4.2779,2.6345,0.2647,12.9479,47.7972,2.531],"Se":[17.0006,5.8196,3.9731,4.3543,2.4098,0.2726,15.2372,43.8163,2.8409],"Br":[17.1789,5.2358,5.6377,3.9851,2.1723,16.5796,0.2609,41.4328,2.9557],"Kr":[17.3555,6.7286,5.5493,3.5375,1.9384,16.5623,0.2261,39.3972,2.825],"Rb":[17.1784,9.6435,5.1399,1.5292,1.7888,17.3151,0.2748,164.934,3.4873],"Sr":[17.5663,9.8184,5.422,2.6694,1.5564,14.0988,0.1664,132.376,2.5064],"Y":[17.776,10.2946,5.72629,3.26588,1.4029,12.8006,0.125599,104.354,1.91213],"Zr":[17.8765,10.948,5.41732,3.65721,1.27618,11.916,0.117622,87.6627,2.06929],"Nb":[17.6142,12.0144,4.04183,3.53346,1.18865,11.766,0.204785,69.7957,3.75591],"Mo":[3.7025,17.2356,12.8876,3.7429,0.2772,1.0958,11.004,61.6584,4.3875],"Tc":[19.1301,11.0948,4.64901,2.71263,0.864132,8.14487,21.5707,86.8472,5.40428],"Ru":[19.2674,12.9182,4.86337,1.56756,0.80852,8.43467,24.7997,94.2928,5.37874],"Rh":[19.2957,14.3501,4.73425,1.28918,0.751536,8.21758,25.8749,98.6062,5.328],"Pd":[19.3319,15.5017,5.29537,0.605844,0.698655,7.98929,25.2052,76.8986,5.26593],"Ag":[19.2808,16.6885,4.8045,1.0463,0.6446,7.4726,24.6605,99.8156,5.179],"Cd":[19.2214,17.6444,4.461,1.6029,0.5946,6.9089,24.7008,87.4825,5.0694],"In":[19.1624,18.5596,4.2948,2.0396,0.5476,6.3776,25.8499,92.8029,4.9391],"Sn":[19.1889,19.1005,4.4585,2.4663,5.8303,0.5031,26.8909,83.9571,4.7821],"Sb":[19.6418,19.0455,5.0371,2.6827,5.3034,0.4607,27.9074,75.2825,4.5909],"Te":[19.9644,19.0138,6.14487,2.5239,4.81742,0.420885,28.5284,70.8403,4.352],"I":[20.1472,18.9949,7.5138,2.2735,4.347,0.3814,27.766,66.8776,4.0712],"Xe":[20.2933,19.0298,8.9767,1.99,3.9282,0.344,26.4659,64.2658,3.7118],"Cs":[20.3892,19.1062,10.662,1.4953,3.569,0.3107,24.3879,213.904,3.3352],"Ba":[20.3361,19.297,10.888,2.6959,3.216,0.2756,20.2073,167.202,2.7731],"La":[20.578,19.599,11.3727,3.28719,2.94817,0.244475,18.7726,133.124,2.14678],"Ce":[21.1671,19.7695,11.8513,3.33049,2.81219,0.226836,17.6083,127.113,1.86264],"Pr":[22.044,19.6697,12.3856,2.82428,2.77393,0.222087,16.7669,143.644,2.0583],"Nd":[22.6845,19.6847,12.774,2.85137,2.66248,0.210628,15.885,137.903,1.98486],"Pm":[23.3405,19.6095,13.1235,2.87516,2.5627,0.202088,15.1009,132.721,2.02876],"Sm":[24.0042,19.4258,13.4396,2.89604,2.47274,0.196451,14.3996,128.007,2.20963],"Eu":[24.6274,19.0886,13.7603,2.9227,2.3879,0.1942,13.7546,123.174,2.5745],"Gd":[25.0709,19.0798,13.8518,3.54545,2.25341,0.181951,12.9331,101.398,2.4196],"Tb":[25.8976,18.2185,14.3167,2.95354,2.24256,0.196143,12.6648,115.362,3.58324],"Dy":[26.507,17.6383,14.5596,2.96577,2.1802,0.202172,12.1899,111.874,4.29728],"Ho":[26.9049,17.294,14.5583,3.63837,2.07051,0.19794,11.4407,92.6566,4.56796],"Er":[27.6563,16.4285,14.9779,2.98233,2.07356,0.223545,11.3604,105.703,5.92046],"Tm":[28.1819,15.8851,15.1542,2.98706,2.02859,0.238849,10.9975,102.961,6.75621],"Yb":[28.6641,15.4345,15.3087,2.98963,1.9889,0.257119,10.6647,100.417,7.56672],"Lu":[28.9476,15.2208,15.1,3.71601,1.90182,9.98519,0.261033,84.3298,7.97628],"Hf":[29.144,15.1726,14.7586,4.30013,1.83262,9.5999,0.275116,72.029,8.58154],"Ta":[29.2024,15.2293,14.5135,4.76492,1.77333,9.37046,0.295977,63.3644,9.24354],"W":[29.0818,15.43,14.4327,5.11982,1.72029,9.2259,0.321703,57.056,9.8875],"Re":[28.7621,15.7189,14.5564,5.44174,1.67191,9.09227,0.3505,52.0861,10.472],"Os":[28.1894,16.155,14.9305,5.67589,1.62903,8.97948,0.382661,48.1647,11.0005],"Ir":[27.3049,16.7296,15.6115,5.83377,1.59279,8.86553,0.417916,45.0011,11.4722],"Pt":[27.0059,17.7639,15.7131,5.7837,1.51293,8.81174,0.424593,38.6103,11.6883],"Au":[16.8819,18.5913,25.5582,5.86,0.4611,8.6216,1.4826,36.3956,12.0658],"Hg":[20.6809,19.0417,21.6575,5.9676,0.545,8.4484,1.5729,38.3246,12.6089],"Tl":[27.5446,19.1584,15.538,5.52593,0.65515,8.70751,1.96347,45.8149,13.1746],"Pb":[31.0617,13.0637,18.442,5.9696,0.6902,2.3576,8.618,47.2579,13.4118],"Bi":[33.3689,12.951,16.5877,6.4692,0.704,2.9238,8.7937,48.0093,13.5782],"Po":[34.6726,15.4733,13.1138,7.02588,0.700999,3.55078,9.55642,47.0045,13.677],"At":[35.3163,19.0211,9.49887,7.42518,0.68587,3.97458,11.3824,45.4715,13.7108],"Rn":[35.5631,21.2816,8.0037,7.4433,0.6631,4.0691,14.0422,44.2473,13.6905],"Fr":[35.9299,23.0547,12.1439,2.11253,0.646453,4.17619,23.1052,150.645,13.7247],"Ra":[35.763,22.9064,12.4739,3.21097,0.616341,3.87135,19.9887,142.325,13.6211],"Ac":[35.6597,23.1032,12.5977,4.08655,0.589092,3.65155,18.599,117.02,13.5266],"Th":[35.5645,23.4219,12.7473,4.80703,0.563359,3.46204,17.8309,99.1722,13.4314],"Pa":[35.8847,23.2948,14.1891,4.17287,0.547751,3.41519,16.9235,105.251,13.4287],"U":[36.0228,23.4128,14.9491,4.188,0.5293,3.3253,16.0927,100.613,13.3966],"Np":[36.1874,23.5964,15.6402,4.1855,0.511929,3.25396,15.3622,97.4908,13.3573],"Pu":[36.5254,23.8083,16.7707,3.47947,0.499384,3.26371,14.9455,105.98,13.3812],"Am":[36.6706,24.0992,17.3415,3.49331,0.483629,3.20647,14.3136,102.273,13.3592],"Cm":[36.6488,24.4096,17.399,4.21665,0.465154,3.08997,13.4346,88.4834,13.2887],"Bk":[36.7881,24.7736,17.8919,4.23284,0.451018,3.04619,12.8946,86.003,13.2754],"Cf":[36.9185,25.1995,18.3317,4.24391,0.437533,3.00775,12.4044,83.7881,13.2674]};
+const NEUTRON_BCOH={"H":-3.739,"He":3.26,"Li":-1.9,"Be":7.79,"B":5.3,"C":6.646,"N":9.36,"O":5.803,"F":5.654,"Ne":4.566,"Na":3.63,"Mg":5.375,"Al":3.449,"Si":4.1491,"P":5.13,"S":2.847,"Cl":9.577,"Ar":1.909,"K":3.67,"Ca":4.7,"Sc":12.29,"Ti":-3.438,"V":-0.3824,"Cr":3.635,"Mn":-3.73,"Fe":9.45,"Co":2.49,"Ni":10.3,"Cu":7.718,"Zn":5.68,"Ga":7.288,"Ge":8.185,"As":6.58,"Se":7.97,"Br":6.795,"Kr":7.81,"Rb":7.09,"Sr":7.02,"Y":7.75,"Zr":7.16,"Nb":7.054,"Mo":6.715,"Tc":6.8,"Ru":7.03,"Rh":5.88,"Pd":5.91,"Ag":5.922,"Cd":4.87,"In":4.065,"Sn":6.225,"Sb":5.57,"Te":5.8,"I":5.28,"Xe":4.92,"Cs":5.42,"Ba":5.07,"La":8.24,"Ce":4.84,"Pr":4.58,"Nd":7.69,"Pm":12.6,"Sm":0.8,"Eu":7.22,"Gd":6.5,"Tb":7.38,"Dy":16.9,"Ho":8.01,"Er":7.79,"Tm":7.07,"Yb":12.43,"Lu":7.21,"Hf":7.7,"Ta":6.91,"W":4.86,"Re":9.2,"Os":10.7,"Ir":10.6,"Pt":9.6,"Au":7.63,"Hg":12.692,"Tl":8.776,"Pb":9.405,"Bi":8.532,"Ra":10,"Th":10.31,"Pa":9.1,"U":8.417,"Np":10.55,"Am":8.3,"Cm":9.5};
+
+function scatteringFactor(symbol,d,kind='xray'){
+ const sym=cleanSymbol(symbol),Z=PERIODIC_SYMBOLS.indexOf(sym)+1;
+ if(!Z||!(Number.isFinite(d)||d===Infinity)||d<=0)throw Error('Geçersiz element veya d aralığı: '+symbol);
+ if(kind==='point')return Z; // Legacy educational reference, never the XRD UI default.
+ if(kind==='neutron'){
+  const b=NEUTRON_BCOH[sym];
+  if(!Number.isFinite(b))throw Error('Nötron koherent saçılma uzunluğu bilinmiyor: '+sym);
+  return b;
+ }
+ if(kind!=='xray')throw Error('Bilinmeyen saçılma türü.');
+ const coefs=XRAY_IT92[sym];
+ if(!coefs)throw Error('IT92 nötr atom katsayısı yok: '+sym);
+ const s2=1/(4*d*d);
+ return coefs[8]+coefs.slice(0,4).reduce((sum,a,i)=>sum+a*Math.exp(-coefs[i+4]*s2),0);
+}
+function structureFactor(h,k,l,sites,cell,kind='xray'){
  if(![h,k,l].every(Number.isInteger)||!Array.isArray(sites)||sites.length>1800)
   throw Error('Geçersiz hkl veya atom listesi.');
  if(!h&&!k&&!l)throw Error('000 yapı faktörü Bragg yansıması değildir.');
  const B=basis(cell),d=planeNormal(h,k,l,B).d;
- const reciprocal=[new THREE.Vector3().crossVectors(B[1],B[2]),new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])].map(v=>v.length()/volume(B));
- let real=0,imag=0;
+ const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
+ const G=new THREE.Vector3().crossVectors(B[1],B[2]).multiplyScalar(h/det)
+  .addScaledVector(new THREE.Vector3().crossVectors(B[2],B[0]),k/det)
+  .addScaledVector(new THREE.Vector3().crossVectors(B[0],B[1]),l/det);
+ let real=0,imag=0;const perElement=new Map();
  for(const site of sites){
-  const Z=PERIODIC_SYMBOLS.indexOf(cleanSymbol(site.symbol))+1;
-  if(Z<1)throw Error('Bilinmeyen atomun X-ışını elektron sayısı: '+site.symbol);
+  const symbol=cleanSymbol(site.symbol);
+  if(!perElement.has(symbol))perElement.set(symbol,scatteringFactor(symbol,d,kind));
   const occ=Number(site.occupancy??1);
   if(!Number.isFinite(occ)||occ<0||occ>1)throw Error('Geçersiz atom doluluğu.');
   let dw=1;
   if(site.adp){
-   const u=adpMatrix(site.adp),q=[h*reciprocal[0],k*reciprocal[1],l*reciprocal[2]];
+   const u=adpToCartesian(site.adp,cell),q=G.toArray();
    let qUq=0;for(let i=0;i<3;i++)for(let j=0;j<3;j++)qUq+=q[i]*u[i][j]*q[j];
+   if(qUq<-1e-10)throw Error('ADP tensörü seçilen yöne negatif yer değiştirme veriyor.');
    dw=Math.exp(-2*Math.PI*Math.PI*Math.max(0,qUq));
   }else if(Number.isFinite(site.uIso)&&site.uIso>0){
    dw=Math.exp(-2*Math.PI*Math.PI*site.uIso/(d*d));
   }
-  const phase=2*Math.PI*(h*site.x+k*site.y+l*site.z),amp=occ*Z*dw;
+  const phase=2*Math.PI*(h*site.x+k*site.y+l*site.z),amp=occ*perElement.get(symbol)*dw;
   real+=amp*Math.cos(phase);imag+=amp*Math.sin(phase);
  }
- return {h,k,l,d,real,imag,intensity:real*real+imag*imag};
+ return {h,k,l,d,real,imag,intensity:real*real+imag*imag,scattering:kind};
 }
-function powderPattern(cell,sites,{wavelength=1.5406,maxIndex=5,maxAngle=90}={}){
+function powderPattern(cell,sites,{wavelength=1.5406,maxIndex=5,maxAngle=90,scattering='xray',lorentzPolarization=false}={}){
  if(!Number.isFinite(wavelength)||wavelength<.2||wavelength>5||
   !Number.isInteger(maxIndex)||maxIndex<1||maxIndex>7||
   !Number.isFinite(maxAngle)||maxAngle<15||maxAngle>150)
   throw Error('XRD: λ, maksimum indis veya 2θ sınırı geçersiz.');
  if(sites.length>1000)throw Error('XRD için en fazla 1000 P1 atom kullanılabilir.');
+ if(!['xray','neutron','point'].includes(scattering))throw Error('Bilinmeyen saçılma türü.');
  const reflections=[];let extinctions=0;
  for(let h=-maxIndex;h<=maxIndex;h++)for(let k=-maxIndex;k<=maxIndex;k++)for(let l=-maxIndex;l<=maxIndex;l++){
   if(!(h||k||l))continue;
   // A Bragg vector and its opposite produce identical nonresonant powder intensity.
   if(h<0||h===0&&k<0||h===0&&k===0&&l<0)continue;
-  const F=structureFactor(h,k,l,sites,cell),arg=wavelength/(2*F.d);
+  const F=structureFactor(h,k,l,sites,cell,scattering),arg=wavelength/(2*F.d);
   if(arg<=0||arg>=1)continue;
   const angle=360/Math.PI*Math.asin(arg);
   if(angle>maxAngle)continue;
   if(F.intensity<1e-8){extinctions++;continue;}
-  reflections.push({...F,angle,multiplicity:2});
+  const theta=angle*Math.PI/360,twoTheta=2*theta;
+  const lp=lorentzPolarization&&scattering==='xray'?
+   (1+Math.cos(twoTheta)**2)/(Math.sin(theta)**2*Math.cos(theta)):1;
+  reflections.push({...F,angle,multiplicity:2,lp,powderIntensity:F.intensity*2*lp});
  }
  reflections.sort((a,b)=>a.angle-b.angle);
  const groups=[];
  for(const reflection of reflections){
   const last=groups.at(-1);
   if(last&&Math.abs(last.angle-reflection.angle)<.012){
-   last.intensity+=reflection.intensity*reflection.multiplicity;
+   last.intensity+=reflection.powderIntensity;
    last.members++;if(reflection.intensity>last.strongestIntensity){
     last.hkl=[reflection.h,reflection.k,reflection.l];last.strongestIntensity=reflection.intensity;
    }
-  }else groups.push({angle:reflection.angle,intensity:reflection.intensity*reflection.multiplicity,
+  }else groups.push({angle:reflection.angle,intensity:reflection.powderIntensity,
     members:1,hkl:[reflection.h,reflection.k,reflection.l],d:reflection.d,strongestIntensity:reflection.intensity});
  }
  const top=Math.max(...groups.map(g=>g.intensity),0);
  for(const group of groups)group.relative=top?group.intensity/top*100:0;
- return {reflections,groups,extinctions,wavelength,maxAngle,maxIndex,scattering:'f=Z',approximate:true};
+ return {reflections,groups,extinctions,wavelength,maxAngle,maxIndex,scattering,
+  lorentzPolarization:!!lorentzPolarization&&scattering==='xray',approximate:true};
+}
+/* Finite inverse Fourier synthesis from MODEL structure factors. Friedel
+   conjugates are handled as 2 Re(F exp(-2πih·r)). This is neither an observed
+   difference map nor an unlimited-resolution experimental density. */
+function modelFourierMap(cell,sites,{kind='density',scattering='xray',maxIndex=2,size=16}={}){
+ if(!['density','patterson'].includes(kind)||!['xray','neutron'].includes(scattering)||
+  !Number.isInteger(maxIndex)||maxIndex<1||maxIndex>3||![16,24].includes(size)||
+  !Array.isArray(sites)||sites.length>1000)
+  throw Error('Fourier: hesap türü, yansıma sınırı veya ızgara geçersiz.');
+ const B=basis(cell),V=volume(B),f0=sites.reduce((sum,site)=>{
+  const occ=Number(site.occupancy??1);
+  if(!Number.isFinite(occ)||occ<0||occ>1)throw Error('Fourier: geçersiz atom doluluğu.');
+  return sum+occ*scatteringFactor(site.symbol,Infinity,scattering);
+ },0);
+ const coefficients=[];
+ for(let h=-maxIndex;h<=maxIndex;h++)for(let k=-maxIndex;k<=maxIndex;k++)for(let l=-maxIndex;l<=maxIndex;l++){
+  if(!(h||k||l)||h<0||h===0&&k<0||h===0&&k===0&&l<0)continue;
+  const F=structureFactor(h,k,l,sites,cell,scattering);
+  coefficients.push({h,k,l,real:kind==='patterson'?F.intensity:F.real,
+   imag:kind==='patterson'?0:F.imag});
+ }
+ const values=new Float32Array(size**3),start=kind==='patterson'?f0*f0:f0;
+ let m=0;
+ for(let i=0;i<size;i++)for(let j=0;j<size;j++)for(let k=0;k<size;k++){
+  let sum=start;
+  for(const term of coefficients){
+   const phase=2*Math.PI*(term.h*i+term.k*j+term.l*k)/size;
+   sum+=2*(term.real*Math.cos(phase)+term.imag*Math.sin(phase));
+  }
+  values[m++]=sum/V;
+ }
+ const result=volumeGrid([size,size,size],[0,0,0],B.map(v=>v.toArray().map(x=>x/size)),values,
+  kind==='patterson'?'PATTERSON':'FOURIER',
+  kind==='patterson'?(scattering==='neutron'?'fm²/Å³ (model)':'e²/Å³ (model)'):
+   (scattering==='neutron'?'fm/Å³ (model)':'e/Å³ (model)'));
+ result.periodic=true;
+ result.modelFourier={kind,scattering,maxIndex,size,reflectionCount:coefficients.length*2+1,
+  source:'calculated model F; no Fobs'};
+ return result;
 }
 function xrdCsv(result){
- return ['h,k,l,d_A,2theta_deg,F_real,F_imag,F_squared',
- ...result.reflections.map(r=>[r.h,r.k,r.l,r.d,r.angle,r.real,r.imag,r.intensity].map(v=>Number(v).toPrecision(9)).join(','))].join('\n')+'\n';
+ return ['h,k,l,d_A,2theta_deg,F_real,F_imag,F_squared,LP,powder_intensity',
+ ...result.reflections.map(r=>[r.h,r.k,r.l,r.d,r.angle,r.real,r.imag,r.intensity,r.lp,r.powderIntensity].map(v=>Number(v).toPrecision(9)).join(','))].join('\n')+'\n';
 }
 function renderPowderChart(result){
  const svg=$('xrdChart');if(!svg)return;svg.replaceChildren();
@@ -3598,7 +4033,8 @@ function runPowderAnalysis(){
   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
   lastXrd=powderPattern(state.cell,sites,{
    wavelength:Number($('xrdLambda').value),maxAngle:Number($('xrdAngle').value),
-   maxIndex:Number($('xrdMaxIndex').value)});
+   maxIndex:Number($('xrdMaxIndex').value),scattering:$('xrdScattering').value,
+   lorentzPolarization:$('xrdLp').checked});
   renderWorkspaceXrd();
  }catch(error){inform('Yapı faktörü: '+error.message);}
 }
@@ -3607,7 +4043,9 @@ function renderWorkspaceXrd(){
  if(!lastXrd){$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
  renderPowderChart(lastXrd);
  $('xrdSummary').textContent=lastXrd.groups.length+' hesaplanan çizgi · '+
-  lastXrd.extinctions+' faz sönümlemesi (< 10⁻⁸) · f=Z sabit yaklaşıklık · nicel şiddet değil';
+  lastXrd.extinctions+' faz sönümlemesi (< 10⁻⁸) · '+
+  (lastXrd.scattering==='neutron'?'nötron b_coh (fm)':lastXrd.scattering==='point'?'f≈Z öğretici':'X-ışını IT92 f₀(s)')+
+  (lastXrd.lorentzPolarization?' · Bragg–Brentano LP':'')+' · kinematik model';
  for(const p of lastXrd.groups.slice(0,35)){
   const line=document.createElement('div');line.className='bond-rule-row';
   line.textContent='('+p.hkl.join(' ')+') · '+p.angle.toFixed(3)+'° · d='+p.d.toFixed(4)+' Å · '+p.relative.toFixed(1)+'%';
@@ -3650,6 +4088,17 @@ function initStage3Analyses(){
   }catch(err){lastBvs=null;inform('BVS: '+err.message);}
  };
  $('exportBvs').onclick=()=>{if(lastBvs)download('bvs_komsular.csv',bvsCsv(lastBvs),'text/csv');else inform('Önce BVS hesaplayın.');};
+ $('madelungCalculate').onclick=()=>{
+  try{
+   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,80):state.sites;
+   const charges=parseIonicCharges($('madelungCharges').value,sites);
+   const result=madelungEwald(state.cell,sites,charges);
+   $('madelungResults').textContent='Hücre enerjisi '+result.energy.toFixed(5)+' eV · yakınsama '+
+    result.convergenceEv.toExponential(2)+' eV\n'+result.potentials.map((v,i)=>
+     (i+1)+'. '+sites[i].symbol+' '+(sites[i].label||'')+' (q='+charges[i]+'): '+v.toFixed(5)+' eV/e').join('\n');
+   $('madelungResults').style.whiteSpace='pre-line';
+  }catch(error){inform('Madelung Ewald: '+error.message);}
+ };
  $('planeFitAdd').onclick=()=>{
   try{
    const values=$('planeFitAtoms').value.split(/[,\s;]+/).filter(Boolean).map(Number);
@@ -3662,6 +4111,19 @@ function initStage3Analyses(){
  $('planeFitClear').onclick=()=>{stage3Planes=[];renderStage3Planes();build();};
  $('analyzeXrd').onclick=runPowderAnalysis;
  $('xrdExport').onclick=()=>{if(lastXrd)download('xrd_hkl.csv',xrdCsv(lastXrd),'text/csv');else inform('Önce XRD hesaplayın.');};
+ $('xrdMapAdd').onclick=()=>{
+  try{
+   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+   const kind=$('xrdMapKind').value,scattering=$('xrdScattering').value;
+   const g=modelFourierMap(state.cell,sites,{kind,scattering,
+    maxIndex:Number($('xrdMapIndex').value),size:Number($('xrdMapSize').value)});
+   addVolumeDataset(g,kind==='patterson'?'Model Patterson '+scattering:'Model Fourier '+scattering);
+   lastVolumePeaks=null;$('volumePeakResults').textContent='Yeni alan için tepe araması yapılmadı.';
+   if($('volumeMode').value==='off')$('volumeMode').value='both';
+   volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
+   setRightSidebarTab('volume');
+  }catch(error){inform('Model Fourier/Patterson: '+error.message);}
+ };
  refreshStage3Atoms();
 }
 
@@ -4115,6 +4577,67 @@ function xyzData(text){
  sites.forEach((s,i)=>{s.x=(coords[i][0]-min[0]+2)/span[0];s.y=(coords[i][1]-min[1]+2)/span[1];s.z=(coords[i][2]-min[2]+2)/span[2];});
  return {name:l[1]?.trim()||'XYZ molekülü',detail:'XYZ · yapay kutu içine yerleştirilmiş atomlar',cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},sites,warning:'XYZ dosyasında örgü/simetri bilgisi yoktur. Görselleştirmek için atomların etrafına 2 Å boşluklu yapay ortorombik hücre oluşturuldu.'};
 }
+/* PDB crystallographic subset: CRYST1, first MODEL, ATOM/HETATM and ANISOU.
+   Residue/chain chemistry and macromolecular topology are not reconstructed. */
+function pdbData(text){
+ const lines=String(text).replace(/\r/g,'').split('\n'),atomRows=[],anisou=new Map();
+ let cell=null,inModel=false,seenModel=false;
+ const extraModels=lines.filter(line=>line.startsWith('MODEL ')).length>1;
+ const cryst=lines.find(line=>line.startsWith('CRYST1'));
+ if(cryst){
+  const nums=[[6,15],[15,24],[24,33],[33,40],[40,47],[47,54]].map(([a,b])=>Number(cryst.slice(a,b).trim()));
+  cell=validateCell({a:nums[0],b:nums[1],c:nums[2],alpha:nums[3],beta:nums[4],gamma:nums[5]});
+ }
+ for(const line of lines){
+  if(line.startsWith('MODEL ')){if(seenModel)break;seenModel=true;inModel=true;continue;}
+  if(line.startsWith('ENDMDL')){if(inModel)break;continue;}
+  if(line.startsWith('ANISOU')){
+   const serial=line.slice(6,11).trim(),values=[[28,35],[35,42],[42,49],[49,56],[56,63],[63,70]].map(([a,b])=>Number(line.slice(a,b).trim()));
+   if(values.every(Number.isFinite))anisou.set(serial,values.map(v=>v/10000));
+   continue;
+  }
+  if(!line.startsWith('ATOM  ')&&!line.startsWith('HETATM'))continue;
+  const alt=line[16]||' ';
+  if(alt!==' '&&alt!=='A')continue;
+  const atomName=line.slice(12,16),rawSymbol=line.slice(76,78).trim();
+  const fallback=atomName[0]===' '?atomName.trim().match(/[A-Za-z]/)?.[0]:
+   atomName.trim().match(/^[A-Za-z][a-z]?/)?.[0];
+  const symbol=cleanSymbol(rawSymbol||fallback||'X');
+  if(!PERIODIC_SYMBOLS.includes(symbol))throw Error('PDB element sembolü tanınmadı: '+symbol);
+  const xyz=[[30,38],[38,46],[46,54]].map(([a,b])=>Number(line.slice(a,b).trim()));
+  if(xyz.some(v=>!Number.isFinite(v)))throw Error('PDB atom koordinatı geçersiz.');
+  const rawOcc=line.slice(54,60).trim(),occ=rawOcc?Number(rawOcc):1;
+  if(!Number.isFinite(occ)||occ<0||occ>1)throw Error('PDB atom doluluğu geçersiz.');
+  const Biso=Number(line.slice(60,66).trim());
+  atomRows.push({serial:line.slice(6,11).trim(),xyz,
+   site:{symbol,label:(atomName.trim()||symbol)+' '+line.slice(6,11).trim(),occupancy:occ,
+    ...(Number.isFinite(Biso)&&Biso>0?{uIso:Biso/(8*Math.PI*Math.PI)}:{})}});
+  if(atomRows.length>1000)throw Error('PDB için en fazla 1000 atom içe aktarılabilir.');
+ }
+ if(!atomRows.length)throw Error('PDB ATOM/HETATM koordinatları bulunamadı.');
+ let obj;
+ if(!cell){
+  const proxy=[String(atomRows.length),'PDB yapı',...atomRows.map(row=>row.site.symbol+' '+row.xyz.join(' '))].join('\n');
+  obj=xyzData(proxy);
+  obj.sites=obj.sites.map((s,i)=>({...s,...atomRows[i].site}));
+  obj.warning='PDB CRYST1 bulunamadı: koordinatlar yapay kutuda gösteriliyor; periyodiklik varsayılmamalı.';
+ }else{
+  const B=basis(cell);
+  obj={name:'PDB yapı',cell,sites:atomRows.map(row=>{
+   const f=toFrac(new THREE.Vector3(...row.xyz),B);
+   return {...row.site,x:frac(f[0]),y:frac(f[1]),z:frac(f[2])};
+  }),warning:''};
+ }
+ for(let i=0;i<atomRows.length;i++){
+  const values=anisou.get(atomRows[i].serial);
+  if(!values)continue;
+  const [u11,u22,u33,u12,u13,u23]=values;
+  obj.sites[i].adp=adpFromCartesian([[u11,u12,u13],[u12,u22,u23],[u13,u23,u33]],obj.cell);
+ }
+ obj.detail='PDB · '+atomRows.length+' atom · '+(cell?'CRYST1 birim hücresi':'yapay görüntüleme kutusu');
+ if(extraModels)obj.warning+=(obj.warning?' ':'')+'Yalnızca ilk MODEL içe aktarıldı.';
+ return obj;
+}
 function loadProject(json){
  const obj=JSON.parse(json);
  if(!obj||!obj.cell||!Array.isArray(obj.sites))throw Error('Geçersiz proje JSON.');
@@ -4490,6 +5013,7 @@ async function importFile(file){
  const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
  if(name.endsWith('.json'))obj=loadProject(str);
  else if(isCif)obj=cifData(str);
+ else if(name.endsWith('.pdb')||name.endsWith('.ent')||/^(?:HEADER|CRYST1|ATOM  |HETATM|MODEL )/m.test(str))obj=pdbData(str);
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
  if(densityGrid)resetVolume();
@@ -4545,6 +5069,50 @@ function exportPoscar(){
  download('POSCAR',rows.join('\n')+'\n');
 }
 function exportXyz(){const q=[String(atomData.length),state.name+' | visible supercell '+state.rep.join('x')];for(const a of atomData)q.push(a.site.symbol+' '+a.pos.toArray().map(v=>v.toFixed(8)).join(' '));download(safeName(state.name)+'.xyz',q.join('\n')+'\n');}
+function pdbExportText(cell,sites){
+ if(!Array.isArray(sites)||!sites.length||sites.length>1000)throw Error('PDB dışa aktarma 1–1000 atom içindir.');
+ const c=validateCell(cell),B=basis(c);
+ const fixed=(fields)=>{
+  const out=Array(80).fill(' ');
+  for(const [start,width,value] of fields){const valueText=String(value);
+   if(valueText.length>width)throw Error('PDB sabit alanına sığmayan sayı veya etiket: '+valueText);
+   for(let i=0;i<valueText.length;i++)out[start+i]=valueText[i];
+  }
+  return out.join('').trimEnd();
+ };
+ const n=(value,digits,width)=>{
+  if(!Number.isFinite(value))throw Error('PDB sayısal alanı geçersiz.');
+  const text=value.toFixed(digits);
+  if(text.length>width)throw Error('PDB koordinatı/sıcaklık faktörü alan sınırını aşıyor.');
+  return text.padStart(width);
+ };
+ const q=[fixed([[0,6,'CRYST1'],[6,9,n(c.a,3,9)],[15,9,n(c.b,3,9)],[24,9,n(c.c,3,9)],
+  [33,7,n(c.alpha,2,7)],[40,7,n(c.beta,2,7)],[47,7,n(c.gamma,2,7)],[55,11,'P 1']])];
+ sites.forEach((s,i)=>{
+  const sym=cleanSymbol(s.symbol);if(!PERIODIC_SYMBOLS.includes(sym))throw Error('PDB element bilinmiyor: '+sym);
+  const xyz=toCart([frac(s.x),frac(s.y),frac(s.z)],B).toArray();
+  const occ=Number(s.occupancy??1);
+  if(!Number.isFinite(occ)||occ<0||occ>1)throw Error('PDB doluluk geçersiz.');
+  const name=(sym.length===1?' '+sym:sym).padEnd(4).slice(0,4),serial=String(i+1).padStart(5);
+  const U=s.adp?adpToCartesian(s.adp,c):null;
+  const uiso=Number.isFinite(s.uIso)?s.uIso:U?(U[0][0]+U[1][1]+U[2][2])/3:0;
+  const atomFields=[[0,6,'HETATM'],[6,5,serial],[12,4,name],[17,3,'MOL'],[21,1,'A'],[22,4,'   1'],
+   [30,8,n(xyz[0],3,8)],[38,8,n(xyz[1],3,8)],[46,8,n(xyz[2],3,8)],
+   [54,6,n(occ,2,6)],[60,6,n(8*Math.PI*Math.PI*uiso,2,6)],[76,2,sym.padStart(2)]];
+  q.push(fixed(atomFields));
+  if(U){
+   const tensor=[U[0][0],U[1][1],U[2][2],U[0][1],U[0][2],U[1][2]];
+   const ufields=[[0,6,'ANISOU'],...atomFields.filter(f=>[6,12,17,21,22,76].includes(f[0]))];
+   tensor.forEach((v,j)=>{const scaled=Math.round(v*10000);ufields.push([28+7*j,7,String(scaled).padStart(7)]);});
+   q.push(fixed(ufields));
+  }
+ });
+ return q.concat('END').join('\n')+'\n';
+}
+function exportPdb(){
+ const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+ download(safeName(state.name)+'.pdb',pdbExportText(state.cell,sites),'chemical/x-pdb');
+}
 function screenshot(){renderer.render(scene,camera);const cv=document.createElement('canvas');cv.width=renderer.domElement.width;cv.height=renderer.domElement.height;const ctx=cv.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(renderer.domElement,0,0);cv.toBlob(blob=>{if(blob)download(safeName(state.name)+'.png',blob);else inform('PNG kaydı oluşturulamadı.');},'image/png');}
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
@@ -5302,10 +5870,10 @@ function initLibrary(){
 }
 
 
-const EXPORT_FORMATS=['project','cif','poscar','xyz','png'];
+const EXPORT_FORMATS=['project','cif','poscar','xyz','pdb','png'];
 let exportFocusBefore=null;
 function exportFunction(format){
- const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,png:screenshot};
+ const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot};
  if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
  return functions[format];
 }
