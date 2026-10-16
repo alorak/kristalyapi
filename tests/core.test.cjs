@@ -54,6 +54,7 @@ const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJpegBytes});',context);
+vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
@@ -131,6 +132,51 @@ test('A4 PDF export includes JPEG XObject, stream offsets and fitting page dimen
  const portrait=api.pdfJpegBytes(800,1200,pseudoJpeg);
  assert.match(Buffer.from(portrait.bytes).toString('latin1'),/\/MediaBox \[0 0 595 842\]/);
  assert.throws(()=>api.pdfJpegBytes(1200,800,new Uint8Array(6)),/JPEG/);
+});
+test('vector PDF/EPS draws real Bezier geometry, no JPEG/image XObjects',()=>{
+ const items=[
+  {type:'circle',x:200,y:120,r:20,fill:'#cc6644',opacity:1,depth:2},
+  {type:'line',x1:1,y1:2,x2:50,y2:60,width:3,stroke:'#1188aa',opacity:.6,depth:5},
+  {type:'triangle',points:[[20,30],[50,30],[25,50]],fill:'#aabbcc',opacity:.4,depth:8},
+  {type:'ellipse',x:130,y:100,rx:16,ry:9,angle:30,fill:'#226644',opacity:.7,depth:3},
+  {type:'label',x:200,y:80,text:'C(1)',opacity:1,depth:1}
+ ];
+ const pdf=api.vectorPdfBytes(items,480,330),value=Buffer.from(pdf).toString('latin1');
+ assert.match(value,/^%PDF-1\.4/);assert.match(value,/\/MediaBox \[0 0 842 595\]/);
+ assert.match(value,/\/ExtGState/);assert.match(value,/\/BaseFont \/Helvetica/);
+ assert.match(value,/ c\n/,'circles/ellipses must be cubic vector paths');
+ assert.match(value,/Tj ET/);assert.doesNotMatch(value,/\/DCTDecode|\/Subtype \/Image|\/XObject/);
+ const xref=Number(value.match(/startxref\n(\d+)/)[1]);assert.equal(value.slice(xref,xref+4),'xref');
+ const eps=api.vectorEpsText(items,480,330);
+ assert.match(eps,/^%!PS-Adobe-3\.0 EPSF-3\.0/);
+ assert.match(eps,/%%BoundingBox: 0 0 842 595/);assert.match(eps,/curveto/);
+ assert.match(eps,/setrgbcolor/);assert.match(eps,/stringwidth/);
+ assert.doesNotMatch(eps,/colorimage|image\s*$/m);
+ assert.throws(()=>api.vectorPdfBytes([{...items[0],fill:'javascript:alert(1)'}],480,330),/rengi/);
+ assert.throws(()=>api.vectorEpsText(items,0,330),/boyutu/);
+});
+test('molecule and periodic crystal bond networks preserve different boundary semantics',()=>{
+ const cell={a:10,b:10,c:10,alpha:90,beta:90,gamma:90};
+ const square=[[0,0],[1.42,0],[1.42,1.42],[0,1.42]].map(([x,y],i)=>({symbol:'C',label:'C'+i,x:(x+2)/10,y:(y+2)/10,z:.5}));
+ const finite=api.bondNetwork(square,cell,{periodic:false,cut:2,auto:true});
+ assert.equal(finite.edges.length,4);assert.equal(finite.components.length,1);assert.equal(finite.cycleRank,1);
+ assert.equal(finite.periodicEdges,0);
+ assert.equal(api.bondNetworkCsv(finite,square).trim().split('\n').length,5);
+ const one=[{symbol:'Si',x:0,y:0,z:0}],tiny={a:2,b:2,c:2,alpha:90,beta:90,gamma:90};
+ const periodic=api.bondNetwork(one,tiny,{periodic:true,cut:2.1,auto:false});
+ assert.equal(periodic.edges.length,3,'simple cubic neighbors form three independent undirected periodic edge classes');
+ assert.equal(periodic.periodicEdges,3);assert.equal(periodic.cycleRank,null);
+ assert.equal(api.bondNetwork(one,tiny,{periodic:false,cut:2.1,auto:false}).edges.length,0);
+ assert.equal(api.bondIsPeriodic('auto',true),false);assert.equal(api.bondIsPeriodic('auto',false),true);
+ assert.equal(api.bondIsPeriodic('periodic',true),true);
+ assert.throws(()=>api.bondIsPeriodic('invalid',true),/modu/);
+ assert.throws(()=>api.bondNetwork(Array(301).fill(one[0]),cell),/300/);
+ assert.equal(api.vrmlEscape('A "B"\nC'),'A \\"B\\" C');
+ const water=api.xyzData('3\nH2O\nO 0 0 0\nH .9584 0 0\nH -.239 0 .927');
+ assert.equal(water.nonPeriodic,true);
+ const restored=api.loadProject(JSON.stringify({...water,bondMode:'molecule'}));
+ assert.equal(restored.nonPeriodic,true);assert.equal(restored.bondMode,'molecule');
+ assert.throws(()=>api.loadProject(JSON.stringify({...water,bondMode:'bad-mode'})),/bağ arama modu/);
 });
 test('SVG vector export serializes projected atoms, bonds and polygon faces without raster images',()=>{
  const shapes=[
@@ -907,7 +953,7 @@ test('preset favorites store only allowlisted structure keys',()=>{
 test('Save dialog offers offline STL and binary glTF 3D exports alongside existing formats',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','stl','glb']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');

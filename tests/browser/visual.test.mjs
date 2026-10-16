@@ -34,6 +34,9 @@ window.__visualTest={
  instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==='bonds').length}),
  bounds:()=>state.bounds.map(a=>[...a]),
  morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
+ moleculeBonds:()=>{const water=xyzData('3\\nH2O\\nO 0 0 0\\nH .9584 0 0\\nH -.239 0 .927');
+  const graph=bondNetwork(water.sites,water.cell,{periodic:bondIsPeriodic('auto',water.nonPeriodic),cut:1.5,auto:true});
+  return {nonPeriodic:water.nonPeriodic,edges:graph.edges.length,components:graph.components.length,cycleRank:graph.cycleRank};},
  polyStats:()=>({center:state.poly,centers:[...(state.polyCenters||[])],meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
   edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
   count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
@@ -138,7 +141,9 @@ try{
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  page.on('request',request=>{if(/cdn\.jsdelivr\.net|unpkg\.com/.test(request.url()))cdnRequests.push(request.url());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ try{
+  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ }catch(error){console.error('Browser startup diagnostics:',{errors,consoleErrors,cdnRequests,renderStatus:await page.locator('#renderStatus').textContent()});throw error;}
  // English is the default; Turkish remains selectable and persisted.
  await page.waitForFunction(()=>document.documentElement.lang==='en');
  assert.equal(await page.locator('#libraryNav').textContent(),'Library');
@@ -155,6 +160,30 @@ try{
  assert.match(svgSource,/<circle/,'SVG export must contain real vector atoms');
  assert.match(svgSource,/<path/,'SVG export must contain lattice/bond vector strokes');
  assert.doesNotMatch(svgSource,/<image|data:image|foreignObject/,'SVG must not embed a raster screenshot');
+ const water=await page.evaluate(()=>window.__visualTest.moleculeBonds());
+ assert.deepEqual(water,{nonPeriodic:true,edges:2,components:1,cycleRank:0},'XYZ water must be a finite two-bond molecule');
+ await page.locator('#saveBtn').click();
+ const [vectorPdfDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="pdf-vector"]').click()]);
+ const vectorPdf=await fs.readFile(await vectorPdfDownload.path());
+ assert.equal(vectorPdf.toString('ascii',0,8),'%PDF-1.4');
+ assert.ok(vectorPdf.includes(Buffer.from('/ExtGState')));
+ assert.ok(vectorPdf.includes(Buffer.from(' c\n')),'PDF must contain Bezier path operators');
+ assert.ok(!vectorPdf.includes(Buffer.from('/Subtype /Image')),'vector PDF must contain no raster image');
+ await fs.writeFile(path.join(artifacts,'print-export-vector.pdf'),vectorPdf);
+ await page.locator('#saveBtn').click();
+ const [epsDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="eps"]').click()]);
+ const eps=await fs.readFile(await epsDownload.path(),'utf8');
+ assert.match(eps,/^%!PS-Adobe-3\.0 EPSF-3\.0/);
+ assert.match(eps,/curveto/);
+ await fs.writeFile(path.join(artifacts,'print-export-vector.eps'),eps);
+ await page.locator('#saveBtn').click();
+ const [vrmlDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="vrml"]').click()]);
+ const vrml=await fs.readFile(await vrmlDownload.path(),'utf8');
+ assert.match(vrml,/^#VRML V2\.0 utf8/);
+ assert.match(vrml,/geometry Sphere \{ radius 1 \}/);
+ assert.match(vrml,/geometry Cylinder \{ radius 1 height 1 \}/);
+ assert.match(vrml,/geometry IndexedLineSet/);
+ await fs.writeFile(path.join(artifacts,'scene-export.wrl'),vrml);
  assert.equal(await page.locator('#morphMode').inputValue(),'point');
  assert.equal((await page.evaluate(()=>window.__visualTest.morphOrbit())).length,4,'tetragonal point group must expand {100} to four reciprocal normals');
  await page.locator('#saveBtn').click();

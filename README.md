@@ -12,7 +12,7 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 2. Üstteki **Aç** düğmesiyle **favoriler**, **örnek yapılar** veya **bilgisayarındaki CIF/PDB vb. dosyalar** arasından seçin. Aynı seçenekler Kütüphane sekmesinde de mevcuttur.
 3. Sol panelde birim hücreyi, süperhücreyi ve atom konumlarını düzenleyin; alt çubuktan görünümü değiştirin.
 4. Sağdaki simgelerden ölçüm, BVS, XRD, Miller düzlemleri veya diğer analizleri açın.
-5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ, PDB, **vektörel SVG**, **STL**, **glTF 2.0 (.glb)** veya **1×–4× yüksek çözünürlüklü PNG** dışa aktarın.
+5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ, PDB, **vektörel SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF veya **1×–4× yüksek çözünürlüklü PNG** dışa aktarın.
 
 **Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
 
@@ -60,7 +60,7 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 | **Yapı faktörü / toz XRD ve nötron** | IT92 nötr atom X-ışını `f₀(s)` veya nötron koherent `b`; Bragg kesiminden türetilen karşı-uzay taraması, `F(hkl)`, Bragg açıları, LP / Lorentz seçeneği, absorplayıcı element uyarısı; ampirik pseudo-Voigt/Caglioti toz profili, Kα1/Kα2 ikilisi ve ölçüm CSV karşılaştırması; `d_min` + FFT ile model Fourier/Patterson; fazı olan SHELX `.fcf` için `Fo`/`Fo−Fc` haritaları. |
 | **Hacimsel fizik verileri** | CUBE, CHGCAR, XSF; CHGCAR kollineer/nonkollineer spin bileşenleri; kaynak nicelik/birim seçimi, yoğunluk/potansiyel normalizasyonu; seçilen alanın CUBE/XSF dışa aktarımı; çoklu izoyüzey, güvenli `A + k₁B + k₂C` fark alanı ve `∫Δρ dV`, ekstremum araması, Miller `(hkl)` kesitleri ve yaklaşık Voronoi integrali. |
 | **Nesneler ve katmanlar** | Atom, bağ, hücre, etiket, Miller ve hacimsel katmanların görünürlük, opaklık ve sırası. |
-| **Atom türlerine göre bağlar** | Element çiftine özel min–maks bağ mesafeleri, geometrik öneriler. |
+| **Atom türlerine göre bağlar** | Element çiftine özel min–maks mesafeler ve geometrik öneriler; otomatik XYZ/PDB molekül veya CIF/POSCAR periyodik bağ modu, 300 bağımsız atoma kadar bağlantı bileşenleri, çevrimsel bağ fazlalığı ve öteleme indisli bağ CSV çıktısı. |
 | **Örgü dönüşümü** | 3×3 baz dönüşümleri, primitive/konvansiyonel hücre, Niggli ve kısa baz, Moyo simetri analizi. |
 | **Miller düzlemleri ve morfoloji** | Bağımsız düzlem katmanları, kesit/slab, `{hkl}` yüz aileleri ve geometrik morfoloji. |
 | **Kristalografik simetri** | Uzay grubu/setting, simetri işlemleri, Wyckoff eşleşmeleri ve simetriyle genişletme. |
@@ -190,7 +190,7 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - **P1 — Fiziksel hesaplamalar (model + deneysel FCF altkümesi):** IT92 ve doğal nötron `b`, model Fourier/Patterson, fazlı SHELX `.fcf` Fo/Fo−Fc FFT, örneklenmiş Voronoi ve iyonik Ewald; ampirik toz profili/ölçüm CSV; CUBE/XSF hacimsel dışa aktarımı mevcut. **Kalan:** `.mtz` ve fazsız FCF çözümleri, anomal saçılma, izotop çözünürlüğü, gerçek cihaz profili inceltmesi/RIETAN-FP eşdeğeri, Bader analizi ve geniş yakınsama benchmarkları.
 - **P1 — Dosya ve simetri kapsamı:** PDB/ENT kristal koordinatları ve ANISOU, CHGCAR spin ızgaraları, sınırlı mCIF moment/simetri görselleştirmesi eklendi. **Kalan:** `.vesta` projeleri, geniş biyomoleküler/kuantum kimyası biçimleri, tam BNS/manyetik süperuzay grupları, SAXIS düzeltmesi ve ayrıntılı setting/orijin dönüşümleri.
 - **P2 — Morfoloji ve sahne:** Kübik olmayan `{hkl}` için tam nokta grubu eşdeğerleri, çoklu faz CIF dışa aktarımı ve VESTA düzeyinde nesne/per-site stil esnekliği eksik.
-- **P2 — Yayın/3B dışa aktarım:** 1×–4× ve en fazla **24 MP** PNG, şeffaf zemin, **vektörel yapı SVG**, **kayıpsız RGB TIFF** (150/300/600 DPI baskı metaverisi), **A4 raster PDF**, **STL** ve **glTF (.glb)** var. PDF bir raster görüntü yerleştirir; vektör grafik için SVG kullanılır. Ancak VRML, WebGL ışık/depth tamponuyla birebir vektör eşdeğeri, manifold STL birleşimi, hacimsel izoyüzeylerin 3B çıktısı ve büyük-atomlu sahnelerde garantili yüksek FPS henüz yok.
+- **P2 — Yayın/3B dışa aktarım:** 1×–4× ve en fazla **24 MP** PNG, şeffaf zemin, **vektörel yapı SVG**, **kayıpsız RGB TIFF** (150/300/600 DPI baskı metaverisi), **A4 raster PDF**, **gerçek Bezier tabanlı vektör PDF/EPS**, **STL**, **renkli VRML97 (.wrl)** ve **glTF (.glb)** var. Vektör çıktıları hacimsel alanı içermez, EPS saydamlığı beyaza düzleştirir. Ancak WebGL ışık/depth tamponuyla birebir vektör eşdeğeri, manifold STL birleşimi, hacimsel izoyüzeylerin 3B çıktısı ve büyük-atomlu sahnelerde garantili yüksek FPS henüz yok.
 
 Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/) ve [geliştirme yol haritası](ROADMAP.md).
 

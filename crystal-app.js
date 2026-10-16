@@ -100,7 +100,7 @@ function validatedVisualSite(site){
  if(site.polyOpacity!==undefined){const n=Number(site.polyOpacity);if(!Number.isFinite(n)||n<.05||n>1)throw Error('Çokyüzlü opaklığı geçersiz.');out.polyOpacity=n;}
  return out;
 }
-let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},planeLayers:[],rep:[2,2,2],bounds:DEFAULT_BOUNDS.map(v=>v.slice()),style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyCenters:[],polyColor:'#54a1db',polyOpacity:.25,polyCut:0,polyNeighbors:12,warning:''};
+let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',bondMode:'auto',nonPeriodic:false,plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},planeLayers:[],rep:[2,2,2],bounds:DEFAULT_BOUNDS.map(v=>v.slice()),style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyCenters:[],polyColor:'#54a1db',polyOpacity:.25,polyCut:0,polyNeighbors:12,warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomRender=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer,measurementHistory=[];
 // InstancedMesh reduces draw calls; these are safety caps, not guaranteed FPS.
 const MAX_ATOMS=20000,MAX_BONDS=65000,MAX_POLYHEDRA=2400;
@@ -1473,6 +1473,56 @@ function bondRange(a,b,rules,cut,auto=false){
  const estimate=1.2*((RADII[a]||1.1)+(RADII[b]||1.1));
  return [.35,auto?Math.min(cut,estimate):cut];
 }
+function bondIsPeriodic(mode='auto',nonPeriodic=false){
+ if(!['auto','molecule','periodic'].includes(mode))throw Error('Geçersiz bağ arama modu.');
+ return mode==='periodic'||mode==='auto'&&!nonPeriodic;
+}
+/* Explicit cell-graph analysis. Edges retain image translations so an
+   infinite periodic network is not confused with a finite molecule/cage.
+   Cyclomatic rank is reported only for finite, nonperiodic graphs. */
+function bondNetwork(sites,cell,{periodic=false,rules=new Map(),cut=2.65,auto=true}={}){
+ if(!Array.isArray(sites)||sites.length<1||sites.length>300)throw Error('Bağ analizi 1–300 bağımsız atom içindir.');
+ const B=basis(cell),f=sites.map(s=>[+s.x,+s.y,+s.z]);
+ if(f.some(v=>v.some(x=>!Number.isFinite(x))))throw Error('Bağ analizi atom koordinatı geçersiz.');
+ const edges=[],parent=sites.map((_,i)=>i),find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+ const shifts=periodic?Array.from({length:27},(_,n)=>[Math.floor(n/9)-1,Math.floor(n/3)%3-1,n%3-1]):[[0,0,0]];
+ for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
+  const [min,max]=bondRange(sites[i].symbol,sites[j].symbol,rules,cut,auto);
+  for(const shift of shifts){
+   if(i===j&&(shift.every(x=>x===0)||shift.find(x=>x!==0)<0))continue;
+   if(!periodic&&i===j)continue;
+   const delta=[0,1,2].map(k=>f[j][k]-f[i][k]+shift[k]),distance=toCart(delta,B).length();
+   if(distance<Math.max(min,1e-5)-1e-6||distance>max+1e-6)continue;
+   if(edges.length>=20000)throw Error('Bağ ağı 20.000 kenar sınırını aşıyor.');
+   edges.push({i,j,shift,distance});
+   const a=find(i),b=find(j);if(a!==b)parent[a]=b;
+  }
+ }
+ const groups=new Map();for(let i=0;i<sites.length;i++){
+  const parentId=find(i);if(!groups.has(parentId))groups.set(parentId,[]);groups.get(parentId).push(i);
+ }
+ const components=[...groups.values()].sort((a,b)=>b.length-a.length);
+ return {periodic,edges,components,periodicEdges:edges.filter(e=>e.shift.some(n=>n!==0)).length,
+  cycleRank:periodic?null:edges.length-sites.length+components.length};
+}
+function bondNetworkCsv(network,sites){
+ const rows=['atom_i,atom_j,element_i,element_j,shift_a,shift_b,shift_c,distance_angstrom'];
+ for(const edge of network.edges){
+  rows.push([edge.i+1,edge.j+1,sites[edge.i].symbol,sites[edge.j].symbol,...edge.shift,edge.distance.toFixed(6)].join(','));
+ }
+ return rows.join('\n')+'\n';
+}
+function analyzeBonds({saveCsv=false}={}){
+ try{
+  const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,300):state.sites;
+  const periodic=bondIsPeriodic(state.bondMode,state.nonPeriodic),network=bondNetwork(sites,state.cell,
+   {periodic,rules:parseBondRules(state.bondRules),cut:state.cut,auto:state.autoBond});
+  const largest=network.components[0]?.length||0;
+  $('bondTopologySummary').textContent=sites.length+' atom · '+network.edges.length+' bağ · '+network.components.length+
+   ' bağlı bileşen · en büyüğü '+largest+' atom · '+(periodic?network.periodicEdges+' hücreler arası bağ':'çevrimsel bağ fazlalığı '+network.cycleRank);
+  if(saveCsv)download(safeName(state.name)+'_bag-agi.csv',bondNetworkCsv(network,sites),'text/csv;charset=utf-8');
+ }catch(error){$('bondTopologySummary').textContent='Bağ analizi: '+error.message;if(saveCsv)throw error;}
+}
 
 /* Periodic first-neighbor coordination: each periodic image is a separate
    geometric neighbor (NaCl has six distinct ion images, not one site).
@@ -2677,7 +2727,8 @@ function build(){
   const arrow=new THREE.ArrowHelper(dir,item.pos.clone(),length,0xd7698b,length*.28,Math.max(.07,length*.13));
   addLayerObject(arrow,'magnetic');magneticArrows++;
  }
- const rules=parseBondRules(state.bondRules);const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
+ const rules=parseBondRules(state.bondRules),bondPeriodic=bondIsPeriodic(state.bondMode,state.nonPeriodic);
+ const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
  const key=(x,y,z)=>x+','+y+','+z;
  for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
  const adjacency=Array.from({length:entry.length},()=>[]);
@@ -2687,6 +2738,7 @@ function build(){
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
    for(const j of buckets.get(key(b[0]+x,b[1]+y,b[2]+z))||[]){
     if(j<=i)continue;
+    if(!bondPeriodic&&[0,1,2].some(k=>Math.floor(entry[i].frac[k]+1e-7)!==Math.floor(entry[j].frac[k]+1e-7)))continue;
     const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut,state.autoBond);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
     if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
     bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
@@ -2697,7 +2749,8 @@ function build(){
   const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x96a2ae:0x98a5b0,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
   const radius=state.style==='wire'?.012:state.style==='stick'?.095:.055;
   const defaultBounds=state.bounds.every(([a,b])=>a===0&&b===1);
-  const periodic=state.plane.slab||!defaultBounds?null:periodicBondSegments(physical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
+  const periodic=state.plane.slab||!defaultBounds||!bondPeriodic?null:
+   periodicBondSegments(physical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
   const segments=periodic?periodic.segments:bondPairs.filter(([i,j])=>atomRender[i].visible&&atomRender[j].visible).map(([i,j])=>[entry[i].pos,entry[j].pos]);
   if(segments.length)addInstancedCylinders(segments,radius,bondMat,'bonds');
   else bondMat.dispose();
@@ -3712,6 +3765,7 @@ function syncControls(){
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
  for(let axis=0;axis<3;axis++)for(let side=0;side<2;side++)$('bound'+['X','Y','Z'][axis]+(side?'Max':'Min')).value=state.bounds[axis][side];
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
+ $('bondMode').value=state.bondMode||'auto';$('bondTopologySummary').textContent='Bağ ağı analizi henüz çalıştırılmadı.';
  $('adpLevel').value=String(state.adpLevel||50);
  $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
  $('polyColor').value=visualHex(state.polyColor,'#54a1db');$('polyOpacity').value=state.polyOpacity??.25;
@@ -3900,7 +3954,7 @@ function loadPreset(key){
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
  state.cifMeta={};state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
  state.cut=ex.cut;state.warning='';state.poly='';state.polyCenters=[];state.polyCut=0;state.polyNeighbors=12;state.polyColor='#54a1db';state.polyOpacity=.25;state.rep=[1,1,1];state.bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());
- state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
+ state.bondRules='';state.bondMode='auto';state.nonPeriodic=false;state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
  state.morphology=[];state.morphVisible=false;
  state.sgNumber=({silicon:227,diamond:227,nacl:225,cscl:221,fcc:225,perovskite:221,graphite:194})[key]||1;
@@ -3914,7 +3968,7 @@ function createEmptyStructure(){
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];state.bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());
  state.poly='';state.polyCenters=[];state.polyColor='#54a1db';state.polyOpacity=.25;state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
- state.symmetryEnabled=false;state.bondRules='';state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
+ state.symmetryEnabled=false;state.bondRules='';state.bondMode='auto';state.nonPeriodic=false;state.cut=2.65;state.bonds=true;state.autoBond=true;state.style='ball';
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
  state.morphology=[];state.morphVisible=false;
  syncControls();build();fit();
@@ -4485,7 +4539,7 @@ function xyzData(text){
  const sites=[],coords=[];for(let i=0;i<n;i++){const p=(l[i+2]||'').trim().split(/\s+/);if(p.length<4)throw Error('XYZ satırı eksik: '+(i+3));const xyz=p.slice(1,4).map(Number);if(xyz.some(v=>!Number.isFinite(v)))throw Error('XYZ koordinatı sayısal değil.');coords.push(xyz);sites.push({symbol:cleanSymbol(p[0]),label:cleanSymbol(p[0])+(i+1),occupancy:1});}
  const min=[0,1,2].map(j=>Math.min(...coords.map(p=>p[j]))),max=[0,1,2].map(j=>Math.max(...coords.map(p=>p[j]))),span=min.map((v,j)=>Math.max(max[j]-v+4,6));
  sites.forEach((s,i)=>{s.x=(coords[i][0]-min[0]+2)/span[0];s.y=(coords[i][1]-min[1]+2)/span[1];s.z=(coords[i][2]-min[2]+2)/span[2];});
- return {name:l[1]?.trim()||'XYZ molekülü',detail:'XYZ · yapay kutu içine yerleştirilmiş atomlar',cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},sites,warning:'XYZ dosyasında örgü/simetri bilgisi yoktur. Görselleştirmek için atomların etrafına 2 Å boşluklu yapay ortorombik hücre oluşturuldu.'};
+ return {name:l[1]?.trim()||'XYZ molekülü',detail:'XYZ · yapay kutu içine yerleştirilmiş atomlar',cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},sites,nonPeriodic:true,warning:'XYZ dosyasında örgü/simetri bilgisi yoktur. Görselleştirmek için atomların etrafına 2 Å boşluklu yapay ortorombik hücre oluşturuldu.'};
 }
 /* PDB crystallographic subset: CRYST1, first MODEL, ATOM/HETATM and ANISOU.
    Residue/chain chemistry and macromolecular topology are not reconstructed. */
@@ -4561,7 +4615,7 @@ function pdbData(text){
   obj.warning='PDB CRYST1 bulunamadı: koordinatlar yapay kutuda gösteriliyor; periyodiklik varsayılmamalı.';
  }else{
   const B=basis(cell);
-  obj={name:'PDB yapı',cell,sites:atomRows.map(row=>{
+  obj={name:'PDB yapı',cell,nonPeriodic:false,sites:atomRows.map(row=>{
    const f=toFrac(new THREE.Vector3(...row.xyz),B);
    return {...row.site,x:frac(f[0]),y:frac(f[1]),z:frac(f[2])};
   }),warning:spaceGroupWarning,
@@ -4622,7 +4676,9 @@ function loadProject(json){
  const polyOpacity=Number(obj.polyOpacity??.25);
  if(!Number.isFinite(polyOpacity)||polyOpacity<.05||polyOpacity>1)throw Error('Kaydedilen çokyüzlü opaklığı geçersiz.');
  const plane={h,k,l,offset,thickness,visible:!!source.visible,repeat:source.repeat!==false,slab:!!source.slab};
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,bounds,style,cut,autoBond:obj.autoBond!==false,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,morphology,morphVisible:!!obj.morphVisible,overlays,poly,polyCenters,polyColor:visualHex(obj.polyColor,'#54a1db'),polyOpacity,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
+ const bondMode=obj.bondMode===undefined?'auto':String(obj.bondMode);
+ bondIsPeriodic(bondMode,!!obj.nonPeriodic);
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,bounds,style,cut,autoBond:obj.autoBond!==false,bondMode,nonPeriodic:!!obj.nonPeriodic,sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,morphology,morphVisible:!!obj.morphVisible,overlays,poly,polyCenters,polyColor:visualHex(obj.polyColor,'#54a1db'),polyOpacity,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
   adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
   layers:normalizedLayerState(obj.layers),layerOrder:normalizedLayerOrder(obj.layerOrder),
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
@@ -4727,7 +4783,7 @@ function lastCrystalPayload(current){
   format:'kristalyapi-last-v2',name:current.name,detail:current.detail,
   cell:current.cell,sites:current.sites,rep:current.rep,style:current.style,
   bounds:current.bounds||DEFAULT_BOUNDS,
-  cut:current.cut,autoBond:current.autoBond,sgNumber:current.sgNumber,
+  cut:current.cut,autoBond:current.autoBond,bondMode:current.bondMode||'auto',nonPeriodic:!!current.nonPeriodic,sgNumber:current.sgNumber,
   sgSetting:current.sgSetting,symmetryEnabled:current.symmetryEnabled,
   bondRules:current.bondRules,plane:current.plane,planeLayers:current.planeLayers||[],
   morphology:current.morphology||[],morphVisible:!!current.morphVisible,overlays:current.overlays||[],
@@ -4986,7 +5042,7 @@ async function importFile(file){
  const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
  obj=structureImportData(str,name);
  if(densityGrid)resetVolume();
- state={...state,...obj,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  if(isCif&&name.endsWith('.json')===false)state.cifOriginal=originalCifRecord(state,str);
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
@@ -5355,6 +5411,122 @@ function exportSvg(){
  download(safeName(state.name)+'.svg',svg,'image/svg+xml;charset=utf-8');
  if(densityGrid&&volumeView.mode!=='off')inform('SVG yalnız vektörel yapı katmanlarını içerir; hacimsel alanlar PNG ile dışa aktarılabilir.');
 }
+/* PDF and EPS share the same camera-projected vector primitives as SVG. All
+   paths (including spherical highlights) remain editable vector geometry. */
+function vectorPageLayout(width,height){
+ if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>8192||height>8192)
+  throw Error('Vektör sayfa boyutu geçersiz.');
+ const [pageWidth,pageHeight]=width>=height?[842,595]:[595,842];
+ const scale=Math.min((pageWidth-56)/width,(pageHeight-56)/height);
+ return {pageWidth,pageHeight,scale,x:(pageWidth-width*scale)/2,y:(pageHeight-height*scale)/2};
+}
+function vectorEllipse(x,y,rx,ry,angle=0){
+ const t=angle*Math.PI/180,c=Math.cos(t),s=Math.sin(t),k=.5522847498307936;
+ const point=(a,b)=>[x+c*a-s*b,y+s*a+c*b];
+ return {start:point(rx,0),curves:[
+  [point(rx,k*ry),point(k*rx,ry),point(0,ry)],
+  [point(-k*rx,ry),point(-rx,k*ry),point(-rx,0)],
+  [point(-rx,-k*ry),point(-k*rx,-ry),point(0,-ry)],
+  [point(k*rx,-ry),point(rx,-k*ry),point(rx,0)]
+ ]};
+}
+function vectorHighlightColor(color){
+ return '#'+[1,3,5].map(i=>Math.round(parseInt(color.slice(i,i+2),16)*.7+255*.3).toString(16).padStart(2,'0')).join('');
+}
+function vectorPagePrimitives(items,width,height){
+ vectorPageLayout(width,height);
+ if(!Array.isArray(items)||items.length>60000)throw Error('Vektör öğesi sınırı aşıldı.');
+ for(const item of items){
+  if(!['circle','ellipse','triangle','line','label'].includes(item.type))throw Error('Bilinmeyen vektör öğesi.');
+  const coords=item.type==='line'?[item.x1,item.y1,item.x2,item.y2,item.width]:
+   item.type==='triangle'?item.points?.flat():[item.x,item.y,...(item.type==='circle'?[item.r]:item.type==='ellipse'?[item.rx,item.ry,item.angle]:[])];
+  if(!coords||coords.some(v=>!Number.isFinite(v))||!Number.isFinite(item.depth)||
+   !Number.isFinite(item.opacity??1)||(item.opacity??1)<0||(item.opacity??1)>1)
+   throw Error('Vektör koordinatı veya opaklığı geçersiz.');
+  if(item.type!=='label'&&!/^#[a-f0-9]{6}$/i.test(item.stroke||item.fill||''))throw Error('Vektör rengi geçersiz.');
+ }
+ return items.slice().sort((a,b)=>b.depth-a.depth);
+}
+function vectorPdfBytes(items,width,height){
+ const layout=vectorPageLayout(width,height),shapes=vectorPagePrimitives(items,width,height);
+ const n=value=>Number(value.toFixed(4)),rgb=color=>[1,3,5].map(i=>n(parseInt(color.slice(i,i+2),16)/255)).join(' ');
+ const path=ellipse=>{
+  const data=[n(ellipse.start[0])+' '+n(ellipse.start[1])+' m'];
+  for(const curve of ellipse.curves)data.push(curve.map(pt=>n(pt[0])+' '+n(pt[1])).join(' ')+' c');
+  return data.join('\n')+'\nh';
+ };
+ const alphas=[...new Set(shapes.map(p=>Math.round((p.opacity??1)*100)))].sort((a,b)=>a-b),alphaId=new Map(alphas.map((a,i)=>[a,'GS'+i]));
+ const rows=['q',n(layout.scale)+' 0 0 '+n(-layout.scale)+' '+n(layout.x)+' '+n(layout.pageHeight-layout.y)+' cm',
+  '0 0 '+width+' '+height+' re W n','1 J 1 j'];
+ for(const p of shapes){
+  const fill=p.fill||'#203047',alpha=alphaId.get(Math.round((p.opacity??1)*100));
+  rows.push('q /'+alpha+' gs');
+  if(p.type==='line')rows.push(rgb(p.stroke)+' RG',n(p.width)+' w',n(p.x1)+' '+n(p.y1)+' m '+n(p.x2)+' '+n(p.y2)+' l S');
+  else if(p.type==='triangle')rows.push(rgb(fill)+' rg',p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'l':'m')).join(' ')+' h f');
+  else if(p.type==='label'){
+   const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
+   rows.push('0.125 0.188 0.278 rg','BT /F1 12 Tf 1 0 0 -1 '+n(p.x-3*label.length)+' '+n(p.y)+' Tm ('+label+') Tj ET');
+  }else{
+   const e=p.type==='circle'?vectorEllipse(p.x,p.y,p.r,p.r):vectorEllipse(p.x,p.y,p.rx,p.ry,p.angle);
+   rows.push(rgb(fill)+' rg',path(e)+' f');
+   if(p.type==='circle'&&p.r>1){
+    rows.push(rgb(vectorHighlightColor(fill))+' rg',path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' f');
+   }
+  }
+  rows.push('Q');
+ }
+ rows.push('Q');
+ const stream=rows.join('\n')+'\n',utf8=new TextEncoder(),blocks=[],offsets=[0];let bytesCount=0;
+ const write=v=>{const b=typeof v==='string'?utf8.encode(v):v;blocks.push(b);bytesCount+=b.length;};
+ const obj=(id,text)=>{offsets[id]=bytesCount;write(id+' 0 obj\n'+text+'\nendobj\n');};
+ write('%PDF-1.4\n%vector\n');
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+layout.pageWidth+' '+layout.pageHeight+
+  '] /Resources << /Font << /F1 4 0 R >> /ExtGState << '+alphas.map(a=>'/'+alphaId.get(a)+' << /Type /ExtGState /ca '+n(a/100)+' /CA '+n(a/100)+' >>').join(' ')+
+  ' >> >> /Contents 5 0 R >>');
+ obj(4,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+ obj(5,'<< /Length '+utf8.encode(stream).length+' >>\nstream\n'+stream+'endstream');
+ obj(6,'<< /Producer (Kristal Yapi) /Title (Vector crystal structure) >>');
+ const xref=bytesCount;write('xref\n0 7\n0000000000 65535 f \n');
+ for(let i=1;i<=6;i++)write(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
+ write('trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
+ const output=new Uint8Array(bytesCount);let at=0;for(const b of blocks){output.set(b,at);at+=b.length;}
+ return output;
+}
+function vectorEpsText(items,width,height){
+ const layout=vectorPageLayout(width,height),shapes=vectorPagePrimitives(items,width,height);
+ const n=value=>Number(value.toFixed(4)),rgb=(color,alpha=1)=>[1,3,5].map(i=>n((parseInt(color.slice(i,i+2),16)*alpha+255*(1-alpha))/255)).join(' ');
+ const path=e=>[n(e.start[0])+' '+n(e.start[1])+' moveto',...e.curves.map(c=>c.map(p=>n(p[0])+' '+n(p[1])).join(' ')+' curveto'),'closepath'].join('\n');
+ const rows=['%!PS-Adobe-3.0 EPSF-3.0','%%BoundingBox: 0 0 '+layout.pageWidth+' '+layout.pageHeight,
+  '%%Creator: Kristal Yapi','%%Pages: 1','%%EndComments','gsave',n(layout.x)+' '+n(layout.pageHeight-layout.y)+' translate',
+  n(layout.scale)+' '+n(-layout.scale)+' scale','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath clip','1 setlinecap 1 setlinejoin'];
+ for(const p of shapes){
+  const alpha=p.opacity??1,fill=p.fill||'#203047';rows.push('gsave');
+  if(p.type==='line')rows.push(rgb(p.stroke,alpha)+' setrgbcolor',n(p.width)+' setlinewidth','newpath '+n(p.x1)+' '+n(p.y1)+' moveto '+n(p.x2)+' '+n(p.y2)+' lineto stroke');
+  else if(p.type==='triangle')rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'lineto':'moveto')).join(' ')+' closepath fill');
+  else if(p.type==='label'){
+   const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
+   rows.push('0.125 0.188 0.278 setrgbcolor',n(p.x)+' '+n(p.y)+' translate','1 -1 scale','/Helvetica findfont 12 scalefont setfont','('+label+') dup stringwidth pop -2 div 0 moveto show');
+  }else{
+   const ellipse=p.type==='circle'?vectorEllipse(p.x,p.y,p.r,p.r):vectorEllipse(p.x,p.y,p.rx,p.ry,p.angle);
+   rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+path(ellipse)+' fill');
+   if(p.type==='circle'&&p.r>1)rows.push(rgb(vectorHighlightColor(fill),alpha)+' setrgbcolor','newpath '+path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' fill');
+  }
+  rows.push('grestore');
+ }
+ rows.push('grestore','showpage','%%EOF');
+ return rows.join('\n')+'\n';
+}
+function exportVectorPrint(format){
+ if(!['pdf-vector','eps'].includes(format))throw Error('Vektör çıktı formatı tanınmıyor.');
+ const rect=$('stage').getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);
+ const primitives=crystalSvgPrimitives(width,height);
+ if(!primitives.length)throw Error('Vektör çıktı için görünür yapı yok.');
+ if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height),'application/pdf');
+ else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height),'application/postscript');
+ if(densityGrid&&volumeView.mode!=='off')inform('Vektör çıktı hacimsel alan katmanını içermez; PNG/TIFF kullanabilirsiniz.');
+}
 const MAX_STL_TRIANGLES=1000000;
 /* The interactive group is translated to put its visual center at the orbit
    target. An exported scientific model must retain real Cartesian Å positions.
@@ -5410,7 +5582,86 @@ async function exportGlb(){
  download(safeName(state.name)+'.glb',binary,'model/gltf-binary');
  if(densityGrid)inform('glTF yalnız yapı katmanlarını içerir; hacimsel izoyüzeyler dışarıda bırakıldı.');
 }
-function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
+function vrmlEscape(text){return String(text).slice(0,150).replace(/[\\"\r\n]/g,c=>({'\\':'\\\\','"':'\\"','\r':' ','\n':' '}[c]));}
+/* VRML97 encodes real Cartesian Å coordinates, never scene orbit offsets.
+   Instance matrices are retained for sphere/cylinder transforms and colors. */
+function vrmlSceneText(model,title='Kristal Yapi'){
+ const fmt=value=>{if(!Number.isFinite(value))throw Error('VRML koordinatı geçersiz.');return Number(value.toFixed(6));};
+ const vec=value=>value.map(fmt).join(' ');
+ const rows=['#VRML V2.0 utf8','WorldInfo { title "'+vrmlEscape(title)+'" info ["Coordinates in angstroms"] }'];
+ const excluded=new Set(['volume','labels','selection']);let primitives=0;
+ model.updateMatrixWorld(true);
+ const rgba=(material,color)=>{
+  const color3=color||material?.color||new THREE.Color('#8392a1');
+  return 'appearance Appearance { material Material { diffuseColor '+vec(color3.toArray())+
+   ' transparency '+fmt(1-(material?.opacity??1))+' } }';
+ };
+ const transform=(matrix,geometry,material,color)=>{
+  const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();matrix.decompose(p,q,s);
+  const angle=2*Math.acos(Math.max(-1,Math.min(1,q.w))),sin=Math.sqrt(Math.max(0,1-q.w*q.w));
+  const axis=sin<1e-8?[0,0,1]:[q.x/sin,q.y/sin,q.z/sin];
+  rows.push('Transform { translation '+vec(p.toArray())+' rotation '+vec(axis)+' '+fmt(angle)+
+   ' scale '+vec(s.toArray())+' children [ Shape { '+rgba(material,color)+' geometry '+geometry+' } ] }');
+ };
+ const mesh=(obj)=>{
+  const attr=obj.geometry?.getAttribute('position');if(!attr)return;
+  const index=obj.geometry.index,count=index?index.count:attr.count,vertices=[];
+  if(count%3!==0)throw Error('VRML yüzey indisleri üçlü olmalı.');
+  if(count>300000)throw Error('VRML 100.000 üçgen sınırı; daha küçük süperhücre seçin.');
+  for(let i=0;i<attr.count;i++){
+   const v=new THREE.Vector3().fromBufferAttribute(attr,i).applyMatrix4(obj.matrixWorld);
+   vertices.push(vec(v.toArray()));
+  }
+  const indices=[];for(let i=0;i<count;i+=3)indices.push([0,1,2].map(k=>index?index.getX(i+k):i+k).join(' ')+' -1');
+  if(vertices.length)rows.push('Shape { '+rgba(obj.material)+' geometry IndexedFaceSet { solid FALSE coord Coordinate { point [ '+vertices.join(', ')+
+   ' ] } coordIndex [ '+indices.join(', ')+' ] } }');
+  primitives+=count/3;
+ };
+ const lines=(obj)=>{
+  const attr=obj.geometry?.getAttribute('position');if(!attr)return;
+  const index=obj.geometry.index,count=index?index.count:attr.count,points=[],ids=[];
+  for(let i=0;i<count;i++){
+   const k=index?index.getX(i):i,v=new THREE.Vector3().fromBufferAttribute(attr,k).applyMatrix4(obj.matrixWorld);
+   points.push(vec(v.toArray()));
+  }
+  if(obj.isLineSegments)for(let i=0;i+1<count;i+=2)ids.push(i+' '+(i+1)+' -1');
+  else if(count>1)ids.push(Array.from({length:count},(_,i)=>i).join(' ')+(obj.isLineLoop?' 0':'')+' -1');
+  if(ids.length)rows.push('Shape { '+rgba(obj.material)+' geometry IndexedLineSet { coord Coordinate { point [ '+points.join(', ')+
+   ' ] } coordIndex [ '+ids.join(', ')+' ] } }');
+  primitives+=ids.length;
+ };
+ const visit=(obj,layer)=>{
+  if(!obj.visible)return;
+  const ownLayer=obj.userData?.layer||layer;
+  if(excluded.has(ownLayer))return;
+  const material=Array.isArray(obj.material)?obj.material[0]:obj.material;
+  if(obj.isInstancedMesh){
+   const isAtom=ownLayer==='atoms';
+   const geometry=isAtom?'Sphere { radius 1 }':ownLayer==='bonds'?'Cylinder { radius 1 height 1 }':null;
+   if(geometry){
+    const inst=new THREE.Matrix4(),world=new THREE.Matrix4(),color=new THREE.Color();
+    for(let i=0;i<obj.count;i++){
+     obj.getMatrixAt(i,inst);world.multiplyMatrices(obj.matrixWorld,inst);
+     if(obj.instanceColor)obj.getColorAt(i,color);
+     transform(world,geometry,material,obj.instanceColor?color:null);primitives++;
+     if(primitives>50000)throw Error('VRML 50.000 öğe sınırını aşıyor.');
+    }
+   }
+  }else if(obj.isMesh)mesh(obj);
+  else if(obj.isLine||obj.isLineSegments||obj.isLineLoop)lines(obj);
+  for(const child of obj.children)visit(child,ownLayer);
+ };
+ visit(model,'');
+ if(primitives===0)throw Error('VRML için dışa aktarılabilir yapı geometrisi yok.');
+ return rows.join('\n')+'\n';
+}
+function exportVrml(){
+ const {model}=threeDimensionalExportScene('glb');
+ const vrml=vrmlSceneText(model,state.name);
+ download(safeName(state.name)+'.wrl',vrml,'model/vrml');
+ if(densityGrid)inform('VRML hacimsel izoyüzeyleri içermez.');
+}
+function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,bondMode:state.bondMode||'auto',nonPeriodic:!!state.nonPeriodic,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCenters:state.polyCenters,polyColor:state.polyColor,polyOpacity:state.polyOpacity,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
@@ -6269,10 +6520,11 @@ function initOpenModal(){
   }
  });
 }
-const EXPORT_FORMATS=['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','stl','glb'];
+const EXPORT_FORMATS=['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml'];
 let exportFocusBefore=null;
 function exportFunction(format){
- const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,stl:exportStl,glb:exportGlb};
+ const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,
+  'pdf-vector':()=>exportVectorPrint('pdf-vector'),eps:()=>exportVectorPrint('eps'),stl:exportStl,glb:exportGlb,vrml:exportVrml};
  if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
  return functions[format];
 }
@@ -6492,6 +6744,9 @@ function bind(){
  $('useSymmetry').onchange=e=>{if(e.target.checked&&!validateSymmetryMetric(state.cell,state.sgSetting)){e.target.checked=false;inform('Uzay grubu seçili hücre parametreleriyle uyumsuz.');return;}state.symmetryEnabled=e.target.checked;syncSgControls();renderSites();build();fit();};
  $('wyckoff').onchange=e=>{const w=settingData(state.sgSetting)[2].find(x=>x[0]===e.target.value);if(w)$('wyckoffInfo').textContent=w[1]+w[0]+' · site symmetry '+w[2]+' · örnek koordinat: '+w[3];};
  $('applyBondRules').onclick=()=>{try{const value=$('bondRules').value;parseBondRules(value);state.bondRules=value;renderBondRuleEditor();build();inform('Bağ türü kuralları uygulandı.');}catch(e){inform(e.message);}};
+ $('bondMode').onchange=e=>{state.bondMode=e.target.value;bondIsPeriodic(state.bondMode,state.nonPeriodic);$('bondTopologySummary').textContent='Bağ modu değişti; analizi yeniden çalıştırın.';build();};
+ $('bondAnalyze').onclick=()=>analyzeBonds();
+ $('bondNetworkCsv').onclick=()=>{try{analyzeBonds({saveCsv:true});}catch(error){inform(error.message);}};
  $('bondSuggest').onclick=()=>{const range=coordinateBondSuggestion($('bondPairA').value,$('bondPairB').value);$('bondMin').value=range[0];$('bondMax').value=range[1];};
  $('bondRuleAdd').onclick=()=>{try{state.bondRules=setPairBondRule(state.bondRules,$('bondPairA').value,$('bondPairB').value,Number($('bondMin').value),Number($('bondMax').value));$('bondRules').value=state.bondRules;renderBondRuleEditor();build();}catch(e){inform(e.message);}};
  $('applyPlane').onclick=()=>{try{previewPlane();build();}catch(e){inform(e.message);}};
