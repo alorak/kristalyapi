@@ -1640,8 +1640,9 @@ function normalizedMillerLayers(input,cell){
 function millerLayerKey(p){return [p.h,p.k,p.l,Number(p.offset.toFixed(6)),!!p.repeat].join('/');}
 
 /* Morphology is a clipped intersection of Cartesian half-spaces n·r <= d,
-   NOT a Wulff energy minimization. General cells generate only Friedel ±hkl;
-   full signed permutations are valid only for cubic metrics. */
+   NOT a Wulff energy minimization. New families follow the selected setting's
+   crystallographic point group. Older project records preserve their legacy
+   cubic/± interpretation instead of silently changing saved geometries. */
 function normalizedMorphology(faces,cell){
  if(!Array.isArray(faces))return [];
  if(faces.length>8)throw Error('Morfoloji en çok sekiz yüz ailesini destekler.');
@@ -1652,7 +1653,9 @@ function normalizedMorphology(faces,cell){
    Math.max(Math.abs(h),Math.abs(k),Math.abs(l))>6||!Number.isFinite(distance)||
    distance<.1||distance>500||!/^#[a-f0-9]{6}$/i.test(String(x.color||'')))
    throw Error('Geçersiz morfoloji (hkl), merkez mesafesi veya rengi.');
-  return {h,k,l,distance,color:x.color,visible:x.visible!==false,cubic:x.cubic!==false};
+  const mode=x.mode===undefined?'legacy':String(x.mode);
+  if(!['point','pair','legacy'].includes(mode))throw Error('Geçersiz morfoloji simetri modu.');
+  return {h,k,l,distance,color:x.color,visible:x.visible!==false,cubic:x.cubic!==false,mode};
  });
 }
 function isCubicCell(cell){
@@ -1672,11 +1675,42 @@ function morphologyOrbit(h,k,l,cubic){
  }
  return out;
 }
-function morphologyHalfspaces(cell,faces){
+/* A Miller index is a reciprocal covector: h' = (R^-1)^T h, not R h.
+   Translations (including centering, screws and glides) do not change normals. */
+function morphologyPointOrbit(h,k,l,setting){
+ const seen=new Set(),out=[];
+ const origin=[0,0,0],unit=[[1,0,0],[0,1,0],[0,0,1]];
+ for(const op of settingData(setting)[1]){
+  const offset=applySymmetry(op,origin);
+  const cols=unit.map(v=>applySymmetry(op,v).map((x,j)=>x-offset[j]));
+  const a=cols[0][0],b=cols[1][0],c=cols[2][0];
+  const d=cols[0][1],e=cols[1][1],f=cols[2][1];
+  const g=cols[0][2],i=cols[1][2],j=cols[2][2];
+  const det=a*(e*j-f*i)-b*(d*j-f*g)+c*(d*i-e*g);
+  if(Math.abs(det)<1e-8)throw Error('Tekil morfoloji simetri matrisi.');
+  const transformed=[
+   ((e*j-f*i)*h+(f*g-d*j)*k+(d*i-e*g)*l)/det,
+   ((c*i-b*j)*h+(a*j-c*g)*k+(b*g-a*i)*l)/det,
+   ((b*f-c*e)*h+(c*d-a*f)*k+(a*e-b*d)*l)/det
+  ].map(value=>{
+   const rounded=Math.round(value);
+   if(Math.abs(value-rounded)>1e-6)throw Error('Morfoloji simetrisinde tamsayı olmayan Miller indisi.');
+   return rounded;
+  });
+  const key=transformed.join(',');
+  if(!seen.has(key)){seen.add(key);out.push(transformed);}
+ }
+ return out;
+}
+function morphologyHalfspaces(cell,faces,setting='1'){
  const B=basis(cell),planes=[],seen=new Set(),cubic=isCubicCell(cell);
  for(const face of normalizedMorphology(faces,cell)){
   if(!face.visible)continue;
-  for(const hkl of morphologyOrbit(face.h,face.k,face.l,cubic&&face.cubic)){
+  if(face.mode==='point'&&!validateSymmetryMetric(cell,setting))
+   throw Error('Seçili uzay grubu hücre metriğine uymuyor; simetri ayarını denetleyin.');
+  const orbit=face.mode==='point'?morphologyPointOrbit(face.h,face.k,face.l,setting):
+   morphologyOrbit(face.h,face.k,face.l,face.mode==='legacy'&&cubic&&face.cubic);
+  for(const hkl of orbit){
    const key=hkl.join(',');
    if(seen.has(key))continue;seen.add(key);
    const n=planeNormal(...hkl,B).normal;
@@ -1734,8 +1768,8 @@ function drawMorphology(B,center){
   return;
  }
  try{
-  const planes=morphologyHalfspaces(state.cell,state.morphology),solid=morphologyPolyhedron(planes);
-  if(!solid.closed){info.textContent='Kapalı yüzey oluşmadı. En az üç bağımsız {hkl} aile ekleyin.';return;}
+  const planes=morphologyHalfspaces(state.cell,state.morphology,state.sgSetting),solid=morphologyPolyhedron(planes);
+  if(!solid.closed){info.textContent='Kapalı yüzey oluşmadı. Seçili nokta grubu yeterli yön üretmiyorsa ek {hkl} aileleri ekleyin.';return;}
   const group=new THREE.Group();group.name='Kristal morfolojisi';
   for(const face of solid.faces){
    const vertices=[];
@@ -1760,7 +1794,8 @@ function renderMorphList(){
   const visible=document.createElement('input');visible.type='checkbox';visible.checked=item.visible;
   visible.setAttribute('aria-label','{'+[item.h,item.k,item.l].join(' ')+'} yüz ailesi görünürlük');
   visible.onchange=()=>{item.visible=visible.checked;build();};
-  const label=document.createElement('label');label.textContent='{'+[item.h,item.k,item.l].join(' ')+'}'+(item.cubic?' · kübik aile':' · ±');
+  const label=document.createElement('label');label.textContent='{'+[item.h,item.k,item.l].join(' ')+'} · '+
+   (item.mode==='point'?'nokta grubu':item.mode==='pair'||!item.cubic?'±':'kübik/±');
   const distance=document.createElement('input');distance.type='number';distance.min='.1';distance.max='500';distance.step='.1';distance.value=item.distance;
   distance.setAttribute('aria-label','{'+[item.h,item.k,item.l].join(' ')+'} merkez mesafesi');
   distance.onchange=()=>{const value=Number(distance.value);if(!(value>=.1&&value<=500))return inform('Uzaklık 0,1–500 Å olmalı.');item.distance=value;build();};
@@ -5079,12 +5114,12 @@ function pngCellStrokeMeshes(cssHeight){
  }
  return temporary;
 }
-function screenshot(){
- const factor=Number($('pngScale').value),rect=$('stage').getBoundingClientRect();
+function renderExportCanvas(factor,opaque=true){
+ const rect=$('stage').getBoundingClientRect();
  const width=Math.round(rect.width*factor),height=Math.round(rect.height*factor);
  const gl=renderer.getContext(),limits=pngExportLimits(gl,renderer.capabilities.maxTextureSize);
  if(![1,2,3,4].includes(factor)||width<1||height<1||width>limits.width||height>limits.height||width*height>limits.maxPixels)
-  throw Error('PNG boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; çözünürlüğü düşürün.');
+  throw Error('Görsel boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; çözünürlüğü düşürün.');
  const previousRatio=renderer.getPixelRatio();
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const temporary=[];
@@ -5092,17 +5127,99 @@ function screenshot(){
   renderer.setPixelRatio(1);renderer.setSize(width,height,false);
   if(renderer.domElement.width!==width||renderer.domElement.height!==height||
    gl.drawingBufferWidth!==width||gl.drawingBufferHeight!==height||gl.isContextLost())
-   throw Error('WebGL gerçek çizim tamponu istenen PNG boyutunu sağlamıyor. Daha düşük çözünürlük seçin.');
+   throw Error('WebGL gerçek çizim tamponu istenen boyutu sağlamıyor. Daha düşük çözünürlük seçin.');
   temporary.push(...pngCellStrokeMeshes(rect.height));
   renderer.render(scene,camera);
-  const ctx=canvas.getContext('2d');if(!ctx)throw Error('PNG çizim yüzeyi oluşturulamadı.');
-  if(!$('pngTransparent').checked){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('Görsel çizim yüzeyi oluşturulamadı.');
+  if(opaque){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
   ctx.drawImage(renderer.domElement,0,0);
  }finally{
   for(const mesh of temporary){root.remove(mesh);mesh.material.dispose();}
   renderer.setPixelRatio(previousRatio);resize();renderer.render(scene,camera);
  }
+ return canvas;
+}
+function screenshot(){
+ const canvas=renderExportCanvas(Number($('pngScale').value),!$('pngTransparent').checked);
+ const {width,height}=canvas;
  canvas.toBlob(blob=>{if(blob)download(safeName(state.name)+'_'+width+'x'+height+'.png',blob,'image/png');else inform('PNG kaydı oluşturulamadı.');},'image/png');
+}
+/* Baseline little-endian, uncompressed 8-bit RGB TIFF, one strip. The X/Y
+   resolution tags specify physical print size; they do not resample pixels. */
+function tiffRgbBytes(width,height,rgba,dpi=300){
+ if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>24000000||
+  ![150,300,600].includes(dpi)||!ArrayBuffer.isView(rgba)||rgba.BYTES_PER_ELEMENT!==1||rgba.length!==width*height*4)
+  throw Error('TIFF piksel boyutu, çözünürlüğü veya RGB verisi geçersiz.');
+ const tagCount=13,ifdSize=2+12*tagCount+4,bits=8+ifdSize,resX=bits+6,resY=resX+8,pixels=resY+8;
+ const byteCount=width*height*3,bytes=new Uint8Array(pixels+byteCount),view=new DataView(bytes.buffer);
+ view.setUint16(0,0x4949,true);view.setUint16(2,42,true);view.setUint32(4,8,true);
+ view.setUint16(8,tagCount,true);
+ let entry=10;
+ const tag=(id,type,count,value)=>{view.setUint16(entry,id,true);view.setUint16(entry+2,type,true);
+  view.setUint32(entry+4,count,true);
+  if(type===3&&count===1)view.setUint16(entry+8,value,true);
+  else view.setUint32(entry+8,value,true);
+  entry+=12;};
+ tag(256,4,1,width);tag(257,4,1,height);tag(258,3,3,bits);tag(259,3,1,1);
+ tag(262,3,1,2);tag(273,4,1,pixels);tag(277,3,1,3);tag(278,4,1,height);
+ tag(279,4,1,byteCount);tag(282,5,1,resX);tag(283,5,1,resY);tag(284,3,1,1);tag(296,3,1,2);
+ view.setUint32(entry,0,true);
+ for(let j=0;j<3;j++)view.setUint16(bits+2*j,8,true);
+ view.setUint32(resX,dpi,true);view.setUint32(resX+4,1,true);
+ view.setUint32(resY,dpi,true);view.setUint32(resY+4,1,true);
+ for(let src=0,dst=pixels;src<rgba.length;src+=4){bytes[dst++]=rgba[src];bytes[dst++]=rgba[src+1];bytes[dst++]=rgba[src+2];}
+ return bytes;
+}
+/* Small, self-contained PDF 1.4 writer: a single A4 sheet with an embedded
+   high-quality JPEG. The scene itself remains raster; SVG is the vector option. */
+function pdfJpegBytes(width,height,jpeg){
+ if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>24000000||
+  !ArrayBuffer.isView(jpeg)||jpeg.BYTES_PER_ELEMENT!==1||jpeg.length<4||jpeg[0]!==255||jpeg[1]!==216||jpeg.at(-2)!==255||jpeg.at(-1)!==217)
+  throw Error('PDF için geçerli bir JPEG görseli gerekli.');
+ const [pageW,pageH]=width>=height?[842,595]:[595,842],margin=28;
+ const scale=Math.min((pageW-2*margin)/width,(pageH-2*margin)/height),drawW=width*scale,drawH=height*scale;
+ const x=(pageW-drawW)/2,y=(pageH-drawH)/2;
+ const number=n=>Number(n.toFixed(4));
+ const content='q\n'+[number(drawW),0,0,number(drawH),number(x),number(y)].join(' ')+' cm\n/Im0 Do\nQ\n';
+ const utf8=new TextEncoder(),chunks=[],offsets=[0];let length=0;
+ const write=value=>{const bytes=typeof value==='string'?utf8.encode(value):value;chunks.push(bytes);length+=bytes.length;};
+ const obj=(id,payload)=>{offsets[id]=length;write(id+' 0 obj\n');write(payload);write('\nendobj\n');};
+ write('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+ offsets[4]=length;write('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+width+' /Height '+height+
+  ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpeg.length+' >>\nstream\n');
+ write(jpeg);write('\nendstream\nendobj\n');
+ obj(5,'<< /Length '+utf8.encode(content).length+' >>\nstream\n'+content+'endstream');
+ obj(6,'<< /Producer (Kristal Yapi) /Title (Crystal structure export) >>');
+ const xref=length;write('xref\n0 7\n0000000000 65535 f \n');
+ for(let id=1;id<=6;id++)write(String(offsets[id]).padStart(10,'0')+' 00000 n \n');
+ write('trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
+ const result=new Uint8Array(length);let p=0;
+ for(const chunk of chunks){result.set(chunk,p);p+=chunk.length;}
+ return {bytes:result,dpi:Math.min(width/(drawW/72),height/(drawH/72))};
+}
+function printExportSettings(){
+ const factor=Number($('printScale').value),dpi=Number($('printDpi').value);
+ if(![1,2,3,4].includes(factor)||![150,300,600].includes(dpi))throw Error('Baskı ayarı geçersiz.');
+ return {factor,dpi};
+}
+function exportTiff(){
+ const {factor,dpi}=printExportSettings(),canvas=renderExportCanvas(factor);
+ const pixels=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
+ const bytes=tiffRgbBytes(canvas.width,canvas.height,pixels,dpi);
+ download(safeName(state.name)+'_'+canvas.width+'x'+canvas.height+'.tiff',bytes,'image/tiff');
+}
+function exportPdf(){
+ const {factor,dpi}=printExportSettings(),canvas=renderExportCanvas(factor);
+ const uri=canvas.toDataURL('image/jpeg',.96);
+ if(!uri.startsWith('data:image/jpeg;base64,'))throw Error('Tarayıcı JPEG kodlayıcısı kullanılamıyor.');
+ const binary=atob(uri.split(',')[1]),jpeg=new Uint8Array(binary.length);
+ for(let i=0;i<binary.length;i++)jpeg[i]=binary.charCodeAt(i);
+ const pdf=pdfJpegBytes(canvas.width,canvas.height,jpeg);
+ download(safeName(state.name)+'_A4.pdf',pdf.bytes,'application/pdf');
+ if(pdf.dpi<dpi)inform('PDF görüntüsü A4 üzerinde yaklaşık '+Math.round(pdf.dpi)+' DPI; daha yüksek çözünürlük için çarpanı artırın.');
 }
 function svgEscape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
 function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false){
@@ -6152,10 +6269,10 @@ function initOpenModal(){
   }
  });
 }
-const EXPORT_FORMATS=['project','cif','poscar','xyz','pdb','png','svg','stl','glb'];
+const EXPORT_FORMATS=['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','stl','glb'];
 let exportFocusBefore=null;
 function exportFunction(format){
- const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,svg:exportSvg,stl:exportStl,glb:exportGlb};
+ const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,stl:exportStl,glb:exportGlb};
  if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
  return functions[format];
 }
@@ -6386,13 +6503,14 @@ function bind(){
    if((state.morphology||[]).length>=8)throw Error('En fazla sekiz yüz ailesi eklenebilir.');
    const rec={h:+$('morphH').value,k:+$('morphK').value,l:+$('morphL').value,
     distance:+$('morphDistance').value,color:$('morphColor').value,visible:true,
-    cubic:$('morphFamily').checked};
+   mode:$('morphMode').value};
    state.morphology=normalizedMorphology([...(state.morphology||[]),rec],state.cell);
    state.morphVisible=true;renderMorphList();build();
   }catch(e){inform(e.message);}
  };
  $('morphPreset').onclick=()=>{
-  state.morphology=normalizedMorphology([{h:1,k:0,l:0,distance:3,color:'#67a6d5',visible:true,cubic:true}],state.cell);
+  // This named geometric demonstration must remain a cube even for P1.
+  state.morphology=normalizedMorphology([{h:1,k:0,l:0,distance:3,color:'#67a6d5',visible:true,mode:'legacy',cubic:true}],state.cell);
   state.morphVisible=true;renderMorphList();build();
  };
  $('morphClear').onclick=()=>{state.morphology=[];state.morphVisible=false;renderMorphList();build();};

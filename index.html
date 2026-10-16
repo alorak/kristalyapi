@@ -546,7 +546,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Kesit görünümü atom-merkezi filtresidir. Aşağıdaki oluşturma aracı ayrıca gerçek 2B periyodik yüzey vektörleriyle yeni 3B hücre ve vakum üretir; yüzey relaksasyonu yapmaz.</p>
   </div>
   <div class="section"><h2>Kristal morfolojisi · {hkl} yüz aileleri</h2>
-   <p class="hint">Yüzey normaline olan merkez uzaklığını Å cinsinden belirleyerek kapalı bir kristal şekli oluştur. Kübik hücrelerde eşdeğer indis permütasyonları uygulanır; diğer hücrelerde yalnız ±(hkl) üretilir.</p>
+   <p class="hint">Yüzey normaline olan merkez uzaklığını Å cinsinden belirleyerek kristal şeklini oluştur. Nokta grubu, seçili uzay grubu ayarındaki dönme işlemleriyle eşdeğer {hkl} yüzlerini üretir; ters yüzler yalnız simetri gerektiriyorsa eklenir.</p>
    <label class="check"><input type="checkbox" id="morphVisible"> Morfolojiyi göster</label>
    <div class="triple">
     <label class="field compact"><span>h</span><input type="number" id="morphH" min="-6" max="6" step="1" value="1"></label>
@@ -557,7 +557,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <label class="field compact"><span>Merkez uzaklığı (Å)</span><input type="number" id="morphDistance" min=".1" max="500" step=".1" value="3"></label>
     <label class="field compact"><span>Yüz rengi</span><input type="color" id="morphColor" value="#67a6d5"></label>
    </div>
-   <label class="check"><input type="checkbox" id="morphFamily" checked> Kübik eşdeğer indisleri birlikte üret (varsa)</label>
+   <label class="field"><span>Yüz ailesi simetrisi</span><select id="morphMode"><option value="point" selected>Seçili uzay grubunun nokta grubu</option><option value="pair">Yalnız ±(hkl) çifti</option></select></label>
    <div class="actionrow"><button type="button" id="morphAdd" class="primary">+ Yüz ailesi ekle</button><button type="button" id="morphPreset">Kübik {100} örneği</button><button type="button" id="morphClear">Temizle</button></div>
    <div id="morphList" class="volume-layer-list" aria-live="polite"></div>
    <div id="morphSummary" class="note">Henüz yüz ailesi eklenmedi.</div>
@@ -897,6 +897,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button type="button" data-export="png" class="export-option">
     <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünümün beyaz zeminli ekran görüntüsü</small></span><span class="export-option-arrow">↓</span>
    </button>
+   <button type="button" data-export="tiff" class="export-option">
+    <span class="export-option-icon">▦</span><span><strong>TIFF görseli</strong><small>Kayıpsız RGB · baskı DPI bilgisiyle</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="pdf" class="export-option">
+    <span class="export-option-icon">▤</span><span><strong>PDF baskı sayfası</strong><small>A4 · yüksek çözünürlüklü raster görünüm</small></span><span class="export-option-arrow">↓</span>
+   </button>
    <button type="button" data-export="svg" class="export-option">
     <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · atom, bağ, kafes ve çokyüzlü çizgileri</small></span><span class="export-option-arrow">↓</span>
    </button>
@@ -908,6 +914,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </button>
   </div>
   <div class="export-png-controls"><strong>PNG</strong><label>Çözünürlük <select id="pngScale" aria-label="PNG çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label><input id="pngTransparent" type="checkbox"> Şeffaf arka plan</label></div>
+  <div class="export-png-controls"><strong>PDF ve TIFF</strong><label>Çözünürlük <select id="printScale" aria-label="Baskı çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label>DPI <select id="printDpi" aria-label="Baskı DPI"><option value="150">150</option><option value="300" selected>300</option><option value="600">600</option></select></label><span>PDF A4 sayfaya sığdırılır; DPI, TIFF baskı ölçüsünü belirler.</span></div>
   <div class="export-png-controls"><strong>SVG</strong><label><input id="svgTransparent" type="checkbox"> Şeffaf arka plan</label><span>Vektör · yakınlaştırınca keskin kalır</span></div>
   <div class="export-dialog-foot"><span>Dosyalar tarayıcın üzerinden indirilir.</span><button type="button" id="exportModalCancel">Vazgeç</button></div>
  </div>

@@ -47,12 +47,13 @@ const bootstrapMarker = '// @kristalyapi/browser-bootstrap:';
 const bootstrapIndex = moduleScript.indexOf(bootstrapMarker);
 assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
-const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, document: {getElementById(){return null;}} };
+const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, TextEncoder, document: {getElementById(){return null;}} };
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
+vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJpegBytes});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
@@ -101,6 +102,35 @@ test('PNG checks actual viewport and renderbuffer limits, not texture size alone
  assert.deepEqual(JSON.parse(JSON.stringify(api.pngExportLimits(gl,8192))),
   {width:3000,height:2100,maxPixels:24000000});
  assert.throws(()=>api.pngExportLimits({...gl,getParameter:()=>null},8192),/WebGL PNG/);
+});
+test('TIFF export encodes lossless RGB pixels, dimensions and 300-DPI rational tags',()=>{
+ const rgba=Uint8ClampedArray.from([12,34,56,255,200,150,100,255]);
+ const tiff=api.tiffRgbBytes(2,1,rgba,300),dv=new DataView(tiff.buffer);
+ assert.equal(dv.getUint16(0,true),0x4949);assert.equal(dv.getUint16(2,true),42);
+ assert.equal(dv.getUint16(8,true),13);
+ const tag=id=>{for(let i=0;i<13;i++){const p=10+i*12;if(dv.getUint16(p,true)===id)return {type:dv.getUint16(p+2,true),count:dv.getUint32(p+4,true),value:dv.getUint32(p+8,true)};}};
+ assert.equal(tag(256).value,2);assert.equal(tag(257).value,1);
+ assert.equal(tag(258).count,3);assert.equal(dv.getUint16(tag(258).value,true),8);
+ assert.equal(tag(262).value,2);assert.equal(tag(259).value,1);
+ assert.equal(tag(279).value,6);
+ assert.equal(dv.getUint32(tag(282).value,true),300);assert.equal(dv.getUint32(tag(283).value,true),300);
+ assert.deepEqual(Array.from(tiff.subarray(tag(273).value)),[12,34,56,200,150,100]);
+ assert.throws(()=>api.tiffRgbBytes(2,1,rgba,72),/TIFF/);
+ assert.throws(()=>api.tiffRgbBytes(2,1,rgba.subarray(0,4),300),/TIFF/);
+});
+test('A4 PDF export includes JPEG XObject, stream offsets and fitting page dimensions',()=>{
+ const pseudoJpeg=Uint8Array.from([255,216,255,224,0,2,255,217]);
+ const output=api.pdfJpegBytes(1200,800,pseudoJpeg);
+ const pdf=Buffer.from(output.bytes).toString('latin1');
+ assert.match(pdf,/^%PDF-1\.4/);assert.match(pdf,/\/MediaBox \[0 0 842 595\]/);
+ assert.match(pdf,/\/Filter \/DCTDecode/);assert.match(pdf,/\/Width 1200 \/Height 800/);
+ assert.match(pdf,/\/Im0 Do/);
+ assert.ok(output.dpi>100&&output.dpi<200);
+ const offset=Number(pdf.match(/startxref\n(\d+)/)[1]);
+ assert.equal(pdf.slice(offset,offset+4),'xref');
+ const portrait=api.pdfJpegBytes(800,1200,pseudoJpeg);
+ assert.match(Buffer.from(portrait.bytes).toString('latin1'),/\/MediaBox \[0 0 595 842\]/);
+ assert.throws(()=>api.pdfJpegBytes(1200,800,new Uint8Array(6)),/JPEG/);
 });
 test('SVG vector export serializes projected atoms, bonds and polygon faces without raster images',()=>{
  const shapes=[
@@ -877,7 +907,7 @@ test('preset favorites store only allowlisted structure keys',()=>{
 test('Save dialog offers offline STL and binary glTF 3D exports alongside existing formats',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','svg','stl','glb']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','stl','glb']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');
@@ -888,6 +918,8 @@ test('Save dialog offers offline STL and binary glTF 3D exports alongside existi
  assert.equal(api.exportFunction('xyz').name,'exportXyz');
  assert.equal(api.exportFunction('pdb').name,'exportPdb');
  assert.equal(api.exportFunction('png').name,'screenshot');
+ assert.equal(api.exportFunction('tiff').name,'exportTiff');
+ assert.equal(api.exportFunction('pdf').name,'exportPdf');
  assert.equal(api.exportFunction('svg').name,'exportSvg');
  assert.throws(()=>api.exportFunction('unsafe'));
  assert.ok(!html.includes('<h2>Dışa aktarma</h2>'));
@@ -1762,6 +1794,34 @@ test('phase2 non-cubic morphology only generates inversion-related ±hkl, not fa
  assert.equal(api.morphologyPolyhedron(planes).closed,false);
  assert.throws(()=>api.normalizedMorphology([{...face,distance:-1}],nonCubic));
  assert.throws(()=>api.normalizedMorphology(Array(9).fill(face),nonCubic));
+});
+test('point-group morphology respects tetragonal, orthorhombic, hexagonal and triclinic settings',()=>{
+ const point={h:1,k:0,l:0,distance:3,color:'#4488cc',visible:true,mode:'point'};
+ const tet={a:5,b:5,c:7,alpha:90,beta:90,gamma:90};
+ const hkl=api.morphologyPointOrbit(1,0,0,'123').map(x=>x.join(','));
+ assert.deepEqual(Array.from(hkl).sort(),['-1,0,0','0,-1,0','0,1,0','1,0,0'].sort());
+ assert.equal(api.morphologyHalfspaces(tet,[point], '123').length,4);
+ const prism=api.morphologyPolyhedron(api.morphologyHalfspaces(tet,[point,{...point,h:0,k:0,l:1}], '123'));
+ assert.equal(prism.faces.length,6);assert.ok(prism.closed);
+ const ortho={a:4,b:5,c:6,alpha:90,beta:90,gamma:90};
+ assert.equal(api.morphologyPointOrbit(1,1,1,'47').length,8);
+ assert.equal(api.morphologyHalfspaces(ortho,[point],'47').length,2);
+ const hex={a:5,b:5,c:8,alpha:90,beta:90,gamma:120};
+ assert.equal(api.morphologyPointOrbit(1,0,0,'191').length,6);
+ assert.equal(api.morphologyHalfspaces(hex,[point],'191').length,6);
+ const tri={a:5,b:6,c:7,alpha:75,beta:85,gamma:102};
+ assert.equal(api.morphologyPointOrbit(1,0,0,'1').length,1,'P1 cannot imply a Friedel opposite face');
+ assert.equal(api.morphologyPointOrbit(1,0,0,'2').length,2,'P-1 has true inversion');
+ assert.equal(api.morphologyHalfspaces(tri,[point],'1').length,1);
+ assert.equal(api.morphologyHalfspaces(tri,[{...point,mode:'pair'}],'1').length,2);
+ assert.throws(()=>api.morphologyHalfspaces(ortho,[point],'123'),/metriğine uymuyor/);
+});
+test('saved morphology family modes preserve legacy models and reject unknown symmetry modes',()=>{
+ const legacy=api.normalizedMorphology([{h:1,k:0,l:0,distance:2,color:'#4488cc',cubic:true}],cubic)[0];
+ assert.equal(legacy.mode,'legacy');assert.equal(api.morphologyHalfspaces(cubic,[legacy]).length,6);
+ const point=api.normalizedMorphology([{...legacy,mode:'point'}],cubic)[0];
+ assert.equal(point.mode,'point');assert.equal(api.morphologyHalfspaces(cubic,[point],'221').length,6);
+ assert.throws(()=>api.normalizedMorphology([{...legacy,mode:'imaginary'}],cubic),/simetri modu/);
 });
 test('phase2 morphology geometry is restored after a project state roundtrip',()=>{
  const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
