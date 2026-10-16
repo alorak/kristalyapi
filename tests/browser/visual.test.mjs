@@ -33,6 +33,7 @@ window.__visualTest={
  repeat:()=>[...state.rep],
  instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==='bonds').length}),
  bounds:()=>state.bounds.map(a=>[...a]),
+ morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
  polyStats:()=>({center:state.poly,centers:[...(state.polyCenters||[])],meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
   edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
   count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
@@ -154,6 +155,22 @@ try{
  assert.match(svgSource,/<circle/,'SVG export must contain real vector atoms');
  assert.match(svgSource,/<path/,'SVG export must contain lattice/bond vector strokes');
  assert.doesNotMatch(svgSource,/<image|data:image|foreignObject/,'SVG must not embed a raster screenshot');
+ assert.equal(await page.locator('#morphMode').inputValue(),'point');
+ assert.equal((await page.evaluate(()=>window.__visualTest.morphOrbit())).length,4,'tetragonal point group must expand {100} to four reciprocal normals');
+ await page.locator('#saveBtn').click();
+ const [tiffDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="tiff"]').click()]);
+ const tiffData=await fs.readFile(await tiffDownload.path());
+ assert.equal(tiffData.toString('ascii',0,2),'II');
+ assert.equal(tiffData.readUInt16LE(2),42);
+ assert.ok(tiffData.readUInt32LE(4)>0,'TIFF must contain an image directory');
+ await fs.writeFile(path.join(artifacts,'print-export-sample.tiff'),tiffData);
+ await page.locator('#saveBtn').click();
+ const [pdfDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="pdf"]').click()]);
+ const pdfData=await fs.readFile(await pdfDownload.path());
+ assert.equal(pdfData.toString('ascii',0,8),'%PDF-1.4');
+ assert.ok(pdfData.includes(Buffer.from('/DCTDecode')),'PDF must embed an actual JPEG');
+ assert.ok(pdfData.includes(Buffer.from('/MediaBox [0 0')),'PDF must have a physical A4 page');
+ await fs.writeFile(path.join(artifacts,'print-export-sample.pdf'),pdfData);
  await page.locator('#saveBtn').click();
  const [stlDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="stl"]').click()]);
  const stlData=await fs.readFile(await stlDownload.path());
