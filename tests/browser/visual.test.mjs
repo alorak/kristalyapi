@@ -73,6 +73,44 @@ try{
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ // Kütüphane: full-width dual columns, separate Worker tab and persistent preset favorites.
+ await page.locator('#libraryNav').click();
+ await page.locator('#libraryPage').waitFor({state:'visible'});
+ assert.equal(await page.locator('#libraryPage').isVisible(),true);
+ const libraryColumns=await page.evaluate(()=>{
+  const left=document.getElementById('codSearchForm').getBoundingClientRect();
+  const right=document.getElementById('codResultsBox').getBoundingClientRect();
+  return {leftRight:left.right,rightLeft:right.left,rightRight:right.right,rightWidth:right.width,leftWidth:left.width,viewportWidth:innerWidth};
+ });
+ assert.ok(libraryColumns.rightLeft>=libraryColumns.leftRight,'search results must be to the right of filters');
+ assert.ok(libraryColumns.rightWidth>libraryColumns.leftWidth,'results should have the wider column');
+ assert.ok(libraryColumns.rightRight>libraryColumns.viewportWidth-60,'library should use nearly full viewport width');
+ await page.screenshot({path:path.join(artifacts,'12-library-search.png'),animations:'disabled'});
+ await page.locator('#libWorkerTab').click();
+ assert.equal(await page.locator('#libWorkerPane').isVisible(),true);
+ assert.equal(await page.locator('#codSearchForm').isVisible(),false,'Worker settings must not share the search pane');
+ assert.equal(await page.locator('#codWorkerUrl').isVisible(),true);
+ await page.screenshot({path:path.join(artifacts,'13-library-worker.png'),animations:'disabled'});
+ await page.locator('#libPresetsTab').click();
+ assert.equal(await page.locator('#presetList .preset-list-row').count(),7);
+ assert.equal(await page.locator('select#preset').count(),0,'example structures must be a list, not a dropdown');
+ await page.locator('#presetList .preset-choice').filter({hasText:'Sodyum klorür'}).click();
+ assert.match(await page.locator('#presetName').textContent(),/Sodyum klorür/);
+ assert.match(await page.locator('#presetSpacegroup').textContent(),/225/);
+ await page.locator('#presetFavorite').click();
+ assert.equal(await page.locator('#presetFavorite').getAttribute('aria-pressed'),'true');
+ assert.match(await page.evaluate(()=>localStorage.getItem('kristalyapi.preset-favorites.v1')),/nacl/);
+ await page.locator('#presetFavoritesOnly').click();
+ assert.equal(await page.locator('#presetList .preset-list-row').count(),1);
+ await page.locator('#presetFavoritesOnly').click();
+ await page.screenshot({path:path.join(artifacts,'14-library-presets.png'),animations:'disabled'});
+ await page.locator('#importPreset').click();
+ assert.match(await page.locator('#infoName').textContent(),/Sodyum klorür/);
+ await page.locator('#libraryNav').click();
+ await page.locator('#libPresetsTab').click();
+ await page.locator('#presetList .preset-choice').filter({hasText:'Silisyum'}).click();
+ await page.locator('#importPreset').click();
+ assert.match(await page.locator('#infoName').textContent(),/Silisyum/);
  const tools=page.locator('[data-right-tool]');
  assert.equal(await tools.count(),12,'Miller must have its own icon as well as the eleven analysis tools');
  for(const [source,destination] of [
@@ -187,6 +225,21 @@ try{
  await page.locator('[data-right-tool="symmetry"]').press('Escape');
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'Escape closes mobile drawer');
  await page.screenshot({path:path.join(artifacts,'11-mobile-quickbar.png'),animations:'disabled'});
+ await page.locator('#libraryNav').click();
+ await page.locator('#libSearchTab').click();
+ assert.equal(await page.locator('#codSearchForm').isVisible(),true);
+ const mobileColumns=await page.evaluate(()=>{
+  const left=document.getElementById('codSearchForm').getBoundingClientRect();
+  const right=document.getElementById('codResultsBox').getBoundingClientRect();
+  return {leftBottom:left.bottom,rightTop:right.top,scrollWidth:document.getElementById('libSearchPane').scrollWidth,viewportWidth:innerWidth};
+ });
+ assert.ok(mobileColumns.rightTop>=mobileColumns.leftBottom-1,'mobile search results should stack below filters');
+ assert.ok(mobileColumns.scrollWidth<=mobileColumns.viewportWidth+1,'mobile library should not overflow horizontally');
+ await page.screenshot({path:path.join(artifacts,'15-mobile-library-search.png'),animations:'disabled'});
+ await page.locator('#libPresetsTab').click();
+ assert.equal(await page.locator('#presetList .preset-list-row').count(),7);
+ await page.screenshot({path:path.join(artifacts,'16-mobile-library-presets.png'),animations:'disabled'});
+ await page.locator('#homeLink').click();
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);
