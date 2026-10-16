@@ -20,7 +20,7 @@ function serviceWorkerHarness(){
   addEventListener(type,handler){listeners.set(type,handler);},
   clients:{async claim(){claimed++;}}};
  const caches={async open(name){assert.match(name,/^kristalyapi-shell-/);return cache;},
-  async keys(){return ['another-app-cache','kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2'];},
+  async keys(){return ['another-app-cache','kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2','kristalyapi-shell-2026-10-16-v3'];},
   async delete(name){deletes.push(name);return true;}};
  const fetch=async request=>{network.push(request.url);return 'network:'+request.url;};
  runInNewContext(source,{self,caches,fetch,URL});
@@ -39,7 +39,9 @@ test('offline install pre-caches the complete local renderer, WASM and page shel
  for(const path of ['index.html','styles.css','crystal-app.js','reciprocal-page.js',
   'reciprocal-core.js','manifest.webmanifest','vendor/moyo_wasm.js',
   'vendor/moyo_wasm_bg.wasm','vendor/three/build/three.core.js',
-  'vendor/three/examples/jsm/math/ConvexHull.js']){
+  'vendor/three/examples/jsm/math/ConvexHull.js',
+  'vendor/three/examples/jsm/exporters/STLExporter.js',
+  'vendor/three/examples/jsm/exporters/GLTFExporter.js']){
   assert.equal(sw.entries.has(scope+path),true,path+' must be available offline');
  }
  assert.equal(sw.entries.has(scope),true,'the GitHub Pages subpath root must be cached');
@@ -59,6 +61,6 @@ test('offline fetch only handles declared, same-origin GET assets',async()=>{
 
 test('activation removes only old Kristal Yapı shell caches',async()=>{
  const sw=serviceWorkerHarness();await sw.dispatch('activate');
- assert.deepEqual(sw.deletes,['kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2']);
+ assert.deepEqual(sw.deletes,['kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2','kristalyapi-shell-2026-10-16-v3']);
  assert.equal(sw.claimed,1);
 });

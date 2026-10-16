@@ -35,7 +35,8 @@ const htmlShell = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf
 assert.match(htmlShell,/"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
 assert.doesNotMatch(htmlShell,/cdn\.jsdelivr\.net|unpkg\.com/,'the editor must not depend on a Three.js CDN');
 for(const name of ['build/three.core.js','build/three.module.js','examples/jsm/controls/OrbitControls.js',
- 'examples/jsm/geometries/ConvexGeometry.js','examples/jsm/math/ConvexHull.js','LICENSE'])
+ 'examples/jsm/geometries/ConvexGeometry.js','examples/jsm/math/ConvexHull.js',
+ 'examples/jsm/exporters/STLExporter.js','examples/jsm/exporters/GLTFExporter.js','LICENSE'])
  assert.ok(fs.statSync(path.join(__dirname,'..','vendor/three',name)).size>0,'missing local Three.js '+name);
 const moduleScript = fs.readFileSync(path.join(__dirname, '..', 'crystal-app.js'), 'utf8');
 // The application's sources are separate deployable files; assertions below
@@ -50,7 +51,7 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
-vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,pngExportLimits});',context);
+vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
@@ -79,6 +80,21 @@ test('polyhedron center skips uncoordinated Ba and chooses sixfold Ti in perovsk
  assert.equal(api.coordinationNeighbors(p.sites,1,B,rules,cut,true,12).length,6);
  assert.equal(api.bestPolyhedronElement(p.sites,B,rules,cut,true,12),'Ti');
  assert.doesNotMatch(moduleScript,/count\s*<\s*64\s*;i\+\+/,'polyhedra must not silently truncate at 64');
+});
+test('multi-element polyhedron centers roundtrip and legacy single-center projects still work',()=>{
+ const crystal=api.examples('perovskite');
+ assert.deepEqual(Array.from(api.normalizedPolyCenters(undefined,'Ti',crystal.sites)),['Ti']);
+ assert.deepEqual(Array.from(api.normalizedPolyCenters(['Ti','O','Ti','Xe'],'Ba',crystal.sites)),['Ti','O']);
+ assert.throws(()=>api.normalizedPolyCenters('Ti','',crystal.sites),/en fazla 16/);
+ assert.throws(()=>api.normalizedPolyCenters(['Ti','<script>'],'',crystal.sites),/element simgesi/);
+ const multi=api.loadProject(JSON.stringify({...crystal,poly:'Ti',polyCenters:['Ti','O']}));
+ assert.equal(multi.poly,'Ti');assert.deepEqual(Array.from(multi.polyCenters),['Ti','O']);
+ const legacy=api.loadProject(JSON.stringify({...crystal,poly:'Ba'}));
+ assert.equal(legacy.poly,'Ba');assert.deepEqual(Array.from(legacy.polyCenters),['Ba']);
+ const storage=new Map(),adapter={getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)};
+ api.storeLastCrystal(adapter,{...multi,format:'kristalyapi-last-v2'});
+ const restored=api.restoreLastCrystal(adapter);
+ assert.deepEqual(Array.from(restored.polyCenters),['Ti','O']);
 });
 test('PNG checks actual viewport and renderbuffer limits, not texture size alone',()=>{
  const gl={MAX_VIEWPORT_DIMS:1,MAX_RENDERBUFFER_SIZE:2,getParameter(k){return k===1?[5000,2100]:3000;}};
@@ -858,10 +874,10 @@ test('preset favorites store only allowlisted structure keys',()=>{
  const broken=vm.runInContext('loadPresetFavorites({getItem(){return "invalid JSON";}})',context);
  assert.deepEqual(Array.from(broken),[]);
 });
-test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ, PDB, PNG and SVG choices',()=>{
+test('Save dialog offers offline STL and binary glTF 3D exports alongside existing formats',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','svg']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','svg','stl','glb']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');
