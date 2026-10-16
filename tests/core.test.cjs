@@ -32,6 +32,11 @@ class Vector3 {
   negate() { this.x = -this.x; this.y = -this.y; this.z = -this.z; return this; }
 }
 const htmlShell = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+assert.match(htmlShell,/"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
+assert.doesNotMatch(htmlShell,/cdn\.jsdelivr\.net|unpkg\.com/,'the editor must not depend on a Three.js CDN');
+for(const name of ['build/three.core.js','build/three.module.js','examples/jsm/controls/OrbitControls.js',
+ 'examples/jsm/geometries/ConvexGeometry.js','examples/jsm/math/ConvexHull.js','LICENSE'])
+ assert.ok(fs.statSync(path.join(__dirname,'..','vendor/three',name)).size>0,'missing local Three.js '+name);
 const moduleScript = fs.readFileSync(path.join(__dirname, '..', 'crystal-app.js'), 'utf8');
 // The application's sources are separate deployable files; assertions below
 // intentionally inspect their combined content without re-embedding it in HTML.
@@ -45,6 +50,7 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
+vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,pngExportLimits});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
@@ -62,6 +68,20 @@ test('fractional x/y/z bounds include negative periodic images without unbounded
  assert.throws(()=>visualV2.validatedBounds([[1.1,-.1],[0,1],[0,1]]),/Sınır aralığı/);
  assert.throws(()=>visualV2.validatedBounds([[-9,2],[0,1],[0,1]]),/Sınır aralığı/);
  assert.equal(visualV2.MAX_ATOMS,20000);assert.equal(visualV2.MAX_BONDS,65000);
+});
+test('polyhedron center skips uncoordinated Ba and chooses sixfold Ti in perovskite',()=>{
+ const p=api.examples('perovskite'),B=api.basis(p.cell);
+ const rules=new Map(),cut=p.cut;
+ assert.ok(api.coordinationNeighbors(p.sites,0,B,rules,cut,true,12).length<4);
+ assert.equal(api.coordinationNeighbors(p.sites,1,B,rules,cut,true,12).length,6);
+ assert.equal(api.bestPolyhedronElement(p.sites,B,rules,cut,true,12),'Ti');
+ assert.doesNotMatch(moduleScript,/count\s*<\s*64\s*;i\+\+/,'polyhedra must not silently truncate at 64');
+});
+test('PNG checks actual viewport and renderbuffer limits, not texture size alone',()=>{
+ const gl={MAX_VIEWPORT_DIMS:1,MAX_RENDERBUFFER_SIZE:2,getParameter(k){return k===1?[5000,2100]:3000;}};
+ assert.deepEqual(JSON.parse(JSON.stringify(api.pngExportLimits(gl,8192))),
+  {width:3000,height:2100,maxPixels:24000000});
+ assert.throws(()=>api.pngExportLimits({...gl,getParameter:()=>null},8192),/WebGL PNG/);
 });
 test('per-site atom/polyhedron styles and fractional bounds survive validated project roundtrip',()=>{
  const model=JSON.parse(vm.runInContext('JSON.stringify(lastCrystalPayload(state))',context));

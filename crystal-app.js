@@ -101,7 +101,7 @@ function validatedVisualSite(site){
 let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},planeLayers:[],rep:[2,2,2],bounds:DEFAULT_BOUNDS.map(v=>v.slice()),style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyColor:'#54a1db',polyOpacity:.25,polyCut:0,polyNeighbors:12,warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomRender=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer,measurementHistory=[];
 // InstancedMesh reduces draw calls; these are safety caps, not guaranteed FPS.
-const MAX_ATOMS=20000,MAX_BONDS=65000;
+const MAX_ATOMS=20000,MAX_BONDS=65000,MAX_POLYHEDRA=2400;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
 const sphereLowGeometry=new THREE.SphereGeometry(1,12,8);
 const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
@@ -1266,6 +1266,21 @@ function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=2
  found.sort((a,b)=>a.distance-b.distance||a.index-b.index);
  return found.slice(0,Math.max(1,Math.min(24,Math.floor(maxNeighbors)||12)));
 }
+/* Choose a viable center when switching into polyhedral mode. Prefer a 4–8
+   coordinate environment (six is typical for perovskite octahedra), sampling
+   a few inequivalent sites per element rather than every supercell image. */
+function bestPolyhedronElement(sites,B,rules,cut,auto,maxNeighbors=12){
+ const tried=new Map();let best=null;
+ for(let i=0;i<sites.length;i++){
+  const element=cleanSymbol(sites[i].symbol),count=tried.get(element)||0;
+  if(count>=4)continue;tried.set(element,count+1);
+  const neighbors=coordinationNeighbors(sites,i,B,rules,cut,auto,maxNeighbors).length;
+  if(neighbors<4)continue;
+  const score=(neighbors<=8?100:30)-Math.abs(neighbors-6);
+  if(!best||score>best.score)best={element,score};
+ }
+ return best?.element||cleanSymbol(sites[0]?.symbol||'');
+}
 function coordinateBondSuggestion(a,b){
  const r=(RADII[a]||1.1)+(RADII[b]||1.1);
  return [Math.max(.35,Math.round(.72*r*20)/20),Math.min(15,Math.round(1.2*r*20)/20)];
@@ -2313,12 +2328,17 @@ function renderLayerManager(){
 
 function build(){
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
- if(state.style==='poly'&&!state.poly)state.poly=cleanSymbol(state.sites[0].symbol);
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
  const B=basis(state.cell);const center=toCart(state.rep.map(v=>v/2),B);clearRoot();root.position.copy(center).multiplyScalar(-1);
  if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting))throw Error('Uzay grubu simetrisi hücre metrikleriyle uyumsuz. Hücreyi veya uzay grubunu düzeltin.');
  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
+ if(state.style==='poly'&&!state.poly){
+  const rules=parseBondRules(state.bondRules),manual=state.polyCut>0;
+  state.poly=bestPolyhedronElement(physical,B,manual?new Map():rules,manual?state.polyCut:state.cut,
+   manual?false:state.autoBond,state.polyNeighbors||12);
+  if($('polyElement'))fillPoly();
+ }
  const positions=new Set(),entry=[];
  for(let s=0;s<physical.length;s++){
   const site=physical[s];site.symbol=cleanSymbol(site.symbol);for(const k of ['x','y','z'])if(!Number.isFinite(Number(site[k])))throw Error('Atom koordinatları sayısal olmalıdır.');
@@ -2410,23 +2430,45 @@ function build(){
  addCellLines(B,state.rep);drawMillerPlane(B);drawMorphology(B,center);drawOverlayStructures(B,center);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
  if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');}
+ let polyCount=0,polyTruncated=false,polyFailed=0;
  if(state.poly){
   const polyRules=state.polyCut>0?new Map():rules,polyCutoff=state.polyCut>0?state.polyCut:state.cut;
-  let count=0;
-  for(let i=0;i<entry.length&&count<64;i++){
+  const cache=new Map(),facePositions=[],faceNormals=[],faceColors=[],edgePositions=[];
+  for(let i=0;i<entry.length;i++){
    if(!atomRender[i].visible||entry[i].site.symbol!==state.poly)continue;
-   const neighbors=coordinationNeighbors(physical,entry[i].idx,B,polyRules,polyCutoff,state.polyCut>0?false:state.autoBond,state.polyNeighbors||12);
+   if(!cache.has(entry[i].idx))cache.set(entry[i].idx,coordinationNeighbors(
+    physical,entry[i].idx,B,polyRules,polyCutoff,state.polyCut>0?false:state.autoBond,state.polyNeighbors||12));
+   const neighbors=cache.get(entry[i].idx);
    if(neighbors.length<4)continue;
+   if(polyCount>=MAX_POLYHEDRA){polyTruncated=true;break;}
    try{
     const vertices=neighbors.map(nb=>entry[i].pos.clone().add(toCart(nb.delta,B)));
-    const g=new ConvexGeometry(vertices);
-    const mat=new THREE.MeshPhongMaterial({color:visualHex(entry[i].site.polyColor,state.polyColor||'#54a1db'),side:THREE.DoubleSide,
-     transparent:true,opacity:entry[i].site.polyOpacity??state.polyOpacity??.25,depthWrite:false,shininess:70});
-    const mesh=new THREE.Mesh(g,mat);addLayerObject(mesh,'polyhedra');
-    const edges=new THREE.LineSegments(new THREE.EdgesGeometry(g),
-     new THREE.LineBasicMaterial({color:0x4296c2,transparent:true,opacity:.74}));
-    addLayerObject(edges,'polyhedra');count++;
-   }catch(err){console.warn('Koordinasyon çokyüzlüsü oluşturulamadı:',err.message);}
+    const geometry=new ConvexGeometry(vertices);
+    const positions=geometry.getAttribute('position'),normals=geometry.getAttribute('normal');
+    const color=new THREE.Color(visualHex(entry[i].site.polyColor,state.polyColor||'#54a1db'));
+    const alpha=entry[i].site.polyOpacity??state.polyOpacity??.25;
+    for(let v=0;v<positions.count;v++){
+     facePositions.push(positions.getX(v),positions.getY(v),positions.getZ(v));
+     faceNormals.push(normals.getX(v),normals.getY(v),normals.getZ(v));
+     faceColors.push(color.r,color.g,color.b,alpha);
+    }
+    const outline=new THREE.EdgesGeometry(geometry),edge=outline.getAttribute('position');
+    for(let v=0;v<edge.count;v++)edgePositions.push(edge.getX(v),edge.getY(v),edge.getZ(v));
+    outline.dispose();geometry.dispose();polyCount++;
+   }catch(err){polyFailed++;console.warn('Koordinasyon çokyüzlüsü oluşturulamadı:',err.message);}
+  }
+  if(polyCount){
+   const merged=new THREE.BufferGeometry();
+   merged.setAttribute('position',new THREE.Float32BufferAttribute(facePositions,3));
+   merged.setAttribute('normal',new THREE.Float32BufferAttribute(faceNormals,3));
+   merged.setAttribute('color',new THREE.Float32BufferAttribute(faceColors,4));
+   const mesh=new THREE.Mesh(merged,new THREE.MeshPhongMaterial({color:0xffffff,vertexColors:true,
+    side:THREE.DoubleSide,transparent:true,opacity:1,depthWrite:false,shininess:70}));
+   mesh.userData.polyhedraCount=polyCount;addLayerObject(mesh,'polyhedra');
+   const borders=new THREE.BufferGeometry();
+   borders.setAttribute('position',new THREE.Float32BufferAttribute(edgePositions,3));
+   addLayerObject(new THREE.LineSegments(borders,new THREE.LineBasicMaterial({color:0x4296c2,
+    transparent:true,opacity:.74})),'polyhedra');
   }
  }
  drawSelection();
@@ -2440,7 +2482,12 @@ function build(){
  recordHistoryChange();
  persistLastCrystal();
  if(reciprocalPage?.visible)reciprocalPage.refresh();
- report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
+ report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',
+  capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',
+  state.poly&&!polyCount?state.poly+' için eşik içinde en az dört komşulu çokyüzlü oluşturulamadı; merkez atomu veya bağ eşiğini değiştirin.':'',
+  polyTruncated?'Çokyüzlü sayısı '+MAX_POLYHEDRA+' sınırına ulaştı; geri kalanı çizilmedi. Tekrar sayısını azaltın.':'',
+  polyFailed?polyFailed+' çokyüzlü geometrisi oluşturulamadı.':'',
+  state.labels&&entry.length>160?'Performans için 160 atomdan fazla yapıda etiketler gizlendi.':''].filter(Boolean).join(' '));
  return true;
  }catch(e){$('renderStatus').textContent='Yapı hatası';inform(e.message||String(e));report(e.message||String(e));return false;}
 }
@@ -3221,7 +3268,7 @@ function syncControls(){
  syncQuickbar();
  try{previewPlane();}catch(e){}fillPoly();syncAnalysisAvailability();renderSites();renderBondRuleEditor();renderMillerLayerList();renderMorphList();renderOverlayList();renderLayerManager();
 }
-function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
+ function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
 
 function renderBondRuleEditor(){
  const elements=[...new Set(state.sites.map(s=>cleanSymbol(s.symbol)))].sort();
@@ -4260,20 +4307,54 @@ function exportPdb(){
  const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
  download(safeName(state.name)+'.pdb',pdbExportText(state.cell,sites),'chemical/x-pdb');
 }
+function pngExportLimits(gl,maxTextureSize){
+ const viewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS),renderbuffer=gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
+ if(!viewport||viewport.length!==2||!Number.isFinite(renderbuffer))throw Error('WebGL PNG sınırları okunamadı.');
+ return {width:Math.min(8192,maxTextureSize,renderbuffer,viewport[0]),
+  height:Math.min(8192,maxTextureSize,renderbuffer,viewport[1]),maxPixels:24000000};
+}
+/* Native WebGL line widths are commonly fixed to one hardware pixel. For
+   export only, overlay depth-tested instanced cylinders that retain legible
+   screen-relative cell edges at 2–4× output resolution. */
+function pngCellStrokeMeshes(cssHeight){
+ if(!state.cellVisible||state.layers?.cell?.visible===false)return [];
+ const frame=projectionVisibleHeight(camera,camera.position.distanceTo(orbit.target));
+ const radius=Math.max(.003,frame/Math.max(cssHeight,1)*.65),temporary=[];
+ for(const item of root.children.filter(obj=>obj.userData.layer==='cell'&&obj.isLineSegments&&obj.visible)){
+  const vertices=item.geometry.getAttribute('position'),segments=[];
+  for(let i=0;i+1<vertices.count;i+=2)segments.push([
+   new THREE.Vector3().fromBufferAttribute(vertices,i),new THREE.Vector3().fromBufferAttribute(vertices,i+1)]);
+  if(!segments.length)continue;
+  const material=new THREE.MeshBasicMaterial({color:item.material.color,transparent:true,
+   opacity:item.material.opacity,depthWrite:false});
+  const mesh=addInstancedCylinders(segments,radius,material,'cell');
+  temporary.push(mesh);
+ }
+ return temporary;
+}
 function screenshot(){
  const factor=Number($('pngScale').value),rect=$('stage').getBoundingClientRect();
  const width=Math.round(rect.width*factor),height=Math.round(rect.height*factor);
- const maxDimension=Math.min(8192,renderer.capabilities.maxTextureSize||8192);
- if(![1,2,3,4].includes(factor)||width<1||height<1||width>maxDimension||height>maxDimension||width*height>24000000)
-  throw Error('PNG boyutu ekran kartı sınırını aşıyor; çözünürlüğü düşürün (en fazla 24 MP ve 8192 px).');
+ const gl=renderer.getContext(),limits=pngExportLimits(gl,renderer.capabilities.maxTextureSize);
+ if(![1,2,3,4].includes(factor)||width<1||height<1||width>limits.width||height>limits.height||width*height>limits.maxPixels)
+  throw Error('PNG boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; çözünürlüğü düşürün.');
  const previousRatio=renderer.getPixelRatio();
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+ const temporary=[];
  try{
   renderer.setPixelRatio(1);renderer.setSize(width,height,false);
+  if(renderer.domElement.width!==width||renderer.domElement.height!==height||
+   gl.drawingBufferWidth!==width||gl.drawingBufferHeight!==height||gl.isContextLost())
+   throw Error('WebGL gerçek çizim tamponu istenen PNG boyutunu sağlamıyor. Daha düşük çözünürlük seçin.');
+  temporary.push(...pngCellStrokeMeshes(rect.height));
   renderer.render(scene,camera);
-  const ctx=canvas.getContext('2d');if(!$('pngTransparent').checked){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('PNG çizim yüzeyi oluşturulamadı.');
+  if(!$('pngTransparent').checked){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
   ctx.drawImage(renderer.domElement,0,0);
- }finally{renderer.setPixelRatio(previousRatio);resize();renderer.render(scene,camera);}
+ }finally{
+  for(const mesh of temporary){root.remove(mesh);mesh.material.dispose();}
+  renderer.setPixelRatio(previousRatio);resize();renderer.render(scene,camera);
+ }
  canvas.toBlob(blob=>{if(blob)download(safeName(state.name)+'_'+width+'x'+height+'.png',blob,'image/png');else inform('PNG kaydı oluşturulamadı.');},'image/png');
 }
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
@@ -5093,8 +5174,6 @@ function renderOpenModal(){
   if(item.type==='preset'){
    const meta=presetMetadata(item.key);
    host.append(openEntry(meta.name,meta.spacegroup+' · '+meta.sites+' atom · '+meta.elements.join(', '),'◇',()=>{
-    const selectedWorkspace=activeWorkspaceId;
-    if(selectedWorkspace!==activeWorkspaceId)return;
     try{loadPreset(item.key);closeOpenModal();inform(meta.name+' · '+(activeWorkspace()?.label||'')+' alanına yüklendi.');}
     catch(error){inform('Örnek açılamadı: '+error.message);}
    }));
@@ -5111,7 +5190,8 @@ function renderOpenModal(){
  }
 }
 function openOpenModal(){
- openFocusBefore=document.activeElement;openTab='favorites';
+ openFocusBefore=document.activeElement;
+ openTab=PRESET_KEYS.some(presetIsFavorite)||codBookmarks.length?'favorites':'examples';
  $('openModal').hidden=false;renderOpenModal();$('openModal').querySelector('.open-dialog').focus();
 }
 function closeOpenModal(){
@@ -5283,7 +5363,7 @@ function initQuickbar(){
 }
 
 const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD (öğretici)','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristalografik simetri'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristalografik simetri'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -5415,8 +5495,7 @@ function bind(){
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible'])$(k).addEventListener('change',e=>{
   const oldStyle=state.style;state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;
-  if(k==='style'){if(state.style==='poly'&&!state.poly)state.poly=state.sites[0]?.symbol||'';
-   else if(oldStyle==='poly'&&state.style!=='poly')state.poly='';fillPoly();}
+   if(k==='style'){if(oldStyle==='poly'&&state.style!=='poly')state.poly='';fillPoly();}
   if(k!=='autoRotate')build();else{recordHistoryChange();persistLastCrystal();}
  });
  for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});

@@ -16,7 +16,7 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 **Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
 
-Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. Three.js **0.182.0** modülleri CDN'den; otomatik simetri analizi için Moyo WASM dosyaları dağıtımın yerel `vendor/` dizininden yüklenir. Bu nedenle **ilk açılış tamamen çevrimdışı değildir**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
+Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Tam çevrimdışı PWA/Service Worker önbelleği henüz yoktur**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
 ## Arayüz
 
@@ -130,7 +130,8 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - CIF içindeki `Uiso/Biso` ve `Uij/Bij` alanlarından yönlenmiş **termal elipsoitler**; uygun olmayan tensörler görselleştirilmez.
 - Süperhücre tekrarları 1–6; Three.js **InstancedMesh** ile atomlar türlerine, bağlar tek bir geometriye göre gruplanır. Güvenlik üst sınırı **20.000 görüntülenen atom** ve **65.000 bağdır**. Bunlar FPS garantisi değildir: GPU, WebGL, etiketler, ADP, çokyüzlü ve sahne karmaşıklığı sonucu etkiler. **5.000 atomdan sonra** daha seyrek küre ağına geçilir.
 - Sınır aralıkları her eksen için normalleştirilmiş kesirli koordinatlarda seçilebilir (örn. `x: −0.1…1.1`); süperhücre tekrarları uç aralığa eklenir. Bağların periyodik gösterimi özel sınır aralıklarında görsel atom listesi üzerinden yapılır.
-- Çokyüzlü model artık alt çubukta bağımsız seçenek olarak bulunur. Merkez atom türü ve genel rengi/opaklığı seçilir; ayrı asimetrik atom sitelerine stil tanımlanabilir. Çokyüzlü çizim **en fazla 64 merkezin geometrik koordinasyonunu** gösterir; elektronik bağ düzeni değildir.
+- Çokyüzlü model alt çubukta bağımsız seçenek olarak bulunur. Başlatıldığında **4–8 komşuya sahip merkez türü** öncelikli seçilir (ör. BaTiO₃'te Ba yerine Ti). Aynı fiziksel sitenin komşuları bir kez hesaplanıp süperhücre kopyalarına taşınır. Yüzeyler **tek renk/alpha öznitelikli mesh**, kenarlar **tek çizim geometrisi** olarak gruplanır. Geometrik yükü sınırlamak için **2400 çokyüzlü** üst sınırı vardır; aşıldığında veya seçili türde uygun koordinasyon bulunmadığında kullanıcıya açık uyarı gösterilir. Bu çizim elektronik bağ düzeni değildir.
+- Yüksek çözünürlüklü PNG'de ekran kartının **MAX_TEXTURE_SIZE, MAX_RENDERBUFFER_SIZE ve MAX_VIEWPORT_DIMS** sınırları önceden kontrol edilir; gerçek WebGL çizim tamponu istenen ölçüyü sağlamazsa dosya oluşturulmaz. 24 MP uygulama sınırı korunur. Düz WebGL çizgisi 4× çıktıda bir piksele sıkışmasın diye, PNG render sırasında hücre çizgilerine geçici, derinlik testli kalın geometriler eklenir; normal interaktif sahne bundan etkilenmez.
 
 ### Geometrik analiz ve Miller
 
@@ -169,7 +170,7 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 
 ### VESTA ile güncel başlıca farklar
 
-- **P0 — Tam bağımsız çevrimdışı paket:** Three.js halen CDN'den geliyor; uygulamanın servis çalışanı (Service Worker), sürümlü önbelleği veya çevrimdışı PWA paketi yok.
+- **P0 — Tam bağımsız çevrimdışı paket:** Three.js ve Moyo WASM artık kendi GitHub Pages dağıtımımızdan yüklenir. **Kalan:** Service Worker, sürümlü önbellek, ağ kesildiğinde garantili yeniden açılış ve offline E2E testi.
 - **P1 — Paket A + Paket B (bilimsel doğruluk):** XRD `d_min` küresel taraması, fiziksel tür/birim kontrollü CUBE/XSF, minimum eşiği, PDB CRYST1/element doğrulaması ve simetri site kimlikleri (A); nötron Lorentz/absorpsiyon uyarıları, `d_min`/FFT tabanlı Fourier 64³, üç kaynaklı Δρ, PAW/AECCAR uyarıları ve PDB element alanı büyük-harf dışa aktarımı (B) eklendi.
 - **P1 — Fiziksel hesaplamalar (model + deneysel FCF altkümesi):** IT92 ve doğal nötron `b`, model Fourier/Patterson, fazlı SHELX `.fcf` Fo/Fo−Fc FFT, örneklenmiş Voronoi ve iyonik Ewald mevcut. **Kalan:** `.mtz` ve fazsız FCF çözümleri, anomal saçılma, izotop çözünürlüğü, deneysel XRD profili/RIETAN-FP eşdeğeri, Bader analizi ve geniş yakınsama benchmarkları.
 - **P1 — Dosya ve simetri kapsamı:** PDB/ENT kristal koordinatları ve ANISOU, CHGCAR spin ızgaraları, sınırlı mCIF moment/simetri görselleştirmesi eklendi. **Kalan:** `.vesta` projeleri, geniş biyomoleküler/kuantum kimyası biçimleri, tam BNS/manyetik süperuzay grupları, SAXIS düzeltmesi ve ayrıntılı setting/orijin dönüşümleri.
@@ -180,11 +181,11 @@ Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/
 
 ## Çevrimdışı çalışma (COD hariç)
 
-**Şu an tam çevrimdışı çalışacağı garanti edilmez.** Kod ve bilimsel hesaplamaların büyük bölümü tarayıcıda çalışır. Dağıtımda Moyo WASM, dil paketi ve favicon yerel dosyadır; ancak Three.js modülleri `cdn.jsdelivr.net` üzerinden alınır. İlk ağsız açılış, CDN önbelleği boşsa 3B arayüzü başlatamayabilir. GitHub Pages'in normal HTTP önbelleği çevrimdışı destek garantisi değildir.
+**CDN bağımlılığı giderildi; tam çevrimdışı açılış hâlâ garanti edilmez.** Three.js 0.186.1 (çekirdek, OrbitControls, ConvexGeometry ve ConvexHull), Moyo WASM, dil paketi ve favicon sitenin **kendi alan adından** yüklenir. Ancak GitHub Pages'in normal HTTP önbelleği, bağlantı kesildiğinde sayfanın her zaman açılmasını garanti etmez. Uygulamada Service Worker/PWA önbelleği bulunmamaktadır.
 
 Tam çevrimdışı/PWA için üç iş gerekir:
 
-1. Three.js 0.182.0 çekirdeğini ve kullanılan OrbitControls/ConvexGeometry modüllerini aynı sürümle **yerel `vendor/`** altından sunmak; import map'i yerel dosyalara geçirmek.
+1. <s>Three.js çekirdeği ve eklentilerini yerel `vendor/` altında sunmak.</s> **Tamamlandı.** Kaynak sürümü, paket bütünlük özeti ve MIT lisansı [vendor/three/README.md](vendor/three/README.md) içinde.
 2. `index.html`, `styles.css`, `crystal-app.js`, `translations.js`, `favicon.svg`, Three.js ve Moyo WASM varlıklarını kapsayan sürümlü **Service Worker / precache** ve güncelleme stratejisi eklemek. COD/Worker istekleri zorunlu cache'e dahil edilmemeli.
 3. Ağ bağlantısını tamamen keserek ilk kurulum sonrası açılış, CIF/POSCAR/XYZ içe/dışa aktarımı, 3B kontrol, analiz, dil geçişi ve kayıt geri yükleme için tarayıcı E2E testi yapmak.
 
@@ -222,7 +223,7 @@ GitHub Pages ayarlarında **Settings → Pages → Build and deployment → Sour
 
 ## Kaynaklar ve lisans notları
 
-- 3B motoru: [Three.js](https://threejs.org/), sürüm 0.182.0.
+- 3B motoru: [Three.js](https://threejs.org/), sürüm **0.186.1**, GitHub Pages'e paketlenen [MIT lisanslı yerel ES modülleri](vendor/three/README.md).
 - Otomatik simetri: [moyo-wasm](https://github.com/spglib/moyo/tree/main/moyo-wasm), sürüm 0.21.0; dağıtıma eklenen [MIT](licenses/LICENSE-MOYO-MIT.txt) ve [Apache-2.0](licenses/LICENSE-MOYO-APACHE.txt) lisansları.
 - Uzay grubu/Wyckoff referans tabloları: [spglib](https://github.com/spglib/spglib) ve [wyckoff](https://github.com/anoopkcn/wyckoff) kaynaklarından türetilmiş veriler. Atıf/lisans bildirimleri uygulama kaynağında yer alır.
 - COD kaynak/API: [Crystallography Open Database](https://www.crystallography.net/cod/) ve [resmî REST API açıklaması](https://wiki.crystallography.net/RESTful_API/).

@@ -7,11 +7,11 @@
 | Aç / kaydet ve kütüphane | Favoriler (COD yer imi + örnek yapı), hazır yapılar ve yerel dosyaları birleştiren Aç modalı; simgeli kompakt üst butonlar, Kütüphane içinde etkin workspace göstergesi | Çoklu dosyayı aynı anda açma, yeniden adlandırılmış favori koleksiyonları, tam klavye/ekran okuyucu denetimi |
 | Dil ve panel başlıkları | TR/EN için statik Türkçe başlık kaynakları; düğmelerin hover görünürlüğü, UI çevirileri | Dinamik bilimsel hata mesajlarının tam çift dilliliği |
 | Çizim ölçeği | Atomlar element bazlı, bağlar toplu `InstancedMesh`; atom sınırı 20.000, bağ sınırı 65.000; 5.000+ atomda basit küre | Farklı cihazlarda FPS/GPU bellek ölçümü, instanced ADP/etiketler, daha büyük yapı için LOD ve WebGPU |
-| Çokyüzlü ve site stilleri | Alt model listesinde polyhedra, seçilebilir merkez türü, varsayılan/atom sitesi bazında renk ve opaklık, atom sitesi rengi/ölçeği | Çokyüzlü sayısı 64 merkezle sınırlı; yoğun/karmaşık sahne optimizasyonu, per-facet stiller |
-| Sınırlar ve çıktı | x/y/z için −1…2 kesirli pencere, periyodik görüntüler; 1×–4× beyaz/şeffaf PNG (24 MP/8192 px sınırı) | TIFF/SVG, 3B STL/glTF, tipografi/vektörel makale çıktıları |
-| Dosya mimarisi | HTML iskeleti + `styles.css` + `crystal-app.js` + `translations.js`; GitHub Pages ve test dağıtımı güncellendi | Tek büyük uygulama modülünü domain modüllerine bölme, import/export API sınırları, offline vendor bundling |
+| Çokyüzlü ve site stilleri | Koordinasyonla seçilen otomatik merkez türü; fiziksel site komşu önbelleği; tek yüzey mesh'i (RGB+alpha), tek kenar geometrisi ve 2400 merkez üst sınırında açık uyarı; site bazında renk/opaklık | Çok büyük sahnelerde FPS ve GPU bellek profili; per-facet stiller, gelişmiş çokyüzlü LOD |
+| Sınırlar ve çıktı | x/y/z için −1…2 kesirli pencere; 1×–4× beyaz/şeffaf PNG (24 MP / WebGL texture-renderbuffer-viewport sınırları, gerçek tampon boyutu testi), dışa aktarımda kalın hücre çizgileri | TIFF/SVG, 3B STL/glTF, tipografi/vektörel makale çıktıları |
+| Dosya mimarisi | HTML/CSS/JS modülleri; resmî Three.js 0.186.1 altkümesi MIT lisansıyla yerel `vendor/three`; GitHub Pages dağıtımı/CDN'siz gerçek WebGL testi | Uygulama modülünü alanlara ayırma, Service Worker/PWA ile çevrimdışı tekrar açılış |
 
-Bu pakette bildirilen atom/bağ sayıları **koruyucu uygulama sınırlarıdır, ölçülmüş performans hızlanması değildir**. Canlı COD ve Three.js CDN'i ağ gerektirmeye devam eder.
+Bu pakette bildirilen atom/bağ/çokyüzlü sayıları **koruyucu uygulama sınırlarıdır, ölçülmüş performans hızlanması değildir**. Three.js üçüncü taraf CDN'den yüklenmez; canlı COD ve ilk site ziyareti hâlâ ağ gerektirir.
 
 ## Kavram laboratuvarı · Karşı Uzay ve Kırınım (Ekim 2026)
 
@@ -67,7 +67,7 @@ Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirm
 
 **Kalan P1 önceliği:** deneysel `.mtz` (ve fazsız FCF için faz çözümü değil, dışarıdan model-faz eşleme) ve nicel FCF ölçek/doğrulama; özgül izotop/anomal saçılma; geniş referans testleri, tam BNS manyetik gruplar, spinor ekseni/SAXIS dönüşümü, Hall setting/orijin ve VESTA proje biçimi.
 
-Bu plan gerçek VESTA özellikleriyle statik HTML/CSS/JavaScript tabanlı tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a; 3B görüntü Three.js CDN'ine bağlıdır.
+Bu plan gerçek VESTA özellikleriyle statik HTML/CSS/JavaScript tabanlı tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a bağlıdır; 3B motoru yerel Three.js ES modülleriyle çalışır.
 
 ## VESTA Aşama 1 — bu dalda uygulanan kapsam
 
@@ -156,7 +156,7 @@ Bu adımlar **kodlandı ve 84/84 regresyon testi başarılı**. Ancak gerçek ta
 - Üretim yine frontend ağırlıklı ve tarayıcı tabanlı kalmalı. Büyük hacimsel veriler için Web Worker/WASM tercih edilebilir.
 - CUBE/CHGCAR/XSF dosyalarındaki nicelikler **dosyada ne varsa odur**; renklendirmenin tek başına elektron yoğunluğu veya elektrostatik potansiyel hesapladığı söylenmemeli.
 - Eklenecek her fiziksel hesap için referans fixture, ölçülebilir tolerans ve bilinen bilimsel sınırlama gerekir.
-- Çalışma yapılırken tek dosya düzeni, harici Three.js CDN bağımlılığı ve çevrimdışı kullanım hedefi birlikte değerlendirilmelidir.
+- Three.js sürümü depodaki yerel dosyalarla sabitlenmiştir; önbelleğe alınmayan ilk sayfa isteği ile offline Service Worker hedefi birbirinden ayrı değerlendirilmelidir.
 
 ### A3.1 — Hücre dönüşümü (kısmi)
 
