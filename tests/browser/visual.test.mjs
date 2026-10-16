@@ -147,6 +147,13 @@ try{
   'with no favorites the Open dialog must start on populated sample structures');
  assert.equal(await page.locator('#openList .open-item').count(),7);
  await page.locator('#openModalClose').click();
+ await page.locator('#saveBtn').click();
+ const [svgDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="svg"]').click()]);
+ const svgSource=await fs.readFile(await svgDownload.path(),'utf8');
+ assert.match(svgSource,/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+ assert.match(svgSource,/<circle/,'SVG export must contain real vector atoms');
+ assert.match(svgSource,/<path/,'SVG export must contain lattice/bond vector strokes');
+ assert.doesNotMatch(svgSource,/<image|data:image|foreignObject/,'SVG must not embed a raster screenshot');
  await page.locator('#languageTurkish').click();
  assert.equal(await page.locator('#libraryNav').textContent(),'Kütüphane');
  assert.equal(await page.locator('html').getAttribute('lang'),'tr');
@@ -401,6 +408,22 @@ try{
  await page.locator('#volumeFile').setInputFiles({name:'density.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf)});
  if(!await page.locator('#rightDrawerPane-volume').isVisible())await page.locator('[data-right-tool="volume"]').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1,null,{timeout:10000});
+ await page.locator('#volumeContours').check();
+ await page.locator('#volumeContourCount').fill('10');await page.locator('#volumeContourCount').dispatchEvent('change');
+ assert.equal(await page.locator('#volumeSlicePreview').isVisible(),true,'2D slice preview must be visible');
+ assert.ok(await canvasInk(page,'#volumeSlicePreview')>10,'contoured slice preview must have sampled pixels');
+ const previewBounds=await page.locator('#volumeSlicePreview').boundingBox();
+ await page.mouse.move(previewBounds.x+previewBounds.width*.2,previewBounds.y+previewBounds.height*.3);
+ await page.mouse.down();
+ await page.mouse.move(previewBounds.x+previewBounds.width*.8,previewBounds.y+previewBounds.height*.7,{steps:6});
+ await page.mouse.up();
+ await page.waitForFunction(()=>document.getElementById('volumeLineStats')?.textContent?.includes('geçerli örnek'));
+ assert.equal(await page.locator('#volumeLineChart').isVisible(),true);
+ assert.match(await page.locator('#volumeLineStats').textContent(),/Å/);
+ const [lineDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#volumeLineCsv').click()]);
+ const lineCsv=await fs.readFile(await lineDownload.path(),'utf8');
+ assert.match(lineCsv,/^distance_A,u,v,x_A,y_A,z_A,value_/);
+ assert.equal(lineCsv.trim().split('\n').length,130,'129 sampled values plus CSV header');
  await page.locator('#volumeIsoAdd').click();
  assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
  const xsf2=['BEGIN_BLOCK_DATAGRID_3D','density2','BEGIN_DATAGRID_3D_density',
