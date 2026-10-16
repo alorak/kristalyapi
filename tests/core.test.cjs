@@ -42,6 +42,8 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
+vm.runInContext('this.p1={linearVolumeCombination,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbExportText,parseIonicCharges,madelungEwald};',context);
+const p1=context.p1;
 vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -643,10 +645,10 @@ test('preset favorites store only allowlisted structure keys',()=>{
  const broken=vm.runInContext('loadPresetFavorites({getItem(){return "invalid JSON";}})',context);
  assert.deepEqual(Array.from(broken),[]);
 });
-test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ and PNG choices',()=>{
+test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ, PDB and PNG choices',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','png']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');
@@ -655,6 +657,7 @@ test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ and PNG cho
  assert.equal(api.exportFunction('cif').name,'exportCif');
  assert.equal(api.exportFunction('poscar').name,'exportPoscar');
  assert.equal(api.exportFunction('xyz').name,'exportXyz');
+ assert.equal(api.exportFunction('pdb').name,'exportPdb');
  assert.equal(api.exportFunction('png').name,'screenshot');
  assert.throws(()=>api.exportFunction('unsafe'));
  assert.ok(!html.includes('<h2>Dışa aktarma</h2>'));
@@ -1412,6 +1415,54 @@ test('phase2 quantitative slice: correct physical axes, mean and CSV values for 
  assert.throws(()=>api.sliceSampleMatrix(g,8,50,3));
  assert.throws(()=>api.sliceSampleMatrix(g,2,101,3));
 });
+test('P1 volumetric arithmetic interpolates mismatched resolution without silently mixing units',()=>{
+ const valsA=[],valsB=[];
+ for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)valsA.push(2*(i+j+k));
+ for(let i=0;i<5;i++)for(let j=0;j<5;j++)for(let k=0;k<5;k++)valsB.push((i+j+k)/2);
+ const a=api.volumeGrid([3,3,3],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],valsA,'rho A','e/Å³');
+ const b=api.volumeGrid([5,5,5],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],valsB,'rho B','e/Å³');
+ const diff=p1.linearVolumeCombination(a,b,-1);
+ assert.equal(diff.derivation.resampled,true);
+ approx(diff.values[api.gridIndex(diff,2,1,1)],4,1e-5);
+ approx(diff.min,0);approx(diff.max,6);
+ const doubled=p1.linearVolumeCombination(a,a,1);
+ assert.equal(doubled.derivation.resampled,false);approx(doubled.max,24);
+ const voltage=api.volumeGrid([5,5,5],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],valsB,'V','volt');
+ assert.throws(()=>p1.linearVolumeCombination(a,voltage,-1),/birim/i);
+ assert.throws(()=>p1.linearVolumeCombination(a,b,Infinity));
+});
+test('P1 3D peak search finds interior maxima/minima, excludes boundaries and exports Å coordinates',()=>{
+ const vals=Array(7**3).fill(0),index=(i,j,k)=>(i*7+j)*7+k;
+ vals[index(2,2,2)]=10;vals[index(4,4,4)]=-5;vals[index(0,0,0)]=99;
+ const g=api.volumeGrid([7,7,7],[10,20,30],[[.5,0,0],[0,1,0],[0,0,2]],vals,'synthetic','e/Å³');
+ const peaks=p1.volumeFindPeaks(g,{mode:'max',threshold:6,limit:5});
+ assert.equal(peaks.length,1);approx(peaks[0].value,10);
+ approx(peaks[0].x,11);approx(peaks[0].y,22);approx(peaks[0].z,34);
+ const troughs=p1.volumeFindPeaks(g,{mode:'min',threshold:4,limit:5});
+ assert.equal(troughs.length,1);approx(troughs[0].value,-5);
+ assert.match(p1.volumePeaksCsv(peaks,g.units),/11\.00000000,22\.00000000,34\.00000000/);
+ assert.throws(()=>p1.volumeFindPeaks(g,{mode:'max',threshold:-1}));
+});
+test('P1 oblique Miller slice uses real unit-cell reciprocal normal and clips to the volume grid',()=>{
+ const vals=[];for(let i=0;i<=4;i++)for(let j=0;j<=4;j++)for(let k=0;k<=4;k++)vals.push(i+j+k);
+ const g=api.volumeGrid([5,5,5],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],vals,'linear','e/Å³');
+ const cell={...cubic,a:4,b:4,c:4};
+ const frame=p1.sliceMillerFrame(g,cell,1,1,1,50);
+ assert.ok(frame.intersectionCount>=3);
+ for(const corner of frame.corners)approx(corner.reduce((a,b)=>a+b,0),6,1e-6);
+ const cut=api.sliceSampleMatrix(g,'hkl',50,33,{cell,hkl:[1,1,1]});
+ assert.ok(cut.rows.length>400&&cut.rows.length<33**2);
+ approx(cut.min,6,1e-4);approx(cut.max,6,1e-4);approx(cut.mean,6,1e-4);
+ for(const row of cut.rows)approx(row.x+row.y+row.z,6,1e-4);
+ const tilted={a:4,b:5,c:6,alpha:70,beta:80,gamma:75};
+ const vectors=api.basis(tilted).map(v=>v.toArray().map(q=>q/4));
+ const angled=api.volumeGrid([5,5,5],[0,0,0],vectors,vals,'triclinic','e/Å³');
+ const tiltedFrame=p1.sliceMillerFrame(angled,tilted,1,1,0,50);
+ const gstar=api.planeNormal(1,1,0,api.basis(tilted)).g;
+ const values=tiltedFrame.corners.map(point=>gstar.dot(new Vector3(...point)));
+ values.forEach(value=>approx(value,values[0],1e-6));
+ assert.throws(()=>p1.sliceMillerFrame(angled,tilted,0,0,0,50));
+});
 
 test('phase2 cubic morphology {100} produces a closed cube with correct metric volume and area',()=>{
  const cube={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
@@ -1509,27 +1560,116 @@ test('stage3 best-fit plane: zero RMS for exact plane and stable tilted plane',(
  assert.throws(()=>api.leastSquaresPlane([[0,0,0],[1,0,0],[2,0,0]]),/doğrusal/);
  assert.throws(()=>api.leastSquaresPlane([[0,0,0],[1,1,0]]));
 });
-test('stage3 structure factor: BCC 100 extinction, 110 allowed and P1 100 allowed',()=>{
+test('P1 IT92 X-ray structure factor: BCC 100 extinction, 110 agrees with Gemmi',()=>{
  const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
  const pair=[{symbol:'Fe',x:0,y:0,z:0},{symbol:'Fe',x:.5,y:.5,z:.5}];
  assert.ok(api.structureFactor(1,0,0,pair,cell).intensity<1e-20);
- approx(api.structureFactor(1,1,0,pair,cell).intensity,4*26*26,1e-6);
- approx(api.structureFactor(1,0,0,pair.slice(0,1),cell).intensity,26*26,1e-6);
+ const gemmiFe110=20.854787826538086; // Gemmi 0.7.4 IT92, stol² = 1/32 Å⁻².
+ approx(api.structureFactor(1,1,0,pair,cell).intensity,4*gemmiFe110**2,2e-4);
+ const f100=p1.scatteringFactor('Fe',4,'xray');
+ approx(api.structureFactor(1,0,0,pair.slice(0,1),cell).intensity,f100**2,1e-7);
+ approx(api.structureFactor(1,1,0,pair,cell,'point').intensity,4*26*26,1e-6);
+ approx(api.structureFactor(1,1,0,pair,cell,'neutron').intensity,4*9.45**2,1e-6);
  const pattern=api.powderPattern(cell,pair,{wavelength:1.5406,maxIndex:2,maxAngle:90});
  assert.ok(pattern.groups.length>0);
  assert.ok(pattern.extinctions>0);
  assert.ok(pattern.groups[0].angle>30&&pattern.groups[0].angle<33);
  assert.match(api.xrdCsv(pattern),/2theta_deg/);
 });
-test('stage3 structure factor: anomalous scattering omitted; occupancy and Biso attenuate F',()=>{
+test('P1 X-ray and neutron: tabulated f0, negative H scattering and ADP attenuation',()=>{
  const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  const atom={symbol:'Si',x:0,y:0,z:0,occupancy:.5};
  const half=api.structureFactor(1,0,0,[atom],cell).intensity;
- approx(half,49,1e-7);
+ const gemmiSi100=12.133805274963379; // Gemmi IT92 stol² = .01 Å⁻².
+ approx(half,(gemmiSi100/2)**2,2e-4);
+ approx(p1.scatteringFactor('Si',5,'xray'),gemmiSi100,3e-5);
+ approx(p1.scatteringFactor('H',2,'neutron'),-3.739,1e-9);
  const thermal=api.structureFactor(1,0,0,[{...atom,uIso:.05}],cell).intensity;
  assert.ok(thermal<half);
  assert.throws(()=>api.powderPattern(cell,[atom],{wavelength:0,maxIndex:2}));
  assert.throws(()=>api.structureFactor(0,0,0,[atom],cell));
+ assert.throws(()=>p1.scatteringFactor('Og',2,'xray'),/IT92/);
+});
+test('P1 anisotropic ADP uses full triclinic reciprocal vector; Bragg-Brentano LP stays optional',()=>{
+ const cell={a:4.8,b:5.2,c:6.1,alpha:72,beta:83,gamma:76},u=.035;
+ const adp=vm.runInContext('adpFromCartesian([[.035,0,0],[0,.035,0],[0,0,.035]],'+JSON.stringify(cell)+')',context);
+ const atom={symbol:'O',x:.12,y:.3,z:.45};
+ const iso=api.structureFactor(1,2,1,[{...atom,uIso:u}],cell);
+ const aniso=api.structureFactor(1,2,1,[{...atom,adp}],cell);
+ approx(iso.intensity,aniso.intensity,1e-8);
+ const base=api.powderPattern(cell,[atom],{scattering:'xray',maxIndex:2,maxAngle:90});
+ const lp=api.powderPattern(cell,[atom],{scattering:'xray',maxIndex:2,maxAngle:90,lorentzPolarization:true});
+ assert.equal(base.lorentzPolarization,false);assert.equal(lp.lorentzPolarization,true);
+ approx(base.reflections[0].intensity,lp.reflections[0].intensity,1e-7);
+ assert.notEqual(base.reflections[0].powderIntensity,lp.reflections[0].powderIntensity);
+ const neut=api.powderPattern(cell,[atom],{scattering:'neutron',maxIndex:2,maxAngle:90,lorentzPolarization:true});
+ assert.equal(neut.lorentzPolarization,false);
+});
+test('P1 model Fourier density conserves F000 mean and Patterson is translation-invariant',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ const silicon=[{symbol:'Si',x:0,y:0,z:0}];
+ const density=p1.modelFourierMap(cell,silicon,{kind:'density',maxIndex:2,size:16});
+ assert.equal(density.periodic,true);assert.equal(density.modelFourier.reflectionCount,125);
+ const expectedMean=p1.scatteringFactor('Si',Infinity,'xray')/64;
+ const mean=density.values.reduce((a,b)=>a+b,0)/density.values.length;
+ approx(mean,expectedMean,1e-5);
+ assert.ok(density.values[api.gridIndex(density,0,0,0)]>
+  density.values[api.gridIndex(density,8,8,8)]);
+ const pat=p1.modelFourierMap(cell,silicon,{kind:'patterson',maxIndex:2,size:16});
+ const translated=p1.modelFourierMap(cell,[{symbol:'Si',x:.25,y:.25,z:.5}],
+  {kind:'patterson',maxIndex:2,size:16});
+ for(const ijk of [[0,0,0],[1,3,5],[7,9,11]]){
+  const n=api.gridIndex(pat,...ijk),opposite=ijk.map(q=>(16-q)%16);
+  approx(pat.values[n],translated.values[n],5e-5);
+  approx(pat.values[n],pat.values[api.gridIndex(pat,...opposite)],5e-5);
+ }
+ assert.throws(()=>p1.modelFourierMap(cell,silicon,{kind:'density',size:128}));
+});
+test('P1 numerical periodic Voronoi integration partitions electron density and conserves charge',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ const g=api.volumeGrid([8,8,8],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],
+  Array(8**3).fill(2),'density','e/Å³');g.periodic=true;
+ const sites=[{symbol:'Na',x:0,y:0,z:0},{symbol:'Cl',x:.5,y:.5,z:.5}];
+ const result=p1.volumeVoronoiIntegration(g,cell,sites);
+ approx(result.total,128,1e-5);
+ approx(result.sites.reduce((s,x)=>s+x.charge,0),128,1e-5);
+ assert.ok(result.sites.every(s=>Math.abs(s.charge-64)<15));
+ assert.match(p1.volumeVoronoiCsv(result),/electrons/);
+ const coarse=p1.volumeVoronoiIntegration(g,cell,sites,100);
+ approx(coarse.total,128,1e-5);assert.ok(coarse.sampled<=100);
+ const nonperiodic={...g,periodic:false};
+ assert.throws(()=>p1.volumeVoronoiIntegration(nonperiodic,cell,sites));
+ assert.throws(()=>p1.volumeVoronoiIntegration({...g,units:'V'},cell,sites));
+});
+test('P1 PDB CRYST1, ATOM occupancy and ANISOU roundtrip preserve cell and Cartesian tensor',()=>{
+ const cell={a:5.3,b:6.2,c:7.4,alpha:76,beta:83,gamma:71};
+ const sites=[{symbol:'Fe',label:'Fe1',x:.1,y:.2,z:.3,occupancy:.75,uIso:.025,
+  adp:[.03,.04,.05,.001,.002,.003]},
+  {symbol:'O',label:'O1',x:.5,y:.6,z:.7,occupancy:1,uIso:.015}];
+ const pdb=p1.pdbExportText(cell,sites);
+ assert.match(pdb,/^CRYST1/);assert.match(pdb,/ANISOU/);assert.match(pdb,/HETATM/);
+ const round=p1.pdbData(pdb);
+ approx(round.cell.a,cell.a,1e-4);approx(round.cell.gamma,cell.gamma,1e-4);
+ assert.equal(round.sites.length,2);assert.equal(round.sites[0].symbol,'Fe');
+ approx(round.sites[0].occupancy,.75,1e-5);
+ for(const axis of ['x','y','z'])approx(round.sites[0][axis],sites[0][axis],2e-4);
+ assert.ok(round.sites[0].adp);
+ round.sites[0].adp.forEach((v,i)=>approx(v,sites[0].adp[i],2e-4));
+ const withoutCell=p1.pdbData(pdb.split('\n').filter(line=>!line.startsWith('CRYST1')).join('\n'));
+ assert.match(withoutCell.warning,/yapay kutu/);
+ assert.throws(()=>p1.pdbData('HEADER empty PDB'));
+});
+test('P1 Ewald reproduces NaCl Madelung lattice energy and rejects nonneutral ion models',()=>{
+ const nacl=api.examples('nacl');
+ const charges=p1.parseIonicCharges('Na:+1, Cl:-1',nacl.sites);
+ const result=p1.madelungEwald(nacl.cell,nacl.sites,charges);
+ const expected=-4*1.747564594633*14.3996454784255/(nacl.cell.a/2);
+ approx(result.energy,expected,.03);
+ assert.ok(result.convergenceEv<.02);
+ approx(result.energy,result.potentials.reduce((s,p,i)=>s+.5*p*charges[i],0),1e-8);
+ assert.throws(()=>p1.madelungEwald(nacl.cell,nacl.sites,charges.map(()=>1)),/nötr|Nötr/);
+ assert.throws(()=>p1.parseIonicCharges('Na:+1',nacl.sites),/Yük tanımlanmamış/);
+ assert.throws(()=>p1.madelungEwald(nacl.cell,[{...nacl.sites[0],occupancy:.5},...nacl.sites.slice(1)],charges),/Kısmi doluluk/);
 });
 
 test('stage3 F-centered NaCl conventional -> primitive conserves two atomic species and quarter volume',()=>{

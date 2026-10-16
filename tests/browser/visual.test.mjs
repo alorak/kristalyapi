@@ -331,6 +331,18 @@ try{
  await page.waitForFunction(()=>document.querySelector('#overlaySummary')?.textContent?.includes('1 ek'),null,{timeout:10000});
  await save(page,'08-two-crystals',metrics);
  assert.notEqual(metrics['07-cubic-morphology'].sum,metrics['08-two-crystals'].sum,'second CIF should change rendering');
+ // IT92 and neutron scattering modes use distinct physical coefficients.
+ await page.locator('[data-right-tool="xrd"]').click();
+ await page.locator('#xrdScattering').selectOption('neutron');
+ await page.locator('#analyzeXrd').click();
+ assert.match(await page.locator('#xrdSummary').textContent(),/nötron b_coh/);
+ await page.locator('#xrdScattering').selectOption('xray');
+ await page.locator('#analyzeXrd').click();
+ assert.match(await page.locator('#xrdSummary').textContent(),/IT92/);
+ await page.locator('#xrdMapAdd').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1);
+ assert.match(await page.locator('#volumeInfo').textContent(),/FOURIER/);
+ await page.locator('#clearVolume').click();
  // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
  const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
   values.push(Math.exp(-((i-1.5)**2+(j-1.5)**2+(k-1.5)**2)));
@@ -338,7 +350,7 @@ try{
   '4 4 4','0 0 0','3 0 0','0 3 0','0 0 3',values.join(' '),
   'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
  await page.locator('#volumeFile').setInputFiles({name:'density.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf)});
- await page.locator('[data-right-tool="volume"]').click();
+ if(!await page.locator('#rightDrawerPane-volume').isVisible())await page.locator('[data-right-tool="volume"]').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1,null,{timeout:10000});
  await page.locator('#volumeIsoAdd').click();
  assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
@@ -348,12 +360,22 @@ try{
  await page.locator('#volumeAdditionalFile').setInputFiles({name:'second.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf2)});
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===2,null,{timeout:10000});
  await save(page,'09-two-volume-fields',metrics);
+ await page.locator('#volumeMathA').selectOption('0');
+ await page.locator('#volumeMathB').selectOption('1');
+ await page.locator('#volumeMathK').fill('-1');
+ await page.locator('#volumeMathAdd').click();
+ assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),3,'derived volume is a separate layer');
+ await page.locator('#volumePeakFind').click();
+ assert.ok((await page.locator('#volumePeakResults').textContent()).length>15);
+ await page.locator('#volumeAxis').selectOption('hkl');
+ assert.match(await page.locator('#volumeSliceStats').textContent(),/\(1 1 1\)/);
+ await save(page,'25-miller-volumetric-slice',metrics);
  assert.match(await page.locator('#volumeSliceStats').textContent(),/Å/);
  // Volumetric grids and iso layer controls belong to the current structure.
  await page.locator('#workspaceToggle').click();await page.locator('#workspaceAdd').click();
  assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),0);
  await page.locator('#workspaceToggle').click();await page.locator('#workspaceList .workspace-select').first().click();
- assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),2);
+ assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),3);
  await page.locator('#volumeActiveDataset').selectOption('0');
  assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
  await page.locator('[data-right-tool="lattice"]').click();
