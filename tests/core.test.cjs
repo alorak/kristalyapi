@@ -613,7 +613,7 @@ test('mobile layout hides closed tabbed sidebar and preserves bottom navigation'
  assert.match(html,/\.left-tab-panel\[hidden\]\{display:none!important\}/);
 });
 
-test('layout: Görünüm first; Miller is preserved under lattice tools, with 11 icon buttons',()=>{
+test('layout: independent Miller tool and docked quick controls with 12 icon buttons',()=>{
  const left=html.slice(html.indexOf('id="leftGeneralPane"'),html.indexOf('id="leftAtomsPane"'));
  assert.ok(left.indexOf('<h2>Görünüm')<left.indexOf('<h2>Birim hücre'));
  assert.ok(!left.includes('Miller düzlemleri (hkl)'));
@@ -623,11 +623,17 @@ test('layout: Görünüm first; Miller is preserved under lattice tools, with 11
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,11);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,12);
  for(const key of ['bonds','lattice','symmetry'])assert.match(left,new RegExp('data-right-section="'+key+'"'));
- assert.match(html,/if\(name==='lattice'\)while\(\$\('rightMillerPane'\)/);
+ assert.match(html,/if\(name==='miller'\)while\(\$\('rightMillerPane'\)/);
+ const quickbar=html.slice(html.indexOf('id="workbenchQuickbar"'),html.indexOf('id="toast"'));
+ assert.equal((quickbar.match(/data-quick-flag="/g)||[]).length,8);
+ for(const id of ['quickStyle','quickAtomScale','quickBondCut','quickH','quickK','quickL',
+  'quickSlabThickness','quickShowPlane','quickRepeatMillerPlanes'])assert.ok(quickbar.includes('id="'+id+'"'),id);
+ for(const type of ['ball','space','stick','wire'])assert.match(quickbar,new RegExp('<option value="'+type+'"'));
+ assert.match(html,/#viewport #stage\{bottom:var\(--quickbar-height\)\}/);
 });
 test('right tool rail toggles one drawer at a time, restores scroll and updates ARIA',()=>{
  const nodes={};const get=id=>nodes[id] ||= {
