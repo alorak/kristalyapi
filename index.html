@@ -371,6 +371,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <label class="check"><input id="xrdLp" type="checkbox"> Sabit dalga boylu toz düzeltmesi (X-ışını: LP; nötron: Lorentz)</label>
    <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
    <div id="xrdSummary" class="note">Hesaplama bekleniyor.</div>
+   <div class="note"><strong>Toz profili · pseudo-Voigt / Caglioti</strong>
+    <div class="triple">
+     <label class="field compact"><span>U (°²)</span><input id="xrdU" type="number" step="0.001" value="0"></label>
+     <label class="field compact"><span>V (°²)</span><input id="xrdV" type="number" step="0.001" value="0"></label>
+     <label class="field compact"><span>W (°²)</span><input id="xrdW" type="number" min="0.000001" step="0.001" value="0.01"></label>
+    </div>
+    <div class="triple">
+     <label class="field compact"><span>Lorentz payı η (0–1)</span><input id="xrdEta" type="number" min="0" max="1" step="0.05" value="0.5"></label>
+     <label class="field compact"><span>2θ adımı (°)</span><input id="xrdStep" type="number" min="0.005" max="0.2" step="0.005" value="0.02"></label>
+     <label class="field compact"><span>Grafik türü</span><select id="xrdViewMode"><option value="profile">Sürekli profil</option><option value="sticks">Çubuk yansımalar</option></select></label>
+    </div>
+    <label class="check"><input id="xrdKAlpha2" type="checkbox" checked> Kα1/Kα2 ikilisini göster (yalnız X-ışını)</label>
+    <div class="triple">
+     <label class="field compact"><span>Kα2 λ (Å)</span><input id="xrdLambda2" type="number" min="0.2" max="5" step="0.00001" value="1.54443"></label>
+     <label class="field compact"><span>Kα2 / Kα1 şiddet oranı</span><input id="xrdRatio" type="number" min="0" max="1" step="0.05" value="0.5"></label>
+    </div>
+    <p class="hint">H² = U tan²θ + V tanθ + W (°²). η, Lorentz bileşeninin payıdır. Varsayılan λ değerleri Cu Kα1/Kα2 içindir; λ değişirse Kα2 değerini de ayarlayın. Bu, deneysel cihazın ampirik yaklaşımıdır; Rietveld inceltmesi değildir.</p>
+    <input type="file" id="xrdMeasuredFile" accept=".csv,.txt,text/csv" hidden>
+    <div class="actionrow"><button id="xrdMeasuredLoad" type="button">Ölçülen CSV yükle</button><button id="xrdMeasuredClear" type="button">Ölçümü kaldır</button><button id="xrdProfileExport" type="button">Profil CSV</button></div>
+    <p id="xrdMeasuredStatus" class="hint" aria-live="polite">Ölçüm yüklenmedi. CSV: 2theta_deg,intensity · karşılaştırma maksimuma göre %100'e ölçeklenir; fit yapılmaz.</p>
+    <p id="xrdProfileStatus" class="hint" aria-live="polite">Profil hesaplama bekleniyor.</p>
+   </div>
    <svg id="xrdChart" viewBox="0 0 440 180" role="img" aria-label="Hesaplanan toz kırınımı çubuk grafiği" style="display:block;width:100%;min-height:150px;border:1px solid #dce5f1;border-radius:8px;background:white"></svg>
    <div id="xrdResults" class="bond-rule-list" style="max-height:235px;overflow:auto"></div>
    <button id="xrdExport" type="button">Yansıma CSV</button>
@@ -389,7 +411,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button type="button" id="fcfMapAdd">Fazlı deneysel haritayı oluştur</button>
     <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. Fazlı harita için gözlenen genliklere ek olarak hesaplanan faz gerekir; hücrenin dosyayla eşleştiğini doğrulayın.</p>
    </div>
-   <p class="hint">Gösterilen çizgiler ideal kinematik yansımalardır; gerçek toz difraktogramının pik genişliğini, izotop oranı belirsizliğini veya ölçüm geometrisini tam olarak modellemez.</p>
+   <p class="hint">Yansıma şiddetleri kinematik modeldendir; profil genişliği ampirik pseudo-Voigt/Caglioti modelidir. Cihaz asimetrisi, Kβ, absorpsiyon, tekstür, arka plan ve tam Rietveld inceltmesi modellenmez.</p>
   </div>
   <div class="section volumetric-panel" data-right-section="volume"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
@@ -412,6 +434,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <button id="openAdditionalVolume" type="button">+ Bir alan daha yükle (en fazla 5)</button>
      <div id="volumeDatasets" class="volume-layer-list" aria-label="Hacimsel veri katmanları"></div>
      <label class="field"><span>Aktif alan (kesit ve izodeğer kaynağı)</span><select id="volumeActiveDataset"></select></label>
+     <div class="actionrow">
+      <label class="field compact"><span>Aktif alanı dışa aktar</span><select id="volumeExportFormat"><option value="cube">Gaussian CUBE (.cube)</option><option value="xsf">XCrySDen XSF (.xsf)</option></select></label>
+      <button id="volumeExport" type="button">3B alanı indir</button>
+     </div>
+     <p class="hint">Seçili alanın gerçek 3B ızgarası ve değerleri indirilir (Δρ, spin, Fourier dahil). Uzunluklar Å'dür; yoğunluk/potansiyel birimi dosyanın yorum satırında belirtilir, veri yeniden ölçeklenmez. Periyodik XSF için sınır düzlemleri tekrarlanır.</p>
      <label class="field"><span>İkinci alan (renklendirme için)</span><select id="volumeColorDataset"><option value="">Yok</option></select></label>
      <p id="volumeFrameStatus" class="hint">İkinci alan yüklenmedi. Eşleştirme aynı uzaysal koordinat çerçevesine göre denetlenir.</p>
      <div class="note"><strong>Türetilmiş alan · A + k₁B + k₂C</strong>
