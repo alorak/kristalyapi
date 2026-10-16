@@ -16,8 +16,17 @@ const server=http.createServer(async(request,response)=>{
  const absolute=path.resolve(base,'.'+name);
  if(!absolute.startsWith(base+path.sep)) {response.writeHead(403).end();return;}
  try{
-  const content=await fs.readFile(absolute);
-  response.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html':name.endsWith('.cif')?'text/plain':'application/octet-stream'});
+  let content=await fs.readFile(absolute);
+  if(name==='/index.html'){
+   const cdn='https://cdn.jsdelivr.net/npm/three@0.182.0/';
+   const html=content.toString('utf8');
+   assert.ok(html.includes(cdn),'Expected pinned Three.js import map');
+   content=Buffer.from(html.replaceAll(cdn,'/node_modules/three/'));
+  }
+  response.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':
+   name.endsWith('.js')?'text/javascript; charset=utf-8':
+   name.endsWith('.wasm')?'application/wasm':
+   name.endsWith('.cif')?'text/plain; charset=utf-8':'application/octet-stream'});
   response.end(content);
  }catch(e){response.writeHead(404).end();}
 });
@@ -57,6 +66,21 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ const tools=page.locator('[data-right-tool]');
+ assert.equal(await tools.count(),11,'all requested analysis tools must appear as icon buttons');
+ for(const [source,destination] of [
+  ['bondRules','bonds'],['matrixPreset','lattice'],['spaceGroup','symmetry']
+ ]){
+  assert.equal(await page.locator('#leftGeneralPane #'+source).count(),0,source+' must leave the left sidebar');
+  assert.equal(await page.locator('#rightDrawerPane-'+destination+' #'+source).count(),1,source+' must move into the right drawer');
+ }
+ await page.locator('[data-right-tool="info"]').click();
+ await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width>300);
+ assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
+ assert.equal(await page.locator('[data-right-tool="info"]').getAttribute('aria-expanded'),'true');
+ await page.locator('[data-right-tool="info"]').click();
+ await page.waitForFunction(()=>document.getElementById('rightPanel').getBoundingClientRect().width<60);
+ assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'active icon must close its own drawer');
  await save(page,'01-silicon-perspective',metrics);
  await page.getByRole('button',{name:'Üstten görünüm'}).click();
  await page.waitForTimeout(650);
@@ -70,10 +94,11 @@ try{
  await page.locator('#adpVisible').check();
  await page.locator('#adpLevel').selectOption('90');
  await save(page,'04-adp-90',metrics);
+ await page.locator('[data-right-tool="layers"]').click();
  await page.locator('#layerManager').getByLabel('Termal elipsoitler görünürlük').uncheck();
  await save(page,'05-adp-hidden',metrics);
  assert.notEqual(metrics['04-adp-90'].sum,metrics['05-adp-hidden'].sum,'ADP visibility should change canvas');
- await page.locator('#rightMillerTab').click();
+ await page.locator('[data-right-tool="lattice"]').click();
  await page.locator('#showPlane').check();
  await page.locator('#applyPlane').click();
  await save(page,'06-miller',metrics);
@@ -81,7 +106,7 @@ try{
  await page.locator('#morphPreset').click();
  await save(page,'07-cubic-morphology',metrics);
  assert.notEqual(metrics['06-miller'].sum,metrics['07-cubic-morphology'].sum,'morphology should affect rendering');
- await page.locator('#rightStructureTab').click();
+ await page.locator('[data-right-tool="comparison"]').click();
  await page.locator('#overlayFile').setInputFiles(path.join(base,'tests/validation/fixtures/real/COD_4335507.cif'));
  await page.waitForFunction(()=>document.querySelector('#overlaySummary')?.textContent?.includes('1 ek'),null,{timeout:10000});
  await save(page,'08-two-crystals',metrics);
@@ -93,6 +118,7 @@ try{
   '4 4 4','0 0 0','3 0 0','0 3 0','0 0 3',values.join(' '),
   'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
  await page.locator('#volumeFile').setInputFiles({name:'density.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf)});
+ await page.locator('[data-right-tool="volume"]').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1,null,{timeout:10000});
  await page.locator('#volumeIsoAdd').click();
  assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
@@ -103,11 +129,18 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===2,null,{timeout:10000});
  await save(page,'09-two-volume-fields',metrics);
  assert.match(await page.locator('#volumeSliceStats').textContent(),/Å/);
+ await page.locator('[data-right-tool="lattice"]').click();
  await page.locator('#moyoDetect').click();
  await page.waitForFunction(()=>document.getElementById('moyoResult')?.textContent?.startsWith('SG #'),null,{timeout:60000});
  assert.match(await page.locator('#moyoResult').textContent(),/Hall \d+/);
  assert.equal(await page.locator('#moyoApplyConventional').isEnabled(),true);
  await save(page,'10-moyo-space-group',metrics);
+ await page.setViewportSize({width:650,height:760});
+ await page.locator('[data-right-tool="symmetry"]').click();
+ assert.equal(await page.locator('#rightDrawerPane-symmetry').isVisible(),true,'mobile drawer must open');
+ assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
+ await page.locator('[data-right-tool="symmetry"]').press('Escape');
+ assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'Escape closes mobile drawer');
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);

@@ -590,38 +590,49 @@ test('mobile layout hides closed tabbed sidebar and preserves bottom navigation'
  assert.match(html,/\.left-tab-panel\[hidden\]\{display:none!important\}/);
 });
 
-test('layout: Görünüm first; Miller exclusively in right Miller tab; no redundant on-canvas help',()=>{
+test('layout: Görünüm first; Miller is preserved under lattice tools, with 11 icon buttons',()=>{
  const left=html.slice(html.indexOf('id="leftGeneralPane"'),html.indexOf('id="leftAtomsPane"'));
  assert.ok(left.indexOf('<h2>Görünüm')<left.indexOf('<h2>Birim hücre'));
  assert.ok(!left.includes('Miller düzlemleri (hkl)'));
- const right=html.slice(html.indexOf('id="rightMillerPane"'),html.indexOf('id="rightMillerTab"'));
+ const right=html.slice(html.indexOf('id="rightMillerPane"'),html.indexOf('id="rightToolRail"'));
  assert.ok(right.includes('Miller düzlemleri (hkl)'));
  assert.ok(!html.includes('class="view-help"'));
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['structure','miller']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','symmetry']);
+ const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,11);
+ for(const key of ['bonds','lattice','symmetry'])assert.match(left,new RegExp('data-right-section="'+key+'"'));
+ assert.match(html,/if\(name==='lattice'\)while\(\$\('rightMillerPane'\)/);
 });
-test('right sidebar tabs expose independent scroll and ARIA states',()=>{
+test('right tool rail toggles one drawer at a time, restores scroll and updates ARIA',()=>{
  const nodes={};const get=id=>nodes[id] ||= {
   hidden:false,scrollTop:0,tabIndex:0,
   classList:{toggle(){}},setAttribute(name,value){this[name]=value}
  };
- const old=context.document.getElementById;context.document.getElementById=get;
+ const oldGet=context.document.getElementById,oldQuery=context.document.querySelector;
+ context.document.getElementById=get;
+ context.document.querySelector=selector=>get(selector.match(/data-right-tool="([^"]+)/)?.[1]||selector);
  try{
-  get('rightTabContent').scrollTop=53;
-  api.setRightSidebarTab('miller');
-  assert.equal(get('rightStructurePane').hidden,true);
-  assert.equal(get('rightMillerPane').hidden,false);
-  assert.equal(get('rightMillerTab')['aria-selected'],'true');
-  get('rightTabContent').scrollTop=87;
-  api.setRightSidebarTab('structure');
-  assert.equal(get('rightTabContent').scrollTop,53);
-  api.setRightSidebarTab('miller');
-  assert.equal(get('rightTabContent').scrollTop,87);
+  api.setRightSidebarTab('info');
+  assert.equal(get('rightDrawerPane-info').hidden,false);
+  assert.equal(get('info')['aria-expanded'],'true');
+  get('rightDrawerContent').scrollTop=53;
+  api.setRightSidebarTab('lattice');
+  assert.equal(get('rightDrawerPane-info').hidden,true);
+  assert.equal(get('rightDrawerPane-lattice').hidden,false);
+  assert.equal(get('info')['aria-expanded'],'false');
+  get('rightDrawerContent').scrollTop=87;
+  api.setRightSidebarTab('info');
+  assert.equal(get('rightDrawerContent').scrollTop,53);
+  api.setRightSidebarTab('lattice');
+  assert.equal(get('rightDrawerContent').scrollTop,87);
+  api.setRightSidebarTab('lattice');
+  assert.equal(get('rightDrawerContent').hidden,true);
+  assert.equal(get('lattice')['aria-expanded'],'false');
   assert.throws(()=>api.setRightSidebarTab('wrong'));
-  api.setRightSidebarTab('structure');
- }finally{context.document.getElementById=old;}
+ }finally{context.document.getElementById=oldGet;context.document.querySelector=oldQuery;}
 });
 test('Gaussian CUBE parses bohr units, origin, counts and z-fastest scalar data',()=>{
  const input=[

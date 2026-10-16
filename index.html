@@ -502,13 +502,27 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 }
 
 
-#app>.panel.right{display:flex;flex-direction:column;overflow:hidden;padding:0;min-height:0}
-.right-tab-content{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#b1c3d5 transparent;padding:8px 0 12px;overscroll-behavior:contain}
-.right-tab-panel[hidden]{display:none!important}
-#app>.panel.right .right-tab-panel>.section{background:#fff;border:1px solid #d9e3ee;border-radius:11px;margin:8px 10px 12px;padding:15px 13px;box-shadow:0 2px 8px rgba(32,57,84,.045)}
-.right-tabbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px 10px;background:#fbfdff;border-top:1px solid #cbd8e5;flex-shrink:0;box-shadow:0 -3px 12px #1f3a5410}
-.right-tabbar button{border-color:transparent;box-shadow:none;background:transparent;color:#60758b;font-weight:700}
-.right-tabbar button.selected{background:#eaf4ff;border-color:#c1daef;color:#176ba8}
+#app{grid-template-columns:318px minmax(280px,1fr) 54px;transition:grid-template-columns .18s ease}
+#app.right-drawer-open{grid-template-columns:318px minmax(280px,1fr) minmax(330px,370px)}
+#app>.panel.right{display:flex;flex-direction:row;overflow:hidden;padding:0;min-height:0;background:#f7faff}
+.right-drawer-content{flex:1;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b1c3d5 transparent;background:#fff;border-right:1px solid #d7e4ef}
+.right-drawer-content[hidden],.right-drawer-pane[hidden]{display:none!important}
+.right-drawer-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:60px;padding:12px 16px;border-bottom:1px solid #dfe8f1;background:#f6faff;position:sticky;top:0;z-index:1}
+.right-drawer-heading strong{font-size:13px;line-height:1.45;letter-spacing:.2px;color:#264b6e}
+.right-drawer-close{flex:0 0 30px;width:30px;height:30px;padding:2px;border:0;background:transparent;color:#52728f;font-size:23px;line-height:1}
+.right-drawer-close:hover{background:#e6f0fa}
+#app>.panel.right .right-drawer-pane>.section{background:transparent;border:0;border-bottom:1px solid #e3ecf5;border-radius:0;margin:0;padding:17px 15px 20px;box-shadow:none}
+#app>.panel.right .right-drawer-pane>.section h2{color:#47627e;font-weight:750}
+#app>.panel.right .right-drawer-pane>.section .field span{color:#57728a}
+#app>.panel.right .right-drawer-pane>.section .note{color:#57728a}
+#app>.panel.right .right-drawer-pane>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea){background:#fbfdff;border-color:#cbd8e6;color:#263d55}
+#app>.panel.right .right-drawer-pane>.section :is(.info,.metric,.measure-item){background:#f5f8fc;border-color:#dfe8f1}
+#app>.panel.right .right-drawer-pane>.section :is(.info strong,.metric strong){color:#294562}
+.right-tool-rail{flex:0 0 54px;width:54px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 5px;background:#f7faff;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;border-left:1px solid #d6e2ef}
+.right-tool{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;padding:8px;border-radius:10px;border:1px solid transparent;background:transparent;box-shadow:none;color:#58738d;transition:background .15s,color .15s}
+.right-tool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.right-tool:hover,.right-tool:focus-visible{background:#e6f0fa;color:#24669e}
+.right-tool.selected{background:#e4f1ff;color:#176ba8;border-color:#b9d9f0;box-shadow:inset 3px 0 #2276b9}
 #app>.panel.right .volumetric-panel input[type="range"]{accent-color:#2c79c0;width:100%}
 #app>.panel.right .volumetric-panel .field select,#app>.panel.right .volumetric-panel .field input[type="number"]{background:#fbfdff;border-color:#cbd8e6;color:#263d55}
 #app>.panel.right .volumetric-panel .note{background:#f2f7fd;border-color:#dce8f4;color:#506980;overflow-wrap:anywhere}
@@ -516,13 +530,16 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 #app>.panel.right .volumetric-panel button{max-width:100%;white-space:normal}
 .axis-gizmo{bottom:16px}
 #toast{bottom:20px}
-@media(max-width:1180px){#app>.panel.right{display:none}#app>.panel.right.open{display:flex}}
-@media(max-width:720px){#app>.panel.right{display:none}#app>.panel.right.open{display:flex}}
+@media(max-width:1180px){
+ #app,#app.right-drawer-open{grid-template-columns:285px minmax(280px,1fr)}
+ #app>.panel.right{position:absolute;right:0;top:54px;bottom:0;width:54px;z-index:5;display:flex;box-shadow:-4px 0 16px rgba(30,54,85,.1)}
+ #app>.panel.right.drawer-open{width:min(370px,calc(100vw - 10px));box-shadow:-13px 0 30px rgba(30,54,85,.2)}
+}
+@media(max-width:720px){#app>.panel.right{top:54px;display:flex}#app>.panel.right.drawer-open{width:min(370px,calc(100vw - 10px))}}
 
 
 .volume-color-legend{height:9px;min-height:9px;border-radius:20px;background:linear-gradient(to right,rgb(38,82,224),#fff,rgb(255,43,36));border:1px solid #d8e3ef}
-#app>.panel.right .right-tab-panel>.section .note,#app>.panel.right .right-tab-panel>.section .field span{color:#57728a}
-#app>.panel.right .right-tab-panel>.section h2{color:#47627e}
+#app>.panel.right .right-drawer-pane>.section .hint,#app>.panel.right .right-drawer-pane>.section .shortcuts,#app>.panel.right .right-drawer-pane>.section .empty{color:#647f99}
 
 
 /* Icon-only camera controls: visual viewport is reserved for the crystal. */
@@ -621,7 +638,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <button id="applyCell" class="primary" style="width:100%;margin-top:10px">Hücreyi uygula</button>
   </div>
-  <div class="section"><h2>Kristalografik simetri <span class="stage">Aşama 1</span></h2>
+  <div class="section" data-right-section="symmetry"><h2>Kristalografik simetri <span class="stage">Aşama 1</span></h2>
    <div class="stack">
     <label class="field"><span>Uzay grubu (1–230)</span><select id="spaceGroup"></select></label>
     <label class="field"><span>Uzay grubu ayarı / setting</span><select id="sgSetting"></select></label>
@@ -631,7 +648,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
     <div class="note" id="wyckoffInfo">Seçilen uzay grubunun genel ve özel konumlarını listeler.</div>
    </div>
   </div>
-  <div class="section"><h2>Atom türlerine göre bağlar <span class="stage">Aşama 1</span></h2>
+  <div class="section" data-right-section="bonds"><h2>Atom türlerine göre bağlar <span class="stage">Aşama 1</span></h2>
    <label class="field"><span>Özel eşikler (Å), örn. Si-O:1.4-2.0; Ti-O:1.7-2.3</span><input id="bondRules" type="text" placeholder="Si-O:1.4-2.0; Ti-O:1.7-2.3" style="width:100%"></label>
    <button id="applyBondRules" class="small" style="margin-top:8px">Bağ kurallarını uygula</button>
    <div class="bond-rule-editor">
@@ -653,7 +670,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <label class="field compact"><span>b ×</span><input id="rb" type="number" min="1" max="6" value="2"></label>
    <label class="field compact"><span>c ×</span><input id="rc" type="number" min="1" max="6" value="2"></label>
   </div><div class="actionrow" style="margin-top:10px"><button id="applyRepeat" class="primary">Çoğalt</button><button id="repeatOne">1 × 1 × 1</button></div></div>
-  <div class="section"><h2>Örgü dönüşümü <span class="stage">Aşama 2</span></h2>
+  <div class="section" data-right-section="lattice"><h2>Örgü dönüşümü <span class="stage">Aşama 2</span></h2>
    <label class="field"><span>Hazır dönüşüm</span><select id="matrixPreset">
     <option value="custom">Özel 3×3 matris</option>
     <option value="fccp">FCC conventional → primitive</option>
@@ -722,15 +739,16 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   <span id="renderStatus" hidden></span><span id="totalSummary" hidden></span>
   <div id="toast" role="status" aria-live="polite"></div>
  </main>
- <aside class="panel right" id="rightPanel" aria-label="Yapı ve Miller inceleme paneli">
-  <div id="rightTabContent" class="right-tab-content">
-   <div id="rightStructurePane" class="right-tab-panel" role="tabpanel" aria-labelledby="rightStructureTab">
-  <div class="section"><h2>Nesneler ve katmanlar</h2>
+ <aside class="panel right" id="rightPanel" aria-label="Kristal analiz araçları">
+  <div id="rightDrawerContent" class="right-drawer-content" hidden></div>
+  <div id="rightTabContent" hidden>
+   <div id="rightStructurePane">
+  <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>
    <div id="layerManager" class="layer-manager" aria-label="Kristal görünüm katmanları"></div>
   </div>
-  <div class="section"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
-  <div class="section"><h2>Çoklu yapı / faz karşılaştırması</h2>
+  <div class="section" data-right-section="info"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div></div>
+  <div class="section" data-right-section="comparison"><h2>Çoklu yapı / faz karşılaştırması</h2>
    <p class="hint">En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.</p>
    <input type="file" id="overlayFile" accept=".cif,.mcif" hidden>
    <button id="overlayAdd" type="button" class="primary">+ Karşılaştırma CIF'i ekle</button>
@@ -738,7 +756,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <div id="overlaySummary" class="note">Henüz ek karşılaştırma yapısı yok.</div>
    <p class="hint">Konumlar aynı Kartezyen koordinat başlangıcına veya hücre merkezlerine göre hizalanabilir. Atom eşleştirme, uyum optimizasyonu ve RDF/yer değiştirme hesabı bu görünüme dahil değildir.</p>
   </div>
-  <div class="section"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Seçilen görüntüler arası uzaklık (Å)</small></div><div id="periodicResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Periyodik en yakın görüntü uzaklığı (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><div id="torsionResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Dört atomun dihedral açısı (°)</small></div>
+  <div class="section" data-right-section="measurement"><h2>Atom seçimi ve ölçüm</h2><p class="empty" id="measureEmpty">Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.</p><div id="measureList"></div><div id="distanceResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Seçilen görüntüler arası uzaklık (Å)</small></div><div id="periodicResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Periyodik en yakın görüntü uzaklığı (Å)</small></div><div id="angleResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Ortadaki atomdaki bağ açısı (°)</small></div><div id="torsionResult" class="metric" style="margin-top:10px;display:none"><strong>—</strong><small>Dört atomun dihedral açısı (°)</small></div>
   <div class="bond-rule-list" style="margin-top:10px">
    <strong class="measure-subheading">Seçili atomun periyodik komşuları</strong>
    <div id="coordinationInfo" class="hint">Koordinasyon çevresini görmek için bir atom seçin.</div>
@@ -753,7 +771,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <p class="hint">2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.</p></div>
 
-  <div class="section"><h2>İleri koordinasyon / BVS</h2>
+  <div class="section" data-right-section="bvs"><h2>İleri koordinasyon / BVS</h2>
    <p class="hint">Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/0,37 Å]. Komşular periyodik görüntülerden bulunur; kısmi doluluk ağırlıklandırılır.</p>
    <label class="field"><span>Merkez atom (asimetrik / P1 liste)</span><select id="analysisCenter"></select></label>
    <label class="field"><span>Cation–anion referans çifti</span><select id="bvsPair"></select></label>
@@ -763,14 +781,14 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <div class="actionrow"><button id="exportBvs" type="button">Komşu CSV</button></div>
    <p class="hint">Brese–O’Keeffe (1991) R₀ parametreleri kullanılır. BVS koordinasyon/eşdeğer oksidasyon durumu kanıtı değildir. Özellikle farklı katyon-valans türlerinde sınırlıdır.</p>
   </div>
-  <div class="section"><h2>Best-fit plane · düzlemsellik</h2>
+  <div class="section" data-right-section="plane"><h2>Best-fit plane · düzlemsellik</h2>
    <p class="hint">Aşağıya atomların 1-tabanlı satır indislerini yaz. Örn. 1,2,3,4. Üçten fazla, doğrusal olmayan atom gerekir. Atomlar mevcut hücrenin Kartezyen Å bazında değerlendirilir; sınır aşan atomlar otomatik unwrap edilmez.</p>
    <label class="field"><span>Atom indisleri (virgülle)</span><input id="planeFitAtoms" placeholder="1,2,3,4" maxlength="500"></label>
    <div class="actionrow"><button id="planeFitAdd" type="button" class="primary">Düzlem hesapla + göster</button><button id="planeFitClear" type="button">Düzlemleri temizle</button></div>
    <div id="planeFitResult" class="note">Henüz düzlem hesaplanmadı.</div>
    <p class="hint">En küçük kovaryans özvektörü düzlem normalini verir. RMS ortogonal sapma ve iki düzlem arasındaki dar açı raporlanır.</p>
   </div>
-  <div class="section"><h2>Yapı faktörü / toz XRD (öğretici)</h2>
+  <div class="section" data-right-section="xrd"><h2>Yapı faktörü / toz XRD (öğretici)</h2>
    <p class="hint">Kinematik F(hkl)=Σ occ·Z·exp(2πi h·r) ile noktasal elektron saçıcı yaklaşımı; sıcaklık faktörü Uiso/Uij varsa eklenir. Elementlere özgü açısal f₀(q), anomal saçılma, Lorentz-polarizasyon, tekstür ve cihaz profili henüz uygulanmaz.</p>
    <div class="triple">
     <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
@@ -784,7 +802,7 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <button id="xrdExport" type="button">Yansıma CSV</button>
    <p class="hint">Bu grafik fiziksel Bragg konumları ve yaklaşık göreli genlikler içindir; deneysel XRD şiddeti ya da Rietveld analizi olarak kullanılmamalıdır.</p>
   </div>
-  <div class="section volumetric-panel"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
+  <div class="section volumetric-panel" data-right-section="volume"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
    <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
    <input type="file" id="potentialFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
@@ -824,9 +842,9 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    </div>
    <p class="hint">Izoyüzeyler marching tetrahedra ile oluşturulur. Büyük ızgaralar seyreltilir; kesit gerçek fiziksel koordinatlarda yerleştirilir. Yüzey renkleri ancak uyumlu ikinci potansiyel ızgarası yüklendiğinde potansiyeli temsil eder.</p>
   </div>
-  <div class="section"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kristal koordinatları, örgü vektörleri ve ölçümler gerçek hücre metriğini kullanır. Bağlar geometrik eşikle çizilir. İzoyüzeyler fiziksel hesaplama yapmaz; dosyadaki örneklenmiş alanı gösterir.</p></div>
+  <div class="section" data-right-section="info"><h2>Bilimsel kapsam</h2><div id="notice" class="notice"></div><p class="shortcuts">Kristal koordinatları, örgü vektörleri ve ölçümler gerçek hücre metriğini kullanır. Bağlar geometrik eşikle çizilir. İzoyüzeyler fiziksel hesaplama yapmaz; dosyadaki örneklenmiş alanı gösterir.</p></div>
    </div>
-   <div id="rightMillerPane" class="right-tab-panel" role="tabpanel" aria-labelledby="rightMillerTab" hidden>
+   <div id="rightMillerPane">
   <div class="section"><h2>Miller düzlemleri (hkl) <span class="stage">Aşama 2</span></h2>
    <div class="triple">
     <label class="field compact"><span>h</span><input id="h" type="number" step="1" min="-8" max="8" value="1"></label>
@@ -872,9 +890,18 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   </div>
    </div>
   </div>
-  <nav class="right-tabbar" role="tablist" aria-label="Sağ panel sekmeleri">
-   <button id="rightStructureTab" type="button" role="tab" aria-controls="rightStructurePane" aria-selected="true" tabindex="0" class="selected">Yapı</button>
-   <button id="rightMillerTab" type="button" role="tab" aria-controls="rightMillerPane" aria-selected="false" tabindex="-1">Miller</button>
+  <nav id="rightToolRail" class="right-tool-rail" aria-label="Analiz araçları">
+   <button type="button" class="right-tool" data-right-tool="info" aria-label="Yapı bilgileri" title="Yapı bilgileri" aria-controls="rightDrawerPane-info" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="comparison" aria-label="Çoklu yapı / faz karşılaştırması" title="Çoklu yapı / faz karşılaştırması" aria-controls="rightDrawerPane-comparison" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="12" height="12" rx="2"/><path d="M9 2h10a2 2 0 0 1 2 2v13m-4 4H7a2 2 0 0 1-2-2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="measurement" aria-label="Atom seçimi ve ölçüm" title="Atom seçimi ve ölçüm" aria-controls="rightDrawerPane-measurement" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="1" transform="rotate(-32 12 12)"/><path d="m8 8 2 3m2-6 2 3m1 8 2 3"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="bvs" aria-label="İleri koordinasyon / BVS" title="İleri koordinasyon / BVS" aria-controls="rightDrawerPane-bvs" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 5v9l-8 4-8-4V8zM12 3v7m8-2-8 2m-8-2 8 2m0 0v11"/><circle cx="12" cy="10" r="2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="plane" aria-label="Best-fit plane · düzlemsellik" title="Best-fit plane · düzlemsellik" aria-controls="rightDrawerPane-plane" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 7-10h11l-7 10zM5 20h14"/><circle cx="10" cy="6" r="1"/><circle cx="14" cy="16" r="1"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="xrd" aria-label="Yapı faktörü / toz XRD (öğretici)" title="Yapı faktörü / toz XRD (öğretici)" aria-controls="rightDrawerPane-xrd" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M6 18v-3m3 3V7m3 11v-6m3 6V4m3 14v-8"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="volume" aria-label="Hacimsel fizik verileri" title="Hacimsel fizik verileri" aria-controls="rightDrawerPane-volume" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm0 10 9-5m-9 5L3 7m9 5v10"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="layers" aria-label="Nesneler ve katmanlar" title="Nesneler ve katmanlar" aria-controls="rightDrawerPane-layers" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="bonds" aria-label="Atom türlerine göre bağlar" title="Atom türlerine göre bağlar" aria-controls="rightDrawerPane-bonds" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="7" r="3"/><path d="m8 15 8-6M8 18l9-8"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="lattice" aria-label="Örgü dönüşümü" title="Örgü dönüşümü · Miller ve morfoloji" aria-controls="rightDrawerPane-lattice" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zm5 0v16m6-16v16M4 9h16M4 15h16m-5-8 2 2-2 2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="symmetry" aria-label="Kristalografik simetri" title="Kristalografik simetri" aria-controls="rightDrawerPane-symmetry" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 1 6M20 3v5h-5M12 5v14M5 12h14"/></svg></button>
   </nav>
  </aside>
 </div>
@@ -3013,7 +3040,7 @@ function pickAtom(e){
  const r=renderer.domElement.getBoundingClientRect();const v=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1));
  const ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects(atomMesh,false)[0];if(!hit)return;
  const id=hit.object.userData.atomIndex;if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length>=4)selected=[id];else selected.push(id);
- drawSelection();$('rightPanel').classList.add('open');
+ drawSelection();if(rightSidebarTab!=='measurement')setRightSidebarTab('measurement');
 }
 
 function dihedralDegrees(a,b,c,d){
@@ -4197,7 +4224,7 @@ function syncLibraryNavigation(){
  $('libraryNav').classList.toggle('active',library);
  $('homeLink').setAttribute('aria-current',library?'false':'page');
  $('libraryNav').setAttribute('aria-current',library?'page':'false');
- if(!library){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');requestAnimationFrame(()=>resize());}
+ if(!library){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
  else {window.scrollTo?.(0,0);}
 }
 function codSetLoading(busy){
@@ -4525,35 +4552,68 @@ function initLeftSidebarTabs(){
 
 
 
-const RIGHT_SIDEBAR_TABS=['structure','miller'];
-let rightSidebarTab='structure';
-const rightSidebarScroll={structure:0,miller:0};
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','symmetry'];
+let rightSidebarTab=null;
+const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
- if(!RIGHT_SIDEBAR_TABS.includes(tab))throw Error('Geçersiz sağ panel sekmesi: '+tab);
- const scroll=$('rightTabContent');rightSidebarScroll[rightSidebarTab]=scroll.scrollTop;
- rightSidebarTab=tab;
- for(const [name,id,pane] of [['structure','rightStructureTab','rightStructurePane'],['miller','rightMillerTab','rightMillerPane']]){
-  const active=name===tab;$(pane).hidden=!active;
-  $(id).classList.toggle('selected',active);$(id).setAttribute('aria-selected',String(active));$(id).tabIndex=active?0:-1;
+ if(tab!==null&&!RIGHT_SIDEBAR_TABS.includes(tab))throw Error('Geçersiz sağ panel aracı: '+tab);
+ const scroll=$('rightDrawerContent');
+ if(rightSidebarTab!==null)rightSidebarScroll[rightSidebarTab]=scroll.scrollTop;
+ const next=tab===rightSidebarTab?null:tab;
+ rightSidebarTab=next;
+ const open=next!==null;
+ $('rightPanel').classList.toggle('drawer-open',open);
+ $('app').classList.toggle('right-drawer-open',open);
+ scroll.hidden=!open;
+ for(const name of RIGHT_SIDEBAR_TABS){
+  const active=open&&name===next;
+  const button=document.querySelector('[data-right-tool="'+name+'"]');
+  $('rightDrawerPane-'+name).hidden=!active;
+  button.classList.toggle('selected',active);
+  button.setAttribute('aria-expanded',String(active));
+  button.setAttribute('aria-pressed',String(active));
  }
- scroll.scrollTop=rightSidebarScroll[tab]||0;
+ if(open)scroll.scrollTop=rightSidebarScroll[next]||0;
+ if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>resize());
 }
 function initRightSidebarTabs(){
- for(const [name,id] of [['structure','rightStructureTab'],['miller','rightMillerTab']]){
-  $(id).onclick=()=>setRightSidebarTab(name);
-  $(id).onkeydown=e=>{
-   if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
-   e.preventDefault();
-   const next=e.key==='Home'?'structure':e.key==='End'?'miller':name==='structure'?'miller':'structure';
-   setRightSidebarTab(next);$(next==='structure'?'rightStructureTab':'rightMillerTab').focus();
+ const drawer=$('rightDrawerContent');
+ const sections=[...document.querySelectorAll('.section[data-right-section]')];
+ for(const name of RIGHT_SIDEBAR_TABS){
+  const button=document.querySelector('[data-right-tool="'+name+'"]');
+  const pane=document.createElement('section');
+  pane.id='rightDrawerPane-'+name;
+  pane.className='right-drawer-pane';
+  pane.setAttribute('role','region');
+  pane.setAttribute('aria-label',button.getAttribute('aria-label'));
+  pane.hidden=true;
+  const heading=document.createElement('div');heading.className='right-drawer-heading';
+  const title=document.createElement('strong');title.textContent=button.getAttribute('aria-label');
+  const close=document.createElement('button');close.type='button';close.className='right-drawer-close';close.textContent='×';
+  close.setAttribute('aria-label','Paneli kapat');close.onclick=()=>{setRightSidebarTab(null);button.focus();};
+  heading.append(title,close);pane.append(heading);
+  for(const section of sections.filter(element=>element.dataset.rightSection===name))pane.append(section);
+  // Miller düzlemleri ve morfoloji, örgü dönüşümüne bağlı araçlar olarak korunur.
+  if(name==='lattice')while($('rightMillerPane').firstElementChild)pane.append($('rightMillerPane').firstElementChild);
+  drawer.append(pane);
+  button.onclick=()=>setRightSidebarTab(name);
+  button.onkeydown=event=>{
+   if(event.key==='Escape'){event.preventDefault();setRightSidebarTab(null);return;}
+   if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+   event.preventDefault();
+   const index=RIGHT_SIDEBAR_TABS.indexOf(name);
+   const next=event.key==='Home'?0:event.key==='End'?RIGHT_SIDEBAR_TABS.length-1:
+    (index+(event.key==='ArrowDown'?1:-1)+RIGHT_SIDEBAR_TABS.length)%RIGHT_SIDEBAR_TABS.length;
+   document.querySelector('[data-right-tool="'+RIGHT_SIDEBAR_TABS[next]+'"]').focus();
   };
  }
- setRightSidebarTab('structure');
+ $('app').addEventListener('transitionend',event=>{if(event.propertyName==='grid-template-columns')resize();});
+ setRightSidebarTab(null);
 }
 
 function bind(){
- initLibrary();
  initRightSidebarTabs();
+ initLibrary();
  initVolumeControls();
  initStage3Analyses();
  initStandardizationControls();
@@ -4629,9 +4689,9 @@ function bind(){
   download('kristal_olcumler.csv','\ufeff'+measurementCsv(measurementHistory),'text/csv;charset=utf-8');};
  $('clearHistory').onclick=()=>{measurementHistory=[];renderMeasurementHistory();};
  renderMeasurementHistory();
- $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('open');};
- $('inspectorToggle').onclick=()=>{$('rightPanel').classList.toggle('open');$('leftPanel').classList.remove('open');};
- document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){$('leftPanel').classList.remove('open');$('rightPanel').classList.remove('open');selected=[];drawSelection();}});
+ $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');setRightSidebarTab(null);};
+ $('inspectorToggle').onclick=()=>{$('leftPanel').classList.remove('open');setRightSidebarTab(rightSidebarTab==='measurement'?null:'measurement');};
+ document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);selected=[];drawSelection();}});
 }
 // @kristalyapi/browser-bootstrap: browser UI entry point, not part of the CIF parser
 try{restoreInitialCrystal();initScene();bind();syncControls();build();fit();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
