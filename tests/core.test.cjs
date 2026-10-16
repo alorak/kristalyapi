@@ -42,6 +42,7 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
+vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
 test('unit cell: cubic volume', () => approx(api.volume(api.basis(cubic)), 125));
@@ -661,9 +662,17 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  const quickbar=html.slice(html.indexOf('id="workbenchQuickbar"'),html.indexOf('id="toast"'));
  assert.equal((quickbar.match(/data-quick-flag="/g)||[]).length,8);
  for(const id of ['quickStyle','quickAtomScale','quickBondCut','quickH','quickK','quickL',
-  'quickSlabThickness','quickShowPlane','quickRepeatMillerPlanes'])assert.ok(quickbar.includes('id="'+id+'"'),id);
+  'quickSlabThickness','quickShowPlane','quickRepeatMillerPlanes',
+  'adpLevel','polyElement','polyCut','polyNeighbors'])assert.ok(quickbar.includes('id="'+id+'"'),id);
  for(const type of ['ball','space','stick','wire'])assert.match(quickbar,new RegExp('<option value="'+type+'"'));
  assert.match(html,/#viewport #stage\{bottom:var\(--quickbar-height\)\}/);
+ assert.match(html,/#viewport\{--quickbar-height:98px\}/);
+ assert.match(html,/\.quickbar-hkl \.quickbar-field\{flex:0 0 41px;width:41px\}/);
+ for(const id of ['quickShowPlane','quickRepeatMillerPlanes'])
+  assert.match(quickbar,new RegExp('<button id="'+id+'"[^>]*aria-pressed="(?:true|false)"[^>]*><svg'));
+ const leftView=html.slice(html.indexOf('<div class="section"><h2>Görünüm</h2>'),html.indexOf('<div class="section"><h2>Birim hücre'));
+ for(const id of ['adpLevel','polyElement','polyCut','polyNeighbors'])
+  assert.ok(!leftView.includes('id="'+id+'"'),id+' must leave the left sidebar');
 });
 test('right tool rail toggles one drawer at a time, restores scroll and updates ARIA',()=>{
  const nodes={};const get=id=>nodes[id] ||= {
@@ -883,6 +892,21 @@ test('viewport removes duplicate structure title and shows five accessible icon-
   assert.match(tag[0],/title="/);
  }
  assert.match(html,/id="projectionBtn"[^>]*aria-pressed="false"/);
+});
+test('perspective and orthographic cameras keep the same target-plane scale and distance',()=>{
+ const {projectionVisibleHeight,perspectiveFovForHeight}=context.cameraScaleApi;
+ const distance=42,fov=44;
+ const perspectiveView={isPerspectiveCamera:true,getEffectiveFOV:()=>fov};
+ const height=projectionVisibleHeight(perspectiveView,distance);
+ const orthographicView={isOrthographicCamera:true,top:height/2,bottom:-height/2,zoom:1};
+ approx(projectionVisibleHeight(orthographicView,distance),height);
+ approx(perspectiveFovForHeight(height,distance),fov);
+ orthographicView.zoom=2.5;
+ const zoomHeight=projectionVisibleHeight(orthographicView,distance);
+ const returnFov=perspectiveFovForHeight(zoomHeight,distance);
+ approx(projectionVisibleHeight({isPerspectiveCamera:true,getEffectiveFOV:()=>returnFov},distance),zoomHeight);
+ assert.ok(returnFov<fov,'orthographic zoom must not cause a jump when returning to perspective');
+ assert.throws(()=>perspectiveFovForHeight(0,distance));
 });
 test('bond pair editor can add and remove an independent distance interval',()=>{
  const txt=api.setPairBondRule('Si-O:1.4-2.0','Fe','O',1.6,2.4);
