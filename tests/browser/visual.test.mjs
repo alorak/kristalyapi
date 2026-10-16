@@ -354,6 +354,7 @@ try{
  const xsf=['BEGIN_BLOCK_DATAGRID_3D','density','BEGIN_DATAGRID_3D_density',
   '4 4 4','0 0 0','3 0 0','0 3 0','0 0 3',values.join(' '),
   'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ await page.locator('#volumeImportUnits').selectOption('density-angstrom');
  await page.locator('#volumeFile').setInputFiles({name:'density.xsf',mimeType:'text/plain',buffer:Buffer.from(xsf)});
  if(!await page.locator('#rightDrawerPane-volume').isVisible())await page.locator('[data-right-tool="volume"]').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1,null,{timeout:10000});
@@ -562,6 +563,15 @@ try{
  await page.locator('#siteStyleColor').fill('#dd9944');
  await page.locator('#siteStyleScale').fill('1.6');
  await page.locator('#leftGeneralTab').click();
+ const boundsSection=await page.locator('#boundXMin').evaluate(input=>({
+  title:input.closest('.section')?.querySelector(':scope > h2')?.textContent?.trim(),
+  previous:input.closest('.section')?.previousElementSibling?.querySelector(':scope > h2')?.textContent?.trim()
+ }));
+ assert.match(boundsSection.title,/Visible fractional bounds|Görünür kesirli sınırlar/);
+ assert.match(boundsSection.previous,/Supercell|Süperhücre/);
+ assert.equal(await page.locator('#xrdMaxIndex').count(),0,
+  'powder diffraction must use the 2theta sphere, not an index cube');
+ assert.equal(await page.locator('#volumeImportUnits option').count(),5);
  await page.locator('#boundXMin').fill('-0.1');await page.locator('#boundXMax').fill('1.1');
  await page.locator('#applyBounds').click();
  assert.deepEqual((await page.evaluate(()=>window.__visualTest.bounds()))[0],[-.1,1.1]);

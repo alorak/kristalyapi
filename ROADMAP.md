@@ -19,13 +19,24 @@ Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirm
 
 | Başlık | Eklenen kapsam | Bilimsel ve teknik sınır |
 | --- | --- | --- |
-| Hacimsel matematik | Eş birim/koordinat kontrolüyle `A+k·B`, farklı çözünürlükte trilineer örnekleme, 26 komşulu 3B ekstremum araması ve CSV | Birim etiketi bilinmeyen CUBE niceliklerini kimyasal olarak doğrulamaz; 2,5 milyon voksel sınırı geçerli |
+| Hacimsel matematik | Kaynak fiziksel tür/birim seçimiyle CUBE/XSF yoğunluk/potansiyel normalizasyonu; güvenli `A+k·B`, farklı çözünürlükte trilineer örnekleme ve işaretli maksimum/minimum eşikleri | Kaynağın gerçekten seçilen niceliği taşıdığını kullanıcı doğrular; belirsiz tür aritmetiğe alınmaz; 2,5 milyon voksel sınırı geçerli |
 | Miller kesitleri | Kristalin gerçek karşı-örgü metriğiyle `(hkl)` yönlü 2B sayısal kesit, ızgara sınırlarına kırpma, PNG/CSV ve kontur | Hesaplanan kesit veri olmayan alanda extrapolasyon yapmaz; inceleme çözünürlüğü sınırlıdır |
 | Kinematik saçılma | 98 nötr element için IT92 X-ışını form faktörü; 90 element için koherent nötron uzunluğu, tam Kartezyen ADP, isteğe bağlı Bragg–Brentano LP | İyonik form faktörleri, anomal katkı, özel izotoplar, pik profili/absorpsiyon ve Rietveld yok |
 | Türetilmiş model haritası | Hesaplanan `F(hkl)` ile 16³/24³ periyodik Fourier/Patterson ters dönüşümü | Fobs/Fo−Fc değildir; sonlu yansıma kesimi ve Gibbs artefaktları vardır |
 | Voronoi | E/Å³ periyodik elektron yoğunluğunda en yakın çekirdeğe sayısal integral ve CSV | Bader sıfır-akı havzaları değildir; örnekleme ve site limiti nedeniyle yakınsama gerektirir |
 | Madelung | Açık iyon yükleriyle nötr P1 hücrede gerçek/karşı-uzay + self terimli Ewald, site potansiyeli ve eV/cell | Noktasal iyon modeli; kısmi doluluk, polarizasyon/dielektrik etki ve elektronik yapı yok |
-| Dosya kapsamı | PDB/ENT CRYST1, ATOM/HETATM, ilk MODEL, ANISOU; PDB P1 dışa aktarımı | `.vesta`, geniş biyomoleküler topoloji, manyetik mCIF/setting dönüşümleri tamamlanmadı |
+| Dosya kapsamı | PDB/ENT CRYST1 hücre+Hermann–Mauguin grup eşleme, ATOM/HETATM element hizalaması, ilk MODEL, ANISOU; PDB P1 dışa aktarımı | Tanınmayan space group güvenli uyarıyla P1 kalır; geniş biyomoleküler topoloji ve `.vesta` tamamlanmadı |
+
+### Paket A · bilimsel doğruluk düzeltmeleri (Ekim 2026)
+
+- **XRD:** Sabit ±hkl küpü yerine dalga boyu ve 2θ üst sınırından türeyen d_min küresi; büyük hücrede hesaplama bütçesi uyarısı; fiziksel indise koyulmuş eski ±8 kesimini yapı faktöründen ayırma.
+- **Hacimsel dosyalar:** CUBE/XSF için kullanıcıdan kaynak nicelik/birim seçimi; e/bohr³ → e/Å³ ve Hartree/e → V; bilinmeyen türün fiziksel aritmetik ve Voronoi işlemlerine girmesini önleme; periyodik XSF son-ızgara düzlemlerini kaldırma.
+- **Ekstremum:** Minimumlarda `değer ≤ eşik`, maksimumlarda `değer ≥ eşik`, negatif eşikler dahil.
+- **PDB:** İki harfli büyük element adlarının hizalama/kalıntı bilgisiyle okunması; CRYST1'de tanınan Hermann–Mauguin uzay gruplarının açılması, tanınmayan/uyumsuz gruplarda bilimsel uyarı.
+- **Simetri/site kimliği:** Genişletilmiş atomlarda asimetrik kaynak site ve simetri işlemi indeksi; Madelung yük ve Voronoi raporlarını kullanıcıdaki kaynak atom etiketiyle eşleme.
+- **Arayüz:** Görünür kesirli sınırlar, birim hücre ve süperhücre gibi ayrı başlıklı bölüm.
+
+**Paket B sonraki aşamadır:** Nötron Lorentz/absorpsiyon, Fourier `d_min` + FFT/64³, üç kaynaklı Δρ, PAW/AECCAR uyarıları ve PDB element alanı dışa aktarım uyumu.
 
 **Kalan P1 önceliği:** deneysel Fobs/MTZ kaynağı ve doğrulaması; özgül izotop/anomal saçılma; yüksek performanslı büyük-ızgara analizi; gelişmiş CIF/mCIF/PDB ve VESTA proje biçimi; manyetik moment vektörleri; ayrıntılı Hall setting/orijin dönüşümleri.
 

@@ -158,8 +158,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <label class="field compact"><span>a ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="ra" data-repeat-step="-1" aria-label="a tekrar sayısını azalt">−</button><input id="ra" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="ra" data-repeat-step="1" aria-label="a tekrar sayısını artır">+</button></div></label>
    <label class="field compact"><span>b ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="rb" data-repeat-step="-1" aria-label="b tekrar sayısını azalt">−</button><input id="rb" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="rb" data-repeat-step="1" aria-label="b tekrar sayısını artır">+</button></div></label>
    <label class="field compact"><span>c ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="rc" data-repeat-step="-1" aria-label="c tekrar sayısını azalt">−</button><input id="rc" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="rc" data-repeat-step="1" aria-label="c tekrar sayısını artır">+</button></div></label>
-  </div><div class="actionrow" style="margin-top:10px"><button id="applyRepeat" class="primary">Çoğalt</button><button id="repeatOne">1 × 1 × 1</button></div>
-  <div class="fractional-bounds"><div class="fractional-bounds-title">Görünür kesirli sınırlar · x/y/z</div><div class="fractional-bounds-grid">
+  </div><div class="actionrow" style="margin-top:10px"><button id="applyRepeat" class="primary">Çoğalt</button><button id="repeatOne">1 × 1 × 1</button></div></div>
+  <div class="section"><h2>Görünür kesirli sınırlar <span>x/y/z</span></h2><div class="fractional-bounds"><div class="fractional-bounds-grid">
    <label>x <span><input id="boundXMin" type="number" step=".1" min="-1" max="2" value="0" aria-label="x alt sınır">–<input id="boundXMax" type="number" step=".1" min="-1" max="2" value="1" aria-label="x üst sınır"></span></label>
    <label>y <span><input id="boundYMin" type="number" step=".1" min="-1" max="2" value="0" aria-label="y alt sınır">–<input id="boundYMax" type="number" step=".1" min="-1" max="2" value="1" aria-label="y üst sınır"></span></label>
    <label>z <span><input id="boundZMin" type="number" step=".1" min="-1" max="2" value="0" aria-label="z alt sınır">–<input id="boundZMax" type="number" step=".1" min="-1" max="2" value="1" aria-label="z üst sınır"></span></label>
@@ -351,7 +351,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <label class="field"><span>Açık iyon yükleri (e)</span><input id="madelungCharges" placeholder="Na:+1, Cl:-1 veya 1:+2, 2:-2"></label>
     <button type="button" id="madelungCalculate">Elektrostatik enerji ve site potansiyelleri</button>
     <div id="madelungResults" class="hint" aria-live="polite">Yükleri belirtip hesaplayın.</div>
-    <p class="hint">Elektriksel olarak nötr P1 hücre ve tam doluluk zorunlu. Ewald gerçek/karşı-uzay ve self terimlerini içerir. Bu noktasal iyon enerjisi bağ enerjisi, elektron yapısı, polarizasyon veya DFT sonucu değildir.</p>
+    <p class="hint">Yüklerde atom türünü, asimetrik birimin 1 tabanlı satırını veya benzersiz atom etiketini kullanabilirsiniz; yük simetri eşdeğerlerine aktarılır. Elektriksel olarak nötr hücre ve tam doluluk zorunlu. Ewald gerçek/karşı-uzay ve self terimlerini içerir. Bu noktasal iyon enerjisi bağ enerjisi, elektron yapısı, polarizasyon veya DFT sonucu değildir.</p>
    </div>
   </div>
   <div class="section" data-right-section="plane"><h2>Best-fit plane · düzlemsellik</h2>
@@ -367,7 +367,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="triple">
     <label class="field compact"><span>λ (Å)</span><input id="xrdLambda" type="number" min=".2" max="5" step=".0001" value="1.5406"></label>
     <label class="field compact"><span>2θ üst sınır (°)</span><input id="xrdAngle" type="number" min="15" max="150" step="5" value="90"></label>
-    <label class="field compact"><span>En büyük |hkl|</span><input id="xrdMaxIndex" type="number" min="1" max="7" step="1" value="5"></label>
    </div>
    <label class="check"><input id="xrdLp" type="checkbox"> Bragg–Brentano Lorentz–polarizasyon düzeltmesi (yalnız X-ışını)</label>
    <button id="analyzeXrd" type="button" class="primary">F(hkl) ve difraktogram hesapla</button>
@@ -388,6 +387,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div class="section volumetric-panel" data-right-section="volume"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
    <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
+   <div class="volume-import-units">
+    <label class="field"><span>CUBE / XSF veri türü ve kaynak birimi</span><select id="volumeImportUnits">
+     <option value="unknown">Bilinmiyor — sadece görselleştir</option>
+     <option value="density-bohr">Elektron yoğunluğu · e/bohr³ → e/Å³</option>
+     <option value="density-angstrom">Elektron yoğunluğu · e/Å³</option>
+     <option value="potential-hartree">Potansiyel · Hartree/e → V</option>
+     <option value="potential-volt">Potansiyel · V</option>
+    </select></label>
+    <label class="check"><input id="volumeImportPeriodic" type="checkbox"> CUBE / XSF periyodik (hücreyle eşleşiyorsa)</label>
+    <p class="hint">Yüklemeden önce seçin. CHGCAR yoğunluğu otomatik olarak e/Å³'e dönüştürülür. Belirsiz alanlar fiziksel aritmetiğe ve Voronoi'ye alınmaz.</p>
+   </div>
    <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
    <input type="file" id="potentialFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
    <div class="stack">
@@ -410,7 +420,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <div class="note"><strong>3B tepe / çukur araması</strong>
       <div class="triple">
        <label class="field compact"><span>Tür</span><select id="volumePeakMode"><option value="max">Maksimumlar</option><option value="min">Minimumlar</option></select></label>
-       <label class="field compact"><span>Mutlak eşik</span><input id="volumePeakThreshold" type="number" step="any" value="0"></label>
+       <label class="field compact"><span>Değer eşiği (≥ maks, ≤ min)</span><input id="volumePeakThreshold" type="number" step="any" value="0"></label>
        <label class="field compact"><span>En fazla</span><input id="volumePeakCount" type="number" min="1" max="50" step="1" value="12"></label>
       </div>
       <div class="actionrow"><button type="button" id="volumePeakFind">Yerel ekstremumları bul</button><button type="button" id="volumePeakCsv">CSV indir</button></div>
