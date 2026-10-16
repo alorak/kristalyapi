@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/core.test.cjs tests/worker.test.mjs tests/validation/test_runner.cjs
+        run: node --test tests/core.test.cjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/validation/test_runner.cjs
   deploy:
     needs: validate
     environment:
@@ -49,6 +49,8 @@ jobs:
           cp index.html public/index.html
           cp styles.css public/styles.css
           cp crystal-app.js public/crystal-app.js
+          cp reciprocal-core.js public/reciprocal-core.js
+          cp reciprocal-page.js public/reciprocal-page.js
           cp favicon.svg public/favicon.svg
           cp translations.js public/translations.js
           cp -R vendor/three public/vendor/three

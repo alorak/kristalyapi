@@ -22,7 +22,7 @@ Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.ht
 
 | Bölüm | İşlev |
 | --- | --- |
-| Üst menü | **Kristal Yapı** başlığının solunda hamburger simgesi, etkin workspace adı ve sayı rozeti; **Kütüphane** görünümünde de hamburger kalır. Kompakt simgeli **Aç / Kaydet**, geri alma/yineleme ve **EN / TR** dil seçimi. |
+| Üst menü | **Kristal Yapı** başlığının solunda hamburger simgesi, etkin workspace adı ve sayı rozeti; **Kütüphane** ve **Karşı Uzay** sayfalarında da hamburger kalır. Kompakt simgeli **Aç / Kaydet**, geri alma/yineleme ve **EN / TR** dil seçimi. |
 | Sol panel / **Genel** | Birim hücre parametreleri (`a, b, c, α, β, γ`), süperhücre, `a/b/c` için **− / +**, 1–6 tekrar ve her eksende **−1…2 arasında görünür kesirli sınır** seçimi (örn. −0,1…1,1). |
 | Sol panel / **Atomlar** | Asimetrik atom listesi, Wyckoff, ekle/sil ve site bazında **atom rengi/ölçeği** ile **çokyüzlü rengi/opaklığı**; proje ve Undo/Redo'da korunur. |
 | 3B çalışma alanı | Fareyle döndürme/kaydırma/zoom, bakış yönleri, görünüme sığdırma, perspektif–ortografik geçişi, XYZ yön göstergesi. |
@@ -64,6 +64,19 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 | **Örgü dönüşümü** | 3×3 baz dönüşümleri, primitive/konvansiyonel hücre, Niggli ve kısa baz, Moyo simetri analizi. |
 | **Miller düzlemleri ve morfoloji** | Bağımsız düzlem katmanları, kesit/slab, `{hkl}` yüz aileleri ve geometrik morfoloji. |
 | **Kristalografik simetri** | Uzay grubu/setting, simetri işlemleri, Wyckoff eşleşmeleri ve simetriyle genişletme. |
+
+## Karşı Uzay ve Kırınım
+
+Üst menüdeki **Karşı Uzay** (`#karsi-uzay`) tam genişlikli bir kavram laboratuvarıdır; etkin çalışma alanındaki yapıyı (simetriyle genişletilmiş P1 listesi) salt okunur kullanır ve editördeki IT92 `f₀(s)`, ADP ve `F(hkl)` hesaplarını paylaşır. Dört sekmesi vardır:
+
+| Sekme | İçerik | Kapsam ve sınır |
+| --- | --- | --- |
+| **Gerçek ↔ karşı örgü** | Birim hücrede `(hkl)` düzlem ailesi ve ona dik `G(hkl)`; `d`, `|G| = 1/d`, `a*, b*, c*`, `α*, β*, γ*`, `V* = 1/V`; `|F|²` ile ağırlıklandırılmış 3B karşı örgü; atom katkılarını uç uca ekleyen **yapı faktörü fazör diyagramı** (kapalı çokgen = sistematik sönüm) | Kristalografik kural `aᵢ·bⱼ = δᵢⱼ`; konvansiyonel hücre kullanılır, merkezleme sönümlerle görünür |
+| **Ewald küresi ve toz halkaları** | Seçilen `[uvw]` düzlemindeki Ewald kesiti, kristal dönüşü `ω`, küreye değen yansımalar ve kırınan ışınlar; **Sonraki Bragg konumu** düğmesi; toz modunda `1/d` kabuklarının küreyi kesmesi; düz dedektörde Debye–Scherrer halkaları ve LP dahil toz deseni | Kinematik model; halkalar `r = D·tan 2θ`, `D = 100 mm` ve `2θ ≤ 70°` ile çizilir |
+| **Bölge ekseni deseni (SAED)** | `[uvw]` bölge ekseni için sıfırıncı Laue bölgesi; relativistik elektron dalgaboyu, Mott–Bethe elektron saçılma çarpanı, uyarılma hatası ve kalınlığa bağlı `sinc²` biçim çarpanı; kinematik olarak sönük konumlar ayrıca işaretlenir | Dinamik ve çift kırınım hesaplanmaz (ör. Si [110]'da (002) gerçek desende görülebilir); HOLZ çizgileri yok |
+| **Brillouin bölgesi ve bantlar** | Yapıyı kendisine taşıyan saf ötelemelerden primitive örgü, primitive karşı örgünün Wigner–Seitz hücresi (birinci Brillouin bölgesi), Bravais türü, Setyawan–Curtarolo (2010) yüksek simetri noktaları/yolu ve **boş örgü** (serbest elektron) bantları | Yol CUB, FCC, BCC, TET, ORC ve HEX için tanımlıdır; etiketler kullanıcının a, b, c eksenlerine göredir. Boş örgüde kristal potansiyeli sıfırdır, bant aralığı açılmaz |
+
+Bilimsel çekirdek bağımsız bir modüldedir ([`reciprocal-core.js`](reciprocal-core.js)); arayüz [`reciprocal-page.js`](reciprocal-page.js) içindedir. Çekirdek testleri dual baz, `d(hkl)`, Bragg geometrisi, saf ötelemeler, FCC/BCC/SC/HEX bölge geometrisi ve hacmi, özel noktaların bölge yüzeyinde olması ve boş örgü enerjilerini analitik değerlere karşı sınar.
 
 ## Kütüphane ve COD
 
@@ -195,7 +208,7 @@ Sonra **http://localhost:8000** adresini açın. Dosyayı doğrudan `file://` il
 **Node regresyon testleri** (ek paket gerektirmez):
 
 ```sh
-node --test tests/core.test.cjs tests/worker.test.mjs
+node --test tests/core.test.cjs tests/worker.test.mjs tests/reciprocal.test.mjs
 ```
 
 **Gerçek Chromium/WebGL görsel testi** (Playwright + Three.js bağımlılıkları ve tarayıcı kurulumu gerekir): `node tests/browser/visual.test.mjs`. **Bağımsız CIF doğruluğu** Gemmi 0.7.4 referanslarını ve sabitlenmiş CIF örneklerini kullanır; komutlar ve kurallar [tests/validation/README.md](tests/validation/README.md) dosyasındadır.

@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'reciprocal-core.js'
+      - 'reciprocal-page.js'
       - 'crystal-app.js'
       - 'styles.css'
       - 'translations.js'

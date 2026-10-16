@@ -6,6 +6,7 @@ const SPACE_NAMES={"1":"P 1","2":"P -1","3":"P 2 = P 1 2 1","4":"P 2_1 = P 1 2_1
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
+import { initReciprocalPage } from './reciprocal-page.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -2480,6 +2481,7 @@ function build(){
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
  recordHistoryChange();
  persistLastCrystal();
+ if(reciprocalPage?.visible)reciprocalPage.refresh();
  report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',
   capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',
   state.poly&&!polyCount?state.poly+' için eşik içinde en az dört komşulu çokyüzlü oluşturulamadı; merkez atomu veya bağ eşiğini değiştirin.':'',
@@ -4845,16 +4847,44 @@ function setLibraryPane(mode){
  if(mode==='bookmarks')renderCodBookmarks();
 }
 function isLibraryHash(hash){return hash==='#kutuphane';}
+function isReciprocalHash(hash){return hash==='#karsi-uzay';}
+function pageFromHash(hash){return isLibraryHash(hash)?'library':isReciprocalHash(hash)?'reciprocal':'editor';}
+let reciprocalPage=null;
 function syncLibraryNavigation(){
- const library=isLibraryHash(window.location.hash);
+ const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
  document.body.classList.toggle('library-open',library);
- $('app').hidden=library;
+ document.body.classList.toggle('reciprocal-open',reciprocal);
+ $('app').hidden=page!=='editor';
  $('libraryPage').hidden=!library;
+ $('reciprocalPage').hidden=!reciprocal;
  $('libraryNav').classList.toggle('active',library);
- $('homeLink').setAttribute('aria-current',library?'false':'page');
+ $('reciprocalNav').classList.toggle('active',reciprocal);
+ $('homeLink').setAttribute('aria-current',page==='editor'?'page':'false');
  $('libraryNav').setAttribute('aria-current',library?'page':'false');
- if(!library){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
+ $('reciprocalNav').setAttribute('aria-current',reciprocal?'page':'false');
+ if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
  else {window.scrollTo?.(0,0);}
+ reciprocalPage?.setVisible(reciprocal);
+}
+/* Read-only bridge for the reciprocal-space page: the active workspace's
+   structure (symmetry-expanded P1 list) and the editor's validated physics. */
+function reciprocalHost(){
+ return {
+  structure(){
+   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):
+    state.sites.map((site,i)=>({...site,sourceSiteIndex:i}));
+   const sg=state.symmetryEnabled?String(SPACE_NAMES[state.sgNumber]||state.sgSetting).split('=')[0].trim():'P1';
+   return {name:state.name,workspace:activeWorkspace()?.label||'',symmetry:sg,cell:{...validateCell(state.cell)},
+    sites:sites.map(site=>({...site,symbol:cleanSymbol(site.symbol),x:Number(site.x),y:Number(site.y),z:Number(site.z)}))};
+  },
+  structureFactor,scatteringFactor,powderPattern,elementColor,
+  atomicNumber:symbol=>PERIODIC_SYMBOLS.indexOf(cleanSymbol(symbol))+1,
+  isotropicU(site,cell){
+   if(Number.isFinite(site.uIso)&&site.uIso>0)return site.uIso;
+   if(site.adp){const U=adpToCartesian(site.adp,cell);return Math.max(0,(U[0][0]+U[1][1]+U[2][2])/3);}
+   return 0;
+  }
+ };
 }
 function codSetLoading(busy){
  codBusy=busy;
@@ -5495,3 +5525,5 @@ function bind(){
 }
 // @kristalyapi/browser-bootstrap: browser UI entry point, not part of the CIF parser
 try{restoreInitialCrystal();initWorkspaceState();initScene();bind();syncControls();build();if(!restoreWorkspaceCamera(activeWorkspace()?.cameraView))fit();persistWorkspaceSession();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
+// The concept page is optional: a failure there must never block the editor.
+try{reciprocalPage=initReciprocalPage(reciprocalHost());syncLibraryNavigation();}catch(err){console.error('Karşı uzay sayfası başlatılamadı:',err);}
