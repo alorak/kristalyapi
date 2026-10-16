@@ -14,13 +14,15 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 4. Sağdaki simgelerden ölçüm, BVS, XRD, Miller düzlemleri veya diğer analizleri açın.
 5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ veya PNG dışa aktarın.
 
-Uygulamanın ana arayüzü, CSS'si ve JavaScript'i [index.html](index.html) içindedir. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. Three.js **0.182.0** modülleri CDN'den; otomatik simetri analizi için Moyo WASM dosyaları dağıtımın yerel `vendor/` dizininden yüklenir. Bu nedenle **ilk açılış tamamen çevrimdışı değildir**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
+**Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
+
+Uygulamanın ana arayüzü, CSS'si ve uygulama JavaScript'i [index.html](index.html) içindedir. Molekül temalı [favicon.svg](favicon.svg) ve yerel dil paketi yayın sırasında ayrı eklenir. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. Three.js **0.182.0** modülleri CDN'den; otomatik simetri analizi için Moyo WASM dosyaları dağıtımın yerel `vendor/` dizininden yüklenir. Bu nedenle **ilk açılış tamamen çevrimdışı değildir**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
 ## Arayüz
 
 | Bölüm | İşlev |
 | --- | --- |
-| Üst menü | **Kristal Yapı** başlığının solundaki hamburger simgesi, çalışma alanları ve sayı rozeti; **Kütüphane**, **Aç**, **Kaydet**, **Geri al / Yinele**. |
+| Üst menü | **Kristal Yapı** başlığının solundaki hamburger simgesi, çalışma alanları ve sayı rozeti; **Kütüphane**, **Aç**, **Kaydet**, **Geri al / Yinele** ve sağ üstte **EN / TR dil seçimi**. |
 | Sol panel / **Genel** | Birim hücre parametreleri (`a, b, c, α, β, γ`), süperhücre, temel yapı düzenleme alanları. Süperhücrede `a/b/c` için **− / +** düğmeleri ve 1–6 tekrar sınırı vardır. |
 | Sol panel / **Atomlar** | Asimetrik konum/atom listesi, kesirli koordinatlar, Wyckoff bilgisi, atom ekleme ve silme. |
 | 3B çalışma alanı | Fareyle döndürme/kaydırma/zoom, bakış yönleri, görünüme sığdırma, perspektif–ortografik geçişi, XYZ yön göstergesi. |
@@ -66,7 +68,7 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 
 **Kütüphane** tam genişlikli sayfadır ve dört alt sekmesi vardır:
 
-1. **COD'da ara:** ana arama ölçütleri solda, **Arama sonuçları** sağda. COD numarası, ad/formül, uzay grubu, gerekli/hariç elementler ve gelişmiş yayın/hacim/element sayısı filtreleri. Arama sonucu yer imlerine eklenebilir, CIF olarak açılabilir veya içe aktarılabilir.
+1. **COD'da ara:** ana arama ölçütleri solda, **Arama sonuçları** sağda. COD numarası, ad/formül, uzay grubu, gerekli/hariç elementler ve gelişmiş yayın/hacim/element sayısı filtreleri. Arama sonucu yer imlerine eklenebilir, CIF olarak açılabilir veya içe aktarılabilir. **COD ID üzerine tıklandığında ayrıntı modalı** açılır.
 2. **Örnek Yapılar:** solda yedi örneğin **açılır menü yerine listesi**, sağda seçili yapının hücre bilgileri, açıklaması, favori düğmesi ve içe aktarma. Si, NaCl, CsCl, elmas, FCC Cu, BaTiO₃ ve grafit bulunur. **Yeni P1 oluştur** seçeneği de vardır.
 3. **Yer imleri:** COD kayıtlarının yerel listesi; kaydedilmiş kayıtları bulma, içe aktarma ve yer imi JSON'unu dışa aktarma.
 4. **Cloudflare Worker · COD API:** yalnızca isteğe bağlı Worker adresini kaydetme, test etme ve temizleme. Arama sayfasında yer kaplamaz.
@@ -82,16 +84,16 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 
 Resmî uç noktalar: [COD klasik JSON](https://www.crystallography.net/cod/result.php?format=json), [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Aramayı tarayıcıdan yürütmek **CORS iznine** bağlıdır. Çevrimiçi içe aktarım başarısız olursa **Dosyadan** ile indirilen CIF'i açabilirsiniz; bu yol COD API CORS'una bağlı değildir. İsteğe bağlı Worker için [kurulum, güvenlik ve dağıtım rehberi](worker/README.md) bulunur. **GitHub Pages dağıtımı Worker'ı otomatik yayınlamaz.**
 
-### Bilinen sorun: OPTIMADE sonuçlarında bazı COD alanları boş
+### COD üstverisi: klasik API, OPTIMADE ve Worker
 
-**16 Ekim 2026 itibarıyla açık bir alan eşleme hatası vardır.** Klasik COD JSON yanıtları `sg`, `a`, `b`, `c`, `alpha`, `beta`, `gamma`, `vol`, `authors`, `journal`, `year`, `doi` alanlarını kullanırken OPTIMADE sonuçlarında birçok COD üstverisi `attributes._cod_sg`, `_cod_a`, `_cod_b`, `_cod_vol`, `_cod_authors`, `_cod_doi` biçimindedir. `normalizeCodRecord()` henüz bu `_cod_` takılarını eşlemiyor.
+Klasik COD JSON yanıtları `sg`, `a`, `b`, `c`, `vol`, `authors`, `doi` gibi alanlar döndürür. OPTIMADE yanıtlarında aynı COD üstverisi `attributes._cod_sg`, `_cod_a`, `_cod_vol`, `_cod_authors`, `_cod_doi` adlarını kullanır. **`normalizeCodRecord()` artık iki biçimi de eşleyerek doğrudan OPTIMADE ve Cloudflare Worker üzerinden gelen sonuçları aynı alanlara dönüştürür.** Deneysel hata payları (`siga`, `sigvol` vb.) ve yayın/rafinman üstverileri de desteklenir.
 
-Bu nedenle bir kaydın **kimyasal formülü göründüğü hâlde uzay grubu, hücre, hacim veya yayın bilgilerinin `—` görünmesi, verinin COD'da olmadığı anlamına gelmez**. Örneğin [COD 4335507](https://www.crystallography.net/cod/4335507.html) klasik yanıtında `C 1 2/m 1`, `a=16.646 Å`, `b=4.419 Å`, `c=7.4834 Å`, `β=106.893°`, `V=526.72 Å³` ve yayın üstverileri vardır.
+Örneğin [COD 4335507](https://www.crystallography.net/cod/4335507.html) için `C 1 2/m 1`, `a=16.646 ± 0.002 Å`, `b=4.419 ± 0.0006 Å`, `c=7.4834 ± 0.001 Å`, `β=106.893 ± 0.002°`, `V=526.72 ± 0.12 Å³` ve yayın üstverileri gösterilebilir.
 
-- **Geçici çözüm:** **COD'da ara → Bağlantı yöntemi → Yalnız doğrudan COD klasik API / CIF** seçip aramayı yeniden yapın. Tarayıcıda klasik API erişimi engellenirse Worker veya indirilen CIF dosyası yolunu kullanın.
-- **Kalıcı çözüm (henüz uygulanmadı):** `normalizeCodRecord()` içinde OPTIMADE'nin `_cod_` alanlarını da tanımak; mümkünse uyum testinde tekil COD kaydının klasik ve OPTIMADE yanıtlarında aynı hücre/uzay grubu/yayın bilgisini ürettiğini doğrulamak. OPTIMADE için eksik alanların tespiti ve klasik yanıtla tamamlama ayrı bir iyileştirme olabilir.
+- **COD ID modalı:** Yalnız mevcut alanları gösterir; kimyasal ad/formül, yayın/DOI, örgü ölçüleri ve belirsizlikler, sıcaklık, uzay grubu, radyasyon türü ve rafinman metrikleri ayrı kartlarda sunulur. Açıldığında seçili bağlantı yöntemine göre ayrıntıları sorgular; başarısız bağlantıda mevcut satır üstverisini gösterir. **COD'da görüntüle** ve **CIF içe aktar** düğmeleri vardır.
+- **Veri bulunurluğu:** Bütün COD kayıtlarında bütün alanlar dolu olmayabilir. Yok olan alanlar için deneysel değer uydurulmaz. Worker'ın ayarlanmış ve erişilebilir olması gerekir.
 
-Bu hata **arama sonuçlarının üstveri gösterimine** ilişkindir; CIF içindeki gerçek hücre parametrelerinin matematiksel olarak hesaplanamadığını göstermez.
+Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sahte boşluklar için klasik COD ve OPTIMADE fixture'larının aynı bilgileri üretmesi artık regresyon testlerinde doğrulanır.
 
 ## Dosya biçimleri
 
@@ -140,6 +142,29 @@ Bu hata **arama sonuçlarının üstveri gösterimine** ilişkindir; CIF içinde
 - Yüzey oluşturma, BVS ve öğretici XRD fiziksel modellerin sınırlı alt kümeleridir. **Yüzey enerjisi, Wulff dengesi, atomik relaksasyon, deneysel pik profili, anomal saçılma ve DFT** hesaplanmaz.
 - CIF dosyasını düzenleyip tekrar dışa aktarmak kaynak deneysel üstverinin her etiketini korumayabilir. Kaynak CIF'le ve bağımsız bilimsel programlarla karşılaştırma önerilir.
 - Referans kontrolleri, sınırlar ve planlanan çalışmalar için [bilimsel CIF doğrulaması](tests/validation/README.md) ve [VESTA yol haritası](ROADMAP.md) sayfalarını inceleyin.
+
+### VESTA ile güncel başlıca farklar
+
+- **P0 — Tam bağımsız çevrimdışı paket:** Three.js halen CDN'den geliyor; uygulamanın servis çalışanı (Service Worker), sürümlü önbelleği veya çevrimdışı PWA paketi yok.
+- **P1 — Hacimsel veri matematiği:** Çoklu ızgara görüntülenebilir ancak ızgaraları toplama/çıkarma, fark yoğunluğu, 3B ekstremum/peak araması ve keyfî Miller kesitinde sayısal kontur eksik.
+- **P1 — Fiziksel hesaplamalar:** Gerçek atomik saçılma katsayılarıyla XRD ve nötron yoğunluğu, Fourier/Patterson sentezi, Voronoi yük integrali ve Madelung potansiyeli/enerjisi yok.
+- **P1 — Dosya ve simetri kapsamı:** VESTA proje biçimi, geniş format desteği, atomlara bağlı manyetik moment vektörleri ve ayrıntılı setting/orijin dönüşümleri henüz tamamlanmadı. Manyetik mCIF işleme desteği de ayrıca geliştirilmelidir.
+- **P2 — Morfoloji ve sahne:** Kübik olmayan `{hkl}` için tam nokta grubu eşdeğerleri, çoklu faz CIF dışa aktarımı ve VESTA düzeyinde nesne/per-site stil esnekliği eksik.
+- **P2 — Yayın/3B dışa aktarım:** Çok yüksek çözünürlüklü sayısal görseller, TIFF/SVG/STL/VRML gibi biçimler ve çok büyük atom/bağ sahneleri desteklenmiyor.
+
+Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/) ve [geliştirme yol haritası](ROADMAP.md).
+
+## Çevrimdışı çalışma (COD hariç)
+
+**Şu an tam çevrimdışı çalışacağı garanti edilmez.** Kod ve bilimsel hesaplamaların büyük bölümü tarayıcıda çalışır. Dağıtımda Moyo WASM, dil paketi ve favicon yerel dosyadır; ancak Three.js modülleri `cdn.jsdelivr.net` üzerinden alınır. İlk ağsız açılış, CDN önbelleği boşsa 3B arayüzü başlatamayabilir. GitHub Pages'in normal HTTP önbelleği çevrimdışı destek garantisi değildir.
+
+Tam çevrimdışı/PWA için üç iş gerekir:
+
+1. Three.js 0.182.0 çekirdeğini ve kullanılan OrbitControls/ConvexGeometry modüllerini aynı sürümle **yerel `vendor/`** altından sunmak; import map'i yerel dosyalara geçirmek.
+2. `index.html`, `translations.js`, `favicon.svg`, Three.js ve Moyo WASM varlıklarını kapsayan sürümlü **Service Worker / precache** ve güncelleme stratejisi eklemek. COD/Worker istekleri zorunlu cache'e dahil edilmemeli.
+3. Ağ bağlantısını tamamen keserek ilk kurulum sonrası açılış, CIF/POSCAR/XYZ içe/dışa aktarımı, 3B kontrol, analiz, dil geçişi ve kayıt geri yükleme için tarayıcı E2E testi yapmak.
+
+COD araması ve ilk CIF indirme çevrimiçi kalır; önceden bu cihazda önbelleğe alınmış CIF'ler bazı durumlarda tekrar açılabilir. Yerel bilimsel işlemler ve dosya düzenleme için COD bağlantısı gerekmez.
 
 ## Yerel geliştirme ve test
 

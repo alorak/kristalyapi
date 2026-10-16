@@ -1,0 +1,428 @@
+/* Local, dependency-free Turkish / English UI dictionary.
+ * Turkish is the source text of the existing editor; English is the default
+ * display language. A MutationObserver also translates later-rendered forms,
+ * library results, dialogs, notifications, and tooltips. Scientific data,
+ * formulae, element symbols and user-entered values are never machine translated.
+ */
+(() => {
+ 'use strict';
+ const entries=[
+  ['Kristal Yapı — 3B Kristal Editörü','Crystal Structure — 3D Crystal Editor'],
+  ['Kristal Yapı','Crystal Structure'],['Kütüphane','Library'],
+  ['Düzenle','Edit'],['☰ Düzenle','☰ Edit'],
+  ['↓ Kaydet','↓ Save'],['↥ Aç','↥ Open'],['Ölçüm','Measure'],
+  ['Projeyi kaydet veya dışa aktar','Save or export project'],
+  ['CIF, POSCAR, XYZ veya proje JSON dosyası','CIF, POSCAR, XYZ or project JSON file'],
+  ['Geri al','Undo'],['Yinele','Redo'],['Geri al · Ctrl/Cmd+Z','Undo · Ctrl/Cmd+Z'],
+  ['Yinele · Ctrl/Cmd+Shift+Z / Ctrl+Y','Redo · Ctrl/Cmd+Shift+Z / Ctrl+Y'],
+  ['Çalışma alanlarını aç','Open workspaces'],['Çalışma alanları','Workspaces'],
+  ['Kristal çalışma alanları','Crystal workspaces'],['Çalışma alanlarını kapat','Close workspaces'],
+  ['Her yapıyı bağımsız düzenleyin ve aralarında geçiş yapın.','Edit each structure independently and switch between them.'],
+  ['+ Yeni yapı ekle','+ Add structure'],['Kristal yapı düzenleyicisi','Crystal structure editor'],
+  ['Genel','General'],['Atomlar','Atoms'],['Birim hücre','Unit cell'],
+  ['Hücreyi uygula','Apply cell'],['Hücre açıları','Cell angles'],
+  ['Hücre hacmi','Cell volume'],['Uzay grubu (1–230)','Space group (1–230)'],
+  ['Uzay grubu ayarı / setting','Space group setting'],['Uzay grubu','Space group'],
+  ['Kristalografik simetri','Crystallographic symmetry'],
+  ['Atomları asimetrik konum kabul edip simetri uygula','Treat atoms as asymmetric sites and apply symmetry'],
+  ['Wyckoff konumları ve eşleştirme','Wyckoff positions and matching'],
+  ['Seçilen uzay grubunun genel ve özel konumlarını listeler.','Lists the general and special positions of the selected space group.'],
+  ['Süperhücre','Supercell'],['Çoğalt','Repeat'],['1 × 1 × 1','1 × 1 × 1'],
+  ['a tekrar sayısını azalt','Decrease a repetitions'],['a tekrar sayısını artır','Increase a repetitions'],
+  ['b tekrar sayısını azalt','Decrease b repetitions'],['b tekrar sayısını artır','Increase b repetitions'],
+  ['c tekrar sayısını azalt','Decrease c repetitions'],['c tekrar sayısını artır','Increase c repetitions'],
+  ['Asimetrik konumlar / atomlar','Asymmetric positions / atoms'],
+  ['+ Atom ekle','+ Add atom'],['Atom ekle','Add atom'],
+  ['Atom türlerine göre bağlar','Bonds by element types'],
+  ['Özel eşikler (Å), örn. Si-O:1.4-2.0; Ti-O:1.7-2.3','Pair-specific distances (Å), e.g. Si-O:1.4-2.0; Ti-O:1.7-2.3'],
+  ['Bağ kurallarını uygula','Apply bond rules'],
+  ['Element A','Element A'],['Element B','Element B'],
+  ['En kısa (Å)','Minimum (Å)'],['En uzun (Å)','Maximum (Å)'],
+  ['Geometrik öneri','Geometric suggestion'],['Kural ekle / güncelle','Add / update rule'],
+  ['Örgü dönüşümü','Lattice transformation'],['Hazır dönüşüm','Transformation preset'],
+  ['Özel 3×3 matris','Custom 3×3 matrix'],
+  ['a / b eksenini değiştir','Swap a / b axes'],['a boyunca iki kat','Double along a'],
+  ['Hücreyi ve atomları dönüştür','Transform cell and atoms'],
+  ['Primitive hücre / kısa baz','Primitive cell / reduced basis'],
+  ['Simetriden primitive hücreye','Primitive from symmetry'],
+  ['Niggli indirgemesi','Niggli reduction'],['Kısa baz (alternatif)','Short basis (alternative)'],
+  ['Otomatik uzay grubu (moyo / WASM)','Automatic space group (moyo / WASM)'],
+  ['Simetri toleransı (Å)','Symmetry tolerance (Å)'],
+  ['Uluslararası tablo setting seçimi','International Tables setting'],
+  ['Uzay grubunu otomatik belirle','Detect space group'],
+  ['Konvansiyonel hücreye dönüştür','Convert to conventional cell'],
+  ['Primitive hücreye dönüştür','Convert to primitive cell'],
+  ['Moyo WASM analizi henüz çalıştırılmadı.','Moyo WASM analysis has not been run.'],
+  ['Yapı bilgileri','Structure information'],['Çoklu yapı / faz karşılaştırması','Multiple structure / phase comparison'],
+  ['Atom seçimi ve ölçüm','Atom selection and measurements'],
+  ['Ölçüm geçmişi','Measurement history'],
+  ['İleri koordinasyon / BVS','Advanced coordination / BVS'],
+  ['Best-fit plane · düzlemsellik','Best-fit plane · planarity'],
+  ['Yapı faktörü / toz XRD (öğretici)','Structure factor / powder XRD (educational)'],
+  ['Hacimsel fizik verileri','Volumetric physical data'],
+  ['Nesneler ve katmanlar','Objects and layers'],
+  ['Miller düzlemleri ve morfoloji','Miller planes and morphology'],
+  ['Miller düzlemleri · kesit · slab · morfoloji','Miller planes · section · slab · morphology'],
+  ['Miller düzlemleri','Miller planes'],['Miller düzlemlerini görüntüle','Show Miller planes'],
+  ['Süperhücredeki tüm paralel düzlemleri göster','Show all parallel planes in the supercell'],
+  ['Kesit kalınlığı','Section thickness'],['Kesit kalınlığı (Å)','Section thickness (Å)'],
+  ['Miller indisi','Miller index'],['Görünüm','Appearance'],
+  ['Hızlı görünüm kontrolleri','Quick view controls'],
+  ['Hızlı model seçimi','Quick model selection'],['Model gösterimi','Model style'],
+  ['Küre ve çubuk','Ball and stick'],['Uzay dolduran','Space filling'],
+  ['Çubuk','Sticks'],['Tel model','Wireframe'],
+  ['Atomlar arası bağlar','Interatomic bonds'],
+  ['Otomatik bağ uzunluğu (elemente göre)','Automatic bond length (by element)'],
+  ['Birim hücre çizgileri','Unit cell edges'],['Sınır atomlarını göster','Show boundary atoms'],
+  ['Atom sembollerini göster','Show atom symbols'],
+  ['Kristal eksenlerini yapı içinde göster','Show crystal axes in structure'],
+  ['Otomatik döndürme','Auto-rotate'],['Termal elipsoitleri (ADP) göster','Show thermal ellipsoids (ADP)'],
+  ['Atom boyutu','Atom size'],['Bağ uzunluğu','Bond length'],
+  ['Olasılık düzeyi','Probability level'],['Olasılık','Probability'],
+  ['Merkez atom','Central atom'],['Komşu sınırı (Å)','Neighbor cutoff (Å)'],
+  ['En fazla komşu','Maximum neighbors'],['Komşu','Neighbor'],
+  ['ADP','ADP'],['Max','Max'],['Model','Model'],
+  ['Görünüme sığdır','Fit to view'],['Üstten görünüm','Top view'],
+  ['Önden görünüm','Front view'],['Yandan görünüm','Side view'],
+  ['Perspektif / ortografik','Perspective / orthographic'],
+  ['Perspektif görünümü; ortografiye geç','Perspective view; switch to orthographic'],
+  ['Ortografik görünümü; perspektife geç','Orthographic view; switch to perspective'],
+  ['3B görünüm araçları','3D view tools'],
+  ['Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi','Cartesian orientation indicator rotating with camera: X red, Y green, Z blue'],
+  ['Kristal Yapı / Veritabanı','Crystal Structure / Database'],
+  ['Kristal yapı ara, yerleşik örnekleri incele ve çalışma alanına aktar.','Search crystal structures, explore built-in examples, and import into the workspace.'],
+  ['COD resmî sitesi ↗','Official COD website ↗'],['Kütüphane görünümü','Library view'],
+  ["COD'da ara",'Search COD'],["⌕ COD'da ara",'⌕ Search COD'],
+  ['⌕ COD’da ara','⌕ Search COD'],['COD numarası','COD ID'],
+  ['Arama parametreleri','Search parameters'],['Ölçütleri birleştirerek ara.','Combine criteria to search.'],
+  ['Metin / malzeme adı','Text / material name'],
+  ['Kimyasal formül (Hill notasyonu)','Chemical formula (Hill notation)'],
+  ['İçermesi gereken elementler','Required elements'],
+  ['İçermemesi gereken elementler','Excluded elements'],
+  ['En fazla 8','Up to 8'],['En fazla 4','Up to 4'],
+  ['Diğer filtreler · yayın, aralıklar ve seçenekler','Other filters · publications, ranges and options'],
+  ['Dergi adı','Journal name'],['Yayın yılı','Publication year'],
+  ['Cilt','Volume'],['Sayı','Issue'],
+  ['Farklı element sayısı','Number of distinct elements'],
+  ['Hücre hacmi (Å³)','Cell volume (Å³)'],['Z (formül birimi)','Z (formula units)'],
+  ["Z′ (asimetrik birim)","Z′ (asymmetric unit)"],
+  ['Fobs verisi olanlar','Has Fobs data'],
+  ['Tekrar kayıtları dahil et','Include duplicate entries'],
+  ['Hatalı kayıtları dahil et','Include entries with errors'],
+  ['Teorik yapıları dahil et','Include theoretical structures'],
+  ['Bağlantı yöntemi','Connection method'],
+  ['Otomatik (Worker ayarlıysa önce Worker)','Automatic (Worker first if configured)'],
+  ['Yalnız kendi Cloudflare Worker API','Cloudflare Worker API only'],
+  ['Yalnız doğrudan OPTIMADE API','Direct OPTIMADE API only'],
+  ['Yalnız doğrudan COD klasik API / CIF','Direct COD classic API / CIF only'],
+  ['Sıfırla','Reset'],['La–Mn–Ge–In örneği','La–Mn–Ge–In example'],
+  ['Aranıyor…','Searching…'],
+  ['Arama sonuçları','Search results'],['Bir malzeme, formül, element veya COD numarası girerek aramaya başlayabilirsin.','Start by entering a material, formula, element or COD ID.'],
+  ['Aramayı COD üzerinde aç ↗','Open search on COD ↗'],
+  ['Otomatik bağlantıda kaydedilmiş Worker önceliklidir. Yapı dosyaları gerektiğinde manuel içe aktarılabilir.','Automatic mode prioritizes the saved Worker. Structure files may also be imported manually.'],
+  ['Cloudflare Worker · COD API','Cloudflare Worker · COD API'],
+  ['Cloudflare Worker · COD API bağlantısı','Cloudflare Worker · COD API connection'],
+  ['Bağlantıyı buradan yönet; arama filtreleri COD’da ara sekmesinde kalır.','Manage the connection here; search filters remain on the Search COD tab.'],
+  ['Kaydet','Save'],['Bağlantıyı test et','Test connection'],['Temizle','Clear'],
+  ['Worker tanımlı değil. COD’a doğrudan bağlanılır.','Worker not configured. COD is accessed directly.'],
+  ['Worker tanımlı değil. COD\'a doğrudan bağlanılır.','Worker not configured. COD is accessed directly.'],
+  ['Worker dağıtıldıktan sonra HTTPS adresini kaydetmen yeterli. Adres yalnızca bu tarayıcıda tutulur ve API anahtarı gerekmez.','Once deployed, save the Worker HTTPS address. It is stored only in this browser; no API key is required.'],
+  ['Örnek Yapılar','Sample Structures'],['Soldaki yapı listesinden seçim yap; sağda özellikleri gör, favorile veya içe aktar.','Select a structure on the left; view details, favorite or import on the right.'],
+  ['Yapılar','Structures'],['☆ Yalnız favoriler','☆ Favorites only'],
+  ['☆ Favoriye ekle','☆ Add to favorites'],['★ Favorilerden çıkar','★ Remove from favorites'],
+  ['Yerleşik örnek · İdeal model','Built-in example · Idealized model'],
+  ['Birim hücrede atom','Atoms per unit cell'],
+  ['Örgü parametreleri','Lattice parameters'],['Atom türleri','Element types'],
+  ['↧ Yapıyı çalışma alanına aktar','↧ Import into workspace'],
+  ['＋ Yeni P1 oluştur','＋ Create new P1'],
+  ['Bu modeller idealize edilmiştir; deneysel CIF kayıtlarının yerine geçmez. İçe aktarma mevcut yapının yerini alır.','These are idealized models, not substitutes for experimental CIF records. Importing replaces the current structure.'],
+  ['★ Yer imleri','★ Bookmarks'],['Yer imleri','Bookmarks'],
+  ['★ Kaydedilen malzemeler','★ Saved materials'],
+  ['Yalnızca malzeme verileri, COD kimliği ve CIF bağlantısı bu tarayıcıda saklanır.','Only material metadata, COD ID and CIF URL are saved in this browser.'],
+  ['Yer imlerini JSON indir','Download bookmarks as JSON'],
+  ['Henüz yer imi bulunmuyor. COD aramasındaki ☆ düğmesiyle malzeme kaydedebilirsin.','No bookmarks yet. Save materials with the ☆ button in COD search.'],
+  ['CIF dosyasından içe aktar','Import from CIF file'],
+  ['COD dosyasını indirip aşağıdan seçebilirsin. Bu yöntem CORS’a ihtiyaç duymaz.','Download a COD file and select it below. This method does not require CORS.'],
+  ['CIF dosyasını COD’dan aç / indir ↗','Open / download CIF from COD ↗'],
+  ['İndirilen CIF dosyasını seç','Select downloaded CIF file'],['Kapat','Close'],
+  ['Formül','Formula'],['Formül bilinmiyor','Unknown formula'],
+  ['Hücre (a · b · c)','Cell (a · b · c)'],
+  ['Hacim Å³','Volume Å³'],['Yayın / DOI','Publication / DOI'],['İşlemler','Actions'],
+  ['Yayın bilgisi yok','No publication information'],
+  ['↧ İçe aktar','↧ Import'],['Alınıyor…','Importing…'],['Yeniden dene','Retry'],
+  ['Dosyadan','From file'],['Yer imlerine ekle','Add to bookmarks'],
+  ['Yer imlerinden çıkar','Remove from bookmarks'],
+  ['‹ Önceki','‹ Previous'],['Sonraki ›','Next ›'],['sayfa','page'],
+  ['COD kaydı','COD record'],['Kayıt ayrıntılarını kapat','Close record details'],
+  ['COD üzerinde görüntüle ↗','View on COD ↗'],['CIF içe aktar ↧','Import CIF ↧'],
+  ['COD ayrıntıları yükleniyor…','Loading COD details…'],
+  ['Yapı ve kimlik','Structure and identity'],['Yaygın ad','Common name'],
+  ['Kimyasal ad','Chemical name'],['Hesaplanan formül','Calculated formula'],
+  ['Yayın bilgileri','Publication'],['Yayın başlığı','Publication title'],
+  ['Yazarlar','Authors'],['Dergi','Journal'],['Yıl','Year'],
+  ['Dergi cildi','Journal volume'],['Sayfalar','Pages'],
+  ['Yapı parametreleri','Structure parameters'],
+  ['Hücre sıcaklığı','Cell temperature'],['Kırınım sıcaklığı','Diffraction temperature'],
+  ['Uzay grubu numarası','Space group number'],
+  ['Hermann–Mauguin simgesi','Hermann–Mauguin symbol'],
+  ['Hall uzay grubu simgesi','Hall space group symbol'],
+  ['Kırınım ve rafinman','Diffraction and refinement'],
+  ['Tüm yansımalar R','Residual R (all reflections)'],
+  ['Güçlü yansımalar R','Residual R (significant reflections)'],
+  ['Güçlü yansımalar ağırlıklı R','Weighted R (significant reflections)'],
+  ['Tüm yansımalar ağırlıklı R','Weighted R (all reflections)'],
+  ['Uyum iyiliği (GoF)','Goodness of fit (GoF)'],
+  ['Işınım dalga boyu','Radiation wavelength'],['Işınım türü','Radiation type'],
+  ['Koordinatlar mevcut','Has coordinates'],['Düzensizlik mevcut','Has disorder'],
+  ['Fobs mevcut','Has Fobs'],['Evet','Yes'],['Hayır','No'],
+  ['Kaydet ve dışa aktar','Save and export'],
+  ['Yapıyı proje olarak kaydet veya istediğin formatta indir.','Save the structure as a project or download a selected format.'],
+  ['Kaydet penceresini kapat','Close save dialog'],
+  ['Proje dosyası','Project file'],['JSON · Düzenleme ve tüm proje ayarlarını korur','JSON · Keeps edits and project settings'],
+  ['Kristalografik yapı ve hücre verileri','Crystallographic structure and cell'],
+  ['VASP · Örgü vektörleri ve atom konumları','VASP · Lattice vectors and atomic positions'],
+  ['Görüntülenen süperhücredeki atom konumları','Visible supercell atom positions'],
+  ['PNG görseli','PNG image'],['3B görünümün beyaz zeminli ekran görüntüsü','White-background screenshot of the 3D view'],
+  ['Dosyalar tarayıcın üzerinden indirilir.','Files are downloaded through your browser.'],
+  ['Vazgeç','Cancel'],['Seçilen atomlar','Selected atoms'],
+  ['Seçimi temizle','Clear selection'],['Ölçümü kaydet','Save measurement'],
+  ['Ölçüm ekle','Add measurement'],['Ölçümleri CSV indir','Export measurements as CSV'],
+  ['Geçmişi temizle','Clear history'],
+  ['Yükle','Load'],['Ekle','Add'],['Kaldır','Remove'],['Sil','Delete'],
+  ['Uygula','Apply'],['Göster','Show'],['Gizle','Hide'],
+  ['Görünürlük','Visibility'],['Saydamlık','Opacity'],['Renk','Color'],
+  ['Kesit','Slice'],['İzoyüzey','Isosurface'],['Aktif alan','Active field'],
+  ['Yeni katman ekle','Add new layer'],['Ölçüm bulunmuyor','No measurements'],
+  ['Ölçüm kaydedilmedi','No saved measurements'],
+  ['Orijin','Origin'],['Hücre merkezi','Cell center'],['Öteleme','Translation'],
+  ['Faz','Phase'],['Faz ekle','Add phase'],['Fazları temizle','Clear phases'],
+  ['Normal vektör','Normal vector'],['RMS sapma','RMS deviation'],
+  ['Maksimum sapma','Maximum deviation'],
+  ['Kullanıcı tarafından tanımlanan yapı','User-defined structure'],
+  ['Yeni kristal','New crystal'],['Silisyum (Si)','Silicon (Si)'],
+  ['Elmas (C)','Diamond (C)'],['Bakır (FCC)','Copper (FCC)'],
+  ['Grafit (C)','Graphite (C)'],
+  ['En fazla 10 yapı · seçili yapının düzenlemeleri korunur.','Up to 10 structures · changes to the active structure are preserved.'],
+  ['Aşama 1','Stage 1'],['Aşama 2','Stage 2'],
+  ['P1: 1 simetri işlemi','P1: 1 symmetry operation'],
+  ['Element çiftine özel min–maks eşikleri diğer bağlardan bağımsızdır. Öneriler atom yarıçaplarına dayalı görsel başlangıç değerleridir, deneysel bağ doğrulaması değildir.',
+   'Pair-specific minimum and maximum thresholds are independent of other bonds. Suggestions are geometric starting values based on atomic radii, not experimental bond validation.'],
+  ['Sütunlar yeni a′, b′, c′ vektörlerini eski kesirli eksenlerde tanımlar. Atomları Kartezyen konumları koruyarak yeni hücreye taşır.',
+   'Columns define the new a′, b′ and c′ vectors in the old fractional basis. Atomic Cartesian coordinates are preserved during transformation.'],
+  ['Seçili uzay grubunun F, I, A, B veya C merkezlemesine göre primitive dönüşümü önce atom koordinatlarında doğrular. Eksik çeviri eşdeğerliği varsa dönüşüm reddedilir.',
+   'Primitive conversion for F, I, A, B or C centering is first verified against atomic positions. Missing translational equivalences cause rejection.'],
+  ['Niggli ve primitive dönüşümleri gerçek baz dönüşümü yapar. Uzay grubunu otomatik tayin etmek için aşağıdaki analiz kullanılır.',
+   'Niggli and primitive operations perform real basis transformations. Use the analysis below to detect the space group automatically.'],
+  ['Spglib uyumlu (Hall)','Spglib-compatible (Hall)'],
+  ["Moyo, 230 uzay grubu ve Hall setting'i üzerinde simetri arar; matris/orijin kayması raporlanır. Dönüşüm, atomları simetrik idealize etmeden geometrik olarak yeniden ifade eder ve açık P1 kaydeder. Tam eşleştirme yapı uyuşmazlığında reddedilir. WASM paketi GitHub Pages dağıtımına yerel eklenir.",
+   'Moyo searches space-group symmetry and Hall settings for 230 groups; the basis matrix and origin shift are reported. Atomic geometry is transformed without imposing idealized symmetry, and the result is stored as explicit P1. Inconsistent structures are rejected. WASM is bundled with GitHub Pages.'],
+  ['Bu işlemler atom koordinatlarını, doluluk oranlarını ve varsa ADP tensörlerini yeni hücreye dönüştürür; sonuç açık P1 olarak saklanır. Uygun olmayan merkezlenme reddedilir.',
+   'These operations transform atomic coordinates, occupancies and available ADP tensors to the new cell. Results are stored as explicit P1; incompatible centering is rejected.'],
+  ['Kesirli koordinatlar: 0–1. CIF içe aktarımında simetri işlemleri P1 atomlarına genişletilir. Görünümdeki atomu seçerek ayrıntılarını inceleyebilirsiniz.',
+   'Fractional coordinates: 0–1. CIF symmetry operations are expanded to P1 atoms on import. Select an atom in the view to inspect its details.'],
+  ['Bağ uzunluğu (Å)','Bond length (Å)'],['Kesit (Å)','Section (Å)'],
+  ['Kapalı','Off'],['Komşu (Å)','Neighbor (Å)'],
+  ['Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.',
+   'Hide objects, adjust opacity and colors, or change their order. Changes are saved to the project and undo/redo history.'],
+  ['Kristal yapısı','Crystal structure'],['Hücrede atom','Atoms in cell'],
+  ["En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.",
+   'Overlay up to three additional CIF structures without changing the main cell. Adjust colors, opacity and Cartesian offsets in Å. Additional phases are saved in the project and undo/redo history.'],
+  ["+ Karşılaştırma CIF'i ekle","+ Add comparison CIF"],
+  ['Henüz ek karşılaştırma yapısı yok.','No comparison structure added yet.'],
+  ['Konumlar aynı Kartezyen koordinat başlangıcına veya hücre merkezlerine göre hizalanabilir. Atom eşleştirme, uyum optimizasyonu ve RDF/yer değiştirme hesabı bu görünüme dahil değildir.',
+   'Structures may be aligned by Cartesian origin or cell center. Atom matching, optimal alignment, RDF and displacement analysis are not included.'],
+  ['Bir atoma tıklayın. İki atomla uzaklık, üç atomla merkezdeki açıyı ölçebilirsiniz.',
+   'Click an atom. Select two atoms to measure distance or three to measure the central angle.'],
+  ['Seçilen görüntüler arası uzaklık (Å)','Selected-image distance (Å)'],
+  ['Periyodik en yakın görüntü uzaklığı (Å)','Minimum periodic-image distance (Å)'],
+  ['Ortadaki atomdaki bağ açısı (°)','Angle at middle atom (°)'],
+  ['Dört atomun dihedral açısı (°)','Four-atom dihedral angle (°)'],
+  ['Seçili atomun periyodik komşuları','Periodic neighbors of selected atom'],
+  ['Koordinasyon çevresini görmek için bir atom seçin.','Select an atom to inspect its coordination environment.'],
+  ['Kayıtlı ölçüm:','Saved measurements:'],['Ölçüm geçmişi →','Measurement history →'],
+  ['2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.',
+   '2 atoms: direct and minimum periodic distance · 3 atoms: angle at B · 4 atoms: A–B–C–D dihedral. Chemical bond interpretations depend on geometric thresholds.'],
+  ['CSV dışa aktar','Export CSV'],
+  ['Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/0,37 Å]. Komşular periyodik görüntülerden bulunur; kısmi doluluk ağırlıklandırılır.',
+   'Oxidation states are selected by the user, not inferred. Bond valence: s = exp[(R₀−d)/0.37 Å]. Neighbors include periodic images and partial occupancy weights.'],
+  ['Merkez atom (asimetrik / P1 liste)','Central atom (asymmetric / P1 list)'],
+  ['Cation–anion referans çifti','Cation–anion reference pair'],
+  ['BVS komşu mesafesi (Å)','BVS neighbor cutoff (Å)'],
+  ['Koordinasyon / BVS hesapla','Calculate coordination / BVS'],
+  ['Atom ve referans parametresi seçin.','Select an atom and reference parameter.'],
+  ['Komşu CSV','Neighbors CSV'],
+  ['Brese–O’Keeffe (1991) R₀ parametreleri kullanılır. BVS koordinasyon/eşdeğer oksidasyon durumu kanıtı değildir. Özellikle farklı katyon-valans türlerinde sınırlıdır.',
+   'Brese–O’Keeffe (1991) R₀ parameters are used. BVS does not prove coordination or oxidation state and has limitations, especially across mixed cation valences.'],
+  ['Aşağıya atomların 1-tabanlı satır indislerini yaz. Örn. 1,2,3,4. Üçten fazla, doğrusal olmayan atom gerekir. Atomlar mevcut hücrenin Kartezyen Å bazında değerlendirilir; sınır aşan atomlar otomatik unwrap edilmez.',
+   'Enter 1-based atom row indices, e.g. 1,2,3,4. At least three noncollinear atoms are needed. Cartesian coordinates use the current cell; crossing periodic boundaries is not automatically unwrapped.'],
+  ['Atom indisleri (virgülle)','Atom indices (comma-separated)'],
+  ['Düzlem hesapla + göster','Calculate and show plane'],['Düzlemleri temizle','Clear planes'],
+  ['Henüz düzlem hesaplanmadı.','No plane calculated yet.'],
+  ['En küçük kovaryans özvektörü düzlem normalini verir. RMS ortogonal sapma ve iki düzlem arasındaki dar açı raporlanır.',
+   'The minimum covariance eigenvector defines the plane normal. Orthogonal RMS deviation and the acute angle between planes are reported.'],
+  ['Kinematik F(hkl)=Σ occ·Z·exp(2πi h·r) ile noktasal elektron saçıcı yaklaşımı; sıcaklık faktörü Uiso/Uij varsa eklenir. Elementlere özgü açısal f₀(q), anomal saçılma, Lorentz-polarizasyon, tekstür ve cihaz profili henüz uygulanmaz.',
+   'Kinematic F(hkl)=Σ occ·Z·exp(2πi h·r) with point-electron scattering, including available Uiso/Uij temperature factors. Element-specific f₀(q), anomalous scattering, Lorentz/polarization, preferred orientation and instrumental profiles are omitted.'],
+  ['2θ üst sınır (°)','Maximum 2θ (°)'],['En büyük |hkl|','Maximum |hkl|'],
+  ['F(hkl) ve difraktogram hesapla','Calculate F(hkl) and diffractogram'],
+  ['Hesaplama bekleniyor.','Awaiting calculation.'],['Yansıma CSV','Reflections CSV'],
+  ['Bu grafik fiziksel Bragg konumları ve yaklaşık göreli genlikler içindir; deneysel XRD şiddeti ya da Rietveld analizi olarak kullanılmamalıdır.',
+   'The plot shows physical Bragg positions and approximate relative amplitudes, not experimental XRD intensity or Rietveld refinement.'],
+  ['CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.',
+   'CUBE, CHGCAR / CHG and XSF DATAGRID_3D. Files are processed entirely in the browser.'],
+  ['Hacimsel veri yükle','Load volumetric data'],['+ Bir alan daha yükle (en fazla 4)','+ Load another field (up to 4)'],
+  ['Aktif alan (kesit ve izodeğer kaynağı)','Active field (slice and isovalue source)'],
+  ['İkinci alan (renklendirme için)','Second field (for coloring)'],
+  ['İkinci alan yüklenmedi. Eşleştirme aynı uzaysal koordinat çerçevesine göre denetlenir.',
+   'No second field loaded. Spatial frame compatibility is checked.'],
+  ['Henüz veri yüklenmedi.','No data loaded yet.'],
+  ['Varsa dosyadaki atomları ve hücreyi kullan','Use atoms and cell from the file, if available'],
+  ['Görselleştirme','Visualization'],['3B izoyüzey','3D isosurface'],
+  ['2B kesit / yoğunluk haritası','2D slice / density map'],
+  ['İzoyüzey + kesit','Isosurface + slice'],['İzodeğer','Isovalue'],
+  ['İzoyüzey saydamlığı','Isosurface opacity'],
+  ['+ İzoyüzey ekle','+ Add isosurface'],['Ek izoyüzeyleri kaldır','Remove additional isosurfaces'],
+  ['Kesit yönü','Slice direction'],
+  ['Z / c doğrultusu','Z / c direction'],['Y / b doğrultusu','Y / b direction'],['X / a doğrultusu','X / a direction'],
+  ['Kesit konumu (%)','Slice position (%)'],['Renk haritası','Color map'],
+  ['Mavi – beyaz – kırmızı','Blue – white – red'],['Viridis-benzeri','Viridis-like'],
+  ['Kesitte izodeğer konturu','Isovalue contour on slice'],
+  ['Elektrostatik potansiyel yükle (renklendir)','Load electrostatic potential (color)'],
+  ['İzoyüzeyi potansiyele göre renklendir','Color isosurface by potential'],
+  ['Renk ölçeği veri yüklenince hesaplanır.','Color scale is calculated after loading data.'],
+  ['2B kesiti PNG kaydet','Save 2D slice as PNG'],['Kesit sayısal CSV','Slice values CSV'],
+  ['Henüz sayısal kesit yok.','No numerical slice yet.'],
+  ['Hacimsel veriyi temizle','Clear volumetric data'],
+  ['Izoyüzeyler marching tetrahedra ile oluşturulur. Büyük ızgaralar seyreltilir; kesit gerçek fiziksel koordinatlarda yerleştirilir. Yüzey renkleri ancak uyumlu ikinci potansiyel ızgarası yüklendiğinde potansiyeli temsil eder.',
+   'Isosurfaces use marching tetrahedra. Large grids are downsampled; slices are positioned in physical coordinates. Surface colors represent potential only when a compatible second potential grid is supplied.'],
+  ['Miller düzlemleri (hkl)','Miller planes (hkl)'],
+  ['Düzlem konumu (h·x+k·y+l·z = t)','Plane offset (h·x+k·y+l·z = t)'],
+  ['Tek düzlem seçiliyse yalnızca t düzlemi; tümü seçiliyse h·x+k·y+l·z = t+n (n tam sayı) ailesi çizilir.',
+   'With one plane selected, only t is drawn; with all planes, the family h·x+k·y+l·z = t+n (integer n) is shown.'],
+  ['Sonlu kalınlıklı yüzey kesitini göster','Show finite-thickness surface section'],
+  ['Miller indislerini girin.','Enter Miller indices.'],
+  ['Düzlem / kesiti uygula','Apply plane / section'],
+  ['Slab için vakum boşluğu (Å)','Vacuum gap for slab (Å)'],
+  ['Vakumlu yüzey hücresi oluştur','Create vacuum slab cell'],
+  ['Çoklu Miller düzlemleri','Multiple Miller planes'],
+  ['Yukarıdaki indisleri bağımsız bir görünüm katmanı olarak ekle. Her katmanın rengi ve görünürlüğü ayrı yönetilir.',
+   'Add these indices as an independent visualization layer. Each layer has its own visibility and color.'],
+  ['+ Düzlem ekle','+ Add plane'],['Ek katmanları temizle','Clear additional layers'],
+  ['Kesit ve vakumlu slab işlemleri yalnız yukarıda seçilen birincil Miller düzlemi için uygulanır.',
+   'Slice and vacuum slab operations use only the primary Miller plane selected above.'],
+  ['Kesit görünümü atom-merkezi filtresidir. Aşağıdaki oluşturma aracı ayrıca gerçek 2B periyodik yüzey vektörleriyle yeni 3B hücre ve vakum üretir; yüzey relaksasyonu yapmaz.',
+   'Slice display filters atom centers. The tool below can also generate a new 3D cell with genuine 2D periodic surface vectors and vacuum; it does not relax surfaces.'],
+  ['Kristal morfolojisi · {hkl} yüz aileleri','Crystal morphology · {hkl} face families'],
+  ['Yüzey normaline olan merkez uzaklığını Å cinsinden belirleyerek kapalı bir kristal şekli oluştur. Kübik hücrelerde eşdeğer indis permütasyonları uygulanır; diğer hücrelerde yalnız ±(hkl) üretilir.',
+   'Set face-center distances along normals (Å) to construct a closed crystal shape. Equivalent index permutations are used for cubic cells; other cells generate only ±(hkl).'],
+  ['Morfolojiyi göster','Show morphology'],['Merkez uzaklığı (Å)','Center distance (Å)'],
+  ['Yüz rengi','Face color'],
+  ['Kübik eşdeğer indisleri birlikte üret (varsa)','Generate cubic-equivalent indices (when applicable)'],
+  ['+ Yüz ailesi ekle','+ Add face family'],['Kübik {100} örneği','Cubic {100} example'],
+  ['Henüz yüz ailesi eklenmedi.','No face family added yet.'],
+  ['Bu bir geometrik morfoloji modelidir; yüzey enerjisi, Wulff dengesi ve relaksasyon hesaplanmaz.',
+   'This is a geometric morphology model; surface energies, Wulff equilibrium and relaxation are not calculated.'],
+  ["Bağlantıyı buradan yönet; arama filtreleri COD'da ara sekmesinde kalır.",
+   'Manage the connection here; search filters remain on the Search COD tab.'],
+  ['sekmesinde bağlantı yöntemi','set the connection method on the'],
+  ['COD dosyasını indirip aşağıdan seçebilirsin. Bu yöntem CORS\'a ihtiyaç duymaz.',
+   'Download a COD file and select it below. This method does not require CORS.'],
+  ["CIF dosyasını COD'dan aç / indir ↗",'Open / download CIF from COD ↗'],
+  ['Diamond cubic · idealize edilmiş Fd-3m','Diamond cubic · idealized Fd-3m']
+ ];
+ const dictionary=new Map(entries);
+ const parts=[
+  [' yapılar arasında geçiş',' switch between structures'],
+  [' yapı açık · her yapının düzenlemeleri korunur.',' structures open · changes are preserved for each.'],
+  [' kayıt alındı.',' records received.'],
+  [' kayıt gösterildi',' records displayed'],
+  [' kayıt',' records'],
+  ['Filtreler temizlendi. Yeni bir arama yapabilirsin.','Filters cleared. You can start a new search.'],
+  ['COD veritabanında aranıyor. Sonuçlar yüklenene kadar bekleyin…','Searching COD database. Please wait for the results…'],
+  ['Bu ölçütlerle COD kaydı bulunamadı.','No COD entries match these criteria.'],
+  ['COD kayıt ayrıntıları alınamadı.','Could not load COD record details.'],
+  ['Güncel ayrıntılar alınamadı; mevcut arama bilgileri gösteriliyor.','Could not fetch updated details; showing available search data.'],
+  ['COD klasik','COD classic'],
+  [' üzerinden ',' via '],
+  [' İlk ',' First '],
+  [' sonuç gösterildi; daha dar filtre önerilir.',' results displayed; narrower filters recommended.']
+ ];
+ const TEXT_ATTRS=['title','aria-label','placeholder','aria-description'];
+ let currentLanguage='en';
+ const originalText=new WeakMap(),displayedText=new WeakMap();
+ const originalAttrs=new WeakMap(),displayedAttrs=new WeakMap();
+ function translated(source){
+  const trimmed=source.trim();
+  if(!trimmed)return source;
+  let translatedText=dictionary.get(trimmed);
+  if(!translatedText){
+   translatedText=trimmed;
+   for(const [tr,en] of parts)if(translatedText.includes(tr))translatedText=translatedText.replaceAll(tr,en);
+  }
+  if(translatedText===trimmed)return source;
+  const start=source.match(/^\s*/)?.[0]||'';
+  const end=source.match(/\s*$/)?.[0]||'';
+  return start+translatedText+end;
+ }
+ function localizeText(node){
+  const now=node.nodeValue;
+  if(!originalText.has(node)||now!==displayedText.get(node)){
+   originalText.set(node,now);
+  }
+  const next=currentLanguage==='en'?translated(originalText.get(node)):originalText.get(node);
+  if(now!==next)node.nodeValue=next;
+  displayedText.set(node,next);
+ }
+ function localizeAttributes(el){
+  const source=originalAttrs.get(el)||{},shown=displayedAttrs.get(el)||{};
+  for(const attr of TEXT_ATTRS){
+   if(!el.hasAttribute(attr))continue;
+   const now=el.getAttribute(attr);
+   if(!(attr in source)||now!==shown[attr])source[attr]=now;
+   const next=currentLanguage==='en'?translated(source[attr]):source[attr];
+   if(now!==next)el.setAttribute(attr,next);
+   shown[attr]=next;
+  }
+  originalAttrs.set(el,source);displayedAttrs.set(el,shown);
+ }
+ function localizeTree(root){
+  if(root.nodeType===Node.TEXT_NODE){localizeText(root);return;}
+  if(root.nodeType!==Node.ELEMENT_NODE)return;
+  if(root.matches('script,style,textarea,[data-i18n-skip]'))return;
+  localizeAttributes(root);
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);
+  while(walker.nextNode()){
+   const node=walker.currentNode;
+   if(node.nodeType===Node.TEXT_NODE){
+    if(!node.parentElement?.closest('script,style,textarea,[data-i18n-skip]'))localizeText(node);
+   }else localizeAttributes(node);
+  }
+ }
+ const titleSource=document.title;
+ function setLanguage(language){
+  currentLanguage=language==='tr'?'tr':'en';
+  document.documentElement.lang=currentLanguage;
+  document.title=currentLanguage==='en'?translated(titleSource):titleSource;
+  document.getElementById('languageEnglish')?.setAttribute('aria-pressed',String(currentLanguage==='en'));
+  document.getElementById('languageTurkish')?.setAttribute('aria-pressed',String(currentLanguage==='tr'));
+  localizeTree(document.body);
+  try{localStorage.setItem('kristalyapi.language.v1',currentLanguage);}catch(error){/* private browsing */}
+ }
+ function init(){
+  let initial='en';
+  try{initial=localStorage.getItem('kristalyapi.language.v1')||'en';}catch(error){/* storage unavailable */}
+  document.getElementById('languageEnglish')?.addEventListener('click',()=>setLanguage('en'));
+  document.getElementById('languageTurkish')?.addEventListener('click',()=>setLanguage('tr'));
+  setLanguage(initial);
+  const observer=new MutationObserver(mutations=>{
+   for(const mutation of mutations){
+    if(mutation.type==='characterData')localizeText(mutation.target);
+    else if(mutation.type==='attributes')localizeAttributes(mutation.target);
+    else for(const child of mutation.addedNodes)localizeTree(child);
+   }
+  });
+  observer.observe(document.body,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:TEXT_ATTRS});
+ }
+ window.CrystalI18n={get language(){return currentLanguage;},setLanguage,t:value=>currentLanguage==='en'?translated(String(value)):String(value)};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+ else init();
+})();

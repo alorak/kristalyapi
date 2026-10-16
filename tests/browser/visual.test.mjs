@@ -105,6 +105,14 @@ try{
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ // English is the default; Turkish remains selectable and persisted.
+ await page.waitForFunction(()=>document.documentElement.lang==='en');
+ assert.equal(await page.locator('#libraryNav').textContent(),'Library');
+ assert.equal(await page.locator('#languageEnglish').getAttribute('aria-pressed'),'true');
+ await page.locator('#languageTurkish').click();
+ assert.equal(await page.locator('#libraryNav').textContent(),'Kütüphane');
+ assert.equal(await page.locator('html').getAttribute('lang'),'tr');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.language.v1')),'tr');
  assert.equal(await page.locator('#leftGeneralPane').getByText('Görünüm',{exact:true}).count(),0);
  assert.equal(await page.locator('#legacyViewControls').isHidden(),true);
  assert.equal(await page.locator('#adpLevel').isDisabled(),true,'ADP probability needs an enabled ellipsoid with Uij/Uiso');
@@ -443,6 +451,58 @@ try{
  await page.locator('#libPresetsTab').click();
  assert.equal(await page.locator('#presetList .preset-list-row').count(),7);
  await page.screenshot({path:path.join(artifacts,'16-mobile-library-presets.png'),animations:'disabled'});
+ // Worker responses can be OPTIMADE-prefixed or classic JSON; both must
+ // populate scientific columns and the on-demand COD detail modal.
+ await page.locator('#libWorkerTab').click();
+ await page.locator('#codWorkerUrl').fill('https://fixture-cod-worker.example');
+ await page.locator('#codWorkerSave').click();
+ await page.route('https://fixture-cod-worker.example/api/**',route=>{
+  const url=new URL(route.request().url());
+  const attrs={
+   _cod_formula:'- Ge4 In0.94 La4 Mn2 -',_cod_commonname:'lanthanum manganese indium germanide (4/2/1/4)',
+   _cod_sg:'C 1 2/m 1',_cod_sgHall:'-C 2y',_cod_sgNumber:'12',
+   _cod_a:16.646,_cod_siga:.002,_cod_b:4.419,_cod_sigb:.0006,_cod_c:7.4834,_cod_sigc:.001,
+   _cod_alpha:90,_cod_beta:106.893,_cod_gamma:90,_cod_vol:526.72,_cod_sigvol:.12,
+   _cod_authors:'Anton O. Oliynyk; Stanislav S. Stoyko; Arthur Mar',
+   _cod_title:'Quaternary Germanides RE4Mn2InGe4',_cod_journal:'Inorganic Chemistry',
+   _cod_year:'2013',_cod_volume:'52',_cod_firstpage:'8264',_cod_lastpage:'8271',
+   _cod_doi:'10.1021/ic401171v',_cod_Rall:.0234,_cod_Robs:.0195,
+   _cod_wRobs:.0406,_cod_wRref:.0417,_cod_gofref:1.054,
+   _cod_celltemp:173,_cod_sigcelltemp:2,_cod_diffrtemp:173,_cod_sigdiffrtemp:2,
+   _cod_wavelength:.71073,_cod_radType:'MoKα',_cod_flags:'has coordinates'
+  };
+  if(url.pathname==='/api/structures'){
+   route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:[{id:'4335507',attributes:attrs}]})});
+  }else if(url.pathname==='/api/search'){
+   const original=Object.fromEntries(Object.entries(attrs).filter(([key])=>key.startsWith('_cod_')).map(([key,value])=>[key.slice(5),value]));
+   route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{file:'4335507',...original}])});
+  }else route.abort();
+ });
+ await page.locator('#libSearchTab').click();
+ await page.locator('#codConnection').selectOption('worker');
+ await page.locator('#codId').fill('4335507');
+ await page.locator('#codSubmit').click();
+ await page.waitForFunction(()=>document.querySelector('#codResults .lib-cod-id')?.textContent==='4335507');
+ assert.match(await page.locator('#codResults').textContent(),/C 1 2\/m 1/);
+ assert.match(await page.locator('#codResults').textContent(),/526\.72/);
+ assert.match(await page.locator('#codResults').textContent(),/Inorganic Chemistry/);
+ await page.locator('.lib-cod-id').click();
+ assert.equal(await page.locator('#codDetailModal').isVisible(),true);
+ await page.waitForFunction(()=>document.getElementById('codDetailStatus').hidden);
+ assert.match(await page.locator('#codDetailGroups').textContent(),/16\.646 ± 0\.002 Å/);
+ assert.match(await page.locator('#codDetailGroups').textContent(),/0\.71073 Å/);
+ assert.match(await page.locator('#codDetailGroups').textContent(),/8264 – 8271/);
+ assert.match(await page.locator('#codDetailGroups').textContent(),/Hayır/);
+ await page.screenshot({path:path.join(artifacts,'24-cod-detail-worker.png'),animations:'disabled'});
+ await page.locator('#codDetailClose').click();
+ assert.equal(await page.locator('#codDetailModal').isHidden(),true);
+ await page.locator('#languageEnglish').click();
+ assert.equal(await page.locator('#libraryNav').textContent(),'Library');
+ assert.match(await page.locator('#libSearchTab').textContent(),/Search COD/);
+ await page.locator('.lib-cod-id').click();
+ assert.match(await page.locator('#codDetailGroups').textContent(),/Structure parameters/);
+ await page.locator('#codDetailClose').click();
+ assert.equal(await page.locator('html').getAttribute('lang'),'en');
  await page.locator('#homeLink').click();
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));

@@ -53,12 +53,14 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -->
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c1426">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <title>Kristal Yapı — 3B Kristal Editörü</title>
+<script src="./translations.js" defer></script>
 <style>
 :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e5edf9;background:#08111f;font-synthesis:none}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7bd6fb;outline-offset:2px}button{border:1px solid #334562;background:#192941;color:#e7eef9;border-radius:9px;padding:9px 12px;transition:.15s}button:hover:not(:disabled){background:#253955;border-color:#57779e}.primary{background:#276ee5;border-color:#3983ff;color:white}.primary:hover:not(:disabled){background:#3981f5}.danger{color:#f7a7a8}.small{font-size:12px;padding:6px 9px}.ghost{background:transparent;border-color:transparent}.muted{color:#91a4be}.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #31516b;border-radius:6px;background:#142840;color:#abdaf1;font-size:11px}header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 19px;border-bottom:1px solid #24344b;background:#0e1a2c;gap:12px}header .brand{display:flex;align-items:center;gap:12px;white-space:nowrap}header .gem{width:36px;height:36px;border-radius:10px;background:linear-gradient(140deg,#277adf,#37c6c9);display:grid;place-items:center;font-size:22px}h1{font-size:17px;margin:0;letter-spacing:-.4px}header .sub{font-size:11px;color:#8298b5}header .actions{display:flex;gap:8px;align-items:center}#app{height:calc(100dvh - 64px);display:grid;grid-template-columns:318px minmax(280px,1fr)300px}.panel{background:#0c182a;overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#39506b transparent}.left{border-right:1px solid #24344b}.right{border-left:1px solid #24344b}.section{padding:16px 18px;border-bottom:1px solid #223148}.section h2{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94aeca;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between}.section .hint{font-size:11px;line-height:1.5;color:#7e96b0;margin:8px 0 0}.stack{display:flex;flex-direction:column;gap:9px}.line{display:flex;align-items:center;gap:8px}.line>*{min-width:0}.split{display:grid;grid-template-columns:1fr 1fr;gap:8px}.triple{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.field{display:flex;flex-direction:column;gap:5px}.field span{font-size:11px;color:#96acc6}.field input,.field select,select{min-width:0;width:100%;background:#111f34;border:1px solid #31445f;border-radius:8px;color:#e5edf9;padding:9px 8px}.field input:focus{border-color:#6ab9e7}.field input[type=number]{font-variant-numeric:tabular-nums}.field.compact input{padding:7px 5px;font-size:12px}.check{display:flex;align-items:center;gap:8px;font-size:12px;color:#cdd9ea;cursor:pointer}.check input{accent-color:#3c93ff}.slider{display:flex;gap:12px;align-items:center}.slider input{flex:1;min-width:0;accent-color:#45b4ec}.slider output{font-size:12px;color:#bdd7ed;width:36px;text-align:right;font-variant-numeric:tabular-nums}.actionrow{display:flex;gap:7px;flex-wrap:wrap}.actionrow button{flex:1}.site-table{width:100%;border-collapse:collapse}.site-table th{font-size:10px;color:#7796b9;text-align:left;font-weight:600;padding:4px}.site-table td{padding:3px 2px}.site-table input{width:100%;min-width:0;padding:6px 3px;font-size:11px;border:1px solid #31445f;background:#14243a;border-radius:5px;color:white}.site-table input[name=element]{max-width:35px}.site-table .del{padding:3px 5px;background:transparent;border:0;color:#d997a4}#viewport{position:relative;min-width:0;background:radial-gradient(ellipse at 50% 36%,#172c4a 0%,#081421 65%,#07111f 100%);overflow:hidden}#stage{position:absolute;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}.floating{position:absolute;z-index:2;border:1px solid #334562;background:rgba(12,25,43,.92);backdrop-filter:blur(12px);border-radius:12px;box-shadow:0 8px 32px #0004}.topbar{left:16px;top:15px;right:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}.topbar>*{pointer-events:auto}.tools{display:flex;flex-wrap:wrap;gap:5px;padding:5px}.tools button{padding:7px 10px;font-size:12px}.tools button.active{background:#164d7a;border-color:#489bd1;color:#d6f4ff}.structure-name{padding:10px 13px;font-size:13px;color:#e3effd}.structure-name small{display:block;font-size:11px;color:#9bb2cb;margin-top:3px}.footbar{position:absolute;bottom:16px;left:16px;right:16px;padding:9px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#a1b9d2;pointer-events:none}.footbar>*{pointer-events:auto}.footbar .dot{width:7px;height:7px;border-radius:50%;background:#43d4aa;display:inline-block;margin-right:7px}.view-help{position:absolute;right:17px;bottom:62px;font-size:11px;color:#91a6bc;text-align:right;pointer-events:none}.legend{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.legend span{font-size:11px;color:#cadbf1;display:flex;align-items:center;gap:5px}.swatch{width:9px;height:9px;border-radius:50%;display:inline-block}.info{background:#12233a;border:1px solid #293d59;padding:12px;border-radius:9px}.info strong{display:block;font-size:17px;margin:4px 0}.info small{color:#8eabc8;font-size:11px}.measure-item{margin-top:8px;padding:9px;border-radius:8px;background:#12223a;border:1px solid #273b59;font-size:12px}.measure-item b{color:#d3e9fc}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric{background:#13243a;border:1px solid #2b3e57;border-radius:9px;padding:10px}.metric strong{display:block;font-size:17px;color:#d2eaff;font-variant-numeric:tabular-nums}.metric small{font-size:10px;color:#8eabc5}.notice{font-size:11px;line-height:1.6;border:1px solid #5b4b29;background:#292418;padding:9px;border-radius:8px;color:#d9c49b;display:none}.notice.visible{display:block}#toast{position:absolute;z-index:10;left:50%;bottom:65px;transform:translateX(-50%);max-width:min(550px,90vw);padding:10px 15px;background:#192e4b;border:1px solid #4d8dbe;border-radius:9px;color:#e7f7ff;font-size:12px;display:none;box-shadow:0 8px 24px #0008}#toast.visible{display:block}#fileInput{display:none}.shortcuts{color:#92a9c3;font-size:11px;line-height:1.8}.empty{color:#849bb7;font-size:12px;line-height:1.6}.colour-square{display:inline-block;width:10px;height:10px;border-radius:3px;background:#3599ec;margin-right:5px}a{color:#7fc7ff;text-decoration:none}a:hover{text-decoration:underline}footer{font-size:11px;color:#8095b0;text-align:center;padding:12px}.nav-toggle{display:none}@media(max-width:1180px){#app{grid-template-columns:285px minmax(280px,1fr)}.right{position:absolute;right:0;top:64px;bottom:0;width:270px;z-index:5;box-shadow:-12px 0 30px #0007;display:none}.right.open{display:block}.nav-toggle{display:inline-block}}@media(max-width:720px){header{height:58px;padding:0 9px}header .sub{display:none}header .brand{gap:7px}header .gem{width:30px;height:30px}h1{font-size:14px}header .actions{gap:3px}header .actions button{padding:7px 8px;font-size:11px}#app{height:calc(100dvh - 58px);display:block}.left{position:absolute;z-index:6;top:58px;bottom:0;width:min(330px,90vw);display:none;box-shadow:12px 0 30px #0008}.left.open{display:block}.right{top:58px}.mobile-panel{display:inline-block!important}#viewport{width:100%;height:100%}.topbar{top:9px;left:9px;right:9px;align-items:flex-start;flex-direction:column}.topbar .structure-name{max-width:100%}.tools{max-width:100%}.tools button{font-size:11px;padding:6px}.footbar{bottom:8px;left:8px;right:8px;font-size:10px}.view-help{display:none}}
 
@@ -754,6 +756,38 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 .workspace-drawer-footer small{display:block;margin-top:9px;color:#7b8fa3;font-size:11px;line-height:1.45}
 @media(max-width:720px){.workspace-drawer,.workspace-backdrop{top:54px}.workspace-launcher{width:32px;height:32px;padding:5px}.workspace-launcher svg{width:19px;height:19px}header .brand{gap:8px}}
 @media(prefers-reduced-motion:reduce){.workspace-drawer{transition:none}}
+/* COD ID opens a searchable-data detail view without leaving the workspace. */
+.lib-cod-id{border:0;background:transparent;box-shadow:none;color:#176eae;font-weight:800;padding:4px 2px;text-decoration:underline;text-decoration-color:#bdd8ee;text-underline-offset:3px;white-space:nowrap}
+.lib-cod-id:hover{background:#e8f3ff;color:#155c97}
+.cod-detail-modal[hidden]{display:none!important}
+.cod-detail-modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px}
+.cod-detail-scrim{position:absolute;inset:0;background:#1d36567d}
+.cod-detail-dialog{position:relative;width:min(880px,100%);max-height:min(93dvh,940px);overflow:auto;background:#fff;border:1px solid #d6e4f1;border-radius:18px;box-shadow:0 25px 80px #0b224b40;color:#294259}
+.cod-detail-header{position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:22px 27px 17px;border-bottom:1px solid #e5edf4;background:#fff}
+.cod-detail-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:#387caf;font-weight:800}
+.cod-detail-header h2{font-size:25px;line-height:1.1;margin:5px 0;color:#264766}
+.cod-detail-subtitle{font-size:12px;color:#6c879b;margin:4px 0 0}
+.cod-detail-close{flex:none;width:36px;height:36px;padding:0;border:1px solid #dce5ed;background:#f6faff;font-size:23px;line-height:1}
+.cod-detail-status{font-size:12px;margin:15px 27px 0;padding:10px 12px;border-radius:8px;background:#ecf5fe;color:#386887}
+.cod-detail-status.error{background:#fff5ed;color:#985b24}
+.cod-detail-groups{display:grid;gap:15px;padding:17px 27px 22px}
+.cod-detail-section{border:1px solid #dde8f3;border-radius:12px;overflow:hidden}
+.cod-detail-section h3{font-size:12px;margin:0;padding:11px 15px;background:#f0f6fd;color:#265b87;letter-spacing:.2px}
+.cod-detail-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 22px;padding:4px 15px 9px}
+.cod-detail-pair{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #eef3f7;padding:10px 0;min-width:0}
+.cod-detail-pair.wide{grid-column:1/-1}
+.cod-detail-pair dt{font-size:11px;color:#72859a;line-height:1.4;flex:0 0 45%}
+.cod-detail-pair dd{font-size:12px;font-weight:650;color:#2f4a63;line-height:1.4;overflow-wrap:anywhere;text-align:right;margin:0}
+.cod-detail-pair.wide dt{flex-basis:31%}
+.cod-detail-pair a{color:#206fa9}
+.cod-detail-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #e5edf4;padding:14px 27px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.cod-detail-footer a{font-size:12px;font-weight:650}
+.cod-detail-footer button{font-size:12px}
+.language-switch{display:inline-flex;align-items:center;gap:2px;padding:3px;border:1px solid #d4e2ef;border-radius:9px;background:#f3f8ff;flex:none}
+.language-switch button{border:0;box-shadow:none;padding:5px 7px;border-radius:6px;font-size:11px;font-weight:750;background:transparent;color:#73899c}
+.language-switch button[aria-pressed="true"]{background:#2674bd;color:#fff}
+@media(max-width:700px){.cod-detail-dialog{max-height:95dvh}.cod-detail-header,.cod-detail-footer{padding:14px}.cod-detail-groups{padding:12px;gap:9px}.cod-detail-fields{grid-template-columns:1fr}.cod-detail-pair.wide dt{flex-basis:45%}.cod-detail-status{margin:10px 12px 0}.language-switch button{padding:4px 5px}header .actions>.tag{display:none}}
+@media(max-width:540px){header .actions>.history-toolbar,header #inspectorToggle{display:none}header .actions{gap:3px}header .actions .language-switch{margin-left:2px}header .brand{gap:5px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"}}</script>
 </head>
@@ -774,6 +808,10 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
   <button id="saveBtn" class="workspace-action" type="button" title="Projeyi kaydet veya dışa aktar" aria-haspopup="dialog" aria-controls="exportModal">↓ Kaydet</button>
   <button id="inspectorToggle" class="nav-toggle workspace-action">Ölçüm</button>
   <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
+  <div class="language-switch" role="group" aria-label="Language / Dil">
+   <button id="languageEnglish" type="button" aria-pressed="true" title="English">EN</button>
+   <button id="languageTurkish" type="button" aria-pressed="false" title="Türkçe">TR</button>
+  </div>
  </div>
 </header>
 <div id="workspaceBackdrop" class="workspace-backdrop" hidden></div>
@@ -1278,6 +1316,22 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
  </div>
 </main>
 
+<div id="codDetailModal" class="cod-detail-modal" role="dialog" aria-modal="true" aria-labelledby="codDetailTitle" hidden>
+ <div class="cod-detail-scrim"></div>
+ <div class="cod-detail-dialog" tabindex="-1">
+  <div class="cod-detail-header">
+   <div><span class="cod-detail-eyebrow">Crystallography Open Database · COD</span>
+    <h2 id="codDetailTitle">COD kaydı</h2><p id="codDetailSubtitle" class="cod-detail-subtitle"></p></div>
+   <button id="codDetailClose" class="cod-detail-close" type="button" aria-label="Kayıt ayrıntılarını kapat">×</button>
+  </div>
+  <div id="codDetailStatus" class="cod-detail-status" role="status" hidden></div>
+  <div id="codDetailGroups" class="cod-detail-groups"></div>
+  <div class="cod-detail-footer">
+   <a id="codDetailSource" href="https://www.crystallography.net/cod/" rel="noopener noreferrer" target="_blank">COD üzerinde görüntüle ↗</a>
+   <button id="codDetailImport" type="button" class="primary">CIF içe aktar ↧</button>
+  </div>
+ </div>
+</div>
 
 <div id="exportModal" class="export-modal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle" aria-describedby="exportModalDescription" hidden>
  <div class="export-modal-scrim" data-close-export="true"></div>
@@ -4658,21 +4712,47 @@ function codFirst(o,names){
  for(const name of names){const value=o?.[name];if(value!==undefined&&value!==null&&String(value).trim()!=='')return String(value).trim();}
  return '';
 }
+// COD's classic API uses a/sg/vol, while COD OPTIMADE exposes the same
+// metadata as attributes._cod_a/_cod_sg/_cod_vol. Both paths (including a
+// Cloudflare Worker relay) must normalize to one record schema.
+function codMetadata(attrs,names){
+ return codFirst(attrs,names)||codFirst(attrs,names.map(name=>'_cod_'+name));
+}
+function codFormulaText(value){
+ return String(value||'').replace(/^\s*-\s*|\s*-\s*$/g,'').trim();
+}
 function normalizeCodRecord(raw,idHint=''){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
- const codId=codFirst(raw,['file','cod_id','codId','id','entry_id'])||String(idHint);
  const attrs=raw.attributes&&typeof raw.attributes==='object'?raw.attributes:raw;
+ const codId=codFirst(raw,['file','cod_id','codId','id','entry_id'])||codMetadata(attrs,['file','id'])||String(idHint);
  if(!/^\d{6,9}$/.test(codId))return null;
+ const read=(...names)=>codMetadata(attrs,names);
+ const flags=read('flags');
  const record={
   codId,
-  formula:codFirst(attrs,['formula','calcformula','chemical_formula_descriptive','chemical_formula_reduced','chemical_formula_sum','chemical_formula','sum_formula']),
-  spacegroup:codFirst(attrs,['sg','spacegroup','space_group','space_group_name_H-M']),
-  cellA:codFirst(attrs,['a','cell_length_a']),cellB:codFirst(attrs,['b','cell_length_b']),
-  cellC:codFirst(attrs,['c','cell_length_c']),volume:codFirst(attrs,['vol','volume','cell_volume']),
-  alpha:codFirst(attrs,['alpha','cell_angle_alpha']),beta:codFirst(attrs,['beta','cell_angle_beta']),gamma:codFirst(attrs,['gamma','cell_angle_gamma']),
-  year:codFirst(attrs,['year','publication_year']),journal:codFirst(attrs,['journal','journal_name_full']),
-  authors:codFirst(attrs,['authors','author','publ_author_name']),title:codFirst(attrs,['title','publication_title']),
-  doi:codFirst(attrs,['doi','journal_paper_doi']),elements:codFirst(attrs,['nel']),
+  formula:codFormulaText(read('formula')||read('chemical_formula_descriptive','chemical_formula_reduced','chemical_formula_sum','chemical_formula','sum_formula','calcformula')),
+  calculatedFormula:codFormulaText(read('calcformula')),
+  commonName:read('commonname'),chemicalName:read('chemname'),
+  spacegroup:read('sg','spacegroup','space_group','space_group_name_H-M'),
+  spacegroupNumber:read('sgNumber'),spacegroupHall:read('sgHall'),
+  cellA:read('a','cell_length_a'),cellB:read('b','cell_length_b'),
+  cellC:read('c','cell_length_c'),volume:read('vol','cell_volume'),
+  alpha:read('alpha','cell_angle_alpha'),beta:read('beta','cell_angle_beta'),gamma:read('gamma','cell_angle_gamma'),
+  sigmaA:read('siga'),sigmaB:read('sigb'),sigmaC:read('sigc'),
+  sigmaAlpha:read('sigalpha'),sigmaBeta:read('sigbeta'),sigmaGamma:read('siggamma'),sigmaVolume:read('sigvol'),
+  cellTemperature:read('celltemp'),sigmaCellTemperature:read('sigcelltemp'),
+  diffractionTemperature:read('diffrtemp'),sigmaDiffractionTemperature:read('sigdiffrtemp'),
+  year:read('year','publication_year'),journal:read('journal','journal_name_full'),
+  authors:read('authors','author','publ_author_name'),title:read('title','publication_title'),
+  journalVolume:read('volume'),firstPage:read('firstpage'),lastPage:read('lastpage'),
+  doi:read('doi','journal_paper_doi'),elements:read('nel','nelements'),
+  residualAll:read('Rall'),residualObserved:read('Robs'),
+  weightedResidualObserved:read('wRobs'),weightedResidualRefined:read('wRref'),
+  goodnessOfFit:read('gofref','gofall','gofobs'),
+  radiationWavelength:read('wavelength'),radiationType:read('radType'),
+  flags,hasCoordinates:flags?String(/has coordinates/i.test(flags)):'',
+  hasDisorder:flags?String(/has disorder/i.test(flags)):'',
+  hasFobs:flags?String(/has Fobs/i.test(flags)):'',
   cifUrl:codCifUrl(codId),entryUrl:codEntryUrl(codId)
  };
  return record;
@@ -4695,7 +4775,11 @@ function codRecordForStorage(r){
  if(!r||!r.codId)return null;
  const codId=String(r.codId);
  if(!/^\d{6,9}$/.test(codId))return null;
- const names=['formula','spacegroup','cellA','cellB','cellC','volume','alpha','beta','gamma','year','journal','authors','title','doi','elements'];
+ const names=['formula','calculatedFormula','commonName','chemicalName','spacegroup','spacegroupNumber','spacegroupHall',
+  'cellA','cellB','cellC','volume','alpha','beta','gamma','sigmaA','sigmaB','sigmaC','sigmaAlpha','sigmaBeta','sigmaGamma','sigmaVolume',
+  'cellTemperature','sigmaCellTemperature','diffractionTemperature','sigmaDiffractionTemperature','year','journal','journalVolume',
+  'firstPage','lastPage','authors','title','doi','elements','residualAll','residualObserved','weightedResidualObserved',
+  'weightedResidualRefined','goodnessOfFit','radiationWavelength','radiationType','flags','hasCoordinates','hasDisorder','hasFobs'];
  const saved={codId,cifUrl:codCifUrl(codId),entryUrl:codEntryUrl(codId)};
  for(const key of names)saved[key]=String(r[key]??'').slice(0,800);
  saved.savedAt=Number(r.savedAt)||Date.now();
@@ -4743,6 +4827,126 @@ function codPlainNode(tag,text,cls){
 function codLink(url,label){
  const a=codPlainNode('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;
 }
+function codDetailValue(value,uncertainty='',unit=''){
+ if(value===undefined||value===null||String(value)==='')return '';
+ return String(value)+(uncertainty?' ± '+uncertainty:'')+(unit?' '+unit:'');
+}
+function codDetailGroups(record){
+ const field=(label,key,unit='',sigma='',wide=false)=>({
+  label,value:codDetailValue(record[key],sigma?record[sigma]:'',unit),wide
+ });
+ return [
+  ['Yapı ve kimlik',[
+   field('Yaygın ad','commonName','', '',true),field('Kimyasal ad','chemicalName','','',true),
+   field('Formül','formula'),field('Hesaplanan formül','calculatedFormula')
+  ]],
+  ['Yayın bilgileri',[
+   field('Yayın başlığı','title','','',true),field('Yazarlar','authors','','',true),
+   field('Dergi','journal'),field('Yıl','year'),field('Dergi cildi','journalVolume'),
+   {label:'Sayfalar',value:[record.firstPage,record.lastPage].filter(Boolean).join(' – ')},
+   field('DOI','doi')
+  ]],
+  ['Yapı parametreleri',[
+   field('a','cellA','Å','sigmaA'),field('b','cellB','Å','sigmaB'),field('c','cellC','Å','sigmaC'),
+   field('α','alpha','°','sigmaAlpha'),field('β','beta','°','sigmaBeta'),field('γ','gamma','°','sigmaGamma'),
+   field('Hücre hacmi','volume','Å³','sigmaVolume'),
+   field('Hücre sıcaklığı','cellTemperature','K','sigmaCellTemperature'),
+   field('Kırınım sıcaklığı','diffractionTemperature','K','sigmaDiffractionTemperature'),
+   field('Farklı element sayısı','elements'),field('Uzay grubu numarası','spacegroupNumber'),
+   field('Hermann–Mauguin simgesi','spacegroup','','',true),
+   field('Hall uzay grubu simgesi','spacegroupHall','','',true)
+  ]],
+  ['Kırınım ve rafinman',[
+   field('Tüm yansımalar R','residualAll'),
+   field('Güçlü yansımalar R','residualObserved'),
+   field('Güçlü yansımalar ağırlıklı R','weightedResidualObserved'),
+   field('Tüm yansımalar ağırlıklı R','weightedResidualRefined'),
+   field('Uyum iyiliği (GoF)','goodnessOfFit'),
+   field('Işınım dalga boyu','radiationWavelength','Å'),
+   field('Işınım türü','radiationType'),
+   {label:'Koordinatlar mevcut',value:record.hasCoordinates===''?'':record.hasCoordinates==='true'?'Evet':'Hayır'},
+   {label:'Düzensizlik mevcut',value:record.hasDisorder===''?'':record.hasDisorder==='true'?'Evet':'Hayır'},
+   {label:'Fobs mevcut',value:record.hasFobs===''?'':record.hasFobs==='true'?'Evet':'Hayır'}
+  ]]
+ ].map(([title,fields])=>({title,fields:fields.filter(entry=>entry.value!=='')}));
+}
+let codDetailAbort=null,codDetailFocus=null,codDetailRecord=null;
+function renderCodDetail(record){
+ const body=$('codDetailGroups');body.replaceChildren();
+ $('codDetailTitle').textContent='COD '+record.codId;
+ $('codDetailSubtitle').textContent=record.formula||record.title||'';
+ $('codDetailSource').href=codEntryUrl(record.codId);
+ for(const group of codDetailGroups(record)){
+  if(!group.fields.length)continue;
+  const section=codPlainNode('section',undefined,'cod-detail-section');
+  const heading=codPlainNode('h3',group.title),list=codPlainNode('dl',undefined,'cod-detail-fields');
+  for(const item of group.fields){
+   const pair=codPlainNode('div',undefined,'cod-detail-pair'+(item.wide?' wide':''));
+   const label=codPlainNode('dt',item.label),value=codPlainNode('dd');
+   if(item.label==='DOI'&&record.doi)value.append(codLink('https://doi.org/'+encodeURIComponent(record.doi),item.value+' ↗'));
+   else value.textContent=item.value;
+   pair.append(label,value);list.append(pair);
+  }
+  section.append(heading,list);body.append(section);
+ }
+}
+function closeCodDetail(){
+ if($('codDetailModal').hidden)return;
+ codDetailAbort?.abort();codDetailAbort=null;
+ $('codDetailModal').hidden=true;
+ if(codDetailFocus?.isConnected)codDetailFocus.focus();
+ codDetailFocus=null;
+}
+async function openCodDetail(record,trigger){
+ closeCodDetail();
+ codDetailRecord=record;
+ codDetailFocus=trigger||document.activeElement;
+ $('codDetailModal').hidden=false;
+ renderCodDetail(record);
+ const status=$('codDetailStatus');
+ status.hidden=false;status.className='cod-detail-status';
+ status.textContent='COD ayrıntıları yükleniyor…';
+ $('codDetailClose').focus();
+ const controller=new AbortController();codDetailAbort=controller;
+ try{
+  const mode=$('codConnection').value;
+  const endpoint=mode==='optimade'?codOptimadeItemUrl(record.codId):
+   codSearchUrl(new URLSearchParams({id:record.codId,format:'json'}));
+  const json=await fetchCodText(endpoint,{mode,signal:controller.signal});
+  const payload=JSON.parse(json);
+  if(payload?.errors?.length)throw Error(payload.errors[0]?.detail||'COD API hatası.');
+  const full=normalizeCodResults(payload).find(row=>row.codId===record.codId);
+  if(!full)throw Error('COD kayıt ayrıntıları alınamadı.');
+  if(controller.signal.aborted||$('codDetailModal').hidden)return;
+  codDetailRecord={...record,...Object.fromEntries(Object.entries(full).filter(([,value])=>value!==''))};
+  renderCodDetail(codDetailRecord);
+  status.hidden=true;
+ }catch(error){
+  if(controller.signal.aborted)return;
+  status.className='cod-detail-status error';
+  status.textContent='Güncel ayrıntılar alınamadı; mevcut arama bilgileri gösteriliyor. '+error.message;
+ }finally{
+  if(codDetailAbort===controller)codDetailAbort=null;
+ }
+}
+function initCodDetail(){
+ $('codDetailClose').onclick=closeCodDetail;
+ $('codDetailModal').querySelector('.cod-detail-scrim').onclick=closeCodDetail;
+ $('codDetailImport').onclick=async()=>{
+  const record=codDetailRecord;if(!record)return;
+  closeCodDetail();
+  try{await importCodEntry(record);}
+  catch(error){codSearchMessage('İçe aktarılamadı: '+error.message,true);showCodManualImport(record,error.message);}
+ };
+ $('codDetailModal').addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeCodDetail();return;}
+  if(event.key!=='Tab')return;
+  const focusable=[...$('codDetailModal').querySelectorAll('button:not([disabled]),a[href]')];
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+ });
+}
 function codButton(label,cls,callback){
  const b=codPlainNode('button',label,cls);b.type='button';b.addEventListener('click',callback);return b;
 }
@@ -4780,7 +4984,9 @@ function codTable(entries){
  const tbody=document.createElement('tbody');
  for(const r of entries){
   const tr=document.createElement('tr');
-  codCell(tr,codLink(r.entryUrl,r.codId));
+  const idButton=codButton(r.codId,'lib-cod-id',()=>openCodDetail(r,idButton));
+  idButton.title='COD '+r.codId+' · yapı parametrelerini görüntüle';
+  codCell(tr,idButton);
   const form=codPlainNode('strong',r.formula||'Formül bilinmiyor');codCell(tr,form,'lib-formula');
   codCell(tr,r.spacegroup||'—');
   codCell(tr,codCellDescription(r),'lib-cell-data');
@@ -5008,6 +5214,7 @@ function showCodManualImport(record,error){
 }
 
 function initLibrary(){
+ initCodDetail();
  const store=codStore();
  try{codWorkerBase=codValidateWorkerBase(store?.getItem(COD_WORKER_KEY)||'');}
  catch(e){codWorkerBase='';}
