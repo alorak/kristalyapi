@@ -65,6 +65,18 @@ async function sample(page){
   return {ink,sum,canvasWidth:canvas.width,canvasHeight:canvas.height};
  });
 }
+async function canvasInk(page,selector){
+ return page.locator(selector).evaluate(canvas=>{
+  const out=document.createElement('canvas');out.width=canvas.width;out.height=canvas.height;
+  const ctx=out.getContext('2d',{willReadFrequently:true});
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,out.width,out.height);ctx.drawImage(canvas,0,0);
+  const image=ctx.getImageData(0,0,out.width,out.height).data;let ink=0;
+  for(let y=4;y<out.height-4;y+=4)for(let x=4;x<out.width-4;x+=4){
+   const p=(y*out.width+x)*4;if(255-Math.min(image[p],image[p+1],image[p+2])>40)ink++;
+  }
+  return ink;
+ });
+}
 async function save(page,name,metrics){
  await page.waitForTimeout(200); // allow WebGL animation loop to draw the latest scene
  await page.screenshot({path:path.join(artifacts,name+'.png'),animations:'disabled'});
@@ -618,6 +630,61 @@ try{
  const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
  assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
   'thousands of displayed atoms should occupy one instanced draw group');
+
+ // Reciprocal-space concept page on a known structure (silicon, a = 5.431 Å).
+ const consoleBefore=consoleErrors.length;
+ await page.locator('#openBtn').click();
+ await page.locator('[data-open-tab="examples"]').click();
+ await page.locator('#openList .open-item').first().click();
+ await page.waitForFunction(()=>document.getElementById('openModal').hidden);
+ await page.locator('#reciprocalNav').click();
+ await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&document.getElementById('app').hidden);
+ await page.waitForFunction(()=>document.querySelectorAll('#rsLatticeReadout dd').length>5);
+ assert.equal(await page.locator('#reciprocalNav').getAttribute('aria-current'),'page');
+ assert.match(await page.locator('#rsLatticeReadout').textContent(),/3\.13559 Å/,'d(111) of silicon');
+ assert.match(await page.locator('#rsSourceDetail').textContent(),/8 atom/);
+ await page.waitForTimeout(250);
+ assert.ok(await canvasInk(page,'#rsRealView canvas')>40,'real-space view must draw the cell and planes');
+ assert.ok(await canvasInk(page,'#rsRecipView canvas')>40,'reciprocal view must draw lattice points');
+ assert.ok(await page.locator('#rsPhasor line').count()>=8,'one phasor arrow per atom');
+ await page.screenshot({path:path.join(artifacts,'rs-01-lattice.png')});
+ for(const [id,value] of [['#rsH','2'],['#rsK','0'],['#rsL','0']]){await page.locator(id).fill(value);await page.locator(id).dispatchEvent('change');}
+ await page.waitForFunction(()=>/Systematic absence/.test(document.getElementById('rsLatticeReadout').textContent));
+ assert.match(await page.locator('#rsPhasor').textContent(),/Closed polygon/);
+ await page.locator('#rsTabEwald').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#rsEwaldSvg circle').length>20);
+ // First visit auto-rotates to a Bragg position; the button steps to the next one.
+ assert.ok(await page.locator('#rsEwaldList tbody tr').count()>=1,'a reflection should touch the Ewald sphere');
+ const omegaBefore=Number(await page.locator('#rsOmega').inputValue());
+ await page.locator('#rsNextBragg').click();
+ await page.waitForFunction(o=>Number(document.getElementById('rsOmega').value)!==o,omegaBefore);
+ assert.match(await page.locator('#rsEwaldStatus').textContent(),/reflections on the sphere/);
+ await page.locator('#rsEwaldMode').selectOption('powder');
+ // Si with Cu Kα1 below 2θ = 70°: (111), (220), (311), (400) rings + the beam stop.
+ await page.waitForFunction(()=>document.querySelectorAll('#rsRingsSvg circle').length===5);
+ assert.ok(await page.locator('#rsStickSvg line').count()>10,'powder stick pattern');
+ assert.match(await page.locator('#rsEwaldList').textContent(),/\(1 1 1\)/);
+ await page.screenshot({path:path.join(artifacts,'rs-02-ewald-powder.png')});
+ await page.locator('#rsTabZone').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#rsZoneSvg circle').length>20);
+ assert.match(await page.locator('#rsZoneReadout').textContent(),/0\.02508 Å/,'relativistic λ at 200 kV');
+ assert.ok(await page.locator('#rsZoneSvg circle[stroke-dasharray]').count()>0,'Si [110] has kinematically forbidden positions');
+ await page.screenshot({path:path.join(artifacts,'rs-03-saed.png')});
+ await page.locator('#rsTabBz').click();
+ await page.waitForFunction(()=>/Face-centred cubic/.test(document.getElementById('rsBzReadout').textContent));
+ assert.match(await page.locator('#rsBzReadout').textContent(),/14 · 24/,'truncated octahedron');
+ assert.equal(await page.locator('#rsBandSvg path').count(),10,'one polyline per band');
+ await page.waitForTimeout(250);
+ assert.ok(await canvasInk(page,'#rsBzView canvas')>40,'Brillouin-zone view must draw the zone');
+ await page.screenshot({path:path.join(artifacts,'rs-04-brillouin.png')});
+ await page.locator('#languageTurkish').click();
+ assert.equal(await page.locator('#reciprocalPage h2').textContent(),'Karşı Uzay ve Kırınım');
+ assert.match(await page.locator('#rsBzReadout').textContent(),/Yüzey merkezli kübik/);
+ await page.locator('#languageEnglish').click();
+ assert.equal(await page.locator('#reciprocalPage h2').textContent(),'Reciprocal Space and Diffraction');
+ await page.locator('#homeLink').click();
+ await page.waitForFunction(()=>document.getElementById('reciprocalPage').hidden&&!document.getElementById('app').hidden);
+ assert.deepEqual(consoleErrors.slice(consoleBefore),[],'reciprocal page console errors');
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);

@@ -50,6 +50,7 @@ const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
 vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
+vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
 test('fractional x/y/z bounds include negative periodic images without unbounded extents',()=>{
@@ -465,7 +466,8 @@ test('English dictionary covers the existing static editor, library and analysis
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
  const languageNeutral=new Set(['GitHub ↗','Element A','Element B','FCC conventional → primitive',
   'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
-  'Cloudflare Worker · COD API','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR']);
+  'Cloudflare Worker · COD API','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
+  'Cu Kα1 · 1.5406 Å','Co Kα1 · 1.7890 Å','Mo Kα1 · 0.7093 Å','Ag Kα1 · 0.5594 Å']);
  assert.deepEqual(labels.filter(label=>!languageNeutral.has(label)&&
   uiContext.window.CrystalI18n.t(label)===label),[]);
 });
@@ -2047,4 +2049,26 @@ test('P0 Moyo transform does not invent occupancy equivalence or crystal volume'
  assert.equal(result.sites.length,1);
  approx(result.det,.25);
  assert.throws(()=>api.moyoApplyCell(ds,true,cell,sites.slice(0,3)),/atom sayısı|doluluk/i);
+});
+
+test('reciprocal-space page is routed, wired to the editor and deployed with its modules',()=>{
+ const pages=context.pageApi;
+ assert.equal(pages.pageFromHash('#kutuphane'),'library');
+ assert.equal(pages.pageFromHash('#karsi-uzay'),'reciprocal');
+ assert.equal(pages.pageFromHash('#kristal'),'editor');
+ assert.equal(pages.pageFromHash(''),'editor');
+ assert.match(html,/<a id="reciprocalNav" href="#karsi-uzay">Karşı Uzay<\/a>/);
+ assert.match(html,/<main id="reciprocalPage" hidden/);
+ for(const id of ['rsPaneLattice','rsPaneEwald','rsPaneZone','rsPaneBz','rsRealView','rsRecipView','rsPhasor',
+  'rsEwaldSvg','rsRingsSvg','rsStickSvg','rsZoneSvg','rsBzView','rsBandSvg'])assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(moduleScript,/import \{ initReciprocalPage \} from '\.\/reciprocal-page\.js';/);
+ // The optional page is initialised after, and isolated from, the editor bootstrap.
+ const boot=moduleScript.slice(moduleScript.indexOf('// @kristalyapi/browser-bootstrap:'));
+ assert.match(boot,/try\{reciprocalPage=initReciprocalPage\(reciprocalHost\(\)\);syncLibraryNavigation\(\);\}catch/);
+ const page=fs.readFileSync(path.join(__dirname,'..','reciprocal-page.js'),'utf8');
+ assert.match(page,/from '\.\/reciprocal-core\.js'/);
+ const workflow=fs.readFileSync(path.join(__dirname,'..','.github/workflows/pages.yml'),'utf8');
+ assert.match(workflow,/cp reciprocal-core\.js public\/reciprocal-core\.js/);
+ assert.match(workflow,/cp reciprocal-page\.js public\/reciprocal-page\.js/);
+ assert.match(workflow,/tests\/reciprocal\.test\.mjs/);
 });

@@ -66,7 +66,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </head>
 <body>
 <header>
- <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a></nav></div>
+ <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="reciprocalNav" href="#karsi-uzay">Karşı Uzay</a></nav></div>
  <div class="actions">
   <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
   <div class="history-toolbar workspace-action" role="group" aria-label="Kristal düzenleme geçmişi">
@@ -682,6 +682,132 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button type="button" id="bookmarkExport">Yer imlerini JSON indir</button></div>
     <div id="libBookmarksList" class="lib-table-wrap"></div>
     <div id="bookmarkEmpty" class="lib-status">Henüz yer imi bulunmuyor. COD aramasındaki ☆ düğmesiyle malzeme kaydedebilirsin.</div>
+  </section>
+ </div>
+</main>
+
+<main id="reciprocalPage" hidden aria-label="Karşı uzay ve kırınım kavram laboratuvarı">
+ <div class="library-wrap rs-wrap">
+  <div class="library-header">
+   <div><div class="library-eyebrow">Kristal Yapı / Kavram laboratuvarı</div><h2>Karşı Uzay ve Kırınım</h2>
+    <p>Düzlem aileleri, karşı örgü, Ewald küresi, kırınım desenleri ve Brillouin bölgesi aynı yapı üzerinde birbirine bağlı olarak incelenir.</p></div>
+   <a class="lib-cod-link" href="#kristal">← Editöre dön</a>
+  </div>
+  <div class="rs-source" aria-live="polite"><span class="rs-source-label">Kaynak yapı</span><strong id="rsSourceName">—</strong><span id="rsSourceDetail">—</span></div>
+  <div class="lib-tabs" role="tablist" aria-label="Karşı uzay bölümleri">
+   <button id="rsTabLattice" class="selected" type="button" role="tab" data-rs-tab="lattice" aria-controls="rsPaneLattice" aria-selected="true">Gerçek ↔ karşı örgü</button>
+   <button id="rsTabEwald" type="button" role="tab" data-rs-tab="ewald" aria-controls="rsPaneEwald" aria-selected="false">Ewald küresi ve toz halkaları</button>
+   <button id="rsTabZone" type="button" role="tab" data-rs-tab="zone" aria-controls="rsPaneZone" aria-selected="false">Bölge ekseni deseni (SAED)</button>
+   <button id="rsTabBz" type="button" role="tab" data-rs-tab="bz" aria-controls="rsPaneBz" aria-selected="false">Brillouin bölgesi ve bantlar</button>
+  </div>
+
+  <section id="rsPaneLattice" class="rs-pane" role="tabpanel" aria-labelledby="rsTabLattice">
+   <div class="rs-grid">
+    <div class="lib-panel rs-controls">
+     <div class="lib-panel-head"><h3>Düzlem ailesi (hkl)</h3></div>
+     <div class="rs-hkl">
+      <label class="lib-field"><span>h</span><input id="rsH" type="number" min="-8" max="8" step="1" value="1"></label>
+      <label class="lib-field"><span>k</span><input id="rsK" type="number" min="-8" max="8" step="1" value="1"></label>
+      <label class="lib-field"><span>l</span><input id="rsL" type="number" min="-8" max="8" step="1" value="1"></label>
+     </div>
+     <label class="lib-field"><span>Karşı örgü sınırı d_min (Å)</span><input id="rsDmin" type="number" min="0.4" max="10" step="0.1" value="1.5"></label>
+     <label class="check rs-check"><input id="rsWeighted" type="checkbox" checked> Noktaları |F|² ile ağırlıklandır</label>
+     <dl id="rsLatticeReadout" class="rs-readout"></dl>
+     <p id="rsLatticeStatus" class="rs-status" role="status"></p>
+     <div class="rs-concept"><strong>Kavram</strong> G(hkl) = h·a* + k·b* + l·c* vektörü (hkl) düzlem ailesine diktir ve uzunluğu 1/d'dir. Karşı örgüdeki her nokta, gerçek uzaydaki bir düzlem ailesini temsil eder.</div>
+    </div>
+    <div class="rs-views">
+     <figure class="rs-figure"><figcaption>Gerçek uzay · birim hücre ve (hkl) düzlemleri</figcaption><div id="rsRealView" class="rs-view"></div></figure>
+     <figure class="rs-figure"><figcaption>Karşı uzay · ağırlıklı karşı örgü</figcaption><div id="rsRecipView" class="rs-view"></div></figure>
+    </div>
+   </div>
+   <div class="lib-panel">
+    <div class="lib-panel-head"><h3>Yapı faktörü fazör diyagramı</h3><p>Her ok bir atomun katkısıdır; okların toplamı F(hkl)'dir.</p></div>
+    <div class="rs-phasor-layout">
+     <svg id="rsPhasor" class="rs-svg" viewBox="0 0 520 380" role="img" aria-label="Yapı faktörü fazör diyagramı"></svg>
+     <div class="rs-phasor-side">
+      <div class="rs-concept"><strong>Kavram</strong> Bir atomun katkısının uzunluğu saçılma gücüne (f), açısı 2π(hx+ky+lz) fazına eşittir. Oklar kapalı bir çokgen oluşturursa toplam sıfırdır ve yansıma sistematik olarak söner.</div>
+      <div id="rsPhasorTable" class="rs-table-wrap"></div>
+     </div>
+    </div>
+   </div>
+  </section>
+
+  <section id="rsPaneEwald" class="rs-pane" role="tabpanel" aria-labelledby="rsTabEwald" hidden>
+   <div class="rs-grid">
+    <div class="lib-panel rs-controls">
+     <div class="lib-panel-head"><h3>Ewald yapısı</h3></div>
+     <label class="lib-field"><span>X-ışını kaynağı</span><select id="rsSource">
+      <option value="1.5406">Cu Kα1 · 1.5406 Å</option><option value="1.78897">Co Kα1 · 1.7890 Å</option>
+      <option value="0.70932">Mo Kα1 · 0.7093 Å</option><option value="0.55941">Ag Kα1 · 0.5594 Å</option><option value="custom">Özel dalgaboyu</option></select></label>
+     <label class="lib-field"><span>Dalgaboyu λ (Å)</span><input id="rsLambda" type="number" min="0.2" max="5" step="0.0001" value="1.5406"></label>
+     <div class="lib-field"><span>Karşı örgü düzlemi · bölge ekseni [uvw]</span>
+      <div class="rs-hkl"><input id="rsEwU" type="number" step="1" value="0" aria-label="Ewald u"><input id="rsEwV" type="number" step="1" value="0" aria-label="Ewald v"><input id="rsEwW" type="number" step="1" value="1" aria-label="Ewald w"></div></div>
+     <label class="lib-field"><span>Kristal dönüşü ω (°)</span><input id="rsOmega" type="range" min="0" max="360" step="any" value="20"><output id="rsOmegaOut">20°</output></label>
+     <button type="button" id="rsNextBragg" class="rs-button">Sonraki Bragg konumu ▸</button>
+     <label class="lib-field"><span>Görünüm türü</span><select id="rsEwaldMode"><option value="single">Tek kristal</option><option value="powder">Toz (tüm yönelimler)</option></select></label>
+     <label class="lib-field"><span>Yansıma toleransı (Å⁻¹)</span><input id="rsTol" type="number" min="0.0005" max="0.05" step="0.0005" value="0.006"></label>
+     <p id="rsEwaldStatus" class="rs-status" role="status"></p>
+     <div id="rsEwaldList" class="rs-table-wrap"></div>
+    </div>
+    <div class="lib-panel rs-figure-panel">
+     <svg id="rsEwaldSvg" class="rs-svg rs-square" viewBox="0 0 600 600" role="img" aria-label="Ewald küresi kesiti"></svg>
+     <div class="rs-concept"><strong>Kavram</strong> Gelen ışın k₀ (|k₀| = 1/λ) karşı örgü başlangıcında biter; Ewald küresi −k₀ merkezli ve 1/λ yarıçaplıdır. Küre yüzeyine değen her karşı örgü noktası Bragg koşulunu sağlar. Toz örnekte noktalar tüm yönelimlerde bulunduğundan 1/d yarıçaplı kabuklara dönüşür; kabukların küreyi kestiği yerler Debye–Scherrer konilerini verir. Kesik çizgili çember (yarıçap 2/λ) erişilebilir yansımaların sınırıdır.</div>
+    </div>
+   </div>
+   <div class="lib-panel">
+    <div class="lib-panel-head"><h3>Debye–Scherrer halkaları ve toz deseni</h3><p>Aynı dalgaboyu; Lorentz–polarizasyon dahil, kinematik model.</p></div>
+    <div class="rs-powder-layout">
+     <svg id="rsRingsSvg" class="rs-svg rs-square rs-dark" viewBox="0 0 400 400" role="img" aria-label="Düz dedektörde Debye–Scherrer halkaları"></svg>
+     <svg id="rsStickSvg" class="rs-svg" viewBox="0 0 640 260" role="img" aria-label="Hesaplanan toz kırınım deseni"></svg>
+    </div>
+    <p class="rs-hint">Halkalar ışına dik, 100 mm uzaklıktaki düz bir dedektörde r = D·tan 2θ ile çizilir; çizgi kalınlığı göreli şiddeti gösterir.</p>
+   </div>
+  </section>
+
+  <section id="rsPaneZone" class="rs-pane" role="tabpanel" aria-labelledby="rsTabZone" hidden>
+   <div class="rs-grid">
+    <div class="lib-panel rs-controls">
+     <div class="lib-panel-head"><h3>Bölge ekseni deseni</h3></div>
+     <div class="lib-field"><span>Işın yönü · bölge ekseni [uvw]</span>
+      <div class="rs-hkl"><input id="rsZoneU" type="number" step="1" value="1" aria-label="Bölge u"><input id="rsZoneV" type="number" step="1" value="1" aria-label="Bölge v"><input id="rsZoneW" type="number" step="1" value="0" aria-label="Bölge w"></div></div>
+     <label class="lib-field"><span>Işınım</span><select id="rsZoneRadiation"><option value="electron">Elektron (SAED)</option><option value="xray">X-ışını (sıfırıncı Laue bölgesi)</option></select></label>
+     <label class="lib-field"><span>Hızlandırma gerilimi (kV)</span><input id="rsKv" type="number" min="20" max="1000" step="10" value="200"></label>
+     <label class="lib-field"><span>Numune kalınlığı (nm)</span><input id="rsThickness" type="number" min="1" max="1000" step="1" value="10"></label>
+     <label class="lib-field"><span>Desen sınırı d_min (Å)</span><input id="rsZoneDmin" type="number" min="0.3" max="5" step="0.05" value="0.8"></label>
+     <label class="check rs-check"><input id="rsZoneLabels" type="checkbox" checked> Miller indislerini göster</label>
+     <label class="check rs-check"><input id="rsZoneForbidden" type="checkbox" checked> Kinematik olarak sönük konumları göster</label>
+     <dl id="rsZoneReadout" class="rs-readout"></dl>
+     <p id="rsZoneStatus" class="rs-status" role="status"></p>
+    </div>
+    <div class="lib-panel rs-figure-panel">
+     <svg id="rsZoneSvg" class="rs-svg rs-square rs-dark" viewBox="0 0 600 600" role="img" aria-label="Bölge ekseni kırınım deseni"></svg>
+     <div class="rs-concept"><strong>Kavram</strong> Elektronların dalgaboyu çok kısa olduğundan Ewald küresi neredeyse düzdür ve ışına dik karşı örgü düzleminin (hu+kv+lw = 0) tamamını aynı anda keser: desen, bu düzlemin doğrudan bir görüntüsüdür. Elektron saçılma çarpanları Mott–Bethe bağıntısıyla X-ışını çarpanlarından türetilir.</div>
+     <div class="rs-concept rs-warning"><strong>Model sınırı</strong> Kinematik model tek saçılmayı varsayar. Gerçek elektron kırınımında çift ve dinamik saçılma, kinematik olarak sönük yansımaları görünür kılabilir; örneğin Si'nin [110] deseninde (002) ve (222) türü konumlar.</div>
+    </div>
+   </div>
+  </section>
+
+  <section id="rsPaneBz" class="rs-pane" role="tabpanel" aria-labelledby="rsTabBz" hidden>
+   <div class="rs-grid">
+    <div class="lib-panel rs-controls">
+     <div class="lib-panel-head"><h3>Primitive örgü ve birinci Brillouin bölgesi</h3></div>
+     <dl id="rsBzReadout" class="rs-readout"></dl>
+     <div id="rsBzPoints" class="rs-table-wrap"></div>
+     <p id="rsBzStatus" class="rs-status" role="status"></p>
+     <div class="rs-concept"><strong>Kavram</strong> Kırınımda konvansiyonel hücre ve 1/d kullanılır; merkezleme sistematik sönümlerle görünür. Katı hal fiziğinde ise primitive hücre ve 2π çarpanı kullanılır: Brillouin bölgesi, primitive karşı örgünün Wigner–Seitz hücresidir. Primitive örgü, yapıyı kendisine taşıyan saf ötelemelerden bulunur.</div>
+    </div>
+    <figure class="rs-figure"><figcaption>Brillouin bölgesi · yüksek simetri noktaları ve yol</figcaption><div id="rsBzView" class="rs-view rs-view-tall"></div></figure>
+   </div>
+   <div class="lib-panel">
+    <div class="lib-panel-head"><h3>Boş örgü bantları</h3><p>E = ħ²|k+G|²/(2m*) · serbest elektron parabolünün Brillouin bölgesine katlanması.</p></div>
+    <div class="rs-band-controls">
+     <label class="lib-field"><span>Bant sayısı</span><input id="rsBands" type="number" min="2" max="24" step="1" value="10"></label>
+     <label class="lib-field"><span>Etkin kütle m*/mₑ</span><input id="rsMass" type="number" min="0.05" max="10" step="0.05" value="1"></label>
+    </div>
+    <svg id="rsBandSvg" class="rs-svg" viewBox="0 0 760 360" role="img" aria-label="Boş örgü bant diyagramı"></svg>
+    <div class="rs-concept rs-warning"><strong>Model sınırı</strong> Bu yaklaşımda kristal potansiyeli sıfırdır: bantlar yalnız katlanmadan doğar ve bölge sınırlarında yasak enerji aralığı açılmaz. Gerçek yarı iletkenlerdeki bant aralığı (ör. Si, GaAs) kristal potansiyelinden kaynaklanır ve burada hesaplanmaz.</div>
+   </div>
   </section>
  </div>
 </main>

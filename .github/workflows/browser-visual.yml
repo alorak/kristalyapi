@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'reciprocal-core.js'
+      - 'reciprocal-page.js'
       - '.github/workflows/pages.yml'
       - 'tests/browser/**'
       - '.github/workflows/browser-visual.yml'
