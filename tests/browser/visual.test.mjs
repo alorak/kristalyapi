@@ -779,6 +779,26 @@ try{
   assert.ok(await canvasInk(offlinePage,'#rsRealView canvas')>20,'offline reciprocal-space view must render');
   await offlinePage.screenshot({path:path.join(artifacts,'rs-05-offline.png')});
  }finally{await offlineContext.close();}
+ // Exercise the real file picker handler, state assignment and WebGL rebuild
+ // for all three newly supported crystallographic structure formats.
+ const importContext=await browser.newContext({viewport:{width:1280,height:800}});
+ try{
+  const importPage=await importContext.newPage();
+  await importPage.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
+  await importPage.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
+  const imports=[
+   {name:'sample.res',title:'SHELX browser test',sites:2,a:5,text:'TITL SHELX browser test\nCELL .71073 5 5 5 90 90 90\nLATT 1\nSFAC C\nC1 1 .2 .3 .4 11 .05\nEND'},
+   {name:'sample.in',title:'Quantum ESPRESSO kristali',sites:1,a:6,text:'&SYSTEM ibrav=0, nat=1 /\nCELL_PARAMETERS angstrom\n6 0 0\n0 6 0\n0 0 6\nATOMIC_POSITIONS crystal\nSi 0 0 0'},
+   {name:'sample.cell',title:'CASTEP kristali',sites:1,a:7,text:'%BLOCK LATTICE_CART\n7 0 0\n0 7 0\n0 0 7\n%ENDBLOCK LATTICE_CART\n%BLOCK POSITIONS_FRAC\nSi .2 .3 .4\n%ENDBLOCK POSITIONS_FRAC'}
+  ];
+  for(const item of imports){
+   await importPage.locator('#fileInput').setInputFiles({name:item.name,mimeType:'text/plain',buffer:Buffer.from(item.text)});
+   await importPage.waitForFunction(title=>document.getElementById('infoName')?.textContent?.includes(title),item.title);
+   assert.equal(Number(await importPage.locator('#siteCount').textContent()),item.sites);
+   assert.ok(Math.abs(Number(await importPage.locator('#a').inputValue())-item.a)<1e-3);
+   assert.ok((await sample(importPage)).ink>20,'imported '+item.name+' must render atoms');
+  }
+ }finally{await importContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));

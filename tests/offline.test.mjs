@@ -59,6 +59,6 @@ test('offline fetch only handles declared, same-origin GET assets',async()=>{
 
 test('activation removes only old Kristal Yapı shell caches',async()=>{
  const sw=serviceWorkerHarness();await sw.dispatch('activate');
- assert.deepEqual(sw.deletes,['kristalyapi-shell-old']);
+ assert.deepEqual(sw.deletes,['kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1']);
  assert.equal(sw.claimed,1);
 });
