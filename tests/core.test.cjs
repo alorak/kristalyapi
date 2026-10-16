@@ -471,13 +471,26 @@ test('COD element validation rejects unknown elements and normalizes case',()=>{
 test('Kütüphane has an independent Örnek Yapılar tab and no old sidebar presets',()=>{
  assert.match(html,/id="libPresetsTab"[^>]*>Örnek Yapılar<\/button>/);
  assert.match(html,/id="libPresetsPane"[^>]*role="tabpanel"/);
- assert.match(html,/id="preset"[^>]*aria-describedby="presetNote"/);
+ assert.match(html,/id="preset" type="hidden" value="silicon"/);
+ assert.match(html,/id="presetList" class="preset-list"/);
+ assert.match(html,/id="presetFavorite"/);
+ assert.match(html,/id="presetFavoritesOnly"/);
+ assert.ok(!html.includes('<select id="preset"'));
  assert.match(html,/id="importPreset"/);
  assert.match(html,/id="newStructureBtn"/);
  assert.ok(!html.includes('<h2>Kristal kütüphanesi'));
  assert.ok(!html.includes('id="resetBtn"'));
  assert.ok(!html.includes('id="newBtn"'));
- assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks']);
+ assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks','worker']);
+});
+test('Kütüphane spans the workspace with filters and results side by side; Worker has its own tab',()=>{
+ assert.match(html,/\.library-wrap\{width:100%;max-width:none/);
+ assert.match(html,/class="lib-search-layout"[\s\S]*?id="codSearchForm"[\s\S]*?id="codResultsBox"/);
+ assert.match(html,/id="libWorkerTab"[^>]*aria-controls="libWorkerPane"/);
+ assert.match(html,/id="libWorkerPane"[^>]*role="tabpanel"/);
+ assert.match(html,/class="lib-advanced-filters"/);
+ assert.match(html,/id="codWorkerUrl"/);
+ assert.match(html,/@media\(max-width:760px\)\{\s*\.lib-search-layout\{grid-template-columns:minmax\(0,1fr\)\}/);
 });
 test('all seven sample structures have valid metadata without loading editor',()=>{
  const examples=['silicon','nacl','cscl','diamond','fcc','perovskite','graphite'];
@@ -489,6 +502,8 @@ test('all seven sample structures have valid metadata without loading editor',()
   assert.ok(m.sites>0);
   assert.ok(m.elements.length>=1);
   approx(m.cell.a,p.cell.a);
+  assert.ok(m.volume>0);
+  assert.match(m.spacegroup,/\d{3}/);
  }
  assert.equal(api.presetMetadata('silicon').sites,8);
  assert.equal(api.presetMetadata('perovskite').sites,5);
@@ -496,28 +511,42 @@ test('all seven sample structures have valid metadata without loading editor',()
 });
 test('preset tab shows preview without immediately importing or changing edit controls',()=>{
  const created={};
- const el=id=>(created[id] ||= {
-  value:id==='preset'?'nacl':'',
-  hidden:false,tabIndex:0,
-  classList:{toggle(){}},setAttribute(){},
-  textContent:''
+ const node=()=>({children:[],hidden:false,tabIndex:0,value:'',textContent:'',
+  classList:{toggle(){}},setAttribute(){},replaceChildren(){this.children=[];},
+  append(...children){this.children.push(...children);}
  });
+ const el=id=>(created[id] ||= Object.assign(node(),{value:id==='preset'?'nacl':''}));
  const before=context.document.getElementById;
+ const beforeCreate=context.document.createElement;
  context.document.getElementById=el;
+ context.document.createElement=node;
  try{
   api.setLibraryPane('presets');
   assert.equal(el('libSearchPane').hidden,true);
   assert.equal(el('libPresetsPane').hidden,false);
   assert.equal(el('libBookmarksPane').hidden,true);
+  assert.equal(el('libWorkerPane').hidden,true);
   assert.match(el('presetName').textContent,/Sodyum klorür/);
   assert.equal(el('presetSiteCount').textContent,'8');
   assert.equal(el('presetElements').textContent,'Na, Cl');
+  assert.match(el('presetSpacegroup').textContent,/225/);
+  assert.equal(el('presetList').children.length,7);
   el('preset').value='silicon';
   api.updatePresetPreview();
   assert.match(el('presetName').textContent,/Silisyum/);
   assert.equal(el('presetElements').textContent,'Si');
+  api.setLibraryPane('worker');
+  assert.equal(el('libWorkerPane').hidden,false);
+  assert.equal(el('libPresetsPane').hidden,true);
   assert.throws(()=>api.setLibraryPane('other'));
- }finally{context.document.getElementById=before;}
+ }finally{context.document.getElementById=before;context.document.createElement=beforeCreate;}
+});
+test('preset favorites store only allowlisted structure keys',()=>{
+ const saved=JSON.stringify(['graphite','not-a-crystal','silicon','silicon']);
+ const loaded=vm.runInContext('loadPresetFavorites({getItem(){return '+JSON.stringify(saved)+';}})',context);
+ assert.deepEqual(Array.from(loaded),['silicon','graphite']);
+ const broken=vm.runInContext('loadPresetFavorites({getItem(){return "invalid JSON";}})',context);
+ assert.deepEqual(Array.from(broken),[]);
 });
 test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ and PNG choices',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
@@ -538,7 +567,8 @@ test('Save button opens an export dialog with JSON, CIF, POSCAR, XYZ and PNG cho
 });
 test('library import and Save handlers are registered, old sidebar handlers removed',()=>{
  assert.match(script,/\$\('importPreset'\)\.onclick/);
- assert.match(script,/\$\('preset'\)\.onchange=updatePresetPreview/);
+ assert.match(script,/\$\('presetFavorite'\)\.onclick=\(\)=>togglePresetFavorite/);
+ assert.match(script,/\$\('libWorkerTab'\)\.onclick=\(\)=>setLibraryPane\('worker'\)/);
  assert.match(script,/\$\('saveBtn'\)\.onclick=openExportModal/);
  assert.match(script,/initExportModal\(\);/);
  for(const id of ['resetBtn','newBtn','pngBtn','exportCif','exportPoscar','exportXyz','exportPng']){
