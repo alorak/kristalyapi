@@ -148,7 +148,7 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - **P0 — Tam bağımsız çevrimdışı paket:** Three.js halen CDN'den geliyor; uygulamanın servis çalışanı (Service Worker), sürümlü önbelleği veya çevrimdışı PWA paketi yok.
 - **P1 — Hacimsel veri matematiği:** Çoklu ızgara görüntülenebilir ancak ızgaraları toplama/çıkarma, fark yoğunluğu, 3B ekstremum/peak araması ve keyfî Miller kesitinde sayısal kontur eksik.
 - **P1 — Fiziksel hesaplamalar:** Gerçek atomik saçılma katsayılarıyla XRD ve nötron yoğunluğu, Fourier/Patterson sentezi, Voronoi yük integrali ve Madelung potansiyeli/enerjisi yok.
-- **P1 — Dosya ve simetri kapsamı:** VESTA proje biçimi, geniş format desteği, manyetik mCIF ve tüm setting/orijin dönüşümleri henüz tamamlanmadı.
+- **P1 — Dosya ve simetri kapsamı:** VESTA proje biçimi, geniş format desteği, atomlara bağlı manyetik moment vektörleri ve ayrıntılı setting/orijin dönüşümleri henüz tamamlanmadı. Manyetik mCIF işleme desteği de ayrıca geliştirilmelidir.
 - **P2 — Morfoloji ve sahne:** Kübik olmayan `{hkl}` için tam nokta grubu eşdeğerleri, çoklu faz CIF dışa aktarımı ve VESTA düzeyinde nesne/per-site stil esnekliği eksik.
 - **P2 — Yayın/3B dışa aktarım:** Çok yüksek çözünürlüklü sayısal görseller, TIFF/SVG/STL/VRML gibi biçimler ve çok büyük atom/bağ sahneleri desteklenmiyor.
 
