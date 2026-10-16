@@ -73,6 +73,58 @@ try{
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ // Independent structures, per-workspace history and camera, the ten-workspace cap.
+ assert.equal(await page.locator('#workspaceCount').textContent(),'1');
+ await page.locator('#workspaceToggle').click();
+ assert.equal(await page.locator('#workspaceDrawer').getAttribute('aria-hidden'),'false');
+ assert.equal(await page.locator('#workspaceList .workspace-entry').count(),1);
+ await page.screenshot({path:path.join(artifacts,'18-workspace-switcher.png'),animations:'disabled'});
+ await page.locator('#workspaceAdd').click();
+ assert.equal(await page.locator('#workspaceCount').textContent(),'2');
+ assert.match(await page.locator('#infoName').textContent(),/Yeni kristal/);
+ assert.equal(await page.locator('#siteCount').textContent(),'1');
+ await page.locator('#a').fill('7.25');await page.locator('#applyCell').click();
+ assert.equal(await page.locator('#a').inputValue(),'7.25');
+ await page.locator('#projectionBtn').click();
+ assert.equal(await page.locator('#projectionBtn').getAttribute('aria-pressed'),'true');
+ await page.locator('#workspaceToggle').click();
+ await page.locator('#workspaceList .workspace-select').first().click();
+ assert.match(await page.locator('#infoName').textContent(),/Silisyum/);
+ assert.equal(await page.locator('#a').inputValue(),'5.431');
+ assert.equal(await page.locator('#projectionBtn').getAttribute('aria-pressed'),'false');
+ await page.locator('#workspaceToggle').click();
+ await page.locator('#workspaceList .workspace-select').nth(1).click();
+ assert.equal(await page.locator('#a').inputValue(),'7.25');
+ assert.equal(await page.locator('#projectionBtn').getAttribute('aria-pressed'),'true');
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.locator('#a').inputValue(),'5');
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.locator('#a').inputValue(),'7.25');
+ // Refresh restores both workspaces and the active selection from local storage.
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
+ assert.equal(await page.locator('#workspaceCount').textContent(),'2');
+ assert.equal(await page.locator('#a').inputValue(),'7.25');
+ await page.locator('#workspaceToggle').click();
+ await page.locator('#workspaceList .workspace-select').first().click();
+ assert.match(await page.locator('#infoName').textContent(),/Silisyum/);
+ await page.locator('#workspaceToggle').click();
+ for(let i=2;i<10;i++){
+  await page.locator('#workspaceAdd').click();
+  if(i<9)await page.locator('#workspaceToggle').click();
+ }
+ assert.equal(await page.locator('#workspaceCount').textContent(),'10');
+ await page.locator('#workspaceToggle').click();
+ assert.equal(await page.locator('#workspaceAdd').isDisabled(),true);
+ await page.screenshot({path:path.join(artifacts,'19-ten-workspaces.png'),animations:'disabled'});
+ page.on('dialog',dialog=>dialog.accept());
+ for(let i=0;i<9;i++){
+  await page.locator('#workspaceList .workspace-remove:not([disabled])').first().click();
+  if(await page.locator('#workspaceDrawer').getAttribute('aria-hidden')==='true')await page.locator('#workspaceToggle').click();
+ }
+ assert.equal(await page.locator('#workspaceCount').textContent(),'1');
+ assert.equal(await page.locator('#workspaceList .workspace-remove').first().isDisabled(),true);
+ await page.locator('#workspaceDrawerClose').click();
  // Kütüphane: full-width dual columns, separate Worker tab and persistent preset favorites.
  await page.locator('#libraryNav').click();
  await page.locator('#libraryPage').waitFor({state:'visible'});
@@ -194,6 +246,13 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===2,null,{timeout:10000});
  await save(page,'09-two-volume-fields',metrics);
  assert.match(await page.locator('#volumeSliceStats').textContent(),/Å/);
+ // Volumetric grids and iso layer controls belong to the current structure.
+ await page.locator('#workspaceToggle').click();await page.locator('#workspaceAdd').click();
+ assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),0);
+ await page.locator('#workspaceToggle').click();await page.locator('#workspaceList .workspace-select').first().click();
+ assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),2);
+ await page.locator('#volumeActiveDataset').selectOption('0');
+ assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
  await page.locator('[data-right-tool="lattice"]').click();
  await page.locator('#moyoDetect').click();
  await page.waitForFunction(()=>{
