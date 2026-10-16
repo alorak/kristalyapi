@@ -1,5 +1,18 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Görselleştirme, workspace ve mimari paketi · Ekim 2026
+
+| Başlık | Uygulanan ilk kapsam | Kalan doğrulama / geliştirme |
+| --- | --- | --- |
+| Aç / kaydet ve kütüphane | Favoriler (COD yer imi + örnek yapı), hazır yapılar ve yerel dosyaları birleştiren Aç modalı; simgeli kompakt üst butonlar, Kütüphane içinde etkin workspace göstergesi | Çoklu dosyayı aynı anda açma, yeniden adlandırılmış favori koleksiyonları, tam klavye/ekran okuyucu denetimi |
+| Dil ve panel başlıkları | TR/EN için statik Türkçe başlık kaynakları; düğmelerin hover görünürlüğü, UI çevirileri | Dinamik bilimsel hata mesajlarının tam çift dilliliği |
+| Çizim ölçeği | Atomlar element bazlı, bağlar toplu `InstancedMesh`; atom sınırı 20.000, bağ sınırı 65.000; 5.000+ atomda basit küre | Farklı cihazlarda FPS/GPU bellek ölçümü, instanced ADP/etiketler, daha büyük yapı için LOD ve WebGPU |
+| Çokyüzlü ve site stilleri | Alt model listesinde polyhedra, seçilebilir merkez türü, varsayılan/atom sitesi bazında renk ve opaklık, atom sitesi rengi/ölçeği | Çokyüzlü sayısı 64 merkezle sınırlı; yoğun/karmaşık sahne optimizasyonu, per-facet stiller |
+| Sınırlar ve çıktı | x/y/z için −1…2 kesirli pencere, periyodik görüntüler; 1×–4× beyaz/şeffaf PNG (24 MP/8192 px sınırı) | TIFF/SVG, 3B STL/glTF, tipografi/vektörel makale çıktıları |
+| Dosya mimarisi | HTML iskeleti + `styles.css` + `crystal-app.js` + `translations.js`; GitHub Pages ve test dağıtımı güncellendi | Tek büyük uygulama modülünü domain modüllerine bölme, import/export API sınırları, offline vendor bundling |
+
+Bu pakette bildirilen atom/bağ sayıları **koruyucu uygulama sınırlarıdır, ölçülmüş performans hızlanması değildir**. Canlı COD ve Three.js CDN'i ağ gerektirmeye devam eder.
+
 ## P1 ilerleme · Ekim 2026
 
 Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirme dalında gerçekleştirildi ve regresyonlarla sınanıyor:
@@ -16,7 +29,7 @@ Bu bölüm önceki faz notlarını günceller; aşağıdaki işler P1 geliştirm
 
 **Kalan P1 önceliği:** deneysel Fobs/MTZ kaynağı ve doğrulaması; özgül izotop/anomal saçılma; yüksek performanslı büyük-ızgara analizi; gelişmiş CIF/mCIF/PDB ve VESTA proje biçimi; manyetik moment vektörleri; ayrıntılı Hall setting/orijin dönüşümleri.
 
-Bu plan gerçek VESTA özellikleriyle mevcut tek-`index.html` tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a; 3B görüntü Three.js CDN'ine bağlıdır.
+Bu plan gerçek VESTA özellikleriyle statik HTML/CSS/JavaScript tabanlı tarayıcı uygulamasını karşılaştırır. Sıra hem bilimsel doğruluğu hem de kullanıcı arayüzünün anlaşılabilirliğini esas alır. **Bir özellik UI'da mevcut diye bilimsel olarak doğrulanmış sayılmaz.** Canlı COD araması internet/CORS'a; 3B görüntü Three.js CDN'ine bağlıdır.
 
 ## VESTA Aşama 1 — bu dalda uygulanan kapsam
 

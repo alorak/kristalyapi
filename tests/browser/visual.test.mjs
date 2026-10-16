@@ -24,16 +24,21 @@ const server=http.createServer(async(request,response)=>{
    const cdn='https://cdn.jsdelivr.net/npm/three@0.182.0/';
    assert.ok(html.includes(cdn),'Expected pinned Three.js import map');
    html=html.replaceAll(cdn,'/node_modules/three/');
-   // Test-only hooks inserted into the served module; the shipped app stays unchanged.
-   const bootstrapMarker='// @kristalyapi/browser-bootstrap:';
-   assert.ok(html.includes(bootstrapMarker),'Expected app bootstrap marker');
-   html=html.replace(bootstrapMarker,
-    'window.__visualTest={select:ids=>{selected=[...ids];drawSelection();},repeat:()=>[...state.rep]};\n'+bootstrapMarker);
    content=Buffer.from(html);
+  }
+  if(name==='/crystal-app.js'){
+   let source=content.toString('utf8');
+   // Test-only hooks inserted into the served module, not the distributed file.
+   const bootstrapMarker='// @kristalyapi/browser-bootstrap:';
+   assert.ok(source.includes(bootstrapMarker),'Expected app bootstrap marker');
+   source=source.replace(bootstrapMarker,
+    'window.__visualTest={select:ids=>{selected=[...ids];drawSelection();},repeat:()=>[...state.rep],instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==="bonds").length}),bounds:()=>state.bounds.map(a=>[...a]),stressAtoms:()=>{resetVolume();state.sites=Array.from({length:60},(_,i)=>({symbol:"Si",label:"Si"+i,x:(i%5)/5,y:(Math.floor(i/5)%4)/4,z:Math.floor(i/20)/3,occupancy:1}));state.rep=[6,6,6];state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;state.bonds=false;state.poly="";state.style="ball";state.labels=false;state.morphology=[];state.overlays=[];state.plane.visible=false;state.plane.slab=false;state.adpVisible=false;build();return {atoms:atomData.length,meshes:atomMesh.length,instances:atomMesh.reduce((n,m)=>n+m.count,0)};}};\n'+bootstrapMarker);
+   content=Buffer.from(source);
   }
   // Chromium refuses native ES modules served as application/octet-stream.
   // Match GitHub Pages' MIME types for the local WASM module and binary.
   const contentType=name.endsWith('.html')?'text/html; charset=utf-8':
+   name.endsWith('.css')?'text/css; charset=utf-8':
    name.endsWith('.js')?'text/javascript; charset=utf-8':
    name.endsWith('.wasm')?'application/wasm':
    name.endsWith('.cif')?'text/plain; charset=utf-8':'application/octet-stream';
@@ -526,6 +531,53 @@ try{
  await page.locator('#codDetailClose').click();
  assert.equal(await page.locator('html').getAttribute('lang'),'en');
  await page.locator('#homeLink').click();
+ // The library retains the workspace launcher and its active destination.
+ await page.setViewportSize({width:1480,height:920});
+ await page.locator('#libraryNav').click();
+ assert.equal(await page.locator('#workspaceToggle').isVisible(),true);
+ assert.ok((await page.locator('#workspaceCurrent').textContent()).trim().length>0);
+ await page.locator('#workspaceToggle').click();
+ assert.equal(await page.locator('#workspaceDrawer').getAttribute('aria-hidden'),'false');
+ await page.locator('#workspaceDrawerClose').click();
+ await page.locator('#homeLink').click();
+ // Open modal has three real sources. Choosing a sample targets the current workspace.
+ await page.locator('#openBtn').click();
+ assert.equal(await page.locator('#openModal').isVisible(),true);
+ assert.equal(await page.locator('[data-open-tab]').count(),3);
+ await page.locator('[data-open-tab="examples"]').click();
+ assert.equal(await page.locator('#openList .open-item').count(),7);
+ await page.screenshot({path:path.join(artifacts,'27-open-modal-examples.png'),animations:'disabled'});
+ await page.locator('#openList .open-item').first().click();
+ assert.equal(await page.locator('#openModal').isHidden(),true);
+ const groups=await page.evaluate(()=>window.__visualTest.instancing());
+ assert.ok(groups.atoms>=8&&groups.instances===groups.atoms&&groups.groups<groups.atoms,
+  'atoms must be batched as InstancedMesh by element: '+JSON.stringify(groups));
+ assert.ok(groups.bondGroups<=1,'bonds should also use a single instanced draw batch');
+ await page.locator('#quickStyle').selectOption('poly');
+ assert.equal(await page.locator('#polyElement').inputValue(),'Si');
+ await page.waitForTimeout(100);
+ const polyGroups=await page.locator('#stage').evaluate(()=>window.__visualTest.instancing());
+ assert.equal(polyGroups.groups,1);
+ await page.locator('#leftAtomsTab').click();
+ await page.locator('#siteStyleColor').fill('#dd9944');
+ await page.locator('#siteStyleScale').fill('1.6');
+ await page.locator('#leftGeneralTab').click();
+ await page.locator('#boundXMin').fill('-0.1');await page.locator('#boundXMax').fill('1.1');
+ await page.locator('#applyBounds').click();
+ assert.deepEqual((await page.evaluate(()=>window.__visualTest.bounds()))[0],[-.1,1.1]);
+ await page.locator('[data-right-tool="measurement"]').click();
+ await page.locator('#languageTurkish').click();
+ await page.waitForFunction(()=>document.querySelector('#rightDrawerPane-measurement .right-drawer-heading strong')?.textContent==='Atom seçimi ve ölçüm');
+ await page.locator('#languageEnglish').click();
+ await page.locator('[data-right-tool="measurement"]').click();
+ await page.locator('#saveBtn').click();
+ await page.locator('#pngScale').selectOption('2');
+ const [pngDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="png"]').click()]);
+ assert.match(pngDownload.suggestedFilename(),/\d+x\d+\.png$/);
+ await save(page,'26-polyhedron-per-site-instanced',metrics);
+ const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
+ assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
+  'thousands of displayed atoms should occupy one instanced draw group');
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);

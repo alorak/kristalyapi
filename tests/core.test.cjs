@@ -31,9 +31,12 @@ class Vector3 {
   toArray() { return [this.x, this.y, this.z]; }
   negate() { this.x = -this.x; this.y = -this.y; this.z = -this.z; return this; }
 }
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const moduleScript = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
-assert.ok(moduleScript, 'HTML must contain the inline module script');
+const htmlShell = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const moduleScript = fs.readFileSync(path.join(__dirname, '..', 'crystal-app.js'), 'utf8');
+// The application's sources are separate deployable files; assertions below
+// intentionally inspect their combined content without re-embedding it in HTML.
+const html = htmlShell + '\n' + fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8') + '\n' + moduleScript;
+assert.ok(html.includes('<script type="module" src="./crystal-app.js"></script>'), 'HTML must load the modular app entry');
 const bootstrapMarker = '// @kristalyapi/browser-bootstrap:';
 const bootstrapIndex = moduleScript.indexOf(bootstrapMarker);
 assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
@@ -44,9 +47,37 @@ vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,me
 const api = context.api;
 vm.runInContext('this.p1={linearVolumeCombination,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
+vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
+const visualV2=context.visualV2;
 vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
+test('fractional x/y/z bounds include negative periodic images without unbounded extents',()=>{
+ const input=[[-.1,1.1],[0,1],[0,1]];
+ assert.equal(JSON.stringify(visualV2.validatedBounds(input)),JSON.stringify(input));
+ const translated=visualV2.visibleTranslations([.95,.5,.5],input,[1,1,1],true);
+ assert.equal(JSON.stringify(translated[0]),'[-1,0]');
+ assert.equal(JSON.stringify(translated[1]),'[0]');
+ assert.throws(()=>visualV2.validatedBounds([[1.1,-.1],[0,1],[0,1]]),/Sınır aralığı/);
+ assert.throws(()=>visualV2.validatedBounds([[-9,2],[0,1],[0,1]]),/Sınır aralığı/);
+ assert.equal(visualV2.MAX_ATOMS,20000);assert.equal(visualV2.MAX_BONDS,65000);
+});
+test('per-site atom/polyhedron styles and fractional bounds survive validated project roundtrip',()=>{
+ const model=JSON.parse(vm.runInContext('JSON.stringify(lastCrystalPayload(state))',context));
+ model.style='poly';model.poly='Si';model.polyColor='#125588';model.polyOpacity=.5;
+ model.bounds=[[-.1,1.1],[0,1],[.1,.9]];
+ Object.assign(model.sites[0],{visualColor:'#dd9944',visualScale:1.6,polyColor:'#4499bb',polyOpacity:.65});
+ context.__styleProject=JSON.stringify(model);
+ const restored=JSON.parse(vm.runInContext('JSON.stringify(loadProject(__styleProject))',context));
+ assert.equal(restored.style,'poly');assert.equal(restored.polyOpacity,.5);
+ assert.deepEqual(restored.bounds,model.bounds);
+ assert.equal(restored.sites[0].visualColor,'#dd9944');
+ assert.equal(restored.sites[0].visualScale,1.6);
+ assert.equal(restored.sites[0].polyColor,'#4499bb');
+ assert.equal(restored.sites[0].polyOpacity,.65);
+ assert.throws(()=>visualV2.validatedVisualSite({visualScale:999}),/ölçeği/);
+ assert.throws(()=>visualV2.validatedVisualSite({polyColor:'red'}),/rengi/);
+});
 test('Workspaces: independent crystals persist and active selection restores with ten-item validation',()=>{
  const sandbox={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,URL,
   document:{getElementById(){return null;}},window:{localStorage:{data:{},getItem(key){return this.data[key]??null;},setItem(key,value){this.data[key]=value;}}}};
@@ -429,7 +460,7 @@ test('COD detail modal, locale controls, favicon and deployment assets are wired
 test('English dictionary covers the existing static editor, library and analysis texts',()=>{
  const uiContext={window:{},document:{title:'',readyState:'loading',addEventListener(){}}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..','translations.js'),'utf8'),uiContext);
- const fragment=html.slice(html.indexOf('<header>'),html.indexOf('<script type="module">'));
+ const fragment=html.slice(html.indexOf('<header>'),html.indexOf('<script type="module" src="./crystal-app.js">'));
  const labels=[...new Set([...fragment.matchAll(/>([^<>]+)</g)]
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
  const languageNeutral=new Set(['GitHub ↗','Element A','Element B','FCC conventional → primitive',
@@ -1185,9 +1216,9 @@ test('Undo/Redo: icons have accessible labels, stay disabled initially and are o
   assert.match(html,re);
  }
  assert.match(html,/recordHistoryChange\(\);\s*persistLastCrystal\(\)/);
- assert.ok(html.includes("$('undoBtn').onclick="));
- assert.ok(html.includes("$('redoBtn').onclick="));
- assert.ok(html.includes('if(historyShortcut(e))return'));
+ assert.ok(moduleScript.includes("$('undoBtn').onclick="));
+ assert.ok(moduleScript.includes("$('redoBtn').onclick="));
+ assert.ok(moduleScript.includes('if(historyShortcut(e))return'));
 });
 test('Undo/Redo: keyboard interception ignores text editors and unrelated key chords',()=>{
  assert.equal(api.isEditableHistoryTarget({closest:s=>s.includes('input')?{}:null}),true);

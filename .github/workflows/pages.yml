@@ -47,6 +47,8 @@ jobs:
         run: |
           mkdir -p public/vendor
           cp index.html public/index.html
+          cp styles.css public/styles.css
+          cp crystal-app.js public/crystal-app.js
           cp favicon.svg public/favicon.svg
           cp translations.js public/translations.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js public/vendor/moyo_wasm.js
