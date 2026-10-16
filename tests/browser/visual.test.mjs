@@ -74,7 +74,7 @@ try{
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  const tools=page.locator('[data-right-tool]');
- assert.equal(await tools.count(),11,'all requested analysis tools must appear as icon buttons');
+ assert.equal(await tools.count(),12,'Miller must have its own icon as well as the eleven analysis tools');
  for(const [source,destination] of [
   ['bondRules','bonds'],['matrixPreset','lattice'],['spaceGroup','symmetry']
  ]){
@@ -105,7 +105,7 @@ try{
  await page.locator('#layerManager').getByLabel('Termal elipsoitler görünürlük').uncheck();
  await save(page,'05-adp-hidden',metrics);
  assert.notEqual(metrics['04-adp-90'].sum,metrics['05-adp-hidden'].sum,'ADP visibility should change canvas');
- await page.locator('[data-right-tool="lattice"]').click();
+ await page.locator('[data-right-tool="miller"]').click();
  await page.locator('#showPlane').check();
  await page.locator('#applyPlane').click();
  await save(page,'06-miller',metrics);
@@ -150,12 +150,43 @@ try{
  assert.match(await page.locator('#moyoResult').textContent(),/Yeni atomlar P1 olarak saklandı/,
   'Moyo standardization must pass geometry/occupancy/ADP checks');
  await save(page,'10-moyo-space-group',metrics);
+ // The dock mirrors the original left controls and updates the same state.
+ assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
+ await page.locator('#quickStyle').selectOption('space');
+ assert.equal(await page.locator('#style').inputValue(),'space');
+ await page.locator('#quickStyle').selectOption('ball');
+ await page.locator('[data-quick-flag="labels"]').click();
+ assert.equal(await page.locator('#labels').isChecked(),true);
+ assert.equal(await page.locator('[data-quick-flag="labels"]').getAttribute('aria-pressed'),'true');
+ await page.locator('#labels').uncheck();
+ assert.equal(await page.locator('[data-quick-flag="labels"]').getAttribute('aria-pressed'),'false');
+ await page.locator('#quickAtomScale').evaluate(el=>{el.value='0.95';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.equal(await page.locator('#atomScale').inputValue(),'0.95');
+ assert.equal(await page.locator('#quickAtomScaleVal').inputValue(),'0.95');
+ await page.locator('#quickK').fill('0');await page.locator('#quickK').press('Tab');
+ await page.locator('#quickL').fill('0');await page.locator('#quickL').press('Tab');
+ await page.locator('#quickSlabThickness').fill('3');await page.locator('#quickSlabThickness').press('Tab');
+ await page.locator('#quickShowPlane').check();
+ await page.locator('#quickRepeatMillerPlanes').uncheck();
+ assert.equal(await page.locator('#h').inputValue(),'1');
+ assert.equal(await page.locator('#k').inputValue(),'0');
+ assert.equal(await page.locator('#l').inputValue(),'0');
+ assert.equal(await page.locator('#slabThickness').inputValue(),'3');
+ assert.equal(await page.locator('#showPlane').isChecked(),true);
+ assert.equal(await page.locator('#repeatMillerPlanes').isChecked(),false);
+ await page.locator('[data-right-tool="miller"]').click();
+ assert.equal(await page.locator('#rightDrawerPane-miller #morphPreset').count(),1);
+ assert.equal(await page.locator('#rightDrawerPane-lattice #morphPreset').count(),0);
+ await page.locator('[data-right-tool="miller"]').click();
  await page.setViewportSize({width:650,height:760});
+ assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
+ assert.equal(await page.evaluate(()=>document.getElementById('stage').getBoundingClientRect().bottom<=document.getElementById('workbenchQuickbar').getBoundingClientRect().top+1),true,'mobile dock must not cover WebGL drawing surface');
  await page.locator('[data-right-tool="symmetry"]').click();
  assert.equal(await page.locator('#rightDrawerPane-symmetry').isVisible(),true,'mobile drawer must open');
  assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
  await page.locator('[data-right-tool="symmetry"]').press('Escape');
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'Escape closes mobile drawer');
+ await page.screenshot({path:path.join(artifacts,'11-mobile-quickbar.png'),animations:'disabled'});
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
  console.log('Real Chromium/WebGL screenshots and layer transitions passed:',metrics);

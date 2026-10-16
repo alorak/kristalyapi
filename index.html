@@ -541,6 +541,68 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 .volume-color-legend{height:9px;min-height:9px;border-radius:20px;background:linear-gradient(to right,rgb(38,82,224),#fff,rgb(255,43,36));border:1px solid #d8e3ef}
 #app>.panel.right .right-drawer-pane>.section .hint,#app>.panel.right .right-drawer-pane>.section .shortcuts,#app>.panel.right .right-drawer-pane>.section .empty{color:#647f99}
 
+/* The lower workbench is a persistent control surface, not a floating overlay
+   over the crystal. The WebGL stage reserves its full height. */
+#viewport{--quickbar-height:148px}
+#viewport #stage{bottom:var(--quickbar-height)}
+#viewport .axis-gizmo{bottom:calc(var(--quickbar-height) + 16px)}
+#viewport #toast{bottom:calc(var(--quickbar-height) + 12px)}
+.workbench-quickbar{position:absolute;z-index:5;left:0;right:0;bottom:0;height:var(--quickbar-height);display:grid;grid-template-columns:minmax(0,1.35fr) minmax(305px,.85fr);gap:15px;align-items:stretch;padding:10px 15px 12px;background:#f7fbff;border-top:1px solid #ccdce9;box-shadow:0 -4px 15px #294a6910;color:#3a5673}
+.quickbar-group{display:flex;flex-direction:column;min-width:0;gap:9px;justify-content:center}
+.quickbar-group+.quickbar-group{border-left:1px solid #dbe6f0;padding-left:14px}
+.quickbar-topline{display:flex;align-items:end;min-width:0;gap:10px}
+.quickbar-field{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:10px;font-weight:700;color:#607b96;letter-spacing:.2px}
+.quickbar-select{width:145px;max-width:100%;min-height:34px;padding:6px 24px 6px 8px;font-size:12px;border:1px solid #bfcfe1;border-radius:8px;background:#fff;color:#264b6b}
+.quickbar-flags{display:flex;gap:4px;flex-wrap:nowrap;align-items:center;min-width:0}
+.quick-toggle{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;padding:6px;border:1px solid #c4d3e4;border-radius:8px;background:#fff;color:#7188a1;box-shadow:0 1px 2px #1c42600a}
+.quick-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.quick-toggle:hover{background:#eaf4fd;color:#286b9d;border-color:#9ac3e2}
+.quick-toggle[aria-pressed="true"]{background:#dcebff;color:#176ba8;border-color:#79b2de;box-shadow:inset 0 0 0 1px #90c4eb,0 2px 4px #216aa41c}
+.quickbar-ranges{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.quickbar-range{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:3px;align-items:center}
+.quickbar-range .quickbar-field-label{grid-column:1/-1;font-size:10px;color:#65809a;font-weight:700}
+.quickbar-range input{width:100%;min-width:0;accent-color:#39a1d4;cursor:pointer;margin:0}
+.quickbar-range output{font-size:11px;font-weight:700;color:#30658e;min-width:32px;text-align:right;font-variant-numeric:tabular-nums}
+.quickbar-hkl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(72px,1.7fr);gap:8px}
+.quickbar-hkl input{width:100%;min-width:0;height:34px;padding:5px 7px;background:#fff;color:#294a67;border:1px solid #c3d3e3;border-radius:8px;font-variant-numeric:tabular-nums}
+.quickbar-miller-options{display:flex;align-items:center;flex-wrap:wrap;column-gap:13px;row-gap:6px}
+.quickbar-check{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:650;color:#416482;cursor:pointer;line-height:1.2}
+.quickbar-check input{margin:0;accent-color:#287ab7;width:15px;height:15px;cursor:pointer}
+.quickbar-check:has(input:checked){color:#176ba8}
+@media(max-width:1330px){
+ #viewport{--quickbar-height:174px}
+ .workbench-quickbar{grid-template-columns:minmax(0,1fr) minmax(275px,.78fr);gap:9px;padding:9px 10px}
+ .quickbar-topline{flex-wrap:wrap;gap:7px}
+ .quickbar-select{width:150px}
+ .quickbar-group+.quickbar-group{padding-left:9px}
+}
+@media(max-width:1180px){
+ .workbench-quickbar{padding-right:64px}
+ #viewport .topbar{right:62px}
+}
+@media(min-width:1331px){
+ #app.right-drawer-open #viewport{--quickbar-height:190px}
+ #app.right-drawer-open .quickbar-topline{flex-wrap:wrap}
+ #app.right-drawer-open .workbench-quickbar{grid-template-columns:minmax(0,1fr) minmax(240px,.7fr)}
+}
+@media(max-width:850px){
+ #viewport{--quickbar-height:248px}
+ .workbench-quickbar{grid-template-columns:minmax(0,1fr);gap:7px;overflow-y:auto;align-content:start}
+ .quickbar-group{gap:7px}
+ .quickbar-group+.quickbar-group{border-left:0;border-top:1px solid #dbe6f0;padding:8px 0 0}
+ .quickbar-topline{flex-wrap:nowrap}
+ .quickbar-select{width:155px}
+ .quick-toggle{flex-basis:31px;width:31px;height:31px}
+ .quickbar-miller-options{flex-direction:column;align-items:flex-start;gap:5px}
+}
+@media(max-width:540px){
+ #viewport{--quickbar-height:266px}
+ .quickbar-topline{flex-wrap:wrap}
+ .quickbar-flags{gap:3px}
+ .quickbar-select{width:100%;min-width:135px}
+ .quickbar-check{font-size:10px}
+}
+
 
 /* Icon-only camera controls: visual viewport is reserved for the crystal. */
 #viewport .topbar{justify-content:flex-end}
@@ -737,6 +799,44 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 
 
   <span id="renderStatus" hidden></span><span id="totalSummary" hidden></span>
+  <section id="workbenchQuickbar" class="workbench-quickbar" aria-label="Hızlı görünüm ve Miller kontrolleri">
+   <div class="quickbar-group" role="group" aria-label="Hızlı görünüm kontrolleri">
+    <div class="quickbar-topline">
+     <label class="quickbar-field">Model
+      <select id="quickStyle" class="quickbar-select" aria-label="Hızlı model seçimi">
+       <option value="ball">Küre ve çubuk</option><option value="space">Uzay dolduran</option>
+       <option value="stick">Çubuk</option><option value="wire">Tel model</option>
+      </select>
+     </label>
+     <div class="quickbar-flags" role="group" aria-label="Görünüm seçenekleri">
+      <button type="button" class="quick-toggle" data-quick-flag="bonds" aria-label="Atomlar arası bağlar" title="Atomlar arası bağlar" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="7" r="3"/><path d="M8 15 16 9"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="autoBond" aria-label="Otomatik bağ uzunluğu (elemente göre)" title="Otomatik bağ uzunluğu (elemente göre)" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 19 15-15m-2-2v5m-3-2h5M4 9l1.5 2L8 12.5l-2.5 1.5L4 16l-1.5-2L0 12.5 2.5 11z"/><circle cx="18" cy="18" r="3"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="cellVisible" aria-label="Birim hücre çizgileri" title="Birim hücre çizgileri" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm0 10 9-5m-9 5L3 7m9 5v10"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="boundary" aria-label="Sınır atomlarını göster" title="Sınır atomlarını göster" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1" stroke-dasharray="3 2"/><circle cx="4" cy="4" r="2.2"/><circle cx="20" cy="20" r="2.2"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="labels" aria-label="Atom sembollerini göster" title="Atom sembollerini göster" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="M14 5h8M18 5v10M14 10h8"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="axes" aria-label="Kristal eksenlerini yapı içinde göster" title="Kristal eksenlerini yapı içinde göster" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V4m0 16h16M5 20l10-10M2 7l3-3 3 3m10 10 3 3-3 3"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="autoRotate" aria-label="Otomatik döndürme" title="Otomatik döndürme" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 9a8 8 0 0 0-14-3L3 9m0-6v6h6m-5 6a8 8 0 0 0 14 3l3-3m0 6v-6h-6"/></svg></button>
+      <button type="button" class="quick-toggle" data-quick-flag="adpVisible" aria-label="Termal elipsoitleri (ADP) göster" title="Termal elipsoitleri (ADP) göster" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5" transform="rotate(-32 12 12)"/><path d="M12 3v18M3 12h18" stroke-dasharray="2 2"/></svg></button>
+     </div>
+    </div>
+    <div class="quickbar-ranges">
+     <label class="quickbar-range"><span class="quickbar-field-label">Atom boyutu</span><input id="quickAtomScale" aria-label="Hızlı atom boyutu" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="quickAtomScaleVal" for="quickAtomScale">0.80</output></label>
+     <label class="quickbar-range"><span class="quickbar-field-label">Bağ uzunluğu eşiği (Å)</span><input id="quickBondCut" aria-label="Hızlı bağ uzunluğu eşiği" type="range" min=".8" max="5" step=".05" value="2.65"><output id="quickBondCutVal" for="quickBondCut">2.65</output></label>
+    </div>
+   </div>
+   <div class="quickbar-group" role="group" aria-label="Miller düzlemleri hızlı kontrolleri">
+    <div class="quickbar-hkl">
+     <label class="quickbar-field">h<input id="quickH" aria-label="Miller h" type="number" step="1" min="-8" max="8" value="1"></label>
+     <label class="quickbar-field">k<input id="quickK" aria-label="Miller k" type="number" step="1" min="-8" max="8" value="1"></label>
+     <label class="quickbar-field">l<input id="quickL" aria-label="Miller l" type="number" step="1" min="-8" max="8" value="1"></label>
+     <label class="quickbar-field" title="Kalınlık, Miller ayrıntılarındaki sonlu kesit filtresi açıkken kullanılır.">Kesit (Å)<input id="quickSlabThickness" aria-label="Miller kesit kalınlığı (Å)" type="number" step=".25" min=".1" max="100" value="2"></label>
+    </div>
+    <div class="quickbar-miller-options">
+     <label class="quickbar-check"><input id="quickShowPlane" type="checkbox"> Miller düzlemlerini görüntüle</label>
+     <label class="quickbar-check"><input id="quickRepeatMillerPlanes" type="checkbox" checked> Süperhücredeki tüm paralel düzlemleri göster</label>
+    </div>
+   </div>
+  </section>
   <div id="toast" role="status" aria-live="polite"></div>
  </main>
  <aside class="panel right" id="rightPanel" aria-label="Kristal analiz araçları">
@@ -900,7 +1000,8 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
    <button type="button" class="right-tool" data-right-tool="volume" aria-label="Hacimsel fizik verileri" title="Hacimsel fizik verileri" aria-controls="rightDrawerPane-volume" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm0 10 9-5m-9 5L3 7m9 5v10"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="layers" aria-label="Nesneler ve katmanlar" title="Nesneler ve katmanlar" aria-controls="rightDrawerPane-layers" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="bonds" aria-label="Atom türlerine göre bağlar" title="Atom türlerine göre bağlar" aria-controls="rightDrawerPane-bonds" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="7" r="3"/><path d="m8 15 8-6M8 18l9-8"/></svg></button>
-   <button type="button" class="right-tool" data-right-tool="lattice" aria-label="Örgü dönüşümü" title="Örgü dönüşümü · Miller ve morfoloji" aria-controls="rightDrawerPane-lattice" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zm5 0v16m6-16v16M4 9h16M4 15h16m-5-8 2 2-2 2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="lattice" aria-label="Örgü dönüşümü" title="Örgü dönüşümü" aria-controls="rightDrawerPane-lattice" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zm5 0v16m6-16v16M4 9h16M4 15h16m-5-8 2 2-2 2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="miller" aria-label="Miller düzlemleri ve morfoloji" title="Miller düzlemleri · kesit · slab · morfoloji" aria-controls="rightDrawerPane-miller" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 7-10h11l-7 10zM5 20h14m-8-9 6-3"/><path d="M10 6 5 16" stroke-dasharray="2 2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="symmetry" aria-label="Kristalografik simetri" title="Kristalografik simetri" aria-controls="rightDrawerPane-symmetry" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 1 6M20 3v5h-5M12 5v14M5 12h14"/></svg></button>
   </nav>
  </aside>
@@ -2202,6 +2303,7 @@ function previewPlane(){
   .filter(at=>planeIntersections(h,k,l,at,state.rep,basis(state.cell)).length>=3).length;
  $('planeInfo').textContent='('+h+' '+k+' '+l+') · dₕₖₗ = '+p.d.toFixed(4)+' Å · |G| = '+p.g.length().toFixed(4)+' Å⁻¹'
    +' · '+count+' görünür düzlem';
+ syncQuickbar();
  return p;
 }
 
@@ -3404,6 +3506,7 @@ function syncControls(){
  $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
  $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
+ syncQuickbar();
  try{previewPlane();}catch(e){}fillPoly();renderSites();renderBondRuleEditor();renderMillerLayerList();renderMorphList();renderOverlayList();renderLayerManager();
 }
 function fillPoly(){const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];node.replaceChildren();for(const el of [''].concat(els)){const o=document.createElement('option');o.value=el;o.textContent=el?el+' merkezli çokyüzlü':'Kapalı';node.append(o);}node.value=els.includes(state.poly)?state.poly:'';if(!els.includes(state.poly))state.poly='';}
@@ -4610,7 +4713,60 @@ function initLeftSidebarTabs(){
 
 
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','symmetry'];
+const QUICKBAR_MILLER_FIELDS=[['quickH','h'],['quickK','k'],['quickL','l'],['quickSlabThickness','slabThickness']];
+function syncQuickbar(){
+ $('quickStyle').value=$('style').value;
+ for(const button of document.querySelectorAll('[data-quick-flag]'))
+  button.setAttribute('aria-pressed',String($(button.dataset.quickFlag).checked));
+ for(const [quick,source,output] of [['quickAtomScale','atomScale','quickAtomScaleVal'],['quickBondCut','bondCut','quickBondCutVal']]){
+  $(quick).value=$(source).value;$(output).value=Number($(source).value).toFixed(2);
+ }
+ for(const [quick,source] of QUICKBAR_MILLER_FIELDS)$(quick).value=$(source).value;
+ $('quickShowPlane').checked=$('showPlane').checked;
+ $('quickRepeatMillerPlanes').checked=$('repeatMillerPlanes').checked;
+}
+function applyQuickMiller(){
+ const hkl=['quickH','quickK','quickL'].map(id=>Number($(id).value));
+ const thickness=Number($('quickSlabThickness').value);
+ if(hkl.some((v,i)=>!$(['quickH','quickK','quickL'][i]).value.trim()||!Number.isInteger(v)||Math.abs(v)>8)
+  ||!$('quickSlabThickness').value.trim()||!Number.isFinite(thickness)||thickness<.1||thickness>100){
+  inform('Miller indisleri -8…8 arasında tam sayı, kesit kalınlığı 0,1–100 Å olmalıdır.');return;
+ }
+ const previousPlane={...state.plane};
+ const originals=QUICKBAR_MILLER_FIELDS.map(([,id])=>[id,$(id).value]);
+ const checkboxes=[['showPlane',$('showPlane').checked],['repeatMillerPlanes',$('repeatMillerPlanes').checked]];
+ for(const [quick,source] of QUICKBAR_MILLER_FIELDS)$(source).value=$(quick).value;
+ $('showPlane').checked=$('quickShowPlane').checked;
+ $('repeatMillerPlanes').checked=$('quickRepeatMillerPlanes').checked;
+ try{previewPlane();build();}
+ catch(error){
+  state.plane=previousPlane;
+  for(const [id,value] of originals)$(id).value=value;
+  for(const [id,checked] of checkboxes)$(id).checked=checked;
+  syncQuickbar();inform('Miller düzlemleri: '+error.message);
+ }
+}
+function initQuickbar(){
+ $('quickStyle').onchange=event=>{$('style').value=event.target.value;$('style').dispatchEvent(new Event('change',{bubbles:true}));syncQuickbar();};
+ for(const button of document.querySelectorAll('[data-quick-flag]')){
+  button.onclick=()=>{const source=$(button.dataset.quickFlag);source.checked=!source.checked;source.dispatchEvent(new Event('change',{bubbles:true}));syncQuickbar();};
+  $(button.dataset.quickFlag).addEventListener('change',syncQuickbar);
+ }
+ $('style').addEventListener('change',syncQuickbar);
+ for(const [quick,source] of [['quickAtomScale','atomScale'],['quickBondCut','bondCut']]){
+  $(quick).addEventListener('input',event=>{$(source).value=event.target.value;$(source).dispatchEvent(new Event('input',{bubbles:true}));syncQuickbar();});
+  $(quick).addEventListener('change',()=>$(source).dispatchEvent(new Event('change',{bubbles:true})));
+  $(source).addEventListener('input',syncQuickbar);
+  $(source).addEventListener('change',syncQuickbar);
+ }
+ for(const [quick,source] of QUICKBAR_MILLER_FIELDS){$(quick).addEventListener('change',applyQuickMiller);$(source).addEventListener('change',syncQuickbar);}
+ for(const [quick,source] of [['quickShowPlane','showPlane'],['quickRepeatMillerPlanes','repeatMillerPlanes']]){
+  $(quick).addEventListener('change',applyQuickMiller);$(source).addEventListener('change',syncQuickbar);
+ }
+ syncQuickbar();
+}
+
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -4651,8 +4807,8 @@ function initRightSidebarTabs(){
   close.setAttribute('aria-label','Paneli kapat');close.onclick=()=>{setRightSidebarTab(null);button.focus();};
   heading.append(title,close);pane.append(heading);
   for(const section of sections.filter(element=>element.dataset.rightSection===name))pane.append(section);
-  // Miller düzlemleri ve morfoloji, örgü dönüşümüne bağlı araçlar olarak korunur.
-  if(name==='lattice')while($('rightMillerPane').firstElementChild)pane.append($('rightMillerPane').firstElementChild);
+  // Miller düzlemleri ve morfoloji artık örgü dönüşümünden bağımsızdır.
+  if(name==='miller')while($('rightMillerPane').firstElementChild)pane.append($('rightMillerPane').firstElementChild);
   drawer.append(pane);
   button.onclick=()=>setRightSidebarTab(name);
   button.onkeydown=event=>{
@@ -4732,6 +4888,7 @@ function bind(){
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible'])$(k).addEventListener('change',e=>{state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;if(k!=='autoRotate')build();else{recordHistoryChange();persistLastCrystal();}});
  for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
+ initQuickbar();
  $('adpLevel').onchange=e=>{state.adpLevel=Number(e.target.value);build();};
  $('polyElement').onchange=e=>{state.poly=e.target.value;build();};
  for(const field of ['polyCut','polyNeighbors'])$(field).addEventListener('change',e=>{
