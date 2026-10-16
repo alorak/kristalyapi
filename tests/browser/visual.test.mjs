@@ -33,7 +33,7 @@ window.__visualTest={
  repeat:()=>[...state.rep],
  instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==='bonds').length}),
  bounds:()=>state.bounds.map(a=>[...a]),
- polyStats:()=>({center:state.poly,meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
+ polyStats:()=>({center:state.poly,centers:[...(state.polyCenters||[])],meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
   edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
   count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
   notice:document.getElementById('notice').textContent}),
@@ -154,6 +154,22 @@ try{
  assert.match(svgSource,/<circle/,'SVG export must contain real vector atoms');
  assert.match(svgSource,/<path/,'SVG export must contain lattice/bond vector strokes');
  assert.doesNotMatch(svgSource,/<image|data:image|foreignObject/,'SVG must not embed a raster screenshot');
+ await page.locator('#saveBtn').click();
+ const [stlDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="stl"]').click()]);
+ const stlData=await fs.readFile(await stlDownload.path());
+ const stlFaces=stlData.readUInt32LE(80);
+ assert.ok(stlFaces>100,'binary STL must expand all instanced atom and bond triangles');
+ assert.equal(stlData.length,84+50*stlFaces,'binary STL must contain each declared triangle');
+ await page.locator('#saveBtn').click();
+ const [glbDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="glb"]').click()]);
+ const glbData=await fs.readFile(await glbDownload.path());
+ assert.equal(glbData.toString('ascii',0,4),'glTF');
+ assert.equal(glbData.readUInt32LE(4),2,'binary glTF must be version 2');
+ assert.equal(glbData.readUInt32LE(8),glbData.length);
+ assert.equal(glbData.toString('ascii',16,20),'JSON');
+ const gltf=JSON.parse(glbData.toString('utf8',20,20+glbData.readUInt32LE(12)));
+ assert.ok(gltf.meshes?.length>0&&gltf.nodes?.length>0,'glTF must preserve actual 3D mesh nodes');
+ assert.ok(gltf.materials?.length>0,'glTF must contain scene materials');
  await page.locator('#languageTurkish').click();
  assert.equal(await page.locator('#libraryNav').textContent(),'Kütüphane');
  assert.equal(await page.locator('html').getAttribute('lang'),'tr');
@@ -704,6 +720,14 @@ try{
  assert.deepEqual({center:polyhedra.center,count:polyhedra.count,meshes:polyhedra.meshes,edges:polyhedra.edges},
   {center:'Ti',count:125,meshes:1,edges:1},'5×5×5 BaTiO3 should render all 125 Ti octahedra in two draw objects');
  await page.waitForFunction(()=>document.querySelector('#polyElement option:checked')?.textContent.includes('centered polyhedron'));
+ await page.locator('#polyMore').click();
+ assert.equal(await page.locator('#polyCenterMenu').isVisible(),true,'extra center selector must open above dock');
+ await page.locator('#polyCenterChoices input[value="O"]').check();
+ const combined=await page.evaluate(()=>window.__visualTest.polyStats());
+ assert.deepEqual(combined.centers,['Ti','O'],'two center elements must be active together');
+ assert.ok(combined.count>=125,'additional centers must retain the original Ti octahedra');
+ await page.locator('#polyCenterDone').click();
+ assert.equal(await page.locator('#polyMore').textContent(),'+1');
  await page.evaluate(()=>window.__visualTest.select([0]));
  await page.waitForFunction(()=>document.querySelector('#measureList .measure-item .muted')?.textContent.includes('Fractional:'));
  assert.match(await page.locator('#measureList .measure-item .muted').textContent(),/occupancy:/);

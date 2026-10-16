@@ -2,7 +2,7 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-16-v3';
+const CACHE_NAME=CACHE_PREFIX+'2026-10-16-v4';
 const APP_FILES=[
  './','./index.html','./styles.css','./crystal-app.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./favicon.svg','./manifest.webmanifest',
@@ -10,6 +10,8 @@ const APP_FILES=[
  './vendor/three/examples/jsm/controls/OrbitControls.js',
  './vendor/three/examples/jsm/geometries/ConvexGeometry.js',
  './vendor/three/examples/jsm/math/ConvexHull.js',
+ './vendor/three/examples/jsm/exporters/STLExporter.js',
+ './vendor/three/examples/jsm/exporters/GLTFExporter.js',
  './vendor/moyo_wasm.js','./vendor/moyo_wasm_bg.wasm'
 ];
 const APP_URLS=APP_FILES.map(path=>new URL(path,self.registration.scope).href);

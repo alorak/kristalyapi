@@ -284,8 +284,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label class="quickbar-field" title="Yalnızca ADP gösterimi açık ve atomlarda Uij/Uiso varsa etkilidir. Olasılık arttıkça elipsoit büyür.">ADP
       <select id="adpLevel" aria-label="Elipsoit olasılık düzeyi"><option value="50">50%</option><option value="90">90%</option><option value="99">99%</option></select>
      </label>
-     <label class="quickbar-field quickbar-poly" title="Koordinasyon çokyüzlüsü oluşturmak için merkez atom türünü seçin. Kapalı iken Komşu ve Maks. kullanılmaz.">Merkez atom
-      <select id="polyElement" aria-label="Koordinasyon çokyüzlüsü merkez atomu"><option value="">Kapalı</option></select>
+     <label class="quickbar-field quickbar-poly" title="Çokyüzlü merkez türünü seçin; + düğmesiyle başka merkezler ekleyin.">Merkez atom
+      <span class="poly-picker"><select id="polyElement" aria-label="Koordinasyon çokyüzlüsü birincil merkez atomu"><option value="">Kapalı</option></select>
+      <button id="polyMore" type="button" title="Birden fazla çokyüzlü merkezi seç" aria-label="Ek çokyüzlü merkezlerini seç" aria-controls="polyCenterMenu" aria-expanded="false">+</button></span>
      </label>
      <label class="quickbar-field" title="Seçili merkez türünün koordinasyon çokyüzlüsünde komşu uzaklığı sınırı. 0 Å: otomatik bağ kurallarını kullanır.">Komşu (Å)
       <input id="polyCut" type="number" min="0" max="12" step="0.1" value="0" aria-label="Komşu sınırı (Å)">
@@ -302,6 +303,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <div id="polyCenterMenu" class="poly-center-menu" popover="auto" aria-label="Çokyüzlü merkezlerini seç">
+   <strong>Çokyüzlü merkezleri</strong><p>Birden fazla element işaretleyebilirsiniz.</p>
+   <div id="polyCenterChoices" class="poly-center-choices"></div>
+   <button type="button" id="polyCenterDone">Tamam</button>
+  </div>
   <div id="toast" role="status" aria-live="polite"></div>
  </main>
  <aside class="panel right" id="rightPanel" aria-label="Kristal analiz araçları">
@@ -893,6 +899,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </button>
    <button type="button" data-export="svg" class="export-option">
     <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · atom, bağ, kafes ve çokyüzlü çizgileri</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="stl" class="export-option">
+    <span class="export-option-icon">⬡</span><span><strong>STL 3B yüzey</strong><small>Atom, bağ ve çokyüzlü üçgenleri · renksiz, Å koordinatları</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="glb" class="export-option">
+    <span class="export-option-icon">◈</span><span><strong>glTF 2.0 (.glb)</strong><small>Renkli 3B model · atom, bağ ve hücre katmanları</small></span><span class="export-option-arrow">↓</span>
    </button>
   </div>
   <div class="export-png-controls"><strong>PNG</strong><label>Çözünürlük <select id="pngScale" aria-label="PNG çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label><input id="pngTransparent" type="checkbox"> Şeffaf arka plan</label></div>
