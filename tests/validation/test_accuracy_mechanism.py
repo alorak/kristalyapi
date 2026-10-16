@@ -14,6 +14,28 @@ def site(element,x,y,z,occupancy=1):
     return dict(element=element,x=x,y=y,z=z,occupancy=occupancy)
 
 class AccuracyMechanismTest(unittest.TestCase):
+    def test_gemmi_singleton_cell_loop_does_not_silently_default_to_1_angstrom(self):
+        block=gemmi.cif.read_file(str(ROOT/"fixtures/real/FePO4.cif")).sole_block()
+        cell=validate.reference_cell(block)
+        self.assertAlmostEqual(cell.a,10.4117668699)
+        self.assertAlmostEqual(cell.alpha,91.0)
+        self.assertAlmostEqual(cell.volume,300.005924818,places=3)
+
+    def test_scientific_gate_blocks_real_differences_and_unknown_uncertainty(self):
+        known={"real-15":"Reference has unspecified"}
+        rows=[
+            {"id":"real-01","status":"pass","issues":[]},
+            {"id":"real-15","status":"inconclusive",
+             "issues":["Gemmi reference unavailable: Reference has unspecified atom positions"]}
+        ]
+        self.assertEqual(validate.gate_failures(rows,known),[])
+        rows.append({"id":"real-12","status":"fail","issues":["cell mismatch"]})
+        self.assertIn("real-12: fail",validate.gate_failures(rows,known))
+        rows[-1]={"id":"new-fixture","status":"inconclusive","issues":["unexpected parse failure"]}
+        self.assertIn("new-fixture: unexpected inconclusive",validate.gate_failures(rows,known))
+        rows[1]["issues"]=["A different scientific problem"]
+        self.assertIn("real-15: unexpected inconclusive",validate.gate_failures(rows,known))
+
     def test_periodic_wrapping(self):
         c=gemmi.UnitCell(5,5,5,90,90,90)
         self.assertAlmostEqual(validate.periodic_distance(site("Si",.99,0,0),

@@ -7,6 +7,9 @@ Yalnızca tarayıcıda çalışan, **VESTA'dan esinlenen bir kristal yapı gör�
 - [index.html](index.html) tek başına arayüzü, CSS'yi ve uygulama JavaScript'ini içerir. Derleme, backend, veritabanı veya API anahtarı gerekmez.
 - 3B motor için sabitlenmiş **Three.js 0.182.0** ve OrbitControls/ConvexGeometry modülleri jsDelivr CDN'den yüklenir. **İlk açılışta internet bağlantısı gerekir; tamamen çevrimdışı, tek dosya değildir.** Kristal dosyaları bir sunucuya yüklenmez.
 - GitHub Pages için depoda **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilir. `main` dalına merge sonrasında doğrulama ve dağıtım çalışır; PR açıldığı anda CI tetiklenmez.
+- WebGL CI, CDN'e erişim yerine aynı Three.js sürümünü npm üzerinden yerel sunarak
+  Moyo WASM ve 3B katman geçişlerini gerçek Chromium'da test eder; `.js` ve
+  `.wasm` dosyaları doğru MIME türüyle sunulur.
 - Yerelde statik sunucu kullanabilirsiniz: `python3 -m http.server 8000` ve `http://localhost:8000` adresini açın.
 
 ## P0 — Otomatik uzay grubu ve orijin / setting dönüşümleri
@@ -338,6 +341,12 @@ Workers.dev HTTPS adresini uygulamaya kaydet.
 - Mesafe ölçümünde doğrudan uzaklığın yanında **minimum periyodik görüntü uzaklığı** (komşu 27 görüntünün taranması).
 - CIF içe aktarımı: Dosyada verilen simetri operatörlerini uygular; operatör yoksa tanınan uzay grubu ve referans ayarıyla genişletir, setting/orijin varsayımını uyarıyla bildirir.
 - CIF dışa aktarımı: Asimetrik konumlara simetri uygulanıyorsa seçilen grup ve operatörler korunur; önceden genişletilmiş (P1) atomlar P1 olarak yazılır.
+- **Kaynak CIF bütünlüğü:** İçe aktarılan CIF bilimsel olarak değiştirilmemişse,
+  aynı oturumdaki CIF dışa aktarımı özgün dosyanın tüm metnini (özel etiketler,
+  belirsizlikler ve asimetrik konumlar dahil) birebir korur. Kristal düzenlenirse
+  desteklenen alanlarla yeniden CIF/P1 yazılır ve metadata kaybı uyarısı gösterilir.
+  Kaynak metin JSON projeye/son-kristal kaydına dahil edilmez. Çoklu `data_`
+  blokları ve açıkça bilinmeyen atom doluluğu sessizce birleştirilmez.
 
 ## Miller düzlemleri ve dönüşümler (Aşama 2)
 

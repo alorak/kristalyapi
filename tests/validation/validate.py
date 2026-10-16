@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Compare production JavaScript CIF structures with independent pinned Gemmi.
-Measurements are reported; --strict enables blocking failures explicitly.
+CI --gate blocks mismatches and unexpected uncertainty; --strict blocks all uncertainty.
 """
 from __future__ import annotations
 import argparse
@@ -18,6 +18,23 @@ import gemmi
 BASE=Path(__file__).resolve().parent
 ROOT=BASE.parent.parent
 TAGS=("_atom_site_fract_x","_atom_site_fract_y","_atom_site_fract_z")
+CELL_TAGS=("_cell_length_a","_cell_length_b","_cell_length_c",
+           "_cell_angle_alpha","_cell_angle_beta","_cell_angle_gamma")
+
+def reference_cell(block):
+    # Gemmi's higher-level small-structure reader silently falls back to
+    # a 1 Å cubic cell for a legal-looking but unusual singleton CIF loop.
+    # Use Gemmi's own low-level CIF values, and reject ambiguous/missing tags.
+    values=[]
+    for tag in CELL_TAGS:
+        raw=list(block.find_values(tag))
+        if len(raw)!=1:
+            raise ValueError(f"Missing or ambiguous CIF cell item {tag}")
+        value=float(gemmi.cif.as_number(raw[0]))
+        if not math.isfinite(value):
+            raise ValueError(f"Nonfinite CIF cell item {tag}")
+        values.append(value)
+    return gemmi.UnitCell(*values)
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -40,7 +57,18 @@ def gemmi_reference(entry):
         missing=[tag for tag in TAGS if not block.find_values(tag)]
         if missing: raise ValueError("Missing coordinates: "+", ".join(missing))
         s=gemmi.make_small_structure_from_block(block)
-        c=s.cell
+        c=reference_cell(block)
+        parsed=s.cell
+        values=(c.a,c.b,c.c,c.alpha,c.beta,c.gamma)
+        parsed_values=(parsed.a,parsed.b,parsed.c,parsed.alpha,parsed.beta,parsed.gamma)
+        if any(abs(x-y)>0.000001 for x,y in zip(values,parsed_values)):
+            # Only the PyCifRW singleton-loop case is known to trigger the
+            # small-structure reader's default-cell fallback. Replacing the
+            # cell of an ordinary structure can invalidate Gemmi's cached
+            # crystallographic symmetry expansion, so do not touch it.
+            if any(abs(x-y)>1e-8 for x,y in zip(parsed_values,(1,1,1,90,90,90))) or s.spacegroup_number not in (None,1):
+                raise ValueError("Gemmi cell metric disagrees with raw CIF items")
+            s.cell=c
         lengths=[c.a,c.b,c.c]
         angles=[c.alpha,c.beta,c.gamma]
         if any(not math.isfinite(v) or v<=0 for v in lengths):
@@ -214,10 +242,24 @@ def report_markdown(rows,counts,manifest):
             "Bu hat, uyumsuzlukları raporlar; uygulamanın CIF kodunu değiştirmez.",""]
     return "\n".join(lines)
 
+def gate_failures(rows,known_inconclusive):
+    problems=[]
+    for row in rows:
+        if row["status"] in ("fail","error"):
+            problems.append(row["id"]+": "+row["status"])
+        elif row["status"]=="inconclusive":
+            known_reason=known_inconclusive.get(row["id"])
+            if not known_reason or not any(known_reason in issue for issue in row["issues"]):
+                problems.append(row["id"]+": unexpected inconclusive")
+    return problems
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--out-dir",default=str(ROOT/"validation-results"))
-    p.add_argument("--strict",action="store_true")
+    policy=p.add_mutually_exclusive_group()
+    policy.add_argument("--strict",action="store_true")
+    policy.add_argument("--gate",action="store_true",
+      help="Block failures and new/changed inconclusive cases; keep known sources explicit")
     args=p.parse_args()
     output=Path(args.out_dir).resolve()
     output.mkdir(parents=True,exist_ok=True)
@@ -238,16 +280,26 @@ def main():
     rows=[measure(entry,by_id[entry["id"]],ref,manifest["tolerances"])
           for entry,ref in zip(entries,reference)]
     counts=dict(Counter(row["status"] for row in rows))
+    known=manifest.get("known_inconclusive",{})
+    unexpected=gate_failures(rows,known)
     result=dict(generated_utc=datetime.now(timezone.utc).isoformat(),
                 engine="Gemmi "+gemmi.__version__,count=len(rows),counts=counts,
-                tolerances=manifest["tolerances"],cases=rows)
+                tolerances=manifest["tolerances"],cases=rows,
+                gate={"unexpected":unexpected,
+                      "known_inconclusive":[row["id"] for row in rows
+                        if row["status"]=="inconclusive" and row["id"] in known]})
     (output/"report.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
     md=report_markdown(rows,counts,manifest)
     (output/"report.md").write_text(md,encoding="utf8")
     print(md)
+    if args.gate:
+        print("Scientific gate:", "PASS" if not unexpected else "FAIL: "+", ".join(unexpected))
+        print("Known unresolved source records:",
+              ", ".join(result["gate"]["known_inconclusive"]) or "none")
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf8") as fh:fh.write(md)
     if counts.get("error"):return 2
+    if args.gate and unexpected:return 1
     if args.strict and (counts.get("fail") or counts.get("inconclusive")):return 1
     return 0
 
