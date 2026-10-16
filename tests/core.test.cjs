@@ -371,6 +371,71 @@ test('COD record normalization uses COD data schema and safe URLs',()=>{
  assert.equal(entry.year,'2013');
  assert.throws(()=>api.codCifUrl('javascript:alert(1)'));
 });
+test('COD classic and OPTIMADE/Worker records preserve identical scientific metadata',()=>{
+ const classic={
+  file:'4335507',formula:'- Ge4 In0.94 La4 Mn2 -',calcformula:'- Ge4 In0.945 La4 Mn2 -',
+  commonname:'lanthanum manganese indium germanide (4/2/1/4)',
+  sg:'C 1 2/m 1',sgHall:'-C 2y',sgNumber:'12',
+  a:'16.646',siga:'0.002',b:'4.419',sigb:'0.0006',c:'7.4834',sigc:'0.001',
+  alpha:'90',beta:'106.893',sigbeta:'0.002',gamma:'90',vol:'526.72',sigvol:'0.12',
+  celltemp:'173',sigcelltemp:'2',authors:'Anton O. Oliynyk; Stanislav S. Stoyko; Arthur Mar',
+  title:'Quaternary Germanides RE4Mn2InGe4',journal:'Inorganic Chemistry',year:'2013',
+  volume:'52',firstpage:'8264',lastpage:'8271',doi:'10.1021/ic401171v',nel:'4',
+  Rall:'0.0234',Robs:'0.0195',wRobs:'0.0406',wRref:'0.0417',gofref:'1.054',
+  wavelength:'0.71073',radType:'MoKα',flags:'has coordinates'
+ };
+ const optimade={id:'4335507',attributes:{
+  chemical_formula_descriptive:'Ge4In0.94La4Mn2',
+  ...Object.fromEntries(Object.entries(classic).map(([key,value])=>['_cod_'+key,value]))
+ }};
+ const direct=api.normalizeCodRecord(classic);
+ const viaWorker=api.normalizeCodResults({data:[optimade]})[0];
+ for(const key of ['formula','calculatedFormula','commonName','spacegroup','spacegroupNumber','spacegroupHall',
+  'cellA','cellB','cellC','sigmaA','sigmaB','sigmaC','beta','sigmaBeta','volume','sigmaVolume',
+  'cellTemperature','sigmaCellTemperature','journal','year','journalVolume','authors','title',
+  'firstPage','lastPage','doi','elements','residualAll','residualObserved','weightedResidualObserved',
+  'weightedResidualRefined','goodnessOfFit','radiationWavelength','radiationType','hasCoordinates','hasDisorder','hasFobs']){
+  assert.ok(direct[key],key+' must be populated from classic COD');
+  assert.equal(viaWorker[key],direct[key],key+' must match OPTIMADE/Worker data');
+ }
+ assert.equal(direct.formula,'Ge4 In0.94 La4 Mn2');
+ const stored=api.codRecordForStorage(viaWorker);
+ assert.equal(stored.sigmaVolume,'0.12');
+ assert.equal(stored.journalVolume,'52');
+ assert.equal(stored.spacegroupHall,'-C 2y');
+ const normalized=JSON.stringify(viaWorker);
+ const details=vm.runInContext('codDetailGroups('+normalized+')',context);
+ assert.ok(details.find(group=>group.title==='Yapı parametreleri').fields.some(item=>item.label==='a'&&item.value==='16.646 ± 0.002 Å'));
+ assert.ok(details.find(group=>group.title==='Kırınım ve rafinman').fields.some(item=>item.label==='Fobs mevcut'&&item.value==='Hayır'));
+});
+test('COD detail modal, locale controls, favicon and deployment assets are wired',()=>{
+ assert.match(html,/id="codDetailModal"/);
+ assert.match(html,/id="codDetailGroups"/);
+ assert.match(html,/id="languageEnglish"/);
+ assert.match(html,/id="languageTurkish"/);
+ assert.match(html,/<html lang="en">/);
+ assert.match(html,/rel="icon" type="image\/svg\+xml" href=".\/favicon.svg"/);
+ const translations=fs.readFileSync(path.join(__dirname,'..','translations.js'),'utf8');
+ assert.match(translations,/\['Kütüphane','Library'\]/);
+ assert.match(translations,/MutationObserver/);
+ const favicon=fs.readFileSync(path.join(__dirname,'..','favicon.svg'),'utf8');
+ assert.match(favicon,/<svg/);
+ const workflow=fs.readFileSync(path.join(__dirname,'..','.github/workflows/pages.yml'),'utf8');
+ assert.match(workflow,/cp translations\.js public\/translations\.js/);
+ assert.match(workflow,/cp favicon\.svg public\/favicon\.svg/);
+});
+test('English dictionary covers the existing static editor, library and analysis texts',()=>{
+ const uiContext={window:{},document:{title:'',readyState:'loading',addEventListener(){}}};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..','translations.js'),'utf8'),uiContext);
+ const fragment=html.slice(html.indexOf('<header>'),html.indexOf('<script type="module">'));
+ const labels=[...new Set([...fragment.matchAll(/>([^<>]+)</g)]
+  .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
+ const languageNeutral=new Set(['GitHub ↗','Element A','Element B','FCC conventional → primitive',
+  'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
+  'Cloudflare Worker · COD API','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR']);
+ assert.deepEqual(labels.filter(label=>!languageNeutral.has(label)&&
+  uiContext.window.CrystalI18n.t(label)===label),[]);
+});
 test('COD search normalizes arrays, keyed objects, duplicate entries',()=>{
  const entry={file:'4335507',formula:'La4 Mn2 Ge4'};
  assert.equal(api.normalizeCodResults([entry,entry]).length,1);
