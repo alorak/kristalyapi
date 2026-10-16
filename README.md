@@ -2,36 +2,37 @@
 
 Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi ve editörü**. CIF ve diğer yapı dosyalarını açabilir, aynı oturumda birden çok kristali düzenleyebilir, geometrik/kristalografik analizler yapabilir ve sonuçları dışa aktarabilirsiniz.
 
-**Uygulama:** [GitHub Pages](https://alorak.github.io/kristalyapi/) · **Kaynak:** [index.html](index.html) · **Geliştirme planı:** [ROADMAP.md](ROADMAP.md)
+**Uygulama:** [GitHub Pages](https://alorak.github.io/kristalyapi/) · **Arayüz:** [index.html](index.html) · **Uygulama modülü:** [crystal-app.js](crystal-app.js) · **Geliştirme planı:** [ROADMAP.md](ROADMAP.md)
 
 > Bu proje bilimsel görselleştirme ve eğitim amaçlıdır; VESTA'nın veya deneysel/yüksek doğruluklu hesaplama yazılımlarının tüm işlevlerine eşdeğer değildir. [Bilimsel kapsam ve sınırlar](#bilimsel-kapsam-ve-sınırlar) bölümüne bakın.
 
 ## Hızlı başlangıç
 
 1. [Uygulamayı açın](https://alorak.github.io/kristalyapi/).
-2. **Kütüphane → Örnek Yapılar** bölümünden hazır bir kristali seçip **İçe aktar** deyin veya üstteki **Aç** düğmesiyle bir dosya yükleyin.
+2. Üstteki **Aç** düğmesiyle **favoriler**, **örnek yapılar** veya **bilgisayarındaki CIF/PDB vb. dosyalar** arasından seçin. Aynı seçenekler Kütüphane sekmesinde de mevcuttur.
 3. Sol panelde birim hücreyi, süperhücreyi ve atom konumlarını düzenleyin; alt çubuktan görünümü değiştirin.
 4. Sağdaki simgelerden ölçüm, BVS, XRD, Miller düzlemleri veya diğer analizleri açın.
-5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ veya PNG dışa aktarın.
+5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ, PDB veya **1×–4× yüksek çözünürlüklü PNG** dışa aktarın.
 
 **Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
 
-Uygulamanın ana arayüzü, CSS'si ve uygulama JavaScript'i [index.html](index.html) içindedir. Molekül temalı [favicon.svg](favicon.svg) ve yerel dil paketi yayın sırasında ayrı eklenir. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. Three.js **0.182.0** modülleri CDN'den; otomatik simetri analizi için Moyo WASM dosyaları dağıtımın yerel `vendor/` dizininden yüklenir. Bu nedenle **ilk açılış tamamen çevrimdışı değildir**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
+Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. Three.js **0.182.0** modülleri CDN'den; otomatik simetri analizi için Moyo WASM dosyaları dağıtımın yerel `vendor/` dizininden yüklenir. Bu nedenle **ilk açılış tamamen çevrimdışı değildir**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
 ## Arayüz
 
 | Bölüm | İşlev |
 | --- | --- |
-| Üst menü | **Kristal Yapı** başlığının solundaki hamburger simgesi, çalışma alanları ve sayı rozeti; **Kütüphane**, **Aç**, **Kaydet**, **Geri al / Yinele** ve sağ üstte **EN / TR dil seçimi**. |
-| Sol panel / **Genel** | Birim hücre parametreleri (`a, b, c, α, β, γ`), süperhücre, temel yapı düzenleme alanları. Süperhücrede `a/b/c` için **− / +** düğmeleri ve 1–6 tekrar sınırı vardır. |
-| Sol panel / **Atomlar** | Asimetrik konum/atom listesi, kesirli koordinatlar, Wyckoff bilgisi, atom ekleme ve silme. |
+| Üst menü | **Kristal Yapı** başlığının solunda hamburger simgesi, etkin workspace adı ve sayı rozeti; **Kütüphane** görünümünde de hamburger kalır. Kompakt simgeli **Aç / Kaydet**, geri alma/yineleme ve **EN / TR** dil seçimi. |
+| Sol panel / **Genel** | Birim hücre parametreleri (`a, b, c, α, β, γ`), süperhücre, `a/b/c` için **− / +**, 1–6 tekrar ve her eksende **−1…2 arasında görünür kesirli sınır** seçimi (örn. −0,1…1,1). |
+| Sol panel / **Atomlar** | Asimetrik atom listesi, Wyckoff, ekle/sil ve site bazında **atom rengi/ölçeği** ile **çokyüzlü rengi/opaklığı**; proje ve Undo/Redo'da korunur. |
 | 3B çalışma alanı | Fareyle döndürme/kaydırma/zoom, bakış yönleri, görünüme sığdırma, perspektif–ortografik geçişi, XYZ yön göstergesi. |
 | Sağdaki ikon şeridi | Seçili aracın içeriğini sola doğru açıp kapatan, birbirinden bağımsız analiz ve ayar çekmeceleri. |
-| Alttaki kompakt çubuk | Model türü, görünüm seçenekleri, atom boyutu/bağ uzunluğu, komşu ve ADP ayarları; ayrı **Miller h/k/l**, kesit kalınlığı ve düzlem düğmeleri. Dar alanda gruplar alt alta geçmez, yatay kaydırılabilir. |
+| Alttaki kompakt çubuk | Model türü (**çokyüzlü dahil**), görünüm seçenekleri, atom boyutu/bağ uzunluğu, merkez atomu, çokyüzlü varsayılan rengi/opaklığı, komşu ve ADP ayarları; ayrıca **Miller h/k/l**, kesit kalınlığı ve düzlem düğmeleri. Dar alanda gruplar alt alta geçmez, yatay kaydırılabilir. |
 
 ### Birden fazla kristal: çalışma alanları
 
 - Üst soldaki **üç çizgili simgeye** basarak yapılar arasında geçiş yapabilir veya **+ Yeni yapı ekle** ile en fazla **10 çalışma alanı** açabilirsiniz. Simgedeki rozet açık yapı sayısını gösterir.
+- Kütüphane görünümündeyken de etkin çalışma alanı başlıkta kalır; Kütüphane veya Aç modalından içe aktarılan kristal **o anda etkin olan çalışma alanını** değiştirir, diğerlerini değiştirmez.
 - Her çalışma alanı kendi kristal durumunu, kamerasını, geri alma/yineleme geçmişini ve ölçüm listesini tutar.
 - Çalışma alanları ve etkin seçim `localStorage` içinde geri yüklenir. Depolama kapasitesi/açma izinleri tarayıcıya bağlıdır. Büyük hacimsel veri dizileri kalıcı kayda eklenmez; yenilemeden sonra bu dosyalar yeniden yüklenmelidir.
 - **Geri al / Yinele:** üstteki ikonlar veya `Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z` / `Ctrl+Y`. Metin kutusu odaktayken yerel yazı geri alma davranışı korunur.
@@ -114,7 +115,9 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - **Moyo WASM 0.21.0** ile otomatik uzay grubu/Hall setting analizi; seçilen tolerans ve güvenli eşleştirme kontrolleriyle konvansiyonel–primitive dönüşümler.
 - Unimodüler kısa baz, kanonik **Niggli indirgemesi**, FCC/BCC ve özel 3×3 hücre dönüşümleri. Dönüştürme işlemleri fiziksel koordinat ve uygun ADP tensörlerini yeni baza taşır; sonuç gerektiğinde açık **P1** olarak kaydedilir.
 - CIF içindeki `Uiso/Biso` ve `Uij/Bij` alanlarından yönlenmiş **termal elipsoitler**; uygun olmayan tensörler görselleştirilmez.
-- Süperhücre tekrarları 1–6; performans sınırı **1800 görüntülenen atom** ve **6500 bağ**.
+- Süperhücre tekrarları 1–6; Three.js **InstancedMesh** ile atomlar türlerine, bağlar tek bir geometriye göre gruplanır. Güvenlik üst sınırı **20.000 görüntülenen atom** ve **65.000 bağdır**. Bunlar FPS garantisi değildir: GPU, WebGL, etiketler, ADP, çokyüzlü ve sahne karmaşıklığı sonucu etkiler. **5.000 atomdan sonra** daha seyrek küre ağına geçilir.
+- Sınır aralıkları her eksen için normalleştirilmiş kesirli koordinatlarda seçilebilir (örn. `x: −0.1…1.1`); süperhücre tekrarları uç aralığa eklenir. Bağların periyodik gösterimi özel sınır aralıklarında görsel atom listesi üzerinden yapılır.
+- Çokyüzlü model artık alt çubukta bağımsız seçenek olarak bulunur. Merkez atom türü ve genel rengi/opaklığı seçilir; ayrı asimetrik atom sitelerine stil tanımlanabilir. Çokyüzlü çizim **en fazla 64 merkezin geometrik koordinasyonunu** gösterir; elektronik bağ düzeni değildir.
 
 ### Geometrik analiz ve Miller
 
@@ -155,7 +158,7 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - **P1 — Fiziksel hesaplamalar (model kapsamı uygulandı):** IT92 ve doğal nötron `b`, model Fourier/Patterson, örneklenmiş Voronoi ve iyonik Ewald mevcut. **Kalan:** gerçek Fobs/MTZ veri kaynağı, anomal saçılma, izotop çözünürlüğü, deneysel XRD profili/RIETAN-FP eşdeğeri, Bader analizi ve geniş yakınsama benchmarkları.
 - **P1 — Dosya ve simetri kapsamı (PDB altkümesi uygulandı):** PDB/ENT kristal koordinatları ve ANISOU desteği eklendi. **Kalan:** `.vesta` projeleri, geniş biyomoleküler/kuantum kimyası biçimleri, atomlara bağlı manyetik moment vektörleri, mCIF manyetik uzay grupları ve ayrıntılı setting/orijin dönüşümleri.
 - **P2 — Morfoloji ve sahne:** Kübik olmayan `{hkl}` için tam nokta grubu eşdeğerleri, çoklu faz CIF dışa aktarımı ve VESTA düzeyinde nesne/per-site stil esnekliği eksik.
-- **P2 — Yayın/3B dışa aktarım:** Çok yüksek çözünürlüklü sayısal görseller, TIFF/SVG/STL/VRML gibi biçimler ve çok büyük atom/bağ sahneleri desteklenmiyor.
+- **P2 — Yayın/3B dışa aktarım:** 1×–4× ve en fazla **24 MP** PNG ile şeffaf zemin var; ancak TIFF/SVG/STL/VRML, gerçek vektörel yayın çıktısı ve büyük-atomlu sahnelerde garantili yüksek FPS henüz yok.
 
 Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/) ve [geliştirme yol haritası](ROADMAP.md).
 
@@ -166,7 +169,7 @@ Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/
 Tam çevrimdışı/PWA için üç iş gerekir:
 
 1. Three.js 0.182.0 çekirdeğini ve kullanılan OrbitControls/ConvexGeometry modüllerini aynı sürümle **yerel `vendor/`** altından sunmak; import map'i yerel dosyalara geçirmek.
-2. `index.html`, `translations.js`, `favicon.svg`, Three.js ve Moyo WASM varlıklarını kapsayan sürümlü **Service Worker / precache** ve güncelleme stratejisi eklemek. COD/Worker istekleri zorunlu cache'e dahil edilmemeli.
+2. `index.html`, `styles.css`, `crystal-app.js`, `translations.js`, `favicon.svg`, Three.js ve Moyo WASM varlıklarını kapsayan sürümlü **Service Worker / precache** ve güncelleme stratejisi eklemek. COD/Worker istekleri zorunlu cache'e dahil edilmemeli.
 3. Ağ bağlantısını tamamen keserek ilk kurulum sonrası açılış, CIF/POSCAR/XYZ içe/dışa aktarımı, 3B kontrol, analiz, dil geçişi ve kayıt geri yükleme için tarayıcı E2E testi yapmak.
 
 COD araması ve ilk CIF indirme çevrimiçi kalır; önceden bu cihazda önbelleğe alınmış CIF'ler bazı durumlarda tekrar açılabilir. Yerel bilimsel işlemler ve dosya düzenleme için COD bağlantısı gerekmez.
