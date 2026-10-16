@@ -2525,6 +2525,30 @@ function moyoApplyCell(dataset,primitive,cell,sites){
  const after=result.sites.reduce((s,item)=>s+Number(item.occupancy??1),0);
  if(Math.abs(after-before*tr.det)>1e-5)
   throw Error('Standartlaştırma doluluk/madde miktarını korumuyor.');
+ // Count and volume alone cannot detect a wrong setting/origin mapping.
+ // Map every transformed position back to the input fractional basis, and
+ // check its species, occupancy and (where applicable) physical ADP tensor.
+ const sourceBasis=basis(cell);
+ for(const site of result.sites){
+  const mapped=matTimes(tr.matrix,[site.x,site.y,site.z]).map((v,i)=>v+tr.origin[i]);
+  const source=sites.find(input=>{
+   if(cleanSymbol(input.symbol)!==cleanSymbol(site.symbol)||
+      Math.abs(Number(input.occupancy??1)-Number(site.occupancy??1))>1e-6)return false;
+   const residual=mapped.map((v,i)=>v-Number([input.x,input.y,input.z][i]));
+   const wrapped=residual.map(v=>v-Math.round(v));
+   return toCart(wrapped,sourceBasis).length()<1e-5;
+  });
+  if(!source)throw Error('Moyo setting/orijin dönüşümü atomun fiziksel yerini veya doluluğunu değiştirdi.');
+  if(!!source.adp!==!!site.adp)
+   throw Error('Moyo dönüşümünde anizotropik ADP bilgisi kayboldu.');
+  if(source.adp){
+   const beforeTensor=adpToCartesian(source.adp,cell),afterTensor=adpToCartesian(site.adp,result.cell);
+   if(beforeTensor.some((row,i)=>row.some((v,j)=>Math.abs(v-afterTensor[i][j])>1e-6)))
+    throw Error('Moyo dönüşümünde ADP tensörü fiziksel olarak korunmadı.');
+  }
+  if(Number.isFinite(source.uIso)&&Math.abs(source.uIso-site.uIso)>1e-9)
+   throw Error('Moyo dönüşümünde izotropik ADP değişti.');
+ }
  return {...result,transform:tr};
 }
 function moyoSnapshotKey(cell,sites){
@@ -2536,7 +2560,7 @@ async function moyoLibrary(){
    let mod;
    try{mod=await import('./vendor/moyo_wasm.js');}
    catch(err){throw Error('Yerel Moyo WASM paketi yüklenemedi. GitHub Pages deployment içinde vendor/ dosyalarını kontrol edin: '+err.message);}
-   await mod.default(new URL('./vendor/moyo_wasm_bg.wasm',window.location.href));
+    await mod.default({module_or_path:new URL('./vendor/moyo_wasm_bg.wasm',window.location.href)});
    if(typeof mod.analyze_cell!=='function')throw Error('Moyo kütüphanesinde analyze_cell fonksiyonu yok.');
    return mod;
   })().catch(error=>{moyoLibraryPromise=null;throw error;});
@@ -2547,6 +2571,7 @@ function moyoSiteList(){return state.symmetryEnabled?expandSites(state.sites,sta
 async function analyzeMoyoCrystal(){
  const button=$('moyoDetect');
  button.disabled=true;
+ $('moyoResult').textContent='Moyo WASM yükleniyor ve simetri hesaplanıyor…';
  try{
   const sites=moyoSiteList(),cell=validateCell(state.cell);
   const tolerance=Number($('moyoTolerance').value),setting=$('moyoSetting').value;
@@ -3405,7 +3430,7 @@ function loadPreset(key){
  if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
- state.cifMeta={};state.cifComposition='';state.adpVisible=false;state.adpLevel=50;state.overlays=[];
+ state.cifMeta={};state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
  state.cut=ex.cut;state.warning='';state.poly='';state.polyCut=0;state.polyNeighbors=12;state.rep=[1,1,1];
  state.bondRules='';state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
@@ -3417,7 +3442,7 @@ function loadPreset(key){
 function createEmptyStructure(){
  if(densityGrid)resetVolume();
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
- state.cifMeta={};state.cifComposition='';state.adpVisible=false;state.adpLevel=50;state.overlays=[];
+ state.cifMeta={};state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];
  state.poly='';state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
@@ -3513,11 +3538,27 @@ function cifCompositionSignature(sites){
  for(const s of sites){const key=cleanSymbol(s.symbol);sums.set(key,(sums.get(key)||0)+Number(s.occupancy??1));}
  return [...sums].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+':'+v.toFixed(4)).join('|');
 }
+function cifScientificFingerprint(current){
+ return JSON.stringify({
+  name:current.name,cell:current.cell,
+  sites:current.sites.map(s=>[s.symbol,s.label,s.x,s.y,s.z,s.occupancy??1,s.uIso??null,s.adp||null]),
+  sgNumber:current.sgNumber,sgSetting:current.sgSetting,
+  symmetryEnabled:!!current.symmetryEnabled,cifMeta:cifMetaValid(current.cifMeta)
+ });
+}
+function originalCifRecord(current,text){
+ if(typeof text!=='string'||text.length>4000000)throw Error('Orijinal CIF metni geçersiz.');
+ return {text,fingerprint:cifScientificFingerprint(current)};
+}
 function cifMetaFromTags(tags){const result={};for(const k of CIF_META_TAGS)if(typeof tags[k]==='string'&&!['?','.'].includes(tags[k]))result[k]=tags[k].slice(0,600);return result;}
 function cifMetaValid(raw){if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};const result={};for(const k of CIF_META_TAGS)if(typeof raw[k]==='string')result[k]=raw[k].slice(0,600);return result;}
 function cifQuoted(value){const s=String(value).replace(/[\r\n]+/g,' ').trim().slice(0,600);return /^[a-z0-9.,+/_():-]+$/i.test(s)&&!/^(data_|loop_|save_)/i.test(s)?s:"'"+s.replace(/'/g,"''")+"'";}
 
 function cifData(src){
+ // Mixing two data_ blocks could silently combine one crystal's cell
+ // with another crystal's atoms. Require an explicit per-block importer.
+ const blocks=src.match(/(?:^|\n)[ \t]*data_[^\s#]+/gi)||[];
+ if(blocks.length>1)throw Error('CIF birden çok data_ bloğu içeriyor. Farklı kristalleri birleştirmemek için tek yapı bloğu seçin.');
  const t=tokenizeCif(src),tags={},loops=[];let i=0;
  while(i<t.length){
   const k=t[i++];if(k.toLowerCase()==='loop_'){const cols=[];while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());if(!cols.length)continue;const rows=[];while(i<t.length&&!t[i].startsWith('_')&&!/^(loop_|data_|save_|stop_)$/i.test(t[i])&&!/^data_/i.test(t[i])){const row=t.slice(i,i+cols.length);if(row.length<cols.length)break;rows.push(row);i+=cols.length;}if(cols.length===1&&rows.length===1&&cols[0].startsWith('_cell_'))tags[cols[0]]=rows[0][0];loops.push({cols,rows});}
@@ -3540,7 +3581,11 @@ function cifData(src){
   const f=lp.cols.findIndex(k=>k==='_atom_site_fract_x'),fy=lp.cols.indexOf('_atom_site_fract_y'),fz=lp.cols.indexOf('_atom_site_fract_z');
   if(f>=0&&fy>=0&&fz>=0){const el=lp.cols.indexOf('_atom_site_type_symbol'),label=lp.cols.indexOf('_atom_site_label'),occ=lp.cols.indexOf('_atom_site_occupancy');
    const iso=lp.cols.indexOf('_atom_site_u_iso_or_equiv'),biso=lp.cols.indexOf('_atom_site_b_iso_or_equiv');
-   for(const row of lp.rows){const x=number(row[f]),y=number(row[fy]),z=number(row[fz]);if(![x,y,z].every(Number.isFinite))throw Error('CIF atom koordinatı eksik veya geçersiz: '+(label>=0?row[label]:'atom '+(sites.length+1)));const raw=el>=0?row[el]:(label>=0?row[label]:'X');const atom={symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy:occ>=0&&Number.isFinite(number(row[occ]))?number(row[occ]):1};
+   for(const row of lp.rows){const x=number(row[f]),y=number(row[fy]),z=number(row[fz]);if(![x,y,z].every(Number.isFinite))throw Error('CIF atom koordinatı eksik veya geçersiz: '+(label>=0?row[label]:'atom '+(sites.length+1)));const raw=el>=0?row[el]:(label>=0?row[label]:'X');
+    const occupancy=occ<0?1:number(row[occ]);
+    if(!Number.isFinite(occupancy)||occupancy<0||occupancy>1)
+     throw Error('CIF atom doluluğu eksik, bilinmiyor veya 0–1 dışında: '+(label>=0?row[label]:'atom '+(sites.length+1)));
+    const atom={symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy};
     const uv=iso>=0?number(row[iso]):biso>=0?number(row[biso])/(8*Math.PI*Math.PI):NaN;
     if(Number.isFinite(uv)&&uv>0)atom.uIso=uv;
     sites.push(atom);}}
@@ -3798,19 +3843,21 @@ function persistLastCrystal(){
  try{storeLastCrystal(window.localStorage,state);}catch(err){console.warn('Son kristal yerel olarak kaydedilemedi:',err.message);}
 }
 function restoreInitialCrystal(){
- try{const saved=restoreLastCrystal(window.localStorage);if(saved)state={...state,...saved};}
+ try{const saved=restoreLastCrystal(window.localStorage);if(saved)state={...state,...saved,cifOriginal:null};}
  catch(err){console.warn('Son kristal geri yüklenemedi; yerleşik örnek açıldı:',err.message);}
 }
 
 async function importFile(file){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
  const str=await file.text(),name=file.name.toLowerCase();let obj;
+ const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
  if(name.endsWith('.json'))obj=loadProject(str);
- else if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))obj=cifData(str);
+ else if(isCif)obj=cifData(str);
  else if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))obj=xyzData(str);
  else obj=poscarData(str);
  if(densityGrid)resetVolume();
- state={...state,...obj,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...obj,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ if(isCif&&name.endsWith('.json')===false)state.cifOriginal=originalCifRecord(state,str);
  syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
 }
 function cifExportText(state){
@@ -3843,7 +3890,17 @@ function cifExportText(state){
  }
   return q.join('\n')+'\n';
 }
-function exportCif(){download(safeName(state.name)+'.cif',cifExportText(state));}
+function cifExportPreservingSource(current){
+ if(current.cifOriginal?.text&&current.cifOriginal.fingerprint===cifScientificFingerprint(current))
+  return {text:current.cifOriginal.text,original:true};
+ return {text:cifExportText(current),original:false};
+}
+function exportCif(){
+ const output=cifExportPreservingSource(state);
+ download(safeName(state.name)+'.cif',output.text);
+ if(state.cifOriginal&&!output.original)
+  inform('Kristal değişti: CIF yeniden üretildi (P1 / desteklenen alanlar). Kaynaktaki tüm CIF meta verileri korunmayabilir.');
+}
 function exportPoscar(){
  const outSites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
  const B=basis(state.cell),species=[...new Set(outSites.map(s=>s.symbol))],rows=[state.name,'1.0',...B.map(v=>v.toArray().map(n=>n.toFixed(9)).join(' ')),species.join(' '),species.map(s=>outSites.filter(a=>a.symbol===s).length).join(' '),'Direct'];
@@ -4308,6 +4365,7 @@ async function codOpenCif(record,cif,originalName){
  await importFile(file);
  state.name=(record.formula||'COD '+record.codId)+' · COD '+record.codId;
  state.detail=(state.detail||'')+' · COD '+record.codId;
+ state.cifOriginal=originalCifRecord(state,cif);
  build();
  await codRememberCif(record.codId,cif);
  $('codImportHelp').hidden=true;

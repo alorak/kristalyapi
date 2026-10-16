@@ -16,8 +16,23 @@ const server=http.createServer(async(request,response)=>{
  const absolute=path.resolve(base,'.'+name);
  if(!absolute.startsWith(base+path.sep)) {response.writeHead(403).end();return;}
  try{
-  const content=await fs.readFile(absolute);
-  response.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html':name.endsWith('.cif')?'text/plain':'application/octet-stream'});
+  let content=await fs.readFile(absolute);
+  if(name==='/index.html'){
+   // The application may use a CDN, but its CI visual oracle must be
+   // deterministic and must not depend on a third-party network response.
+   let html=content.toString('utf8');
+   const cdn='https://cdn.jsdelivr.net/npm/three@0.182.0/';
+   assert.ok(html.includes(cdn),'Expected pinned Three.js import map');
+   html=html.replaceAll(cdn,'/node_modules/three/');
+   content=Buffer.from(html);
+  }
+  // Chromium refuses native ES modules served as application/octet-stream.
+  // Match GitHub Pages' MIME types for the local WASM module and binary.
+  const contentType=name.endsWith('.html')?'text/html; charset=utf-8':
+   name.endsWith('.js')?'text/javascript; charset=utf-8':
+   name.endsWith('.wasm')?'application/wasm':
+   name.endsWith('.cif')?'text/plain; charset=utf-8':'application/octet-stream';
+  response.writeHead(200,{'Content-Type':contentType});
   response.end(content);
  }catch(e){response.writeHead(404).end();}
 });
@@ -53,8 +68,9 @@ try{
   '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
  ]});
  const page=await browser.newPage({viewport:{width:1480,height:920},deviceScaleFactor:1});
- const errors=[];
+ const errors=[],consoleErrors=[];
  page.on('pageerror',error=>errors.push(error.message));
+ page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  await page.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await save(page,'01-silicon-perspective',metrics);
@@ -104,9 +120,17 @@ try{
  await save(page,'09-two-volume-fields',metrics);
  assert.match(await page.locator('#volumeSliceStats').textContent(),/Å/);
  await page.locator('#moyoDetect').click();
- await page.waitForFunction(()=>document.getElementById('moyoResult')?.textContent?.startsWith('SG #'),null,{timeout:60000});
- assert.match(await page.locator('#moyoResult').textContent(),/Hall \d+/);
+ await page.waitForFunction(()=>{
+  const result=document.getElementById('moyoResult')?.textContent||'';
+  return result.startsWith('SG #')||result.startsWith('SG tayini başarısız:');
+ },null,{timeout:30000});
+ const moyoMessage=await page.locator('#moyoResult').textContent();
+ assert.match(moyoMessage,/^SG #\d+.*Hall \d+/,
+  'Moyo integration error: '+moyoMessage+'; browser console: '+consoleErrors.join(' | '));
  assert.equal(await page.locator('#moyoApplyConventional').isEnabled(),true);
+ await page.locator('#moyoApplyConventional').click();
+ assert.match(await page.locator('#moyoResult').textContent(),/Yeni atomlar P1 olarak saklandı/,
+  'Moyo standardization must pass geometry/occupancy/ADP checks');
  await save(page,'10-moyo-space-group',metrics);
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));
