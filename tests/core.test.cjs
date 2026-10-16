@@ -45,7 +45,7 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
-vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
+vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
@@ -880,6 +880,20 @@ test('CHGCAR parses x-fastest VASP storage and correct charge density scaling',(
  approx(g.values[api.gridIndex(g,0,0,1)],4/8);
  assert.equal(g.units,'e/Å³ (CHGCAR / V)');
 });
+test('P1+ CHGCAR reads collinear and noncollinear spin blocks after PAW augmentation',()=>{
+ const header=['Spin CHGCAR','1.0','2 0 0','0 2 0','0 0 2','Fe','1','Direct','0 0 0','','2 2 2'];
+ const charge=['0 0 0 0 0 0 0 0'];
+ const spin=['2 2 2','8 8 8 8 8 8 8 8'];
+ const col=api.readChgcar([...header,...charge,'augmentation occupancies   1 10','9 8 7',...spin].join('\n'));
+ assert.equal(col.spinMode,'collinear');assert.equal(col.spinComponents.length,1);
+ assert.equal(col.spinComponents[0].axis,'z');
+ assert.equal(col.spinComponents[0].grid.quantity,'magnetization');
+ approx(col.spinComponents[0].grid.values[0],1);
+ const nc=api.readChgcar([...header,...charge,...spin,...spin,...spin].join('\n'));
+ assert.equal(nc.spinMode,'noncollinear');
+ assert.deepEqual(Array.from(nc.spinComponents.map(s=>s.axis)),['x','y','z']);
+ assert.throws(()=>api.readChgcar([...header,...charge,...spin,...spin].join('\n')),/üç bileşen/);
+});
 test('XSF DATAGRID uses x-fastest data and n-1 spacings to include endpoints',()=>{
  const data=['BEGIN_BLOCK_DATAGRID_3D','scalar',
  'BEGIN_DATAGRID_3D_density','2 2 2','0 0 0','2 0 0','0 2 0','0 0 2',
@@ -1343,7 +1357,7 @@ test('Layer manager: canonical order, visibility, opacity and color are bounded'
  assert.equal(layers.atoms.color,'');
  const order=Array.from(api.normalizedLayerOrder(['volume','atoms','volume','invalid']));
  assert.deepEqual(order.slice(0,2),['volume','atoms']);
- assert.equal(order.length,11);
+ assert.equal(order.length,12);
  assert.match(html,/id="layerManager"/);
  assert.match(html,/id="adpVisible"/);
  assert.match(html,/id="adpLevel"/);
@@ -1712,6 +1726,71 @@ test('Paket B triple-field Δρ subtracts both sources in one pass with unit/fra
  assert.throws(()=>p1.linearVolumeCombination3(A,B,{...C,origin:[1,0,0]},-1,-1),/kapsama/);
  assert.throws(()=>p1.linearVolumeCombination3(A,B,C,100,-1),/Katsayı/);
 });
+test('P1+ Δρ integral uses periodic voxel sums and nonperiodic trapezoids',()=>{
+ const periodic=api.volumeGrid([4,4,4],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],Array(64).fill(.25),'rho','e/Å³');
+ periodic.periodic=true;
+ approx(p1.volumeIntegral(periodic).value,2,1e-9);
+ const open=api.volumeGrid([3,3,3],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],Array(27).fill(.25),'rho','e/Å³');
+ approx(p1.volumeIntegral(open).value,2,1e-9);
+ const ramp=api.volumeGrid([3,3,3],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],
+  Array.from({length:27},(_,index)=>Math.floor(index/9)),'rho','e/Å³');
+ approx(p1.volumeIntegral(ramp).value,8,1e-9);
+});
+test('P1+ peaks return fractional and subvoxel extrema; inversion merges equivalents',()=>{
+ const dims=[9,9,9],values=[];
+ for(let i=0;i<9;i++)for(let j=0;j<9;j++)for(let k=0;k<9;k++)
+  values.push(10-(i-3.2)**2-(j-4.3)**2-(k-5.1)**2);
+ const g=api.volumeGrid(dims,[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],values,'rho','e/Å³');
+ const peak=p1.volumeFindPeaks(g,{threshold:0})[0];
+ approx(peak.x,3.2,1e-4);approx(peak.y,4.3,1e-4);approx(peak.z,5.1,1e-4);
+ approx(peak.gridFraction[0],3.2/8,1e-5);
+ assert.match(p1.volumePeaksCsv([peak],g.units),/frac_u,frac_v,frac_w/);
+ const periodic=api.volumeGrid([8,8,8],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],Array(512).fill(0),'rho','e/Å³');
+ periodic.periodic=true;
+ periodic.values[api.gridIndex(periodic,1,1,1)]=10;
+ periodic.values[api.gridIndex(periodic,7,7,7)]=9;
+ const raw=p1.volumeFindPeaks(periodic,{threshold:8,refine:false});
+ const merged=p1.volumeFindPeaks(periodic,{threshold:8,refine:false,mergeSymmetry:true,
+  cell:{a:8,b:8,c:8,alpha:90,beta:90,gamma:90},sgSetting:'2'});
+ assert.equal(raw.length,2);assert.equal(merged.length,1);
+});
+test('P1+ SHELX FCF requires phases and produces phase-controlled Fo−Fc FFT maps',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const text=['data_test','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 64 0','0 1 0 25 16 90','-1 0 0 100 64 0'].join('\n');
+ const fcf=p1.readFcf(text);
+ assert.equal(fcf.reflections.length,3);assert.equal(fcf.hasPhases,true);
+ const map=p1.observedFourierMap(cell,fcf,{kind:'difference',size:16,dMin:1});
+ assert.equal(map.experimental.used,2);assert.equal(map.periodic,true);
+ approx(map.values[api.gridIndex(map,0,0,0)],2*2/(125),1e-6);
+ assert.throws(()=>p1.observedFourierMap(cell,p1.readFcf(text.replace(/_refln_phase_calc/,'_refln_unrelated')),{}),/faz bilgisi/);
+ const noCalc=p1.readFcf(text.replace('_refln_F_squared_calc','_refln_other_calc'));
+ assert.throws(()=>p1.observedFourierMap(cell,noCalc,{kind:'difference'}),/Fcalc/);
+ assert.equal(p1.observedFourierMap(cell,noCalc,{kind:'observed',size:16,dMin:1}).experimental.used,2);
+});
+test('P1+ mCIF magnetic translation flips time-reversed vectors, and P1 export retains moments',()=>{
+ const cif=['data_magnetic','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y',
+  '_atom_site_fract_z','Fe1 Fe 0.1 0.2 0.3','loop_',
+  '_atom_site_moment.label','_atom_site_moment.Cartn_x','_atom_site_moment.Cartn_y','_atom_site_moment.Cartn_z',
+  'Fe1 0 0 2','loop_','_space_group_symop_magn_operation.xyz',
+  "'x,y,z,+1'","'x+1/2,y,z,-1'"].join('\n');
+ const result=api.cifData(cif);
+ assert.equal(result.sites.length,2);approx(result.sites[1].x,.6);
+ approx(result.sites[0].magneticMoment[2],2);approx(result.sites[1].magneticMoment[2],-2);
+ assert.match(result.warning,/zaman tersleme/);
+ const exportCif=api.cifExportText(result),again=api.cifData(exportCif);
+ assert.equal(again.sites.length,2);approx(again.sites[1].magneticMoment[2],-2);
+ assert.throws(()=>p1.parseMagneticOperation('x,y,z;0,+1'),/Desteklenmeyen/);
+ const mirror=p1.parseMagneticOperation('x,y,-z,+1');
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ assert.deepEqual(Array.from(p1.rotateMagneticMoment([1,0,0],mirror,cell)).map(n=>Math.round(n)||0),[-1,0,0],
+  'moments are axial, so an improper reflection changes in-plane components');
+ assert.deepEqual(Array.from(p1.rotateMagneticMoment([0,0,2],mirror,cell)).map(n=>Math.round(n)||0),[0,0,2],
+  'normal-to-mirror axial moment retains its direction');
+});
 test('P1 numerical periodic Voronoi integration partitions electron density and conserves charge',()=>{
  const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
  const g=api.volumeGrid([8,8,8],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],
@@ -1825,6 +1904,7 @@ test('Paket A PDB aligns uppercase atom-name fallbacks and enables recognized CR
  assert.equal(protein.sites[0].symbol,'C','CA in aligned protein ATOM record is C-alpha');
  const unrecognized=p1.pdbData(lines.join('\n').replace('P 21 21 21','X 99 99 99'));
  assert.match(unrecognized.warning,/eşlenemedi/);assert.equal(unrecognized.symmetryEnabled,false);
+ assert.match(unrecognized.warning,/sonuçlarına güvenmeyin, bağımsız olarak doğrulayın/);
 });
 test('Paket A symmetry-expanded charges and Voronoi labels refer to asymmetric sites',()=>{
  const asymmetric=[{symbol:'Na',label:'Na1',x:.12,y:.21,z:.31},
