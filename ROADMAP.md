@@ -9,13 +9,15 @@
 | Çizim ölçeği | Atomlar element bazlı, bağlar toplu `InstancedMesh`; atom sınırı 20.000, bağ sınırı 65.000; 5.000+ atomda basit küre | Farklı cihazlarda FPS/GPU bellek ölçümü, instanced ADP/etiketler, daha büyük yapı için LOD ve WebGPU |
 | Çokyüzlü ve site stilleri | Koordinasyonla seçilen otomatik merkez türü; fiziksel site komşu önbelleği; tek yüzey mesh'i (RGB+alpha), tek kenar geometrisi ve 2400 merkez üst sınırında açık uyarı; site bazında renk/opaklık | Çok büyük sahnelerde FPS ve GPU bellek profili; per-facet stiller, gelişmiş çokyüzlü LOD |
 | Sınırlar ve çıktı | x/y/z için −1…2 kesirli pencere; 1×–4× beyaz/şeffaf PNG (24 MP / WebGL texture-renderbuffer-viewport sınırları, gerçek tampon boyutu testi), dışa aktarımda kalın hücre çizgileri | TIFF/SVG, 3B STL/glTF, tipografi/vektörel makale çıktıları |
-| Dosya mimarisi | HTML/CSS/JS modülleri; resmî Three.js 0.186.1 altkümesi MIT lisansıyla yerel `vendor/three`; GitHub Pages dağıtımı/CDN'siz gerçek WebGL testi | Uygulama modülünü alanlara ayırma, Service Worker/PWA ile çevrimdışı tekrar açılış |
+| Dosya mimarisi | HTML/CSS/JS modülleri; yerel Three.js 0.186.1; sürümlü Service Worker, PWA manifesti ve Moyo WASM dâhil önbellek | Uygulama modülünü alanlara ayırma, gerçek cihazlarda çevrimdışı yenileme ve güncelleme geçişi testleri |
 
 Bu pakette bildirilen atom/bağ/çokyüzlü sayıları **koruyucu uygulama sınırlarıdır, ölçülmüş performans hızlanması değildir**. Three.js üçüncü taraf CDN'den yüklenmez; canlı COD ve ilk site ziyareti hâlâ ağ gerektirir.
 
 ## Kavram laboratuvarı · Karşı Uzay ve Kırınım (Ekim 2026)
 
 VESTA'da karşılığı olmayan, öğretim ve araştırma amaçlı ayrı sayfa (`#karsi-uzay`).
+
+**Ekim 2026 arayüz düzeni:** Sekmeler beyaz bir yüzey üzerinde seçili mavi dolgu, kaynak bilgi bandı ayrı vurgu, parametre paneli beyaz, sayısal özet mavi-gri, kavram kutuları yeşil ton ve 3B grafikler kendi beyaz kartı içinde nötr arka plan kullanır. Tek rengin üst üste binen alanlarında kaybolmayı önlemek için tüm dört sekmede tutarlı yüzey hiyerarşisi uygulanır. Boş çokyüzlü merkezini ilk elemente zorlayan `syncControls()` ataması kaldırıldı.
 
 | Başlık | Uygulanan kapsam | Kalan geliştirme |
 | --- | --- | --- |

@@ -16,7 +16,7 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 **Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
 
-Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Tam çevrimdışı PWA/Service Worker önbelleği henüz yoktur**. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
+Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
 ## Arayüz
 
@@ -176,7 +176,7 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 
 ### VESTA ile güncel başlıca farklar
 
-- **P0 — Tam bağımsız çevrimdışı paket:** Three.js ve Moyo WASM artık kendi GitHub Pages dağıtımımızdan yüklenir. **Kalan:** Service Worker, sürümlü önbellek, ağ kesildiğinde garantili yeniden açılış ve offline E2E testi.
+- **P0 — Çevrimdışı paket:** Three.js, Moyo WASM ve uygulamanın tamamı aynı dağıtımdan yüklenir; sürümlü Service Worker ve PWA manifesti eklendi. İlk ziyarette bütün uygulama dosyalarının önbelleğe alınması gerekir. Kullanıcının hacimsel dosyaları, COD/Worker çağrıları ve daha önce indirilmemiş CIF'ler çevrimdışı kullanılamaz.
 - **P1 — Paket A + Paket B (bilimsel doğruluk):** XRD `d_min` küresel taraması, fiziksel tür/birim kontrollü CUBE/XSF, minimum eşiği, PDB CRYST1/element doğrulaması ve simetri site kimlikleri (A); nötron Lorentz/absorpsiyon uyarıları, `d_min`/FFT tabanlı Fourier 64³, üç kaynaklı Δρ, PAW/AECCAR uyarıları ve PDB element alanı büyük-harf dışa aktarımı (B) eklendi.
 - **P1 — Fiziksel hesaplamalar (model + deneysel FCF altkümesi):** IT92 ve doğal nötron `b`, model Fourier/Patterson, fazlı SHELX `.fcf` Fo/Fo−Fc FFT, örneklenmiş Voronoi ve iyonik Ewald; ampirik toz profili/ölçüm CSV; CUBE/XSF hacimsel dışa aktarımı mevcut. **Kalan:** `.mtz` ve fazsız FCF çözümleri, anomal saçılma, izotop çözünürlüğü, gerçek cihaz profili inceltmesi/RIETAN-FP eşdeğeri, Bader analizi ve geniş yakınsama benchmarkları.
 - **P1 — Dosya ve simetri kapsamı:** PDB/ENT kristal koordinatları ve ANISOU, CHGCAR spin ızgaraları, sınırlı mCIF moment/simetri görselleştirmesi eklendi. **Kalan:** `.vesta` projeleri, geniş biyomoleküler/kuantum kimyası biçimleri, tam BNS/manyetik süperuzay grupları, SAXIS düzeltmesi ve ayrıntılı setting/orijin dönüşümleri.
@@ -187,15 +187,12 @@ Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/
 
 ## Çevrimdışı çalışma (COD hariç)
 
-**CDN bağımlılığı giderildi; tam çevrimdışı açılış hâlâ garanti edilmez.** Three.js 0.186.1 (çekirdek, OrbitControls, ConvexGeometry ve ConvexHull), Moyo WASM, dil paketi ve favicon sitenin **kendi alan adından** yüklenir. Ancak GitHub Pages'in normal HTTP önbelleği, bağlantı kesildiğinde sayfanın her zaman açılmasını garanti etmez. Uygulamada Service Worker/PWA önbelleği bulunmamaktadır.
+**Service Worker + PWA manifesti mevcuttur.** HTTPS üzerindeki ilk başarılı ziyarette bütün uygulama kabuğu, Three.js ES modülleri, Moyo WASM, Türkçe/İngilizce çeviriler ve Karşı Uzay sayfası bir arada önbelleğe alınır. Bu önbellek hazır olduktan sonra aynı tarayıcı profilinde, aynı site adresinden yeniden açılış ve yerel bilimsel hesaplamalar ağ olmadan çalışabilir. İlk kurulum internet gerektirir; önbellek tarayıcı tarafından silinirse tekrar çevrimiçi ziyaret gerekir.
 
-Tam çevrimdışı/PWA için üç iş gerekir:
-
-1. <s>Three.js çekirdeği ve eklentilerini yerel `vendor/` altında sunmak.</s> **Tamamlandı.** Kaynak sürümü, paket bütünlük özeti ve MIT lisansı [vendor/three/README.md](vendor/three/README.md) içinde.
-2. `index.html`, `styles.css`, `crystal-app.js`, `translations.js`, `favicon.svg`, Three.js ve Moyo WASM varlıklarını kapsayan sürümlü **Service Worker / precache** ve güncelleme stratejisi eklemek. COD/Worker istekleri zorunlu cache'e dahil edilmemeli.
-3. Ağ bağlantısını tamamen keserek ilk kurulum sonrası açılış, CIF/POSCAR/XYZ içe/dışa aktarımı, 3B kontrol, analiz, dil geçişi ve kayıt geri yükleme için tarayıcı E2E testi yapmak.
-
-COD araması ve ilk CIF indirme çevrimiçi kalır; önceden bu cihazda önbelleğe alınmış CIF'ler bazı durumlarda tekrar açılabilir. Yerel bilimsel işlemler ve dosya düzenleme için COD bağlantısı gerekmez.
+- Service Worker yalnız **aynı alan adındaki sabit uygulama dosyalarına** yanıt verir. COD, kullanıcı ayarlı Cloudflare Worker, diğer API'ler ve dış bağlantılar önbelleğe alınmaz.
+- Yeni dağıtımda `sw.js` içindeki `CACHE_NAME` sürümünü artırın. Yeni sürüm bütün dosyaları başarıyla indirdikten sonra etkinleşir; açık eski sekmeler kapatıldıktan sonra geçiş olur. Eksik dosya varsa eski çalışan sürüm korunur.
+- Hacimsel veri dosyalarının baytları proje kalıcı kaydına dahil edilmez ve sayfa yenilendiğinde yeniden yüklenmesi gerekir. Yerel CIF/POSCAR/XYZ dosyalarını kullanıcı tekrar açabilir; uzak COD verisine çevrimdışı erişilemez.
+- Çevrimdışı testi Service Worker aktivasyonundan sonra DevTools ağ bağlantısını keserek veya tarayıcıdaki çevrimdışı senaryoyla yapın. `file://` şeması desteklenmez; HTTPS veya localhost kullanılmalı.
 
 ## Yerel geliştirme ve test
 

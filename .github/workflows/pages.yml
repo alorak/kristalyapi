@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/core.test.cjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/validation/test_runner.cjs
+        run: node --test tests/core.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/validation/test_runner.cjs
   deploy:
     needs: validate
     environment:
@@ -48,6 +48,8 @@ jobs:
           mkdir -p public/vendor
           cp index.html public/index.html
           cp styles.css public/styles.css
+          cp sw.js public/sw.js
+          cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
           cp reciprocal-core.js public/reciprocal-core.js
           cp reciprocal-page.js public/reciprocal-page.js
@@ -61,6 +63,8 @@ jobs:
           test -s public/vendor/moyo_wasm_bg.wasm
           test -s public/vendor/three/build/three.module.js
           test -s public/vendor/three/examples/jsm/geometries/ConvexGeometry.js
+          test -s public/sw.js
+          test -s public/manifest.webmanifest
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

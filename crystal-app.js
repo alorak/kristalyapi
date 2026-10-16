@@ -3497,7 +3497,6 @@ function initRepeatSteppers(){
  syncRepeatSteppers();
 }
 function syncControls(){
- if(state.style==='poly'&&!state.poly&&state.sites.length)state.poly=cleanSymbol(state.sites[0].symbol);
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncRepeatSteppers();syncSgControls();$('bondRules').value=state.bondRules;
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);

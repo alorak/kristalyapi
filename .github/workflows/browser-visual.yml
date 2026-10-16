@@ -9,10 +9,13 @@ on:
       - 'reciprocal-page.js'
       - 'crystal-app.js'
       - 'styles.css'
+      - 'sw.js'
+      - 'manifest.webmanifest'
       - 'translations.js'
       - 'vendor/three/**'
       - '.github/workflows/pages.yml'
       - 'tests/browser/**'
+      - 'tests/offline.test.mjs'
       - '.github/workflows/browser-visual.yml'
   workflow_dispatch:
 
@@ -37,6 +40,8 @@ jobs:
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
       - name: Render real WebGL scenes and compare screenshots
         run: node tests/browser/visual.test.mjs
+      - name: Verify Service Worker asset isolation and cache lifecycle
+        run: node --test tests/offline.test.mjs
       - name: Upload screenshots and pixel metrics
         if: always()
         uses: actions/upload-artifact@v4
