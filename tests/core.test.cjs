@@ -45,7 +45,7 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,angleBetweenPlanes,stage3FitFromIndices,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
-vm.runInContext('this.p1={linearVolumeCombination,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
+vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
@@ -1634,27 +1634,83 @@ test('P1 anisotropic ADP uses full triclinic reciprocal vector; Bragg-Brentano L
  approx(base.reflections[0].intensity,lp.reflections[0].intensity,1e-7);
  assert.notEqual(base.reflections[0].powderIntensity,lp.reflections[0].powderIntensity);
  const neut=api.powderPattern(cell,[atom],{scattering:'neutron',maxIndex:2,maxAngle:90,lorentzPolarization:true});
- assert.equal(neut.lorentzPolarization,false);
+ assert.equal(neut.lorentzPolarization,true);
+ assert.equal(neut.correction,'neutron-Lorentz');
+ const theta=neut.reflections[0].angle*Math.PI/360;
+ approx(neut.reflections[0].lp,1/(Math.sin(theta)**2*Math.cos(theta)),1e-8);
+ const neutRaw=api.powderPattern(cell,[atom],{scattering:'neutron',maxAngle:90});
+ assert.notEqual(neutRaw.reflections[0].powderIntensity,neut.reflections[0].powderIntensity);
 });
 test('P1 model Fourier density conserves F000 mean and Patterson is translation-invariant',()=>{
  const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
  const silicon=[{symbol:'Si',x:0,y:0,z:0}];
- const density=p1.modelFourierMap(cell,silicon,{kind:'density',maxIndex:2,size:16});
- assert.equal(density.periodic,true);assert.equal(density.modelFourier.reflectionCount,125);
+ const density=p1.modelFourierMap(cell,silicon,{kind:'density',dMin:1.2,size:16});
+ assert.equal(density.periodic,true);
+ assert.ok(density.modelFourier.reflectionCount>125);
  const expectedMean=p1.scatteringFactor('Si',Infinity,'xray')/64;
  const mean=density.values.reduce((a,b)=>a+b,0)/density.values.length;
  approx(mean,expectedMean,1e-5);
  assert.ok(density.values[api.gridIndex(density,0,0,0)]>
   density.values[api.gridIndex(density,8,8,8)]);
- const pat=p1.modelFourierMap(cell,silicon,{kind:'patterson',maxIndex:2,size:16});
+ const pat=p1.modelFourierMap(cell,silicon,{kind:'patterson',dMin:1.2,size:16});
  const translated=p1.modelFourierMap(cell,[{symbol:'Si',x:.25,y:.25,z:.5}],
-  {kind:'patterson',maxIndex:2,size:16});
+  {kind:'patterson',dMin:1.2,size:16});
  for(const ijk of [[0,0,0],[1,3,5],[7,9,11]]){
   const n=api.gridIndex(pat,...ijk),opposite=ijk.map(q=>(16-q)%16);
   approx(pat.values[n],translated.values[n],5e-5);
   approx(pat.values[n],pat.values[api.gridIndex(pat,...opposite)],5e-5);
  }
  assert.throws(()=>p1.modelFourierMap(cell,silicon,{kind:'density',size:128}));
+});
+test('Paket B neutron absorbers warn, while X-ray LP remains independent',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ for(const sym of ['B','Cd','Sm','Eu','Gd']){
+  const pattern=api.powderPattern(cell,[{symbol:sym,x:0,y:0,z:0}],{scattering:'neutron'});
+  assert.ok(pattern.warnings.length>0);
+  assert.match(pattern.warnings[0],new RegExp(sym));
+ }
+ assert.equal(api.powderPattern(cell,[{symbol:'Si',x:0,y:0,z:0}],{scattering:'neutron'}).warnings.length,0);
+ assert.equal(api.powderPattern(cell,[{symbol:'Gd',x:0,y:0,z:0}],{scattering:'xray'}).warnings.length,0);
+});
+test('Paket B 64³ Fourier resolves a 10 Å cell at d_min=0.8 Å, with no Nyquist alias',()=>{
+ const cell={a:10,b:10,c:10,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Si',x:.2,y:.3,z:.4}];
+ const map=p1.modelFourierMap(cell,sites,{kind:'density',dMin:.8,size:64});
+ assert.equal(map.dims[0],64);
+ assert.equal(map.modelFourier.dMin,.8);
+ assert.ok(map.modelFourier.reflectionCount>5000);
+ approx(map.values.reduce((sum,v)=>sum+v,0)/map.values.length,
+  p1.scatteringFactor('Si',Infinity,'xray')/1000,1e-7);
+ assert.throws(()=>p1.modelFourierMap(cell,sites,{kind:'density',dMin:.8,size:16}),/Nyquist/);
+});
+test('Paket B FFT matches an independent direct Fourier sum at non-origin sample sites',()=>{
+ const cell={a:4,b:5,c:6,alpha:90,beta:90,gamma:90},sites=[
+  {symbol:'C',x:.17,y:.38,z:.41},{symbol:'O',x:.62,y:.12,z:.76}];
+ const map=p1.modelFourierMap(cell,sites,{kind:'density',dMin:2.8,size:16});
+ for(const [i,j,k] of [[0,0,0],[1,3,7],[8,5,13]]){
+  let direct=p1.scatteringFactor('C',Infinity)+p1.scatteringFactor('O',Infinity);
+  for(let h=-2;h<=2;h++)for(let m=-2;m<=2;m++)for(let l=-3;l<=3;l++){
+   if(!(h||m||l))continue;
+   const d=1/Math.hypot(h/4,m/5,l/6);
+   if(d+1e-9<2.8)continue;
+   const F=api.structureFactor(h,m,l,sites,cell);
+   const phi=2*Math.PI*(h*i+m*j+l*k)/16;
+   direct+=F.real*Math.cos(phi)+F.imag*Math.sin(phi);
+  }
+  approx(map.values[api.gridIndex(map,i,j,k)],direct/120,1e-5);
+ }
+});
+test('Paket B triple-field Δρ subtracts both sources in one pass with unit/frame checks',()=>{
+ const A=api.volumeGrid([3,3,3],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],Array(27).fill(10),'CUBE','e/Å³');
+ const B=api.volumeGrid([3,3,3],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],Array(27).fill(3),'CUBE','e/Å³');
+ const C=api.volumeGrid([5,5,5],[0,0,0],[[.5,0,0],[0,.5,0],[0,0,.5]],Array(125).fill(2),'XSF','e/Å³');
+ for(const g of [A,B,C])g.quantity='density';
+ const diff=p1.linearVolumeCombination3(A,B,C,-1,-1);
+ assert.ok(diff.values.every(v=>v===5));
+ assert.deepEqual(Array.from(diff.derivation.resampled),[false,true]);
+ assert.throws(()=>p1.linearVolumeCombination3(A,B,{...C,units:'V'},-1,-1),/birim/);
+ assert.throws(()=>p1.linearVolumeCombination3(A,B,{...C,origin:[1,0,0]},-1,-1),/kapsama/);
+ assert.throws(()=>p1.linearVolumeCombination3(A,B,C,100,-1),/Katsayı/);
 });
 test('P1 numerical periodic Voronoi integration partitions electron density and conserves charge',()=>{
  const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
@@ -1679,6 +1735,8 @@ test('P1 PDB CRYST1, ATOM occupancy and ANISOU roundtrip preserve cell and Carte
   {symbol:'O',label:'O1',x:.5,y:.6,z:.7,occupancy:1,uIso:.015}];
  const pdb=p1.pdbExportText(cell,sites);
  assert.match(pdb,/^CRYST1/);assert.match(pdb,/ANISOU/);assert.match(pdb,/HETATM/);
+ const ironLine=pdb.split('\n').find(line=>line.startsWith('HETATM'));
+ assert.equal(ironLine.slice(76,78),'FE','PDB element field must be uppercase for two-letter elements');
  const round=p1.pdbData(pdb);
  approx(round.cell.a,cell.a,1e-4);approx(round.cell.gamma,cell.gamma,1e-4);
  assert.equal(round.sites.length,2);assert.equal(round.sites[0].symbol,'Fe');

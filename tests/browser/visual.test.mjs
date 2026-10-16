@@ -371,6 +371,12 @@ try{
  await page.locator('#volumeMathK').fill('-1');
  await page.locator('#volumeMathAdd').click();
  assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),3,'derived volume is a separate layer');
+ await page.locator('#volumeMathC').selectOption('2');
+ assert.equal(await page.locator('#volumeMathK2').isEnabled(),true);
+ await page.locator('#volumeMathK2').fill('-1');
+ await page.locator('#volumeMathAdd').click();
+ assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),4,
+  'three-source A + k1B + k2C must produce one derived layer');
  await page.locator('#volumePeakFind').click();
  assert.ok((await page.locator('#volumePeakResults').textContent()).length>15);
  await page.locator('#volumeAxis').selectOption('hkl');
@@ -381,7 +387,7 @@ try{
  await page.locator('#workspaceToggle').click();await page.locator('#workspaceAdd').click();
  assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),0);
  await page.locator('#workspaceToggle').click();await page.locator('#workspaceList .workspace-select').first().click();
- assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),3);
+ assert.equal(await page.locator('#volumeDatasets .volume-layer-row').count(),4);
  await page.locator('#volumeActiveDataset').selectOption('0');
  assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),2);
  await page.locator('[data-right-tool="lattice"]').click();
@@ -569,9 +575,19 @@ try{
  }));
  assert.match(boundsSection.title,/Visible fractional bounds|Görünür kesirli sınırlar/);
  assert.match(boundsSection.previous,/Supercell|Süperhücre/);
+ const boundsStyle=await page.locator('#boundXMin').evaluate(input=>({
+  radius:getComputedStyle(input).borderRadius,
+  background:getComputedStyle(input).backgroundImage,
+  appearance:getComputedStyle(input).appearance
+ }));
+ assert.ok(parseFloat(boundsStyle.radius)>=7,'fractional bounds must have rounded modern input frames');
+ assert.equal(boundsStyle.appearance,'textfield','legacy number spinners should be hidden');
  assert.equal(await page.locator('#xrdMaxIndex').count(),0,
   'powder diffraction must use the 2theta sphere, not an index cube');
  assert.equal(await page.locator('#volumeImportUnits option').count(),5);
+ assert.equal(await page.locator('#xrdMapIndex').count(),0);
+ assert.equal(await page.locator('#xrdMapResolution').getAttribute('min'),'0.35');
+ assert.equal(await page.locator('#xrdMapSize option').count(),3);
  await page.locator('#boundXMin').fill('-0.1');await page.locator('#boundXMax').fill('1.1');
  await page.locator('#applyBounds').click();
  assert.deepEqual((await page.evaluate(()=>window.__visualTest.bounds()))[0],[-.1,1.1]);
