@@ -206,7 +206,7 @@ function periodicSeamCase(){
  assert.equal(topology.openEdges,0,'complete signed periodic ball must close across seam');
  return topology;
 }
-try{
+if(require.main===module)try{
  const output=process.argv[2]?{type:'real-highres',...realMap(path.resolve(process.argv[2]))}:
   {type:'periodic-synthetic',...periodicSeamCase()};
  process.stdout.write(JSON.stringify(output)+'\n');
@@ -214,3 +214,7 @@ try{
  console.error('P10.8.3 high-resolution/topology gate failed:',error.stack||error);
  process.exitCode=1;
 }
+
+/* Reuse exactly the validated source parsers, resampler and Worker in the
+ * independent-mesher research comparison without duplicating any science. */
+module.exports={parse,ctx,gridLike,realMap};
