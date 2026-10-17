@@ -101,3 +101,39 @@ test('P7.8 malformed and degenerate geometry cannot pass as valid hull',()=>{
  assert.throws(()=>ctx.neighbors([atom('Si',0,0,0),atom('O',.5,0,0,1.3)],0,
    [[4,0,0],[0,4,0],[0,0,4]],[0,4],0,false,24),/doluluğu/);
 });
+
+
+// Verify the other periodic features use the same metric-bounded image logic.
+const c=src.indexOf('function minimumPeriodicImage('),d=src.indexOf('function planeNormal(',c);
+assert.ok(c>=0&&d>c);
+vm.runInContext(src.slice(c,d)+';this.minimum=minimumPeriodicImage;this.periodicSegments=periodicBondSegments',ctx);
+const e=src.indexOf('function bondNetwork('),f=src.indexOf('function bondNetworkCsv(',e);
+assert.ok(e>=0&&f>e);
+ctx.basis=B=>B;
+vm.runInContext(src.slice(e,f)+';this.network=bondNetwork',ctx);
+
+test('P7.8 exact minimum-image calculation reaches a translated atom two cells away',()=>{
+ const B=[[3,0,0],[2.85,.3,0],[0,0,4]];
+ const result=ctx.minimum([0,0,0],[.4,.2,0],B);
+ const best=independentImages([atom('Si',0,0,0),atom('O',.4,.2,0)],B,[0,10])
+  .filter(x=>x.index===1)[0];
+ assert.ok(Math.abs(result.distance-best.distance)<1e-9);
+ assert.deepEqual([...result.shift],[...best.shift]);
+ assert.deepEqual([...result.shift],[1,-2,0]);
+});
+
+test('P7.8 skew-cell periodic bonds cross two unit cells in both graph and renderer',()=>{
+ const B=[[3,0,0],[2.85,.3,0],[0,0,4]];
+ const sites=[atom('Si',0,0,0)];
+ const range=[.66,.68];
+ const graph=ctx.network(sites,B,{periodic:true,rules:range,cut:.68,auto:false});
+ assert.equal(graph.edges.length,1);
+ assert.ok(Math.max(...graph.edges[0].shift.map(Math.abs))>=2);
+ const clipped=ctx.periodicSegments(sites,[3,3,1],B,range,.68,6500,false);
+ assert.ok(clipped.segments.length>0);
+ assert.ok(!clipped.truncated);
+ for(const [a,b] of clipped.segments){
+  const distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+  assert.ok(distance>0&&distance<.69);
+ }
+});
