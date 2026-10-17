@@ -1,4 +1,4 @@
-/* Package 10.2 — isolated, offline marching-tetrahedra worker.
+/* Package 10.3 — isolated, offline progressive isosurface and slice worker.
  * Mirrors the pure numeric routine in crystal-app.js; native tests compare
  * the complete position/color arrays with both synthetic and Gemmi grids.
  * No network access, dynamic imports, or mutable editor state. */
@@ -45,8 +45,8 @@ function scalarColor(value,g,palette){
  }
  return colorFromScalar(value,g.min,g.max,palette);
 }
-function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=75000){
- const d=volumeShape(g),stride=Math.max(1,...d.map(n=>Math.ceil((n-1)/40)));
+function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=75000,minStride=1){
+ const d=volumeShape(g),stride=Math.max(minStride,1,...d.map(n=>Math.ceil((n-1)/40)));
  const vertices=[],colors=[];
  const corner=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
  const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
@@ -84,23 +84,72 @@ function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=7500
   triangles:vertices.length/9,decimation:stride,truncated:vertices.length/9>=maxTriangles};
 }
 
+/* Raster-only export: sample Cartesian skew / signed maps off the UI thread.
+ * Miller frames come from the already validated main-thread clipping routine. */
+function sliceRaster(grid,potential,job){
+ const size=job.size,values=new Float32Array(size*size),rgba=new Uint8ClampedArray(size*size*4);
+ const hkl=job.axis==='hkl',shape=volumeShape(grid),floating=hkl?null:[0,1,2].filter(n=>n!==job.axis);
+ const corners=job.corners;
+ for(let j=0;j<size;j++)for(let i=0;i<size;i++){
+  const s=i/(size-1),t=j/(size-1),index=j*size+i;
+  let world,coord;
+  if(hkl){
+   world=corners[0].map((v,k)=>v+s*(corners[1][k]-v)+t*(corners[3][k]-v));
+   const xyz=volumeCoord(grid,world);
+   if(xyz.some((v,k)=>v< -1e-5||v>shape[k]-1+1e-5)){values[index]=NaN;continue;}
+  }else{
+   coord=[0,0,0];coord[job.axis]=(shape[job.axis]-1)*job.position/100;
+   coord[floating[0]]=(shape[floating[0]]-1)*s;
+   coord[floating[1]]=(shape[floating[1]]-1)*t;
+   world=volumeWorld(grid,...coord);
+  }
+  const value=hkl?volumeAtWorld(grid,world):volumeSample(grid,coord);
+  values[index]=value;
+  const colorGrid=potential||grid;
+  const colorValue=potential?volumeAtWorld(potential,world):value;
+  const rgb=scalarColor(colorValue,colorGrid,job.palette);
+  const p=index*4;
+  for(let k=0;k<3;k++)rgba[p+k]=Math.round(rgb[k]*255);
+  rgba[p+3]=206;
+ }
+ return {values,rgba};
+}
 self.onmessage=event=>{
  const data=event.data||{},requestId=data.requestId;
  try{
-  if(!Array.isArray(data.grids)||data.grids.length>6||!Array.isArray(data.jobs)||data.jobs.length>8)
+  if(!Array.isArray(data.grids)||data.grids.length>6||(data.type!=='slice'&&(!Array.isArray(data.jobs)||data.jobs.length>8)))
    throw Error('Invalid volume worker budget');
   for(const g of data.grids){
    const n=g?.dims?.reduce((a,b)=>a*b,1);
    if(!Array.isArray(g?.dims)||g.dims.length!==3||g.dims.some(x=>!Number.isInteger(x)||x<2)||
       n>2500000||n<8||g.values?.length!==n)throw Error('Invalid worker voxel grid');
   }
+  if(data.type==='slice'){
+   const job=data.slice,grid=data.grids[job?.grid],potential=job?.potential<0?null:data.grids[job?.potential];
+   if(!grid||job.potential>=data.grids.length||!Number.isInteger(job.size)||
+      job.size<64||job.size>1024||!(job.axis==='hkl'||[0,1,2].includes(job.axis))||
+      !Number.isFinite(job.position)||job.position<0||job.position>100||
+      !['thermal','viridis','blue-red'].includes(job.palette)||
+      (job.axis==='hkl'&&(!Array.isArray(job.corners)||job.corners.length!==4||
+       job.corners.some(p=>!Array.isArray(p)||p.length!==3||p.some(x=>!Number.isFinite(x))))))
+    throw Error('Invalid slice export');
+   const result=sliceRaster(grid,potential,job);
+   self.postMessage({requestId,slice:result},[result.values.buffer,result.rgba.buffer]);
+   return;
+  }
   const started=performance.now(),results=[],transfer=[];
-  for(const job of data.jobs){
+  for(const [jobIndex,job] of data.jobs.entries()){
    const grid=data.grids[job.grid],potential=job.potential<0?null:data.grids[job.potential];
    if(!grid||job.potential>=data.grids.length||!Number.isFinite(job.level)||
       !Number.isInteger(job.maxTriangles)||job.maxTriangles<1||job.maxTriangles>75000||
       !['thermal','viridis','blue-red'].includes(job.palette))
     throw Error('Invalid isosurface job');
+   if(data.progressive&&grid.values.length>=200000){
+    const stride=Math.max(1,...volumeShape(grid).map(n=>Math.ceil((n-1)/40)))*2;
+    const preview=isoTriangles(grid,job.level,potential,job.palette,job.maxTriangles,stride);
+    self.postMessage({requestId,previewIndex:jobIndex,previewSurface:preview},
+     [preview.positions.buffer,...(preview.colors?[preview.colors.buffer]:[])]);
+   }
    const surface=isoTriangles(grid,job.level,potential,job.palette,job.maxTriangles);
    results.push(surface);transfer.push(surface.positions.buffer);
    if(surface.colors)transfer.push(surface.colors.buffer);

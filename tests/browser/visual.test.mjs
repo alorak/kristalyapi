@@ -576,6 +576,8 @@ try{
  const slicePng=await fs.readFile(await sliceDownload.path());
  assert.equal(slicePng.readUInt32BE(16),768,'P9.2 PNG export width');
  assert.equal(slicePng.readUInt32BE(20),768,'P9.2 PNG export height');
+ const sliceWorkerStats=await page.evaluate(()=>window.__visualTest.performance());
+ assert.ok(sliceWorkerStats.sliceExportWorkerMs>=0,'P10.3 PNG raster sampling must run in an offline Worker');
  await page.locator('#clearVolume').click();
  await page.locator('#volumeSurfaceStyle').selectOption('smooth');
  await page.locator('#volumeContourMode').selectOption('uniform');
@@ -1158,6 +1160,10 @@ try{
   await importPage.waitForFunction(()=>{const p=window.__visualTest.performance();return !p.volumePending&&p.volumeTriangles>0;},null,{timeout:30000});
   const workerHeavy=await importPage.evaluate(()=>window.__visualTest.performance());
   assert.ok(workerHeavy.volumeWorkerMs>=0&&workerHeavy.volumeTriangles>0);
+  assert.ok(workerHeavy.volumePreviews>=1,'P10.3 large grid should have a progressive low-resolution preview');
+  assert.equal(typeof workerHeavy.gpuTimerSupported,'boolean');
+  if(workerHeavy.gpuRenderMs!==null)assert.ok(workerHeavy.gpuRenderMs>=0);
+
   const asyncGeometry=await importPage.evaluate(()=>window.__visualTest.heavySignature(false));
   const syncGeometry=await importPage.evaluate(()=>window.__visualTest.heavySignature(true));
   assert.deepEqual(asyncGeometry,syncGeometry,'Worker and synchronous paths must produce equal world-coordinate surface vertices');
@@ -1170,7 +1176,7 @@ try{
   const finished=await importPage.evaluate(()=>window.__visualTest.performance());
   assert.equal(finished.volumePending,false);
   await fs.writeFile(path.join(artifacts,'package-10-2-volume-worker.json'),
-   JSON.stringify({workerParity,firstHeavy,workerHeavy,cached,cancel,finished},null,2));
+   JSON.stringify({workerParity,firstHeavy,workerHeavy,cached,cancel,finished,sliceWorkerStats},null,2));
 
  }finally{await importContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');

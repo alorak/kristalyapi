@@ -1,5 +1,16 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.3 — Kademeli hacim, çokyüzlü görünüm LOD'u ve GPU profil (bu PR)
+
+| Alan | Uygulama / kabul | Açık sınır |
+| --- | --- | --- |
+| İki aşamalı izoyüzey | ≥200k vokselde Worker önce daha seyrek örneklenmiş bir önizleme gönderir, sonra 10.2 ile bire bir aynı tam yüzeyi üretir; önizleme kaynakları iptal/sıfırlamada temizlenir, önbelleğe yalnız tam sonuç kaydedilir | Yerel hata tahminli adaptif marching-tetrahedra / çok kademeli sürekli LOD henüz yok |
+| Çokyüzlü görünüm LOD'u | Merkez sayısı, yaklaşık ekrandaki boyut ve yüksek/otomatik/hızlı moduna göre dekoratif kenar çizgilerini azaltır; dolgular, alan/hacim, koordinasyon, sayısal hesaplar ve dışa aktarım korunur | Çokyüzlü birleşim ve ConvexGeometry CPU maliyeti mevcut; uzak LOD yalnız çizim çağrısını azaltır |
+| 2B kesit PNG Worker | 768 px Kartezyen veya Miller dilim piksel örnekleme ve renk eşlemesi, kopya veri ve transfer sonucu ile offline Worker'da; eşzamanlı güvenli geri dönüş ve eski çıktı iptali | 192px önizleme, kontur izlemesi, CSV ve nicel analiz hâlâ ana iş parçacığında |
+| GPU ve bellek profili | WebGL2 `EXT_disjoint_timer_query_webgl2` varsa asenkron GPU render süresi ve disjoint kontrolü; Worker önizleme ve PNG süreleri/rapor, gerçek WebGL ve sayısal eşleme testleri | Destek yoksa GPU süresi bilinmiyor; sabit FPS/milisaniye başarı eşiği veya tam VRAM ölçümü yok |
+
+**Sonraki 10.4:** tamamı Worker'da 2B kontur/CSV örnekleme, maliyetli çokyüzlü ConvexGeometry/merging CPU optimizasyonu, adaptif izoyüzey ve daha kapsamlı cihaz/GPU matrisi.
+
 ## Paket 10.2 — Hacimsel Worker, iptal/önbellek ve CPU darboğazları (bu PR)
 
 | Alan | Uygulama / kabul | Açık sınır |

@@ -20,13 +20,21 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Progressive surfaces, polyhedron LOD and GPU timing (Package 10.3)
+
+Large (≥200,000-voxel) uncached isosurfaces now appear first as a **coarse Worker preview**, then are replaced by the numerically unchanged final marching-tetrahedra mesh. Cancellation prevents obsolete previews or results from becoming visible; only completed final meshes enter the existing 32 MiB cache. This is a two-stage preview/refine strategy, **not** adaptive local error-controlled meshing.
+
+Polyhedron **edge outlines** use display-only distance/count/quality LOD for dense scenes; the merged filled faces, centers, coordination neighbors, areas, volumes and exported scientific geometry remain unchanged. **High quality** preserves outlines. The 768×768 2D slice PNG samples its skew Cartesian/Miller plane values and colors in the same offline Worker; 192px interactive previews, contour tracing and scientific slice CSV remain on the main thread. If Worker processing is unavailable, PNG export falls back to the existing synchronous sampler.
+
+Where WebGL2 provides `EXT_disjoint_timer_query_webgl2`, the Performance panel and JSON snapshot report asynchronous hardware **GPU render query time**, sample count and disjoint events, separately from CPU scene generation and frame intervals. Unsupported/disjoint devices explicitly report no valid GPU time. Absolute FPS or GPU millisecond gates are intentionally avoided; these readings depend on drivers, workload, query availability and browser. Existing voxel/surface/atom/polyhedron safety caps remain in place.
+
 ## Volume Worker and CPU profiling (Package 10.2)
 
 For volumetric maps of at least **75,000 voxels**, uncached 3D isosurfaces are triangulated by an **offline, same-origin Web Worker**. The browser keeps the viewer responsive while the numeric marching-tetrahedra work runs in the background. Changing a surface level, dataset or visibility cancels the superseded job; returning to a previously computed surface can reuse a bounded **32 MiB in-memory geometry cache**. Original voxel arrays remain in the editor; only copied buffers are transferred to the Worker. Worker failures safely fall back to synchronous rendering rather than hiding the data.
 
 The Performance panel now separates atom-build, bond-search and polyhedron CPU durations, the main-thread volume preparation time, Worker triangulation duration, cache hits and canceled jobs. The timings depend on hardware/browser conditions and **are not GPU timing queries**. Numerical parity is verified against the existing main-thread isosurface routine, including signed levels, skew grids, periodic boundaries and potential-color interpolation. Real browser tests check cancellation, cache reuse, Gemmi CCP4 parity and Worker operation while offline.
 
-This phase does not change scientific voxel values or volume units, remove the existing 8-surface/triangle budgets, or run 2D slice rendering in a Worker. A dedicated polyhedron LOD, progressive volume chunks and supported GPU timer-query benchmarks remain Package 10.3+.
+Package 10.2 preserved scientific voxel values and units and the 8-surface/triangle budgets; 2D raster export and supported GPU queries arrive in Package 10.3 above.
 
 ## Performance and LOD (Package 10.1)
 
