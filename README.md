@@ -20,6 +20,21 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Independent real-format cross-check (Package 10.8.6)
+
+CI now downloads SHA-256-verified, immutable upstream **CHGCAR, CUBE and XSF**
+fixtures from `pymatgen-core`, runs the actual browser volumetric readers, and
+checks **every voxel, origin, skew Cartesian Å basis and three orthogonal slices**
+against independent **ASE 3.26.0** decoders. The real Li CHGCAR (32³) and
+electron-density CUBE (23×23×24) show **zero misread voxels** under strict
+Float32 tolerances; a small upstream synthetic 2³ XSF tests x-fastest ordering.
+On matching source isolevels, separate tetrahedra/cubes surface areas differ by
+**0.21% CHGCAR**, **8.55% CUBE**, and approximately **0% XSF**. These are
+algorithm comparisons, **not actual VESTA GUI measurements**. The CUBE's nine
+atom records are still **not imported as crystal atoms** by the browser; this
+known structural gap is explicitly flagged. See the
+[P10.8.6 reproducible format and manual VESTA protocol](tests/validation/PACKAGE_10_8_6_STATUS.md).
+
 ## Source sampling and isolevel sensitivity (Package 10.8.5)
 
 A new **CI-only** study examines why sparse real 5wkd Fourier-density
