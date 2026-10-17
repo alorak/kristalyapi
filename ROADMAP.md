@@ -1,5 +1,31 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 11 — Çok alanlı CUBE/XSF ve VESTA ayar güvenliği
+
+- **CUBE çoklu alan:** Voksel içinde sırayla yazılan `NVAL` alanları ve
+  `NATOMS<0` / `DSET_IDS` orbital kimlikleri en fazla beş ayrı hacim
+  katmanı olarak okunur; veri sırası `z` en hızlı değişecek şekildedir.
+  Yanlış başlık, eksik değer, tekrarlanan orbital kimliği ve limit aşımı
+  açıkça reddedilir.
+- **XSF çoklu DATAGRID ve moleküller:** Eş Kartezyen Å çerçeveli
+  adlandırılmış alanlar katmanlara ayrılır; `ATOMS` moleküler koordinatları
+  periyodik olmayan, gizli görüntüleme kutusu içinde korunur. Çok kareli
+  `AXSF` ve farklı ızgara boyutu/çerçevesi bilerek reddedilir.
+- **VESTA setting:** `GROUP` alternatif setting kodu, özel `SYMOP` veya
+  `TRANM` varsa iç simetri işlemleri kesin eşdeğer sayılmaz; dosyada verilen
+  asimetrik atomlar P1 olarak korunup kullanıcı uyarılır. Çok alanlı eşlikçi
+  yoğunluğu tek `IMPORT_DENSITY` referansına sessizce bağlamayız.
+- **Bağımsız kalite kapısı:** SHA-256 sabitlenmiş gerçek hesaplama kaynaklı
+  23×23×24 CUBE'dan türetilen iki kanallı CUBE ve ASE üretimi moleküler
+  çok alanlı XSF, ASE 3.26.0 ile **tüm voksel/Å ekseni/orijin/9 atom**
+  kontrollerinden geçer. İkinci alanlar matematiksel türevdir; yeni deneysel
+  alan veya VESTA GUI karşılaştırması değildir.
+- **Sonraki 12:** Bağ/koordinasyon ve kristal kimyasında bağımsız referans
+  korpusları, karışık doluluk ve disorder verileri, BVS parametre kapsamı;
+  özel VESTA setting dönüşümleri için doğrulanmış simetri eşlemesi ayrı iş.
+
+[Paket 11 kapsam, test ve sınırlar](tests/validation/PACKAGE_11_STATUS.md).
+
 ## Paket 10.9 — CUBE atomları, bağımsız XSF dönüşümü ve Worker A/B
 
 - **CUBE atomları:** Atom numarası, nükleer yük ve Bohr/Å koordinatları

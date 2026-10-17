@@ -157,6 +157,32 @@ test('P9.3 VESTA malformed/sparse input fails safely, unsupported settings produ
  assert.equal(noVoxels.vesta.surfaces.length,2);
  assert.ok(!('values' in noVoxels),'VESTA text must not fabricate voxel data');
 });
+test('P11 VESTA explicit origin/setting transforms do not fabricate standard symmetry',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'fixtures','package9-3-signed.vesta'),'utf8');
+ const p2=src.replace('GROUP\n 1 1 P 1','GROUP\n 2 1 P -1');
+ const standard=api.vestaProjectData(p2);
+ assert.equal(standard.sgNumber,2);
+ assert.equal(standard.symmetryEnabled,true);
+ assert.equal(standard.vesta.settingProvenance.groupNumber,2);
+ assert.equal(standard.vesta.settingProvenance.groupSettingCode,'1');
+ assert.equal(standard.vesta.settingProvenance.hasSymop,true);
+ assert.equal(standard.vesta.settingProvenance.nonIdentitySymop,false);
+ const originShift=p2.replace('SYMOP\n 0.000000','SYMOP\n 0.250000');
+ const shifted=api.vestaProjectData(originShift);
+ assert.equal(shifted.sgNumber,1,'unknown VESTA origin change cannot use an inferred P-1 setting');
+ assert.equal(shifted.symmetryEnabled,false);
+ assert.equal(shifted.vesta.settingProvenance.nonIdentitySymop,true);
+ assert.match(shifted.warning,/nonstandard setting/);
+ const transformed=api.vestaProjectData(p2.replace('CELLP','TRANM\n 1 0 0 0 1 0 0 0 1\nCELLP'));
+ assert.equal(transformed.symmetryEnabled,false);
+ assert.equal(transformed.vesta.settingProvenance.hasTranm,true);
+ assert.deepEqual(transformed.sites.map(s=>[s.x,s.y,s.z]),standard.sites.map(s=>[s.x,s.y,s.z]));
+ const alternate=api.vestaProjectData(p2.replace('GROUP\n 2 1 P -1','GROUP\n 2 2 P -1'));
+ assert.equal(alternate.sgNumber,1,'unverified GROUP setting 2 cannot invoke preferred setting 1');
+ assert.equal(alternate.symmetryEnabled,false);
+ assert.equal(alternate.vesta.settingProvenance.groupSettingCode,'2');
+ assert.match(alternate.warning,/nonstandard setting/);
+});
 
 test('fractional x/y/z bounds include negative periodic images without unbounded extents',()=>{
  const input=[[-.1,1.1],[0,1],[0,1]];
@@ -1290,7 +1316,72 @@ test('P10.9 XSF accepts the real ASE DATAGRID_3Dgrid#1 field label',()=>{
  const g=api.readXsf(txt);
  assert.equal(g.values[api.gridIndex(g,1,0,0)],1);
  assert.deepEqual(Array.from(g.origin),[-2,1,0]);
- assert.equal(g.crystal,undefined,'nonperiodic ATOMS must not invent a cell');
+ assert.equal(g.crystal.nonPeriodic,true,'ATOMS must not become a crystallographic cell');
+ assert.equal(g.crystal.displayCell,false);
+ const site=g.crystal.sites[0],c=g.crystal.cell,o=g.crystal.nonPeriodicOrigin;
+ assert.deepEqual([site.x*c.a+o[0],site.y*c.b+o[1],site.z*c.c+o[2]],[0,0,0]);
+});
+test('P11 CUBE positive NVAL channels remain voxel-interleaved and unit-compatible',()=>{
+ const lines=['NVAL density + reference','Cartesian frame in Bohr',
+  '1 0 0 0 2','2 1 0 0','2 0 1 0','2 0 0 1','6 6 0 0 0',
+  ...Array.from({length:8},(_,i)=>String(i)+' '+String(-10-i))];
+ const g=api.readCube(lines.join('\n'));
+ assert.equal(g.volumeComponents.length,1);
+ assert.equal(g.volumeComponents[0].label,'Alan 2');
+ for(let i=0;i<8;i++){
+  approx(g.values[i],i);
+  approx(g.volumeComponents[0].grid.values[i],-10-i);
+ }
+ const asDensity=api.interpretVolumeUnits(g,'density-bohr');
+ approx(asDensity.values[1],1/.529177210903**3,1e-4);
+ approx(asDensity.volumeComponents[0].grid.values[1],-11/.529177210903**3,1e-4);
+ assert.deepEqual(Array.from(g.atoms[0].position),[0,0,0]);
+});
+test('P11 CUBE negative NATOMS DSET_IDS across lines preserves orbital identities',()=>{
+ const head=['Two interleaved orbitals','IDs 17 and 31, not a crystal cell',
+  '-1 -1 0 0','-2 1 0 0','-2 0 1 0','-2 0 0 1','8 8 0 0 0'];
+ const data=Array.from({length:8},(_,i)=>String(i/4)+' '+String(1-i/4));
+ const g=api.readCube([...head,'2 17','31',...data].join('\n'));
+ assert.deepEqual(Array.from(g.datasetIds),[17,31]);
+ assert.equal(g.volumeComponents[0].label,'Orbital 31');
+ assert.equal(g.crystal.nonPeriodic,true);
+ assert.equal(g.values[api.gridIndex(g,1,0,0)],1);
+ assert.equal(g.volumeComponents[0].grid.values[api.gridIndex(g,1,0,0)],0);
+ assert.deepEqual(Array.from(g.origin),[-1,0,0]);
+ assert.throws(()=>api.readCube([...head,'2 17 17',...data].join('\n')),/tekrarlı/);
+ assert.throws(()=>api.readCube([...head,'6 1 2 3 4 5 6',...data].join('\n')),/beş/);
+ assert.throws(()=>api.readCube([...head,'2 17 31',...data.slice(0,7)].join('\n')),/veri sayısı/);
+ assert.throws(()=>api.readCube([...head.slice(0,2),'-1 0 0 0 2',...head.slice(3),
+  '2 17 31',...data].join('\n')),/NVAL ve DSET_IDS/);
+});
+test('P11 XSF multi DATAGRID and ATOMS share the unmodified Cartesian Å frame',()=>{
+ const grid=(id,origin,values)=>[
+  'BEGIN_DATAGRID_3D_'+id,'2 2 2',origin,'3 0 0','0 2 0','0 0 1',
+  values.join(' '),'END_DATAGRID_3D'];
+ const source=['MOLECULE','ATOMS','8 -2 1 0','1 -1 1 0',
+  'BEGIN_BLOCK_DATAGRID_3D','density',
+  ...grid('charge','-3 0 0',[0,1,2,3,4,5,6,7]),
+  ...grid('potential','-3 0 0',[10,11,12,13,14,15,16,17]),
+  'END_BLOCK_DATAGRID_3D'].join('\n');
+ const g=api.readXsf(source);
+ assert.equal(g.crystal.nonPeriodic,true);
+ assert.equal(g.crystal.displayCell,false);
+ assert.equal(g.crystal.sites.length,2);
+ const c=g.crystal.cell,o=g.crystal.nonPeriodicOrigin;
+ const world=g.crystal.sites.map(s=>[s.x*c.a+o[0],s.y*c.b+o[1],s.z*c.c+o[2]]);
+ world[0].forEach((v,i)=>approx(v,[-2,1,0][i]));
+ world[1].forEach((v,i)=>approx(v,[-1,1,0][i]));
+ assert.equal(g.fieldLabel,'charge');
+ assert.equal(g.volumeComponents.length,1);
+ assert.equal(g.volumeComponents[0].label,'potential');
+ assert.equal(g.values[api.gridIndex(g,1,0,0)],1);
+ assert.equal(g.volumeComponents[0].grid.values[api.gridIndex(g,1,0,0)],11);
+ const pot=api.interpretVolumeUnits(g,'potential-hartree');
+ approx(pot.volumeComponents[0].grid.values[0],10*27.211386245988,1e-4);
+ assert.throws(()=>api.readXsf(source.replace('BEGIN_DATAGRID_3D_potential\n2 2 2\n-3 0 0',
+  'BEGIN_DATAGRID_3D_potential\n2 2 2\n-2 0 0')),/çerçevesi uyuşmuyor/);
+ assert.throws(()=>api.readXsf(source.replace('10 11 12 13 14 15 16 17','10 11 12')),/veri sayısı/);
+ assert.throws(()=>api.readXsf('ANIMSTEPS 2\n'+source),/animasyonları/);
 });
 test('CHGCAR parses x-fastest VASP storage and correct charge density scaling',()=>{
  const data=['Grid example','1.0','2 0 0','0 2 0','0 0 2','H','1','Direct','0 0 0',

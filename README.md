@@ -20,6 +20,26 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Multi-field CUBE/XSF and safer VESTA settings (Package 11)
+
+CUBE files can now load **up to five interleaved fields per voxel** through
+`NVAL`, or orbital-labelled channels through the negative-`NATOMS` / `DSET_IDS`
+form. Multiple compatible `BEGIN_DATAGRID_3D` sections in XSF become separately
+selectable, named volume layers. XSF molecular `ATOMS` records retain their
+original Cartesian Å positions in a hidden nonperiodic display box; they are
+not incorrectly interpreted as fractional crystal coordinates. Every volume
+layer still uses the shared five-layer limit, and ambiguous multi-field
+potential/companion files are explicitly refused.
+
+When importing a `.vesta` project, unknown `GROUP` settings or custom
+`SYMOP`/`TRANM` transforms no longer trigger unverified standard-setting
+symmetry expansion. Listed atomic sites remain as P1 with a warning; VESTA
+setting equivalence is **not claimed**. An independent ASE 3.26.0 gate checks
+all **12,696 voxels in each field**, the physical frame and all nine atoms,
+using a SHA-pinned real CUBE and clearly labelled *derived* extra fields.
+Actual VESTA GUI screenshots have still not been compared.
+[P11 protocol and open limits](tests/validation/PACKAGE_11_STATUS.md).
+
 ## CUBE atom frame and real-field XSF validation (Package 10.9)
 
 When **Use file atoms** is checked, CUBE atom positions now load in the

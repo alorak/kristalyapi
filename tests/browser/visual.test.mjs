@@ -43,6 +43,10 @@ window.__visualTest={
   nonPeriodic:state.nonPeriodic,offset:state.nonPeriodicOrigin,cellVisible:state.cellVisible,
   densityOrigin:densityGrid.origin,atomWorld:atomData.map(item=>item.pos.toArray()),
   virtualCellVolumeText:document.getElementById('infoVolume').textContent}:null,
+ volumetricFields:()=>({names:volumeDatasets.map(item=>item.name),
+  values:volumeDatasets.map(item=>[item.grid.values[0],item.grid.values[1],item.grid.values[63]]),
+  active:activeVolumeIndex,kind:densityGrid?.kind,nonPeriodic:state.nonPeriodic,
+  worldAtoms:atomData.map(item=>item.pos.toArray())}),
  snapshotStructure:()=>JSON.parse(JSON.stringify(state)),
  restoreStructure:snapshot=>{state=snapshot;syncControls();build();fit();},
  vestaImport:()=>({name:state.name,sites:state.sites.length,cell:state.cell,bounds:state.bounds,
@@ -646,6 +650,40 @@ try{
  // The rest of this long smoke test must use its original crystallographic
  // state. Clearing an imported density alone does not replace CUBE's
  // nonperiodic display structure; leaving it active changes later Moyo tests.
+ await page.evaluate(snapshot=>window.__visualTest.restoreStructure(snapshot),cubePreviousStructure);
+ // P11: interleaved NVAL CUBE becomes two independently selectable layers.
+ const twoCube=['P11 two-channel cube','interleaved per voxel',
+  '2 -2 1 0 2','4 1 0 0','4 0 1 0','4 0 0 1',
+  '8 0 -1 0 0','1 0 0 0 0',
+  cubeValues.flatMap(value=>[value,value*.25]).join(' ')].join('\n');
+ await page.locator('#volumeFile').setInputFiles({name:'two-fields.cube',mimeType:'text/plain',buffer:Buffer.from(twoCube)});
+ await page.waitForFunction(()=>window.__visualTest.volumetricFields().names.length===2,null,{timeout:10000});
+ let multiVisual=await page.evaluate(()=>window.__visualTest.volumetricFields());
+ assert.ok(multiVisual.names[1].includes('Alan 2'));
+ assert.ok(Math.abs(multiVisual.values[0][1]*.25-multiVisual.values[1][1])<1e-6);
+ await page.locator('#volumeActiveDataset').selectOption('1');
+ multiVisual=await page.evaluate(()=>window.__visualTest.volumetricFields());
+ assert.equal(multiVisual.active,1,'second CUBE channel should be selected');
+ assert.equal(multiVisual.kind,'CUBE');
+ await page.locator('#clearVolume').click();
+ await page.evaluate(snapshot=>window.__visualTest.restoreStructure(snapshot),cubePreviousStructure);
+ // P11: ATOMS-only molecular XSF, two independently named DATAGRIDs.
+ const molecularXsf=['ATOMS','8 -1 0 0','1 0 0 0','BEGIN_BLOCK_DATAGRID_3D',
+  'electron_channels','BEGIN_DATAGRID_3D_density','4 4 4','-2 1 0',
+  '3 0 0','0 3 0','0 0 3',cubeValues.join(' '),'END_DATAGRID_3D',
+  'BEGIN_DATAGRID_3D_delta','4 4 4','-2 1 0','3 0 0','0 3 0','0 0 3',
+  cubeValues.map(v=>-.5*v).join(' '),'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ await page.locator('#volumeFile').setInputFiles({name:'molecular-two.xsf',mimeType:'text/plain',buffer:Buffer.from(molecularXsf)});
+ await page.waitForFunction(()=>window.__visualTest.volumetricFields().names.length===2,null,{timeout:10000});
+ multiVisual=await page.evaluate(()=>window.__visualTest.volumetricFields());
+ assert.equal(multiVisual.nonPeriodic,true);
+ assert.equal(multiVisual.worldAtoms.length,2);
+ assert.ok(Math.abs(multiVisual.worldAtoms[0][0]+1)<1e-6,'XSF ATOMS must retain original Cartesian Å');
+ assert.ok(multiVisual.names[0].includes('density')&&multiVisual.names[1].includes('delta'));
+ assert.ok(Math.abs(multiVisual.values[0][1]*-.5-multiVisual.values[1][1])<1e-6);
+ await page.locator('#volumeActiveDataset').selectOption('1');
+ assert.equal((await page.evaluate(()=>window.__visualTest.volumetricFields())).active,1);
+ await page.locator('#clearVolume').click();
  await page.evaluate(snapshot=>window.__visualTest.restoreStructure(snapshot),cubePreviousStructure);
  // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
  const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
