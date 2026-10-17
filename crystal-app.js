@@ -1685,8 +1685,11 @@ function polyhedralDistortionMetrics(environment,geometry=null,hull=null){
   const unit=normal.map(v=>v/norm),plane=a.reduce((sum,v,j)=>sum+v*unit[j],0);
   // Coplanar triangles indicate a non-triangular face (e.g. a prism);
   // its triangulation diagonals are not real polyhedron edges.
-  if(faces.some(f=>Math.abs(f.unit.reduce((sum,v,j)=>sum+v*unit[j],0))>1-1e-7&&
-    Math.abs(Math.abs(f.plane)-Math.abs(plane))<1e-5*Math.max(1,scale)))return result;
+  if(faces.some(f=>{
+   const direction=f.unit.reduce((sum,v,j)=>sum+v*unit[j],0);
+   return direction>1-1e-7&&Math.abs(f.plane-plane)<1e-5*Math.max(1,scale)||
+    direction<-(1-1e-7)&&Math.abs(f.plane+plane)<1e-5*Math.max(1,scale);
+  }))return result;
   faces.push({unit,plane});
   for(let k=0;k<3;k++)edges.add([ids[k],ids[(k+1)%3]].sort((x,y)=>x-y).join('/'));
  }
@@ -3890,11 +3893,13 @@ function renderCoordinationSummary(){
   angle.textContent='Komşu–merkez–komşu açı aralığı: '+environment.angleMin.toFixed(1)+'–'+environment.angleMax.toFixed(1)+'°';
   angle.style.marginTop='5px';node.append(angle);
  }
+ let distortion=environment.vertexCount?polyhedralDistortionMetrics(environment):null;
  if(environment.vertexCount>=4){
   let geometry;
   try{
    geometry=new ConvexGeometry(environment.vertices.map(v=>new THREE.Vector3(...v.xyz)));
    const shape=coordinationHullMetrics(geometry);
+   distortion=polyhedralDistortionMetrics(environment,geometry,shape);
    const readout=document.createElement('div');
    readout.textContent='Koordinasyon çokyüzlüsü: '+shape.volume.toFixed(3)+' Å³ · yüzey '+shape.area.toFixed(3)+' Å²';
    readout.style.marginTop='5px';node.append(readout);
@@ -3903,6 +3908,28 @@ function renderCoordinationSummary(){
    warning.textContent='Kapalı 3B çokyüzlü yok (düzlemsel veya dejenere komşuluk).';
    warning.className='muted';warning.style.marginTop='5px';node.append(warning);
   }finally{geometry?.dispose();}
+ }
+ if(distortion&&shell.length<24){
+  const readout=document.createElement('div');
+  readout.textContent='Ortalama bağ: '+distortion.meanBondLength.toFixed(4)+' Å · Baur D: '+
+   distortion.distortionIndex.toFixed(5)+' · Hoppe ECoN: '+distortion.econ.toFixed(4);
+  readout.style.marginTop='5px';node.append(readout);
+  if(distortion.polyhedronType){
+   const regular=document.createElement('div');
+   regular.textContent=(distortion.polyhedronType==='octahedron'?'Oktahedral':'Tetrahedral')+
+    ' topoloji · Quadratic elongation: '+distortion.quadraticElongation.toFixed(5)+
+    ' · Bağ açısı varyansı: '+distortion.bondAngleVariance.toFixed(3)+' derece²';
+   regular.style.marginTop='5px';node.append(regular);
+  }
+  if(distortion.occupancyCaveat){
+   const warning=document.createElement('div');warning.className='muted';
+   warning.textContent='ECoN ve D yalnız eşsiz geometrik köşeler üzerinden hesaplanır; kısmi/alternatif doluluk ve eşzamanlı yerleşim olasılıkları hesaba katılmaz.';
+   node.append(warning);
+  }
+ }else if(shell.length===24){
+  const warning=document.createElement('div');warning.className='muted';
+  warning.textContent='Komşular ilk 24 ile sınırlandırıldı; D/ECoN eksik bir kabuktan güvenilir hesaplanamaz.';
+  node.append(warning);
  }
  const limited=shell.slice(0,12);
  if(limited.length){const sample=document.createElement('div');sample.textContent='En kısa uzaklıklar: '+limited.map(x=>x.element+' '+x.distance.toFixed(3)+' Å').join(' · ');sample.style.marginTop='5px';node.append(sample);}
