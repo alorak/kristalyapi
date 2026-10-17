@@ -301,3 +301,17 @@ test('P7.9 BVS zero-occupancy and invalid input do not emit phantom bonds',()=>{
  assert.equal(absent.count,0);
  assert.throws(()=>ctx.bvs([atom('Na',0,0,0),atom('Cl',.5,0,0,1.5)],0,B,'Na1-Cl',3.5),/doluluğu/);
 });
+
+
+test('P7.9 expected equal bond length uses formal charge and occupancy-weighted neighbor count',()=>{
+ const B=[[5.64,0,0],[0,5.64,0],[0,0,5.64]];
+ const sites=[atom('Na',0,0,0),atom('Cl',.5,0,0,.5)];
+ const result=ctx.bvs(sites,0,B,'Na1-Cl',3.5);
+ assert.equal(result.count,2);
+ assert.ok(Math.abs(result.weightedCount-1)<1e-12);
+ assert.ok(Math.abs(result.expectedBondLength-2.15)<1e-12);
+ const full=ctx.bvs([atom('Na',0,0,0),atom('Cl',.5,0,0)],0,B,'Na1-Cl',3.5);
+ assert.ok(Math.abs(full.expectedBondLength-(2.15-.37*Math.log(1/2)))<1e-12);
+ const empty=ctx.bvs([atom('Na',0,0,0),atom('Cl',.5,0,0,0)],0,B,'Na1-Cl',3.5);
+ assert.equal(empty.expectedBondLength,null);
+});
