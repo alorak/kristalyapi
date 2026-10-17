@@ -728,7 +728,12 @@ try{
  assert.equal(await page.locator('#xrdMapIndex').count(),0);
  assert.equal(await page.locator('#xrdMapResolution').getAttribute('min'),'0.35');
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
- assert.equal(await page.locator('#fcfMapKind option').count(),3);
+ assert.deepEqual(await page.locator('#fcfMapKind option').evaluateAll(options=>
+  options.map(opt=>opt.value)),
+  ['difference','observed','twice-observed','weighted-main','weighted-difference']);
+ assert.equal(await page.locator('#mtzFreeExclude option').count(),3);
+ assert.equal(await page.locator('#mtzFomMode option').count(),2);
+ assert.equal(await page.locator('#mtzMinSnr').getAttribute('min'),'0');
  assert.equal(await page.locator('#fcfScaleMode option').count(),2);
 
  // Real user path: restore the XRD drawer after library/workspace navigation
