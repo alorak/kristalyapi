@@ -43,6 +43,8 @@ window.__visualTest={
   nonPeriodic:state.nonPeriodic,offset:state.nonPeriodicOrigin,cellVisible:state.cellVisible,
   densityOrigin:densityGrid.origin,atomWorld:atomData.map(item=>item.pos.toArray()),
   virtualCellVolumeText:document.getElementById('infoVolume').textContent}:null,
+ snapshotStructure:()=>JSON.parse(JSON.stringify(state)),
+ restoreStructure:snapshot=>{state=snapshot;syncControls();build();fit();},
  vestaImport:()=>({name:state.name,sites:state.sites.length,cell:state.cell,bounds:state.bounds,
   colors:state.sites.map(site=>site.visualColor),warning:state.warning,attached:!!densityGrid}),
  volumeVisual:()=>({isoCount:activeVolumeDataset()?.layers.length,style:volumeView.surfaceStyle,
@@ -621,6 +623,7 @@ try{
  await page.locator('#volumeContourMode').selectOption('uniform');
  await page.locator('#volumeContourStyle').selectOption('standard');
  await page.locator('#volumeContours').uncheck();
+ const cubePreviousStructure=await page.evaluate(()=>window.__visualTest.snapshotStructure());
  // P10.9: native CUBE Å atom coordinates remain aligned with the density
  // even when its origin lies outside a padded nonperiodic display box.
  const cubeValues=Array.from({length:64},(_,i)=>Math.exp(-((i%4-1.5)**2+(.5-Math.floor(i/4)%4)**2)));
@@ -640,6 +643,10 @@ try{
  assert.deepEqual(cubeSaved.nonPeriodicOrigin.map(Number),cubeVisual.offset.map(Number));
  await save(page,'29-cube-atoms-density-alignment',metrics);
  await page.locator('#clearVolume').click();
+ // The rest of this long smoke test must use its original crystallographic
+ // state. Clearing an imported density alone does not replace CUBE's
+ // nonperiodic display structure; leaving it active changes later Moyo tests.
+ await page.evaluate(snapshot=>window.__visualTest.restoreStructure(snapshot),cubePreviousStructure);
  // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
  const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
   values.push(Math.exp(-((i-1.5)**2+(j-1.5)**2+(k-1.5)**2)));
