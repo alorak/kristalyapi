@@ -2506,3 +2506,53 @@ test('P7.6 CIF roundtrip retains partial occupancies and anisotropic ADP',()=>{
  assert.ok(Array.isArray(second.sites[0].adp));
  first.sites[0].adp.forEach((value,i)=>approx(second.sites[0].adp[i],value,1e-6));
 });
+
+
+test('P7.7 cubic symmetry rotates anisotropic ADP Uij with analytic component signs',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ // CIF Uij order: U11,U22,U33,U23,U13,U12.
+ const u=[.045,.025,.015,.002,-.003,.004];
+ const rotated=api.adpRotateBySymmetry(u,cell,'y,-x,z');
+ const expected=[.025,.045,.015,.003,.002,-.004];
+ expected.forEach((v,i)=>approx(rotated[i],v,1e-10));
+ let full=u;
+ for(let i=0;i<4;i++)full=api.adpRotateBySymmetry(full,cell,'y,-x,z');
+ u.forEach((v,i)=>approx(full[i],v,1e-10));
+});
+
+test('P7.7 inversion, translation and monoclinic twofold obey tensor rules',()=>{
+ const triclinic={a:6,b:7,c:8,alpha:76,beta:84,gamma:101};
+ const u=[.04,.028,.02,.003,-.002,.004];
+ for(const op of ['-x,-y,-z','x+1/2,y,z']){
+  const next=api.adpRotateBySymmetry(u,triclinic,op);
+  u.forEach((v,i)=>approx(next[i],v,1e-9));
+ }
+ const monoclinic={a:5,b:6,c:7,alpha:90,beta:104,gamma:90};
+ const rotated=api.adpRotateBySymmetry(u,monoclinic,'-x,y,-z');
+ const expected=[u[0],u[1],u[2],-u[3],u[4],-u[5]];
+ expected.forEach((v,i)=>approx(rotated[i],v,1e-9));
+});
+
+test('P7.7 symmetry preserves Cartesian ADP ellipsoid spectrum in hexagonal lattice',()=>{
+ const cell={a:5,b:5,c:8,alpha:90,beta:90,gamma:120};
+ const u=[.04,.035,.025,.002,-.003,.004];
+ const before=api.adpEigen(api.adpToCartesian(u,cell)).values.slice().sort((a,b)=>a-b);
+ const site={symbol:'Si',label:'Si1',x:.173,y:.271,z:.391,occupancy:.75,adp:u};
+ const expanded=api.expandSites([site],'143',16,cell);
+ assert.equal(expanded.length,3);
+ for(const atom of expanded){
+  const after=api.adpEigen(api.adpToCartesian(atom.adp,cell)).values.slice().sort((a,b)=>a-b);
+  before.forEach((v,i)=>approx(after[i],v,1e-8));
+  approx(atom.occupancy,.75,1e-12);
+  const e=api.adpEllipsoid(atom,cell,90);
+  assert.ok(e.scales.every(n=>Number.isFinite(n)&&n>0));
+ }
+});
+
+test('P7.7 rejects symmetry operations incompatible with the supplied cell',()=>{
+ const orthorhombic={a:4,b:5,c:6,alpha:90,beta:90,gamma:90};
+ const u=[.04,.025,.03,.002,.001,.003];
+ assert.throws(()=>api.adpRotateBySymmetry(u,orthorhombic,'y,-x,z'),/metriğiyle uyumsuz/);
+ assert.throws(()=>api.expandSites(
+  [{symbol:'Si',x:.17,y:.23,z:.31,adp:u}], '143',16,orthorhombic),/metriğiyle uyumsuz/);
+});
