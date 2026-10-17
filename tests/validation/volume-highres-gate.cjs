@@ -148,13 +148,26 @@ function metrics(grid,level,full){
 function realMap(filename){
  const native=parse.ccp4Read(fs.readFileSync(filename),path.basename(filename));
  assert.ok(native.dims.every(n=>n>=2)&&native.values.length<=2500000);
- const sorted=Array.from(native.values).sort((a,b)=>a-b);
  const negative=/DELFWT/i.test(path.basename(filename));
  const q=negative?.01:.99;
- const idx=Math.floor(sorted.length*q),level=(sorted[idx]+sorted[idx+1])/2;
- assert.ok(level>native.min&&level<native.max);
- const series=[32,48,64].map(n=>{
-  const grid=gridLike(native,n);
+ const grids=[32,48,64].map(n=>gridLike(native,n));
+ // A marching-tetrahedra intersection coinciding *exactly* with any node
+ // can yield a zero-area triangle. Select an actual scalar gap near the
+ // requested percentile across SOURCE and ALL sampled research grids.
+ // This fixes an ill-posed test level; it does not filter faulty triangles.
+ const sorted=Array.from(native.values);
+ for(const grid of grids)sorted.push(...grid.values);
+ sorted.sort((a,b)=>a-b);
+ const target=Math.floor(sorted.length*q),radius=Math.max(8,Math.floor(sorted.length*.002));
+ let bestGap=-1,level=NaN;
+ for(let index=Math.max(0,target-radius);index<Math.min(sorted.length-1,target+radius);index++){
+  const low=sorted[index],high=sorted[index+1],gap=high-low;
+  if(gap>bestGap&&gap>0){bestGap=gap;level=low+gap*.5;}
+ }
+ assert.ok(Number.isFinite(level)&&level>native.min&&level<native.max,
+  'experimental threshold must fall between distinct source samples');
+ const series=grids.map((grid,i)=>{
+  const n=[32,48,64][i];
   const production=metrics(grid,level,false),full=metrics(grid,level,true);
   assert.ok(full.stride===1,'research full-grid comparison was silently decimated');
   if(n===32)assert.equal(production.stride,full.stride);
@@ -168,7 +181,7 @@ function realMap(filename){
    relativeOccupiedVolumeChange:relative(earlier.occupiedVoxelVolumeA3,later.occupiedVoxelVolumeA3)});
  }
  return {source:path.basename(filename),sourceShape:native.dims,
-  periodic:!!native.periodic,quantile:q,isovalue:level,scalarUnits:'unknown',
+  periodic:!!native.periodic,targetQuantile:q,scalarGap:bestGap,isovalue:level,scalarUnits:'unknown',
   series,differences,
   resolutionSensitivityAlert:Math.max(...differences.map(x=>x.relativeAreaChange))>.1,
   note:'Absolute differences are observed resolution sensitivity, not an independent physical truth or global Hausdorff bound.'};
