@@ -39,6 +39,10 @@ window.__visualTest={
   return {nonPeriodic:water.nonPeriodic,edges:graph.edges.length,components:graph.components.length,cycleRank:graph.cycleRank};},
  ccp4:()=>densityGrid&&({kind:densityGrid.kind,dims:densityGrid.dims,periodic:densityGrid.periodic,
   mapping:densityGrid.ccp4?.mapping,starts:densityGrid.ccp4?.starts,quantity:densityGrid.quantity}),
+ cubeAtoms:()=>densityGrid?.kind==='CUBE'?{
+  nonPeriodic:state.nonPeriodic,offset:state.nonPeriodicOrigin,cellVisible:state.cellVisible,
+  densityOrigin:densityGrid.origin,atomWorld:atomData.map(item=>item.pos.toArray()),
+  virtualCellVolumeText:document.getElementById('infoVolume').textContent}:null,
  vestaImport:()=>({name:state.name,sites:state.sites.length,cell:state.cell,bounds:state.bounds,
   colors:state.sites.map(site=>site.visualColor),warning:state.warning,attached:!!densityGrid}),
  volumeVisual:()=>({isoCount:activeVolumeDataset()?.layers.length,style:volumeView.surfaceStyle,
@@ -617,6 +621,25 @@ try{
  await page.locator('#volumeContourMode').selectOption('uniform');
  await page.locator('#volumeContourStyle').selectOption('standard');
  await page.locator('#volumeContours').uncheck();
+ // P10.9: native CUBE Å atom coordinates remain aligned with the density
+ // even when its origin lies outside a padded nonperiodic display box.
+ const cubeValues=Array.from({length:64},(_,i)=>Math.exp(-((i%4-1.5)**2+(.5-Math.floor(i/4)%4)**2)));
+ const cube=['P10.9 molecule density','X outer Y middle Z inner',
+  '2 -2 1 0','4 1 0 0','4 0 1 0','4 0 0 1',
+  '8 0 -1 0 0','1 0 0 0 0',cubeValues.join(' ')].join('\n');
+ await page.locator('#volumeFile').setInputFiles({name:'atoms.cube',mimeType:'text/plain',buffer:Buffer.from(cube)});
+ await page.waitForFunction(()=>window.__visualTest.cubeAtoms()?.atomWorld.length===2,null,{timeout:10000});
+ const cubeVisual=await page.evaluate(()=>window.__visualTest.cubeAtoms());
+ assert.equal(cubeVisual.nonPeriodic,true);
+ assert.equal(cubeVisual.cellVisible,false);
+ assert.match(cubeVisual.virtualCellVolumeText,/görüntüleme kutusu/);
+ assert.ok(Math.abs(cubeVisual.atomWorld[0][0]+.529177210903)<1e-6,'O position remains raw Cartesian Å');
+ assert.ok(Math.abs(cubeVisual.atomWorld[1][0])<1e-6,'H position remains raw Cartesian Å');
+ const cubeSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('kristalyapi.last-structure.v2')));
+ assert.equal(cubeSaved.nonPeriodic,true);
+ assert.deepEqual(cubeSaved.nonPeriodicOrigin.map(Number),cubeVisual.offset.map(Number));
+ await save(page,'29-cube-atoms-density-alignment',metrics);
+ await page.locator('#clearVolume').click();
  // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
  const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
   values.push(Math.exp(-((i-1.5)**2+(j-1.5)**2+(k-1.5)**2)));
