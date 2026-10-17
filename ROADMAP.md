@@ -1,5 +1,16 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.4 — Çokyüzlü şablon önbelleği, 2B kontur/CSV Worker ve görsel önizleme seçimi (bu PR)
+
+| Alan | Uygulama / kabul | Açık sınır |
+| --- | --- | --- |
+| Çokyüzlü CPU üretimi | Her eşsiz asimetrik merkez için tek yerel ConvexGeometry + EdgesGeometry; kopyalarda yalnız öteleme ve renk; BaTiO₃ 125 oktahedronda 1 şablon + 124 yeniden kullanım, bağımsız hacim/alan testi | Tam BufferGeometry birleştirme hâlâ CPU'da; dinamik GPU instancing sonraki iş |
+| PNG kontur Worker | 768² pikselde marching-squares işaretli/eşik modları, eyer noktası ve geçersiz Miller delikleri Worker'da; sayısal parite testleri | 192px etkileşimli kontur önizlemesi ana iş parçacığında |
+| CSV Worker | 64×64 kesit sayılarını, Kartezyen Å koordinatlarını ve özet istatistikleri bağımsız Worker'da üretip transfer; iptal ve fallback | 128px çizgi profili ve 32px küçük panel kesiti ana iş parçacığında |
+| Kaba izoyüzey | 6³ üst sınırlı eşik-kesişim yoklamasıyla iki küresel önizleme stride'ından biri seçilir; tam nihai geometri algoritması değişmez | Uzaysal adaptif, watertight ve hata kontrollü ağ henüz uygulanmadı; önizleme bilimsel harita değildir |
+
+**Sonraki 10.5:** gerçek yerel adaptif izoyüzey için topolojik geçiş/hata tahmini, geniş örnek dosya kümesi; çokyüzlü GPU instancing; etkileşimli 2B kesit ve çizgi profili Worker desteği; cihaz bazlı gerçek VRAM/bellek ölçümü.
+
 ## Paket 10.3 — Kademeli hacim, çokyüzlü görünüm LOD'u ve GPU profil (bu PR)
 
 | Alan | Uygulama / kabul | Açık sınır |
