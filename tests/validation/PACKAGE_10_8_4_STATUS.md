@@ -36,6 +36,21 @@ python -m pip install gemmi==0.7.5 numpy==2.1.3 scipy==1.15.3 scikit-image==0.25
 python tests/validation/volume_independent_reference.py
 ```
 
+## Measured result (PR CI run 39061733464)
+
+All values below compare 48³→64³ **full-grid** native/independent surface areas at a shared threshold and shared Float32 voxel field:
+
+| Source and quantile | Native Δarea 48→64 | Independent Δarea 48→64 | Native/independent 64³ area difference | 64³ snapped components: native/ref |
+| --- | ---: | ---: | ---: | ---: |
+| 5i55 partial CCP4, q=.990 | 5.84% | 5.88% | 0.09% | 3 / 3 |
+| 5i55 partial CCP4, q=.995 | 9.88% | 9.92% | 0.22% | 4 / 4 |
+| 5wkd weighted FWT/PHWT, q=.990 | **62.33%** | **62.42%** | 4.58% | 68 / 72 |
+| 5wkd weighted FWT/PHWT, q=.995 | **87.72%** | **88.01%** | 6.29% | 30 / 30 |
+| 5wkd signed DELFWT/PHDELWT, q=.005 | **47.21%** | **47.20%** | 1.72% | 32 / 32 |
+| 5wkd signed DELFWT/PHDELWT, q=.010 | **52.71%** | **53.01%** | 1.79% | 64 / 66 |
+
+**Interpretation:** at identical input grids and scalar levels, two independent triangulation algorithms show nearly identical *changes between grid sizes*, but nonidentical absolute areas and fragment counts. This is strong evidence that the very large 5wkd 48→64 area changes are largely **sampled-field/resolution/effective feature-scale** sensitivity rather than exclusively a marching-tetrahedra artifact. It is **not** a proof that the FWT source map is physically converged, nor evidence that a different algorithm fixes it. For 5wkd FWT at q=.995 the observed change is almost 88% in both methods; no automatic high-accuracy switch is scientifically justified yet.
+
 ## Remaining research
 
 The independent extractor is **not** a gold-standard physical surface. Robust accuracy claims would require known analytic fields and point-to-triangle distances, voxel/surface error bounds, more independent real samples (including CHGCAR/CUBE/XSF), and source-map physical-quantity/unit provenance. An optional “high accuracy” UI mode is **deferred** until error vs performance is quantified and the 75k triangle budget can be upheld for target large datasets.
