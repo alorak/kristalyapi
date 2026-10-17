@@ -40,6 +40,8 @@ window.__visualTest={
  polyStats:()=>({center:state.poly,centers:[...(state.polyCenters||[])],meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
   edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
   count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
+  area:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraArea||0),0),
+  volume:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraVolume||0),0),
   notice:document.getElementById('notice').textContent}),
  perovskitePolys:()=>{resetVolume();loadPreset('perovskite');state.rep=[5,5,5];state.style='poly';state.poly='';
   state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
@@ -765,6 +767,12 @@ try{
  const polyhedra=await page.evaluate(()=>window.__visualTest.perovskitePolys());
  assert.deepEqual({center:polyhedra.center,count:polyhedra.count,meshes:polyhedra.meshes,edges:polyhedra.edges},
   {center:'Ti',count:125,meshes:1,edges:1},'5×5×5 BaTiO3 should render all 125 Ti octahedra in two draw objects');
+ // Independent geometric reference: ideal cubic BaTiO3 a=4 Å; each TiO6
+ // octahedron has 6 vertices at ±a/2 on Cartesian axes.
+ assert.ok(Math.abs(polyhedra.volume-125*Math.pow(4,3)/6)<1e-4,
+  '125 ideal TiO6 octahedra must have total reference volume 125*a^3/6');
+ assert.ok(Math.abs(polyhedra.area-125*Math.sqrt(3)*4*4)<1e-4,
+  '125 ideal TiO6 octahedra must have surface 125*sqrt(3)*a^2');
  await page.waitForFunction(()=>document.querySelector('#polyElement option:checked')?.textContent.includes('centered polyhedron'));
  await page.locator('#polyMore').click();
  assert.equal(await page.locator('#polyCenterMenu').isVisible(),true,'extra center selector must open above dock');
