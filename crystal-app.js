@@ -5371,12 +5371,12 @@ function cifExportText(state){
  const symmetry=!hasMagnetism&&state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
- const changedComposition=!!state.cifComposition&&cifCompositionSignature(state.sites)!==state.cifComposition;
- const modifiedSource=!!state.cifOriginal&&state.cifOriginal.fingerprint!==cifScientificFingerprint(state);
+ const changedComposition=!state.cifComposition||
+  cifCompositionSignature(state.sites)!==state.cifComposition;
  for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta))){
-  // A changed chemical identity invalidates names/formula, while a changed
-  // source structure must not masquerade as its original COD deposition.
-  if(changedComposition&&tag.startsWith('_chemical_')||modifiedSource&&tag==='_cod_database_code')continue;
+  // A regenerated CIF is a NEW derivative, even if its old source ID was
+  // retained in a project JSON. Never reassign the deposited COD identifier.
+  if(tag==='_cod_database_code'||changedComposition&&tag.startsWith('_chemical_'))continue;
   q.push(tag+' '+cifQuoted(value));
  }
  // Only non-structural literature provenance is inherited from an edited CIF.
