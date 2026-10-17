@@ -946,8 +946,8 @@ try{
  await page.waitForTimeout(120);
  const qualityMetrics=await page.evaluate(()=>window.__visualTest.performance());
  assert.equal(qualityMetrics.atomLod[0].tier,'high');
- assert.ok(qualityMetrics.gpuTriangles>fastMetrics.gpuTriangles,
-  'quality override increases triangles without changing the atom instances');
+ assert.ok(qualityMetrics.atomLod[0].trianglesPerSphere>fastMetrics.atomLod[0].trianglesPerSphere,
+  'quality override must increase sphere tessellation without changing atom instances');
  assert.equal(qualityMetrics.visibleAtoms,fastMetrics.visibleAtoms);
  await page.locator('#atomQuality').selectOption('auto');
  await page.locator('#performanceClose').click();

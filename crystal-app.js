@@ -1605,7 +1605,8 @@ function updateAtomLod(){
 function performanceSnapshot(){
  const render=renderer?.info?.render||{},memory=renderer?.info?.memory||{};
  return {
-  quality:renderQuality,atomLod:atomMesh.map(mesh=>({tier:mesh.userData.atomLodTier,count:mesh.count})),
+  quality:renderQuality,atomLod:atomMesh.map(mesh=>({tier:mesh.userData.atomLodTier,count:mesh.count,
+   trianglesPerSphere:(mesh.geometry.getIndex()?.count||0)/3})),
   atoms:atomData.length,visibleAtoms:atomMesh.reduce((n,mesh)=>n+mesh.count,0),
   bonds:root?root.children.filter(mesh=>mesh.userData.layer==='bonds'&&mesh.isInstancedMesh).reduce((n,mesh)=>n+mesh.count,0):0,
   polyhedra:root?root.children.filter(mesh=>mesh.userData.layer==='polyhedra'&&mesh.isMesh).reduce((n,mesh)=>n+(mesh.userData.polyhedraCount||0),0):0,
@@ -1621,7 +1622,7 @@ function refreshPerformancePanel(){
  const word=(english,turkish)=>en?english:turkish;
  $('performanceMetrics').textContent=[
   word('Atoms ','Atom ')+x.visibleAtoms.toLocaleString()+' / '+x.atoms.toLocaleString()+' · '+word('bonds ','bağ ')+x.bonds.toLocaleString()+' · '+word('polyhedra ','çokyüzlü ')+x.polyhedra,
-  'Atom LOD '+(x.atomLod.map(item=>item.tier+': '+item.count).join(', ')||'—'),
+  'Atom LOD '+(x.atomLod.map(item=>item.tier+': '+item.count+' ('+item.trianglesPerSphere+' tris/atom)').join(', ')||'—'),
   word('CPU build ','CPU oluşturma ')+fmt(x.buildMs)+' ms · '+word('volume ','hacim ')+fmt(x.volumeBuildMs)+' ms',
   word('Volume ','Hacim ')+x.volumeTriangles.toLocaleString()+word(' triangles · grid stride ',' üçgen · ızgara adımı ')+(x.volumeStride||'—')+(x.volumeTruncated?word(' (limited)',' (sınırlı)'):''),
   'WebGL '+x.drawCalls+word(' draw calls · ',' çizim çağrısı · ')+x.gpuTriangles.toLocaleString()+word(' triangles · ',' üçgen · ')+x.geometries+word(' geometries',' geometri'),
