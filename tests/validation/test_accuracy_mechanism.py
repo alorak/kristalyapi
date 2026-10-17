@@ -36,6 +36,30 @@ class AccuracyMechanismTest(unittest.TestCase):
         rows[1]["issues"]=["A different scientific problem"]
         self.assertIn("real-15: unexpected inconclusive",validate.gate_failures(rows,known))
 
+    def test_known_inconclusive_cannot_hide_extra_issue(self):
+        known={"real-15":"Reference has unspecified"}
+        rows=[{"id":"real-15","status":"inconclusive","issues":[
+            "Gemmi reference unavailable: Reference has unspecified atom positions",
+            "Unexpected site mismatch"]}]
+        self.assertIn("real-15: unexpected inconclusive",
+                      validate.gate_failures(rows,known))
+        rows[0]["issues"]=["Reference has unspecified"]
+        self.assertIn("real-15: unexpected inconclusive",
+                      validate.gate_failures(rows,known))
+
+    def test_origin_shift_search_is_not_limited_to_first_24_sites(self):
+        # The matching anchor is deliberately the 25th site in the reference.
+        # Older logic silently truncated the candidate list to 24.
+        browser=[site("Si",0,0,0)]
+        reference=[site("Si",i/1000,0,0) for i in range(1,25)]
+        reference.append(site("Si",.5,0,0))
+        # Use unique occupancy groups to isolate the candidate-search behavior.
+        # One reference anchor candidate at index 25 must still be considered.
+        browser=[site("Si",i/1000,0,0) for i in range(25)]
+        reference=[site("Si",(i/1000+.5)%1,0,0) for i in range(25)]
+        match=validate.compare_sites(browser,reference,CELL,.001)
+        self.assertTrue(match["success"])
+
     def test_periodic_wrapping(self):
         c=gemmi.UnitCell(5,5,5,90,90,90)
         self.assertAlmostEqual(validate.periodic_distance(site("Si",.99,0,0),
