@@ -728,9 +728,25 @@ try{
  assert.equal(await page.locator('#xrdMapIndex').count(),0);
  assert.equal(await page.locator('#xrdMapResolution').getAttribute('min'),'0.35');
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
- assert.equal(await page.locator('#fcfMapKind option').count(),2);
+ assert.equal(await page.locator('#fcfMapKind option').count(),3);
  assert.equal(await page.locator('#fcfScaleMode option').count(),2);
 
+ // Real user path: restore the XRD drawer after library/workspace navigation
+ // before interacting with its controls. Hidden controls cannot be selected.
+ if(!await page.locator('#fcfScaleMode').isVisible())
+  await page.locator('[data-right-tool="xrd"]').click();
+ await page.locator('#fcfScaleMode').waitFor({state:'visible'});
+ // The persistent bottom toolbar must contain its actual input boxes, even
+ // when a field label wraps; overflow must not cut the last row off.
+ const quickbarClip=await page.locator('#workbenchQuickbar').evaluate(bar=>{
+  const bound=bar.getBoundingClientRect();
+  return [...bar.querySelectorAll('.quickbar-field input,.quickbar-field select')]
+   .filter(el=>getComputedStyle(el).visibility!=='hidden')
+   .map(el=>({id:el.id,top:el.getBoundingClientRect().top,
+    bottom:el.getBoundingClientRect().bottom}))
+   .filter(rect=>rect.top<bound.top+2||rect.bottom>bound.bottom-2);
+ });
+ assert.deepEqual(quickbarClip,[],'quickbar inputs must stay within dock vertical bounds');
  // Real user path: upload an FCF in Chromium, choose nontrivial Fo/Fc
  // normalization, produce the map and surface the fitted scale diagnostics.
  await page.locator('#fcfScaleMode').selectOption('lsq');

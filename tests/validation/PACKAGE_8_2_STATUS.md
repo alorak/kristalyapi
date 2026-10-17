@@ -42,7 +42,16 @@ CIF2, çoklu data_/save_ blokları, alan bazlı kayıp raporu, tüm ADP özel ko
 - **Başarı kapsamı dardır:** P1 olmayan uzay grupları, unmerged/batch MTZ, otomatik ASU/simetri tamamlama, anomali ve ağırlıklı FWT/PHWT gibi harita katsayıları bu okuyucudan geçmez. Genel MTZ desteği tamamlandı iddiası yoktur.
 - Sentetik IEEE LE/BE, eksik değer, yanlış veri kümesi hücresi, belirsiz sütun, uzay grubu ve doğrudan Fourier regresyonları eklendi. **Bağımsız gerçek MTZ/Gemmi/CCP4 harita doğrulaması bu PR'da yapılmış sayılmaz.**
 
-## Sonraki alt paket (8.2c)
+## Paket 8.2c — simetri, açık sütunlar ve CI/yerleşim (ilk aşama)
+
+- Birleşik, anomalous olmayan MTZ için P1 (#1), P-1 (#2), P21 (#4), P21/c (#14), P212121 (#19) işlemleri **sınırlı** olarak açıldı; SYMINF sayısı, primitive P kafesi, SYMM dönüşüm det/kimlik/tekrar/grup kapanışı ve metrik tutarlılığı doğrulanır. Diğer gruplar fail-closed kalır.
+- `h' = Rᵀh` ve `φ' = φ − 360°(h·t)` ile Fourier için simetri eşdeğerleri oluşturulur; Friedel/sistematik sönüm tutarsızlığında reddedilir. 300.000 işlenmiş hkl bütçesi korunur.
+- Belirsiz Fo/Fc/PHIC sütunları kullanıcının açık `datasetId:LABEL` eşlemesiyle seçilebilir; türler denetlenir, FWT/DELFWT/PHWT/PHDELWT ön-ağırlıklı harita katsayıları Fo/Fc gibi alınmaz.
+- Ham veya LSQ ölçekli **ağırlıksız model-fazlı 2Fo−Fc** seçeneği eklendi. σA/FOM/FREE refinman haritası olarak gösterilmez.
+- Bağımsız analitik P-1, orijini kaymış tersinim, P21 vida ekseni, P21/c/P212121 grup kapanışı, uyumsuz metrik ve yanlış faz/sönüm testleri eklendi. Gerçek MTZ/Gemmi/CCP4 **henüz doğrulanmadı**.
+- İngilizce statik sözlükte eksik MTZ metinleri tamamlandı (native regression #88), WebGL smoke testindeki kapalı XRD paneli açma adımı düzeltildi; alt araç çubuğunun yüksekliği artırıldı ve taşma denetimi eklendi.
+
+## Sonraki alt paket (8.2c devamı)
 
 1. Gerçek MTZ/IUCr veri kümelerinde Fo/Fc/PHIC ve Fourier örneklerinin Gemmi/CCP4 ile bağımsız karşılaştırılması; başlangıç için doğrulanmış P1 fixture.
 2. ASU/uzay grubu simetrisiyle yansıma tamamlama ve ayrı anomalous Friedel yolu; çoklu dataset/kolon açık eşleme arayüzü.

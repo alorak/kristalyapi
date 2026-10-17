@@ -162,7 +162,9 @@ tamlığı bağımsız doğrulanmalıdır.
 
 **Paket 8.2b — sınırlı MTZ girişi:** Birleşik **P1 MTZ** dosyasında türü doğrulanmış, belirsiz olmayan **FP/F/FOBS, FC ve PHIC** sütunları varsa model fazlı Fo/Fo−Fc haritaları üretilebilir. IEEE endian, başlık/veri uzunluğu, P1 simetrisi, veri kümesi hücresi, eksik değer işaretleri ve geçersiz/negatif genlikler kontrol edilir; eksik satırların sayısı rapor edilir. **P1 dışındaki uzay grupları, batch/unmerged veriler, belirsiz veri kümeleri, anomalous çiftler ve FWT/PHWT gibi ön-ağırlıklı harita katsayıları reddedilir**; P1 ölçümüymüş gibi yorumlanmaz. İlk regresyonlar sentetik MTZ üstündedir; gerçek MTZ/harita için bağımsız Gemmi/CCP4 referans doğrulaması hâlâ gereklidir.
 
-**Henüz desteklenmeyenler:** genel MTZ simetri genişletmesi, CCP4 `.map` / `.ccp4` haritaları, CIF2'nin tüm yansıma sözlükleri, anomalous Friedel farkları ve ağırlıklı `2Fo−Fc` harita refinmanı.
+**Paket 8.2c — sınırlı ilkel örgü simetrisi ve açık sütun eşlemesi:** Birleşik, anomalous olmayan MTZ için **P1 (#1), P-1 (#2), P21 (#4), P21/c (#14), P212121 (#19)** desteklenir. `SYMM` işlemleri, ilkel işlem sayısı, grup kapanışı ve hücre metriği doğrulanır. `h' = Rᵀh` ve `φ' = φ - 360° h·t` ile yansıma/faz genişletilir; uyumsuz simetri/Friedel çiftleri reddedilir. Tekrarlanan sütun adlarında isteğe bağlı Fo, Fc ve faz alanlarına `veriKümesiID:ETİKET` yazılabilir. Yeni **ham veya LSQ ölçekli, model fazlı `2Fo−Fc`** seçeneği, **σA/FOM ağırlıklı refinman haritası değildir**. Alt araç çubuğunun yüksekliği artırılmış, İngilizce çeviri sözlüğü ve WebGL smoke gezinimi de düzeltilmiştir.
+
+**Henüz desteklenmeyenler:** genel MTZ uzay grupları/ASU ayarları, CCP4 `.map` / `.ccp4` haritaları, CIF2'nin tüm yansıma sözlükleri, anomalous Friedel farkları ve FOM/σ/FREE ağırlıklı harita refinmanı. Bu artırımın testleri analitik/sentetiktir; gerçek MTZ ile bağımsız Gemmi/CCP4 sayısal harita doğrulaması hâlâ gereklidir.
 İleri işler [8.2 durum belgesinde](tests/validation/PACKAGE_8_2_STATUS.md).
 
 ### Paket 8.1 — ADP site-symmetry denetimi ve CIF kaynak bütünlüğü

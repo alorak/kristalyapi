@@ -22,7 +22,8 @@ Bilimsel kontrat ve test örnekleri:
 | P0 | `hkl`/Friedel eşleniği faz ve amplitüd uyumunu kontrol et; tekrarları sessizce seçme | Modulo-360 ve zıt faz referansları, çelişki testleri |
 | P0 | Ham `Fo−Fc` ve seçilebilir LSQ Fc ölçekli fark haritaları, d_min/Nyquist ve P1 grid kapsamı | Analitik tek-çift Fourier ve ölçek testleri |
 | P1 | **8.2b başlangıcı:** Birleşik P1 MTZ için endian/başlık/NCOL/COL/DCELL/VALM doğrulamalı FP/FC/PHIC okuma ve model-fazlı Fo/Fo−Fc; non-P1 ve belirsiz sütunlar fail-closed | Sentetik LE/BE, eksik değer, yanlış hücre/simetri testleri; **gerçek Gemmi/CCP4 fixture ve bağımsız harita referansı hâlâ gerekli** |
-| P1 | Gelişmiş ölçüm ölçeği, FOM/σ ağırlığı, 2Fo−Fc ve CCP4/MRC map | Tam yansıma/ölçek matematiği gerektiriyor |
+| P1 | **8.2c ilk aşama:** P1 / P-1 / P21 / P21/c / P212121 MTZ simetri kapanışı, hkl/faz translasyonu; `datasetId:LABEL` eşlemesi; ham/LSQ `2Fo−Fc` | Analitik dönüşüm/Friedel/sistematik sönüm testleri; gerçek Gemmi/CCP4 karşılaştırması açık |
+| P1 | FOM/σ/FREE, çözünürlük kabukları, σA ağırlığı ve CCP4/MRC map | Bağımsız gerçek yansıma/harita referansı gerekli |
 
 **Kapsam belgesi:** [`tests/validation/PACKAGE_8_2_STATUS.md`](tests/validation/PACKAGE_8_2_STATUS.md).
 
