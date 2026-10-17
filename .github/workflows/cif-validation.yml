@@ -59,6 +59,14 @@ jobs:
             python tests/validation/validate.py --out-dir validation-results --gate
           fi
 
+      - name: Generate unified scientific and visual-status report
+        if: always()
+        shell: bash
+        run: |
+          if [ -f validation-results/report.json ]; then
+            python tests/validation/combined_report.py --scientific validation-results/report.json --out validation-results/combined-report.json
+          fi
+
       - name: Upload detailed reference, metrics and report
         if: always()
         uses: actions/upload-artifact@v4
