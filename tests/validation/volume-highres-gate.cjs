@@ -61,8 +61,9 @@ function occupiedVolume(grid,level){
 function auditTopology(mesh,grid){
  const periodic=!!grid.periodic;
  const span=grid.dims.map(n=>periodic?n:n-1);
- const tolerance=1e-3,faces=new Map();
- let degenerateTriangles=0,area=0,interiorOpenEdges=0,faceOpenEdges=0;
+ const tolerance=2e-4,faces=new Map();
+ let degenerateTriangles=0,quantizedCollapsed=0,area=0,interiorOpenEdges=0,faceOpenEdges=0;
+ const anomalies=[];
  const onOuterFace=(a,b)=>{
   for(let axis=0;axis<3;axis++){
    if((Math.abs(a[axis])<tolerance&&Math.abs(b[axis])<tolerance)||
@@ -80,8 +81,15 @@ function auditTopology(mesh,grid){
   const corner=xyz.map(ctx.toIndex.bind(null,grid)),ids=corner.map(key);
   const ux=xyz[1].map((v,k)=>v-xyz[0][k]),vx=xyz[2].map((v,k)=>v-xyz[0][k]);
   const triangleArea=Math.hypot(...cross(ux,vx))/2;
-  if(ids.some((q,j)=>ids.indexOf(q)!==j)||triangleArea<1e-12){
-   degenerateTriangles++;continue;
+  if(triangleArea<1e-12){
+   degenerateTriangles++;
+   if(anomalies.length<4)anomalies.push({kind:'physical area',areaA2:triangleArea,xyz});
+   continue;
+  }
+  if(ids.some((q,j)=>ids.indexOf(q)!==j)){
+   quantizedCollapsed++;
+   if(anomalies.length<4)anomalies.push({kind:'index quantization',areaA2:triangleArea,voxel:corner});
+   continue;
   }
   area+=triangleArea;
   for(const [p,q] of [[0,1],[1,2],[2,0]]){
@@ -102,7 +110,8 @@ function auditTopology(mesh,grid){
   else if(edge.positive!==1||edge.negative!==1)orientationConflicts++;
  }
  return {triangles:mesh.triangles,areaA2:area,edgeCount:faces.size,
-  degenerateTriangles,openEdges,faceOpenEdges,interiorOpenEdges,
+  degenerateTriangles,quantizedCollapsed,anomalies,
+  openEdges,faceOpenEdges,interiorOpenEdges,
   nonmanifoldEdges,orientationConflicts,periodicSeamGlued:periodic};
 }
 function metrics(grid,level,full){
@@ -110,7 +119,8 @@ function metrics(grid,level,full){
  assert.ok(surface.positions.length>0,'empty surface on high resolution test');
  assert.ok(!surface.truncated,'75k scientific triangle limit exceeded');
  const topology=auditTopology(surface,grid);
- assert.equal(topology.degenerateTriangles,0,'degenerate triangles');
+ assert.equal(topology.degenerateTriangles,0,'physically degenerate triangles: '+JSON.stringify(topology.anomalies));
+ assert.equal(topology.quantizedCollapsed,0,'distinct vertices collapse under index quantization (grid '+grid.dims[0]+'): '+JSON.stringify(topology.anomalies));
  // We record orientation conflicts explicitly; do not silently "fix" triangle
  // winding in measurements or claim an oriented manifold without proof.
  assert.equal(topology.nonmanifoldEdges,0,'non-manifold edge detected');
