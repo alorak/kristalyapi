@@ -1487,10 +1487,16 @@ function bondNetwork(sites,cell,{periodic=false,rules=new Map(),cut=2.65,auto=tr
  const B=basis(cell),f=sites.map(s=>[+s.x,+s.y,+s.z]);
  if(f.some(v=>v.some(x=>!Number.isFinite(x))))throw Error('Bağ analizi atom koordinatı geçersiz.');
  const edges=[],parent=sites.map((_,i)=>i),find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
- const shifts=periodic?Array.from({length:27},(_,n)=>[Math.floor(n/9)-1,Math.floor(n/3)%3-1,n%3-1]):[[0,0,0]];
+ let imageCandidates=0;
  for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
   const [min,max]=bondRange(sites[i].symbol,sites[j].symbol,rules,cut,auto);
-  for(const shift of shifts){
+  const offset=[0,1,2].map(k=>f[j][k]-f[i][k]);
+  const bounds=periodic?coordinationImageBounds(B,max,offset):[[0,0],[0,0],[0,0]];
+  const [xs,ys,zs]=bounds;
+  imageCandidates+=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+  if(imageCandidates>300000)throw Error('Bağ ağı periyodik görüntü araması çok büyük.');
+  for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
+   const shift=[x,y,z];
    if(i===j&&(shift.every(x=>x===0)||shift.find(x=>x!==0)<0))continue;
    if(!periodic&&i===j)continue;
    const delta=[0,1,2].map(k=>f[j][k]-f[i][k]+shift[k]),distance=toCart(delta,B).length();
@@ -1526,25 +1532,112 @@ function analyzeBonds({saveCsv=false}={}){
  }catch(error){$('bondTopologySummary').textContent='Bağ analizi: '+error.message;if(saveCsv)throw error;}
 }
 
-/* Periodic first-neighbor coordination: each periodic image is a separate
-   geometric neighbor (NaCl has six distinct ion images, not one site).
-   No oxidation-state or bond-order inference is made here. */
+/* A Cartesian sphere of radius r projects to |delta_i| <= r |a*_i|.
+   Use reciprocal lattice lengths to enumerate every image capable of lying
+   within the physical cutoff. Searching only [-1,+1] fails in acute/skew
+   cells: a close Cartesian neighbor may be multiple cells away in indices.
+   Fail closed if the bounded search is too large, rather than return an
+   incomplete first coordination shell. */
+function coordinationImageBounds(B,radius,offset){
+ if(!Number.isFinite(radius)||radius<=0)throw Error('Koordinasyon yarıçapı geçersiz.');
+ const vectors=B.map(v=>Array.isArray(v)?v:[v.x,v.y,v.z]);
+ if(vectors.length!==3||vectors.some(v=>v.length!==3||v.some(n=>!Number.isFinite(n))))
+  throw Error('Koordinasyon örgü vektörleri geçersiz.');
+ const cross=(u,v)=>[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+ const dot=(u,v)=>u[0]*v[0]+u[1]*v[1]+u[2]*v[2];
+ const dual=[cross(vectors[1],vectors[2]),cross(vectors[2],vectors[0]),cross(vectors[0],vectors[1])];
+ const volume=Math.abs(dot(vectors[0],dual[0]));
+ if(!Number.isFinite(volume)||volume<1e-10)throw Error('Koordinasyon için tekil örgü hücresi.');
+ return dual.map((v,i)=>{
+  const reach=(radius+1e-6)*Math.hypot(...v)/volume+1e-9;
+  const low=Math.ceil(-reach-offset[i]),high=Math.floor(reach-offset[i]);
+  return [low,high];
+ });
+}
+/* Periodic geometric coordination counts each translated neighbor separately.
+   Occupancy is retained as an *expected* contribution, not treated as a
+   chemical bond order. Distinct partially occupied species may share one
+   geometric vertex; the visual hull must not duplicate that vertex. */
 function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=24){
  if(!sites[centerIndex])throw Error('Koordinasyon merkezi bulunamadı.');
- const center=sites[centerIndex],start=[frac(+center.x),frac(+center.y),frac(+center.z)],found=[];
+ const fraction=s=>[frac(Number(s.x)),frac(Number(s.y)),frac(Number(s.z))];
+ const occupation=s=>{
+  const n=Number(s.occupancy??1);
+  if(!Number.isFinite(n)||n<0||n>1)throw Error('Koordinasyon atom doluluğu 0–1 arasında olmalı.');
+  return n;
+ };
+ const center=sites[centerIndex],start=fraction(center),found=[];
+ if(start.some(n=>!Number.isFinite(n)))throw Error('Koordinasyon merkezi koordinatları geçersiz.');
+ const centerOccupancy=occupation(center);
+ if(centerOccupancy===0)return [];
+ let candidates=0;
  for(let j=0;j<sites.length;j++){
-  const site=sites[j],end=[frac(+site.x),frac(+site.y),frac(+site.z)];
+  const site=sites[j],occ=occupation(site);
+  if(occ===0)continue;
+  const end=fraction(site);
+  if(end.some(n=>!Number.isFinite(n)))throw Error('Koordinasyon atom koordinatları geçersiz.');
   const range=bondRange(center.symbol,site.symbol,rules,cut,auto);
-  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+  if(!range.every(Number.isFinite)||range[0]<0||range[1]<range[0])throw Error('Koordinasyon bağ aralığı geçersiz.');
+  const offset=end.map((v,k)=>v-start[k]),limits=coordinationImageBounds(B,range[1],offset);
+  const [xs,ys,zs]=limits;
+  const nImages=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+  candidates+=nImages;
+  if(candidates>200000)throw Error('Koordinasyon görüntü araması çok büyük; kesim yarıçapını küçültün.');
+  for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
    if(j===centerIndex&&x===0&&y===0&&z===0)continue;
-   const delta=[end[0]-start[0]+x,end[1]-start[1]+y,end[2]-start[2]+z];
-   const d=toCart(delta,B).length();
+   const delta=[offset[0]+x,offset[1]+y,offset[2]+z],d=toCart(delta,B).length();
    if(d<1e-5||d<range[0]-1e-6||d>range[1]+1e-6)continue;
-   found.push({index:j,element:site.symbol,distance:d,delta,shift:[x,y,z]});
+   found.push({index:j,element:site.symbol,distance:d,delta,shift:[x,y,z],occupancy:occ});
   }
  }
- found.sort((a,b)=>a.distance-b.distance||a.index-b.index);
+ found.sort((a,b)=>a.distance-b.distance||a.index-b.index||
+  a.shift[0]-b.shift[0]||a.shift[1]-b.shift[1]||a.shift[2]-b.shift[2]);
  return found.slice(0,Math.max(1,Math.min(24,Math.floor(maxNeighbors)||12)));
+}
+/* The crystallographic coordination number is geometric; the sum of
+   occupancies is a separate expected-count estimate. Coincident mixed
+   species contribute one hull vertex and keep their weighted CN. */
+function coordinationGeometry(neighbors,B){
+ const vertices=[];
+ let weightedCN=0;
+ for(const n of neighbors){
+  const occupancy=Number(n.occupancy??1);
+  if(!Number.isFinite(occupancy)||occupancy<0||occupancy>1)throw Error('Koordinasyon atom doluluğu geçersiz.');
+  weightedCN+=occupancy;
+  const p=toCart(n.delta,B),xyz=[p.x,p.y,p.z];
+  if(xyz.some(v=>!Number.isFinite(v)))throw Error('Çokyüzlü köşe koordinatı geçersiz.');
+  if(!vertices.some(v=>Math.hypot(...xyz.map((coord,i)=>coord-v.xyz[i]))<1e-6))
+   vertices.push({xyz,delta:n.delta.slice(),distance:n.distance,element:n.element});
+ }
+ const angles=[];
+ for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){
+  const a=vertices[i].xyz,b=vertices[j].xyz,da=Math.hypot(...a),db=Math.hypot(...b);
+  if(da<1e-8||db<1e-8)continue;
+  const cos=Math.max(-1,Math.min(1,a.reduce((sum,v,k)=>sum+v*b[k],0)/(da*db)));
+  angles.push(Math.acos(cos)*180/Math.PI);
+ }
+ return {geometricCN:neighbors.length,weightedCN,vertexCount:vertices.length,vertices,
+  angles,angleMin:angles.length?Math.min(...angles):null,
+  angleMax:angles.length?Math.max(...angles):null};
+}
+/* Triangle soup returned by ConvexGeometry; calculations use a local origin
+   for stable tetrahedral signed-volume accumulation. */
+function coordinationHullMetrics(geometry){
+ const positions=geometry.getAttribute('position');
+ if(!positions||positions.count<12||positions.count%3)throw Error('Çokyüzlü üçgen ağı geçersiz.');
+ const get=i=>[positions.getX(i),positions.getY(i),positions.getZ(i)];
+ const anchor=get(0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+ let volume=0,area=0;
+ for(let i=0;i<positions.count;i+=3){
+  const p=get(i),q=get(i+1),r=get(i+2);
+  const a=p.map((v,k)=>v-anchor[k]),b=q.map((v,k)=>v-anchor[k]),c=r.map((v,k)=>v-anchor[k]);
+  const normal=cross(b.map((v,k)=>v-a[k]),c.map((v,k)=>v-a[k]));
+  area+=Math.hypot(...normal)/2;
+  volume+=a.reduce((sum,v,k)=>sum+v*cross(b,c)[k],0)/6;
+ }
+ if(!Number.isFinite(volume)||!Number.isFinite(area)||Math.abs(volume)<1e-9||area<=0)
+  throw Error('Koordinasyon çokyüzlüsü üç boyutlu kapalı hacim oluşturmuyor.');
+ return {volume:Math.abs(volume),area};
 }
 /* Choose a viable center when switching into polyhedral mode. Prefer a 4–8
    coordinate environment (six is typical for perovskite octahedra), sampling
@@ -1554,7 +1647,7 @@ function bestPolyhedronElement(sites,B,rules,cut,auto,maxNeighbors=12){
  for(let i=0;i<sites.length;i++){
   const element=cleanSymbol(sites[i].symbol),count=tried.get(element)||0;
   if(count>=4)continue;tried.set(element,count+1);
-  const neighbors=coordinationNeighbors(sites,i,B,rules,cut,auto,maxNeighbors).length;
+  const neighbors=coordinationGeometry(coordinationNeighbors(sites,i,B,rules,cut,auto,maxNeighbors),B).vertexCount;
   if(neighbors<4)continue;
   const score=(neighbors<=8?100:30)-Math.abs(neighbors-6);
   if(!best||score>best.score)best={element,score};
@@ -1590,11 +1683,21 @@ function removePairBondRule(str,pair){
 }
 
 function minimumPeriodicImage(fa,fb,B){
- let distance=Infinity,shift=[0,0,0],delta=null;
- for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
-  const d=[fb[0]-fa[0]+x,fb[1]-fa[1]+y,fb[2]-fa[2]+z],len=toCart(d,B).length();
-  if(len<distance){distance=len;shift=[x,y,z];delta=d;}
- }return {distance,shift,delta};
+ const offset=[0,1,2].map(k=>fb[k]-fa[k]);
+ if(offset.some(v=>!Number.isFinite(v)))throw Error('Periyodik uzaklık için koordinatlar geçersiz.');
+ // The rounded fractional image provides a finite upper bound; the exact
+ // closest image must lie within the reciprocal-metric search box.
+ let shift=offset.map(v=>-Math.round(v)),delta=offset.map((v,i)=>v+shift[i]);
+ let distance=toCart(delta,B).length();
+ if(distance<=1e-12)return {distance,shift,delta};
+ const limits=coordinationImageBounds(B,distance+1e-8,offset),[xs,ys,zs]=limits;
+ const candidates=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+ if(candidates>200000)throw Error('Periyodik minimum görüntü araması çok büyük.');
+ for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
+  const d=[offset[0]+x,offset[1]+y,offset[2]+z],len=toCart(d,B).length();
+  if(len<distance-1e-12){distance=len;shift=[x,y,z];delta=d;}
+ }
+ return {distance,shift,delta};
 }
 
 function clipSegmentToCell(a,b,repeat){
@@ -1610,9 +1713,14 @@ function clipSegmentToCell(a,b,repeat){
 function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false){
  if(sites.length>100) return null; // large structures retain spatial hash renderer
  const neighbors=[],fractional=sites.map(s=>[frac(+s.x),frac(+s.y),frac(+s.z)]);
+ let imageCandidates=0;
  for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
   const range=bondRange(sites[i].symbol,sites[j].symbol,rules,cut,auto);
-  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+  const offset=[0,1,2].map(k=>fractional[j][k]-fractional[i][k]);
+  const [xs,ys,zs]=coordinationImageBounds(B,range[1],offset);
+  imageCandidates+=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+  if(imageCandidates>300000)throw Error('Periyodik bağ çizimi görüntü araması çok büyük.');
+  for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
    if(i===j&&x===0&&y===0&&z===0)continue;
    if(i===j&&(x<0||(x===0&&y<0)||(x===0&&y===0&&z<0)))continue;
    const delta=[fractional[j][0]-fractional[i][0]+x,fractional[j][1]-fractional[i][1]+y,fractional[j][2]-fractional[i][2]+z];
@@ -2761,7 +2869,7 @@ function build(){
  addCellLines(B,state.rep);drawMillerPlane(B);drawMorphology(B,center);drawOverlayStructures(B,center);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
  if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');}
- let polyCount=0,polyTruncated=false,polyFailed=0,polyMissing=[];
+ let polyCount=0,polyTruncated=false,polyFailed=0,polyMissing=[],polyArea=0,polyVolume=0;
  if(state.polyCenters.length){
   const centers=new Set(state.polyCenters);
   const produced=new Map([...centers].map(symbol=>[symbol,0]));
@@ -2771,12 +2879,13 @@ function build(){
    if(!atomRender[i].visible||!centers.has(entry[i].site.symbol))continue;
    if(!cache.has(entry[i].idx))cache.set(entry[i].idx,coordinationNeighbors(
     physical,entry[i].idx,B,polyRules,polyCutoff,state.polyCut>0?false:state.autoBond,state.polyNeighbors||12));
-   const neighbors=cache.get(entry[i].idx);
-   if(neighbors.length<4)continue;
+   const neighbors=cache.get(entry[i].idx),environment=coordinationGeometry(neighbors,B);
+   if(environment.vertexCount<4)continue;
    if(polyCount>=MAX_POLYHEDRA){polyTruncated=true;break;}
    try{
-    const vertices=neighbors.map(nb=>entry[i].pos.clone().add(toCart(nb.delta,B)));
+    const vertices=environment.vertices.map(v=>entry[i].pos.clone().add(new THREE.Vector3(...v.xyz)));
     const geometry=new ConvexGeometry(vertices);
+    const hull=coordinationHullMetrics(geometry);
     const positions=geometry.getAttribute('position'),normals=geometry.getAttribute('normal');
     const defaultColor=centers.size>1&&entry[i].site.symbol!==state.poly?
      elementColor(entry[i].site.symbol):state.polyColor||'#54a1db';
@@ -2789,7 +2898,7 @@ function build(){
     }
     const outline=new THREE.EdgesGeometry(geometry),edge=outline.getAttribute('position');
     for(let v=0;v<edge.count;v++)edgePositions.push(edge.getX(v),edge.getY(v),edge.getZ(v));
-    outline.dispose();geometry.dispose();polyCount++;
+    outline.dispose();geometry.dispose();polyCount++;polyArea+=hull.area;polyVolume+=hull.volume;
     produced.set(entry[i].site.symbol,produced.get(entry[i].site.symbol)+1);
    }catch(err){polyFailed++;console.warn('Koordinasyon çokyüzlüsü oluşturulamadı:',err.message);}
   }
@@ -2800,7 +2909,7 @@ function build(){
    merged.setAttribute('color',new THREE.Float32BufferAttribute(faceColors,4));
    const mesh=new THREE.Mesh(merged,new THREE.MeshPhongMaterial({color:0xffffff,vertexColors:true,
     side:THREE.DoubleSide,transparent:true,opacity:1,depthWrite:false,shininess:70}));
-   mesh.userData.polyhedraCount=polyCount;addLayerObject(mesh,'polyhedra');
+   mesh.userData.polyhedraCount=polyCount;mesh.userData.polyhedraArea=polyArea;mesh.userData.polyhedraVolume=polyVolume;addLayerObject(mesh,'polyhedra');
    const borders=new THREE.BufferGeometry();
    borders.setAttribute('position',new THREE.Float32BufferAttribute(edgePositions,3));
    addLayerObject(new THREE.LineSegments(borders,new THREE.LineBasicMaterial({color:0x4296c2,
@@ -3693,8 +3802,30 @@ function renderCoordinationSummary(){
  const atom=atomData[selected[0]],rules=parseBondRules(state.bondRules);
  const shell=coordinationNeighbors(sites,atom.idx,B,rules,state.cut,state.autoBond,24);
  const counts=new Map();for(const n of shell)counts.set(n.element,(counts.get(n.element)||0)+1);
- const head=document.createElement('div');head.textContent='Geometrik komşu: '+shell.length+(shell.length===24?' (ilk 24)':'')+' · '+[...counts].map(([el,count])=>el+': '+count).join(', ');
+ const environment=coordinationGeometry(shell,B);
+ const head=document.createElement('div');head.textContent='Geometrik komşu: '+shell.length+(shell.length===24?' (ilk 24)':'')+
+  ' · Eşsiz köşe: '+environment.vertexCount+' · Doluluk ağırlıklı CN: '+environment.weightedCN.toFixed(2)+
+  ' · '+[...counts].map(([el,count])=>el+': '+count).join(', ');
  node.append(head);
+ if(environment.angles.length){
+  const angle=document.createElement('div');
+  angle.textContent='Komşu–merkez–komşu açı aralığı: '+environment.angleMin.toFixed(1)+'–'+environment.angleMax.toFixed(1)+'°';
+  angle.style.marginTop='5px';node.append(angle);
+ }
+ if(environment.vertexCount>=4){
+  let geometry;
+  try{
+   geometry=new ConvexGeometry(environment.vertices.map(v=>new THREE.Vector3(...v.xyz)));
+   const shape=coordinationHullMetrics(geometry);
+   const readout=document.createElement('div');
+   readout.textContent='Koordinasyon çokyüzlüsü: '+shape.volume.toFixed(3)+' Å³ · yüzey '+shape.area.toFixed(3)+' Å²';
+   readout.style.marginTop='5px';node.append(readout);
+  }catch(error){
+   const warning=document.createElement('div');
+   warning.textContent='Kapalı 3B çokyüzlü yok (düzlemsel veya dejenere komşuluk).';
+   warning.className='muted';warning.style.marginTop='5px';node.append(warning);
+  }finally{geometry?.dispose();}
+ }
  const limited=shell.slice(0,12);
  if(limited.length){const sample=document.createElement('div');sample.textContent='En kısa uzaklıklar: '+limited.map(x=>x.element+' '+x.distance.toFixed(3)+' Å').join(' · ');sample.style.marginTop='5px';node.append(sample);}
 }

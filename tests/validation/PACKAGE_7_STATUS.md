@@ -11,8 +11,8 @@ veya VESTA ile bilimsel eşdeğerliği **kanıtlamaz**.
 | 7.3–7.4 (#54) | ADP tensör invariantları, hücre metriği, sistematik sönüm ve Bragg referansları; mevcut JS round-trip testleri | Daha geniş bağımsız karşılaştırma ve simetri operasyonları |
 | 7.5 (#54) | Bilimsel ve görsel sonuç durumlarını ayrı bildiren rapor | Gerçek Chromium/WebGL testi merge-only CI'da çalışmıyor; görsel metriklerin otomatik toplanması yok |
 | 7.6 · CIF round-trip (#56) | Orijinal kaynağın birebir saklanması, düzenleme sonrası yeniden üretim, doluluk/ADP regresyonları | Düzenlenmiş CIF'de bilinmeyen tüm etiketlerin kayıpsız round-trip garantisi yok |
-| 7.7 · ADP simetri (bu PR) | Hücreye özgü ADP genişletmesi; fiziksel olmayan simetri işlemlerinin reddi; mCIF bileşik dönüşüm; ortorombik/monoklinik/hekzagonal, CIF/mCIF testleri | Gerçek deneysel ADP veri setleri ve özel konum site-symmetry tensör kısıtları |
-| 7.8 · Koordinasyon (sonraki) | Henüz geliştirilmedi | Komşuluk/köşe/çokyüzlü alan-hacim, sınır atomları, çoklu görüntüler ve kısmi doluluk eşleştirmeleri |
+| 7.7 · ADP simetri (#57) | Hücreye özgü ADP genişletmesi; fiziksel olmayan simetri işlemlerinin reddi; mCIF bileşik dönüşüm; ortorombik/monoklinik/hekzagonal, CIF/mCIF testleri | Gerçek deneysel ADP veri setleri ve özel konum site-symmetry tensör kısıtları |
+| 7.8 · Koordinasyon (bu PR) | Metrik tabanlı periyodik görüntü sınırları; minimum görüntü, bağ ağı ve çizim; kısmi doluluk ağırlıklı CN; eşsiz çokyüzlü köşeleri; bağ açıları, alan/hacim; bağımsız Node ve Chromium kontrolleri | Kimyasal bağ sırası/oksidasyon, karşılıklı bağımlı düzensizlik modelleri, hacimsel belirsizlik ve geniş deneysel kıyaslama |
 
 ## 7.7 ile düzeltilen önceki doğrulama açıkları
 
@@ -28,6 +28,32 @@ veya VESTA ile bilimsel eşdeğerliği **kanıtlamaz**.
   tekrar işlendi: görsel metrik dosyasının yalnız varlığı başarı sayılmıyor.
 - 7.2'nin `tests/coordination-reference.test.cjs` dosyası önceden Pages CI
   test komutunda **yoktu**; artık merge-only doğrulamada çalıştırılacak.
+
+## 7.8 koordinasyon doğrulaması
+
+- Periyodik koordinasyon, minimum görüntü, bağ ağı ve bağ çizimi
+  yalnız ±1 örgü hücresiyle sınırlandırılmıyor. Arama kutusu, gerçek
+  **kartezyen kesim yarıçapının karşılık gelen ters örgü bileşenlerindeki
+  izdüşümünden** hesaplanıyor; bu sınır içindeki tüm görüntüler inceleniyor.
+- Arama kutusu 200.000 (koordinasyon/minimum görüntü) veya 300.000
+  (bağ ağı/bağ çizimi) görüntü adayından fazla olduğunda algoritma
+  **açıkça hata veriyor**, komşuları sessizce eksiltmiyor.
+  Poligonlar için seçilen maksimum 24 komşu sınırı kullanıcı tercihidir;
+  küresel koordinasyon sayısı garantisi olarak yorumlanmamalı.
+- Geometrik komşu sayısı (\`CN\`) ve doluluk ağırlıklı \`Σoccupancy\`
+  ayrı değerlerdir. Alternatif türler aynı konumu işgal ediyorsa
+  geometrik çokyüzlüde **tek köşe** kullanılır; buna rağmen ağırlıklı
+  katkıları ayrı kalır. Ortak işgal olasılıkları/bond valence çıkarılmaz.
+- Seçilen atomun komşuluk panelinde en küçük/en büyük merkez açıları
+  ve kapalı bir konveks gövde oluşuyorsa çokyüzlü alan/hacmi gösterilir.
+  Üretilen 3B çokyüzlülerin alan/hacim toplamı da mesh metadata'sında
+  bulunur; kristal hücre hacmi ile karıştırılmamalıdır.
+- \`tests/coordination-reference.test.cjs\` üzerinde bağımsız -6…+6
+  görüntü taraması, SC/BCC/FCC/triklinik/çok eğik hücre, doluluk,
+  oktahedral açılar, tetrahedral hacim ve yozlaşmış geometri testleri var.
+- \`tests/browser/visual.test.mjs\` için 125 ideal TiO6 oktahedronun
+  analitik \`V=a³/6\`, \`A=√3 a²\` sonuçlarına kıyaslama eklendi;
+  bu Chromium testi standart merge-only CI'da **henüz çalıştırılmıyor**.
 
 ## CI ve bilimsel kapsam ayrımı
 
