@@ -2556,3 +2556,34 @@ test('P7.7 rejects symmetry operations incompatible with the supplied cell',()=>
  assert.throws(()=>api.expandSites(
   [{symbol:'Si',x:.17,y:.23,z:.31,adp:u}], '143',16,orthorhombic),/metriğiyle uyumsuz/);
 });
+
+
+test('P7.7 explicit CIF P2 expansion rotates ADP and preserves partial occupancy',()=>{
+ const input=[
+  'data_adp_p2',
+  '_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 104','_cell_angle_gamma 90',
+  '_space_group_IT_number 3',
+  'loop_','_space_group_symop_operation_xyz',
+  "'x,y,z'","'-x,y,-z'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  '_atom_site_occupancy','Si1 Si .17 .23 .31 .60',
+  'loop_','_atom_site_aniso_label','_atom_site_aniso_U_11',
+  '_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_23','_atom_site_aniso_U_13','_atom_site_aniso_U_12',
+  'Si1 .04 .025 .03 .004 -.003 .002'
+ ].join('\n')+'\n';
+ const imported=api.cifData(input);
+ assert.equal(imported.sites.length,2);
+ const first=imported.sites.find(s=>Math.abs(s.x-.17)<1e-7);
+ const second=imported.sites.find(s=>Math.abs(s.x-.83)<1e-7);
+ assert.ok(first&&second);
+ assert.deepEqual(Array.from(first.adp).map(v=>+v.toFixed(8)),[.04,.025,.03,.004,-.003,.002]);
+ assert.deepEqual(Array.from(second.adp).map(v=>+v.toFixed(8)),[.04,.025,.03,-.004,-.003,-.002]);
+ approx(first.occupancy,.6);
+ approx(second.occupancy,.6);
+ const before=api.adpEigen(api.adpToCartesian(first.adp,imported.cell)).values.slice().sort((a,b)=>a-b);
+ const after=api.adpEigen(api.adpToCartesian(second.adp,imported.cell)).values.slice().sort((a,b)=>a-b);
+ before.forEach((v,i)=>approx(after[i],v,1e-9));
+});
