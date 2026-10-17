@@ -153,7 +153,11 @@ function experimental(pathname){
  const original=parseCtx.read(fs.readFileSync(pathname),path.basename(pathname));
  boundsCheck(original);
  const sorted=Array.from(original.values).sort((a,b)=>a-b);
- const q=Math.floor(sorted.length*.78),level=(sorted[q]+sorted[q+1])/2;
+ // Use sparse signed density peaks so the actual 75k-triangle application
+ // safety budget is never sidestepped by this scientific measurement.
+ const difference=/DELFWT/i.test(path.basename(pathname));
+ const quantile=difference?.06:.94;
+ const q=Math.floor(sorted.length*quantile),level=(sorted[q]+sorted[q+1])/2;
  assert.ok(level>original.min&&level<original.max,'real source isovalue degenerate');
  // Re-encodings of the same REAL CCP4 data. These are NOT independently
  // obtained laboratory CUBE, XSF or CHGCAR datasets.
