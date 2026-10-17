@@ -37,6 +37,8 @@ window.__visualTest={
  moleculeBonds:()=>{const water=xyzData('3\\nH2O\\nO 0 0 0\\nH .9584 0 0\\nH -.239 0 .927');
   const graph=bondNetwork(water.sites,water.cell,{periodic:bondIsPeriodic('auto',water.nonPeriodic),cut:1.5,auto:true});
   return {nonPeriodic:water.nonPeriodic,edges:graph.edges.length,components:graph.components.length,cycleRank:graph.cycleRank};},
+ ccp4:()=>densityGrid&&({kind:densityGrid.kind,dims:densityGrid.dims,periodic:densityGrid.periodic,
+  mapping:densityGrid.ccp4?.mapping,starts:densityGrid.ccp4?.starts,quantity:densityGrid.quantity}),
  polyStats:()=>({center:state.poly,centers:[...(state.polyCenters||[])],meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
   edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
   count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
@@ -465,6 +467,18 @@ try{
  await page.locator('#xrdMapAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1);
  assert.match(await page.locator('#volumeInfo').textContent(),/FOURIER/);
+ await page.locator('#clearVolume').click();
+ // Read the pinned experimental CCP4 brick through the actual file-input UI.
+ await page.locator('#volumeImportUnits').selectOption('unknown');
+ await page.locator('#volumeFile').setInputFiles(path.join(base,'tests/fixtures/gemmi-5i55_tiny.ccp4'));
+ await page.waitForFunction(()=>document.querySelectorAll('#volumeDatasets .volume-layer-row').length===1,null,{timeout:10000});
+ const ccp4Info=await page.evaluate(()=>window.__visualTest.ccp4());
+ assert.deepEqual(ccp4Info.dims,[6,8,10]);
+ assert.deepEqual(ccp4Info.mapping,[2,1,3]);
+ assert.deepEqual(ccp4Info.starts,[50,-8,40]);
+ assert.equal(ccp4Info.periodic,false);
+ assert.equal(ccp4Info.quantity,'unknown');
+ assert.match(await page.locator('#volumeInfo').textContent(),/CCP4\/MRC/);
  await page.locator('#clearVolume').click();
  // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
  const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
