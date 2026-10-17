@@ -1539,7 +1539,7 @@ function analyzeBonds({saveCsv=false}={}){
    Fail closed if the bounded search is too large, rather than return an
    incomplete first coordination shell. */
 function coordinationImageBounds(B,radius,offset){
- if(!Number.isFinite(radius)||radius<=0||radius>30)throw Error('Koordinasyon yarıçapı geçersiz.');
+ if(!Number.isFinite(radius)||radius<=0)throw Error('Koordinasyon yarıçapı geçersiz.');
  const vectors=B.map(v=>Array.isArray(v)?v:[v.x,v.y,v.z]);
  if(vectors.length!==3||vectors.some(v=>v.length!==3||v.some(n=>!Number.isFinite(n))))
   throw Error('Koordinasyon örgü vektörleri geçersiz.');
