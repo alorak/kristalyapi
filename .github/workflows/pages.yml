@@ -42,6 +42,10 @@ jobs:
         run: python tests/validation/volume_surface_reference.py
       - name: Gate 32/48/64 full-grid scientific convergence and periodic seam topology
         run: python tests/validation/volume_highres_reference.py
+      - name: Install independent marching-cubes scientific reference
+        run: python -m pip install scikit-image==0.25.2 scipy==1.15.3
+      - name: Gate independent marching-cubes geometry and fragmentation on real maps
+        run: python tests/validation/volume_independent_reference.py
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,6 +54,7 @@ jobs:
           path: |
             validation-results/volume-surface-10-8.json
             validation-results/volume-highres-10-8-3.json
+            validation-results/volume-independent-10-8-4.json
           if-no-files-found: warn
           retention-days: 30
 
