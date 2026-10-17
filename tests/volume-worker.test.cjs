@@ -66,3 +66,67 @@ test('P10.2 worker rejects invalid budgets without returning geometry',()=>{
  assert.match(invalid.error,/Invalid worker voxel grid/);
  assert.match(workerSource,/self\.postMessage\(\{requestId,results,elapsedMs:/);
 });
+
+test('P10.3 progressive Worker previews are coarser and final vertices retain exact scientific parity',()=>{
+ const g=field([64,64,64]);
+ const job={grid:0,potential:-1,level:1.2,palette:'thermal',maxTriangles:75000};
+ const events=[],self={postMessage(message){events.push(message);}};
+ const context={self,Float32Array,Uint8ClampedArray,performance:{now:()=>12},Math};
+ vm.createContext(context);vm.runInContext(workerSource,context);
+ self.onmessage({data:{requestId:8,grids:[g],jobs:[job],progressive:true}});
+ assert.equal(events.length,2);
+ assert.equal(events[0].previewIndex,0);
+ assert.ok(events[0].previewSurface.decimation>events[1].results[0].decimation);
+ assert.equal(events[0].previewSurface.positions.length,events[0].previewSurface.triangles*9);
+ assertSame(events[1].results[0],coreCtx.compute(g,job.level,null,job.palette,job.maxTriangles),false);
+});
+test('P10.3 slice Worker matches Cartesian trilinear and skew Miller frame samples',()=>{
+ const g=field([9,10,11]);
+ const messages=[],self={postMessage(message){messages.push(message);}};
+ const context={self,Float32Array,Uint8ClampedArray,performance:{now:()=>12},Math};
+ vm.createContext(context);vm.runInContext(workerSource,context);
+ vm.runInContext('this.sample=volumeSample;this.world=volumeWorld;this.at=volumeAtWorld;',coreCtx);
+ self.onmessage({data:{requestId:9,type:'slice',grids:[g],slice:{
+  grid:0,potential:-1,axis:1,position:45,size:64,palette:'thermal'}}});
+ assert.equal(messages.length,1);
+ const axial=messages.pop().slice;
+ assert.equal(axial.values.length,4096);assert.equal(axial.rgba.length,16384);
+ for(const [x,y] of [[0,0],[20,45],[63,63]]){
+  const coord=[x*8/63,9*.45,y*10/63];
+  assert.ok(Math.abs(axial.values[y*64+x]-coreCtx.sample(g,coord))<1e-5);
+  assert.equal(axial.rgba[(y*64+x)*4+3],206);
+ }
+ const corners=[coreCtx.world(g,1,1,3),coreCtx.world(g,7,1,3),
+  coreCtx.world(g,7,8,3),coreCtx.world(g,1,8,3)];
+ self.onmessage({data:{requestId:10,type:'slice',grids:[g],slice:{
+  grid:0,potential:-1,axis:'hkl',position:50,size:64,palette:'viridis',corners}}});
+ const frame=messages.pop().slice;
+ const point=corners[0].map((v,k)=>v+(corners[1][k]-v)*17/63+(corners[3][k]-v)*43/63);
+ assert.ok(Math.abs(frame.values[43*64+17]-coreCtx.at(g,point))<1e-5);
+ assert.equal(frame.rgba[(43*64+17)*4+3],206);
+});
+test('P10.3 slice Worker rejects invalid sizes and does not draw outside Miller grid',()=>{
+ const g=field([5,5,5]);
+ const events=[],self={postMessage(message){events.push(message);}};
+ const context={self,Float32Array,Uint8ClampedArray,performance:{now:()=>12},Math};
+ vm.createContext(context);vm.runInContext(workerSource,context);
+ self.onmessage({data:{requestId:11,type:'slice',grids:[g],slice:{
+  grid:0,potential:-1,axis:0,position:50,size:2048,palette:'thermal'}}});
+ assert.match(events.pop().error,/Invalid slice export/);
+ self.onmessage({data:{requestId:12,type:'slice',grids:[g],slice:{
+  grid:0,potential:-1,axis:'hkl',position:50,size:64,palette:'thermal',
+  corners:[[500,500,500],[501,500,500],[501,501,500],[500,501,500]]}}});
+ const hole=events.pop().slice;
+ assert.ok(Number.isNaN(hole.values[0]));assert.equal(hole.rgba[3],0);
+});
+test('P10.3 polyhedron display LOD only changes outline visibility decisions',()=>{
+ const match=app.match(/function polyOutlineVisible\([\s\S]*?\n\}/);
+ assert.ok(match,'missing polyhedron LOD');
+ const context={};vm.createContext(context);
+ vm.runInContext(match[0]+';this.decide=polyOutlineVisible;',context);
+ assert.equal(context.decide(800,2,'auto'),false);
+ assert.equal(context.decide(800,20,'auto'),true);
+ assert.equal(context.decide(800,1,'high'),true);
+ assert.equal(context.decide(800,20,'fast'),false);
+ assert.equal(context.decide(8,1,'fast'),true);
+});

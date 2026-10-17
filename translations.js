@@ -7,6 +7,7 @@
 (() => {
  'use strict';
  const entries=[
+  ['Performans · Paket 10.3','Performance · Package 10.3'],
   ['Performans · Paket 10.2','Performance · Package 10.2'],
   ['İzoyüzey arka planda oluşturuluyor…','Building isosurface in the background…'],
   ['Hacimsel Worker kullanılamadı; güvenli çizim modu uygulanıyor.','Volume Worker unavailable; using safe synchronous rendering.'],

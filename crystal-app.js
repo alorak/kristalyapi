@@ -115,13 +115,21 @@ function atomLodTier(count,pixelRadius,quality='auto'){
  if(count>=10000||pixelRadius<2.5)return 'low';
  return count>=3000||pixelRadius<9?'medium':'high';
 }
+/* Render-only polyhedron edge LOD. Never discard faces, hulls or measurements. */
+function polyOutlineVisible(count,pixelRadius,quality='auto'){
+ if(quality==='high')return true;
+ if(count<=32)return true;
+ if(quality==='fast')return false;
+ return !(count>600&&pixelRadius<12||count>160&&pixelRadius<5);
+}
 function frameTimingStats(values){
  const sample=values.filter(x=>Number.isFinite(x)&&x>0&&x<1000).sort((a,b)=>a-b);
  if(!sample.length)return {samples:0,medianMs:null,p95Ms:null};
  const percentile=p=>sample[Math.min(sample.length-1,Math.ceil(p*sample.length)-1)];
  return {samples:sample.length,medianMs:percentile(.5),p95Ms:percentile(.95)};
 }
-let renderQuality='auto',lastBuildMs=0,lastBuildPhases={atomsMs:0,bondsMs:0,polyhedraMs:0},lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false,workerMs:0,cacheHits:0,pending:false};
+let renderQuality='auto',lastBuildMs=0,lastBuildPhases={atomsMs:0,bondsMs:0,polyhedraMs:0},lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false,workerMs:0,cacheHits:0,pending:false,previews:0};
+let gpuTimer=null;
 let frameTimings=[],previousFrameTimestamp=0,performanceFrameCounter=0;
 const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
 const atomMaterials=new Map();
@@ -1001,6 +1009,66 @@ function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null,frame=null,
  }
  return canvas;
 }
+/* Large 2D PNG raster export uses the same offline Worker and a bounded copy
+ * of its input grids. Interactive 192px previews stay synchronous. */
+async function sliceImageExport(g,axis,pos,level,palette,contours,colorGrid=null,frame=null,size=768){
+ const stamp=volumeRequestSerial,exportId=++sliceExportSerial;
+ if(typeof Worker!=='function')return sliceImage(g,axis,pos,level,palette,contours,colorGrid,frame,size);
+ let worker;
+ try{worker=new Worker('./volume-iso-worker.js');}
+ catch(error){return sliceImage(g,axis,pos,level,palette,contours,colorGrid,frame,size);}
+ if(volumeSliceExportWorker){volumeSliceExportWorker.terminate();volumeSliceExportFinish?.(null);}
+ volumeSliceExportWorker=worker;
+ const grids=[serializeVolumeWorkerGrid(g)],potential=colorGrid?1:-1;
+ if(colorGrid)grids.push(serializeVolumeWorkerGrid(colorGrid));
+ const requestId=stamp,started=performance.now();
+ const result=await new Promise(resolve=>{
+  let settled=false;
+  const finish=value=>{
+   if(settled)return;
+   settled=true;clearTimeout(timeout);worker.terminate();
+   if(volumeSliceExportWorker===worker){volumeSliceExportWorker=null;volumeSliceExportFinish=null;}
+   resolve(value);
+  };
+  const timeout=setTimeout(()=>finish(null),20000);
+  volumeSliceExportFinish=finish;
+  worker.onmessage=event=>{
+   const payload=event.data||{},slice=payload.slice;
+   if(payload.requestId!==requestId||!slice||!(slice.values instanceof Float32Array)||
+      !(slice.rgba instanceof Uint8ClampedArray)||slice.values.length!==size*size||
+      slice.rgba.length!==size*size*4)return finish(null);
+   finish(slice);
+  };
+  worker.onerror=()=>finish(null);
+  try{worker.postMessage({requestId,type:'slice',grids,slice:{
+   grid:0,potential,axis,position:pos,size,palette,corners:frame?.corners||null}},
+   grids.map(grid=>grid.values.buffer));}
+  catch(error){finish(null);}
+ });
+ if(stamp!==volumeRequestSerial||exportId!==sliceExportSerial||g!==densityGrid)throw Error('Kesit değişti; eski PNG dışa aktarımı iptal edildi.');
+ if(!result)return sliceImage(g,axis,pos,level,palette,contours,colorGrid,frame,size);
+ lastSliceExportWorkerMs=performance.now()-started;
+ const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+ const ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
+ img.data.set(result.rgba);ctx.putImageData(img,0,0);
+ if(contours){
+  const levels=sliceContourLevels(result.values,volumeView.contourCount,level,volumeView.contourMode);
+  const {segments}=sliceContourSegments(result.values,size,levels,Math.max(1,Math.floor(size/192)));
+  for(const active of levels){
+   const reference=Math.abs(active-level)<=Math.max(1e-12,(g.max-g.min)*1e-5);
+   const stroke=sliceContourStroke(active,reference,volumeView.contourStyle),scale=size/192;
+   ctx.strokeStyle=stroke.color;ctx.lineWidth=stroke.width*scale;
+   ctx.setLineDash(stroke.dash.map(x=>x*scale));ctx.beginPath();
+   for(const segment of segments)if(segment.level===active){
+    ctx.moveTo(segment.x1,segment.y1);ctx.lineTo(segment.x2,segment.y2);
+   }
+   ctx.stroke();
+  }
+  ctx.setLineDash([]);
+ }
+ refreshPerformancePanel();
+ return canvas;
+}
 function sliceWorldCorners(g,axis,pos){
  const floating=[0,1,2].filter(n=>n!==axis),shape=volumeShape(g);
  const at=(a,b)=>{const xyz=[0,0,0];xyz[axis]=(shape[axis]-1)*pos/100;
@@ -1027,7 +1095,7 @@ function volumeSliceMesh(g){
 // Package 10.2: bounded triangulation cache, cancellation, and Web Worker offload.
 const VOLUME_WORKER_THRESHOLD=75000,VOLUME_SURFACE_CACHE_BYTES=32*1024*1024;
 const volumeGridIds=new WeakMap(),volumeSurfaceCache=new Map();
-let nextVolumeGridId=1,volumeSurfaceCacheSize=0,volumeRequestSerial=0,volumeActiveWorker=null,volumeCancelledJobs=0;
+let nextVolumeGridId=1,volumeSurfaceCacheSize=0,volumeRequestSerial=0,volumeActiveWorker=null,volumeCancelledJobs=0,volumeSliceExportWorker=null,volumeSliceExportFinish=null,lastSliceExportWorkerMs=null,sliceExportSerial=0;
 function volumeGridIdentity(grid){
  if(!grid)return 0;
  if(!volumeGridIds.has(grid))volumeGridIds.set(grid,nextVolumeGridId++);
@@ -1054,7 +1122,8 @@ function storeVolumeSurface(key,surface){
  }
 }
 function cancelVolumeWorker(){
- ++volumeRequestSerial;
+ ++volumeRequestSerial;++sliceExportSerial;
+ if(volumeSliceExportWorker){volumeSliceExportWorker.terminate();volumeSliceExportWorker=null;volumeSliceExportFinish?.(null);}
  if(volumeActiveWorker){volumeActiveWorker.terminate();volumeActiveWorker=null;volumeCancelledJobs++;}
 }
 function serializeVolumeWorkerGrid(grid){
@@ -1106,7 +1175,7 @@ function clearVolumeLayer(){
 function drawVolume(forceSync=false){
  const started=performance.now();
  clearVolumeLayer();
- lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false,workerMs:0,cacheHits:0,pending:false};
+ lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false,workerMs:0,cacheHits:0,pending:false,previews:0};
  if(!root||!densityGrid||volumeView.mode==='off')return;
  updateVolumeInfo();
  const requestId=volumeRequestSerial;
@@ -1153,6 +1222,20 @@ function drawVolume(forceSync=false){
  };
  const jobs=pending.map(task=>({grid:gridIndexFor(task.dataset.grid),potential:gridIndexFor(pot),
   level:task.item.value,palette:volumeView.palette,maxTriangles:triangleLimit}));
+ const previewObjects=new Map();
+ const discardPreview=index=>{
+  const objects=previewObjects.get(index)||[],disposed=new Set();
+  for(const obj of objects){
+   layer.remove(obj);
+   if(obj.geometry&&!disposed.has(obj.geometry)){disposed.add(obj.geometry);obj.geometry.dispose();}
+   if(obj.material&&!disposed.has(obj.material)){disposed.add(obj.material);obj.material.dispose();}
+  }
+  previewObjects.delete(index);
+ };
+ const validSurface=surface=>surface&&surface.positions instanceof Float32Array&&
+  Number.isInteger(surface.triangles)&&surface.triangles>=0&&surface.triangles<=triangleLimit+1&&
+  surface.positions.length===surface.triangles*9&&
+  (!pot||(surface.colors instanceof Float32Array&&surface.colors.length===surface.positions.length));
  const finishError=error=>{
   if(requestId!==volumeRequestSerial||layer!==volumeLayer)return;
   volumeActiveWorker=null;worker.terminate();
@@ -1163,16 +1246,27 @@ function drawVolume(forceSync=false){
  worker.onmessage=event=>{
   if(requestId!==volumeRequestSerial||layer!==volumeLayer)return;
   const payload=event.data||{};
-  if(payload.requestId!==requestId||payload.error||!Array.isArray(payload.results)||
-   payload.results.length!==pending.length)return finishError(payload.error||'Invalid worker response');
+  if(payload.requestId!==requestId)return;
+  if(Number.isInteger(payload.previewIndex)&&payload.previewSurface){
+   const index=payload.previewIndex,surface=payload.previewSurface;
+   if(index<0||index>=pending.length||!validSurface(surface))return finishError('Invalid preview geometry');
+   try{
+    discardPreview(index);
+    const before=layer.children.length;
+    appendVolumeSurface(layer,pending[index].dataset,pending[index].item,surface,pot);
+    previewObjects.set(index,layer.children.slice(before));
+    lastVolumeStats.previews++;
+    applyLayerAppearance();refreshPerformancePanel();
+   }catch(error){finishError(error);}
+   return;
+  }
+  if(payload.error||!Array.isArray(payload.results)||payload.results.length!==pending.length)
+   return finishError(payload.error||'Invalid worker response');
   try{
    for(let i=0;i<pending.length;i++){
     const surface=payload.results[i];
-    if(!(surface.positions instanceof Float32Array)||!Number.isInteger(surface.triangles)||
-       surface.triangles<0||surface.triangles>triangleLimit+1||
-       surface.positions.length!==surface.triangles*9||
-       (pot&&(!(surface.colors instanceof Float32Array)||surface.colors.length!==surface.positions.length)))
-     throw Error('Invalid worker triangles');
+    if(!validSurface(surface))throw Error('Invalid worker triangles');
+    discardPreview(i);
     process(pending[i],surface);
    }
    volumeActiveWorker=null;worker.terminate();
@@ -1183,7 +1277,7 @@ function drawVolume(forceSync=false){
   }catch(error){finishError(error);}
  };
  worker.onerror=event=>{event.preventDefault();finishError(event.message||'Worker error');};
- try{worker.postMessage({requestId,grids,jobs},grids.map(g=>g.values.buffer));}
+ try{worker.postMessage({requestId,grids,jobs,progressive:true},grids.map(g=>g.values.buffer));}
  catch(error){finishError(error);}
 }
 function updateVolumeInfo(){
@@ -1662,13 +1756,13 @@ function initVolumeControls(){
   download('kristalyapi_slice_'+volumeView.axis+'.csv',
    '# x,y,z koordinatlari Angstrom; alan: '+result.units+'\n'+volumeSliceCsv(result),'text/csv');
  };
- $('volumeSlicePng').onclick=()=>{
+ $('volumeSlicePng').onclick=async()=>{
   if(!densityGrid)return inform('Önce alan yükleyin.');
   let canvas;
   try{
    const frame=volumeView.axis==='hkl'?sliceMillerFrame(densityGrid,state.cell,
     ...volumeView.hkl,volumeView.position):null;
-   canvas=sliceImage(densityGrid,volumeView.axis,volumeView.position,volumeView.iso,
+   canvas=await sliceImageExport(densityGrid,volumeView.axis,volumeView.position,volumeView.iso,
     volumeView.palette,volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null,frame,768);
   }catch(error){return inform('Kesit: '+error.message);}
   canvas.toBlob(blob=>{if(blob)download('kristalyapi_slice_'+volumeView.axis+'.png',blob,'image/png');},'image/png');
@@ -1679,7 +1773,7 @@ function initVolumeControls(){
 function initScene(){
  scene=new THREE.Scene();
  perspective=true;camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
- renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;$('stage').appendChild(renderer.domElement);
+ renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;$('stage').appendChild(renderer.domElement);initGpuTimer();
  scene.add(new THREE.HemisphereLight(0xffffff,0xf0f2f5,1.15));
  const l=new THREE.DirectionalLight(0xffffff,2.15);l.position.set(8,-13,18);scene.add(l);
  const l2=new THREE.DirectionalLight(0xffffff,.55);l2.position.set(-10,12,-4);scene.add(l2);
@@ -1704,6 +1798,40 @@ function updateAtomLod(){
   mesh.geometry=geometries[tier];mesh.userData.atomLodTier=tier;
  }
 }
+function updatePolyhedronLod(){
+ if(!root||!camera||!renderer||!orbit)return;
+ const distance=Math.max(.01,camera.position.distanceTo(orbit.target));
+ const height=Math.max(.0001,projectionVisibleHeight(camera,distance));
+ const pixels=Math.max(1,renderer.domElement.clientHeight||$('stage').clientHeight||600);
+ for(const obj of root.children)if(obj.userData.polyOutline){
+  const pixelRadius=(obj.userData.maxPolyRadius||1)*pixels/height;
+  obj.visible=polyOutlineVisible(obj.userData.polyhedraCount||0,pixelRadius,renderQuality);
+ }
+}
+/* Optional hardware GPU timer query, polled asynchronously. No CPU/FPS surrogate. */
+function initGpuTimer(){
+ const gl=renderer.getContext();
+ const ext=typeof WebGL2RenderingContext!=='undefined'&&gl instanceof WebGL2RenderingContext?
+  gl.getExtension('EXT_disjoint_timer_query_webgl2'):null;
+ gpuTimer={gl,ext,supported:!!ext,pending:[],lastMs:null,samples:0,disjoint:0};
+}
+function pollGpuTimer(){
+ if(!gpuTimer?.supported)return;
+ const {gl,ext}=gpuTimer;
+ try{
+  if(gl.getParameter(ext.GPU_DISJOINT_EXT)){
+   for(const query of gpuTimer.pending)gl.deleteQuery(query);
+   gpuTimer.pending=[];gpuTimer.lastMs=null;gpuTimer.disjoint++;return;
+  }
+  for(let i=gpuTimer.pending.length-1;i>=0;i--){
+   const query=gpuTimer.pending[i];
+   if(!gl.getQueryParameter(query,gl.QUERY_RESULT_AVAILABLE))continue;
+   const ns=gl.getQueryParameter(query,gl.QUERY_RESULT);
+   if(Number.isFinite(ns)&&ns>=0){gpuTimer.lastMs=ns/1e6;gpuTimer.samples++;}
+   gl.deleteQuery(query);gpuTimer.pending.splice(i,1);
+  }
+ }catch(error){gpuTimer.supported=false;}
+}
 function performanceSnapshot(){
  const render=renderer?.info?.render||{},memory=renderer?.info?.memory||{};
  return {
@@ -1715,6 +1843,10 @@ function performanceSnapshot(){
   buildPhases:{...lastBuildPhases},volumeWorkerMs:lastVolumeStats.workerMs,
   volumeCacheHits:lastVolumeStats.cacheHits,volumePending:lastVolumeStats.pending,
   volumeCancelledJobs,volumeCacheBytes:volumeSurfaceCacheSize,
+  volumePreviews:lastVolumeStats.previews||0,sliceExportWorkerMs:lastSliceExportWorkerMs,
+  polyOutlineVisible:root?root.children.some(obj=>obj.userData.polyOutline&&obj.visible):false,
+  gpuTimerSupported:!!gpuTimer?.supported,gpuRenderMs:gpuTimer?.lastMs??null,
+  gpuTimerSamples:gpuTimer?.samples||0,gpuDisjointEvents:gpuTimer?.disjoint||0,
   volumeTriangles:lastVolumeStats.triangles,volumeStride:lastVolumeStats.stride,
   volumeTruncated:lastVolumeStats.truncated,buildMs:lastBuildMs,volumeBuildMs:lastVolumeStats.ms,
   drawCalls:render.calls||0,gpuTriangles:render.triangles||0,geometries:memory.geometries||0,
@@ -1729,16 +1861,27 @@ function refreshPerformancePanel(){
   word('Atoms ','Atom ')+x.visibleAtoms.toLocaleString()+' / '+x.atoms.toLocaleString()+' · '+word('bonds ','bağ ')+x.bonds.toLocaleString()+' · '+word('polyhedra ','çokyüzlü ')+x.polyhedra,
   'Atom LOD '+(x.atomLod.map(item=>item.tier+': '+item.count+' ('+item.trianglesPerSphere+' tris/atom)').join(', ')||'—'),
   word('CPU build ','CPU oluşturma ')+fmt(x.buildMs)+' ms · '+word('atoms ','atomlar ')+fmt(x.buildPhases.atomsMs)+' · '+word('bonds ','bağlar ')+fmt(x.buildPhases.bondsMs)+' · '+word('poly ','çokyüzlü ')+fmt(x.buildPhases.polyhedraMs),
-  word('Volume (main) ','Hacim (ana) ')+fmt(x.volumeBuildMs)+' ms · Worker '+fmt(x.volumeWorkerMs)+' ms · '+word('cache hits ','önbellek isabeti ')+x.volumeCacheHits+(x.volumePending?word(' (processing)',' (işleniyor)'):'')+word(' · canceled ',' · iptal ')+x.volumeCancelledJobs,
+  word('Volume (main) ','Hacim (ana) ')+fmt(x.volumeBuildMs)+' ms · Worker '+fmt(x.volumeWorkerMs)+' ms · '+word('cache hits ','önbellek isabeti ')+x.volumeCacheHits+(x.volumePending?word(' (processing)',' (işleniyor)'):'')+word(' · canceled ',' · iptal ')+x.volumeCancelledJobs+word(' · previews ',' · önizleme ')+x.volumePreviews,
   word('Volume ','Hacim ')+x.volumeTriangles.toLocaleString()+word(' triangles · grid stride ',' üçgen · ızgara adımı ')+(x.volumeStride||'—')+(x.volumeTruncated?word(' (limited)',' (sınırlı)'):''),
+  word('Polyhedron edges ','Çokyüzlü kenarları ')+(x.polyOutlineVisible?word('visible','görünür'):word('LOD hidden','LOD ile gizli'))+
+   word(' · Slice PNG Worker ',' · Kesit PNG Worker ')+fmt(x.sliceExportWorkerMs)+' ms',
   'WebGL '+x.drawCalls+word(' draw calls · ',' çizim çağrısı · ')+x.gpuTriangles.toLocaleString()+word(' triangles · ',' üçgen · ')+x.geometries+word(' geometries',' geometri'),
+  'GPU '+(x.gpuTimerSupported?(fmt(x.gpuRenderMs)+' ms · '+x.gpuTimerSamples+word(' timer queries',' zaman sorgusu')):word('timer query unavailable','zaman sorgusu desteklenmiyor'))+word(' · disjoint ',' · geçersiz sorgu ')+x.gpuDisjointEvents,
   word('Frame intervals ','Kare aralıkları ')+fmt(x.medianMs)+' / '+fmt(x.p95Ms)+word(' ms (median / p95, ',' ms (ortanca / p95, ')+x.samples+word(' samples)',' örnek)')
  ].join('\n');
 }
 function loop(timestamp){
  requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();
- if(++performanceFrameCounter%15===0)updateAtomLod();
- updateAxisGizmo();renderer.render(scene,camera);
+ if(++performanceFrameCounter%15===0){updateAtomLod();updatePolyhedronLod();}
+ pollGpuTimer();
+ updateAxisGizmo();
+ let query=null;
+ if(gpuTimer?.supported&&performanceFrameCounter%20===0&&gpuTimer.pending.length<3){
+  try{query=gpuTimer.gl.createQuery();gpuTimer.gl.beginQuery(gpuTimer.ext.TIME_ELAPSED_EXT,query);}
+  catch(error){if(query)gpuTimer.gl.deleteQuery(query);query=null;gpuTimer.supported=false;}
+ }
+ try{renderer.render(scene,camera);}
+ finally{if(query){gpuTimer.gl.endQuery(gpuTimer.ext.TIME_ELAPSED_EXT);gpuTimer.pending.push(query);}}
  if($('performancePanel')&&!$('performancePanel').hidden){
   if(previousFrameTimestamp&&timestamp>previousFrameTimestamp){
    frameTimings.push(timestamp-previousFrameTimestamp);if(frameTimings.length>120)frameTimings.shift();
@@ -3292,7 +3435,7 @@ function build(){
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
  if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');}
  const polyStarted=performance.now();
- let polyCount=0,polyTruncated=false,polyFailed=0,polyMissing=[],polyArea=0,polyVolume=0;
+ let polyCount=0,polyTruncated=false,polyFailed=0,polyMissing=[],polyArea=0,polyVolume=0,polyRadius=0;
  if(state.polyCenters.length){
   const centers=new Set(state.polyCenters);
   const produced=new Map([...centers].map(symbol=>[symbol,0]));
@@ -3307,6 +3450,7 @@ function build(){
    if(polyCount>=MAX_POLYHEDRA){polyTruncated=true;break;}
    try{
     const vertices=environment.vertices.map(v=>entry[i].pos.clone().add(new THREE.Vector3(...v.xyz)));
+    polyRadius=Math.max(polyRadius,...environment.vertices.map(v=>Math.hypot(...v.xyz)));
     const geometry=new ConvexGeometry(vertices);
     const hull=coordinationHullMetrics(geometry);
     const positions=geometry.getAttribute('position'),normals=geometry.getAttribute('normal');
@@ -3332,11 +3476,12 @@ function build(){
    merged.setAttribute('color',new THREE.Float32BufferAttribute(faceColors,4));
    const mesh=new THREE.Mesh(merged,new THREE.MeshPhongMaterial({color:0xffffff,vertexColors:true,
     side:THREE.DoubleSide,transparent:true,opacity:1,depthWrite:false,shininess:70}));
-   mesh.userData.polyhedraCount=polyCount;mesh.userData.polyhedraArea=polyArea;mesh.userData.polyhedraVolume=polyVolume;addLayerObject(mesh,'polyhedra');
+   mesh.userData.polyhedraCount=polyCount;mesh.userData.polyhedraArea=polyArea;mesh.userData.polyhedraVolume=polyVolume;mesh.userData.maxPolyRadius=polyRadius;addLayerObject(mesh,'polyhedra');
    const borders=new THREE.BufferGeometry();
    borders.setAttribute('position',new THREE.Float32BufferAttribute(edgePositions,3));
-   addLayerObject(new THREE.LineSegments(borders,new THREE.LineBasicMaterial({color:0x4296c2,
-    transparent:true,opacity:.74})),'polyhedra');
+   const edges=new THREE.LineSegments(borders,new THREE.LineBasicMaterial({color:0x4296c2,
+    transparent:true,opacity:.74}));edges.userData.polyOutline=true;edges.userData.polyhedraCount=polyCount;edges.userData.maxPolyRadius=polyRadius;
+   addLayerObject(edges,'polyhedra');
   }
   polyMissing=[...produced].filter(([,count])=>!count).map(([symbol])=>symbol);
  }
@@ -3345,7 +3490,7 @@ function build(){
  drawVolume();
  updateAtomLod();
  drawStage3Planes();
- applyLayerAppearance();
+ applyLayerAppearance();updatePolyhedronLod();
  renderLayerManager();
  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';$('infoVolume').textContent=volume(B).toFixed(2);$('infoSites').textContent=physical.length;
@@ -8177,7 +8322,7 @@ function bind(){
   updateAtomLod();refreshPerformancePanel();
  };
  $('performanceClose').onclick=()=>{$('performancePanel').hidden=true;$('performanceBtn').setAttribute('aria-expanded','false');};
- $('atomQuality').onchange=e=>{renderQuality=e.target.value;updateAtomLod();refreshPerformancePanel();};
+ $('atomQuality').onchange=e=>{renderQuality=e.target.value;updateAtomLod();updatePolyhedronLod();refreshPerformancePanel();};
  $('performanceDownload').onclick=()=>download('kristalyapi_performance.json',
   JSON.stringify({kind:'kristalyapi-render-snapshot',schema:1,recordedAt:new Date().toISOString(),
    note:'Frame intervals include vsync/browser scheduling and are not GPU execution times. Hardware-dependent timings are informational.',

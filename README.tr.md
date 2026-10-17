@@ -20,13 +20,21 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Kademeli yüzey, çokyüzlü LOD ve GPU ölçümü (Paket 10.3)
+
+Büyük (≥200.000 voksel) ve önbellekte bulunmayan izoyüzeyler önce Worker üzerinde üretilen **kaba bir önizleme**, ardından sayısal algoritması değişmeyen tam geometri olarak görünür. Eski görevlerin iptali nedeniyle geç önizleme/sonuç sahneye eklenmez; mevcut 32 MiB önbelleğe yalnız tam sonuç girer. Bu yöntem iki aşamalı önizleme/iyileştirmedir; yerel hata kontrollü uyarlamalı üçgenleme değildir.
+
+Çok sayıda çokyüzlü için **kenar çizgileri** uzaklık, sayı ve kalite seçimine göre görsel LOD kullanır. Dolgu yüzeyleri, koordinasyon komşuları, alan/hacim değerleri ve bilimsel dışa aktarım geometrisi değişmez. **Yüksek kalite** kenarları korur. 768×768 2B kesit PNG'sinin eğik Kartezyen/Miller düzlemindeki örnek ve renk hesabı aynı çevrimdışı Worker'a taşındı; 192px etkileşimli önizleme, kontur çizimi ve sayısal CSV ana iş parçacığındadır. Worker kullanılamazsa eşzamanlı güvenli PNG yoluna dönülür.
+
+WebGL2'de `EXT_disjoint_timer_query_webgl2` desteklenirse Performans paneli ve JSON raporu CPU/kare sürelerinden ayrı olarak asenkron **gerçek GPU render sorgu süresi**, örnek sayısı ve geçersiz sorgu olaylarını gösterir. Desteklenmeyen veya geçersiz cihazlarda GPU süresi raporlanmaz. Sürücü/tarayıcı farklılıkları nedeniyle sabit FPS/ms başarı eşiği uygulanmaz. Mevcut atom, çokyüzlü, izoyüzey ve voksel güvenlik sınırları korunur.
+
 ## Hacimsel Worker ve CPU profili (Paket 10.2)
 
 En az **75.000 voksel** içeren haritalarda önbellekte bulunmayan 3B izoyüzeyler, **çevrimdışı çalışabilen aynı kökenli Web Worker** üzerinde üçgenlenir. Böylece sayısal marching-tetrahedra hesabı sürerken görüntüleyici yanıt verebilir. İzodeğeri, veri kümesi veya görünürlük değiştiğinde eski görev iptal edilir; daha önce hesaplanan bir yüzeye dönüldüğünde **32 MiB sınırındaki bellek önbelleği** kullanılır. Asıl voksel dizisi uygulamada kalır, Worker'a yalnızca kopyalar aktarılır. Worker hatasında veri gizlenmez; eşzamanlı güvenli çizime dönülür.
 
 Performans paneli artık atom yerleştirme, bağ arama ve çokyüzlü üretiminin CPU sürelerini; ana iş parçacığındaki hacim hazırlığını, Worker üçgenleme süresini, önbellek isabetlerini ve iptal edilen işleri ayrı gösterir. Bu süreler donanıma/tarayıcıya bağlıdır ve **GPU zamanlayıcı sorgusu değildir**. Sayısal sonuçların mevcut izoyüzey hesabıyla eşitliği, işaretli seviyeler, eğik/periodik ızgaralar ve potansiyelle renklendirme için doğrulanır. Gerçek tarayıcı testleri iptal, önbellek, Gemmi CCP4 ve çevrimdışı Worker çalışmasını kapsar.
 
-Bu aşamada fiziksel voksel değerleri veya birimler değişmez; mevcut 8-yüzey/üçgen sınırı kaldırılmaz ve 2B kesit Worker'a taşınmaz. Çokyüzlü LOD'u, kademeli hacim işleme ve desteklenen GPU timer-query ölçümleri Paket 10.3+ kapsamındadır.
+Paket 10.2'de fiziksel voksel değerleri, birimler ve 8-yüzey/üçgen güvenlik sınırları değişmedi; 2B PNG raster işleme ve desteklenen GPU zaman sorguları yukarıdaki Paket 10.3 kapsamındadır.
 
 ## Performans ve LOD (Paket 10.1)
 
