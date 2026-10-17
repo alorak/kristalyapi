@@ -43,6 +43,10 @@ window.__visualTest={
   area:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraArea||0),0),
   volume:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraVolume||0),0),
   notice:document.getElementById('notice').textContent}),
+ tiChemistry:()=>{resetVolume();loadPreset('perovskite');state.rep=[1,1,1];
+  state.style='poly';state.cut=2.18;build();
+  selected=[atomData.findIndex(atom=>atom.site.symbol==='Ti')];
+  renderCoordinationSummary();return document.getElementById('coordinationInfo').textContent;},
  perovskitePolys:()=>{resetVolume();loadPreset('perovskite');state.rep=[5,5,5];state.style='poly';state.poly='';
   state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
  syncedPolyCenter:()=>{resetVolume();loadPreset('perovskite');state.style='poly';state.poly='';
@@ -793,6 +797,11 @@ try{
  const restoredPoly=await page.evaluate(()=>window.__visualTest.syncedPolyCenter());
  assert.equal(restoredPoly.center,'Ti','syncControls must keep an empty polyhedron center for smart Ti selection');
  assert.ok(restoredPoly.count>0,'the synced perovskite should show nonempty Ti polyhedra');
+ const chemistry=await page.evaluate(()=>window.__visualTest.tiChemistry());
+ assert.match(chemistry,/Baur D: 0\.00000/,'ideal TiO6 has zero bond-length distortion');
+ assert.match(chemistry,/Hoppe ECoN: 6\.0000/,'ideal TiO6 has effective CN 6');
+ assert.match(chemistry,/Quadratic elongation: 1\.00000/,'regular octahedron has lambda 1');
+ assert.match(chemistry,/Bağ açısı varyansı: 0\.000/,'regular octahedron has zero angle variance');
  const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
  assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
   'thousands of displayed atoms should occupy one instanced draw group');
