@@ -418,16 +418,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div class="note"><strong>SHELX .fcf / sınırlı MTZ · deneysel yansımalar</strong>
     <input type="file" id="fcfFile" accept=".fcf,.cif,.mtz" hidden>
-    <div class="actionrow"><button type="button" id="fcfImport">.fcf / MTZ dosyası seç</button><select id="fcfMapKind" aria-label="Deneysel harita türü"><option value="difference">Fo−Fc fark haritası</option><option value="observed">Fo haritası</option><option value="twice-observed">2Fo−Fc (model fazlı, ağırlıksız)</option></select></div>
+    <div class="actionrow"><button type="button" id="fcfImport">.fcf / MTZ dosyası seç</button><select id="fcfMapKind" aria-label="Deneysel harita türü"><option value="difference">Fo−Fc fark haritası</option><option value="observed">Fo haritası</option><option value="twice-observed">2Fo−Fc (model fazlı, ağırlıksız)</option><option value="weighted-main">FWT/PHWT (rafine ağırlıklı)</option><option value="weighted-difference">DELFWT/PHDELWT (rafine fark)</option></select></div>
     <div class="actionrow">
      <label class="field compact"><span>MTZ Fo sütunu (isteğe bağlı)</span><input id="mtzFoColumn" type="text" placeholder="ör. 1:FP" maxlength="35"></label>
      <label class="field compact"><span>MTZ Fc sütunu (isteğe bağlı)</span><input id="mtzFcColumn" type="text" placeholder="ör. 1:FC" maxlength="35"></label>
      <label class="field compact"><span>MTZ faz sütunu (isteğe bağlı)</span><input id="mtzPhaseColumn" type="text" placeholder="ör. 1:PHIC" maxlength="35"></label>
     </div>
-    <p class="hint">MTZ: boş alanlar yalnız tek anlamlı eşleşmede otomatik seçilir. Belirsiz adlarda <code>veriKümesiID:ETİKET</code> yazın. FWT/PHWT harita katsayısı, anomalous yansıma veya FREE/FOM ağırlığı Fo/Fc yerine kullanılmaz.</p>
+    <div class="actionrow">
+     <label class="field compact"><span>MTZ SIGFP sütunu</span><input id="mtzSigmaColumn" type="text" placeholder="ör. 1:SIGFP" maxlength="35"></label>
+     <label class="field compact"><span>MTZ FOM sütunu</span><input id="mtzFomColumn" type="text" placeholder="ör. 1:FOM" maxlength="35"></label>
+     <label class="field compact"><span>MTZ FREE sütunu</span><input id="mtzFreeColumn" type="text" placeholder="ör. 0:FREE" maxlength="35"></label>
+    </div>
+    <p class="hint">MTZ: boş alanlar tek anlamlıysa otomatik eşlenir; belirsiz sütunlarda <code>veriKümesiID:ETİKET</code> yazın. FWT/PHWT ve DELFWT/PHDELWT doğrudan rafine harita katsayılarıdır; FOM ile yeniden çarpılmaz. FREE test değeri açıkça seçilir.</p>
+    <div class="actionrow">
+     <label class="field compact"><span>Asgari Fo/σ(Fo)</span><input type="number" id="mtzMinSnr" min="0" max="100" step="0.5" value="0"></label>
+     <label class="field compact"><span>FREE hariç tut</span><select id="mtzFreeExclude"><option value="none">Hayır</option><option value="0">FREE = 0</option><option value="1">FREE = 1</option></select></label>
+     <label class="field compact"><span>Model fazı FOM</span><select id="mtzFomMode"><option value="off">Kapalı</option><option value="multiply">Ampirik ×FOM</option></select></label>
+    </div>
     <label class="field compact"><span>Fo−Fc / 2Fo−Fc için Fcalc ölçeği</span><select id="fcfScaleMode"><option value="raw">Ham FCF (ölçek değiştirme)</option><option value="lsq">Otomatik en küçük kareler (Fcalc → Fo)</option></select></label>
     <button type="button" id="fcfMapAdd">Fazlı deneysel haritayı oluştur</button>
-    <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. Model fazları, hücre/orijin ve Friedel tutarlılığı kontrol edilir. Ham ve LSQ ölçek yöntemleri seçilebilir. MTZ için birleşik P1 / P-1 / P21 / P21/c / P212121 ve uyumlu Fo/Fc/PHIC sütunları desteklenir; anomalous/FOM/FREE haritaları desteklenmez.</p>
+    <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. MTZ P1 / P-1 / P21 / C2 / P21/c / P212121 destekler. Ham/LSQ Fo−Fc, isteğe bağlı Fo/σ ve FREE süzgeci, ampirik FOM çarpanı ve doğrudan FWT/DELFWT rafine haritalar kullanılabilir. Anomalous veri ve uygulama içi σA hesaplaması desteklenmez.</p>
    </div>
    <p class="hint">Yansıma şiddetleri kinematik modeldendir; profil genişliği ampirik pseudo-Voigt/Caglioti modelidir. Cihaz asimetrisi, Kβ, absorpsiyon, tekstür, arka plan ve tam Rietveld inceltmesi modellenmez.</p>
   </div>

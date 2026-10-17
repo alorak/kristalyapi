@@ -23,7 +23,7 @@ Bilimsel kontrat ve test örnekleri:
 | P0 | Ham `Fo−Fc` ve seçilebilir LSQ Fc ölçekli fark haritaları, d_min/Nyquist ve P1 grid kapsamı | Analitik tek-çift Fourier ve ölçek testleri |
 | P1 | **8.2b başlangıcı:** Birleşik P1 MTZ için endian/başlık/NCOL/COL/DCELL/VALM doğrulamalı FP/FC/PHIC okuma ve model-fazlı Fo/Fo−Fc; non-P1 ve belirsiz sütunlar fail-closed | Sentetik LE/BE, eksik değer, yanlış hücre/simetri testleri; **gerçek Gemmi/CCP4 fixture ve bağımsız harita referansı hâlâ gerekli** |
 | P1 | **8.2c ilk aşama:** P1 / P-1 / P21 / P21/c / P212121 MTZ simetri kapanışı, hkl/faz translasyonu; `datasetId:LABEL` eşlemesi; ham/LSQ `2Fo−Fc` | Analitik dönüşüm/Friedel/sistematik sönüm testleri; gerçek Gemmi/CCP4 karşılaştırması açık |
-| P1 | FOM/σ/FREE, çözünürlük kabukları, σA ağırlığı ve CCP4/MRC map | Bağımsız gerçek yansıma/harita referansı gerekli |
+| P1 | **8.2d gerçek referans + kalite süzgeçleri:** Gemmi 5e5z (P21) / 5wkd (C2), gerçek COLUMN ve FWT/DELFWT, Gemmi 0.7.5 FFT voxelleri, Fo/σ ve açık FREE filtreleri; FOM deneysel çarpanı | 367 gerçek 5wkd yansıması ve iki bağımsız harita gridi CI kapısında; σA hesaplaması ve çözünürlük kabukları sonraki iş |\n| P1 | Tam σA/m/D refinman ağırlığı, çözünürlük kabukları ve CCP4/MRC map | Bu sürümde FWT/DELFWT hazır ağırlıkları kullanılır; tam refinman algoritması ayrı kapsam |
 
 **Kapsam belgesi:** [`tests/validation/PACKAGE_8_2_STATUS.md`](tests/validation/PACKAGE_8_2_STATUS.md).
 

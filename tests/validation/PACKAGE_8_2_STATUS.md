@@ -51,15 +51,25 @@ CIF2, çoklu data_/save_ blokları, alan bazlı kayıp raporu, tüm ADP özel ko
 - Bağımsız analitik P-1, orijini kaymış tersinim, P21 vida ekseni, P21/c/P212121 grup kapanışı, uyumsuz metrik ve yanlış faz/sönüm testleri eklendi. Gerçek MTZ/Gemmi/CCP4 **henüz doğrulanmadı**.
 - İngilizce statik sözlükte eksik MTZ metinleri tamamlandı (native regression #88), WebGL smoke testindeki kapalı XRD paneli açma adımı düzeltildi; alt araç çubuğunun yüksekliği artırıldı ve taşma denetimi eklendi. İki test iş akışı PR aşamasında da çalışır; Pages dağıtımı PR'da atlanır.
 
-## Sonraki alt paket (8.2c devamı)
+## 8.2d sonrasında kalan açık işler
 
-1. Gerçek MTZ/IUCr veri kümelerinde Fo/Fc/PHIC ve Fourier örneklerinin Gemmi/CCP4 ile bağımsız karşılaştırılması; başlangıç için doğrulanmış P1 fixture.
-2. ASU/uzay grubu simetrisiyle yansıma tamamlama ve ayrı anomalous Friedel yolu; çoklu dataset/kolon açık eşleme arayüzü.
-3. FOM/σ/FREE, harita normalizasyonu ve çözünürlük kabuğu ölçekleri; ağırlıklı `2Fo−Fc` için açık matematiksel model.
-4. CCP4/MRC hacimsel harita uyumluluğu ve Paket 9'a aktarım.
+1. Genel ASU/uzay grubu yorumlayıcısı, alternatif eksenler, tüm merkezli örgüler ve anomalous Friedel ayrımı.
+2. σA/m/D parametrelerinin refinman algoritmasıyla doğrudan tahmini, çözünürlük kabukları ve harita normalizasyonu.
+3. CCP4/MRC hacimsel harita uyumluluğu ve Paket 9'a aktarım.
+4. Gemmi dışına ek CCP4 `fft` aracıyla birebir karşılaştırma ve daha geniş gerçek MTZ koleksiyonu.
 
 ## Referanslar
 
 - [IUCr yapı faktörü tanımı](https://dictionary.iucr.org/Structure_factor)
 - [CCP4 FFT belgeleri](https://www.ccp4.ac.uk/html/fft.html)
 - [CCP4 SFTOOLS Fourier ve çözünürlük açıklaması](https://www.ccp4.ac.uk/html/sftools.html)
+\n## Paket 8.2d — gerçek MTZ / Gemmi ve kontrollü ağırlıklandırma
+
+- Gerçek iki Gemmi MTZ fikstürü kayda alındı: `5e5z.mtz` (441 yansıma, P21, FP/SIGFP/FREE, model fazı yok) ve `5wkd_phases.mtz.gz` (367 yansıma, C2, FC/PHIC, FP/SIGFP/FOM/FREE ve rafine FWT/PHWT/DELFWT/PHDELWT).
+- CCP4 `COLUMN` kartları okunuyor; C2 merkezleme/simetri grup kapanışı doğrulanıyor. Çıplak FWT sütunu hiçbir zaman yanlışlıkla Fo diye kabul edilmiyor.
+- Harita tipinde dosyadan **hazır ağırlıklı** FWT/PHWT ve DELFWT/PHDELWT seçilebilir. FOM × genlik modu yalnız model fazlı ham Fo/Fc için ampirik seçenek; σA/m/D parametrelerini yeniden tahmin etmez.
+- Fo/σ(Fo) filtresi yalnız ölçülmüş Fo ve SIGFP'den `Fo/SIGFP ≥ eşik` mantığıyla çalışır; keyfî `1/σ²` Fourier çarpanı eklenmez. FREE hariç tutma değeri kullanıcı tarafından 0 veya 1 seçilir; belirsiz bayrak konvansiyonu varsayılmaz.
+- GitHub Actions, `gemmi==0.7.5` kullanıp 5wkd'nin 367 gerçek yansımasını ve C2 simetrisiyle iki 64³ Fourier ızgarasından örnekleri bağımsız olarak karşılaştırır. Bu validasyon, Gemmi/CCP4 uyumlu MTZ + Gemmi FFT kontrolüdür; CCP4 `fft` komutu ayrıca çalıştırılmış değildir.
+- Kaynak: https://github.com/project-gemmi/gemmi/tree/master/tests — Git blob SHA `508b7a962f78a76343c5e9bc8b65c5c7a2cd09cf` (5e5z), `937d3f4fd0f8b22733b07cd5dc6b5a325aa6e011` (5wkd). Örnekler kristal veri topluluğunun paylaşılan referanslarıdır; ayrıca `tests/fixtures/README.md` notları korunur.
+
+**Sınır:** Tüm MTZ uzay grupları, anomalous ayrımı, uygunsuz/boş model fazlarının tahmini, tam CCP4/REFMAC σA/m/D hesaplaması, tüm hkl çözünürlük kabukları ve normalizasyon bir sonraki alt pakette kalır.
