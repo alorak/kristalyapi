@@ -7,6 +7,7 @@
 - **Rapor:** Aynı çözünürlükte algoritmalar arası alan ve örneklenmiş tepe mesafesi; iki algoritmada ayrı ayrı 48³→64³ alan değişimi; ağ bileşenleri ve voksel yoğunluk bileşenleri.
 - **Kalite kapısı:** Geçersiz/boş/kesilmiş bilimsel ağ ve yanlış Kartezyen sistem başarısız olur. Büyük yöntem farkları **uyarı olarak** kaydedilir: CI geçmesi yakınsama anlamına gelmez.
 - **Yüksek doğruluk modu:** Üretim ayarı henüz açılmadı; performans, sayısal doğruluk ve bellek doğrulaması tamamlandıktan sonra ayrı A/B önerisi.
+- **10.8.4 sonucu:** FWT %99 seviyesinde 48³→64³ alan değişimi üretim/bağımsız yöntemde %62,33/%62,42; %99,5 seviyesinde %87,72/%88,01. Kök neden araştırmasında çözünürlük, yoğunluk tepe yapısı ve eşik etkisi algoritma değişiminden önce gelmeli.
 - **Açık:** Bağımsız deneysel CUBE/XSF/CHGCAR, VESTA ile bire bir skaler eşiğe göre karşılaştırma, daha güçlü nokta-üçgen yüzey uzaklıkları ve farklı gerçek donanımlar.
 
 ## Paket 10.8.3 — Tam 32³/48³/64³ ağ ve gerçek harita topolojisi
