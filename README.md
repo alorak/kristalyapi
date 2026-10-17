@@ -117,13 +117,30 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 | **Dışa aktar** | Proje JSON, CIF, POSCAR, XYZ (görünür süperhücre atomları), **PDB** (birim hücrede P1 atomları), **SVG yapı görünümü**, **STL üçgen yüzeyi**, **glTF 2.0 (.glb) renkli 3B modeli**, PNG. |
 | **Hacimsel alan** | Gaussian CUBE (`.cube`, `.cub`), VASP CHGCAR/CHG, XCrySDen XSF DATAGRID_3D. |
 
-İçe aktarılan ve **değiştirilmemiş** bir kaynak CIF, aynı oturumda dışa aktarılırken özgün metni koruyabilir. Kristal düzenlendiğinde CIF yeniden üretilir; tanınmayan CIF alanları, tüm loop blokları ve çoklu veri blokları için eksiksiz **round-trip garantisi yoktur**. Bilimsel arşiv için orijinal CIF'i de saklayın. XYZ dosyaları hücre verisi içermez; uygulama görüntüleme için yapay bir kutu kullanır. PDB desteği **kristalografik koordinat altkümesidir**: CRYST1 Hermann–Mauguin sembolü eşlenebiliyorsa asimetrik atomlara simetri uygulanır; sembol tanınmıyor veya metrikle uyuşmuyorsa açık uyarı verilir. Element sütunu boşsa atom adı/hizalama üzerinden tahmin yapılır ve uyarılır (özellikle protein `CA` atom adı kalsiyumla karıştırılmamalıdır). Zincir/rezidü topolojisi korunmaz. PDB'nin sabit ondalık sütunları nedeniyle koordinat, doluluk ve ANISOU aktarımında biçimin yuvarlama sınırları geçerlidir.
+İçe aktarılan ve **değiştirilmemiş** bir kaynak CIF, aynı oturumda dışa aktarılırken özgün metni **birebir** korur. **Paket 8.1:** Kristal düzenlendiğinde güvenli, kaynakla ilişkilendirilebilir bibliyografik `_publ_author_*`, `_citation_*` ve `_journal_*` skaler/loop alanları da (boyut ve sözdizimi sınırları içinde) yeniden üretilen CIF'ye taşınır. Yapıya bağlı `_atom_site_*`, `_geom_*`, `_refine_*` ve deneysel kayıtlar eski yapı için kalabileceğinden otomatik taşınmaz; değiştirilen yapının eski `_cod_database_code` kimliği yeniden kullanılmaz. Kimyasal bileşim değişirse özgün formül/kimyasal isimler de yeniden üretilen dosyadan çıkarılır. **Tüm CIF varyantları/metadata için kayıpsız round-trip garantisi yoktur.** Bu kaynak-koruma davranışı orijinal dosya metninin bellekte tutulduğu oturumla sınırlıdır; proje JSON veya sayfa yenilenmesi kaynak dosyanın byte düzeyinde korunduğu anlamına gelmez. Bilimsel arşiv için orijinal CIF'i ayrıca saklayın. XYZ dosyaları hücre verisi içermez; uygulama görüntüleme için yapay bir kutu kullanır. PDB desteği **kristalografik koordinat altkümesidir**: CRYST1 Hermann–Mauguin sembolü eşlenebiliyorsa asimetrik atomlara simetri uygulanır; sembol tanınmıyor veya metrikle uyuşmuyorsa açık uyarı verilir. Element sütunu boşsa atom adı/hizalama üzerinden tahmin yapılır ve uyarılır (özellikle protein `CA` atom adı kalsiyumla karıştırılmamalıdır). Zincir/rezidü topolojisi korunmaz. PDB'nin sabit ondalık sütunları nedeniyle koordinat, doluluk ve ANISOU aktarımında biçimin yuvarlama sınırları geçerlidir.
 
 **SHELXL yapı girişi:** `.res/.ins` dosyalarındaki `CELL`, `LATT`, `SYMM`, `SFAC`, `FVAR` ve atom satırları okunur. Merkezleme/tersinme dahil simetri işlemleri açık **P1** atomlarına genişletilir; kısmi doluluklar ve desteklenen `Uiso/Uij` alanları taşınır. `PART` düzensizlik grupları, bağ/restraint/rafine parametreleri proje nesnesine birebir aktarılmaz; `.fcf` yapı dosyası değil, ayrı Fourier veri girişidir. Tanınmayan doluluk değişkenlerinde yükleme hata verir.
 
 **Quantum ESPRESSO girişi:** `pw.x` `&SYSTEM` ve `ATOMIC_POSITIONS` kartı kullanılır; `ibrav=0` için `CELL_PARAMETERS` (`alat`, `bohr`, `angstrom`), ayrıca belgelenmiş `ibrav=1…14`, negatif eşdeğer ayarlar ve `91` desteklenir. `celldm` ve Å cinsinden `A/B/C` girdileri ayrıdır. Konumlar `crystal`, `alat`, `bohr`, `angstrom` birimlerinde dönüştürülür. `crystal_sg` yalnızca eşdeğer olmayan atomları tanımladığı ve uzay grubu ayarları olmadan tam hücre üretilemeyeceği için reddedilir. Bu okuyucu `pw.x` **girdi** dosyası içindir; çıktıda art arda yinelenen model kartları veya QE hesaplama ayarlarını saklamak amaçlanmaz.
 
 **CASTEP girişi:** `.cell` içindeki `%BLOCK LATTICE_CART` / `LATTICE_ABC` ve `%BLOCK POSITIONS_FRAC` / `POSITIONS_ABS` okunur; `ang`, `bohr` ve `nm` uzunluk birimleri işlenir. Simetri üretme anahtarları ve DFT kısıtları aktarılmaz. Üç okuyucuda da yalnızca tarayıcıda işlem yapılır; orijinal bilimsel dosya değiştirilmez.
+
+### Paket 8.1 — ADP site-symmetry denetimi ve CIF kaynak bütünlüğü
+
+CIF/mCIF içe aktarımında özel konumdaki bir atomun anizotropik yer değiştirme
+tensörü, siteyi kendi üzerine götüren her geçerli simetri işlemi için
+Kartezyen kovaryans biçiminde karşılaştırılır. Hücre/simetri tutarlılığı
+korunurken CIF'nin sonlu sayı basamağından gelen küçük farklar (en az
+0,002 Å² veya tensör büyüklüğünün %3'ü) tolere edilir; açık çelişkiler
+dosyanın hatalı ADP'sini doğruymuş gibi göstermemek için **hata** verir.
+Genel konumdaki atomlarda tensörün dönmesi normaldir ve hata sayılmaz.
+
+Bilimsel doğrulama kapısındaki 30 gerçek/10 sentetik CIF veri kümesi korunur.
+Ayrıca kaynak/reference belirsizliği taşımayan **28 gerçek, sabitlenmiş CIF** için kaynak metni ve atom
+koordinatları değiştirildikten sonraki yeniden içe aktarma testleri,
+ayna/dört katlı eksen özel konumları için analitik tensör referansları
+eklendi. Bu çalışmalar özel konumdaki tüm Wyckoff/ADP sınıflarını veya
+deneysel kaynak hatalarını kapsayan tam bir doğruluk iddiası değildir.
 
 ## Kristalografi ve sayısal özellikler
 

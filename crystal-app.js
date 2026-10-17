@@ -4323,9 +4323,60 @@ function cifScientificFingerprint(current){
   symmetryEnabled:!!current.symmetryEnabled,cifMeta:cifMetaValid(current.cifMeta)
  });
 }
+/* CIF1 provenance protection. Re-export only provenance that remains truthful
+   after structural changes, never atom/geometry/refinement/deposition records.
+   CIF is a data model, not a free-form comment field: output is retokenized
+   and bounds-checked before accepting a reusable source snapshot. */
+function cifProvenanceSafeValue(value){
+ const s=String(value);
+ if(s.length>8192||/[\0\x01-\x08\x0b\x0c\x0e-\x1f]/.test(s)||
+    s.split('\n').some(line=>line.startsWith(';')))
+  throw Error('CIF kaynak metadata değeri güvenli biçimde yazılamıyor.');
+ if(s===''||s==='.'||s==='?')return s===''?"''":s;
+ if(/^[^\s#'"]+$/.test(s)&&!/^(_|data_|loop_|save_|stop_|global_|[\[\]])/i.test(s))return s;
+ if(s.includes('\n')||s.includes("'")&&s.includes('"'))return ';\n'+s+'\n;';
+ if(!s.includes("'"))return "'"+s+"'";
+ return '"'+s+'"';
+}
+function cifProvenanceFromSource(source){
+ const t=tokenizeCif(source),scalars=[],loops=[],seen=new Set();
+ const eligible=key=>/^_(?:publ_author|citation|journal)_[a-z0-9_]+$/.test(key);
+ // CIF '?' and '.' are missing-value tokens, distinct from quoted literal
+ // strings with those characters. The existing tokenizer erases that distinction.
+ // Omit such bibliography cells instead of silently changing their semantics.
+ const safeText=v=>typeof v==='string'&&v!=='.'&&v!=='?'&&v.length<=8192&&!v.startsWith('_')&&
+  !v.split('\n').some(line=>line.startsWith(';'))&&
+  !/[\0\x01-\x08\x0b\x0c\x0e-\x1f]/.test(v);
+ let i=0,total=0;
+ while(i<t.length){
+  const key=t[i++],lower=key.toLowerCase();
+  if(lower==='loop_'){
+   const cols=[];
+   while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());
+   if(!cols.length)continue;
+   const rows=[];
+   while(i<t.length&&!t[i].startsWith('_')&&
+     !/^(loop_|data_|save_|stop_|global_)/i.test(t[i])){
+    if(i+cols.length>t.length)break;
+    rows.push(t.slice(i,i+cols.length));i+=cols.length;
+   }
+   if(!cols.every(k=>eligible(k)&&!CIF_META_TAGS.includes(k))||
+      cols.some(k=>seen.has(k))||cols.length>12||rows.length>256||
+      !rows.every(row=>row.length===cols.length&&row.every(safeText)))continue;
+   const bytes=JSON.stringify([cols,rows]).length;
+   if(total+bytes>100000)continue;
+   cols.forEach(k=>seen.add(k));loops.push({cols,rows});total+=bytes;
+  }else if(lower.startsWith('_')&&i<t.length){
+   const value=t[i++];if(!eligible(lower)||CIF_META_TAGS.includes(lower)||
+     seen.has(lower)||!safeText(value)||total+lower.length+value.length>100000)continue;
+   seen.add(lower);scalars.push([lower,value]);total+=lower.length+value.length;
+  }
+ }
+ return {scalars,loops};
+}
 function originalCifRecord(current,text){
  if(typeof text!=='string'||text.length>4000000)throw Error('Orijinal CIF metni geçersiz.');
- return {text,fingerprint:cifScientificFingerprint(current)};
+ return {text,fingerprint:cifScientificFingerprint(current),provenance:cifProvenanceFromSource(text)};
 }
 function cifMetaFromTags(tags){const result={};for(const k of CIF_META_TAGS)if(typeof tags[k]==='string'&&!['?','.'].includes(tags[k]))result[k]=tags[k].slice(0,600);return result;}
 function cifMetaValid(raw){if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};const result={};for(const k of CIF_META_TAGS)if(typeof raw[k]==='string')result[k]=raw[k].slice(0,600);return result;}
@@ -4448,7 +4499,7 @@ function cifData(src){
   const Z=d[0]*vectors[0].z+d[1]*vectors[1].z+d[2]*vectors[2].z;
   return Math.hypot(X,Y,Z);
  };
- for(const site of sites)for(let j=0;j<operations.length;j++){
+ for(const [siteIndex,site] of sites.entries())for(let j=0;j<operations.length;j++){
   const item=operations[j],magneticOp=hasMagnetism&&magOps.length?item:null;
   const [op,offset]=magneticOp?[magneticOp.op.xyz,'0,0,0']:item;
   const shift=offset.split(',').map(rational);
@@ -4456,6 +4507,20 @@ function cifData(src){
   if(magneticOp)xyz=applySymmetry(magneticOp.center.xyz,xyz).map(frac);
   const magneticMoment=site.magneticMoment?
    (magneticOp?rotateMagneticMoment(rotateMagneticMoment(site.magneticMoment,magneticOp.op,c),magneticOp.center,c):site.magneticMoment):null;
+  let transformedADP=null;
+  if(site.adp){
+   transformedADP=adpRotateBySymmetry(site.adp,c,op);
+   if(magneticOp)transformedADP=adpRotateBySymmetry(transformedADP,c,magneticOp.center.xyz);
+   // Site stabilizer must leave the same displacement covariance unchanged.
+   // Check in Cartesian units, not the six differently scaled CIF components.
+   if(symmetryDistance(xyz,site)<.001){
+    const original=adpToCartesian(site.adp,c),rotated=adpToCartesian(transformedADP,c);
+    const scale=Math.max(...original.map((row,i)=>Math.abs(row[i])),.01);
+    const tolerance=Math.max(.002,scale*.03); // CIF Uij rounding tolerance (Å²).
+    if(original.some((row,i)=>row.some((value,k)=>Math.abs(value-rotated[i][k])>tolerance)))
+     throw Error('CIF özel konum ADP tensörü site simetrisiyle çelişiyor: '+site.label+' / '+op);
+   }
+  }
   // Mixed-occupancy species on a shared site must never be collapsed.
   const group=site.symbol+'|'+Math.round(site.occupancy*10000);
   let present=grouped.get(group);
@@ -4468,12 +4533,7 @@ function cifData(src){
   }
   const next={...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(operations.length>1?'_'+(j+1):'')};
   if(magneticMoment)next.magneticMoment=magneticMoment;
-  if(site.adp){
-   const transformed=adpRotateBySymmetry(site.adp,c,op);
-   // mCIF positions apply magnetic operation then centering operation.
-   // Its Cartesian covariance tensor must undergo the same composition.
-   next.adp=magneticOp?adpRotateBySymmetry(transformed,c,magneticOp.center.xyz):transformed;
-  }
+  if(transformedADP)next.adp=transformedADP;
   present.push(next);out.push(next);
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
@@ -5311,9 +5371,33 @@ function cifExportText(state){
  const symmetry=!hasMagnetism&&state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
+ const changedComposition=!state.cifComposition||
+  cifCompositionSignature(state.sites)!==state.cifComposition;
  for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta))){
-  if(tag==='_chemical_formula_sum'&&state.cifComposition&&cifCompositionSignature(state.sites)!==state.cifComposition)continue;
+  // A regenerated CIF is a NEW derivative, even if its old source ID was
+  // retained in a project JSON. Never reassign the deposited COD identifier.
+  if(tag==='_cod_database_code'||changedComposition&&tag.startsWith('_chemical_'))continue;
   q.push(tag+' '+cifQuoted(value));
+ }
+ // Only non-structural literature provenance is inherited from an edited CIF.
+ // Provenance is held in the ephemeral original source record, not in the
+ // project JSON or a fabricated experiment/refinement record.
+ const provenance=state.cifOriginal?.provenance;
+ if(provenance&&Array.isArray(provenance.scalars)&&Array.isArray(provenance.loops)){
+  for(const entry of provenance.scalars){
+   if(!Array.isArray(entry)||entry.length!==2)continue;
+   const [tag,value]=entry;
+   if(!/^_(?:publ_author|citation|journal)_[a-z0-9_]+$/.test(tag)||
+      CIF_META_TAGS.includes(tag))continue;
+   q.push(tag,cifProvenanceSafeValue(value));
+  }
+  for(const block of provenance.loops){
+   if(!Array.isArray(block.cols)||!Array.isArray(block.rows)||
+     !block.cols.length||!block.cols.every(tag=>/^_(?:publ_author|citation|journal)_[a-z0-9_]+$/.test(tag))||
+     block.rows.some(row=>!Array.isArray(row)||row.length!==block.cols.length))continue;
+   q.push('loop_',...block.cols);
+   for(const row of block.rows)for(const value of row)q.push(cifProvenanceSafeValue(value));
+  }
  }
  if(symmetry){
   q.push('loop_','_space_group_symop_id','_space_group_symop_operation_xyz');
@@ -5352,7 +5436,7 @@ function exportCif(){
  const output=cifExportPreservingSource(state);
  download(safeName(state.name)+(state.sites.some(s=>s.magneticMoment)?'.mcif':'.cif'),output.text);
  if(state.cifOriginal&&!output.original)
-  inform('Kristal değişti: CIF yeniden üretildi (P1 / desteklenen alanlar). Kaynaktaki tüm CIF meta verileri korunmayabilir.');
+  inform('Kristal değişti: CIF yeniden üretildi. Yazar ve yayın kaynakları korunabilir; yapıya bağlı ölçüm/rafinman kayıtları ve eski depo kimliği taşınmadı. Orijinal CIF arşivini ayrıca saklayın.');
 }
 function exportPoscar(){
  const outSites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;

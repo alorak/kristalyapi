@@ -1,5 +1,18 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 8.1 — CIF veri bütünlüğü ve ileri ADP doğrulaması (bu PR)
+
+| Öncelik | Kapsam | Bilimsel kabul / kalan açık |
+| --- | --- | --- |
+| P0 | Düzenlenmiş CIF'de güvenli `_publ_author_*`, `_citation_*`, `_journal_*` alanlarını ve `loop_` değerlerini taşı; eski COD depo kimliği, rafinman ve geometri etiketlerini yeniden atama | Tam CIF2 / bütün bilinmeyen alanları kayıpsız taşıma hedefi yok; kullanıcıya orijinal kaynağı saklama uyarısı |
+| P0 | Özel konum stabilizer ADP koşulunu Kartezyen `R U Rᵀ` üzerinden doğrula; açık uyuşmazlıkta fail-closed davran | Yalnız supported CIF/mCIF simetri altkümesi; tüm Hall/orijin/deneysel belirsizlik analizi yok |
+| P0 | Sabitlenmiş gerçek CIF kaynaklarından 28 geçerli dosya için korunma/yeniden-içe-aktarma, analitik ayna/dörtlü simetri ve Gemmi 0.7.4 ile bağımsız yeniden ayrıştırma testleri | Önceki 40 dosyalık Gemmi referans kapısı da çalışır; iki bilinen `inconclusive` kaynak olumlu sayılmaz |
+| P1 | Alan bazında metadata kayıp raporu, çoklu `data_` ve CIF2 sözdizimi | Sonraki paket |
+| P1 | Deneysel Fo/Fc, yansıma ölçekleme ve MTZ veri akışı | Paket 8.2 |
+
+Bilimsel kontrat ve test örnekleri:
+[`tests/validation/PACKAGE_8_1_STATUS.md`](tests/validation/PACKAGE_8_1_STATUS.md).
+
 ## Görselleştirme, workspace ve mimari paketi · Ekim 2026
 
 | Başlık | Uygulanan ilk kapsam | Kalan doğrulama / geliştirme |

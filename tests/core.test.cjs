@@ -2623,3 +2623,175 @@ test('P7.7 mCIF composes magnetic symmetry and centering for ADP covariance',()=
  const expected=[.04,.025,.03,-.004,-.003,-.002];
  expected.forEach((v,i)=>approx(site.adp[i],v,1e-9));
 });
+
+
+
+test('P8.1 edited CIF retains safe bibliographic loops and multiline provenance',()=>{
+ const source=[
+  'data_literature',
+  '_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_journal_name_full 'Journal of Crystal Studies'",
+  '_citation_title',';','A "crystal" with O\'Brien','and a second line',';',
+  "_citation_doi '10.1107/example'",
+  '_refine_ls_R_factor_all 0.019',
+  '_database_code_csd 000001',
+  'loop_','_publ_author_name',
+  "'Ada Example'","\"O'Brien\"",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si 0.125 0.25 0.375'
+ ].join('\n')+'\n';
+ const first=api.cifData(source),record=api.originalCifRecord(first,source);
+ assert.equal(api.cifExportPreservingSource({...first,cifOriginal:record}).text,source);
+ assert.equal(record.provenance.loops.length,1);
+ const edited={...first,cifOriginal:record,sites:[{...first.sites[0],x:.5}]};
+ const exported=api.cifExportPreservingSource(edited);
+ assert.equal(exported.original,false);
+ assert.match(exported.text,/_publ_author_name/);
+ assert.match(exported.text,/_citation_title/);
+ assert.match(exported.text,/A "crystal" with O'Brien/);
+ assert.match(exported.text,/second line/);
+ assert.match(exported.text,/_citation_doi/);
+ assert.match(exported.text,/_journal_name_full/);
+ assert.doesNotMatch(exported.text,/_database_code_csd/);
+ assert.doesNotMatch(exported.text,/_refine_ls_R_factor_all/);
+ const parsed=api.cifData(exported.text);
+ approx(parsed.sites[0].x,.5);
+ // Re-import, then repeat the mutation and export: the bibliography survives
+ // without duplicating data names.
+ const replay=api.originalCifRecord(parsed,exported.text);
+ const repeated=api.cifExportText({...parsed,cifOriginal:replay,sites:[{...parsed.sites[0],y:.125}]});
+ assert.equal((repeated.match(/_citation_title/g)||[]).length,1);
+ assert.equal((repeated.match(/_publ_author_name/g)||[]).length,1);
+ approx(api.cifData(repeated).sites[0].y,.125);
+});
+
+test('P8.1 uncertain CIF missing-value tokens are not presented as source citations',()=>{
+ const source=[
+  'data_unknown','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  '_citation_title ?',
+  'loop_','_publ_author_name','?',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si .1 .2 .3'
+ ].join('\n')+'\n';
+ const parsed=api.cifData(source);
+ const record=api.originalCifRecord(parsed,source);
+ assert.equal(record.provenance.scalars.length,0);
+ assert.equal(record.provenance.loops.length,0);
+ const out=api.cifExportText({...parsed,cifOriginal:record,
+  sites:[{...parsed.sites[0],x:.4}]});
+ assert.doesNotMatch(out,/_citation_title|_publ_author_name/);
+});
+
+test('P8.1 source COD identifier is not falsely attributed to an edited structure',()=>{
+ const source=[
+  'data_cod','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  '_cod_database_code 12345',
+  "_chemical_name_common 'silicon'",
+  "_chemical_formula_sum 'Si'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si .1 .2 .3'
+ ].join('\n')+'\n';
+ const first=api.cifData(source),record=api.originalCifRecord(first,source);
+ const edited={...first,cifOriginal:record,sites:[{...first.sites[0],x:.2}]};
+ assert.doesNotMatch(api.cifExportText(edited),/_cod_database_code/);
+ // An old project JSON also contains the COD field, but it is not the
+ // deposition identifier of a newly generated derivative CIF.
+ assert.doesNotMatch(api.cifExportText(api.loadProject(JSON.stringify(first))),/_cod_database_code/);
+ assert.match(api.cifExportText(edited),/_chemical_name_common/);
+ const changed={...edited,sites:[{...edited.sites[0],symbol:'Ge'}]};
+ const result=api.cifExportText(changed);
+ assert.doesNotMatch(result,/_chemical_formula_sum|_chemical_name_common|_cod_database_code/);
+ assert.equal(api.cifData(result).sites[0].symbol,'Ge');
+});
+
+test('P8.1 provenance excludes structure-dependent loops after a chemical edit',()=>{
+ const source=[
+  'data_metadata',
+  '_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_chemical_formula_sum 'Si'",
+  'loop_','_publ_author_name',"'Researcher One'",
+  'loop_','_geom_bond_atom_site_label_1','_geom_bond_atom_site_label_2','_geom_bond_distance',
+  'Si1 Si2 2.32',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si 0 0 0'
+ ].join('\n')+'\n';
+ const first=api.cifData(source),original=api.originalCifRecord(first,source);
+ const edited={...first,cifOriginal:original,sites:[{...first.sites[0],symbol:'Ge'}]};
+ const output=api.cifExportText(edited);
+ assert.doesNotMatch(output,/_geom_bond_distance/);
+ assert.doesNotMatch(output,/_chemical_formula_sum/);
+ assert.match(output,/_publ_author_name/);
+ assert.equal(api.cifData(output).sites[0].symbol,'Ge');
+});
+
+test('P8.1 mirror-site ADP must obey crystallographic site-symmetry restrictions',()=>{
+ const cif=(x,u12,u13)=>[
+  'data_mirror','_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  'loop_','_space_group_symop_operation_xyz',"'x,y,z'","'-x,y,z'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si '+x+' .21 .32',
+  'loop_','_atom_site_aniso_label',
+  '_atom_site_aniso_U_11','_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_23','_atom_site_aniso_U_13','_atom_site_aniso_U_12',
+  'Si1 .04 .03 .02 .002 '+u13+' '+u12
+ ].join('\n')+'\n';
+ const good=api.cifData(cif(0,0,0));
+ assert.equal(good.sites.length,1);
+ const invalid=cif(0,.015,.012);
+ assert.throws(()=>api.cifData(invalid),/özel konum ADP.*site simetrisi/);
+ const general=api.cifData(cif(.13,.015,.012));
+ assert.equal(general.sites.length,2);
+ approx(general.sites[0].adp[5],.015,1e-9);
+ approx(general.sites[1].adp[5],-.015,1e-9);
+});
+
+test('P8.1 fourfold-site Uij has equal in-plane diagonals and zero mixed terms',()=>{
+ const cif=(u22,u23,u13)=>[
+  'data_fourfold','_cell_length_a 5','_cell_length_b 5','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  'loop_','_space_group_symop_operation_xyz',"'x,y,z'","'-y,x,z'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Ti1 Ti 0 0 .25',
+  'loop_','_atom_site_aniso_label',
+  '_atom_site_aniso_U_11','_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_23','_atom_site_aniso_U_13','_atom_site_aniso_U_12',
+  'Ti1 .035 '+u22+' .02 '+u23+' '+u13+' 0'
+ ].join('\n')+'\n';
+ assert.equal(api.cifData(cif(.035,0,0)).sites.length,1);
+ assert.throws(()=>api.cifData(cif(.017,0,0)),/özel konum ADP/);
+ assert.throws(()=>api.cifData(cif(.035,.015,0)),/özel konum ADP/);
+});
+
+test('P8.1 28 pinned experimental CIFs preserve source, provenance and atom multiplicities',()=>{
+ // Excludes known inconclusive real-15 (undefined positions) and real-30
+ // (unterminated string in upstream source); neither is a validated pass.
+ const cases=["COD_4335507.cif","Co8.cif","CoO19128.cif","Cod_2100513.cif","Cod_4115344.cif","CsI3Pb.cif","CsSnI3.cif","Cu7Te5.cif","CuCl.cif","Fe.cif","Fe3O4.cif","FePO4.cif","Graphite.cif","H6PbCI3N_mp-977013_symmetrized.cif","La2CoO4.cif","La4Fe4O12.cif","Li.cif","Li10GeP2S12.cif","Li2O.cif","Li4Fe3Mn1(PO4)4.cif","Li8Fe2NiCoO8.cif","LiFePO4.cif","MgNiF6.cif","OneLineSymmP1.cif","V2O3.cif","bcc_1927.cif","hex_1170.cif","monoc_1028.cif"];
+ for(const name of cases){
+  const input=fs.readFileSync(path.join(__dirname,'validation','fixtures/real',name),'utf8');
+  const structure=api.cifData(input),record=api.originalCifRecord(structure,input);
+  const untouched=api.cifExportPreservingSource({...structure,cifOriginal:record});
+  assert.equal(untouched.original,true,'pinned original '+name);
+  assert.equal(untouched.text,input,'source byte fidelity '+name);
+  const edited={...structure,cifOriginal:record,
+   sites:structure.sites.map((site,i)=>i?site:{...site,x:site.x+.003})};
+  const output=api.cifExportPreservingSource(edited);
+  assert.equal(output.original,false,'edited source may not be reused '+name);
+  const parsed=api.cifData(output.text);
+  assert.equal(parsed.sites.length,structure.sites.length,'multiplicity '+name);
+  approx(parsed.sites[0].x-structure.sites[0].x,.003,1e-5);
+  const preserved=api.originalCifRecord(parsed,output.text).provenance;
+  assert.equal(JSON.stringify(preserved),JSON.stringify(record.provenance),
+   'publication provenance '+name);
+ }
+});
