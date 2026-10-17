@@ -64,7 +64,25 @@ window.__visualTest={
  stressAtoms:()=>{resetVolume();state.sites=Array.from({length:60},(_,i)=>({symbol:'Si',label:'Si'+i,x:(i%5)/5,y:(Math.floor(i/5)%4)/4,z:Math.floor(i/20)/3,occupancy:1}));
   state.rep=[6,6,6];state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;state.bonds=false;state.poly='';state.style='ball';
   state.labels=false;state.morphology=[];state.overlays=[];state.plane.visible=false;state.plane.slab=false;state.adpVisible=false;build();
-  return {atoms:atomData.length,meshes:atomMesh.length,instances:atomMesh.reduce((n,m)=>n+m.count,0)};}
+  return {atoms:atomData.length,meshes:atomMesh.length,instances:atomMesh.reduce((n,m)=>n+m.count,0)};},
+ performance:()=>performanceSnapshot(),
+ stressSeries:()=>{
+  const samples=[];
+  for(const repeat of [1,3,6]){
+   state.rep=[repeat,repeat,repeat];
+   const start=performance.now();if(!build())throw Error('Failed to build stress scene');
+   updateAtomLod();
+   samples.push({...performanceSnapshot(),repeat,elapsedMs:performance.now()-start});
+  }
+  fit();return samples;
+ },
+ smallStress:()=>{state.rep=[1,1,1];build();fit();return performanceSnapshot();},
+ highQualityExportProof:()=>{
+  const before=atomMesh.map(mesh=>mesh.geometry),count=atomMesh.reduce((n,m)=>n+m.count,0);
+  renderExportCanvas(1);
+  return {restored:atomMesh.every((mesh,i)=>mesh.geometry===before[i]),
+   instances:atomMesh.reduce((n,m)=>n+m.count,0),before:count};
+ }
 };
 `+bootstrapMarker);
    content=Buffer.from(source);
@@ -901,6 +919,42 @@ try{
  const stress=await page.evaluate(()=>window.__visualTest.stressAtoms());
  assert.deepEqual(stress,{atoms:12960,meshes:1,instances:12960},
   'thousands of displayed atoms should occupy one instanced draw group');
+ // Package 10.1: reproducible scene sizes; timing is reported, never CI-gated.
+ const benchSeries=await page.evaluate(()=>window.__visualTest.stressSeries());
+ assert.deepEqual(benchSeries.map(item=>item.visibleAtoms),[60,1620,12960]);
+ assert.ok(benchSeries.every(item=>item.atomLod.length===1&&item.drawCalls>=1));
+ assert.equal(benchSeries[2].atomLod[0].tier,'low','large scenes must use display-only LOD');
+ assert.ok(benchSeries.every(item=>Number.isFinite(item.elapsedMs)&&item.elapsedMs>=0));
+ await page.locator('#performanceBtn').click();
+ assert.equal(await page.locator('#performancePanel').isVisible(),true);
+ assert.equal(await page.locator('#performanceBtn').getAttribute('aria-expanded'),'true');
+ await page.waitForFunction(()=>window.__visualTest.performance().samples>=8);
+ const largeMetrics=await page.evaluate(()=>window.__visualTest.performance());
+ assert.equal(largeMetrics.visibleAtoms,12960);
+ assert.ok(largeMetrics.gpuTriangles>0&&largeMetrics.drawCalls>=1);
+ assert.match(await page.locator('#performanceMetrics').textContent(),/WebGL/);
+ const smallMetrics=await page.evaluate(()=>window.__visualTest.smallStress());
+ assert.equal(smallMetrics.visibleAtoms,60);
+ await page.locator('#atomQuality').selectOption('fast');
+ await page.waitForTimeout(120);
+ const fastMetrics=await page.evaluate(()=>window.__visualTest.performance());
+ assert.equal(fastMetrics.atomLod[0].tier,'low');
+ const exportProof=await page.evaluate(()=>window.__visualTest.highQualityExportProof());
+ assert.deepEqual(exportProof,{restored:true,instances:60,before:60},
+  'PNG must temporarily use full geometry and restore the interactive LOD');
+ await page.locator('#atomQuality').selectOption('high');
+ await page.waitForTimeout(120);
+ const qualityMetrics=await page.evaluate(()=>window.__visualTest.performance());
+ assert.equal(qualityMetrics.atomLod[0].tier,'high');
+ assert.ok(qualityMetrics.atomLod[0].trianglesPerSphere>fastMetrics.atomLod[0].trianglesPerSphere,
+  'quality override must increase sphere tessellation without changing atom instances');
+ assert.equal(qualityMetrics.visibleAtoms,fastMetrics.visibleAtoms);
+ await page.locator('#atomQuality').selectOption('auto');
+ await page.locator('#performanceClose').click();
+ assert.equal(await page.locator('#performancePanel').isVisible(),false);
+ const perfReport={cases:benchSeries,largeMetrics,fastMetrics,qualityMetrics,exportProof};
+ await fs.writeFile(path.join(artifacts,'package-10-1-benchmarks.json'),JSON.stringify(perfReport,null,2));
+ metrics.package101=perfReport;
 
  // Reciprocal-space concept page on a known structure (silicon, a = 5.431 Å).
  const consoleBefore=consoleErrors.length;
@@ -1021,6 +1075,10 @@ try{
   const vestaVolume=await importPage.evaluate(()=>window.__visualTest.volumeVisual());
   assert.deepEqual(vestaVolume.values,[.15,-.15]);
   assert.ok(vestaVolume.fills>=1,'real signed CCP4 ISURF triangles should reach WebGL');
+  const volumeBenchmark=await importPage.evaluate(()=>window.__visualTest.performance());
+  assert.ok(volumeBenchmark.volumeTriangles>0,'real Gemmi CCP4 must generate reportable isosurface triangles');
+  assert.ok(volumeBenchmark.volumeBuildMs>=0&&volumeBenchmark.volumeStride>=1);
+  await fs.writeFile(path.join(artifacts,'package-10-1-volume.json'),JSON.stringify(volumeBenchmark,null,2));
   await importPage.screenshot({path:path.join(artifacts,'package-9-3-vesta-import.png')});
   // A project by itself must show atoms, but surface voxels must remain absent.
   await importPage.locator('#fileInput').setInputFiles(projectFile);

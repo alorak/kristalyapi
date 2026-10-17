@@ -7,6 +7,18 @@
 (() => {
  'use strict';
  const entries=[
+  ['Performans paneli','Performance panel'],
+  ['Performans ve LOD','Performance and LOD'],
+  ['Performans ve LOD ölçümleri','Performance and LOD measurements'],
+  ['Performans · Paket 10.1','Performance · Package 10.1'],
+  ['Performans panelini kapat','Close performance panel'],
+  ['Atom görsel ayrıntısı','Atom visual detail'],
+  ['Otomatik LOD','Automatic LOD'],
+  ['Yüksek kalite','High quality'],
+  ['Hız öncelikli','Prioritize speed'],
+  ['Ölçüm bekleniyor…','Awaiting measurements…'],
+  ['Kare aralıkları GPU süresi değildir. Ölçümler cihaz ve tarayıcıya bağlıdır; atom verileri ve bilimsel hesaplar değişmez.','Frame intervals are not GPU execution time. Measurements depend on your device and browser; atom data and scientific calculations are unchanged.'],
+  ['JSON performans raporunu indir','Download JSON performance report'],
   ['CIF · mCIF · SHELX · QE · CASTEP · POSCAR · XYZ · PDB · JSON · VESTA 3.x (.vesta + isteğe bağlı harita; birlikte seçin)','CIF · mCIF · SHELX · QE · CASTEP · POSCAR · XYZ · PDB · JSON · VESTA 3.x (.vesta + optional density map; select together)'],
   ['CUBE, CHGCAR / CHG, XSF DATAGRID_3D ve CCP4/MRC (.map/.ccp4/.mrc). Dosyalar yalnızca tarayıcıda işlenir.','CUBE, CHGCAR / CHG, XSF DATAGRID_3D and CCP4/MRC (.map/.ccp4/.mrc). Files are processed locally in the browser.'],
   ['CUBE / XSF / CCP4-MRC veri türü ve kaynak birimi','CUBE / XSF / CCP4-MRC physical quantity and source units'],

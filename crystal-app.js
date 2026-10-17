@@ -106,6 +106,23 @@ let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomRender=[],atomData=[]
 const MAX_ATOMS=20000,MAX_BONDS=65000,MAX_POLYHEDRA=2400;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
 const sphereLowGeometry=new THREE.SphereGeometry(1,12,8);
+const sphereTinyGeometry=new THREE.SphereGeometry(1,8,6);
+// Rendering-only LOD: the atomic positions, radii, colors and measurements do not change.
+function atomLodTier(count,pixelRadius,quality='auto'){
+ if(quality==='high')return 'high';
+ if(quality==='fast')return 'low';
+ if(!Number.isFinite(pixelRadius)||pixelRadius<=0)return 'low';
+ if(count>=10000||pixelRadius<2.5)return 'low';
+ return count>=3000||pixelRadius<9?'medium':'high';
+}
+function frameTimingStats(values){
+ const sample=values.filter(x=>Number.isFinite(x)&&x>0&&x<1000).sort((a,b)=>a-b);
+ if(!sample.length)return {samples:0,medianMs:null,p95Ms:null};
+ const percentile=p=>sample[Math.min(sample.length-1,Math.ceil(p*sample.length)-1)];
+ return {samples:sample.length,medianMs:percentile(.5),p95Ms:percentile(.95)};
+}
+let renderQuality='auto',lastBuildMs=0,lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false};
+let frameTimings=[],previousFrameTimestamp=0,performanceFrameCounter=0;
 const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
 const atomMaterials=new Map();
 function materialFor(el){if(!atomMaterials.has(el))atomMaterials.set(el,new THREE.MeshStandardMaterial({color:elementColor(el),roughness:.33,metalness:0}));return atomMaterials.get(el);}
@@ -1022,7 +1039,9 @@ function clearVolumeLayer(){
  volumeLayer=null;
 }
 function drawVolume(){
+ const started=performance.now();
  clearVolumeLayer();
+ lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false};
  if(!root||!densityGrid||volumeView.mode==='off')return;
  volumeLayer=new THREE.Group();volumeLayer.name='Volumetric data';
  const pot=volumeView.potential&&potentialGrid?potentialGrid:null;
@@ -1034,6 +1053,9 @@ function drawVolume(){
     if(!item.visible)continue;
     if(++drawn>VOLUME_TOTAL_SURFACE_LIMIT){truncated=true;break;}
     const surface=isoTriangles(dataset.grid,item.value,pot,volumeView.palette,Math.floor(75000/VOLUME_TOTAL_SURFACE_LIMIT)*2);
+    lastVolumeStats.triangles+=surface.triangles;
+    lastVolumeStats.stride=Math.max(lastVolumeStats.stride,surface.decimation);
+    lastVolumeStats.truncated=lastVolumeStats.truncated||surface.truncated;
     if(surface.triangles){
      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
      if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
@@ -1060,6 +1082,7 @@ function drawVolume(){
  }
  if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(densityGrid));
  addLayerObject(volumeLayer,'volume');applyLayerAppearance();
+ lastVolumeStats.ms=performance.now()-started;refreshPerformancePanel();
 }
 
 function updateVolumeInfo(){
@@ -1568,8 +1591,57 @@ function initScene(){
  requestAnimationFrame(loop);
 }
 function resize(){const r=$('stage').getBoundingClientRect();if(r.width<1||r.height<1)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;if(camera.isPerspectiveCamera)camera.updateProjectionMatrix();else{const scale=r.width/r.height;camera.left=-currentSpan*scale/2;camera.right=currentSpan*scale/2;camera.top=currentSpan/2;camera.bottom=-currentSpan/2;camera.updateProjectionMatrix();}}
-function loop(){requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();updateAxisGizmo();renderer.render(scene,camera);}
-function clearRoot(){const freed=new Set(),shared=new Set(atomMaterials.values());for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==sphereLowGeometry&&x.geometry!==bondGeometry&&!freed.has(x.geometry)){freed.add(x.geometry);x.geometry.dispose();}if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(!shared.has(m)&&!freed.has(m)){freed.add(m);if(m.map)m.map.dispose();m.dispose();}});}});}atomMesh=[];atomRender=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
+function updateAtomLod(){
+ if(!atomMesh.length||!camera||!renderer)return;
+ const distance=Math.max(.01,camera.position.distanceTo(orbit.target));
+ const worldHeight=Math.max(.0001,projectionVisibleHeight(camera,distance));
+ const pixels=Math.max(1,renderer.domElement.clientHeight||$('stage').clientHeight||600);
+ const geometries={high:sphereGeometry,medium:sphereLowGeometry,low:sphereTinyGeometry};
+ for(const mesh of atomMesh){
+  const tier=atomLodTier(atomData.length,(mesh.userData.maxAtomRadius||1)*pixels/worldHeight,renderQuality);
+  mesh.geometry=geometries[tier];mesh.userData.atomLodTier=tier;
+ }
+}
+function performanceSnapshot(){
+ const render=renderer?.info?.render||{},memory=renderer?.info?.memory||{};
+ return {
+  quality:renderQuality,atomLod:atomMesh.map(mesh=>({tier:mesh.userData.atomLodTier,count:mesh.count,
+   trianglesPerSphere:(mesh.geometry.getIndex()?.count||0)/3})),
+  atoms:atomData.length,visibleAtoms:atomMesh.reduce((n,mesh)=>n+mesh.count,0),
+  bonds:root?root.children.filter(mesh=>mesh.userData.layer==='bonds'&&mesh.isInstancedMesh).reduce((n,mesh)=>n+mesh.count,0):0,
+  polyhedra:root?root.children.filter(mesh=>mesh.userData.layer==='polyhedra'&&mesh.isMesh).reduce((n,mesh)=>n+(mesh.userData.polyhedraCount||0),0):0,
+  volumeTriangles:lastVolumeStats.triangles,volumeStride:lastVolumeStats.stride,
+  volumeTruncated:lastVolumeStats.truncated,buildMs:lastBuildMs,volumeBuildMs:lastVolumeStats.ms,
+  drawCalls:render.calls||0,gpuTriangles:render.triangles||0,geometries:memory.geometries||0,
+  ...frameTimingStats(frameTimings)
+ };
+}
+function refreshPerformancePanel(){
+ const panel=$('performancePanel');if(!panel||panel.hidden)return;
+ const x=performanceSnapshot(),fmt=n=>n===null?'—':Number(n).toFixed(1),en=window.CrystalI18n?.language!=='tr';
+ const word=(english,turkish)=>en?english:turkish;
+ $('performanceMetrics').textContent=[
+  word('Atoms ','Atom ')+x.visibleAtoms.toLocaleString()+' / '+x.atoms.toLocaleString()+' · '+word('bonds ','bağ ')+x.bonds.toLocaleString()+' · '+word('polyhedra ','çokyüzlü ')+x.polyhedra,
+  'Atom LOD '+(x.atomLod.map(item=>item.tier+': '+item.count+' ('+item.trianglesPerSphere+' tris/atom)').join(', ')||'—'),
+  word('CPU build ','CPU oluşturma ')+fmt(x.buildMs)+' ms · '+word('volume ','hacim ')+fmt(x.volumeBuildMs)+' ms',
+  word('Volume ','Hacim ')+x.volumeTriangles.toLocaleString()+word(' triangles · grid stride ',' üçgen · ızgara adımı ')+(x.volumeStride||'—')+(x.volumeTruncated?word(' (limited)',' (sınırlı)'):''),
+  'WebGL '+x.drawCalls+word(' draw calls · ',' çizim çağrısı · ')+x.gpuTriangles.toLocaleString()+word(' triangles · ',' üçgen · ')+x.geometries+word(' geometries',' geometri'),
+  word('Frame intervals ','Kare aralıkları ')+fmt(x.medianMs)+' / '+fmt(x.p95Ms)+word(' ms (median / p95, ',' ms (ortanca / p95, ')+x.samples+word(' samples)',' örnek)')
+ ].join('\n');
+}
+function loop(timestamp){
+ requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();
+ if(++performanceFrameCounter%15===0)updateAtomLod();
+ updateAxisGizmo();renderer.render(scene,camera);
+ if($('performancePanel')&&!$('performancePanel').hidden){
+  if(previousFrameTimestamp&&timestamp>previousFrameTimestamp){
+   frameTimings.push(timestamp-previousFrameTimestamp);if(frameTimings.length>120)frameTimings.shift();
+  }
+  if(performanceFrameCounter%30===0)refreshPerformancePanel();
+ }
+ previousFrameTimestamp=timestamp;
+}
+function clearRoot(){const freed=new Set(),shared=new Set(atomMaterials.values());for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==sphereLowGeometry&&x.geometry!==sphereTinyGeometry&&x.geometry!==bondGeometry&&!freed.has(x.geometry)){freed.add(x.geometry);x.geometry.dispose();}if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(!shared.has(m)&&!freed.has(m)){freed.add(m);if(m.map)m.map.dispose();m.dispose();}});}});}atomMesh=[];atomRender=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
 function line(points,color,opacity=1){return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false}));}
 function addCellLines(B,r){
  const pts=[],OUT=[];
@@ -2999,6 +3071,7 @@ function renderLayerManager(){
 }
 
 function build(){
+ const buildStarted=performance.now();
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
@@ -3060,7 +3133,8 @@ function build(){
  for(const [symbol,instances] of instanceGroups){
   if(!instances.length)continue;
   const mat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.33,metalness:0,opacity:atomOpacity,transparent:atomOpacity<1});
-  const mesh=new THREE.InstancedMesh(entry.length>5000?sphereLowGeometry:sphereGeometry,mat,instances.length);
+  const mesh=new THREE.InstancedMesh(sphereGeometry,mat,instances.length);
+  mesh.userData.maxAtomRadius=Math.max(...instances.map(item=>item.size));
   mesh.userData.instanceAtomIndices=instances.map(item=>item.index);
   mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
   instances.forEach((item,i)=>{instanceDummy.position.copy(item.pos);instanceDummy.quaternion.identity();instanceDummy.scale.setScalar(item.size);instanceDummy.updateMatrix();mesh.setMatrixAt(i,instanceDummy.matrix);mesh.setColorAt(i,new THREE.Color(item.color));});
@@ -3159,6 +3233,7 @@ function build(){
  }
  drawSelection();
  drawVolume();
+ updateAtomLod();
  drawStage3Planes();
  applyLayerAppearance();
  renderLayerManager();
@@ -3168,6 +3243,8 @@ function build(){
  recordHistoryChange();
  persistLastCrystal();
  if(reciprocalPage?.visible)reciprocalPage.refresh();
+ lastBuildMs=performance.now()-buildStarted;
+ refreshPerformancePanel();
  report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',
   capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',
   state.polyCenters.length&&!polyCount?state.polyCenters.join(', ')+' için eşik içinde en az dört komşulu çokyüzlü oluşturulamadı; merkez atomu veya bağ eşiğini değiştirin.':'',
@@ -3198,9 +3275,9 @@ function fit(){
  camera.position.set(center[0]+span*1.3,center[1]-span*1.75,center[2]+span*1.35);
  camera.near=.01;camera.far=Math.max(1000,span*50);camera.updateProjectionMatrix();
  orbit.minDistance=.2;orbit.maxDistance=Math.max(300,span*20);
- resize();orbit.update();
+ resize();orbit.update();updateAtomLod();
 }
-function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);camera.lookAt(orbit.target);orbit.update();}
+function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);camera.lookAt(orbit.target);orbit.update();updateAtomLod();}
 function projectionVisibleHeight(view,distance){
  if(view.isPerspectiveCamera)return 2*distance*Math.tan(view.getEffectiveFOV()*Math.PI/360);
  if(view.isOrthographicCamera)return (view.top-view.bottom)/view.zoom;
@@ -3223,7 +3300,7 @@ function toggleProjection(){
   camera=new THREE.OrthographicCamera(-height/2,height/2,height/2,-height/2,old.near,old.far);
  }
  camera.up.copy(old.up);camera.position.copy(p);camera.quaternion.copy(old.quaternion);
- orbit.object=camera;orbit.target.copy(t);resize();orbit.update();
+ orbit.object=camera;orbit.target.copy(t);resize();orbit.update();updateAtomLod();
  $('projectionBtn').setAttribute('aria-pressed',String(!perspective));
  $('projectionBtn').setAttribute('aria-label',perspective?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
 }
@@ -6338,8 +6415,10 @@ function renderExportCanvas(factor,opaque=true){
   throw Error('Görsel boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; çözünürlüğü düşürün.');
  const previousRatio=renderer.getPixelRatio();
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
- const temporary=[];
+ const temporary=[],previousAtomGeometries=atomMesh.map(mesh=>mesh.geometry);
  try{
+  // Screenshots use original tessellation even when the interactive viewport uses LOD.
+  for(const mesh of atomMesh)mesh.geometry=sphereGeometry;
   renderer.setPixelRatio(1);renderer.setSize(width,height,false);
   if(renderer.domElement.width!==width||renderer.domElement.height!==height||
    gl.drawingBufferWidth!==width||gl.drawingBufferHeight!==height||gl.isContextLost())
@@ -6351,6 +6430,7 @@ function renderExportCanvas(factor,opaque=true){
   ctx.drawImage(renderer.domElement,0,0);
  }finally{
   for(const mesh of temporary){root.remove(mesh);mesh.material.dispose();}
+  atomMesh.forEach((mesh,i)=>{mesh.geometry=previousAtomGeometries[i];});
   renderer.setPixelRatio(previousRatio);resize();renderer.render(scene,camera);
  }
  return canvas;
@@ -7980,6 +8060,18 @@ function bind(){
   if(!Number.isFinite(value)||(field==='polyCut'&&(value<0||value>12))||(field==='polyNeighbors'&&(!Number.isInteger(value)||value<4||value>24))){inform('Geçersiz koordinasyon parametresi.');syncControls();return;}
   state[field]=value;build();
  });
+ $('performanceBtn').onclick=()=>{
+  const panel=$('performancePanel');panel.hidden=!panel.hidden;
+  $('performanceBtn').setAttribute('aria-expanded',String(!panel.hidden));
+  frameTimings=[];previousFrameTimestamp=0;
+  updateAtomLod();refreshPerformancePanel();
+ };
+ $('performanceClose').onclick=()=>{$('performancePanel').hidden=true;$('performanceBtn').setAttribute('aria-expanded','false');};
+ $('atomQuality').onchange=e=>{renderQuality=e.target.value;updateAtomLod();refreshPerformancePanel();};
+ $('performanceDownload').onclick=()=>download('kristalyapi_performance.json',
+  JSON.stringify({kind:'kristalyapi-render-snapshot',schema:1,recordedAt:new Date().toISOString(),
+   note:'Frame intervals include vsync/browser scheduling and are not GPU execution times. Hardware-dependent timings are informational.',
+   ...performanceSnapshot()},null,2)+'\n','application/json');
  $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
  initExportModal();
  $('clearMeasure').onclick=()=>{selected=[];drawSelection();};

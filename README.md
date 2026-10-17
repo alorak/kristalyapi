@@ -20,6 +20,14 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Performance and LOD (Package 10.1)
+
+Use the **bar-chart icon** in the viewport's upper toolbar to open the Performance panel. **Automatic LOD** chooses one of three sphere tessellation levels based on projected on-screen atom size and total atom count. **High quality** keeps detailed spheres even for large models; **Prioritize speed** uses lightweight spheres. Only the interactive sphere mesh changes: all atomic coordinates, element colors, bond topology, polyhedron geometry, selections, and scientific calculations remain intact. **PNG exports always render at full sphere detail** and then restore the interactive LOD.
+
+The panel reports visible atom/bond instances, polyhedron count, estimated CPU scene-build and volume triangulation times, WebGL draw calls, rendered triangles, and geometry allocations. Frame intervals include browser scheduling and refresh synchronization, so **median/p95 frame intervals are not GPU execution times or hardware-independent FPS**. **Download JSON performance report** saves an on-device snapshot. The browser CI records 60 / 1,620 / 12,960-atom stress scenes and real Gemmi CCP4 surface metrics; it verifies counts and LOD transitions without flaky absolute timing limits.
+
+Existing safety caps still apply (**20,000 atoms; 65,000 bonds; 2,400 polyhedra; 2.5 million volume voxels**). Package 10.1 does not yet add worker-based geometry generation, GPU timer queries, or unrestricted large-volume rendering.
+
 ## Interface
 
 | Area | Main functions |
