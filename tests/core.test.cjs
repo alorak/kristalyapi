@@ -2700,6 +2700,9 @@ test('P8.1 source COD identifier is not falsely attributed to an edited structur
  const first=api.cifData(source),record=api.originalCifRecord(first,source);
  const edited={...first,cifOriginal:record,sites:[{...first.sites[0],x:.2}]};
  assert.doesNotMatch(api.cifExportText(edited),/_cod_database_code/);
+ // An old project JSON also contains the COD field, but it is not the
+ // deposition identifier of a newly generated derivative CIF.
+ assert.doesNotMatch(api.cifExportText(api.loadProject(JSON.stringify(first))),/_cod_database_code/);
  assert.match(api.cifExportText(edited),/_chemical_name_common/);
  const changed={...edited,sites:[{...edited.sites[0],symbol:'Ge'}]};
  const result=api.cifExportText(changed);
