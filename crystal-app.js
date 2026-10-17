@@ -1641,6 +1641,73 @@ function coordinationHullMetrics(geometry){
   throw Error('Koordinasyon çokyüzlüsü üç boyutlu kapalı hacim oluşturmuyor.');
  return {volume:Math.abs(volume),area};
 }
+/* Quantitative crystal chemistry, following VESTA manual §11.4.3.
+   Baur D and Hoppe ECoN describe the *geometric* first shell. They must
+   never be confused with the separately reported occupancy-weighted CN.
+   Robinson quadratic elongation / bond-angle variance are only meaningful
+   after checking triangular-face topology of a tetrahedron or octahedron.
+   A six-vertex triangular prism must not be labelled an octahedron. */
+function polyhedralDistortionMetrics(environment,geometry=null,hull=null){
+ const vertices=environment?.vertices;
+ if(!Array.isArray(vertices)||!vertices.length)throw Error('Kristal kimyası için en az bir koordinasyon köşesi gerekli.');
+ const lengths=vertices.map(v=>Math.hypot(...v.xyz));
+ if(lengths.some(d=>!Number.isFinite(d)||d<=1e-8))throw Error('Kristal kimyası bağ uzaklığı geçersiz.');
+ const n=lengths.length,min=Math.min(...lengths),mean=lengths.reduce((a,b)=>a+b,0)/n;
+ const distortionIndex=lengths.reduce((sum,d)=>sum+Math.abs(d-mean),0)/(n*mean);
+ // Hoppe's one-pass reference mean is weighted relative to the SHORTEST bond.
+ const hoppeWeight=d=>Math.exp(1-(d/min)**6);
+ const weights=lengths.map(hoppeWeight),denom=weights.reduce((a,b)=>a+b,0);
+ const hoppeMean=lengths.reduce((sum,d,i)=>sum+d*weights[i],0)/denom;
+ const econ=lengths.reduce((sum,d)=>sum+Math.exp(1-(d/hoppeMean)**6),0);
+ const result={meanBondLength:mean,distortionIndex,econ,hoppeMean,
+  quadraticElongation:null,bondAngleVariance:null,polyhedronType:null,
+  idealAngle:null,hullEdgeCount:null,
+  occupancyCaveat:environment.weightedCN!==environment.geometricCN||
+    environment.geometricCN!==environment.vertexCount};
+ if(!geometry||!hull||!Number.isFinite(hull.volume)||hull.volume<=1e-9||![4,6].includes(n))return result;
+ const positions=geometry.getAttribute('position');
+ const expectedFaces=n===4?4:8,expectedEdges=n===4?6:12,degree=n===4?3:4;
+ if(!positions||positions.count!==expectedFaces*3)return result;
+ const faces=[],edges=new Set(),scale=Math.max(...lengths);
+ for(let i=0;i<positions.count;i+=3){
+  const ids=[];
+  for(let k=0;k<3;k++){
+   const p=[positions.getX(i+k),positions.getY(i+k),positions.getZ(i+k)];
+   const id=vertices.findIndex(v=>Math.hypot(...v.xyz.map((x,j)=>x-p[j]))<1e-5*Math.max(1,scale));
+   if(id<0||ids.includes(id))return result;
+   ids.push(id);
+  }
+  const [a,b,c]=ids.map(j=>vertices[j].xyz);
+  const ab=b.map((v,j)=>v-a[j]),ac=c.map((v,j)=>v-a[j]);
+  const normal=[ab[1]*ac[2]-ab[2]*ac[1],ab[2]*ac[0]-ab[0]*ac[2],ab[0]*ac[1]-ab[1]*ac[0]];
+  const norm=Math.hypot(...normal);
+  if(norm<=1e-9)return result;
+  const unit=normal.map(v=>v/norm),plane=a.reduce((sum,v,j)=>sum+v*unit[j],0);
+  // Coplanar triangles indicate a non-triangular face (e.g. a prism);
+  // its triangulation diagonals are not real polyhedron edges.
+  if(faces.some(f=>Math.abs(f.unit.reduce((sum,v,j)=>sum+v*unit[j],0))>1-1e-7&&
+    Math.abs(Math.abs(f.plane)-Math.abs(plane))<1e-5*Math.max(1,scale)))return result;
+  faces.push({unit,plane});
+  for(let k=0;k<3;k++)edges.add([ids[k],ids[(k+1)%3]].sort((x,y)=>x-y).join('/'));
+ }
+ if(edges.size!==expectedEdges)return result;
+ const degrees=Array(n).fill(0);
+ const angles=[];
+ for(const key of edges){
+  const [i,j]=key.split('/').map(Number);degrees[i]++;degrees[j]++;
+  const a=vertices[i].xyz,b=vertices[j].xyz;
+  const dot=a.reduce((sum,v,k)=>sum+v*b[k],0);
+  angles.push(Math.acos(Math.max(-1,Math.min(1,dot/(lengths[i]*lengths[j]))))*180/Math.PI);
+ }
+ if(degrees.some(d=>d!==degree)||angles.length!==expectedEdges)return result;
+ const l0=n===4?Math.cbrt(hull.volume*9*Math.sqrt(3)/8):Math.cbrt(hull.volume*3/4);
+ const ideal=n===4?Math.acos(-1/3)*180/Math.PI:90;
+ result.quadraticElongation=lengths.reduce((sum,d)=>sum+(d/l0)**2,0)/n;
+ result.bondAngleVariance=angles.reduce((sum,v)=>sum+(v-ideal)**2,0)/(angles.length-1);
+ result.polyhedronType=n===4?'tetrahedron':'octahedron';
+ result.idealAngle=ideal;result.hullEdgeCount=edges.size;
+ return result;
+}
 /* Choose a viable center when switching into polyhedral mode. Prefer a 4–8
    coordinate environment (six is typical for perovskite octahedra), sampling
    a few inequivalent sites per element rather than every supercell image. */
@@ -3036,15 +3103,24 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
  const center=sites[centerIndex];
  if(cleanSymbol(center.symbol)!==parameter.cation)throw Error('Merkez atom '+parameter.cation+' değil; referans çiftiyle eşleştirin.');
  const B=basis(cell),c=[Number(center.x),Number(center.y),Number(center.z)];
- const neighbors=[];const cutoff2=cutoff*cutoff;
- for(let j=0;j<sites.length;j++){
+ if(c.some(v=>!Number.isFinite(v)))throw Error('BVS merkez atom koordinatı geçersiz.');
+ const centerOcc=Number(center.occupancy??1);
+ if(!Number.isFinite(centerOcc)||centerOcc<0||centerOcc>1)throw Error('BVS merkez atom doluluğu geçersiz.');
+ const neighbors=[];let candidates=0;
+ if(centerOcc>0)for(let j=0;j<sites.length;j++){
   if(cleanSymbol(sites[j].symbol)!==parameter.anion)continue;
   const s=sites[j],site=[Number(s.x),Number(s.y),Number(s.z)];
   const occupation=Number(s.occupancy??1);
   if(![...site,occupation].every(Number.isFinite)||occupation<0||occupation>1)throw Error('Atom doluluğu veya koordinatı geçersiz.');
-  for(let x=-2;x<=2;x++)for(let y=-2;y<=2;y++)for(let z=-2;z<=2;z++){
-   const dist=toCart([site[0]-c[0]+x,site[1]-c[1]+y,site[2]-c[2]+z],B).length();
+  if(occupation===0)continue;
+  const offset=site.map((v,k)=>v-c[k]);
+  const [xs,ys,zs]=coordinationImageBounds(B,cutoff,offset);
+  candidates+=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+  if(candidates>200000)throw Error('BVS periyodik arama sınırı aşıldı; kesim yarıçapını küçültün.');
+  for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
+   const dist=toCart([offset[0]+x,offset[1]+y,offset[2]+z],B).length();
    if(dist<1e-6||dist>cutoff+1e-8)continue;
+   if(neighbors.length>=20000)throw Error('BVS 20.000 komşu sınırını aştı.');
    const value=Math.exp((parameter.r0-dist)/.37)*occupation;
    neighbors.push({index:j,label:s.label||parameter.anion+(j+1),shift:[x,y,z],distance:dist,
     occupancy:occupation,contribution:value});
