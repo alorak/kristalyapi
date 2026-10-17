@@ -71,7 +71,7 @@ function meshMetrics(mesh,original,level,analytic=null){
    const center=[0,1,2].map(j=>(a[j]+b[j]+c[j])/3-analytic.center[j]);
    const sign=dot(normal,center)>=0?1:-1;
    signedVolume+=sign*dot(a.map((v,j)=>v-analytic.center[j]),
-    cross(b.map((v,j)=>v-analytic.center[j]),c.map((v,j)=>v-analytic.center[j]))/6;
+    cross(b.map((v,j)=>v-analytic.center[j]),c.map((v,j)=>v-analytic.center[j])))/6;
   }
  }
  deviations.sort((a,b)=>a-b);
