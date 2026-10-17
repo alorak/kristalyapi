@@ -1,6 +1,17 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
-## Paket 9.2 — İşaretli izoyüzeyler ve 2B kontur stilleri (bu PR)
+## Paket 9.3 — VESTA 3.x proje alt kümesinin içe aktarımı (bu PR)
+
+| Kapsam | Uygulama / bilimsel kabul | Bilinen sınır |
+| --- | --- | --- |
+| Hücre ve atomlar | Sürüm/terminatör doğrulaması, monoklinik dahil `CELLP`, `STRUC` kesirsel konum/doluluk, uyumlu standart `GROUP`; 1.000 atom sınırı | Özel `SYMOP`/setting ve köken dönüşümleri aktarılmaz, şeffaf uyarı |
+| Görünüm | `BOUND` (-1…2), `SITET/ATOMT` RGB, `SBOND` mesafe kuralları, `BONDS/LABEL` | Kamera, ışıklar, vektör, ADP, çokyüzlü/atom yarıçapı ve doku kaplama stilleri henüz yok |
+| Harita projesi | Referanslanan yerel CUBE/XSF/CHGCAR/CCP4-MRC kullanıcı tarafından `.vesta` ile birlikte seçilirse `ISURF` ± eşik/renkleri uygulanır | Harita `.vesta` içinde bulunmaz; dış yollara erişim yok, ± dört katman, opaklık varsayılan |
+| Test | VESTA 3.3 örnek veri sözdizimi çapraz incelemesi; VESTA 3.5 dosya fixture'ı ve gerçek Gemmi 5i55 CCP4 ile native/Chromium | Gerçek VESTA GUI görüntüsüyle piksel eşlemesi ve tam dosya biçimi genellemesi yok |
+
+**Sonraki çalışmalar:** VESTA sürüm/dataset çeşitliliği için daha geniş bağımsız kaynak kümesi, proje-dışı kamera/ADP/poligon görünüm eşlemesi; **Paket 10:** büyük veri LOD/benchmark, render kalitesi.
+
+## Paket 9.2 — İşaretli izoyüzeyler ve 2B kontur stilleri (tamamlandı)
 
 | Öncelik | Yapılan iş | Test ve bilimsel sınır |
 | --- | --- | --- |
@@ -9,9 +20,9 @@
 | P1 | 2B uniform, ± simetrik, pozitif/negatif kontur seviyeleri; işaretli düz/kesikli ve tek renk çizim | Marching-squares sentetik sayısal testleri; boş işaret için güvenli davranış |
 | P1 | 768×768 PNG (192×192 önizlemeden bağımsız yeniden örnekleme) | WebGL gerçek dosya yükleme, görüntü ve PNG başlık testi; vektör çizim değil |
 
-**Sıradaki 9.3:** VESTA proje dosyasının sınırlandırılmış, doğrulanabilir içe aktarımı ile farklı fiziksel haritaların çapraz uygulama doğrulaması. **Paket 10:** çok büyük ızgaralar için LOD/benchmark ve ileri çıktı optimizasyonları.
+**9.3 uygulandı:** sınırlı VESTA 3.x yapı ve eşlik eden harita/ISURF içe aktarımı. **Paket 10:** çok büyük ızgaralar için LOD/benchmark ve ileri çıktı optimizasyonları.
 
-## Paket 9.1 — CCP4/MRC skaler harita içe aktarımı (bu PR)
+## Paket 9.1 — CCP4/MRC skaler harita içe aktarımı (tamamlandı)
 
 | Kapsam | Uygulama / kabul | Sınır |
 | --- | --- | --- |
@@ -20,7 +31,7 @@
 | Bağımsız referans | Gerçek Gemmi 5i55 monoklinik permütasyonlu harita; 5wkd gerçek MTZ → Gemmi FFT → CCP4 yaz → bağımsız voksel/orijin doğrulaması | Genel CCP4/EM üretici corpus'u, tarayıcıda büyük harita performansı sonra |
 | Kullanıcı akışı | Üç dosya yükleme yolu ve iki dilde uyarılar | MRC2014 extended-header metadatası veya VESTA proje içe aktarımı yok |
 
-**9.2 tamamlandı:** işaretli ± izoyüzey, 3B yüzey stili, işaretli kontur ve 768 px PNG; **9.3 sırada:** VESTA proje alt kümesi ve araştırma örnekleri. Paket 10: GPU/CPU LOD/benchmark.
+**9.2 tamamlandı:** işaretli ± izoyüzey, 3B yüzey stili, işaretli kontur ve 768 px PNG; **9.3 uygulandı:** sınırlı .vesta proje/harita/ISURF içe aktarımı. Paket 10: GPU/CPU LOD/benchmark.
 
 ## Paket 8.1 — CIF veri bütünlüğü ve ileri ADP doğrulaması (#61 merge)
 
