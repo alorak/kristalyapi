@@ -1096,7 +1096,9 @@ test('tab switch preserves independent scroll offsets, toggles ARIA selection, r
 });
 test('atom badge follows imported structures by updating during every renderSites',()=>{
  assert.match(script,/function renderSites\(\)\{[\s\S]{0,1500}\$\('leftAtomsBadge'\)\.textContent=String\(state\.sites\.length\)/);
- assert.match(script,/async function importFile\(file\)[\s\S]*syncControls\(\);build\(\);fit\(\);/);
+ const importer=script.slice(script.indexOf('async function importFile('),script.indexOf('function cifExportText('));
+ assert.match(importer,/async function importFile\(file,selectedFiles=\[file\]\)/);
+ assert.match(importer,/syncControls\(\);build\(\);[\s\S]*fit\(\);/);
  assert.match(script,/function syncControls\(\)[\s\S]*fillPoly\(\);renderSites\(\);/);
 });
 test('mobile layout hides closed tabbed sidebar and preserves bottom navigation',()=>{
