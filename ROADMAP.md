@@ -1,5 +1,15 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.8.1–10.8.2 — Gerçek haritalarda izoyüzey ve yakınsama doğrulaması
+
+- **Zorunlu CI:** Üretimdeki Worker marching-tetrahedra ile 16³/24³/32³ analitik küre. Yarıçap, yüzey alanı ve kapalı hacmin bağımsız referansına göre açıklanmış eşikler başarısızsa CI kırılır.
+- **Gerçek kaynak:** Gemmi 5i55 kısmi monoklinik CCP4; Gemmi 5wkd deneysel C2 FWT ve DELFWT Fourier haritaları. 16³/24³/32³ örneklemelerde fiziksel alan, üçgen, kaynak-skaler artık P95 ve eşik üstü hacim farkları raporlanır.
+- **Biçim kontrolü:** Gerçek CCP4 verisini CUBE ve XSF biçimine yeniden kodlayıp okuma. Bağımsız deneysel CUBE/XSF veya CHGCAR fixture bulunmuş gibi yorumlanmaz.
+- **Bilimsel sınır:** Gerçek haritalar için kesin analitik şekil bilinmez; kaynak-voksel artık/örnek değişimi global Hausdorff sınırı değildir. Kısmi/açık yüzey için mesh iç hacmi kullanılmaz. Üçgen sınırında kesilme ya da geçersiz değer CI başarısızlığıdır. Nihai bilimsel ağ değişmez.
+- **Sonraki 10.8.3:** gerçek haritalarda manifold/kenar yönlülüğü ve periyodik sınır geçişi testi; bağımsız CHGCAR/CUBE/XSF korpusu ve çoklu donanım raporları.
+
+
+
 ## Paket 10.7 — Bölgesel octree, topoloji ve aygıt benchmarkları (bu PR)
 
 | Alan | Uygulama / doğrulama | Sınır |
