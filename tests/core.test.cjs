@@ -2832,6 +2832,19 @@ test('P8.2 Friedel conjugacy, circular phase equivalence and conflicting duplica
   {kind:'difference',size:16,dMin:1}),/Friedel hkl çelişkili/);
 });
 
+test('P8.2 a lone negative-h reflection produces the correct conjugate map',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const parse=(h,phase)=>p1.readFcf([
+  'data_sign','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_meas','_refln_F_calc','_refln_phase_calc',
+  h+' 0 0 10 8 '+phase
+ ].join('\n'));
+ const plus=p1.observedFourierMap(cell,parse(1,45),{kind:'difference',size:16,dMin:1});
+ const minus=p1.observedFourierMap(cell,parse(-1,-45),{kind:'difference',size:16,dMin:1});
+ for(const [i,j,k] of [[0,0,0],[1,0,0],[4,0,0],[7,5,3],[15,15,15]])
+  approx(plus.values[api.gridIndex(plus,i,j,k)],minus.values[api.gridIndex(minus,i,j,k)],1e-7);
+});
+
 test('P8.2 Fo minus LSQ-scaled Fc and raw Fo-Fc are scientifically distinct',()=>{
  const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  const f=p1.readFcf([
