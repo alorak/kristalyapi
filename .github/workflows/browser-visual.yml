@@ -39,7 +39,21 @@ jobs:
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
       - name: Render real WebGL scenes and compare screenshots
+        id: visual
         run: node tests/browser/visual.test.mjs
+      - name: Record explicit visual outcome
+        if: always()
+        env:
+          VISUAL_OUTCOME: ${{ steps.visual.outcome }}
+        run: |
+          mkdir -p tests/browser/artifacts
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const outcome = process.env.VISUAL_OUTCOME;
+          const status = outcome === 'success' ? 'pass' : outcome === 'failure' ? 'fail' : 'not_run';
+          fs.writeFileSync('tests/browser/artifacts/visual-status.json',
+            JSON.stringify({status, outcome, source:'browser-visual.yml'}, null, 2) + '\n');
+          NODE
       - name: Verify Service Worker asset isolation and cache lifecycle
         run: node --test tests/offline.test.mjs
       - name: Upload screenshots and pixel metrics
