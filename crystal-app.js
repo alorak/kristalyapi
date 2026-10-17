@@ -1551,7 +1551,9 @@ function coordinationImageBounds(B,radius,offset){
  return dual.map((v,i)=>{
   const reach=(radius+1e-6)*Math.hypot(...v)/volume+1e-9;
   const low=Math.ceil(-reach-offset[i]),high=Math.floor(reach-offset[i]);
-  return [low,high];
+  // JavaScript Math.ceil(-fraction) may produce -0. Lattice indices are
+  // integers, and -0 must have a unique canonical representation (0).
+  return [low===0?0:low,high===0?0:high];
  });
 }
 /* Periodic geometric coordination counts each translated neighbor separately.
@@ -1687,7 +1689,7 @@ function minimumPeriodicImage(fa,fb,B){
  if(offset.some(v=>!Number.isFinite(v)))throw Error('Periyodik uzaklık için koordinatlar geçersiz.');
  // The rounded fractional image provides a finite upper bound; the exact
  // closest image must lie within the reciprocal-metric search box.
- let shift=offset.map(v=>-Math.round(v)),delta=offset.map((v,i)=>v+shift[i]);
+ let shift=offset.map(v=>-Math.round(v)||0),delta=offset.map((v,i)=>v+shift[i]);
  let distance=toCart(delta,B).length();
  if(distance<=1e-12)return {distance,shift,delta};
  const limits=coordinationImageBounds(B,distance+1e-8,offset),[xs,ys,zs]=limits;
