@@ -1,6 +1,18 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
-## Paket 10.5 — Etkileşimli 2B Worker, iptal doğruluğu ve bellek görünürlüğü (bu PR)
+## Paket 10.6 — Uyumluluklu adaptif önizleme ve çokyüzlü GPU A/B (bu PR)
+
+| Alan | Yapılan iş ve doğrulama | Bilimsel sınır |
+| --- | --- | --- |
+| Adaptif 3B izoyüzey önizlemesi | Worker'da eşik yakınındaki örnek merkezlerinin trilineer skaler artıklarına göre her eksende seçilen düzensiz ortak koordinat düzlemleri (≤32 nokta/eksen); komşu hücreler aynı yüzey ayrıtlarına sahip, T-bağlantısı oluşmaz | Tam yerel 2:1 octree değil: bir bölgedeki rafinasyon bütün kesit düzlemini uzatır; **yalnızca geçici önizleme** değişti |
+| Hata kontrolü | Üç turla sınırlı düzlem seçimi; son hücrelerde maksimum **örneklenmiş merkez skaler artığı** raporu ve tolerans geçişi; karşılanmazsa 10.4'ün düzenli kaba önizlemesine güvenli dönüş | Bu sayı tüm hacim için matematiksel hata üst sınırı/izoyüzey Hausdorff mesafesi değildir; truncated yüzeyde watertight garantisi verilmez |
+| Topoloji ve eşleme | İzoyüzey tümüyle içte kalan işaretli kürede her ayrıt tam iki üçgene bağlı; aynı eksen düğümlerinde periyodik/eğik ve potansiyelle renklendirilmiş konumlar sabit algoritmayla birebir eşleşir; final Worker algoritması aynıdır | Harita sınırını kesen yüzeylerin açık kenarları fizikseldir; genel manifold garantisi fiziksel dosya korpusu ile ayrıca ele alınacak |
+| Çokyüzlü GPU A/B | Performans panelinde **birleşik mesh (varsayılan)** / **deneysel GPU instancing**; asimetrik merkez+opaklık grupları, yerel gövde şablonları, 4×4 matris ve instance rengi; kenarlar eskisi gibi tek çizim grubu | Instancing otomatik seçilmez; birleştirilmiş ağ zaten tek dolgu çizim çağrısıdır, cihaz bazlı hız üstünlüğü garanti edilmez |
+| Sayısal/gerçek tarayıcı testleri | BaTiO₃ 125 TiO₆ üzerinde her iki yol için çokyüzlü sayısı, alan/hacim, CPU geometri belleği, WebGL çizim grubu ve CPU süresi A/B; büyük 64³ hacim önizlemesi ve tüm önceki bağımsız Gemmi/MTZ/CCP4 testleri | CPU arabellek tahmini sürücü VRAM ölçümü değildir; GPU timer sorguları donanım/driver destekli ise ayrı geçerlidir |
+
+**Sonraki 10.7:** gerçekten bölgesel (tensor düzlemi gerektirmeyen) 2:1 octree geçiş ağları, watertight/kesişim ve en büyük fiziksel kontur sapması denetimleri; farklı GPU/OS/tarayıcılarda A/B benchmark matrisi ve belgelenmiş VRAM tahmini/araç karşılaştırması. Doğrulanmış nihai marching-tetrahedra/CSV verileri değiştirilmeyecek.
+
+## Paket 10.5 — Etkileşimli 2B Worker, iptal doğruluğu ve bellek görünürlüğü (tamamlandı)
 
 | Alan | Uygulama / doğrulama | Sınır |
 | --- | --- | --- |

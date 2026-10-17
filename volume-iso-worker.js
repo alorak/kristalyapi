@@ -1,4 +1,4 @@
-/* Package 10.5 — isolated, offline progressive isosurface, interactive slice and export worker.
+/* Package 10.6 — offline progressive conforming adaptive preview, slices and final parity.
  * Mirrors the pure numeric routine in crystal-app.js; native tests compare
  * the complete position/color arrays with both synthetic and Gemmi grids.
  * No network access, dynamic imports, or mutable editor state. */
@@ -102,6 +102,119 @@ function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=7500
   triangles:vertices.length/9,decimation:stride,truncated:vertices.length/9>=maxTriangles};
 }
 
+
+function isoConformingAxisTriangles(g,level,potential,palette,maxTriangles,axisCoords){
+ const stride=Math.max(1,...axisCoords.flatMap(axis=>axis.slice(1).map((v,i)=>v-axis[i])));
+ const vertices=[],colors=[];
+ const corner=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+ const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+ const emit=(arr)=>{for(const p of arr){vertices.push(...volumeWorld(g,...p));if(potential){
+  const world=volumeWorld(g,...p),sample=volumeAtWorld(potential,world);
+  colors.push(...scalarColor(sample,potential,palette));
+ }}};
+ function edge(a,b){
+  const va=a[3],vb=b[3],t=Math.abs(vb-va)>1e-14?Math.max(0,Math.min(1,(level-va)/(vb-va))):.5;
+  return [0,1,2].map(n=>a[n]+(b[n]-a[n])*t);
+ }
+ outer:for(let ii=0;ii<axisCoords[0].length-1;ii++)for(let jj=0;jj<axisCoords[1].length-1;jj++)for(let kk=0;kk<axisCoords[2].length-1;kk++){
+  const i=axisCoords[0][ii],j=axisCoords[1][jj],k=axisCoords[2][kk];
+  const dx=axisCoords[0][ii+1]-i,dy=axisCoords[1][jj+1]-j,dz=axisCoords[2][kk+1]-k;
+  const points=corner.map(([a,b,c])=>{
+   const xyz=[i+a*dx,j+b*dy,k+c*dz];
+   return [...xyz,volumeVoxel(g,...xyz)];
+  });
+  for(const tet of tetra){
+   const inside=tet.map(q=>points[q]).filter(p=>p[3]>=level);
+   const outside=tet.map(q=>points[q]).filter(p=>p[3]<level);
+   if(!inside.length||!outside.length)continue;
+   if(inside.length===1){
+    emit(outside.map(p=>edge(inside[0],p)));
+   }else if(inside.length===3){
+    emit(inside.map(p=>edge(outside[0],p)).reverse());
+   }else{
+    const [a,b]=inside,[c,d]=outside;
+    const p=edge(a,c),q=edge(a,d),r=edge(b,c),t=edge(b,d);
+    emit([p,q,r]);emit([q,t,r]);
+   }
+   if(vertices.length/9>=maxTriangles)break outer;
+  }
+ }
+ return {positions:new Float32Array(vertices),colors:potential?new Float32Array(colors):null,
+  triangles:vertices.length/9,decimation:stride,truncated:vertices.length/9>=maxTriangles};
+}
+
+
+
+
+/* P10.6: conforming nonuniform tensor-grid *preview*.
+ * Every plane at a chosen axis coordinate spans the whole grid: neighbors
+ * therefore share identical face vertices/diagonals (no T-junctions).
+ * Refinement decisions are local samples projected onto axis intervals.
+ * The residual is sampled scalar error, NOT a rigorous Hausdorff bound;
+ * the numerically validated final mesh still uses isoTriangles verbatim.
+ * This deliberately is not an octree with arbitrary local 2:1 transitions. */
+function isoAdaptiveAxisPlan(g,level,minStride,maxAxisNodes=32){
+ const shape=volumeShape(g),step=Math.max(1,Math.trunc(minStride));
+ const nodes=shape.map(n=>{
+  const out=[];for(let i=0;i<n-1;i+=step)out.push(i);
+  out.push(n-1);return out;
+ });
+ const tolerance=Math.max(1e-8,Math.abs(g.max-g.min)*.005);
+ let refined=0,passes=0;
+ const sampleCell=(lo,hi)=>{
+  const vals=[];
+  for(const x of [lo[0],hi[0]])for(const y of [lo[1],hi[1]])for(const z of [lo[2],hi[2]])
+   vals.push(volumeVoxel(g,x,y,z));
+  const center=lo.map((v,a)=>(v+hi[a])/2),actual=volumeSample(g,center);
+  const predicted=vals.reduce((sum,v)=>sum+v,0)/8;
+  const minimum=Math.min(...vals),maximum=Math.max(...vals);
+  const oneSign=minimum>=level?1:maximum<level?-1:0;
+  const missingCrossing=oneSign!==0&&(actual>=level)!==(oneSign>0);
+  const nearby=(minimum<=level&&maximum>=level)||missingCrossing||
+   Math.abs(actual-level)<=Math.abs(actual-predicted)*2;
+  return {error:Math.abs(actual-predicted),nearby,missingCrossing};
+ };
+ for(let pass=0;pass<3;pass++){
+  const proposals=[new Map(),new Map(),new Map()];
+  for(let i=0;i<nodes[0].length-1;i++)for(let j=0;j<nodes[1].length-1;j++)for(let k=0;k<nodes[2].length-1;k++){
+   const lo=[nodes[0][i],nodes[1][j],nodes[2][k]],
+    hi=[nodes[0][i+1],nodes[1][j+1],nodes[2][k+1]];
+   if(hi.every((v,a)=>v-lo[a]<2))continue;
+   const result=sampleCell(lo,hi);
+   if(!result.nearby||(!result.missingCrossing&&result.error<=tolerance))continue;
+   for(let axis=0;axis<3;axis++){
+    if(hi[axis]-lo[axis]<2)continue;
+    const midpoint=Math.floor((hi[axis]+lo[axis])/2);
+    const score=(result.missingCrossing?100:0)+result.error/tolerance;
+    proposals[axis].set(midpoint,Math.max(score,proposals[axis].get(midpoint)||0));
+   }
+  }
+  let added=0;
+  for(let axis=0;axis<3;axis++){
+   const capacity=Math.max(0,maxAxisNodes-nodes[axis].length);
+   const perPass=Math.min(capacity,Math.max(1,Math.ceil(capacity/(3-pass))));
+   const selected=[...proposals[axis]].sort((a,b)=>b[1]-a[1]||a[0]-b[0])
+    .slice(0,perPass).map(([coord])=>coord);
+   if(selected.length){
+    nodes[axis]=[...new Set([...nodes[axis],...selected])].sort((a,b)=>a-b);
+    added+=selected.length;
+   }
+  }
+  passes++;refined+=added;
+  if(!added)break;
+ }
+ let maxSampledError=0,centerSamples=0;
+ for(let i=0;i<nodes[0].length-1;i++)for(let j=0;j<nodes[1].length-1;j++)for(let k=0;k<nodes[2].length-1;k++){
+  const lo=[nodes[0][i],nodes[1][j],nodes[2][k]],
+   hi=[nodes[0][i+1],nodes[1][j+1],nodes[2][k+1]];
+  const result=sampleCell(lo,hi);
+  if(result.nearby){centerSamples++;maxSampledError=Math.max(maxSampledError,result.error);}
+ }
+ return {nodes,stats:{kind:'conforming-axis-preview',axisCells:nodes.map(a=>a.length-1),
+  sampledCenterErrorMax:maxSampledError,scalarTolerance:tolerance,
+  sampledToleranceMet:maxSampledError<=tolerance,
+  centerSamples,refinedAxisIntervals:refined,passes}};
+}
 
 function sliceContourLevels(values,count=8,reference=null,mode='uniform'){
  if(!Number.isInteger(count)||count<2||count>20)throw Error('Kontur sayısı 2–20 olmalı.');
@@ -309,7 +422,13 @@ self.onmessage=event=>{
     throw Error('Invalid isosurface job');
    if(data.progressive&&grid.values.length>=200000){
     const stride=isoPreviewStride(grid,job.level);
-    const preview=isoTriangles(grid,job.level,potential,job.palette,job.maxTriangles,stride);
+    const axisPlan=isoAdaptiveAxisPlan(grid,job.level,stride);
+     // If the sampled scalar tolerance cannot be met, keep the old coarse
+     // preview and never advertise adaptive acceptance. Final mesh is fixed.
+     const preview=axisPlan.stats.sampledToleranceMet?
+      isoConformingAxisTriangles(grid,job.level,potential,job.palette,job.maxTriangles,axisPlan.nodes):
+      isoTriangles(grid,job.level,potential,job.palette,job.maxTriangles,stride);
+     preview.adaptive={...axisPlan.stats,accepted:axisPlan.stats.sampledToleranceMet&&!preview.truncated};
     self.postMessage({requestId,previewIndex:jobIndex,previewSurface:preview},
      [preview.positions.buffer,...(preview.colors?[preview.colors.buffer]:[])]);
    }
