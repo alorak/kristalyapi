@@ -3812,6 +3812,20 @@ function renderCoordinationSummary(){
   angle.textContent='Komşu–merkez–komşu açı aralığı: '+environment.angleMin.toFixed(1)+'–'+environment.angleMax.toFixed(1)+'°';
   angle.style.marginTop='5px';node.append(angle);
  }
+ if(environment.vertexCount>=4){
+  let geometry;
+  try{
+   geometry=new ConvexGeometry(environment.vertices.map(v=>new THREE.Vector3(...v.xyz)));
+   const shape=coordinationHullMetrics(geometry);
+   const readout=document.createElement('div');
+   readout.textContent='Koordinasyon çokyüzlüsü: '+shape.volume.toFixed(3)+' Å³ · yüzey '+shape.area.toFixed(3)+' Å²';
+   readout.style.marginTop='5px';node.append(readout);
+  }catch(error){
+   const warning=document.createElement('div');
+   warning.textContent='Kapalı 3B çokyüzlü yok (düzlemsel veya dejenere komşuluk).';
+   warning.className='muted';warning.style.marginTop='5px';node.append(warning);
+  }finally{geometry?.dispose();}
+ }
  const limited=shell.slice(0,12);
  if(limited.length){const sample=document.createElement('div');sample.textContent='En kısa uzaklıklar: '+limited.map(x=>x.element+' '+x.distance.toFixed(3)+' Å').join(' · ');sample.style.marginTop='5px';node.append(sample);}
 }
