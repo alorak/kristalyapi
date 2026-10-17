@@ -370,6 +370,86 @@ function readXsf(src){
  }
  return g;
 }
+
+/* CCP4/MRC2014 scalar maps: NC is fastest on disk, our volume grid is Z-fastest
+   and indexed along crystallographic X/Y/Z. Do not apply crystallographic
+   symmetry or silently fill a partial map with repeated/synthetic samples. */
+function readCcp4Map(buffer,filename=''){
+ const bytes=ArrayBuffer.isView(buffer)?
+  new Uint8Array(buffer.buffer,buffer.byteOffset,buffer.byteLength):
+  buffer instanceof ArrayBuffer?new Uint8Array(buffer):null;
+ if(!bytes||bytes.byteLength<1024||bytes.byteLength>24000000)
+  throw Error('CCP4/MRC başlığı eksik veya dosya 24 MB sınırını aşıyor.');
+ if(bytes[208]!==77||bytes[209]!==65||bytes[210]!==80||bytes[211]!==32)
+  throw Error('CCP4/MRC MAP imzası geçersiz.');
+ const stamp=[...bytes.subarray(212,216)];
+ const little=(stamp[0]===0x44&&(stamp[1]===0x41||stamp[1]===0x44));
+ const big=(stamp[0]===0x11&&stamp[1]===0x11);
+ if(!little&&!big)throw Error('CCP4/MRC makine damgası veya byte sırası desteklenmiyor.');
+ const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ const int=word=>view.getInt32(4*(word-1),little);
+ const real=word=>view.getFloat32(4*(word-1),little);
+ const counts=[int(1),int(2),int(3)],mode=int(4);
+ const widths={0:1,1:2,2:4,6:2},itemSize=widths[mode];
+ if(!itemSize)throw Error('CCP4/MRC MODE '+mode+' desteklenmiyor (skaler 0/1/2/6 gerekir).');
+ const total=counts.reduce((n,x)=>n*x,1);
+ if(counts.some(n=>!Number.isInteger(n)||n<2)||total>VOLUME_MAX_VOXELS)
+  throw Error('CCP4/MRC 3B ızgara boyutları desteklenmiyor.');
+ const start=[int(5),int(6),int(7)],sampling=[int(8),int(9),int(10)];
+ if(sampling.some(n=>n<1||n>1000000))
+  throw Error('CCP4/MRC hücre örnekleme aralıkları geçersiz.');
+ const cell=validateCell({a:real(11),b:real(12),c:real(13),
+  alpha:real(14),beta:real(15),gamma:real(16)});
+ const mapping=[int(17),int(18),int(19)];
+ if([...mapping].sort().join(',')!=='1,2,3')
+  throw Error('CCP4/MRC MAPC/MAPR/MAPS eksenleri geçersiz.');
+ const nSymbt=int(24),skew=int(25),ispg=int(23);
+ if(nSymbt<0||nSymbt>24000000||nSymbt%4!==0)
+  throw Error('CCP4/MRC genişletilmiş başlık uzunluğu geçersiz.');
+ if(skew!==0)throw Error('CCP4/MRC skew matrisi (LSKFLG) henüz desteklenmiyor.');
+ const startByte=1024+nSymbt;
+ if(startByte+total*itemSize>bytes.byteLength)
+  throw Error('CCP4/MRC veri bloğu eksik veya kesilmiş.');
+ const dims=[0,0,0],fractionalStart=[0,0,0];
+ for(let fileAxis=0;fileAxis<3;fileAxis++){
+  const crystalAxis=mapping[fileAxis]-1;
+  dims[crystalAxis]=counts[fileAxis];
+  fractionalStart[crystalAxis]=start[fileAxis]/sampling[crystalAxis];
+ }
+ const vectors=basis(cell).map(v=>v.toArray());
+ const origin=toCart(fractionalStart,basis(cell)).toArray();
+ const declaredOrigin=[real(50),real(51),real(52)];
+ if(!declaredOrigin.every(Number.isFinite))
+  throw Error('CCP4/MRC ORIGIN koordinatları geçersiz.');
+ const hasOrigin=declaredOrigin.some(x=>Math.abs(x)>1e-6);
+ if(hasOrigin){
+  if(!/\.mrc$/i.test(String(filename))||start.some(x=>x!==0))
+   throw Error('CCP4/MRC ORIGIN ve START alanları belirsiz; konum güvenle belirlenemedi.');
+  origin.splice(0,3,...declaredOrigin);
+ }
+ const axes=vectors.map((v,i)=>v.map(component=>component/sampling[i]));
+ const values=new Float32Array(total),[nc,nr,ns]=counts;
+ let offset=startByte;
+ for(let s=0;s<ns;s++)for(let r=0;r<nr;r++)for(let c=0;c<nc;c++){
+  let value;
+  if(mode===0)value=view.getInt8(offset);
+  else if(mode===1)value=view.getInt16(offset,little);
+  else if(mode===6)value=view.getUint16(offset,little);
+  else value=view.getFloat32(offset,little);
+  if(!Number.isFinite(value))throw Error('CCP4/MRC verilerinde NaN/Infinity bulundu.');
+  const xyz=[0,0,0];
+  xyz[mapping[0]-1]=c;xyz[mapping[1]-1]=r;xyz[mapping[2]-1]=s;
+  values[(xyz[0]*dims[1]+xyz[1])*dims[2]+xyz[2]]=value;
+  offset+=itemSize;
+ }
+ const grid=volumeGrid(dims,origin,axes,values,'CCP4/MRC','bilinmiyor');
+ grid.periodic=dims.every((n,i)=>n===sampling[i]);
+ grid.ccp4={counts,starts:start,sampling,mapping,mode,ispg,nSymbt,
+  byteOrder:little?'little':'big',originMode:hasOrigin?'MRC-ORIGIN':'START',
+  partial:!grid.periodic,cell};
+ return grid;
+}
+
 function readVolumetric(src,filename){
  if(src.length>24000000)throw Error('Hacimsel dosya 24 MB sınırını aşıyor.');
  const name=String(filename||'').toLowerCase();
@@ -447,6 +527,7 @@ const VOLUME_UNIT_CHOICES={
 };
 function interpretVolumeUnits(grid,selection='unknown',{periodic=false}={}){
  if(grid.kind==='CHGCAR')return grid; // CHGCAR already has known normalized charge-density units.
+ if(grid.kind==='CCP4/MRC')periodic=!!grid.periodic; // A partial CCP4 brick is never tiled.
  const choice=VOLUME_UNIT_CHOICES[selection];
  if(!choice)throw Error('Hacimsel veri türü/birimi bilinmiyor.');
  let source=grid;
@@ -1173,9 +1254,11 @@ function updateVolumeSliceStats(){
 async function loadVolumeFile(file,asPotential=false,additional=false){
  if(!file||file.size>24e6)throw Error('Dosya en fazla 24 MB olmalı.');
  const workspaceId=activeWorkspaceId;
- const raw=readVolumetric(await file.text(),file.name);
+ const isCcp4=/\.(?:map|ccp4|mrc)$/i.test(file.name);
+ const raw=isCcp4?readCcp4Map(await file.arrayBuffer(),file.name):
+  readVolumetric(await file.text(),file.name);
  const parsed=interpretVolumeUnits(raw,$('volumeImportUnits').value,
-  {periodic:$('volumeImportPeriodic').checked});
+  {periodic:isCcp4?raw.periodic:$('volumeImportPeriodic').checked});
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen yeniden yükleyin.');
  const incomingFields=1+(parsed.spinComponents?.length||0);
  if(!asPotential&&incomingFields+(additional?volumeDatasets.length:0)>VOLUME_DATASET_LIMIT)

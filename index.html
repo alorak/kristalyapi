@@ -442,23 +442,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Yansıma şiddetleri kinematik modeldendir; profil genişliği ampirik pseudo-Voigt/Caglioti modelidir. Cihaz asimetrisi, Kβ, absorpsiyon, tekstür, arka plan ve tam Rietveld inceltmesi modellenmez.</p>
   </div>
   <div class="section volumetric-panel" data-right-section="volume"><h2>Hacimsel fizik verileri <span>3B / 2B</span></h2>
-   <p class="hint">CUBE, CHGCAR / CHG ve XSF DATAGRID_3D. Dosyalar yalnızca tarayıcıda işlenir.</p>
+   <p class="hint">CUBE, CHGCAR / CHG, XSF DATAGRID_3D ve CCP4/MRC (.map/.ccp4/.mrc). Dosyalar yalnızca tarayıcıda işlenir.</p>
    <div class="volume-import-units">
-    <label class="field"><span>CUBE / XSF veri türü ve kaynak birimi</span><select id="volumeImportUnits">
+    <label class="field"><span>CUBE / XSF / CCP4-MRC veri türü ve kaynak birimi</span><select id="volumeImportUnits">
      <option value="unknown">Bilinmiyor — sadece görselleştir</option>
      <option value="density-bohr">Elektron yoğunluğu · e/bohr³ → e/Å³</option>
      <option value="density-angstrom">Elektron yoğunluğu · e/Å³</option>
      <option value="potential-hartree">Potansiyel · Hartree/e → V</option>
      <option value="potential-volt">Potansiyel · V</option>
     </select></label>
-    <label class="check"><input id="volumeImportPeriodic" type="checkbox"> CUBE / XSF periyodik (hücreyle eşleşiyorsa)</label>
-    <p class="hint">Yüklemeden önce seçin. CHGCAR yoğunluğu otomatik olarak e/Å³'e dönüştürülür. Belirsiz alanlar fiziksel aritmetiğe ve Voronoi'ye alınmaz.</p>
+    <label class="check"><input id="volumeImportPeriodic" type="checkbox"> CUBE / XSF periyodik (CCP4/MRC otomatik)</label>
+    <p class="hint">Yüklemeden önce seçin. CHGCAR yoğunluğu e/Å³'e dönüştürülür. CCP4/MRC birimi varsayılan olarak bilinmez; yalnızca tam hücre ızgarası periyodiktir. Belirsiz alanlar fiziksel aritmetiğe ve Voronoi'ye alınmaz.</p>
    </div>
-   <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
-   <input type="file" id="potentialFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
+   <input type="file" id="volumeFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.map,.ccp4,.mrc,.txt" hidden>
+   <input type="file" id="potentialFile" accept=".cube,.cub,.chgcar,.chg,.xsf,.map,.ccp4,.mrc,.txt" hidden>
    <div class="stack">
      <button id="openVolume" class="primary">Hacimsel veri yükle</button>
-     <input id="volumeAdditionalFile" type="file" accept=".cube,.cub,.chgcar,.chg,.xsf,.txt" hidden>
+     <input id="volumeAdditionalFile" type="file" accept=".cube,.cub,.chgcar,.chg,.xsf,.map,.ccp4,.mrc,.txt" hidden>
      <button id="openAdditionalVolume" type="button">+ Bir alan daha yükle (en fazla 5)</button>
      <div id="volumeDatasets" class="volume-layer-list" aria-label="Hacimsel veri katmanları"></div>
      <label class="field"><span>Aktif alan (kesit ve izodeğer kaynağı)</span><select id="volumeActiveDataset"></select></label>

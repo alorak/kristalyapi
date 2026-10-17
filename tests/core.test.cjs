@@ -49,7 +49,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, TextEncoder, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,readCcp4Map,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
@@ -1181,6 +1181,96 @@ test('XSF DATAGRID uses x-fastest data and n-1 spacings to include endpoints',()
  approx(g.values[api.gridIndex(g,1,1,1)],7);
  assert.equal(api.readVolumetric(data,'scalar.xsf').kind,'XSF');
 });
+
+function ccp4Fixture({counts=[3,2,2],sampling=[8,10,12],starts=[4,-2,1],
+ mapping=[2,1,3],mode=2,big=false,nSymbt=80,
+ cell=[9,11,13,88,104,112],origin=[0,0,0],skew=0}={}){
+ const bytesPer={0:1,1:2,2:4,6:2}[mode]||4,count=counts.reduce((a,b)=>a*b,1);
+ const b=Buffer.alloc(1024+nSymbt+count*bytesPer),d=new DataView(b.buffer,b.byteOffset,b.length);
+ const i=(w,v)=>d.setInt32((w-1)*4,v,!big),f=(w,v)=>d.setFloat32((w-1)*4,v,!big);
+ counts.forEach((x,j)=>i(j+1,x));i(4,mode);
+ starts.forEach((x,j)=>i(j+5,x));sampling.forEach((x,j)=>i(j+8,x));
+ cell.forEach((x,j)=>f(j+11,x));mapping.forEach((x,j)=>i(j+17,x));
+ i(23,1);i(24,nSymbt);i(25,skew);origin.forEach((x,j)=>f(j+50,x));
+ b.write('MAP ',208);b.set(big?[0x11,0x11,0,0]:[0x44,0x41,0,0],212);
+ let o=1024+nSymbt;
+ for(let s=0;s<counts[2];s++)for(let r=0;r<counts[1];r++)for(let c=0;c<counts[0];c++){
+  const value=100*s+10*r+c;
+  if(mode===0)d.setInt8(o,value>100?value-200:value);
+  else if(mode===1)d.setInt16(o,value-50,!big);
+  else if(mode===6)d.setUint16(o,value+30000,!big);
+  else d.setFloat32(o,value+.125,!big);
+  o+=bytesPer;
+ }
+ return b;
+}
+test('P9.1 CCP4 parser transposes MAPC/MAPR/MAPS and maps shifted triclinic voxels to Cartesian Å',()=>{
+ const b=ccp4Fixture(),g=api.readCcp4Map(b,'test.ccp4');
+ assert.deepEqual(Array.from(g.dims),[2,3,2]);
+ assert.equal(g.ccp4.byteOrder,'little');assert.equal(g.ccp4.partial,true);
+ assert.equal(g.periodic,false);
+ assert.deepEqual(Array.from(g.ccp4.mapping),[2,1,3]);
+ approx(g.values[api.gridIndex(g,1,2,1)],112.125);
+ approx(g.values[api.gridIndex(g,0,0,0)],.125);
+ const vectors=api.basis({a:9,b:11,c:13,alpha:88,beta:104,gamma:112});
+ const origin=api.toCart([-2/8,4/10,1/12],vectors).toArray();
+ for(let j=0;j<3;j++)approx(g.origin[j],origin[j],1e-6);
+ for(let j=0;j<3;j++)for(let k=0;k<3;k++)
+  approx(g.axes[j][k],vectors[j].toArray()[k]/[8,10,12][j],1e-6);
+ const corner=api.volumeWorld(g,1,2,1);
+ for(let j=0;j<3;j++)approx(corner[j],origin[j]+g.axes[0][j]+2*g.axes[1][j]+g.axes[2][j],1e-6);
+});
+test('P9.1 CCP4 endian and scalar MODE 0/1/2/6 sample decoding',()=>{
+ for(const big of [false,true])for(const mode of [0,1,2,6]){
+  const g=api.readCcp4Map(ccp4Fixture({mode,big,nSymbt:0}),'density.map');
+  assert.equal(g.ccp4.byteOrder,big?'big':'little');
+  const expected=mode===0?-88:mode===1?62:mode===6?30112:112.125;
+  approx(g.values[api.gridIndex(g,1,2,1)],expected,1e-6);
+ }
+ const full=api.readCcp4Map(ccp4Fixture({counts:[2,3,4],sampling:[3,2,4],
+  starts:[0,0,0]}),'full.ccp4');
+ assert.equal(full.periodic,true);
+ assert.deepEqual(Array.from(api.volumeShape(full)),[4,3,5]);
+ assert.equal(api.interpretVolumeUnits(full,'unknown',{periodic:false}).periodic,true);
+ const partial=api.readCcp4Map(ccp4Fixture(),'partial.ccp4');
+ assert.equal(api.interpretVolumeUnits(partial,'unknown',{periodic:true}).periodic,false);
+});
+test('P9.1 MRC ORIGIN is Å; conflicting START/ORIGIN and unsupported formats fail closed',()=>{
+ const mrc=api.readCcp4Map(ccp4Fixture({starts:[0,0,0],origin:[5,6,7]}),'volume.mrc');
+ assert.deepEqual(Array.from(mrc.origin),[5,6,7]);
+ assert.equal(mrc.ccp4.originMode,'MRC-ORIGIN');
+ assert.throws(()=>api.readCcp4Map(ccp4Fixture({origin:[5,6,7]}),'volume.mrc'),/ORIGIN.*START/);
+ assert.throws(()=>api.readCcp4Map(ccp4Fixture({starts:[0,0,0],origin:[5,6,7]}),'volume.ccp4'),/ORIGIN.*START/);
+ const truncated=ccp4Fixture().subarray(0,1024);
+ assert.throws(()=>api.readCcp4Map(truncated,'test.map'),/veri bloğu/);
+ const wrongStamp=ccp4Fixture();wrongStamp[212]=0;
+ assert.throws(()=>api.readCcp4Map(wrongStamp,'test.map'),/makine damgası/);
+ const wrongAxis=ccp4Fixture(),dv=new DataView(wrongAxis.buffer,wrongAxis.byteOffset,wrongAxis.length);
+ dv.setInt32(64,1,true);dv.setInt32(68,1,true);
+ assert.throws(()=>api.readCcp4Map(wrongAxis,'test.map'),/MAPC\/MAPR\/MAPS/);
+ assert.throws(()=>api.readCcp4Map(ccp4Fixture({mode:4}),'test.map'),/MODE/);
+ assert.throws(()=>api.readCcp4Map(ccp4Fixture({skew:1}),'test.map'),/skew/);
+ assert.throws(()=>api.readCcp4Map(ccp4Fixture({counts:[1,2,2]}),'test.map'),/ızgara boyutları/);
+ const notFinite=ccp4Fixture(),header=new DataView(notFinite.buffer,notFinite.byteOffset,notFinite.length);
+ header.setFloat32(1024+80,NaN,true);
+ assert.throws(()=>api.readCcp4Map(notFinite,'test.map'),/NaN/);
+});
+test('P9.1 genuine Gemmi monoclinic CCP4 partial map retains signed start, permutations and density',()=>{
+ const bytes=fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5i55_tiny.ccp4'));
+ const g=api.readCcp4Map(bytes,'5i55_tiny.ccp4');
+ assert.deepEqual(Array.from(g.dims),[6,8,10]);
+ assert.deepEqual(Array.from(g.ccp4.counts),[8,6,10]);
+ assert.deepEqual(Array.from(g.ccp4.starts),[50,-8,40]);
+ assert.deepEqual(Array.from(g.ccp4.mapping),[2,1,3]);
+ assert.equal(g.ccp4.nSymbt,160);assert.equal(g.ccp4.ispg,4);
+ assert.equal(g.periodic,false);
+ approx(g.origin[0],-8/60*29.45+(40/60)*29.7*Math.cos(111.975*Math.PI/180),1e-5);
+ approx(g.values[api.gridIndex(g,0,0,0)],.054934993386268616,1e-7);
+ approx(g.values[api.gridIndex(g,0,7,0)],-.25636330246925354,1e-7);
+ approx(g.min,-.5310382843017578,1e-7);
+ approx(g.max,2.3988280296325684,1e-7);
+});
+
 test('CUBE export preserves skew Cartesian Angstrom geometry, scalar ordering and units comment',()=>{
  const g=api.volumeGrid([2,3,2],[1.2,-2.5,.75],[[.2,0,0],[.1,.4,0],[0,.07,.35]],
   Array.from({length:12},(_,i)=>i-.25),'derived','e/Å³');
