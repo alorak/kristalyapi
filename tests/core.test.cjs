@@ -2963,6 +2963,16 @@ test('P8.2 phase-conjugate Friedel pair canonicalizes to one reflection',()=>{
   {size:16,dMin:1}),/çelişkili/);
 });
 
+test('P8.2 Friedel phases are equivalent modulo 360 degrees',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const fcf=p1.readFcf(['data_wrapped','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 25 390','-1 0 0 100 25 -390'].join('\n'));
+ const map=p1.observedFourierMap(cell,fcf,{kind:'difference',size:16,dMin:1});
+ assert.equal(map.experimental.used,1);
+ assert.equal(map.experimental.duplicates,1);
+});
+
 test('P8.2 Fc LSQ scaling removes a purely multiplicative Fo/Fc mismatch',()=>{
  const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  const fcf=p1.readFcf(['data_lsq','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
