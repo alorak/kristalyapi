@@ -40,12 +40,16 @@ jobs:
         run: python tests/validation/ccp4_gemmi_reference.py
       - name: Gate final scientific isosurface geometry against analytic and real Gemmi reference maps
         run: python tests/validation/volume_surface_reference.py
+      - name: Gate 32/48/64 full-grid scientific convergence and periodic seam topology
+        run: python tests/validation/volume_highres_reference.py
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: volume-convergence-${{ github.run_number }}
-          path: validation-results/volume-surface-10-8.json
+          path: |
+            validation-results/volume-surface-10-8.json
+            validation-results/volume-highres-10-8-3.json
           if-no-files-found: warn
           retention-days: 30
 
