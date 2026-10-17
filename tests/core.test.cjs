@@ -2587,3 +2587,32 @@ test('P7.7 explicit CIF P2 expansion rotates ADP and preserves partial occupancy
  const after=api.adpEigen(api.adpToCartesian(second.adp,imported.cell)).values.slice().sort((a,b)=>a-b);
  before.forEach((v,i)=>approx(after[i],v,1e-9));
 });
+
+
+test('P7.7 mCIF composes magnetic symmetry and centering for ADP covariance',()=>{
+ const input=[
+  'data_madp',
+  '_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 104','_cell_angle_gamma 90',
+  'loop_','_space_group_symop_magn_operation.xyz',"'x,y,z,+1'",
+  'loop_','_space_group_symop_magn_centering.xyz',"'-x,y,-z,+1'",
+  'loop_','_atom_site_moment.label','_atom_site_moment.cartn_x',
+  '_atom_site_moment.cartn_y','_atom_site_moment.cartn_z',
+  'Si1 0 0 1',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si .17 .23 .31',
+  'loop_','_atom_site_aniso_label','_atom_site_aniso_U_11',
+  '_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_23','_atom_site_aniso_U_13','_atom_site_aniso_U_12',
+  'Si1 .04 .025 .03 .004 -.003 .002'
+ ].join('\n')+'\n';
+ const imported=api.cifData(input);
+ assert.equal(imported.sites.length,1);
+ const site=imported.sites[0];
+ approx(site.x,.83);
+ approx(site.y,.23);
+ approx(site.z,.69);
+ const expected=[.04,.025,.03,-.004,-.003,-.002];
+ expected.forEach((v,i)=>approx(site.adp[i],v,1e-9));
+});
