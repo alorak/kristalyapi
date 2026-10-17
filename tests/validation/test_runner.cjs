@@ -13,6 +13,9 @@ const examplePath=path.join(__dirname,'fixtures','synthetic','s01_p1_cubic.cif')
 
 test('headless CIF extraction does not execute browser-only initialization',()=>{
  const parse=parserFromHtml(htmlPath);
+ assert.equal(typeof parse.exportText,'function');
+ assert.equal(typeof parse.originalRecord,'function');
+ assert.equal(typeof parse.exportPreservingSource,'function');
  const data=parse(fs.readFileSync(examplePath,'utf8'));
  assert.equal(data.cell.a,5);
  assert.equal(data.sites.length,1);
