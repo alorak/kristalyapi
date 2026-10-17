@@ -743,6 +743,28 @@ let lastVoronoi=null;
 const VOLUME_DATASET_LIMIT=5,VOLUME_ISO_LIMIT=4,VOLUME_TOTAL_SURFACE_LIMIT=8;
 const VOLUME_ISO_COLORS=['#307cba','#d97d45','#32a98b','#9567c2'];
 function defaultVolumeIso(grid){return {value:grid.min+(grid.max-grid.min)*.7,visible:true,opacity:.62,color:VOLUME_ISO_COLORS[0]};}
+
+/* Positive/negative difference-density surfaces share an absolute threshold
+   but stay independently editable after creation. No sign is inferred from units. */
+function volumeSignedIsoPair(grid,magnitude){
+ const limit=Math.min(-grid.min,grid.max);
+ if(!(limit>0)||!Number.isFinite(magnitude)||magnitude<=0||magnitude>=limit)
+  throw Error('± izoyüzey için alan sıfırın iki yanında olmalı; |ρ| iki yöndeki maksimumdan küçük olmalı.');
+ return [
+  validateVolumeIsoLayer({value:magnitude,color:'#2476b8',opacity:.62,visible:true},grid),
+  validateVolumeIsoLayer({value:-magnitude,color:'#dd5b4f',opacity:.62,visible:true},grid)
+ ];
+}
+function volumeSurfaceStyleSpec(style){
+ switch(style){
+  case 'smooth':return {filled:true,wire:false,flat:false};
+  case 'flat':return {filled:true,wire:false,flat:true};
+  case 'wire':return {filled:false,wire:true,flat:false};
+  case 'hybrid':return {filled:true,wire:true,flat:false};
+  default:throw Error('Bilinmeyen izoyüzey çizim stili.');
+ }
+}
+
 function validateVolumeIsoLayer(layer,grid){
  if(!layer||!Number.isFinite(Number(layer.value))||!Number.isFinite(Number(layer.opacity))||
    Number(layer.opacity)<.1||Number(layer.opacity)>1||!/^#[a-f\d]{6}$/i.test(layer.color||''))
@@ -759,7 +781,7 @@ function addVolumeDataset(grid,name){
  volumeDatasets.push(entry);activeVolumeIndex=volumeDatasets.length-1;densityGrid=entry.grid;
  return entry;
 }
-const volumeView={mode:'off',iso:0,opacity:.62,axis:2,hkl:[1,1,1],position:50,palette:'thermal',contours:false,contourCount:8,potential:false};
+const volumeView={mode:'off',iso:0,opacity:.62,axis:2,hkl:[1,1,1],position:50,palette:'thermal',contours:false,contourCount:8,contourMode:'uniform',contourStyle:'standard',surfaceStyle:'smooth',potential:false};
 function colorFromScalar(value,min,max,palette){
  const v=Math.max(0,Math.min(1,(value-min)/Math.max(1e-12,max-min)));
  if(palette==='viridis'){
@@ -855,15 +877,42 @@ function sliceMillerFrame(g,cell,h,k,l,position){
  return {corners:[at(0,0),at(1,0),at(1,1),at(0,1)],at,inside,
   width:umax-umin,height:vmax-vmin,intersectionCount:intersections.length,hkl:[h,k,l]};
 }
-function sliceContourLevels(values,count=8,reference=null){
+function sliceContourLevels(values,count=8,reference=null,mode='uniform'){
  if(!Number.isInteger(count)||count<2||count>20)throw Error('Kontur sayısı 2–20 olmalı.');
+ if(!['uniform','balanced','positive','negative'].includes(mode))
+  throw Error('Kontur seviye modu geçersiz.');
  let min=Infinity,max=-Infinity;
  for(const value of values)if(Number.isFinite(value)){min=Math.min(min,value);max=Math.max(max,value);}
  if(!(max>min))return [];
- const levels=Array.from({length:count},(_,i)=>min+(max-min)*(i+1)/(count+1));
- if(Number.isFinite(reference)&&reference>min&&reference<max&&
-  !levels.some(n=>Math.abs(n-reference)<(max-min)*1e-5))levels.push(reference);
+ let levels;
+ if(mode==='balanced'&&min<0&&max>0){
+  const limit=Math.min(-min,max),pairs=Math.floor(count/2);
+  levels=[];
+  for(let i=1;i<=pairs;i++){
+   const magnitude=limit*i/(pairs+1);levels.push(-magnitude,magnitude);
+  }
+  if(count%2)levels.push(0);
+ }else{
+  let lower=min,upper=max;
+  if(mode==='positive')lower=Math.max(0,min);
+  if(mode==='negative')upper=Math.min(0,max);
+  if(!(upper>lower))return [];
+  levels=Array.from({length:count},(_,i)=>lower+(upper-lower)*(i+1)/(count+1));
+ }
+ const containsReference=Number.isFinite(reference)&&reference>min&&reference<max&&
+  (mode!=='positive'||reference>0)&&(mode!=='negative'||reference<0);
+ if(containsReference&&!levels.some(n=>Math.abs(n-reference)<(max-min)*1e-5))levels.push(reference);
  return levels.sort((a,b)=>a-b);
+}
+function sliceContourStroke(level,reference,style='standard'){
+ if(!['standard','signed','mono'].includes(style))throw Error('Kontur çizgi stili geçersiz.');
+ if(style==='signed'){
+  if(Math.abs(level)<1e-12)return {color:'#1c2b3b',width:1.7,dash:[]};
+  return level>0?{color:'#0c766e',width:reference?2.6:1.4,dash:[]}:
+   {color:'#be493f',width:reference?2.6:1.4,dash:[5,3]};
+ }
+ if(style==='mono')return {color:'#1e2835',width:reference?2.3:1.2,dash:reference?[5,2]:[]};
+ return {color:reference?'rgba(255,255,255,.96)':'rgba(28,42,63,.8)',width:reference?2.1:.9,dash:[]};
 }
 /* Marching squares with a center-value saddle disambiguation. Invalid Miller
    pixels remain holes: no contour crosses an undefined outside-grid area. */
@@ -898,8 +947,9 @@ function sliceContourSegments(values,resolution,levels,step=1,maxSegments=60000)
  }
  return {segments:result,truncated};
 }
-function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null,frame=null){
- const canvas=document.createElement('canvas'),size=192;canvas.width=size;canvas.height=size;
+function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null,frame=null,size=192){
+ if(!Number.isInteger(size)||size<64||size>1024)throw Error('Kesit PNG çözünürlüğü geçersiz.');
+ const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
  const ctx=canvas.getContext('2d'),img=ctx.createImageData(size,size);
  const floating=frame?null:[0,1,2].filter(n=>n!==axis),shape=volumeShape(g);
  const values=new Float32Array(size*size);
@@ -921,15 +971,16 @@ function sliceImage(g,axis,pos,level,palette,contours,colorGrid=null,frame=null)
  }
  ctx.putImageData(img,0,0);
  if(contours){
-  const levels=sliceContourLevels(values,volumeView.contourCount,level);
-  const {segments}=sliceContourSegments(values,size,levels,2);
+  const levels=sliceContourLevels(values,volumeView.contourCount,level,volumeView.contourMode);
+  const {segments}=sliceContourSegments(values,size,levels,Math.max(1,Math.floor(size/192)));
   for(const active of levels){
    const reference=Math.abs(active-level)<=Math.max(1e-12,(g.max-g.min)*1e-5);
-   ctx.strokeStyle=reference?'rgba(255,255,255,.96)':'rgba(28,42,63,.8)';
-   ctx.lineWidth=reference?2.1:.9;ctx.beginPath();
+   const stroke=sliceContourStroke(active,reference,volumeView.contourStyle),scale=size/192;
+   ctx.strokeStyle=stroke.color;ctx.lineWidth=stroke.width*scale;ctx.setLineDash(stroke.dash.map(x=>x*scale));ctx.beginPath();
    for(const segment of segments)if(segment.level===active){ctx.moveTo(segment.x1,segment.y1);ctx.lineTo(segment.x2,segment.y2);}
    ctx.stroke();
   }
+  ctx.setLineDash([]);
  }
  return canvas;
 }
@@ -959,10 +1010,13 @@ function volumeSliceMesh(g){
 function clearVolumeLayer(){
  if(!volumeLayer)return;
  if(volumeLayer.parent)volumeLayer.parent.remove(volumeLayer);
+ const released=new Set();
  volumeLayer.traverse(o=>{
-  if(o.geometry)o.geometry.dispose();
+  if(o.geometry&&!released.has(o.geometry)){released.add(o.geometry);o.geometry.dispose();}
   if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material]){
-   if(m.map)m.map.dispose();m.dispose();
+   if(released.has(m))continue;released.add(m);
+   if(m.map&&!released.has(m.map)){released.add(m.map);m.map.dispose();}
+   m.dispose();
   }}
  });
  volumeLayer=null;
@@ -984,9 +1038,20 @@ function drawVolume(){
      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
      if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
      geo.computeVertexNormals();
-     const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:item.color,vertexColors:!!pot,
-      side:THREE.DoubleSide,transparent:true,opacity:item.opacity,depthWrite:false,shininess:45});
-     const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
+     const spec=volumeSurfaceStyleSpec(volumeView.surfaceStyle);
+     if(spec.filled){
+      const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:item.color,vertexColors:!!pot,
+       side:THREE.DoubleSide,transparent:true,opacity:item.opacity,depthWrite:false,shininess:45,
+       flatShading:spec.flat,polygonOffset:spec.wire,polygonOffsetFactor:1,polygonOffsetUnits:1});
+      const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
+     }
+     if(spec.wire){
+      const mat=new THREE.MeshBasicMaterial({color:pot?0xffffff:(spec.filled?'#263b51':item.color),
+       vertexColors:!!pot,side:THREE.DoubleSide,transparent:true,
+       opacity:spec.filled?Math.min(1,item.opacity+.12):item.opacity,
+       depthWrite:false,wireframe:true});
+      const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
+     }
     }
     if(surface.truncated)truncated=true;
    }
@@ -1066,8 +1131,12 @@ function volumeRefreshDatasetUi(){
  $('volumeExport').disabled=!activeVolumeDataset();
 }
 function volumeSyncIsoControls(){
- const layer=activeVolumeDataset()?.layers[0];if(!layer)return;
+ const dataset=activeVolumeDataset(),layer=dataset?.layers[0];if(!layer)return;
  $('volumeIso').value=layer.value;$('volumeOpacity').value=layer.opacity;
+ const bound=Math.min(-dataset.grid.min,dataset.grid.max),input=$('volumePairThreshold');
+ const previous=Number(input.value);
+ if(!(bound>0)||!(previous>0&&previous<bound))input.value=bound>0?String(Number((bound*.35).toPrecision(5))):'0';
+ $('volumeIsoPair').disabled=!(bound>0)||dataset.layers.length>VOLUME_ISO_LIMIT-2;
 }
 function volumeRefreshIsoUi(){
  const host=$('volumeIsoLayers');host.replaceChildren();
@@ -1077,7 +1146,7 @@ function volumeRefreshIsoUi(){
   const visible=document.createElement('input');visible.type='checkbox';visible.checked=layer.visible;
   visible.setAttribute('aria-label','İzoyüzey '+(i+1)+' görünürlük');
   visible.onchange=()=>{layer.visible=visible.checked;drawVolume();};
-  const caption=document.createElement('label');caption.textContent='Iso '+(i+1);caption.title=dataset.grid.units;
+  const caption=document.createElement('label');caption.textContent='Iso '+(i+1)+(layer.value>0?' (+)':layer.value<0?' (−)':' (0)');caption.title=dataset.grid.units;
   const level=document.createElement('input');level.type='number';level.step='any';level.value=String(layer.value);
   level.setAttribute('aria-label','İzoyüzey '+(i+1)+' değeri');
   level.onchange=()=>{const value=Number(level.value);if(!Number.isFinite(value)){inform('Geçersiz izodeğer.');return;}layer.value=value;volumeSyncIsoControls();drawVolume();};
@@ -1093,6 +1162,7 @@ function volumeRefreshIsoUi(){
    del.onclick=()=>{dataset.layers.splice(i,1);volumeRefreshIsoUi();drawVolume();};row.append(del);}
   host.append(row);
  });
+ volumeSyncIsoControls();
 }
 function volumeControlChanged(){
  if(!densityGrid)return;
@@ -1103,9 +1173,16 @@ function volumeControlChanged(){
  volumeView.position=Number($('volumePosition').value);volumeView.palette=$('volumePalette').value;
  volumeView.contours=$('volumeContours').checked;volumeView.potential=$('volumePotential').checked;
  volumeView.contourCount=Number($('volumeContourCount').value);
+ volumeView.contourMode=$('volumeContourMode').value;volumeView.contourStyle=$('volumeContourStyle').value;
+ volumeView.surfaceStyle=$('volumeSurfaceStyle').value;
+ volumeSurfaceStyleSpec(volumeView.surfaceStyle);
+ if(!['uniform','balanced','positive','negative'].includes(volumeView.contourMode)||
+  !['standard','signed','mono'].includes(volumeView.contourStyle))
+  return inform('Kontur ayarları geçersiz.');
  if(!Number.isInteger(volumeView.contourCount)||volumeView.contourCount<2||volumeView.contourCount>20)
   return inform('Kontur seviye sayısı 2–20 arasında bir tamsayı olmalı.');
  $('volumeContourCount').disabled=!volumeView.contours;
+ $('volumeContourMode').disabled=!volumeView.contours;$('volumeContourStyle').disabled=!volumeView.contours;
  if(!Number.isFinite(volumeView.iso)||!Number.isFinite(volumeView.opacity))return;
  const first=activeVolumeDataset()?.layers[0];
  if(first){first.value=volumeView.iso;first.opacity=Math.max(.1,Math.min(1,volumeView.opacity));}
@@ -1418,7 +1495,15 @@ function initVolumeControls(){
   const active=activeVolumeDataset();if(!active)return;
   active.layers.splice(1);volumeRefreshIsoUi();drawVolume();
  };
- for(const id of ['volumeMode','volumeIso','volumeOpacity','volumeAxis','volumePosition','volumePalette','volumeContours','volumeContourCount','volumePotential','volumeH','volumeK','volumeL'])
+ $('volumeIsoPair').onclick=()=>{
+  const active=activeVolumeDataset();if(!active)return inform('Önce hacimsel veri yükleyin.');
+  if(active.layers.length>VOLUME_ISO_LIMIT-2)return inform('± çift için iki boş izoyüzey yuvası gerekli.');
+  try{
+   active.layers.push(...volumeSignedIsoPair(active.grid,Number($('volumePairThreshold').value)));
+   volumeRefreshIsoUi();drawVolume();
+  }catch(error){inform(error.message);}
+ };
+ for(const id of ['volumeMode','volumeIso','volumeOpacity','volumeAxis','volumePosition','volumePalette','volumeContours','volumeContourCount','volumeContourMode','volumeContourStyle','volumeSurfaceStyle','volumePotential','volumeH','volumeK','volumeL'])
   $(id).addEventListener('change',volumeControlChanged);
  const preview=$('volumeSlicePreview');
  const pointerPoint=event=>{
@@ -1459,7 +1544,7 @@ function initVolumeControls(){
    const frame=volumeView.axis==='hkl'?sliceMillerFrame(densityGrid,state.cell,
     ...volumeView.hkl,volumeView.position):null;
    canvas=sliceImage(densityGrid,volumeView.axis,volumeView.position,volumeView.iso,
-    volumeView.palette,volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null,frame);
+    volumeView.palette,volumeView.contours,volumeView.potential&&potentialGrid?potentialGrid:null,frame,768);
   }catch(error){return inform('Kesit: '+error.message);}
   canvas.toBlob(blob=>{if(blob)download('kristalyapi_slice_'+volumeView.axis+'.png',blob,'image/png');},'image/png');
  };

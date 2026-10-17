@@ -503,9 +503,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <option value="iso">3B izoyüzey</option><option value="slice">2B kesit / yoğunluk haritası</option>
        <option value="both">İzoyüzey + kesit</option><option value="off">Gizle</option>
      </select></label>
+     <label class="field"><span>3B izoyüzey stili</span><select id="volumeSurfaceStyle">
+       <option value="smooth">Yumuşak yüzey</option><option value="flat">Keskin yüzey</option>
+       <option value="wire">Tel kafes</option><option value="hybrid">Yüzey + tel kafes</option>
+     </select></label>
      <label class="field"><span>İzodeğer</span><input type="number" id="volumeIso" step="0.01" value="0.1"></label>
      <label class="field"><span>İzoyüzey saydamlığı</span><input type="range" id="volumeOpacity" min=".15" max="1" step=".05" value=".62"></label>
      <div class="actionrow"><button type="button" id="volumeIsoAdd">+ İzoyüzey ekle</button><button type="button" id="volumeIsoClear">Ek izoyüzeyleri kaldır</button></div>
+     <div class="volume-pair-action">
+      <label class="field compact"><span>± yoğunluk eşiği |ρ|</span><input id="volumePairThreshold" type="number" min="0" step="any" value="0"></label>
+      <button type="button" id="volumeIsoPair" disabled>+ Pozitif / negatif çift ekle</button>
+     </div>
+     <p class="hint">İki işaretli alanlarda +ρ ve −ρ eşikleri ayrı renklerle gösterilir; mevcut izoyüzeyler korunur.</p>
      <div id="volumeIsoLayers" class="volume-layer-list" aria-label="Çoklu izoyüzey katmanları"></div>
      <label class="field"><span>Kesit yönü</span><select id="volumeAxis">
        <option value="2">Z / c doğrultusu</option><option value="1">Y / b doğrultusu</option><option value="0">X / a doğrultusu</option>
@@ -522,11 +531,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      </select></label>
      <label class="check"><input type="checkbox" id="volumeContours"> Kesitte çok seviyeli konturlar</label>
      <label class="field"><span>Kontur seviye sayısı</span><input type="number" id="volumeContourCount" min="2" max="20" step="1" value="8"></label>
+     <div class="volume-contour-options">
+      <label class="field"><span>Kontur seviyeleri</span><select id="volumeContourMode">
+       <option value="uniform">Tüm aralıkta eşit</option><option value="balanced">Sıfır çevresinde ± simetrik</option>
+       <option value="positive">Yalnız pozitif</option><option value="negative">Yalnız negatif</option>
+      </select></label>
+      <label class="field"><span>Kontur çizgileri</span><select id="volumeContourStyle">
+       <option value="standard">Standart</option><option value="signed">Pozitif düz / negatif kesikli</option>
+       <option value="mono">Tek renk baskı</option>
+      </select></label>
+     </div>
      <button id="openPotential">Elektrostatik potansiyel yükle (renklendir)</button>
      <label class="check"><input type="checkbox" id="volumePotential"> İzoyüzeyi potansiyele göre renklendir</label>
      <div id="volumeColorLegend" class="volume-color-legend" aria-label="Mavi düşük, beyaz orta, kırmızı yüksek skaler alan"></div>
      <div id="volumeColorScale" class="hint" aria-live="polite">Renk ölçeği veri yüklenince hesaplanır.</div>
-     <div class="actionrow"><button id="volumeSlicePng" type="button">2B kesiti PNG kaydet</button><button id="volumeSliceCsv" type="button">Kesit sayısal CSV</button></div>
+     <div class="actionrow"><button id="volumeSlicePng" type="button">2B kesiti PNG kaydet (768 px)</button><button id="volumeSliceCsv" type="button">Kesit sayısal CSV</button></div>
      <div class="volume-map-panel" aria-label="Etkileşimli 2B kesit haritası">
       <div class="volume-map-head"><strong>2B kesit haritası</strong><span>Üzerinde sürükleyerek çizgi profili seç</span></div>
       <canvas id="volumeSlicePreview" width="192" height="192" aria-label="Yoğunluk kesiti, çizgi profili için sürükleyin" hidden></canvas>

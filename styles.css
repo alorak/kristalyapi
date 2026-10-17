@@ -132,6 +132,14 @@ body.library-open #app{display:none}
 .volume-layer-row input[type=color]{width:27px;height:25px;border:0;background:none;padding:0}
 .volume-layer-row input[type=range]{width:52px;min-width:34px}
 .volume-layer-row button{padding:3px 6px;font-size:11px}
+.volume-pair-action{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);align-items:end;gap:7px;margin:6px 0}
+.volume-pair-action .field{margin:0}
+.volume-pair-action button{min-width:0;padding:8px 6px;line-height:1.3;white-space:normal}
+.volume-contour-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:6px 0}
+.volume-contour-options .field{min-width:0}
+.volume-contour-options select{min-width:0;width:100%;text-overflow:ellipsis}
+@media(max-width:420px){.volume-pair-action,.volume-contour-options{grid-template-columns:1fr}}
+
 .cod-worker-settings{padding:15px 20px}
 .cod-worker-settings h3{font-size:14px;margin:0 0 6px}
 .cod-worker-settings p{margin:0 0 11px;color:#6f8195;font-size:12px;line-height:1.6}

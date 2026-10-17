@@ -1,5 +1,16 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 9.2 — İşaretli izoyüzeyler ve 2B kontur stilleri (bu PR)
+
+| Öncelik | Yapılan iş | Test ve bilimsel sınır |
+| --- | --- | --- |
+| P0 | İki işaretli alan için eşit büyüklükte +|ρ|/−|ρ| izoyüzey çifti; eşik ve renkler bağımsız düzenlenir | Gerçek 5i55 CCP4 ve sentetik Fo−Fc üzerinde işaret, sonlu eşik, değer korunumu |
+| P1 | 3B smooth, flat-shaded, wireframe ve hybrid yüzeyler | Aynı örnekleme/geometri kullanılır; performans/üçgen limiti değişmez |
+| P1 | 2B uniform, ± simetrik, pozitif/negatif kontur seviyeleri; işaretli düz/kesikli ve tek renk çizim | Marching-squares sentetik sayısal testleri; boş işaret için güvenli davranış |
+| P1 | 768×768 PNG (192×192 önizlemeden bağımsız yeniden örnekleme) | WebGL gerçek dosya yükleme, görüntü ve PNG başlık testi; vektör çizim değil |
+
+**Sıradaki 9.3:** VESTA proje dosyasının sınırlandırılmış, doğrulanabilir içe aktarımı ile farklı fiziksel haritaların çapraz uygulama doğrulaması. **Paket 10:** çok büyük ızgaralar için LOD/benchmark ve ileri çıktı optimizasyonları.
+
 ## Paket 9.1 — CCP4/MRC skaler harita içe aktarımı (bu PR)
 
 | Kapsam | Uygulama / kabul | Sınır |
@@ -9,7 +20,7 @@
 | Bağımsız referans | Gerçek Gemmi 5i55 monoklinik permütasyonlu harita; 5wkd gerçek MTZ → Gemmi FFT → CCP4 yaz → bağımsız voksel/orijin doğrulaması | Genel CCP4/EM üretici corpus'u, tarayıcıda büyük harita performansı sonra |
 | Kullanıcı akışı | Üç dosya yükleme yolu ve iki dilde uyarılar | MRC2014 extended-header metadatası veya VESTA proje içe aktarımı yok |
 
-**9.2 sonraki kapsam:** gelişmiş izoyüzey kontur/stil seçenekleri ve güvenilir ek harita biçimleri; **9.3:** VESTA proje alt kümesi ve araştırma örnekleri. Paket 10: GPU/CPU LOD/benchmark.
+**9.2 tamamlandı:** işaretli ± izoyüzey, 3B yüzey stili, işaretli kontur ve 768 px PNG; **9.3 sırada:** VESTA proje alt kümesi ve araştırma örnekleri. Paket 10: GPU/CPU LOD/benchmark.
 
 ## Paket 8.1 — CIF veri bütünlüğü ve ileri ADP doğrulaması (#61 merge)
 

@@ -39,6 +39,11 @@ window.__visualTest={
   return {nonPeriodic:water.nonPeriodic,edges:graph.edges.length,components:graph.components.length,cycleRank:graph.cycleRank};},
  ccp4:()=>densityGrid&&({kind:densityGrid.kind,dims:densityGrid.dims,periodic:densityGrid.periodic,
   mapping:densityGrid.ccp4?.mapping,starts:densityGrid.ccp4?.starts,quantity:densityGrid.quantity}),
+ volumeVisual:()=>({isoCount:activeVolumeDataset()?.layers.length,style:volumeView.surfaceStyle,
+  values:activeVolumeDataset()?.layers.map(layer=>layer.value),contourMode:volumeView.contourMode,
+  contourStyle:volumeView.contourStyle,
+  wires:volumeLayer?.children.filter(x=>x.isMesh&&x.material?.wireframe).length||0,
+  fills:volumeLayer?.children.filter(x=>x.isMesh&&!x.material?.wireframe).length||0}),
  polyStats:()=>({center:state.poly,centers:[...(state.polyCenters||[])],meshes:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).length,
   edges:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isLineSegments).length,
   count:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh).reduce((s,m)=>s+(m.userData.polyhedraCount||0),0),
@@ -479,7 +484,33 @@ try{
  assert.equal(ccp4Info.periodic,false);
  assert.equal(ccp4Info.quantity,'unknown');
  assert.match(await page.locator('#volumeInfo').textContent(),/CCP4\/MRC/);
+ if(!await page.locator('#rightDrawerPane-volume').isVisible())await page.locator('[data-right-tool="volume"]').click();
+ await page.locator('#volumeSurfaceStyle').selectOption('hybrid');
+ await page.locator('#volumePairThreshold').fill('0.15');
+ await page.locator('#volumeIsoPair').click();
+ assert.equal(await page.locator('#volumeIsoLayers .volume-layer-row').count(),3);
+ await page.locator('#volumeContours').check();
+ await page.locator('#volumeContourMode').selectOption('balanced');
+ await page.locator('#volumeContourStyle').selectOption('signed');
+ const volumeVisual=await page.evaluate(()=>window.__visualTest.volumeVisual());
+ assert.equal(volumeVisual.style,'hybrid');
+ assert.equal(volumeVisual.isoCount,3);
+ assert.ok(volumeVisual.values.some(v=>Math.abs(v-.15)<1e-6));
+ assert.ok(volumeVisual.values.some(v=>Math.abs(v+.15)<1e-6));
+ assert.equal(volumeVisual.contourMode,'balanced');
+ assert.equal(volumeVisual.contourStyle,'signed');
+ assert.ok(volumeVisual.wires>0,'hybrid iso style must draw wire meshes');
+ assert.ok(volumeVisual.fills>0,'hybrid iso style must draw filled meshes');
+ assert.ok(await canvasInk(page,'#volumeSlicePreview')>5,'signed CCP4 contour preview must render');
+ const [sliceDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#volumeSlicePng').click()]);
+ const slicePng=await fs.readFile(await sliceDownload.path());
+ assert.equal(slicePng.readUInt32BE(16),768,'P9.2 PNG export width');
+ assert.equal(slicePng.readUInt32BE(20),768,'P9.2 PNG export height');
  await page.locator('#clearVolume').click();
+ await page.locator('#volumeSurfaceStyle').selectOption('smooth');
+ await page.locator('#volumeContourMode').selectOption('uniform');
+ await page.locator('#volumeContourStyle').selectOption('standard');
+ await page.locator('#volumeContours').uncheck();
  // A tiny XSF plane-wave field produces real isosurfaces on a simple Cartesian grid.
  const values=[];for(let k=0;k<4;k++)for(let j=0;j<4;j++)for(let i=0;i<4;i++)
   values.push(Math.exp(-((i-1.5)**2+(j-1.5)**2+(k-1.5)**2)));
@@ -494,6 +525,7 @@ try{
  await page.locator('#volumeContourCount').fill('10');await page.locator('#volumeContourCount').dispatchEvent('change');
  assert.equal(await page.locator('#volumeSlicePreview').isVisible(),true,'2D slice preview must be visible');
  assert.ok(await canvasInk(page,'#volumeSlicePreview')>10,'contoured slice preview must have sampled pixels');
+ await page.locator('#volumeSlicePreview').scrollIntoViewIfNeeded();
  const previewBounds=await page.locator('#volumeSlicePreview').boundingBox();
  await page.mouse.move(previewBounds.x+previewBounds.width*.2,previewBounds.y+previewBounds.height*.3);
  await page.mouse.down();

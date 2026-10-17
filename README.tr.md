@@ -175,6 +175,12 @@ Hacimsel çalışma tezgâhı artık CUBE, CHGCAR ve XSF yanında ikili **`.map`
 
 CCP4/MRC başlıkları fiziksel niceliği/birimi güvenilir biçimde bildirmez. Varsayılan **bilinmiyor** seçilir; yoğunluk/potansiyel birimi ancak kaynaktan biliniyorsa açıkça seçilmelidir. Karmaşık Fourier modları, MODE 12 float16, skew matrisleri, eksik hücre geometri bilgisi ve 1B/2B haritalar henüz desteklenmez; genel cryo-EM haritalarının sağ-/sol-el oryantasyonu üreticiye bağlı olabilir. Bağımsız CI testi Gemmi'nin gerçek monoklinik **5i55_tiny.ccp4** örneğinin permütasyonunu, işaretli başlangıcını ve voksel değerlerini doğrular; ayrıca gerçek **5wkd rafinman MTZ** verisinden Gemmi 0.7.5 FFT ile yeni tam-hücre haritası üretilip aynı kontroller uygulanır. Bu, tüm MRC üreticileri veya VESTA proje uyumu iddiası değildir.
 
+### Paket 9.2 — İşaretli izoyüzey ve yüksek çözünürlüklü kontur stilleri
+
+Fo−Fc fark haritası veya potansiyel gibi **iki işaretli skaler alanlara** tek tıklamayla **+|ρ| / −|ρ|** izoyüzey çifti eklenir. Pozitif/mavi ve negatif/kırmızı yüzeyler eklendikten sonra eşik, görünürlük ve saydamlık bakımından bağımsız ayarlanabilir. Her iki işarette de kaynak değer bulunması ve eşik değerinin ikisini de kapsaması gerekir; işlem **voksel verisini değiştirmez**, birimi belirsiz CCP4 alanını otomatik elektron yoğunluğu kabul etmez. Mevcut izoyüzeyler korunur; alan başına dört katman sınırı geçerlidir.
+
+3B için **yumuşak**, **keskin (flat shading)**, **tel kafes** ve **yüzey+tel kafes** stilleri bulunur. 2B konturlarda **tüm aralıkta eşit**, **sıfıra göre ± simetrik**, **yalnız pozitif**, **yalnız negatif** seviye seçenekleri; işarete göre **düz/kesikli** ve **tek renk baskı** çizgileri vardır. Simetrik seviyelerde iki işaretin ortak büyüklük aralığı seçilir; tek işaretli veri güvenle eşit aralığa döner. PNG indirme artık 192 × 192 önizlemeyi büyütmez, doğrudan **768 × 768** sayısal ızgarayı örnekler. Bu iyileştirme hâlen **raster** çıktıdır; vektör/PDF konturu, GPU LOD veya tam VESTA eşdeğerliği değildir.
+
 ### Paket 8.1 — ADP site-symmetry denetimi ve CIF kaynak bütünlüğü
 
 CIF/mCIF içe aktarımında özel konumdaki bir atomun anizotropik yer değiştirme
