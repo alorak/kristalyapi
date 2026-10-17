@@ -1,5 +1,16 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 9.1 — CCP4/MRC skaler harita içe aktarımı (bu PR)
+
+| Kapsam | Uygulama / kabul | Sınır |
+| --- | --- | --- |
+| MAP/CCP4/MRC ikili okuyucu | MODE 0/1/2/6; little-/big-endian, NSYMBT, MAPC/MAPR/MAPS, signed START, birim hücre geometri ve Å konumu | MODE 3/4/12, skew ve 1B/2B reddedilir; 24 MB/2,5M voksel sınırı |
+| Kısmi haritalar ve fiziksel anlam | START ile doğru uzay kesiti; tam hücre periyodik, kısmi kesit periyodik değil; kaynak niceliği varsayılan bilinmiyor | Otomatik simetriyle genişletme, birim ve sağ-/sol-el yorumu yok |
+| Bağımsız referans | Gerçek Gemmi 5i55 monoklinik permütasyonlu harita; 5wkd gerçek MTZ → Gemmi FFT → CCP4 yaz → bağımsız voksel/orijin doğrulaması | Genel CCP4/EM üretici corpus'u, tarayıcıda büyük harita performansı sonra |
+| Kullanıcı akışı | Üç dosya yükleme yolu ve iki dilde uyarılar | MRC2014 extended-header metadatası veya VESTA proje içe aktarımı yok |
+
+**9.2 sonraki kapsam:** gelişmiş izoyüzey kontur/stil seçenekleri ve güvenilir ek harita biçimleri; **9.3:** VESTA proje alt kümesi ve araştırma örnekleri. Paket 10: GPU/CPU LOD/benchmark.
+
 ## Paket 8.1 — CIF veri bütünlüğü ve ileri ADP doğrulaması (#61 merge)
 
 | Öncelik | Kapsam | Bilimsel kabul / kalan açık |
@@ -23,7 +34,8 @@ Bilimsel kontrat ve test örnekleri:
 | P0 | Ham `Fo−Fc` ve seçilebilir LSQ Fc ölçekli fark haritaları, d_min/Nyquist ve P1 grid kapsamı | Analitik tek-çift Fourier ve ölçek testleri |
 | P1 | **8.2b başlangıcı:** Birleşik P1 MTZ için endian/başlık/NCOL/COL/DCELL/VALM doğrulamalı FP/FC/PHIC okuma ve model-fazlı Fo/Fo−Fc; non-P1 ve belirsiz sütunlar fail-closed | Sentetik LE/BE, eksik değer, yanlış hücre/simetri testleri; **gerçek Gemmi/CCP4 fixture ve bağımsız harita referansı hâlâ gerekli** |
 | P1 | **8.2c ilk aşama:** P1 / P-1 / P21 / P21/c / P212121 MTZ simetri kapanışı, hkl/faz translasyonu; `datasetId:LABEL` eşlemesi; ham/LSQ `2Fo−Fc` | Analitik dönüşüm/Friedel/sistematik sönüm testleri; gerçek Gemmi/CCP4 karşılaştırması açık |
-| P1 | **8.2d gerçek referans + kalite süzgeçleri:** Gemmi 5e5z (P21) / 5wkd (C2), gerçek COLUMN ve FWT/DELFWT, Gemmi 0.7.5 FFT voxelleri, Fo/σ ve açık FREE filtreleri; FOM deneysel çarpanı | 367 gerçek 5wkd yansıması ve iki bağımsız harita gridi CI kapısında; σA hesaplaması ve çözünürlük kabukları sonraki iş |\n| P1 | Tam σA/m/D refinman ağırlığı, çözünürlük kabukları ve CCP4/MRC map | Bu sürümde FWT/DELFWT hazır ağırlıkları kullanılır; tam refinman algoritması ayrı kapsam |
+| P1 | **8.2d gerçek referans + kalite süzgeçleri:** Gemmi 5e5z (P21) / 5wkd (C2), gerçek COLUMN ve FWT/DELFWT, Gemmi 0.7.5 FFT voxelleri, Fo/σ ve açık FREE filtreleri; FOM deneysel çarpanı | 367 gerçek 5wkd yansıması ve iki bağımsız harita gridi CI kapısında; σA hesaplaması ve çözünürlük kabukları sonraki iş |
+| P1 | Tam σA/m/D refinman ağırlığı, çözünürlük kabukları ve CCP4/MRC map | Bu sürümde FWT/DELFWT hazır ağırlıkları kullanılır; tam refinman algoritması ayrı kapsam |
 
 **Kapsam belgesi:** [`tests/validation/PACKAGE_8_2_STATUS.md`](tests/validation/PACKAGE_8_2_STATUS.md).
 

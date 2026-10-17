@@ -7,6 +7,10 @@
 (() => {
  'use strict';
  const entries=[
+  ['CUBE, CHGCAR / CHG, XSF DATAGRID_3D ve CCP4/MRC (.map/.ccp4/.mrc). Dosyalar yalnızca tarayıcıda işlenir.','CUBE, CHGCAR / CHG, XSF DATAGRID_3D and CCP4/MRC (.map/.ccp4/.mrc). Files are processed locally in the browser.'],
+  ['CUBE / XSF / CCP4-MRC veri türü ve kaynak birimi','CUBE / XSF / CCP4-MRC physical quantity and source units'],
+  ['CUBE / XSF periyodik (CCP4/MRC otomatik)','Periodic CUBE / XSF (automatic for CCP4/MRC)'],
+  ['Yüklemeden önce seçin. CHGCAR yoğunluğu e/Å³\'e dönüştürülür. CCP4/MRC birimi varsayılan olarak bilinmez; yalnızca tam hücre ızgarası periyodiktir. Belirsiz alanlar fiziksel aritmetiğe ve Voronoi\'ye alınmaz.','Select before loading. CHGCAR density is converted to e/Å³. CCP4/MRC units are unknown by default, and only a full-cell grid is periodic. Fields without known units are excluded from physical arithmetic and Voronoi analysis.'],
   ['Kristal Yapı — 3B Kristal Editörü','Crystal Structure — 3D Crystal Editor'],
   ['Kristal Yapı','Crystal Structure'],['Kütüphane','Library'],
   ['Aç','Open'],['Kaydet','Save'],['Yapı 1','Structure 1'],['Etkin çalışma alanı','Active workspace'],
