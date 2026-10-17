@@ -2795,3 +2795,110 @@ test('P8.1 28 pinned experimental CIFs preserve source, provenance and atom mult
    'publication provenance '+name);
  }
 });
+
+
+test('P8.2 FCF source unit cell is checked before Fourier synthesis',()=>{
+ const cell={a:5,b:6,c:7,alpha:90,beta:90,gamma:90};
+ const input=[
+  'data_fofc','_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  'loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 64 0'
+ ].join('\n')+'\n';
+ const f=p1.readFcf(input);
+ assert.equal(f.cell.a,5);
+ assert.equal(p1.observedFourierMap(cell,f,{kind:'difference',size:16,dMin:1}).experimental.sourceCell,true);
+ assert.throws(()=>p1.observedFourierMap({...cell,a:5.2},f,
+  {kind:'difference',size:16,dMin:1}),/hücresi.*uyuşmuyor/);
+ assert.throws(()=>p1.readFcf(input.replace('_cell_angle_gamma 90','')),/hücre parametreleri eksik/);
+});
+
+test('P8.2 Friedel conjugacy, circular phase equivalence and conflicting duplicates',()=>{
+ const make=(second)=>[
+  'data_pairs','loop_',
+  '_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_meas','_refln_F_calc','_refln_phase_calc',
+  '1 0 0 10 8 90',second
+ ].join('\n')+'\n';
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const consistent=p1.readFcf(make('-1 0 0 10 8 -270'));
+ const map=p1.observedFourierMap(cell,consistent,{kind:'difference',size:16,dMin:1});
+ assert.equal(map.experimental.used,1);
+ assert.equal(map.experimental.duplicates,1);
+ assert.throws(()=>p1.observedFourierMap(cell,p1.readFcf(make('-1 0 0 10 8 90')),
+  {kind:'difference',size:16,dMin:1}),/Friedel hkl çelişkili/);
+ assert.throws(()=>p1.observedFourierMap(cell,p1.readFcf(make('-1 0 0 9 8 -90')),
+  {kind:'difference',size:16,dMin:1}),/Friedel hkl çelişkili/);
+});
+
+test('P8.2 Fo minus LSQ-scaled Fc and raw Fo-Fc are scientifically distinct',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const f=p1.readFcf([
+  'data_scale','loop_',
+  '_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_meas','_refln_F_calc','_refln_phase_calc',
+  '1 0 0 12 6 0'
+ ].join('\n')+'\n');
+ const raw=p1.observedFourierMap(cell,f,{size:16,dMin:1,scaleMode:'raw'});
+ const fitted=p1.observedFourierMap(cell,f,{size:16,dMin:1,scaleMode:'lsq'});
+ approx(raw.experimental.fcScale,1,1e-12);
+ approx(fitted.experimental.fcScale,2,1e-12);
+ approx(raw.values[api.gridIndex(raw,0,0,0)],12/125,1e-6);
+ for(const value of fitted.values)approx(value,0,1e-6);
+ const fo=p1.observedFourierMap(cell,f,{kind:'observed',size:16,dMin:1,scaleMode:'lsq'});
+ approx(fo.values[api.gridIndex(fo,0,0,0)],24/125,1e-6);
+ assert.equal(fo.experimental.scaleMode,'not-applicable');
+});
+
+test('P8.2 phase-controlled Fo-Fc FFT matches independent one-pair Fourier sum',()=>{
+ const cell={a:4,b:4,c:4,alpha:90,beta:90,gamma:90};
+ const f=p1.readFcf([
+  'data_fourier','loop_',
+  '_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_meas','_refln_F_calc','_refln_phase_calc',
+  '1 0 0 10 8 90'
+ ].join('\n'));
+ const g=p1.observedFourierMap(cell,f,{kind:'difference',size:16,dMin:1});
+ for(const n of [0,1,2,3,4,8,12,15]){
+  const expected=2*(10-8)/64*Math.cos(Math.PI/2+2*Math.PI*n/16);
+  approx(g.values[api.gridIndex(g,n,0,0)],expected,1e-6);
+ }
+});
+
+test('P8.2 Nyquist and d_min exclusions are explicitly counted without folding',()=>{
+ const cell={a:10,b:10,c:10,alpha:90,beta:90,gamma:90};
+ const f=p1.readFcf([
+  'data_sampling','loop_',
+  '_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_meas','_refln_F_calc','_refln_phase_calc',
+  '1 0 0 10 8 0','8 0 0 3 2 0','12 0 0 3 2 0'
+ ].join('\n'));
+ const g=p1.observedFourierMap(cell,f,{kind:'difference',size:16,dMin:1});
+ assert.equal(g.experimental.used,1);
+ assert.equal(g.experimental.skippedResolution,1);
+ assert.equal(g.experimental.skippedNyquist,1);
+ assert.ok(g.experimental.gridP1Coverage>0&&g.experimental.gridP1Coverage<1);
+ assert.match(g.experimental.warning,/tamlık değildir/);
+});
+
+test('P8.2 negative measured F² is traceable, while bad calculated F² is rejected',()=>{
+ const source=[
+  'data_negative','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 -4 25 0'
+ ].join('\n');
+ const f=p1.readFcf(source);
+ assert.equal(f.clippedNegativeFo2,1);
+ approx(f.reflections[0].fo,0);
+ assert.throws(()=>p1.readFcf(source.replace('-4 25','4 -25')),/hesaplanan F² geçersiz/);
+ assert.throws(()=>p1.readFcf(source+'\ndata_second\n'),/Birden çok FCF/);
+ assert.throws(()=>p1.observedFourierMap({a:5,b:5,c:5,alpha:90,beta:90,gamma:90},
+  p1.readFcf(source.replace('_refln_phase_calc','_unused')),{}),/faz bilgisi/);
+});
+
+test('P8.2 frontend provides scale selection and prevents maps after structure edits',()=>{
+ assert.match(htmlShell,/id="fcfScaleMode"/);
+ assert.match(moduleScript,/fcf.structureFingerprint=cifScientificFingerprint\(state\)/);
+ assert.match(moduleScript,/fcf.structureFingerprint!==cifScientificFingerprint\(state\)/);
+});
