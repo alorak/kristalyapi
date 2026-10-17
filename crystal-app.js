@@ -878,9 +878,9 @@ function sliceMillerFrame(g,cell,h,k,l,position){
   width:umax-umin,height:vmax-vmin,intersectionCount:intersections.length,hkl:[h,k,l]};
 }
 function sliceContourLevels(values,count=8,reference=null,mode='uniform'){
- if(!Number.isInteger(count)||count<2||count>20||
-  !['uniform','balanced','positive','negative'].includes(mode))
-  throw Error('Kontur sayısı veya seviye modu geçersiz.');
+ if(!Number.isInteger(count)||count<2||count>20)throw Error('Kontur sayısı 2–20 olmalı.');
+ if(!['uniform','balanced','positive','negative'].includes(mode))
+  throw Error('Kontur seviye modu geçersiz.');
  let min=Infinity,max=-Infinity;
  for(const value of values)if(Number.isFinite(value)){min=Math.min(min,value);max=Math.max(max,value);}
  if(!(max>min))return [];
