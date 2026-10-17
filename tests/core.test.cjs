@@ -1088,7 +1088,7 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
   'adpLevel','polyElement','polyCut','polyNeighbors'])assert.ok(quickbar.includes('id="'+id+'"'),id);
  for(const type of ['ball','space','stick','wire'])assert.match(quickbar,new RegExp('<option value="'+type+'"'));
  assert.match(html,/#viewport #stage\{bottom:var\(--quickbar-height\)\}/);
- assert.match(html,/#viewport\{--quickbar-height:80px\}/);
+ assert.match(html,/#viewport\{--quickbar-height:118px\}/);
  assert.match(html,/\.workbench-quickbar\{[^}]*grid-template-columns:minmax\(420px,1fr\) minmax\(345px,auto\)[^}]*overflow-x:auto/);
  assert.match(html,/#app\.right-drawer-open \.quickbar-group:last-child\{justify-self:start\}/);
  assert.doesNotMatch(html,/#app\.right-drawer-open #viewport\{--quickbar-height:142px\}/);
@@ -3084,7 +3084,7 @@ test('P8.2b merged P1 MTZ reads typed FP/FC/PHIC and produces direct-Fourier amp
  approx(map.values[api.gridIndex(map,0,0,0)],4/125,1e-7);
  assert.equal(map.experimental.sourceCell,true);
  assert.match(htmlShell,/accept="\.fcf,\.cif,\.mtz"/);
- assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\)\)/);
+ assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\),\{columns:choices\}\)/);
 });
 test('P8.2b MTZ byte order and missing-number sentinel are validated and counted',()=>{
  const big=p1.readMtz(makeP1Mtz({endian:'big',rows:[[1,0,0,10,8,90]]}));
