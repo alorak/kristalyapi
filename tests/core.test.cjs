@@ -2549,6 +2549,13 @@ test('P7.7 symmetry preserves Cartesian ADP ellipsoid spectrum in hexagonal latt
  }
 });
 
+test('P7.7 accepts small CIF rounding in a hexagonal cell angle',()=>{
+ const nearlyHex={a:5,b:5,c:8,alpha:90,beta:90,gamma:119.99};
+ const rotated=api.adpRotateBySymmetry([.04,.035,.025,.002,-.003,.004],nearlyHex,'-y,x-y,z');
+ assert.equal(rotated.length,6);
+ assert.ok(rotated.every(Number.isFinite));
+});
+
 test('P7.7 rejects symmetry operations incompatible with the supplied cell',()=>{
  const orthorhombic={a:4,b:5,c:6,alpha:90,beta:90,gamma:90};
  const u=[.04,.025,.03,.002,.001,.003];
