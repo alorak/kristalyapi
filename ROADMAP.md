@@ -21,7 +21,7 @@ Bilimsel kontrat ve test örnekleri:
 | P0 | FCF içindeki hücreyi aktif kristalle karşılaştır; FCF yüklemesinden sonra yapısal değişimi algıla | Yanlış hücre ve değişmiş kristal fail-closed |
 | P0 | `hkl`/Friedel eşleniği faz ve amplitüd uyumunu kontrol et; tekrarları sessizce seçme | Modulo-360 ve zıt faz referansları, çelişki testleri |
 | P0 | Ham `Fo−Fc` ve seçilebilir LSQ Fc ölçekli fark haritaları, d_min/Nyquist ve P1 grid kapsamı | Analitik tek-çift Fourier ve ölçek testleri |
-| P1 | MTZ binary dosya okuma, veri kümesi/sütun doğrulama, anomali/simetri tamamlama | Gemmi/CCP4 bağımsız dosya+harita referansı: **sonraki alt paket (8.2b)** |
+| P1 | **8.2b başlangıcı:** Birleşik P1 MTZ için endian/başlık/NCOL/COL/DCELL/VALM doğrulamalı FP/FC/PHIC okuma ve model-fazlı Fo/Fo−Fc; non-P1 ve belirsiz sütunlar fail-closed | Sentetik LE/BE, eksik değer, yanlış hücre/simetri testleri; **gerçek Gemmi/CCP4 fixture ve bağımsız harita referansı hâlâ gerekli** |
 | P1 | Gelişmiş ölçüm ölçeği, FOM/σ ağırlığı, 2Fo−Fc ve CCP4/MRC map | Tam yansıma/ölçek matematiği gerektiriyor |
 
 **Kapsam belgesi:** [`tests/validation/PACKAGE_8_2_STATUS.md`](tests/validation/PACKAGE_8_2_STATUS.md).

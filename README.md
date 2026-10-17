@@ -138,7 +138,9 @@ A Friedel pair is combined only under the **non-anomalous, real-density assumpti
 
 Fo−Fc offers **unscaled** `Fo−Fc` by default, or an optional **least-squares Fcalc scale** `s = Σ(Fo Fc) / Σ(Fc²)` yielding `Fo−sFc`. This is a simple constant multiplier—not refinement by resolution shell, anisotropic B factor, reflection weighting, or instrument model. Maps use **model phases (`φcalc`)**, a P1 inverse Fourier transform, and relative scaling. Before interpreting them as experimental density, independently validate atomic origin, crystal symmetry, experimental scale, and reflection completeness.
 
-**Not yet supported:** binary MTZ reflections, native CCP4 `.map` / `.ccp4` density maps, every CIF2 reflection dictionary, automatic completion across symmetry equivalents, anomalous Friedel differences, or weighted `2Fo−Fc` map refinement. See the [Package 8.2 status report](tests/validation/PACKAGE_8_2_STATUS.md) for follow-up work.
+**Package 8.2b — limited MTZ input:** A merged **P1 MTZ** can now provide model-phased Fo/Fo−Fc maps when unambiguous typed **FP/F/FOBS, FC, and PHIC** columns are present. The parser checks IEEE byte order, header/data lengths, P1 symmetry, dataset cells, missing-number sentinels, and negative/invalid amplitudes. Skipped incomplete rows are counted. **Other space groups, unmerged/batch files, ambiguous datasets, anomalous pairs, and pre-weighted map-coefficient columns (e.g. FWT/PHWT) are rejected**, not mapped as if they were P1 observations. The initial regression fixtures are synthetic; independent Gemmi/CCP4 real-MTZ and map benchmarks are still pending.
+
+**Not yet supported:** general MTZ symmetry expansion, native CCP4 `.map` / `.ccp4` density maps, every CIF2 reflection dictionary, anomalous Friedel differences, or weighted `2Fo−Fc` map refinement. See the [Package 8.2 status report](tests/validation/PACKAGE_8_2_STATUS.md) for follow-up work.
 
 ### Package 8.1 — ADP site-symmetry validation and CIF provenance
 
