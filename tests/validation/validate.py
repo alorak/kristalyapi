@@ -161,7 +161,7 @@ def compare_sites(bsites,rsites,cell,tol):
     if bg:
         rare=min(bg,key=lambda k:len(bg[k]))
         anchor=bg[rare][0]
-        for site in rg[rare][:24]:
+        for site in rg[rare]:
             shift=[site[k]-anchor[k] for k in ("x","y","z")]
             success,n,worst=attempt(shift)
             if success:
@@ -249,7 +249,7 @@ def gate_failures(rows,known_inconclusive):
             problems.append(row["id"]+": "+row["status"])
         elif row["status"]=="inconclusive":
             known_reason=known_inconclusive.get(row["id"])
-            if not known_reason or not any(known_reason in issue for issue in row["issues"]):
+            if not known_reason or len(row["issues"]) != 1 or not row["issues"][0].startswith("Gemmi reference unavailable: ") or known_reason not in row["issues"][0]:
                 problems.append(row["id"]+": unexpected inconclusive")
     return problems
 
