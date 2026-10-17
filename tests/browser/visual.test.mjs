@@ -730,6 +730,26 @@ try{
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
  assert.equal(await page.locator('#fcfMapKind option').count(),2);
  assert.equal(await page.locator('#fcfScaleMode option').count(),2);
+
+ // Real user path: upload an FCF in Chromium, choose nontrivial Fo/Fc
+ // normalization, produce the map and surface the fitted scale diagnostics.
+ await page.locator('#fcfScaleMode').selectOption('lsq');
+ await page.locator('#fcfFile').setInputFiles({
+  name:'two-reflections.fcf',mimeType:'text/plain',
+  buffer:Buffer.from([
+   'data_browser_FCF','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+   '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+   '1 0 0 100 25 0','0 1 0 49 25 90'
+  ].join('\n'))
+ });
+ await page.waitForFunction(()=>document.querySelector('#fcfStatus')?.textContent.includes('2 yansıma'));
+ await page.locator('#fcfMapAdd').click();
+ await page.waitForFunction(()=>document.querySelector('#fcfStatus')?.textContent.includes('Fc ölçeği'),null,{timeout:15000});
+ const fcfMessage=await page.locator('#fcfStatus').textContent();
+ assert.match(fcfMessage,/2 benzersiz yansıma/);
+ assert.match(fcfMessage,/Fc ölçeği 1\.70000 \(lsq\)/);
+ assert.match(fcfMessage,/P1 ızgara kapsama/);
+
  assert.equal(await page.locator('#volumePeakRefine').isChecked(),true);
  assert.equal(await page.locator('#volumePeakMerge').isChecked(),false);
  assert.match(await page.locator('#volumeMathIntegral').textContent(),/Volume integral/);
