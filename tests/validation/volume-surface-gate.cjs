@@ -27,7 +27,7 @@ const parseCtx={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
 vm.createContext(parseCtx);
 vm.runInContext(src.slice(0,boundary).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.read=readCcp4Map;this.toCube=volumeCubeText;this.fromCube=readCube;'+
- 'this.toXsf=volumeXsfText;this.fromXsf=readXsf;',parseCtx);
+ 'this.toXsf=volumeXsfText;this.fromXsf=readXsf;this.normalize=interpretVolumeUnits;',parseCtx);
 const workerCtx={self:{postMessage(){}},Float32Array,Float64Array,Uint8ClampedArray,Math};
 vm.createContext(workerCtx);
 vm.runInContext(fs.readFileSync(path.join(ROOT,'volume-iso-worker.js'),'utf8')+
@@ -153,12 +153,13 @@ function experimental(pathname){
  const original=parseCtx.read(fs.readFileSync(pathname),path.basename(pathname));
  boundsCheck(original);
  const sorted=Array.from(original.values).sort((a,b)=>a-b);
- const level=sorted[Math.floor(sorted.length*.78)];
+ const q=Math.floor(sorted.length*.78),level=(sorted[q]+sorted[q+1])/2;
  assert.ok(level>original.min&&level<original.max,'real source isovalue degenerate');
  // Re-encodings of the same REAL CCP4 data. These are NOT independently
  // obtained laboratory CUBE, XSF or CHGCAR datasets.
  const cube=parseCtx.fromCube(parseCtx.toCube(original));
- const xsf=parseCtx.fromXsf(parseCtx.toXsf(original));
+ const xsf=parseCtx.normalize(parseCtx.fromXsf(parseCtx.toXsf(original)),
+  'unknown',{periodic:!!original.periodic});
  const interchange={cubeMaxScalarDifference:compareGrid(original,cube,'CUBE'),
   xsfMaxScalarDifference:compareGrid(original,xsf,'XSF')};
  const series=[16,24,32].map(n=>{
