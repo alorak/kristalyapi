@@ -1,6 +1,6 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
-## Paket 8.1 — CIF veri bütünlüğü ve ileri ADP doğrulaması (bu PR)
+## Paket 8.1 — CIF veri bütünlüğü ve ileri ADP doğrulaması (#61 merge)
 
 | Öncelik | Kapsam | Bilimsel kabul / kalan açık |
 | --- | --- | --- |
@@ -12,6 +12,25 @@
 
 Bilimsel kontrat ve test örnekleri:
 [`tests/validation/PACKAGE_8_1_STATUS.md`](tests/validation/PACKAGE_8_1_STATUS.md).
+
+## Paket 8.2 — FCF/Fourier bilimsel güvenilirlik (bu PR)
+
+| Öncelik | Uygulanan / yapılacak | Bilimsel doğrulama |
+| --- | --- | --- |
+| P0 | FCF `F²` ölçümünü izlenebilir Fo genliğine dönüştür; negatif `F²` say, hatalı hesaplanan `F²` reddet | Negatif/eksik FCF ölçüm-fixture testleri |
+| P0 | FCF içindeki hücreyi aktif kristalle karşılaştır; FCF yüklemesinden sonra yapısal değişimi algıla | Yanlış hücre ve değişmiş kristal fail-closed |
+| P0 | `hkl`/Friedel eşleniği faz ve amplitüd uyumunu kontrol et; tekrarları sessizce seçme | Modulo-360 ve zıt faz referansları, çelişki testleri |
+| P0 | Ham `Fo−Fc` ve seçilebilir LSQ Fc ölçekli fark haritaları, d_min/Nyquist ve P1 grid kapsamı | Analitik tek-çift Fourier ve ölçek testleri |
+| P1 | MTZ binary dosya okuma, veri kümesi/sütun doğrulama, anomali/simetri tamamlama | Gemmi/CCP4 bağımsız dosya+harita referansı: **sonraki alt paket (8.2b)** |
+| P1 | Gelişmiş ölçüm ölçeği, FOM/σ ağırlığı, 2Fo−Fc ve CCP4/MRC map | Tam yansıma/ölçek matematiği gerektiriyor |
+
+**Kapsam belgesi:** [`tests/validation/PACKAGE_8_2_STATUS.md`](tests/validation/PACKAGE_8_2_STATUS.md).
+
+### Paket 8.1 kalan işler
+
+CIF2 ve çoklu bloklar, desteklenmeyen metadata'nın alan bazında
+kayıp raporu, deneysel `Uij` belirsizlikleri, Hall/orijin ayarlarının
+kapsamlı doğrulanması. Paket 8.2 bunları tamamlamış saymaz.
 
 ## Görselleştirme, workspace ve mimari paketi · Ekim 2026
 
