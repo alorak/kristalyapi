@@ -2667,6 +2667,27 @@ test('P8.1 edited CIF retains safe bibliographic loops and multiline provenance'
  approx(api.cifData(repeated).sites[0].y,.125);
 });
 
+test('P8.1 source COD identifier is not falsely attributed to an edited structure',()=>{
+ const source=[
+  'data_cod','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  '_cod_database_code 12345',
+  "_chemical_name_common 'silicon'",
+  "_chemical_formula_sum 'Si'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si .1 .2 .3'
+ ].join('\n')+'\n';
+ const first=api.cifData(source),record=api.originalCifRecord(first,source);
+ const edited={...first,cifOriginal:record,sites:[{...first.sites[0],x:.2}]};
+ assert.doesNotMatch(api.cifExportText(edited),/_cod_database_code/);
+ assert.match(api.cifExportText(edited),/_chemical_name_common/);
+ const changed={...edited,sites:[{...edited.sites[0],symbol:'Ge'}]};
+ const result=api.cifExportText(changed);
+ assert.doesNotMatch(result,/_chemical_formula_sum|_chemical_name_common|_cod_database_code/);
+ assert.equal(api.cifData(result).sites[0].symbol,'Ge');
+});
+
 test('P8.1 provenance excludes structure-dependent loops after a chemical edit',()=>{
  const source=[
   'data_metadata',
@@ -2730,14 +2751,20 @@ test('P8.1 fourfold-site Uij has equal in-plane diagonals and zero mixed terms',
  assert.throws(()=>api.cifData(cif(.035,.015,0)),/özel konum ADP/);
 });
 
-test('P8.1 real pinned CIF fixtures remain original-source round-trip safe',()=>{
- const cases=['COD_4335507.cif','CoO19128.cif','Fe.cif'];
- const filenames=['fixtures/real/COD_4335507.cif','fixtures/real/CoO19128.cif','fixtures/real/Fe.cif'];
- for(let i=0;i<filenames.length;i++){
-  const input=fs.readFileSync(path.join(__dirname,'validation',filenames[i]),'utf8');
-  const structure=api.cifData(input);
-  const untouched=api.cifExportPreservingSource({...structure,cifOriginal:api.originalCifRecord(structure,input)});
-  assert.equal(untouched.original,true,'pinned fixture '+cases[i]);
-  assert.equal(untouched.text,input,'source byte fidelity '+cases[i]);
+test('P8.1 fourteen pinned experimental CIFs preserve source and editable atom multiplicities',()=>{
+ const cases=["COD_4335507.cif","Co8.cif","CoO19128.cif","Cod_2100513.cif","Cod_4115344.cif","CsI3Pb.cif","CsSnI3.cif","Cu7Te5.cif","CuCl.cif","Fe.cif","Fe3O4.cif","FePO4.cif","Graphite.cif","H6PbCI3N_mp-977013_symmetrized.cif"];
+ for(const name of cases){
+  const input=fs.readFileSync(path.join(__dirname,'validation','fixtures/real',name),'utf8');
+  const structure=api.cifData(input),record=api.originalCifRecord(structure,input);
+  const untouched=api.cifExportPreservingSource({...structure,cifOriginal:record});
+  assert.equal(untouched.original,true,'pinned original '+name);
+  assert.equal(untouched.text,input,'source byte fidelity '+name);
+  const edited={...structure,cifOriginal:record,
+   sites:structure.sites.map((site,i)=>i?site:{...site,x:site.x+.003})};
+  const output=api.cifExportPreservingSource(edited);
+  assert.equal(output.original,false,'edited source may not be reused '+name);
+  const parsed=api.cifData(output.text);
+  assert.equal(parsed.sites.length,structure.sites.length,'multiplicity '+name);
+  approx(parsed.sites[0].x-structure.sites[0].x,.003,1e-5);
  }
 });
