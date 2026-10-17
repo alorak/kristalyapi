@@ -44,6 +44,21 @@ assert.ok(grid.axes.flat().every(Number.isFinite));
 const file=`${format}-grid.float32`;
 const values=Float32Array.from(grid.values);
 fs.writeFileSync(path.join(outDir,file),Buffer.from(values.buffer,values.byteOffset,values.byteLength));
+// P11: export each source channel independently; the primary gridFile remains
+// unchanged for the previously pinned P10.8.6/10.9 reference suites.
+const allFields=[{label:grid.fieldLabel||
+ (grid.datasetIds?.length?'Orbital '+grid.datasetIds[0]:'primary'),grid},
+ ...(grid.volumeComponents||[])];
+const fields=allFields.map(({label,grid:component},index)=>{
+ assert.deepEqual(component.dims,grid.dims,'channel dimensions differ');
+ const filename=index===0?file:`${format}-field-${index}.float32`;
+ if(index){
+  const channel=Float32Array.from(component.values);
+  assert.equal(channel.length,size,'channel voxel count differs');
+  fs.writeFileSync(path.join(outDir,filename),Buffer.from(channel.buffer,channel.byteOffset,channel.byteLength));
+ }
+ return {label,file:filename,voxels:component.values.length};
+});
 
 const worker={self:{postMessage(){}},Float32Array,Float64Array,Uint8ClampedArray,Math};
 vm.createContext(worker);
@@ -72,7 +87,8 @@ assert.ok(Number.isFinite(areaA2)&&areaA2>0);
 const manifest={protocol:'p10.8.6-real-format-reader',source:path.basename(source),
  format,kind:grid.kind,units:grid.units,quantity:grid.quantity,
  dims:[...grid.dims],origin:[...grid.origin],axes:grid.axes.map(v=>[...v]),
- periodic:!!grid.periodic,min:grid.min,max:grid.max,gridFile:file,
+ periodic:!!grid.periodic,min:grid.min,max:grid.max,gridFile:file,fields,
+ datasetIds:grid.datasetIds||null,
  siteCount:grid.crystal?.sites.length??0,
  atoms:grid.atoms?.map(atom=>({atomicNumber:atom.atomicNumber,
   positionA:[...atom.position],nuclearCharge:atom.nuclearCharge}))||null,

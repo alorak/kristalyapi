@@ -58,6 +58,8 @@ jobs:
         run: python tests/validation/volume_vesta_formats_reference.py
       - name: Gate real CUBE atom positions, independent ASE XSF and audit 40/64 Worker cost
         run: python tests/validation/volume_109_reference.py
+      - name: Gate P11 multiple CUBE orbitals and molecular multi-field XSF against ASE
+        run: python tests/validation/volume_11_reference.py
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,6 +72,7 @@ jobs:
             validation-results/volume-sampling-10-8-5.json
             validation-results/volume-vesta-formats-10-8-6.json
             validation-results/volume-109-real-format-and-cost.json
+            validation-results/volume-11-multifield-scientific.json
           if-no-files-found: warn
           retention-days: 30
 

@@ -242,19 +242,42 @@ function volumeSample(g,xyz){
  return sum;
 }
 function volumeAtWorld(g,world){return volumeSample(g,volumeCoord(g,world));}
+function nonPeriodicVolumetricStructure(grid,atoms,source){
+ // A file's display grid box is not a crystal lattice. Its Cartesian offset
+ // must survive scene building and project/recent-structure serialization.
+ const dims=grid.dims,origin=grid.origin,axes=grid.axes,corners=[];
+ for(let i of [0,dims[0]-1])for(let j of [0,dims[1]-1])for(let k of [0,dims[2]-1])
+  corners.push([0,1,2].map(q=>origin[q]+i*axes[0][q]+j*axes[1][q]+k*axes[2][q]));
+ const positions=[...corners,...atoms.map(a=>a.position)];
+ const offset=[0,1,2].map(q=>Math.min(...positions.map(v=>v[q]))-2);
+ const span=[0,1,2].map(q=>Math.max(6,Math.max(...positions.map(v=>v[q]))-offset[q]+2));
+ const sites=atoms.map((a,i)=>({symbol:a.symbol,label:a.symbol+(i+1),occupancy:1,
+  x:(a.position[0]-offset[0])/span[0],
+  y:(a.position[1]-offset[1])/span[1],
+  z:(a.position[2]-offset[2])/span[2]}));
+ return {name:grid.title||source,cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},
+  sites,nonPeriodic:true,nonPeriodicOrigin:offset,displayCell:false,
+  warning:source+' gerçek kristal örgüsü bildirmez; atomlar Å konumlarında, periyodik olmayan yapay görüntüleme kutusundadır.'};
+}
 function readCube(src){
  const lines=src.replace(/\r/g,'').split('\n');
  if(lines.length<7)throw Error('CUBE başlığı eksik.');
  const words=i=>(lines[i]||'').trim().split(/\s+/).filter(Boolean);
- const first=words(2),nAtoms=volumeNumber(first[0]);
- if(!Number.isInteger(nAtoms)||nAtoms<0||nAtoms>20000)throw Error('Orbital/multi-grid CUBE henüz desteklenmiyor (atom sayısı negatif olabilir).');
+ const first=words(2),signedAtoms=volumeNumber(first[0]),nAtoms=Math.abs(signedAtoms);
+ if(!Number.isInteger(signedAtoms)||nAtoms>20000||![4,5].includes(first.length))
+  throw Error('CUBE atom/alan başlığı geçersiz.');
+ // Positive NATOMS optionally carries NVAL values/voxel. Negative NATOMS
+ // instead carries a count and DSET_IDS after the atom lines (often orbital
+ // numbers); the formats cannot be mixed safely.
+ if(signedAtoms<0&&first.length===5)throw Error('CUBE NVAL ve DSET_IDS birlikte kullanılamaz.');
+ let fields=first.length===5?volumeNumber(first[4]):1;
+ if(!Number.isInteger(fields)||fields<1||fields>5)
+  throw Error('CUBE en fazla beş veri alanını destekler.');
  const unitScale=[3,4,5].some(i=>volumeNumber(words(i)[0])<0)?1:VOLUME_BOHR;
  const dims=[3,4,5].map(i=>Math.abs(volumeNumber(words(i)[0])));
  const origin=first.slice(1,4).map(volumeNumber).map(v=>v*unitScale);
  const axes=[3,4,5].map(i=>words(i).slice(1,4).map(volumeNumber).map(v=>v*unitScale));
  if(first.length<4||axes.some(a=>a.length!==3))throw Error('CUBE ızgara ekseni eksik.');
- const start=6+nAtoms;
- if(start>=lines.length)throw Error('CUBE atom/ızgara verisi eksik.');
  const count=dims.reduce((a,b)=>a*b,1);
  if(count>VOLUME_MAX_VOXELS)throw Error('CUBE ızgarası çok büyük.');
  const atoms=[];
@@ -267,29 +290,34 @@ function readCube(src){
   const position=row.slice(2,5).map(volumeNumber).map(v=>v*unitScale);
   atoms.push({atomicNumber:z,symbol:z?PERIODIC_SYMBOLS[z-1]:'X',nuclearCharge:charge,position});
  }
- const vals=lines.slice(start).join(' ').trim().split(/\s+/);
- if(vals.length<count)throw Error('CUBE ızgara değerleri eksik.');
- const g=volumeGrid(dims,origin,axes,vals.slice(0,count).map(volumeNumber),'CUBE','dosya ölçeği');
- g.title=lines[0]?.trim()||'Gaussian CUBE';
- g.atoms=atoms;
- if(atoms.length&&atoms.length<=1000){
-  // CUBE has no crystallographic lattice. Enclose BOTH the native Cartesian
-  // density parallelepiped and atoms in a non-periodic orthorhombic *display*
-  // box. The original grid origin/axes/values remain absolutely unchanged.
-  const corners=[];
-  for(let i of [0,dims[0]-1])for(let j of [0,dims[1]-1])for(let k of [0,dims[2]-1])
-   corners.push([0,1,2].map(q=>origin[q]+i*axes[0][q]+j*axes[1][q]+k*axes[2][q]));
-  const positions=[...corners,...atoms.map(a=>a.position)];
-  const offset=[0,1,2].map(q=>Math.min(...positions.map(v=>v[q]))-2);
-  const span=[0,1,2].map(q=>Math.max(6,Math.max(...positions.map(v=>v[q]))-offset[q]+2));
-  const sites=atoms.map((a,i)=>({symbol:a.symbol,label:a.symbol+(i+1),occupancy:1,
-   x:(a.position[0]-offset[0])/span[0],
-   y:(a.position[1]-offset[1])/span[1],
-   z:(a.position[2]-offset[2])/span[2]}));
-  g.crystal={name:g.title,cell:{a:span[0],b:span[1],c:span[2],alpha:90,beta:90,gamma:90},
-   sites,nonPeriodic:true,nonPeriodicOrigin:offset,displayCell:false,
-   warning:'CUBE gerçek kristal örgüsü bildirmez; atomlar Å konumlarında, periyodik olmayan yapay görüntüleme kutusundadır.'};
+ let start=6+nAtoms,datasetIds=[];
+ if(signedAtoms<0){
+  const firstIds=words(start++);
+  fields=volumeNumber(firstIds[0]);
+  if(!Number.isInteger(fields)||fields<1||fields>5)
+   throw Error('CUBE DSET_IDS alan sayısı geçersiz veya beş sınırını aşıyor.');
+  datasetIds=firstIds.slice(1);
+  while(datasetIds.length<fields&&start<lines.length)datasetIds.push(...words(start++));
+  if(datasetIds.length!==fields||datasetIds.some(id=>!/^[+-]?\d+$/.test(id)))
+   throw Error('CUBE DSET_IDS orbital kimlikleri eksik veya geçersiz.');
+  datasetIds=datasetIds.map(Number);
+  if(new Set(datasetIds).size!==fields||datasetIds.some(n=>!Number.isSafeInteger(n)))
+   throw Error('CUBE DSET_IDS orbital kimlikleri tekrarlı veya geçersiz.');
  }
+ if(start>=lines.length)throw Error('CUBE atom/ızgara verisi eksik.');
+ const vals=lines.slice(start).join(' ').trim().split(/\s+/);
+ if(vals.length!==count*fields)throw Error('CUBE ızgara veri sayısı veya çoklu alan sırası geçersiz.');
+ const channels=Array.from({length:fields},()=>new Float32Array(count));
+ // Gaussian CUBE stores Z fastest and interleaves channels at EACH voxel.
+ for(let i=0;i<count;i++)for(let c=0;c<fields;c++)
+  channels[c][i]=volumeNumber(vals[i*fields+c]);
+ const g=volumeGrid(dims,origin,axes,channels[0],'CUBE','dosya ölçeği');
+ g.title=lines[0]?.trim()||'Gaussian CUBE';
+ g.atoms=atoms;g.datasetIds=datasetIds;
+ g.volumeComponents=channels.slice(1).map((values,i)=>({
+  label:datasetIds.length?'Orbital '+datasetIds[i+1]:'Alan '+(i+2),
+  grid:volumeGrid(dims,origin,axes,values,'CUBE','dosya ölçeği')}));
+ if(atoms.length&&atoms.length<=1000)g.crystal=nonPeriodicVolumetricStructure(g,atoms,'CUBE');
  return g;
 }
 function readChgcar(src){
@@ -382,29 +410,49 @@ function readChgcar(src){
 }
 function readXsf(src){
  const lines=src.replace(/\r/g,'').split('\n').map(s=>s.trim());
- // ASE 3.26 emits BEGIN_DATAGRID_3Dgrid#1 (no underscore); the XCrySDen
- // format also permits BEGIN_DATAGRID_3D_<label>. Keep both spellings.
- let p=lines.findIndex(l=>/^BEGIN_DATAGRID_3D\S*$/i.test(l));
- if(p<0)throw Error('XSF DATAGRID_3D bloğu bulunamadı.');
- p++;
- if(!/^\d+\s+\d+\s+\d+$/.test(lines[p]||''))p++;
- const dims=(lines[p++]||'').split(/\s+/).map(Number);
- if(dims.length!==3||dims.some(n=>!Number.isInteger(n)||n<2))throw Error('XSF ızgara boyutları eksik.');
- const count=dims.reduce((a,b)=>a*b,1);
- if(count>VOLUME_MAX_VOXELS)throw Error('XSF ızgarası çok büyük.');
- const origin=(lines[p++]||'').split(/\s+/).map(volumeNumber);
- const spans=[0,1,2].map(()=>(lines[p++]||'').split(/\s+/).map(volumeNumber));
- if(origin.length!==3||spans.some(v=>v.length!==3))throw Error('XSF grid origin/vektörler eksik.');
- const body=[];
- while(p<lines.length&&!/^END_DATAGRID_3D/i.test(lines[p])){
-  if(lines[p])body.push(...lines[p].split(/\s+/));p++;
+ if(lines.some(l=>/^ANIMSTEPS(?:\s|$)/i.test(l)))
+  throw Error('XSF çok adımlı AXSF animasyonları desteklenmiyor; tek kare açın.');
+ const fields=[];
+ for(let p=0;p<lines.length;p++){
+  // ASE emits BEGIN_DATAGRID_3Dgrid#1 without an underscore. Both that
+  // spelling and named BEGIN_DATAGRID_3D_<identifier> are valid.
+  const marker=lines[p].match(/^BEGIN_DATAGRID_3D(\S*)$/i);
+  if(!marker)continue;
+  if(fields.length>=5)throw Error('XSF en fazla beş DATAGRID alanını destekler.');
+  let label=marker[1].replace(/^_/,'').slice(0,80)||'Alan '+(fields.length+1);
+  p++;
+  if(!/^\d+\s+\d+\s+\d+$/.test(lines[p]||''))p++;
+  const dims=(lines[p++]||'').split(/\s+/).map(Number);
+  if(dims.length!==3||dims.some(n=>!Number.isInteger(n)||n<2))throw Error('XSF ızgara boyutları eksik.');
+  const count=dims.reduce((a,b)=>a*b,1);
+  if(count>VOLUME_MAX_VOXELS)throw Error('XSF ızgarası çok büyük.');
+  const origin=(lines[p++]||'').split(/\s+/).map(volumeNumber);
+  const spans=[0,1,2].map(()=>(lines[p++]||'').split(/\s+/).map(volumeNumber));
+  if(origin.length!==3||spans.some(v=>v.length!==3))throw Error('XSF grid origin/vektörler eksik.');
+  const body=[];
+  while(p<lines.length&&!/^END_DATAGRID_3D\s*$/i.test(lines[p])){
+   if(lines[p])body.push(...lines[p].split(/\s+/));p++;
+  }
+  if(p>=lines.length||body.length!==count)throw Error('XSF DATAGRID sonu/veri sayısı geçersiz.');
+  const raw=new Float32Array(count);
+  // XCrySDen DATAGRID is x-fastest; the internal grid is z-fastest.
+  for(let k=0;k<dims[2];k++)for(let j=0;j<dims[1];j++)for(let i=0;i<dims[0];i++)
+   raw[(i*dims[1]+j)*dims[2]+k]=volumeNumber(body[(k*dims[1]+j)*dims[0]+i]);
+  const axes=spans.map((row,d)=>row.map(x=>x/(dims[d]-1)));
+  const field=volumeGrid(dims,origin,axes,raw,'XSF','kaynak birim');
+  if(fields.length){
+   const first=fields[0].grid;
+   if(dims.some((v,i)=>v!==first.dims[i])||
+    [...origin,...axes.flat()].some((v,i)=>
+     Math.abs(v-[...first.origin,...first.axes.flat()][i])>1e-5))
+    throw Error('XSF DATAGRID alanlarının boyutları veya Kartezyen Å çerçevesi uyuşmuyor.');
+  }
+  fields.push({label,grid:field});
  }
- if(body.length<count)throw Error('XSF yoğunluk değerleri eksik.');
- const raw=new Float32Array(count);
- // XSF DATAGRID is stored x-fastest.
- for(let k=0;k<dims[2];k++)for(let j=0;j<dims[1];j++)for(let i=0;i<dims[0];i++)
-  raw[(i*dims[1]+j)*dims[2]+k]=volumeNumber(body[(k*dims[1]+j)*dims[0]+i]);
- const g=volumeGrid(dims,origin,spans.map((row,d)=>row.map(x=>x/(dims[d]-1))),raw,'XSF','kaynak birim');
+ if(!fields.length)throw Error('XSF DATAGRID_3D bloğu bulunamadı.');
+ const g=fields[0].grid;
+ g.title='XSF · '+fields[0].label;g.fieldLabel=fields[0].label;
+ g.volumeComponents=fields.slice(1);
  const pv=lines.findIndex(x=>/^PRIMVEC$/i.test(x)),pc=lines.findIndex(x=>/^PRIMCOORD$/i.test(x));
  if(pv>=0&&pc>=0){
   const vectors=lines.slice(pv+1,pv+4).map(x=>x.split(/\s+/).map(volumeNumber));
@@ -421,6 +469,30 @@ function readXsf(src){
      sites.push({symbol,label:symbol+(i+1),x:frac(f[0]),y:frac(f[1]),z:frac(f[2]),occupancy:1});
     }
     g.crystal={cell:metric(B),sites,name:'XSF kristali'};
+   }
+  }
+ }else{
+  // XSF's ATOMS section denotes a molecule, *not* a periodic lattice.
+  // Preserve its physical Cartesian Å coordinates with the same offset
+  // mechanism as a CUBE molecule, even for skew/translated DATAGRIDs.
+  const at=lines.findIndex(x=>/^ATOMS$/i.test(x));
+  if(at>=0){
+   const atoms=[];
+   for(let i=at+1;i<lines.length;i++){
+    const row=lines[i].split(/\s+/);
+    if(!lines[i])continue;
+    if(/^(?:BEGIN_|END_|CRYSTAL|PRIMVEC|PRIMCOORD|CONVVEC|CONVCOORD|ATOMS|MOLECULE|SLAB|POLYMER|#)/i.test(lines[i]))break;
+    if(row.length<4)throw Error('XSF ATOMS koordinat satırı eksik.');
+    const numeric=/^\d+$/.test(row[0]),z=numeric?Number(row[0]):PERIODIC_SYMBOLS.indexOf(cleanSymbol(row[0]))+1;
+    if(!Number.isInteger(z)||z<1||z>PERIODIC_SYMBOLS.length)
+     throw Error('XSF ATOMS atom numarası geçersiz.');
+    atoms.push({atomicNumber:z,symbol:PERIODIC_SYMBOLS[z-1],
+     position:row.slice(1,4).map(volumeNumber),nuclearCharge:null});
+    if(atoms.length>1000)throw Error('XSF ATOMS en fazla 1.000 atom destekler.');
+   }
+   if(atoms.length){
+    g.atoms=atoms;
+    g.crystal=nonPeriodicVolumetricStructure(g,atoms,'XSF ATOMS');
    }
   }
  }
@@ -607,6 +679,10 @@ function interpretVolumeUnits(grid,selection='unknown',{periodic=false}={}){
    values[i]=v;min=Math.min(min,v);max=Math.max(max,v);
   }
   result.values=values;result.min=min;result.max=max;
+ }
+ if(grid.volumeComponents?.length){
+  result.volumeComponents=grid.volumeComponents.map(item=>({
+   label:item.label,grid:interpretVolumeUnits(item.grid,selection,{periodic})}));
  }
  return result;
 }
@@ -1730,33 +1806,40 @@ async function loadVolumeFile(file,asPotential=false,additional=false){
  const parsed=interpretVolumeUnits(raw,$('volumeImportUnits').value,
   {periodic:isCcp4?raw.periodic:$('volumeImportPeriodic').checked});
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen yeniden yükleyin.');
- const incomingFields=1+(parsed.spinComponents?.length||0);
+ const components=parsed.volumeComponents||[];
+ const incomingFields=1+(parsed.spinComponents?.length||0)+components.length;
  if(!asPotential&&incomingFields+(additional?volumeDatasets.length:0)>VOLUME_DATASET_LIMIT)
-  throw Error('CHGCAR spin bileşenleri için en fazla beş alan sınırı aşıldı.');
- if(additional&&parsed.spinComponents?.some(item=>!volumeGridCompatible(densityGrid,item.grid)))
-  throw Error('CHGCAR spin bileşenlerinin ızgara çerçevesi uyuşmuyor.');
+  throw Error('Birden fazla CUBE/XSF/CHGCAR alanı için beş katman sınırı aşıldı.');
+ if(asPotential&&components.length)
+  throw Error('Çok alanlı CUBE/XSF potansiyel olarak doğrudan açılamaz; istediğiniz alanı ayrı yükleyin.');
+ if(additional&&[...(parsed.spinComponents||[]),...components].some(item=>!volumeGridCompatible(densityGrid,item.grid)))
+  throw Error('Ek veri alanlarının Kartezyen Å ızgara çerçevesi uyuşmuyor.');
+ const primaryName=file.name+(parsed.fieldLabel?' · '+parsed.fieldLabel:parsed.datasetIds?.length?' · Orbital '+parsed.datasetIds[0]:'');
  if(asPotential){
   if(!densityGrid)throw Error('Önce ana hacimsel veri dosyasını yükleyin.');
   if(!volumeGridCompatible(densityGrid,parsed))throw Error('Potansiyel alanı uzaysal koordinat sınırlarıyla uyumsuz.');
   potentialGrid=parsed;volumeColorIndex='';$('volumePotential').checked=true;
  }else if(additional){
   if(!densityGrid)throw Error('Önce ana alanı yükleyin.');
-  addVolumeDataset(parsed,file.name);
+  addVolumeDataset(parsed,primaryName);
   if(parsed.spinComponents){
    parsed.spinComponents.forEach(component=>addVolumeDataset(component.grid,file.name+' · m_'+component.axis));
   }
+  components.forEach(component=>addVolumeDataset(component.grid,file.name+' · '+component.label));
   volumeColorIndex='';potentialGrid=null;$('volumePotential').checked=false;
   volumeSyncIsoControls();
  }else{
   clearVolumeLayer();volumeDatasets=[];densityGrid=null;potentialGrid=null;volumeColorIndex='';
-  addVolumeDataset(parsed,file.name);
+  addVolumeDataset(parsed,primaryName);
   if(parsed.spinComponents){
    parsed.spinComponents.forEach(component=>addVolumeDataset(component.grid,'CHGCAR · m_'+component.axis));
   }
+  components.forEach(component=>addVolumeDataset(component.grid,file.name+' · '+component.label));
+  if(components.length){activeVolumeIndex=0;densityGrid=volumeDatasets[0].grid;}
   $('volumePotential').checked=false;
   if(parsed.crystal&&$('volumeLoadAtoms').checked){
    state={...state,name:parsed.crystal.name,
-    detail:parsed.crystal.nonPeriodic?'CUBE · atomlar, periyodik olmayan görüntüleme kutusu':parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
+    detail:parsed.crystal.nonPeriodic?parsed.kind+' · atomlar, periyodik olmayan görüntüleme kutusu':parsed.kind+' · dosyadaki atomlar ve hücre',cell:parsed.crystal.cell,
     sites:parsed.crystal.sites,nonPeriodic:!!parsed.crystal.nonPeriodic,
     nonPeriodicOrigin:parsed.crystal.nonPeriodicOrigin||[0,0,0],
     cellVisible:parsed.crystal.displayCell!==false,bondMode:'auto',
@@ -6662,14 +6745,35 @@ function vestaProjectData(source){
  if(!ended||!sites.length)throw Error('VESTA STRUC must contain sites and a terminating zero row.');
  const groupIndex=find('GROUP');
  let sgNumber=1,sgSetting='1',symmetryEnabled=false;
+ const symopIndex=find('SYMOP'),tranmIndex=find('TRANM');
+ const symop= symopIndex>=0?tokens(lines[symopIndex+1]).map(scalar):null;
+ // VESTA can explicitly change the origin/setting with SYMOP and TRANM.
+ // The internal preferred-setting operations are NOT equivalent to an
+ // arbitrary user transform. Only a numerical identity header is safe.
+ const identity=[0,0,0,1,0,0,0,1,0,0,0,1];
+ const nonIdentitySymop=!!symop&&
+  (symop.length<12||symop.slice(0,12).some((x,i)=>!Number.isFinite(x)||Math.abs(x-identity[i])>1e-8));
+ const groupTokens=groupIndex>=0?tokens(lines[groupIndex+1]):[];
+ const unsupportedSettingTransform=nonIdentitySymop||tranmIndex>=0||
+  (Number(groupTokens[0])>1&&groupTokens[1]!=='1');
+ const vestaSettingProvenance={
+  groupNumber:Number(groupTokens[0])||null,
+  groupSettingCode:groupTokens[1]||null,
+  groupSymbol:groupTokens.slice(2).join(' ').slice(0,100),
+  hasSymop:symopIndex>=0,nonIdentitySymop,hasTranm:tranmIndex>=0,
+  settingTransformApplied:false};
+ if(unsupportedSettingTransform)
+  warnings.push('VESTA GROUP setting or SYMOP/TRANM contains an unverified setting/origin transform; coordinates stay as listed and no unverified transform is applied.');
  if(groupIndex>=0){
-  const row=tokens(lines[groupIndex+1]);
+  const row=groupTokens;
   const n=Number(row[0]);
   if(Number.isInteger(n)&&n>=1&&n<=230&&n>1){
    const setting=preferredSetting(n);
-   if(setting&&SPACE_GROUPS[setting]&&validateSymmetryMetric(cell,setting)){
+   if(unsupportedSettingTransform){
+    warnings.push('VESTA nonstandard setting: symmetry expansion disabled; importing listed sites as P1.');
+   }else if(setting&&SPACE_GROUPS[setting]&&validateSymmetryMetric(cell,setting)){
     sgNumber=n;sgSetting=setting;symmetryEnabled=true;
-    warnings.push('Space-group operations use internal standard settings; custom VESTA SYMOP/TRANM settings are not imported.');
+    warnings.push('Space-group operations use internal preferred settings; exact VESTA GROUP setting equivalence is not independently established.');
    }else warnings.push('VESTA non-P1 space group is incompatible or unavailable; supplied sites are displayed as P1 without fabricated symmetry.');
   }else if(n!==1)warnings.push('Unrecognized VESTA space-group setting; importing listed sites as P1.');
  }else warnings.push('GROUP is missing; treating the listed fractional sites as P1.');
@@ -6750,7 +6854,8 @@ function vestaProjectData(source){
   style:'ball',cut:2.65,cellVisible:true,axes:false,poly:'',polyCenters:[],nonPeriodic:false,
   bonds:bonds?bonds[0]!=='0':true,labels:labels?labels[0]!=='0':false,
   autoBond:deDuplicatedRules.length===0,bondRules:deDuplicatedRules.join(';'),
-  warning:warnings.join(' '),vesta:{version:version[1],density,surfaces,warnings}};
+  warning:warnings.join(' '),vesta:{version:version[1],density,surfaces,warnings,
+   settingProvenance:vestaSettingProvenance}};
 }
 /* The browser's file chooser is the only authority for a companion density
    file. Basenames are matched exactly; no network, directory or local-path IO. */
@@ -6795,6 +6900,8 @@ async function prepareVestaCompanion(project,selectedFiles){
   const binary=/\.(?:map|ccp4|mrc)$/i.test(file.name);
   const raw=binary?readCcp4Map(await file.arrayBuffer(),file.name):
    readVolumetric(await file.text(),file.name);
+  if(raw.volumeComponents?.length||raw.spinComponents?.length)
+   throw Error('Multiple scalar channels cannot be assigned safely to a single VESTA IMPORT_DENSITY/ISURF reference; provide an explicit single-field companion.');
   let grid=interpretVolumeUnits(raw,'unknown',{periodic:binary?raw.periodic:!!raw.periodic});
   const scale=meta.density.scale;
   if(scale!==1){

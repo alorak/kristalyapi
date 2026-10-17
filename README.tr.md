@@ -20,6 +20,25 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Çok alanlı CUBE/XSF ve VESTA setting güvenliği (Paket 11)
+
+CUBE `NVAL` ile voksel başına iç içe saklanan **en fazla beş alanı** veya
+negatif `NATOMS`/`DSET_IDS` ile adlandırılmış orbital alanlarını ayrı
+katmanlara yükleyebilir. XSF'deki aynı Kartezyen çerçeveli birden fazla
+`DATAGRID_3D` bloğu da adlandırılmış katman olur. Moleküler XSF `ATOMS`
+koordinatları özgün **Kartezyen Å** konumunda korunur; yapay görüntüleme
+kutusu kristal hücresi sayılmaz. Toplam **beş katman sınırı** korunur;
+birden fazla alan barındıran belirsiz potansiyel/VESTA eşlikçi dosyası
+tek alanmış gibi sessizce kullanılmaz.
+
+VESTA `.vesta` projesinde doğrulanamayan `GROUP` ayarı ve özel
+`SYMOP`/`TRANM` dönüşümü varsa standart ayardan **yanlış simetri çoğaltması**
+yapılmaz; kaynak atomlar P1 olarak ve açık uyarıyla açılır. Bağımsız
+ASE 3.26.0 testleri sabit gerçek CUBE kaynağından **türetilmiş** çoklu alanlarda
+her katmanın 12.696 vokselini, fiziksel Å çerçevesini ve dokuz atomu
+denetler. Bu bağımsız yeni deneysel alan veya gerçek VESTA GUI karşılaştırması
+değildir. [Paket 11 protokolü ve sınırları](tests/validation/PACKAGE_11_STATUS.md).
+
 ## CUBE atomları ve bağımsız XSF doğrulaması (Paket 10.9)
 
 CUBE açılırken **dosyadaki atomları kullan** seçeneği işaretliyse atom
