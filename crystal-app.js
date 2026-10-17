@@ -4026,11 +4026,12 @@ function adpRotateBySymmetry(u,cell,op){
  const M=[0,1,2].map(i=>[at[1][i]-at[0][i],at[2][i]-at[0][i],at[3][i]-at[0][i]]);
  const A=adpBasis(cell,false),R=mat3Mul(mat3Mul(A,M),mat3Inv(A)),U=adpToCartesian(u,cell);
  // A crystallographic symmetry operator must be an isometry of the lattice.
- // Reject incompatible cell / SG pairs instead of distorting ellipsoids.
+ // Allow small CIF rounding (e.g. 119.99 deg for hexagonal gamma), but
+ // reject genuinely incompatible cell / space-group pairs.
  const orthogonality=mat3Mul(R,mat3Transpose(R));
  for(let i=0;i<3;i++)for(let j=0;j<3;j++){
   const expected=i===j?1:0;
-  if(!Number.isFinite(orthogonality[i][j])||Math.abs(orthogonality[i][j]-expected)>2e-4)
+  if(!Number.isFinite(orthogonality[i][j])||Math.abs(orthogonality[i][j]-expected)>1e-3)
    throw Error('ADP simetri işlemi hücre metriğiyle uyumsuz: '+op);
  }
  return adpFromCartesian(mat3Mul(mat3Mul(R,U),mat3Transpose(R)),cell);
