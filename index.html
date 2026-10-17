@@ -419,8 +419,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="note"><strong>SHELX .fcf · deneysel yansımalar</strong>
     <input type="file" id="fcfFile" accept=".fcf,.cif" hidden>
     <div class="actionrow"><button type="button" id="fcfImport">.fcf dosyası seç</button><select id="fcfMapKind" aria-label="Deneysel harita türü"><option value="difference">Fo−Fc fark haritası</option><option value="observed">Fo haritası</option></select></div>
+    <label class="field compact"><span>Fo−Fc için Fcalc ölçeği</span><select id="fcfScaleMode"><option value="raw">Ham FCF (ölçek değiştirme)</option><option value="lsq">Otomatik en küçük kareler (Fcalc → Fo)</option></select></label>
     <button type="button" id="fcfMapAdd">Fazlı deneysel haritayı oluştur</button>
-    <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. Fazlı harita için gözlenen genliklere ek olarak hesaplanan faz gerekir; hücrenin dosyayla eşleştiğini doğrulayın.</p>
+    <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. Model fazları, hücre/orijin ve Friedel tutarlılığı kontrol edilir. Ham ve LSQ ölçek yöntemleri seçilebilir; MTZ desteği yoktur.</p>
    </div>
    <p class="hint">Yansıma şiddetleri kinematik modeldendir; profil genişliği ampirik pseudo-Voigt/Caglioti modelidir. Cihaz asimetrisi, Kβ, absorpsiyon, tekstür, arka plan ve tam Rietveld inceltmesi modellenmez.</p>
   </div>
