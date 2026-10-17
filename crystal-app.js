@@ -3132,8 +3132,15 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
  neighbors.sort((a,b)=>a.distance-b.distance||a.index-b.index);
  const sum=neighbors.reduce((total,n)=>total+n.contribution,0);
  const mean=neighbors.length?neighbors.reduce((total,n)=>total+n.distance,0)/neighbors.length:0;
+ // For a hypothetical equal-bond environment, solve the BVS equation
+ // with occupancy weights. This is a reference estimate, not a structural
+ // refinement or a prediction of unknown atom positions.
+ const weightedCount=neighbors.reduce((total,n)=>total+n.occupancy,0);
+ const expectedBondLength=weightedCount>0?
+  parameter.r0-.37*Math.log(parameter.charge/weightedCount):null;
  return {pair:key,r0:parameter.r0,b:.37,referenceCharge:parameter.charge,centerIndex,
-  count:neighbors.length,sum,mean,min:neighbors[0]?.distance??null,
+  count:neighbors.length,sum,mean,weightedCount,expectedBondLength,
+  min:neighbors[0]?.distance??null,
   max:neighbors.length?neighbors.at(-1).distance:null,neighbors};
 }
 function bvsCsv(result){
@@ -3740,7 +3747,8 @@ function renderWorkspaceBvs(){
  $('bvsResult').textContent=lastBvs?'CN='+lastBvs.count+' · BVS='+lastBvs.sum.toFixed(4)+' v.u.'+
   ' · referans yükseltgenme +'+lastBvs.referenceCharge+
   ' · ort. bağ='+lastBvs.mean.toFixed(4)+' Å'+
-  ' · min/maks='+String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å':
+  ' · min/maks='+String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å'+
+  (lastBvs.expectedBondLength!==null?' · eşit bağ varsayımıyla beklenen='+lastBvs.expectedBondLength.toFixed(4)+' Å':''):
   'Atom ve referans parametresi seçin.';
 }
 function refreshStage3Atoms(){
