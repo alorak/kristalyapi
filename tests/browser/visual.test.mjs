@@ -795,6 +795,12 @@ try{
  assert.equal(output4.readUInt32BE(20),Math.round(rect4.height*4),'4× screenshot height must not be clamped');
  await page.setViewportSize({width:1480,height:920});
  await save(page,'26-polyhedron-per-site-instanced',metrics);
+ // A previous volume suite has filled the five-layer budget (including the
+ // earlier FCF layer). Start this independent import with an empty volume set.
+ if(!await page.locator('#clearVolume').isVisible())
+  await page.locator('[data-right-tool="volume"]').click();
+ await page.locator('#clearVolume').click();
+ assert.equal(await page.locator('#volumeActiveDataset option').count(),0);
  await page.locator('[data-right-tool="xrd"]').click();
  assert.equal(await page.locator('#fcfMapAdd').isVisible(),true);
  const fcfFixture=['data_smoke','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
