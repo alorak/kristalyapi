@@ -124,7 +124,7 @@ async function assertHorizontalQuickbar(page,{drawerOpen=false,mobile=false}={})
    scrollWidth:dock.scrollWidth,clientWidth:dock.clientWidth
   };
  });
- assert.ok(geometry.dock.height<=82,'the bottom dock must stay one compact row: '+JSON.stringify(geometry));
+ assert.ok(geometry.dock.height>=116&&geometry.dock.height<=120,'the bottom dock must reserve 118px without stacking: '+JSON.stringify(geometry));
  assert.ok(geometry.view.right<=geometry.miller.left+1,'the two control groups must stay side by side: '+JSON.stringify(geometry));
  assert.ok(Math.abs((geometry.view.top+geometry.view.bottom)/2-(geometry.miller.top+geometry.miller.bottom)/2)<12,
   'the control groups must share the same vertical row: '+JSON.stringify(geometry));
