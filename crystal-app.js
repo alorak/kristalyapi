@@ -1446,7 +1446,9 @@ function validateSymmetryMetric(cell,key,tolerance=1e-4){
  return true;
 }
 
-function expandSites(sites,key,limit=1800){
+function expandSites(sites,key,limit=1800,cell=state.cell){
+ // The caller may expand a crystal other than the one currently displayed.
+ // ADP transformations must use that crystal's metric, never implicit UI state.
  const out=[],seen=new Set(),ops=settingOps(key);
  for(const [sourceSiteIndex,site] of sites.entries())for(const [symmetryOperationIndex,[op,shift]] of ops.entries()){
   const values=applySymmetry(op,[+site.x,+site.y,+site.z]),offset=shift.split(',').map(rational);
@@ -1454,7 +1456,7 @@ function expandSites(sites,key,limit=1800){
   const tag=cleanSymbol(site.symbol)+'|'+f.map(v=>Math.round(v*1e5)).join(':');
   if(seen.has(tag))continue;seen.add(tag);
   out.push({...site,x:f[0],y:f[1],z:f[2],sourceSiteIndex,symmetryOperationIndex,
-   ...(site.adp?{adp:adpRotateBySymmetry(site.adp,state.cell,op)}:{})});
+   ...(site.adp?{adp:adpRotateBySymmetry(site.adp,cell,op)}:{})});
   if(out.length>limit)throw Error('Simetri genişletmesi '+limit+' atom sınırını aşıyor.');
  }
  return out;
@@ -4023,6 +4025,14 @@ function adpRotateBySymmetry(u,cell,op){
  const at=[[0,0,0],[1,0,0],[0,1,0],[0,0,1]].map(p=>applySymmetry(op,p));
  const M=[0,1,2].map(i=>[at[1][i]-at[0][i],at[2][i]-at[0][i],at[3][i]-at[0][i]]);
  const A=adpBasis(cell,false),R=mat3Mul(mat3Mul(A,M),mat3Inv(A)),U=adpToCartesian(u,cell);
+ // A crystallographic symmetry operator must be an isometry of the lattice.
+ // Reject incompatible cell / SG pairs instead of distorting ellipsoids.
+ const orthogonality=mat3Mul(R,mat3Transpose(R));
+ for(let i=0;i<3;i++)for(let j=0;j<3;j++){
+  const expected=i===j?1:0;
+  if(!Number.isFinite(orthogonality[i][j])||Math.abs(orthogonality[i][j]-expected)>2e-4)
+   throw Error('ADP simetri işlemi hücre metriğiyle uyumsuz: '+op);
+ }
  return adpFromCartesian(mat3Mul(mat3Mul(R,U),mat3Transpose(R)),cell);
 }
 function adpEigen(m){
