@@ -7,7 +7,11 @@
 (() => {
  'use strict';
  const entries=[
+  ['Performans · Paket 10.6','Performance · Package 10.6'],
   ['Performans · Paket 10.5','Performance · Package 10.5'],
+  ['Çokyüzlü dolgu yöntemi','Polyhedron face renderer'],
+  ['Birleşik ağ (varsayılan)','Merged mesh (default)'],
+  ['GPU örnekleme (deneysel)','GPU instancing (experimental)'],
   ['Performans · Paket 10.3','Performance · Package 10.3'],
   ['Performans · Paket 10.2','Performance · Package 10.2'],
   ['İzoyüzey arka planda oluşturuluyor…','Building isosurface in the background…'],

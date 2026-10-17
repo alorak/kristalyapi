@@ -60,6 +60,21 @@ window.__visualTest={
   state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
  syncedPolyCenter:()=>{resetVolume();loadPreset('perovskite');state.style='poly';state.poly='';
   syncControls();build();return window.__visualTest.polyStats();},
+ polyRendererAB:async()=>{
+  const samples=[];
+  for(const mode of ['merged','instanced','merged']){
+   polyFaceStrategy=mode;document.getElementById('polyFaceStrategy').value=mode;
+   if(!build())throw Error('Polyhedron strategy failed: '+mode);
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   samples.push({...performanceSnapshot(),centerCount:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh)
+    .reduce((n,m)=>n+(m.userData.polyhedraCount||0),0),
+    area:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh)
+    .reduce((n,m)=>n+(m.userData.polyhedraArea||0),0),
+    volume:root.children.filter(m=>m.userData.layer==='polyhedra'&&m.isMesh)
+    .reduce((n,m)=>n+(m.userData.polyhedraVolume||0),0)});
+  }
+  return samples;
+ },
  perovskiteWithoutNeighbors:()=>{state.poly='Ba';build();return window.__visualTest.polyStats();},
  stressAtoms:()=>{resetVolume();state.sites=Array.from({length:60},(_,i)=>({symbol:'Si',label:'Si'+i,x:(i%5)/5,y:(Math.floor(i/5)%4)/4,z:Math.floor(i/20)/3,occupancy:1}));
   state.rep=[6,6,6];state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;state.bonds=false;state.poly='';state.style='ball';
@@ -966,6 +981,16 @@ try{
  assert.equal(hullCache.templates,1,'one unique TiO6 convex hull should be computed');
  assert.equal(hullCache.reuses,124,'other 124 TiO6 polyhedra should reuse local hull and translate vertices');
  assert.ok(hullCache.templateBytes>0);
+ const polyAB=await page.evaluate(()=>window.__visualTest.polyRendererAB());
+ assert.deepEqual(polyAB.map(x=>x.polyFaceStrategy),['merged','instanced','merged']);
+ assert.deepEqual(polyAB.map(x=>x.centerCount),[125,125,125]);
+ assert.ok(polyAB.every(x=>Math.abs(x.volume-125*Math.pow(4,3)/6)<1e-4));
+ assert.ok(polyAB.every(x=>Math.abs(x.area-125*Math.sqrt(3)*16)<1e-4));
+ assert.equal(polyAB[1].polyFaceDrawGroups,1,'one Ti template -> one InstancedMesh draw group');
+ assert.ok(polyAB[1].managedGeometryBytes<polyAB[0].managedGeometryBytes,
+  'P10.6 reusable instance matrices consume fewer managed geometry bytes than 125 copied hulls');
+ assert.ok(polyAB.every(x=>Number.isFinite(x.buildPhases.polyhedraMs)),'benchmark observed on actual Chromium');
+ await fs.writeFile(path.join(artifacts,'package-10-6-poly-ab.json'),JSON.stringify(polyAB,null,2));
  await page.waitForFunction(()=>document.querySelector('#polyElement option:checked')?.textContent.includes('centered polyhedron'));
  await page.locator('#polyMore').click();
  assert.equal(await page.locator('#polyCenterMenu').isVisible(),true,'extra center selector must open above dock');
@@ -1185,6 +1210,11 @@ try{
   const workerHeavy=await importPage.evaluate(()=>window.__visualTest.performance());
   assert.ok(workerHeavy.volumeWorkerMs>=0&&workerHeavy.volumeTriangles>0);
   assert.ok(workerHeavy.volumePreviews>=1,'P10.3 large grid should have a progressive low-resolution preview');
+  assert.equal(workerHeavy.volumeAdaptivePreview?.kind,'conforming-axis-preview');
+  assert.ok(workerHeavy.volumeAdaptivePreview.axisCells.every(n=>n>0&&n<32),
+   'P10.6 conforming axis grid stays within a bounded preview budget');
+  assert.ok(Number.isFinite(workerHeavy.volumeAdaptivePreview.sampledCenterErrorMax),
+   'P10.6 sampled scalar residual is reported, never called a rigorous iso error bound');
   assert.ok(workerHeavy.managedGeometryBytes>0,'P10.5 GPU-bound vertex attribute backing arrays are measurable');
   assert.ok(workerHeavy.volumeVoxelBytes>=64**3*4,'P10.5 source voxel storage reported separately');
   assert.equal(typeof workerHeavy.managedTextureBytesEstimate,'number');

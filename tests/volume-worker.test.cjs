@@ -287,3 +287,78 @@ test('P10.5 interactive Miller profile samples preserve skew Cartesian positions
  assert.ok(Math.abs(data.matrix.values[y*size+x]-coreCtx.at(g,world))<1e-5);
  assert.ok(data.stats.valid>0);
 });
+
+test('P10.6 conforming axis mesh exactly reproduces the fixed-grid worker on skew and periodic colored maps',()=>{
+ const ctx={self:{postMessage(){}},Float32Array,Float64Array,Uint8ClampedArray,
+  performance:{now:()=>0},Math};
+ vm.createContext(ctx);
+ vm.runInContext(workerSource+';this.regular=isoTriangles;this.conforming=isoConformingAxisTriangles;',ctx);
+ const g=field([13,15,11],[-3,1,2],[[.3,.04,0],[.02,.3,.01],[0,.03,.4]],true);
+ const potential=field([13,15,11],[-3,1,2],[[.3,.04,0],[.02,.3,.01],[0,.03,.4]],true);
+ const shape=g.dims.map(n=>n+1);
+ const nodes=shape.map(n=>Array.from({length:n},(_,i)=>i));
+ const a=ctx.regular(g,-.28,potential,'viridis',75000);
+ const b=ctx.conforming(g,-.28,potential,'viridis',75000,nodes);
+ assert.equal(a.triangles,b.triangles);
+ assert.equal(a.truncated,b.truncated);
+ assert.deepEqual(Array.from(a.positions),Array.from(b.positions),'all periodic world vertices byte-for-byte');
+ assert.deepEqual(Array.from(a.colors),Array.from(b.colors),'all potential colors byte-for-byte');
+});
+test('P10.6 locally refined axis preview is topologically closed for a signed sphere and reports sampled scalar error honestly',()=>{
+ const n=64,values=new Float32Array(n**3);let min=Infinity,max=-Infinity;
+ for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<n;k++){
+  const x=17.531-Math.hypot(i-31.5,j-31.5,k-31.5);
+  values[(i*n+j)*n+k]=x;min=Math.min(min,x);max=Math.max(max,x);
+ }
+ const g={dims:[n,n,n],origin:[0,0,0],axes:[[.2,0,0],[0,.2,0],[0,0,.2]],
+  values,min,max,periodic:false};
+ const ctx={self:{postMessage(){}},Float32Array,Float64Array,Uint8ClampedArray,
+  performance:{now:()=>0},Math};
+ vm.createContext(ctx);
+ vm.runInContext(workerSource+';this.plan=isoAdaptiveAxisPlan;this.mesh=isoConformingAxisTriangles;this.stride=isoPreviewStride;',ctx);
+ const step=ctx.stride(g,0),plan=ctx.plan(g,0,step);
+ assert.equal(plan.stats.kind,'conforming-axis-preview');
+ assert.ok(plan.stats.refinedAxisIntervals>0,'sphere curvature must trigger axial refinement');
+ assert.ok(plan.stats.axisCells.every(n=>n<32),'bounded plane count avoids a full high-resolution preview');
+ assert.ok(plan.stats.sampledCenterErrorMax>=0);
+ assert.ok(plan.stats.scalarTolerance>0);
+ const surface=ctx.mesh(g,0,null,'thermal',75000,plan.nodes);
+ assert.ok(surface.triangles>0&&!surface.truncated);
+ assert.equal(surface.decimation,step,'coarse cells remain away from detailed regions');
+ const incidence=new Map();
+ for(let p=0;p<surface.positions.length;p+=9){
+  const points=[0,3,6].map(k=>[surface.positions[p+k],surface.positions[p+k+1],surface.positions[p+k+2]]
+   .map(v=>Math.round(v*1e5)).join(','));
+  for(const [a,b] of [[0,1],[1,2],[2,0]]){
+   const key=[points[a],points[b]].sort().join('|');
+   incidence.set(key,(incidence.get(key)||0)+1);
+  }
+ }
+ assert.ok(incidence.size>100);
+ for(const count of incidence.values())assert.equal(count,2,'closed surface edge must belong to two triangles');
+ const final=ctx.mesh(g,0,null,'thermal',75000,[...Array(3)].map(()=>Array.from({length:64},(_,i)=>i)));
+ assert.ok(final.triangles>=surface.triangles);
+});
+test('P10.6 per-site polyhedron instancing leaves the previous merged renderer the default',()=>{
+ assert.match(app,/polyFaceStrategy='merged'/);
+ assert.match(app,/new THREE\.InstancedMesh\(geometry,material,group\.instances\.length\)/);
+ assert.match(app,/mesh\.setMatrixAt\(index,dummy\.matrix\);mesh\.setColorAt\(index,item\.color\)/);
+ assert.match(app,/group\.area\+=template\.hull\.area;group\.volume\+=template\.hull\.volume/);
+ assert.match(app,/appendPolyhedronEdges\(template,entry\[i\]\.pos,edgePositions\)/);
+});
+
+test('P10.6 unmet sampled residual threshold falls back to the established uniform preview',()=>{
+ const g=field([64,64,64]),events=[],self={postMessage:m=>events.push(m)};
+ const ctx={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>2},Math};
+ vm.createContext(ctx);
+ vm.runInContext(workerSource+';this.uniform=isoTriangles;this.stride=isoPreviewStride;',ctx);
+ const job={grid:0,potential:-1,level:1.2,palette:'thermal',maxTriangles:75000};
+ self.onmessage({data:{requestId:106,grids:[g],jobs:[job],progressive:true}});
+ assert.equal(events.length,2);
+ const preview=events[0].previewSurface;
+ assert.equal(preview.adaptive?.sampledToleranceMet,false,'highly oscillatory map exceeds the sampled proxy');
+ assert.equal(preview.adaptive.accepted,false);
+ const expected=ctx.uniform(g,job.level,null,job.palette,job.maxTriangles,ctx.stride(g,job.level));
+ assert.deepEqual(Array.from(preview.positions),Array.from(expected.positions),'fallback preview remains byte-for-byte legacy');
+ assertSame(events[1].results[0],coreCtx.compute(g,job.level,null,job.palette,job.maxTriangles),false);
+});
