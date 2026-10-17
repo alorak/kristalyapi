@@ -2506,3 +2506,120 @@ test('P7.6 CIF roundtrip retains partial occupancies and anisotropic ADP',()=>{
  assert.ok(Array.isArray(second.sites[0].adp));
  first.sites[0].adp.forEach((value,i)=>approx(second.sites[0].adp[i],value,1e-6));
 });
+
+
+test('P7.7 cubic symmetry rotates anisotropic ADP Uij with analytic component signs',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ // CIF Uij order: U11,U22,U33,U23,U13,U12.
+ const u=[.045,.025,.015,.002,-.003,.004];
+ const rotated=api.adpRotateBySymmetry(u,cell,'y,-x,z');
+ const expected=[.025,.045,.015,.003,.002,-.004];
+ expected.forEach((v,i)=>approx(rotated[i],v,1e-10));
+ let full=u;
+ for(let i=0;i<4;i++)full=api.adpRotateBySymmetry(full,cell,'y,-x,z');
+ u.forEach((v,i)=>approx(full[i],v,1e-10));
+});
+
+test('P7.7 inversion, translation and monoclinic twofold obey tensor rules',()=>{
+ const triclinic={a:6,b:7,c:8,alpha:76,beta:84,gamma:101};
+ const u=[.04,.028,.02,.003,-.002,.004];
+ for(const op of ['-x,-y,-z','x+1/2,y,z']){
+  const next=api.adpRotateBySymmetry(u,triclinic,op);
+  u.forEach((v,i)=>approx(next[i],v,1e-9));
+ }
+ const monoclinic={a:5,b:6,c:7,alpha:90,beta:104,gamma:90};
+ const rotated=api.adpRotateBySymmetry(u,monoclinic,'-x,y,-z');
+ const expected=[u[0],u[1],u[2],-u[3],u[4],-u[5]];
+ expected.forEach((v,i)=>approx(rotated[i],v,1e-9));
+});
+
+test('P7.7 symmetry preserves Cartesian ADP ellipsoid spectrum in hexagonal lattice',()=>{
+ const cell={a:5,b:5,c:8,alpha:90,beta:90,gamma:120};
+ const u=[.04,.035,.025,.002,-.003,.004];
+ const before=api.adpEigen(api.adpToCartesian(u,cell)).values.slice().sort((a,b)=>a-b);
+ const site={symbol:'Si',label:'Si1',x:.173,y:.271,z:.391,occupancy:.75,adp:u};
+ const expanded=api.expandSites([site],'143',16,cell);
+ assert.equal(expanded.length,3);
+ for(const atom of expanded){
+  const after=api.adpEigen(api.adpToCartesian(atom.adp,cell)).values.slice().sort((a,b)=>a-b);
+  before.forEach((v,i)=>approx(after[i],v,1e-8));
+  approx(atom.occupancy,.75,1e-12);
+  const e=api.adpEllipsoid(atom,cell,90);
+  assert.ok(e.scales.every(n=>Number.isFinite(n)&&n>0));
+ }
+});
+
+test('P7.7 accepts small CIF rounding in a hexagonal cell angle',()=>{
+ const nearlyHex={a:5,b:5,c:8,alpha:90,beta:90,gamma:119.99};
+ const rotated=api.adpRotateBySymmetry([.04,.035,.025,.002,-.003,.004],nearlyHex,'-y,x-y,z');
+ assert.equal(rotated.length,6);
+ assert.ok(rotated.every(Number.isFinite));
+});
+
+test('P7.7 rejects symmetry operations incompatible with the supplied cell',()=>{
+ const orthorhombic={a:4,b:5,c:6,alpha:90,beta:90,gamma:90};
+ const u=[.04,.025,.03,.002,.001,.003];
+ assert.throws(()=>api.adpRotateBySymmetry(u,orthorhombic,'y,-x,z'),/metriğiyle uyumsuz/);
+ assert.throws(()=>api.expandSites(
+  [{symbol:'Si',x:.17,y:.23,z:.31,adp:u}], '143',16,orthorhombic),/metriğiyle uyumsuz/);
+});
+
+
+test('P7.7 explicit CIF P2 expansion rotates ADP and preserves partial occupancy',()=>{
+ const input=[
+  'data_adp_p2',
+  '_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 104','_cell_angle_gamma 90',
+  '_space_group_IT_number 3',
+  'loop_','_space_group_symop_operation_xyz',
+  "'x,y,z'","'-x,y,-z'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  '_atom_site_occupancy','Si1 Si .17 .23 .31 .60',
+  'loop_','_atom_site_aniso_label','_atom_site_aniso_U_11',
+  '_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_23','_atom_site_aniso_U_13','_atom_site_aniso_U_12',
+  'Si1 .04 .025 .03 .004 -.003 .002'
+ ].join('\n')+'\n';
+ const imported=api.cifData(input);
+ assert.equal(imported.sites.length,2);
+ const first=imported.sites.find(s=>Math.abs(s.x-.17)<1e-7);
+ const second=imported.sites.find(s=>Math.abs(s.x-.83)<1e-7);
+ assert.ok(first&&second);
+ assert.deepEqual(Array.from(first.adp).map(v=>+v.toFixed(8)),[.04,.025,.03,.004,-.003,.002]);
+ assert.deepEqual(Array.from(second.adp).map(v=>+v.toFixed(8)),[.04,.025,.03,-.004,-.003,-.002]);
+ approx(first.occupancy,.6);
+ approx(second.occupancy,.6);
+ const before=api.adpEigen(api.adpToCartesian(first.adp,imported.cell)).values.slice().sort((a,b)=>a-b);
+ const after=api.adpEigen(api.adpToCartesian(second.adp,imported.cell)).values.slice().sort((a,b)=>a-b);
+ before.forEach((v,i)=>approx(after[i],v,1e-9));
+});
+
+
+test('P7.7 mCIF composes magnetic symmetry and centering for ADP covariance',()=>{
+ const input=[
+  'data_madp',
+  '_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 104','_cell_angle_gamma 90',
+  'loop_','_space_group_symop_magn_operation.xyz',"'x,y,z,+1'",
+  'loop_','_space_group_symop_magn_centering.xyz',"'-x,y,-z,+1'",
+  'loop_','_atom_site_moment.label','_atom_site_moment.cartn_x',
+  '_atom_site_moment.cartn_y','_atom_site_moment.cartn_z',
+  'Si1 0 0 1',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si .17 .23 .31',
+  'loop_','_atom_site_aniso_label','_atom_site_aniso_U_11',
+  '_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_23','_atom_site_aniso_U_13','_atom_site_aniso_U_12',
+  'Si1 .04 .025 .03 .004 -.003 .002'
+ ].join('\n')+'\n';
+ const imported=api.cifData(input);
+ assert.equal(imported.sites.length,1);
+ const site=imported.sites[0];
+ approx(site.x,.83);
+ approx(site.y,.23);
+ approx(site.z,.69);
+ const expected=[.04,.025,.03,-.004,-.003,-.002];
+ expected.forEach((v,i)=>approx(site.adp[i],v,1e-9));
+});

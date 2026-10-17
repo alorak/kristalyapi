@@ -17,7 +17,8 @@ def combine(scientific,visual):
                       'unexpected':unexpected,
                       'status':'fail' if unexpected or counts.get('fail',0) or counts.get('error',0) else
                                'inconclusive' if counts.get('inconclusive',0) else 'pass'},
-        'visual':{'status':'pass' if visual is not None else 'not_run',
+        'visual':{'status':visual.get('status') if isinstance(visual,dict) and visual.get('status') in ('pass','fail','inconclusive') else
+                     'inconclusive' if visual is not None else 'not_run',
                   'metrics':visual},
     }
 
@@ -32,7 +33,7 @@ def main():
     report=combine(scientific,visual)
     Path(args.out).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))
-    return 1 if report['scientific']['status']=='fail' else 0
+    return 1 if report['scientific']['status']=='fail' or report['visual']['status']=='fail' else 0
 
 if __name__=='__main__':
     raise SystemExit(main())
