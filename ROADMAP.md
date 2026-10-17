@@ -1,5 +1,12 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.8.3 — Tam 32³/48³/64³ ağ ve gerçek harita topolojisi
+
+- CI, P10.8.1/2 doğrulamalarına ilaveten gerçek 5i55 ve Gemmi 5wkd FWT/DELFWT yoğunluklarında 32³/48³/64³ tam-ızgara karşılaştırması yapar.
+- Yayındaki 40 aralık/eksen sınırı ile bilimsel *test referansı* 64 aralık/eksen ayrı ölçülür. 75.000 üçgen sınırı iki yolda da korunur.
+- Gerçek haritalarda alan/hacim, stride, üçgen, iç açık kenar ve manifold dışı kenar raporlanır; açık kısmi-harita dış sınırları geçerli sayılır. Eğik hücreli periyodik sentetik küre sınır eşleşmesi zorunlu olarak denetlenir.
+- Tekrar örnekleme farkları, kanıtlanmış uzaysal yakınsama veya Hausdorff hatası gibi sunulmaz. Bağımsız deneysel CHGCAR/CUBE/XSF ve üçüncü taraf yüzey çıkarıcı karşılaştırması ayrı takip edilir.
+
 ## Paket 10.8.1–10.8.2 — Gerçek haritalarda izoyüzey ve yakınsama doğrulaması
 
 - **Zorunlu CI:** Üretimdeki Worker marching-tetrahedra ile 16³/24³/32³ analitik küre. Yarıçap, yüzey alanı ve kapalı hacmin bağımsız referansına göre açıklanmış eşikler başarısızsa CI kırılır.

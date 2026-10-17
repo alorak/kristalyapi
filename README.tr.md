@@ -20,6 +20,14 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Yüksek çözünürlüklü yakınsama ve topoloji denetimi (Paket 10.8.3)
+
+İkinci zorunlu CI kapısı gerçek 5i55 CCP4 ve Gemmi ile bağımsız üretilen 5wkd FWT/DELFWT haritalarını **32³/48³/64³** boyutlarında inceler. Yayındaki nihai üçgenleme eksen başına yaklaşık **40 aralıkla** sınırlıdır; dolayısıyla 48³ veya 64³ veri, kendiliğinden aynı ayrıntıda mesh çizimi anlamına gelmez. CI hem **mevcut varsayılan** hem de **yalnız testte kullanılan tam ızgara** üretimini raporlar. İki yol da mevcut **75.000 üçgen üst sınırına** uyar; kesilmiş sonuçlar reddedilir.
+
+Fiziksel Å² yüzey alanı, eşik üstü voksel-integrali Å³ hacim, gerçek stride ve üçgen sayısı kaydedilir. Alan/hacim değişimleri *gözlenen çözünürlük duyarlılığıdır*, kesin yakınsama ispatı değildir. Gerçek kısmi haritaların dış sınırında açık kenara izin verilir, ancak **iç çatlaklar ve manifold olmayan kenarlar** CI hatasıdır. Eğik periyodik hücre sınırından geçen sentetik işaretli kürenin iki yüzündeki eş kenarlar periyodik sarımla kapatılmalıdır. Yönlendirme tutarsızlıkları ayrıca raporlanır, gizlice düzeltilmez.
+
+Mevcut Worker kodu kullanılır; eksen aralığı yalnızca doğrulama amaçlı değiştirilebilir, **üretim varsayılanı ve bilimsel algoritma değişmedi**. Bağımsız deneysel CHGCAR/CUBE/XSF veri kümesi hâlâ açıktır. [Doğrulama durumu](tests/validation/PACKAGE_10_8_3_STATUS.md).
+
 ## Bağımsız hacimsel yakınsama kapısı (Paket 10.8.1–10.8.2)
 
 CI artık analitik işaretli-mesafe küresi ve gerçek Gemmi kaynaklı haritalar üzerinden **zorunlu bilimsel izoyüzey doğrulaması** çalıştırır. Analitik kürenin (16³/24³/32³) gerçek alanı, kapalı hacmi ve yarıçapı bilindiği için **yüzey konumu, alan ve hacim yakınsaması** açık hata eşikleriyle denetlenir. Üretimdeki nihai marching-tetrahedra algoritması doğrudan mevcut Worker kaynağından çalıştırılır.

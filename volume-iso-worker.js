@@ -63,8 +63,12 @@ function isoPreviewStride(grid,level){
  }
  return base*(crossed/Math.max(1,checked)>.25?2:3);
 }
-function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=75000,minStride=1){
- const d=volumeShape(g),stride=Math.max(minStride,1,...d.map(n=>Math.ceil((n-1)/40)));
+/* P10.8.3: maxAxisIntervals is a validation-only override. Runtime calls use
+ * the unchanged 40-interval limit. The triangle cap is NEVER bypassed. */
+function isoTriangles(g,level,potential=null,palette='thermal',maxTriangles=75000,minStride=1,maxAxisIntervals=40){
+ if(!Number.isInteger(maxAxisIntervals)||maxAxisIntervals<1||maxAxisIntervals>64)
+  throw Error('Invalid scientific comparison sampling limit');
+ const d=volumeShape(g),stride=Math.max(minStride,1,...d.map(n=>Math.ceil((n-1)/maxAxisIntervals)));
  const vertices=[],colors=[];
  const corner=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
  const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
