@@ -156,7 +156,7 @@ function realMap(filename){
  // requested percentile across SOURCE and ALL sampled research grids.
  // This fixes an ill-posed test level; it does not filter faulty triangles.
  const sorted=Array.from(native.values);
- for(const grid of grids)sorted.push(...grid.values);
+ for(const grid of grids)for(const value of grid.values)sorted.push(value);
  sorted.sort((a,b)=>a-b);
  const target=Math.floor(sorted.length*q),radius=Math.max(8,Math.floor(sorted.length*.002));
  let bestGap=-1,level=NaN;
