@@ -1549,7 +1549,7 @@ function coordinationImageBounds(B,radius,offset){
  const volume=Math.abs(dot(vectors[0],dual[0]));
  if(!Number.isFinite(volume)||volume<1e-10)throw Error('Koordinasyon için tekil örgü hücresi.');
  return dual.map((v,i)=>{
-  const reach=radius*Math.hypot(...v)/volume+1e-6;
+  const reach=(radius+1e-6)*Math.hypot(...v)/volume+1e-9;
   const low=Math.ceil(-reach-offset[i]),high=Math.floor(reach-offset[i]);
   return [low,high];
  });
