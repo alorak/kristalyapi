@@ -20,6 +20,22 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Source sampling and isolevel sensitivity (Package 10.8.5)
+
+A new **CI-only** study examines why sparse real 5wkd Fourier-density
+isosurfaces changed greatly between 48³ and 64³ even with two independent
+meshing algorithms. It uses actual source voxels plus the production trilinear
+resampler at 32³/48³/64³, with **fixed original-source** upper-tail scalar
+thresholds, explicit negative DELFWT peaks, physical Å grid coordinates,
+peak-retention and fragment diagnostics. The study measures changes in
+isosurface area after **±2% of original peak-minus-median scalar contrast**
+threshold shifts; it also records a near-Nyquist *index-spectrum proxy* with
+open-boundary tapering. Occupied-node fractions are not physical electron
+integrals and FFT-edge energy does not prove aliasing. Scientific sensitivity
+is flagged, **not treated as a passing physical convergence test**. No browser
+algorithm, cap, or high-accuracy mode changes. The JSON is archived by CI;
+see the [P10.8.5 methodology and limitations](tests/validation/PACKAGE_10_8_5_STATUS.md).
+
 ## Independent mesher and fragmentation study (Package 10.8.4)
 
 The scientific PR quality gate now compares the application's **actual full-grid marching-tetrahedra Worker** with the independent **scikit-image 0.25.2 Lewiner marching-cubes** extractor. Both algorithms consume the **same matched, source-derived Float32 voxels**, iso-threshold, and Cartesian Å voxel basis, so differences on one grid isolate extraction-method sensitivity rather than changes in the experimental data. The corpus is the real 5i55 partial CCP4 map and two 5wkd weighted/difference density maps recomputed independently by Gemmi 0.7.5. Per source, two sparse signed thresholds are compared at **32³, 48³, 64³** (18 independent comparisons).

@@ -1,5 +1,32 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.8.5 — Kaynak sabitli örnekleme, seyrek tepe ve izoeşik duyarlılığı
+
+- **Amaç:** P10.8.4'ün gerçek 5wkd haritalarında iki bağımsız üçgenleyicide de
+  gözlenen güçlü 48³→64³ alan değişiminin olası *örnekleme/eşik/parçalanma*
+  bileşenlerini ayrı ölçmek. Bu paket tek bir nedensel açıklama veya yakınsama
+  kanıtı ileri sürmez.
+- **Kaynak ve işaret:** 5i55 kısmi CCP4; gerçek 5wkd MTZ'den Gemmi ile FWT ve
+  negatif DELFWT. Pozitif/negatif seyrek kuyruklar doğru işaretle değerlendirilir.
+  Başlangıç kaynak alanından q=.990/.995 izoeşikleri seçilip 32³/48³/64³
+  boyunca *aynı mutlak skaler değerde* tutulur.
+- **Ölçümler:** Orijinal kaynak tepe/medyanı ve örneklenmiş tepe korunumu,
+  gerçek eğik Å ızgara aralıkları ve tepe yeri, eşik üstü düğüm oranı,
+  altı-komşuluk parça sayısı, kaynak skaler kontrastının ±%2'si kadar eşik
+  değişiminde bağımsız yüzey alanı, pencere uygulanmış normalize FFT'nin
+  Nyquist yakınındaki enerji oranı (yalnız *örnekleme göstergesi*).
+- **Kalite kapısı:** Eksik veya sonlu olmayan grid, kaynak uzamsal kapsamının
+  değişmesi ve fiziksel koordinat uyumsuzluğu testleri kırar. Yüksek alan,
+  düğüm oranı veya eşik duyarlılığı **araştırma uyarısıdır**; CI başarısı
+  fiziksel yakınsama olarak rapor edilmez.
+- **Değişmeyen:** Gerçek zamanlı uygulama, izoyüzey algoritması ve güvenlik
+  bütçeleri; yüksek doğruluk modu henüz açılmadı.
+- **Sonraki 10.8.6:** Bağımsız ham CHGCAR/CUBE/XSF korpusu ve VESTA ile aynı
+  fiziksel yoğunluk/izoeşik altında nesnel geometrik ve sayısal kıyaslama.
+
+Yöntem, çalışma komutları ve ölçülen çıktı:
+[P10.8.5 bilimsel durum](tests/validation/PACKAGE_10_8_5_STATUS.md).
+
 ## Paket 10.8.4 — Bağımsız izoyüzey algoritması ve parçalanma değerlendirmesi
 
 - **Bağımsız referans:** scikit-image 0.25.2 Lewiner marching-cubes ile üretimdeki marching-tetrahedra **aynı Float32 yoğunluk ve aynı Å koordinat sisteminde** ölçülür; ikisi de nihai mutlak fiziksel yüzey değildir.

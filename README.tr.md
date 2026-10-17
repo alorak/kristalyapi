@@ -20,6 +20,21 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Kaynak örnekleme ve izoeşik duyarlılığı (Paket 10.8.5)
+
+Yeni **yalnız CI'da çalışan** inceleme, 5wkd gerçek Fourier yoğunluğunun
+48³→64³ izoyüzey alanında iki bağımsız üçgenleyiciyle de neden büyük değişim
+gösterdiğini araştırır. Gerçek kaynak voksel değerleri ve uygulamanın 32³/48³/64³
+trilineer örnekleyicisi kullanılır; **orijinal kaynaktan belirlenen sabit
+izoeşikler**, negatif DELFWT tepeleri, fiziksel Å koordinatları, tepe değer
+korunumu ve parçalanma ayrı ölçülür. Kaynak tepe-medyan skaler kontrastının
+**±%2'si** kadar eşik kaydırıldığında bağımsız izoyüzey alanının duyarlılığı
+raporlanır. Nyquist yakınındaki indeks-FFT enerjisi yalnız *örnekleme göstergesidir*;
+aliasing kanıtı değildir. Eşik üstü düğüm oranı fiziksel elektron integrali
+anlamına gelmez. Yüksek duyarlılıklar bilimsel uyarıdır, **yakınsama başarısı
+değildir**. Uygulama algoritması/sınırları ve yüksek doğruluk modu değişmedi.
+JSON ölçümleri CI'da saklanır: [P10.8.5 yöntem ve sınırlar](tests/validation/PACKAGE_10_8_5_STATUS.md).
+
 ## Bağımsız üçgenleyici ve yüzey parçalanması analizi (Paket 10.8.4)
 
 Yeni CI kapısı, uygulamanın **gerçek tam-ızgara marching-tetrahedra Worker** algoritmasını bağımsız **scikit-image 0.25.2 Lewiner marching-cubes** yöntemiyle karşılaştırır. İki algoritmaya **aynı kaynak-türevli Float32 voksel alanı**, izoeşik ve fiziksel Å koordinat sistemi verilir. Böylece aynı çözünürlükteki farklar deneysel veri değişiminden değil, çıkarım yönteminden kaynaklanan duyarlılığı gösterir. Korpus gerçek 5i55 kısmi CCP4 ile Gemmi 0.7.5 tarafından 5wkd MTZ'den oluşturulan ağırlıklı/fark yoğunluklarıdır. Her kaynakta iki işaretli eşik **32³, 48³, 64³** çözünürlükte sınanır (18 karşılaştırma).
