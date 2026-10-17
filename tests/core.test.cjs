@@ -3001,7 +3001,7 @@ test('P8.2 reflection coverage is P1 grid sampling, not experimental completenes
  const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  const fcf=p1.readFcf(['data_sparse','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
   '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
-  '1 0 0 100 64 0','5 0 0 100 64 0','7 0 0 100 64 0'].join('\n'));
+  '1 0 0 100 64 0','5 0 0 100 64 0','8 0 0 100 64 0'].join('\n'));
  const map=p1.observedFourierMap(cell,fcf,{size:16,dMin:1});
  assert.equal(map.experimental.used,1);
  assert.equal(map.experimental.skippedResolution,2);
