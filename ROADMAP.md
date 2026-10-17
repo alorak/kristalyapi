@@ -1,5 +1,28 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.8.6 — Bağımsız gerçek dosya ve VESTA hazırlık protokolü
+
+- **Kaynaklar:** Sabit `pymatgen-core` commit'inden gerçek Li VASP CHGCAR,
+  hesaplama kaynaklı CUBE ve küçük sentetik XSF biçim-fixture'ı; üçünde de
+  tam dosya SHA-256 doğrulanıyor. Bu veri **CCP4 yeniden kodlaması değildir**.
+- **Sayısal referans:** Bağımsız ASE 3.26.0, uygulamanın gerçek CHGCAR/CUBE/XSF
+  okuyucusuyla **tüm 45.472 vokseli**; fiziki Å orijini ve eksenleri, üç 2B
+  orta kesit, periyodiklik ve desteklenen atom sayısını karşılaştırır.
+  Yanlış sıra/ölçek/eksen CI başarısızlığıdır; sıfır voksel hatası ölçüldü.
+- **İzoyüzey:** Üretim Worker ve bağımsız marching-cubes **aynı mutlak eşik**
+  üzerinden sırasıyla **%0,21 / %8,55 / yaklaşık %0** alan farkına sahiptir;
+  bu **gerçek VESTA ölçümü veya fiziksel yakınsama kanıtı değildir**.
+- **Açık fark:** CUBE'ın 9 atomu referansta okunuyor, Kristal Yapı yalnız
+  skaler alanı alıyor; rapor `pass-with-known-gap` ve `atomImportGap` içerir.
+  XSF'nin 2³ testi üretim verisi değil biçim doğrulamasıdır.
+- **Elle VESTA:** Uygulamada GUI VESTA yürütülmedi; bire bir eşik/birim,
+  hücre/orijin, kesit, görüntü şartları ve ekran görüntüsü protokolü yazıldı.
+  [Tam yöntem ve komutlar](tests/validation/PACKAGE_10_8_6_STATUS.md).
+- **Sonraki 10.9:** CUBE atom içe aktarımı; fiziksel büyük XSF/CUBE korpusu ve
+  gerçek VESTA GUI çekimleri; ancak sonra isteğe bağlı yüksek doğruluk modu,
+  performans/Bellek A-B testleri. **11:** format/proje kapsamı; **12:** ileri
+  koordinasyon ve kristal kimyası.
+
 ## Paket 10.8.5 — Kaynak sabitli örnekleme, seyrek tepe ve izoeşik duyarlılığı
 
 - **Amaç:** P10.8.4'ün gerçek 5wkd haritalarında iki bağımsız üçgenleyicide de

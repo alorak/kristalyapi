@@ -50,6 +50,12 @@ jobs:
         run: python -m unittest discover -s tests/validation -p 'test_volume_sampling.py' -v
       - name: Diagnose real-map peak retention, threshold sensitivity and spectral sampling
         run: python tests/validation/volume_sampling_reference.py
+      - name: Install pinned independent ASE format readers
+        run: python -m pip install ase==3.26.0
+      - name: Test real-format numeric mismatch detection
+        run: python -m unittest discover -s tests/validation -p 'test_volume_vesta_formats.py' -v
+      - name: Gate upstream CHGCAR/CUBE/XSF arrays and affine frames against ASE
+        run: python tests/validation/volume_vesta_formats_reference.py
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,6 +66,7 @@ jobs:
             validation-results/volume-highres-10-8-3.json
             validation-results/volume-independent-10-8-4.json
             validation-results/volume-sampling-10-8-5.json
+            validation-results/volume-vesta-formats-10-8-6.json
           if-no-files-found: warn
           retention-days: 30
 

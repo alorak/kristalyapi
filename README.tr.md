@@ -20,6 +20,21 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Bağımsız gerçek dosya karşılaştırması (Paket 10.8.6)
+
+CI, `pymatgen-core` deposunun kaynak commit ve SHA-256'sı sabitlenmiş
+**CHGCAR, CUBE ve XSF** dosyalarını alıyor; uygulamanın **gerçek okuyucusunu**
+bağımsız **ASE 3.26.0** okuyucularıyla tüm voksel değerleri, orijin,
+eğik Kartezyen Å ızgara vektörleri ve üç orta kesitte karşılaştırıyor.
+Gerçek Li CHGCAR (32³) ve hesaplamadan CUBE (23×23×24) alanlarında
+**hatalı voksel yok**; küçük 2³ XSF ise gerçek fiziksel yoğunluk değil,
+upstream biçim/sıra sınamasıdır. Aynı izoeşikte iki bağımsız izoyüzey
+algoritmasının alan farkı sırasıyla **%0,21 / %8,55 / yaklaşık %0**;
+bunlar **VESTA ekranından ölçüm değildir**. CUBE'daki **dokuz atomun**
+uygulamada yalnız alan yüklenirken kristal sitesi olarak alınmadığı açık
+bir eksiklik olarak raporlandı. [P10.8.6 yeniden üretme ve elle VESTA
+karşılaştırma adımları](tests/validation/PACKAGE_10_8_6_STATUS.md).
+
 ## Kaynak örnekleme ve izoeşik duyarlılığı (Paket 10.8.5)
 
 Yeni **yalnız CI'da çalışan** inceleme, 5wkd gerçek Fourier yoğunluğunun
