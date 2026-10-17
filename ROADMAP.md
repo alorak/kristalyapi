@@ -1,5 +1,16 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.2 — Hacimsel Worker, iptal/önbellek ve CPU darboğazları (bu PR)
+
+| Alan | Uygulama / kabul | Açık sınır |
+| --- | --- | --- |
+| İzoyüzey Worker | ≥75k vokselde aynı kökenli yerel Worker; Float32Array kopyalarını transfer, sonuç konum/renk buffer'larını sıfır kopya aktarım; ana thread fallback | 2B kesit, yoğunluk integrali ve volume export Worker'a taşınmadı |
+| Görev iptali | Her yeni çizimde önceki Worker terminate edilir; artan istek sürümü ile geç cevaplar atılır; veri sıfırlanınca iptal | Birden fazla paralel Worker kullanılmaz |
+| Önbellek | Grid kimliği, eşik, potansiyel, palet ve üçgen bütçesi anahtarlı 32 MiB LRU; stile/opacity değişiminde tekrar hesaplamayı azaltır | Kullanıcı cihazı RAM'i ve 20k atom / 2,5M voksel sınırları devam |
+| Profil ve doğruluk | Atom/bağ/çokyüzlü CPU fazları, Worker/main süreleri, cache hit/cancel; signed/renkli/periodik Worker--ana thread tam koordinat eşlemesi; gerçek Gemmi CCP4; büyük gerçek Chromium/WebGL; offline Worker | Sabit FPS/ms başarım eşiği yok; GPU süresi olarak yorumlanamaz |
+
+**Sonraki 10.3:** çokyüzlü seviyelendirme/birleştirme maliyeti, hacim kesitlerinin Worker'a taşınması, aşamalı çözünürlük, çok büyük örneklerde bellek profili, destekli GPU timer query benchmarkları ve yayın kalitesi görsel çıktı.
+
 ## Paket 10.1 — Büyük süperhücre benchmarkları ve atom LOD'u (bu PR)
 
 | Alan | Uygulanan kabul kriteri | Sınır |

@@ -36,7 +36,7 @@ function serviceWorkerHarness(){
 
 test('offline install pre-caches the complete local renderer, WASM and page shell',async()=>{
  const sw=serviceWorkerHarness();await sw.dispatch('install');
- for(const path of ['index.html','styles.css','crystal-app.js','reciprocal-page.js',
+ for(const path of ['index.html','styles.css','crystal-app.js','volume-iso-worker.js','reciprocal-page.js',
   'reciprocal-core.js','manifest.webmanifest','vendor/moyo_wasm.js',
   'vendor/moyo_wasm_bg.wasm','vendor/three/build/three.core.js',
   'vendor/three/examples/jsm/math/ConvexHull.js',

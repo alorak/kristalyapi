@@ -82,6 +82,56 @@ window.__visualTest={
   renderExportCanvas(1);
   return {restored:atomMesh.every((mesh,i)=>mesh.geometry===before[i]),
    instances:atomMesh.reduce((n,m)=>n+m.count,0),before:count};
+ },
+ workerFixtureParity:()=>new Promise((resolve,reject)=>{
+  const dataset=activeVolumeDataset();if(!dataset)return reject(Error('Missing fixture grid'));
+  const g=dataset.grid,pot=volumeView.potential?potentialGrid:null;
+  const level=dataset.layers[0].value,limit=12000;
+  const expected=isoTriangles(g,level,pot,volumeView.palette,limit);
+  const worker=new Worker('./volume-iso-worker.js');
+  worker.onmessage=event=>{
+   worker.terminate();
+   if(event.data.error)return reject(Error(event.data.error));
+   const actual=event.data.results[0];
+   const same=a=>a.length===actual.positions.length&&a.every((x,i)=>x===actual.positions[i]);
+   resolve({matched:same(expected.positions),triangles:actual.triangles,
+    origin:g.origin,colorsMatch:!pot||expected.colors.every((x,i)=>x===actual.colors[i])});
+  };
+  worker.onerror=error=>{worker.terminate();reject(Error(error.message));};
+  const grid=serializeVolumeWorkerGrid(g),grids=[grid],jobs=[{grid:0,potential:-1,level,palette:volumeView.palette,maxTriangles:limit}];
+  worker.postMessage({requestId:7,grids,jobs},[grid.values.buffer]);
+ }),
+ heavyVolume:()=>{
+  resetVolume();const n=64,values=new Float32Array(n*n*n);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<n;k++){
+   const r=Math.hypot(i-31.5,j-31.5,k-31.5);
+   values[(i*n+j)*n+k]=14-r;
+  }
+  const g=volumeGrid([n,n,n],[0,0,0],[[.2,0,0],[0,.2,0],[0,0,.2]],values,'Synthetic CPU benchmark','e/Å³');
+  addVolumeDataset(g,'Package 10.2 worker stress');
+  volumeView.mode='iso';volumeView.surfaceStyle='smooth';volumeView.potential=false;
+  document.getElementById('volumeMode').value='iso';
+  activeVolumeDataset().layers[0].value=0;
+  drawVolume();
+  return performanceSnapshot();
+ },
+ heavySignature:sync=>{
+  if(sync)drawVolume(true);
+  const attr=volumeLayer?.children.find(x=>x.isMesh)?.geometry.getAttribute('position');
+  if(!attr)return null;
+  const values=attr.array;
+  return {count:values.length,head:Array.from(values.slice(0,18)),
+   tail:Array.from(values.slice(-18))};
+ },
+ heavyRestyle:()=>{
+  volumeView.surfaceStyle='wire';drawVolume();
+  return {...performanceSnapshot(),wires:volumeLayer.children.filter(o=>o.isMesh&&o.material.wireframe).length};
+ },
+ heavyCancel:()=>{
+  const before=volumeCancelledJobs;
+  activeVolumeDataset().layers[0].value=.25;drawVolume();
+  activeVolumeDataset().layers[0].value=.75;drawVolume();
+  return {cancelDelta:volumeCancelledJobs-before,...performanceSnapshot()};
  }
 };
 `+bootstrapMarker);
@@ -1037,6 +1087,17 @@ try{
   await offlinePage.locator('#reciprocalNav').click();
   await offlinePage.waitForFunction(()=>document.querySelectorAll('#rsLatticeReadout dd').length>5);
   assert.ok(await canvasInk(offlinePage,'#rsRealView canvas')>20,'offline reciprocal-space view must render');
+  const offlineWorker=await offlinePage.evaluate(()=>new Promise((resolve,reject)=>{
+   const w=new Worker('./volume-iso-worker.js');
+   w.onmessage=e=>{w.terminate();resolve({error:e.data.error||null,triangles:e.data.results?.[0]?.triangles||0});};
+   w.onerror=e=>{w.terminate();reject(Error('offline Worker: '+e.message));};
+   const grid={dims:[2,2,2],origin:[0,0,0],axes:[[1,0,0],[0,1,0],[0,0,1]],
+    values:new Float32Array([1,0,0,0,0,0,0,0]),min:0,max:1,periodic:false};
+   w.postMessage({requestId:9,grids:[grid],jobs:[{grid:0,potential:-1,level:.5,palette:'thermal',maxTriangles:100}]},
+    [grid.values.buffer]);
+  }));
+  assert.equal(offlineWorker.error,null,'cached isosurface Worker should load with network disabled');
+  assert.ok(offlineWorker.triangles>0);
   await offlinePage.screenshot({path:path.join(artifacts,'rs-05-offline.png')});
  }finally{await offlineContext.close();}
  // Exercise the real file picker handler, state assignment and WebGL rebuild
@@ -1079,6 +1140,10 @@ try{
   assert.ok(volumeBenchmark.volumeTriangles>0,'real Gemmi CCP4 must generate reportable isosurface triangles');
   assert.ok(volumeBenchmark.volumeBuildMs>=0&&volumeBenchmark.volumeStride>=1);
   await fs.writeFile(path.join(artifacts,'package-10-1-volume.json'),JSON.stringify(volumeBenchmark,null,2));
+  const workerParity=await importPage.evaluate(()=>window.__visualTest.workerFixtureParity());
+  assert.equal(workerParity.matched,true,'offline-isolated worker must exactly match the main-thread Gemmi CCP4 isosurface');
+  assert.equal(workerParity.colorsMatch,true);
+  assert.ok(workerParity.triangles>0);
   await importPage.screenshot({path:path.join(artifacts,'package-9-3-vesta-import.png')});
   // A project by itself must show atoms, but surface voxels must remain absent.
   await importPage.locator('#fileInput').setInputFiles(projectFile);
@@ -1087,6 +1152,25 @@ try{
   assert.match((await importPage.evaluate(()=>window.__visualTest.vestaImport())).warning,
    /matching .cube\/.xsf\/CHGCAR\/CCP4\/MRC/);
   assert.equal(await importPage.evaluate(()=>window.__visualTest.volumeVisual().isoCount),undefined);
+  // P10.2: a >75k-voxel map must triangulate in a cancellable Worker.
+  const firstHeavy=await importPage.evaluate(()=>window.__visualTest.heavyVolume());
+  assert.equal(firstHeavy.volumePending,true);
+  await importPage.waitForFunction(()=>{const p=window.__visualTest.performance();return !p.volumePending&&p.volumeTriangles>0;},null,{timeout:30000});
+  const workerHeavy=await importPage.evaluate(()=>window.__visualTest.performance());
+  assert.ok(workerHeavy.volumeWorkerMs>=0&&workerHeavy.volumeTriangles>0);
+  const asyncGeometry=await importPage.evaluate(()=>window.__visualTest.heavySignature(false));
+  const syncGeometry=await importPage.evaluate(()=>window.__visualTest.heavySignature(true));
+  assert.deepEqual(asyncGeometry,syncGeometry,'Worker and synchronous paths must produce equal world-coordinate surface vertices');
+  const cached=await importPage.evaluate(()=>window.__visualTest.heavyRestyle());
+  assert.equal(cached.volumePending,false,'surface style changes should reuse geometry');
+  assert.ok(cached.volumeCacheHits>=1&&cached.wires>0);
+  const cancel=await importPage.evaluate(()=>window.__visualTest.heavyCancel());
+  assert.ok(cancel.cancelDelta>=1,'superseded Worker should be terminated');
+  await importPage.waitForFunction(()=>{const p=window.__visualTest.performance();return !p.volumePending&&p.volumeTriangles>0;},null,{timeout:30000});
+  const finished=await importPage.evaluate(()=>window.__visualTest.performance());
+  assert.equal(finished.volumePending,false);
+  await fs.writeFile(path.join(artifacts,'package-10-2-volume-worker.json'),
+   JSON.stringify({workerParity,firstHeavy,workerHeavy,cached,cancel,finished},null,2));
 
  }finally{await importContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
