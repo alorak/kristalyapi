@@ -1487,10 +1487,16 @@ function bondNetwork(sites,cell,{periodic=false,rules=new Map(),cut=2.65,auto=tr
  const B=basis(cell),f=sites.map(s=>[+s.x,+s.y,+s.z]);
  if(f.some(v=>v.some(x=>!Number.isFinite(x))))throw Error('Bağ analizi atom koordinatı geçersiz.');
  const edges=[],parent=sites.map((_,i)=>i),find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
- const shifts=periodic?Array.from({length:27},(_,n)=>[Math.floor(n/9)-1,Math.floor(n/3)%3-1,n%3-1]):[[0,0,0]];
+ let imageCandidates=0;
  for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
   const [min,max]=bondRange(sites[i].symbol,sites[j].symbol,rules,cut,auto);
-  for(const shift of shifts){
+  const offset=[0,1,2].map(k=>f[j][k]-f[i][k]);
+  const bounds=periodic?coordinationImageBounds(B,max,offset):[[0,0],[0,0],[0,0]];
+  const [xs,ys,zs]=bounds;
+  imageCandidates+=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+  if(imageCandidates>300000)throw Error('Bağ ağı periyodik görüntü araması çok büyük.');
+  for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
+   const shift=[x,y,z];
    if(i===j&&(shift.every(x=>x===0)||shift.find(x=>x!==0)<0))continue;
    if(!periodic&&i===j)continue;
    const delta=[0,1,2].map(k=>f[j][k]-f[i][k]+shift[k]),distance=toCart(delta,B).length();
@@ -1677,11 +1683,21 @@ function removePairBondRule(str,pair){
 }
 
 function minimumPeriodicImage(fa,fb,B){
- let distance=Infinity,shift=[0,0,0],delta=null;
- for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
-  const d=[fb[0]-fa[0]+x,fb[1]-fa[1]+y,fb[2]-fa[2]+z],len=toCart(d,B).length();
-  if(len<distance){distance=len;shift=[x,y,z];delta=d;}
- }return {distance,shift,delta};
+ const offset=[0,1,2].map(k=>fb[k]-fa[k]);
+ if(offset.some(v=>!Number.isFinite(v)))throw Error('Periyodik uzaklık için koordinatlar geçersiz.');
+ // The rounded fractional image provides a finite upper bound; the exact
+ // closest image must lie within the reciprocal-metric search box.
+ let shift=offset.map(v=>-Math.round(v)),delta=offset.map((v,i)=>v+shift[i]);
+ let distance=toCart(delta,B).length();
+ if(distance<=1e-12)return {distance,shift,delta};
+ const limits=coordinationImageBounds(B,distance+1e-8,offset),[xs,ys,zs]=limits;
+ const candidates=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+ if(candidates>200000)throw Error('Periyodik minimum görüntü araması çok büyük.');
+ for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
+  const d=[offset[0]+x,offset[1]+y,offset[2]+z],len=toCart(d,B).length();
+  if(len<distance-1e-12){distance=len;shift=[x,y,z];delta=d;}
+ }
+ return {distance,shift,delta};
 }
 
 function clipSegmentToCell(a,b,repeat){
@@ -1697,9 +1713,14 @@ function clipSegmentToCell(a,b,repeat){
 function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false){
  if(sites.length>100) return null; // large structures retain spatial hash renderer
  const neighbors=[],fractional=sites.map(s=>[frac(+s.x),frac(+s.y),frac(+s.z)]);
+ let imageCandidates=0;
  for(let i=0;i<sites.length;i++)for(let j=i;j<sites.length;j++){
   const range=bondRange(sites[i].symbol,sites[j].symbol,rules,cut,auto);
-  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+  const offset=[0,1,2].map(k=>fractional[j][k]-fractional[i][k]);
+  const [xs,ys,zs]=coordinationImageBounds(B,range[1],offset);
+  imageCandidates+=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
+  if(imageCandidates>300000)throw Error('Periyodik bağ çizimi görüntü araması çok büyük.');
+  for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
    if(i===j&&x===0&&y===0&&z===0)continue;
    if(i===j&&(x<0||(x===0&&y<0)||(x===0&&y===0&&z<0)))continue;
    const delta=[fractional[j][0]-fractional[i][0]+x,fractional[j][1]-fractional[i][1]+y,fractional[j][2]-fractional[i][2]+z];
