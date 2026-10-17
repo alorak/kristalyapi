@@ -4223,7 +4223,12 @@ function cifData(src){
   }
   const next={...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(operations.length>1?'_'+(j+1):'')};
   if(magneticMoment)next.magneticMoment=magneticMoment;
-  if(site.adp)next.adp=adpRotateBySymmetry(site.adp,c,op);
+  if(site.adp){
+   const transformed=adpRotateBySymmetry(site.adp,c,op);
+   // mCIF positions apply magnetic operation then centering operation.
+   // Its Cartesian covariance tensor must undergo the same composition.
+   next.adp=magneticOp?adpRotateBySymmetry(transformed,c,magneticOp.center.xyz):transformed;
+  }
   present.push(next);out.push(next);
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
