@@ -237,8 +237,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button id="frontBtn" class="view-tool" type="button" aria-label="Önden görünüm" title="Önden görünüm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="m4 6 4-3h12v17M4 20h16"/></svg></button>
     <button id="sideBtn" class="view-tool" type="button" aria-label="Yandan görünüm" title="Yandan görünüm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h10l3 4v12H8zM8 4 3 8v12h18M3 8h18"/></svg></button>
     <button id="projectionBtn" class="view-tool" type="button" aria-pressed="false" aria-label="Perspektif görünümü; ortografiye geç" title="Perspektif / ortografik"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/></svg></button>
+    <button id="performanceBtn" class="view-tool" type="button" aria-label="Performans paneli" title="Performans ve LOD" aria-controls="performancePanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18v-5m5 5V9m5 9V5m5 13v-8M2 20h20"/></svg></button>
    </div>
   </div>
+  <section id="performancePanel" class="performance-panel" aria-label="Performans ve LOD ölçümleri" hidden>
+   <div class="performance-head"><strong>Performans · Paket 10.1</strong><button id="performanceClose" type="button" aria-label="Performans panelini kapat">×</button></div>
+   <label class="performance-select">Atom görsel ayrıntısı
+    <select id="atomQuality"><option value="auto">Otomatik LOD</option><option value="high">Yüksek kalite</option><option value="fast">Hız öncelikli</option></select>
+   </label>
+   <pre id="performanceMetrics" aria-live="off">Ölçüm bekleniyor…</pre>
+   <p>Kare aralıkları GPU süresi değildir. Ölçümler cihaz ve tarayıcıya bağlıdır; atom verileri ve bilimsel hesaplar değişmez.</p>
+   <button id="performanceDownload" type="button">JSON performans raporunu indir</button>
+  </section>
   <div id="axisGizmo" class="axis-gizmo" role="img" aria-label="Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi">
     <svg id="axisGizmoSvg" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="58" r="4" fill="#69798a" stroke="#fff" stroke-width="1.5"/></svg>
 

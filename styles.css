@@ -872,3 +872,25 @@ body.reciprocal-open #app{display:none}
 @media(max-width:700px){.rs-views{grid-template-columns:1fr}.rs-view{height:300px}#reciprocalPage .lib-tabs{overflow-x:auto;flex-wrap:nowrap}#reciprocalPage .lib-tabs button{white-space:nowrap}}
 .rs-button{align-self:flex-start;background:#fff;color:#1a67a9;border:1px solid #c9dbee;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:650}
 .rs-button:hover:not(:disabled){background:#edf4fb;border-color:#9fc1e2}
+
+/* Package 10.1: a bounded, top-anchored performance panel, never below the viewport. */
+#performancePanel[hidden]{display:none!important}
+#viewport .performance-panel{
+ position:absolute;z-index:25;top:64px;right:14px;
+ width:min(350px,calc(100% - 28px));max-height:calc(100% - 80px);
+ overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;
+ display:grid;gap:11px;padding:14px;border:1px solid #d0e0ec;border-radius:12px;
+ background:rgba(255,255,255,.98);box-shadow:0 10px 26px rgba(21,48,77,.14);
+ color:#29435b;font-size:12px;line-height:1.5
+}
+.performance-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.performance-head strong{font-size:13px;color:#213c56}
+.performance-head button{padding:0 7px;font-size:19px;line-height:26px}
+.performance-select{display:grid;gap:5px;font-weight:650;color:#47627c}
+.performance-select select{width:100%;padding:7px 9px;font-size:12px}
+#performanceMetrics{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;padding:10px;
+ border:1px solid #e0eaf3;border-radius:8px;background:#f6f9fc;
+ font:11px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums;color:#334e68}
+.performance-panel p{margin:0;color:#60768d}
+#performanceDownload{justify-self:start;padding:8px 10px;font-size:12px}
+@media(max-height:480px){#viewport .performance-panel{top:53px;max-height:calc(100% - 60px)}}

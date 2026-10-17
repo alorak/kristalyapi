@@ -63,9 +63,44 @@ const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
 vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
+vm.runInContext('this.perfApi={atomLodTier,frameTimingStats};',context);
+const perfApi=context.perfApi;
 vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
+
+test('P10.1 display LOD chooses deterministic budgets without changing structural data',()=>{
+ const lod=perfApi.atomLodTier;
+ assert.equal(lod(100,15),'high');
+ assert.equal(lod(100,5),'medium');
+ assert.equal(lod(100,2),'low');
+ assert.equal(lod(3000,15),'medium');
+ assert.equal(lod(10000,30),'low');
+ assert.equal(lod(20000,100),'low');
+ assert.equal(lod(20000,1,'high'),'high','quality override stays possible for publication');
+ assert.equal(lod(100,30,'fast'),'low');
+ assert.equal(lod(10,NaN),'low');
+ assert.equal(lod(10,0),'low');
+ assert.match(moduleScript,/mesh\.userData\.instanceAtomIndices=instances\.map/);
+ assert.match(moduleScript,/atomMesh\.forEach\(\(mesh,i\)=>\{mesh\.geometry=previousAtomGeometries\[i\]/,
+  'PNG export must restore exact interactive geometry after forcing full detail');
+ const sphereTriangles=(rings,segments)=>rings*(segments-1)*2;
+ assert.equal(sphereTriangles(24,16),720);
+ assert.ok(sphereTriangles(8,6)<sphereTriangles(12,8)&&sphereTriangles(12,8)<sphereTriangles(24,16));
+});
+test('P10.1 frame interval statistics are robust and never used as hard CI timing gates',()=>{
+ const stats=perfApi.frameTimingStats([33,16,17,18,20,NaN,-1,Infinity,2000]);
+ assert.equal(stats.samples,5);
+ assert.equal(stats.medianMs,18);
+ assert.equal(stats.p95Ms,33);
+ const empty=perfApi.frameTimingStats([NaN,0,-5]);
+ assert.equal(empty.samples,0);
+ assert.equal(empty.medianMs,null);
+ assert.equal(empty.p95Ms,null);
+ assert.match(htmlShell,/id="performancePanel"[^>]*hidden/);
+ assert.match(htmlShell,/id="atomQuality"/);
+ assert.match(moduleScript,/renderer\.info/);
+});
 
 test('P9.3 VESTA 3.5 project imports cell, fractional asymmetric sites, styles, bounds and signed ISURF levels',()=>{
  const src=fs.readFileSync(path.join(__dirname,'fixtures','package9-3-signed.vesta'),'utf8');

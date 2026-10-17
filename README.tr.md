@@ -20,6 +20,14 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Performans ve LOD (Paket 10.1)
+
+Görünümün üst araç çubuğundaki **çubuk grafik simgesi** Performans panelini açar. **Otomatik LOD**, atomların ekrandaki yaklaşık büyüklüğüne ve toplam sayısına göre üç küre ağ ayrıntısından birini seçer. **Yüksek kalite** büyük yapılarda bile ayrıntılı küreler kullanır; **Hız öncelikli** hafif ağı seçer. Yalnızca etkileşimli atom çizim ağı değişir: koordinatlar, renkler, bağ topolojisi, çokyüzlü geometrisi, seçimler ve bilimsel hesaplar korunur. **PNG dışa aktarımında daima tam ayrıntılı küreler kullanılır** ve ardından etkileşimli LOD geri yüklenir.
+
+Panel görünür atom/bağ örneklerini, çokyüzlü sayısını, yaklaşık CPU sahne ve hacim üçgenleme sürelerini, WebGL çizim çağrılarını, çizilen üçgenleri ve geometri sayısını gösterir. Kare aralıkları tarayıcı zamanlamasını ve ekran senkronunu içerdiğinden **ortanca/p95 süreleri doğrudan GPU zamanı veya donanımdan bağımsız FPS değildir**. **JSON performans raporunu indir** ile cihazınızdaki ölçümü kaydedebilirsiniz. Tarayıcı CI, 60 / 1.620 / 12.960 atomlu stres sahnelerini ve gerçek Gemmi CCP4 yüzeyini kaydeder; değişken süreler için sabit geçiş eşiği koymaz.
+
+Mevcut güvenlik sınırları geçerlidir: **20.000 atom, 65.000 bağ, 2.400 çokyüzlü, 2,5 milyon hacim vokseli**. Paket 10.1 henüz Web Worker ile geometri üretimi, GPU zamanlayıcı sorguları veya sınırsız hacim render'ı sağlamaz.
+
 ## Arayüz
 
 | Bölüm | İşlev |

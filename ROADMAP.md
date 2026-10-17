@@ -1,5 +1,16 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.1 — Büyük süperhücre benchmarkları ve atom LOD'u (bu PR)
+
+| Alan | Uygulanan kabul kriteri | Sınır |
+| --- | --- | --- |
+| Atom gösterim LOD | 24×16 / 12×8 / 8×6 küre tessellasyonu; ekran piksel yarıçapı ve atom sayısına göre otomatik geçiş; yüksek kalite/hız seçenekleri | Koordinatlar, bağlar, sayısal analizler, çokyüzlüler ve seçimler LOD'dan etkilenmez; henüz örgü hücresi/çokyüzlü LOD'u yok |
+| Yayın PNG kalitesi | 1×–4× PNG'de geçici yüksek ayrıntı; işlem sonunda eski geometriyi geri yükleme | GPU/driver sınırlarını aşan yüksek çözünürlüklerde mevcut güvenli ret korunur |
+| Ölçüm paneli | CPU sahne/iso oluşturma ms; atom/bağ/çokyüzlü ve hacim üçgen sayıları; Three.js WebGL çizim çağrısı/üçgen/geometri; ortanca/p95 kare aralığı; JSON raporu | Kare aralığı GPU zamanı değildir. Donanım ve tarayıcı farkları nedeniyle sabit ms/FPS başarı eşiği yok |
+| Stres regresyonu | Chromium gerçek WebGL 60 / 1.620 / 12.960 atom, LOD değişimi ve PNG kalitesi; 9.3 Gemmi gerçek CCP4 ile yüzey üçgen ve stride raporu | 20.000 atom / 65.000 bağ / 2.400 çokyüzlü / 2,5M voksel sınırları devam eder |
+
+**Sonraki 10.2:** bağ ve çokyüzlü hesaplama profili, hacim üretiminin Worker'a alınması/iptal ve önbellekleme, geniş çözünürlüklü yoğunluklarda hatasız bütçe uygulama; GPU timer query destekli cihaz matrisi; yayın kalitesinde daha geniş dışa aktarım.
+
 ## Paket 9.3 — VESTA 3.x proje alt kümesinin içe aktarımı (bu PR)
 
 | Kapsam | Uygulama / bilimsel kabul | Bilinen sınır |
