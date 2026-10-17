@@ -136,7 +136,7 @@ dosyanın hatalı ADP'sini doğruymuş gibi göstermemek için **hata** verir.
 Genel konumdaki atomlarda tensörün dönmesi normaldir ve hata sayılmaz.
 
 Bilimsel doğrulama kapısındaki 30 gerçek/10 sentetik CIF veri kümesi korunur.
-Ayrıca ilk **14 gerçek, sabitlenmiş CIF** için kaynak metni ve atom
+Ayrıca kaynak/reference belirsizliği taşımayan **28 gerçek, sabitlenmiş CIF** için kaynak metni ve atom
 koordinatları değiştirildikten sonraki yeniden içe aktarma testleri,
 ayna/dört katlı eksen özel konumları için analitik tensör referansları
 eklendi. Bu çalışmalar özel konumdaki tüm Wyckoff/ADP sınıflarını veya
