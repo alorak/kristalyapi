@@ -3964,10 +3964,15 @@ function initStage3Analyses(){
    if(file.size>8000000)throw Error('FCF dosyası 8 MB sınırını aşıyor.');
    const fcf=readFcf(await file.text());
    if(workspace!==activeWorkspaceId)throw Error('FCF yüklenirken çalışma alanı değişti.');
+   const cellCheck=validateFcfCell(state.cell,fcf);
+   // The FCF is tied to this exact structural origin, not just a workspace.
+   // If the crystal changes after importing the file, demand a fresh FCF.
+   fcf.structureFingerprint=cifScientificFingerprint(state);
    fcfByWorkspace.set(workspace,fcf);
    $('fcfStatus').textContent=fcf.reflections.length+' yansıma yüklendi · Fcalc '+
     (fcf.hasCalc?'var':'yok')+' · faz '+(fcf.hasPhases?'var':'yok')+
-    ' · deneysel genlikler yalnızca mevcut hücreyle eşleştirilerek haritalanır.';
+    ' · '+(cellCheck.hasSourceCell?'FCF hücresi eşleşti':'FCF hücre verisi yok; aktif hücre varsayılıyor')+
+    (fcf.clippedNegativeFo2?' · '+fcf.clippedNegativeFo2+' negatif F², Fo=0 alındı':'');
   }catch(error){inform('SHELX FCF: '+error.message);}
   finally{e.target.value='';}
  };
@@ -3975,14 +3980,20 @@ function initStage3Analyses(){
   try{
    const fcf=fcfByWorkspace.get(activeWorkspaceId);
    if(!fcf)throw Error('Önce SHELX .fcf dosyası yükleyin.');
+   if(fcf.structureFingerprint!==cifScientificFingerprint(state))
+    throw Error('Kristal, FCF yüklenmesinden sonra değişti: doğru yansıma ve orijin için FCF dosyasını yeniden yükleyin.');
    const kind=$('fcfMapKind').value;
-   const g=observedFourierMap(state.cell,fcf,{kind,
+   const g=observedFourierMap(state.cell,fcf,{kind,scaleMode:$('fcfScaleMode').value,
     dMin:Number($('xrdMapResolution').value),size:Number($('xrdMapSize').value)});
    addVolumeDataset(g,kind==='difference'?'SHELX Fo−Fc (model fazlı)':'SHELX Fo (model fazlı)');
    if($('volumeMode').value==='off')$('volumeMode').value='both';
    volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
-   $('fcfStatus').textContent=g.experimental.used+' yansıma kullanıldı, '+g.experimental.skipped+
-    ' çözünürlük/ızgara dışında. '+g.experimental.warning;
+   const e=g.experimental;
+   $('fcfStatus').textContent=e.used+' benzersiz yansıma · '+e.duplicates+' eşdeğer kopya · '+
+    e.skippedResolution+' d_min dışı · '+e.skippedNyquist+' Nyquist dışı'+
+    (e.gridP1Coverage===null?'':(' · P1 ızgara kapsama '+(100*e.gridP1Coverage).toFixed(1)+'%'))+
+    (kind==='difference'?' · Fc ölçeği '+e.fcScale.toFixed(5)+' ('+e.scaleMode+')':'')+
+    (e.clippedNegativeFo2?' · negatif F²: '+e.clippedNegativeFo2:'')+'. '+e.warning;
    setRightSidebarTab('volume');
   }catch(error){inform('FCF haritası: '+error.message);}
  };
