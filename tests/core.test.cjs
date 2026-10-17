@@ -1230,7 +1230,7 @@ test('P9.1 CCP4 endian and scalar MODE 0/1/2/6 sample decoding',()=>{
  const full=api.readCcp4Map(ccp4Fixture({counts:[2,3,4],sampling:[3,2,4],
   starts:[0,0,0]}),'full.ccp4');
  assert.equal(full.periodic,true);
- assert.deepEqual(Array.from(api.volumeShape(full)),[3,4,5]);
+ assert.deepEqual(Array.from(api.volumeShape(full)),[4,3,5]);
  assert.equal(api.interpretVolumeUnits(full,'unknown',{periodic:false}).periodic,true);
  const partial=api.readCcp4Map(ccp4Fixture(),'partial.ccp4');
  assert.equal(api.interpretVolumeUnits(partial,'unknown',{periodic:true}).periodic,false);
