@@ -3084,7 +3084,7 @@ test('P8.2b merged P1 MTZ reads typed FP/FC/PHIC and produces direct-Fourier amp
  approx(map.values[api.gridIndex(map,0,0,0)],4/125,1e-7);
  assert.equal(map.experimental.sourceCell,true);
  assert.match(htmlShell,/accept="\.fcf,\.cif,\.mtz"/);
- assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\),\{columns:choices\}\)/);
+ assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\),\{columns:choices,allowUnphased:true\}\)/);
 });
 test('P8.2b MTZ byte order and missing-number sentinel are validated and counted',()=>{
  const big=p1.readMtz(makeP1Mtz({endian:'big',rows:[[1,0,0,10,8,90]]}));
@@ -3212,4 +3212,71 @@ test('P8.2c raw and LSQ 2Fo-Fc are model-phased, not sigma-A weighted maps',()=>
  assert.equal(raw.experimental.modelPhased,true);
  assert.match(raw.experimental.warning,/σA/);
  assert.match(htmlShell,/value="twice-observed"/);
+});
+
+const zlib=require('node:zlib');
+test('P8.2d genuine Gemmi 5e5z MTZ reads canonical COLUMN cards and measured quality fields',()=>{
+ const bytes=fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5e5z.mtz'));
+ const raw=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+ assert.throws(()=>p1.readMtz(raw),/FC\/PHIC model fazı yok/);
+ const data=p1.readMtz(raw,{allowUnphased:true});
+ assert.equal(data.mtz.spaceGroupNumber,4);
+ assert.equal(data.mtz.totalRows,441);
+ assert.equal(data.hasCalc,false);assert.equal(data.hasPhases,false);
+ assert.equal(data.mtz.optionalColumns.sigma,'1:SIGFP');
+ assert.equal(data.mtz.optionalColumns.free,'1:FREE');
+ assert.equal(data.reflections.length,403);
+ assert.equal(data.mtz.skippedMissing,38);
+ assert.ok(data.reflections.every(r=>r.fo>=0&&r.sigma>=0&&(r.free===0||r.free===1)));
+ assert.throws(()=>p1.observedFourierMap(data.cell,data,{kind:'observed',size:32,dMin:2}),/model fazları yok/);
+});
+test('P8.2d genuine Gemmi 5wkd refined C2 MTZ has model and weighted map coefficients',()=>{
+ const gz=fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5wkd_phases.mtz.gz'));
+ const bytes=zlib.gunzipSync(gz);
+ const raw=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+ const data=p1.readMtz(raw);
+ assert.equal(data.mtz.spaceGroupNumber,5);
+ assert.equal(data.mtz.symmetryOperations.length,4);
+ assert.equal(data.mtz.totalRows,367);
+ assert.equal(data.mtz.optionalColumns.fom,'1:FOM');
+ assert.equal(data.mtz.optionalColumns.sigma,'1:SIGFP');
+ assert.equal(data.mtz.optionalColumns.free,'0:FREE');
+ assert.ok(data.reflections.length>350);
+ assert.ok(data.mtz.weightedMain.length>350);
+ assert.ok(data.mtz.weightedDifference.length>350);
+ assert.match(data.source,/MTZ SG 5/);
+});
+test('P8.2d optional SIGFP, explicit FREE exclusion, empirical FOM and true weighted coefficients',()=>{
+ const columns=[['H','H',0],['K','H',0],['L','H',0],['FP','F',1],['SIGFP','Q',1],
+  ['FC','F',1],['PHIC','P',1],['FOM','W',1],['FREE','I',0],
+  ['FWT','F',1],['PHWT','P',1],['DELFWT','F',1],['PHDELWT','P',1]];
+ const rows=[[1,0,0,10,2,8,0,.25,1,12,90,4,180],
+  [0,1,0,9,5,7,90,.75,0,10,0,3,0]];
+ const data=p1.readMtz(makeP1Mtz({columns,rows}));
+ const unweighted=p1.observedFourierMap(cubic,data,{size:16,dMin:1,kind:'difference'});
+ const fom=p1.observedFourierMap(cubic,data,{size:16,dMin:1,kind:'difference',fomMode:'multiply'});
+ approx(unweighted.values[api.gridIndex(unweighted,0,0,0)],4/125,1e-7);
+ approx(fom.values[api.gridIndex(fom,0,0,0)],1/125,1e-7);
+ assert.equal(fom.experimental.fomMode,'multiply');
+ assert.match(fom.experimental.warning,/σA haritası değildir/);
+ const signal=p1.observedFourierMap(cubic,data,{size:16,dMin:1,minSignalToNoise:3});
+ assert.equal(signal.experimental.skippedSignal,1);
+ assert.equal(signal.experimental.used,1);
+ const free=p1.observedFourierMap(cubic,data,{size:16,dMin:1,freeFlagValue:1});
+ assert.equal(free.experimental.skippedFree,1);
+ assert.equal(free.experimental.used,1);
+ const wt=p1.observedFourierMap(cubic,data,{kind:'weighted-main',size:16,dMin:1});
+ const delta=p1.observedFourierMap(cubic,data,{kind:'weighted-difference',size:16,dMin:1});
+ approx(wt.values[api.gridIndex(wt,0,0,0)],20/125,1e-6);
+ approx(delta.values[api.gridIndex(delta,0,0,0)],-2/125,1e-6);
+ assert.equal(wt.experimental.modelPhased,false);
+ assert.equal(wt.experimental.scaleMode,'not-applicable');
+ assert.throws(()=>p1.observedFourierMap(cubic,data,
+  {kind:'weighted-main',size:16,dMin:1,fomMode:'multiply'}),/yeniden çarpılamaz/);
+ assert.throws(()=>p1.observedFourierMap(cubic,
+  p1.readMtz(makeP1Mtz()),{size:16,dMin:1,minSignalToNoise:2}),/SIGFP/);
+ assert.throws(()=>p1.observedFourierMap(cubic,
+  p1.readMtz(makeP1Mtz()),{size:16,dMin:1,freeFlagValue:0}),/FREE/);
+ assert.throws(()=>p1.observedFourierMap(cubic,
+  p1.readMtz(makeP1Mtz()),{size:16,dMin:1,fomMode:'multiply'}),/FOM/);
 });
