@@ -16,7 +16,7 @@ const root=path.resolve(__dirname,'../..');
 const source=fs.readFileSync(path.join(root,'crystal-app.js'),'utf8');
 const index=source.indexOf('// @kristalyapi/browser-bootstrap:');
 if(index<0)throw Error('Browser bootstrap marker missing');
-const context={THREE:{Vector3},URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
+const context={THREE:{Vector3,SphereGeometry:class {},CylinderGeometry:class {}},URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(context);
 vm.runInContext(source.slice(0,index).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.ccp4Read=readCcp4Map;',context);
