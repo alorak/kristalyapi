@@ -62,6 +62,33 @@ Bilinen bozuk kaynaklar dahil **her** belirsizliği başarısız saymak için:
 python tests/validation/validate.py --strict --out-dir validation-results
 ```
 
+## Paket 8.1 — düzenlenmiş CIF ve özel konum ADP doğrulaması
+
+- **28 sabitlenmiş gerçek CIF:** `tests/core.test.cjs` gerçek
+  deneysel koleksiyondan real-01–14 ve real-16–29 için
+  birebir kaynak koruması, düzenlenmiş CIF'nin yeniden
+  içe aktarması, atom çokluğu ve güvenli bibliyografi
+  kaydı regresyonlarını yürütür.
+- **İki bilinçli dışlama:** real-15 eksik/NaN atom konumu,
+  real-30 kaynak referansındaki sonlanmamış dizge
+  nedeniyle önceki `inconclusive` kayıtlarıdır;
+  yanlışlıkla başarılı CIF olarak raporlanmaz.
+- **ADP site symmetry:** simetriyle aynı konuma dönülen
+  noktalarda anizotropik Kartezyen kovaryans tensörünün
+  invariantlığı, ayna ve dörtlü dönme için analitik
+  referanslarla test edilir.
+- **Bağımsız sözdizimi kapısı:** `test_package81_gemmi.py`
+  Node'daki gerçek üretim CIF dışa aktarma fonksiyonundan
+  oluşturduğu düzenlenmiş CIF dosyasını **Gemmi 0.7.4**
+  ile yeniden açar. Yazar loop'u, çok satırlı alıntı,
+  koordinat güncellemesi ve güncelliği kalmayan depo/rafinman
+  kayıtlarının dışlanmasını doğrular.
+
+Bu testler mevcut 40 dosyalık referans karşılaştırmasının
+yerine geçmez. Kaynağın tüm CIF2/sözlük verilerinin
+kayıpsız taşındığı veya tüm ADP site-symmetry sınıflarının
+doğrulandığı iddia edilmez. [Paket 8.1 sınırları](PACKAGE_8_1_STATUS.md).
+
 ## GitHub Actions
 
 [**CIF crystal accuracy · Gemmi reference**](../../.github/workflows/cif-validation.yml) iş akışı **yalnızca `main` dalına ilgili dosyalar merge/push edildiğinde** veya elle `workflow_dispatch` ile çalışır. PR açılınca tetiklenmez. Sonuçlar GitHub Actions **Summary** görünümüne yazılır ve `browser.json`, `reference.json`, `report.json`, `report.md` dosyaları 30 günlük artifact olarak saklanır.
