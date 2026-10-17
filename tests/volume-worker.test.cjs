@@ -362,3 +362,108 @@ test('P10.6 unmet sampled residual threshold falls back to the established unifo
  assert.deepEqual(Array.from(preview.positions),Array.from(expected.positions),'fallback preview remains byte-for-byte legacy');
  assertSame(events[1].results[0],coreCtx.compute(g,job.level,null,job.palette,job.maxTriangles),false);
 });
+
+
+test('P10.7 local 2:1 octree produces a closed, consistently oriented signed-sphere preview with analytic Å displacement audit',()=>{
+ const n=64,radius=17.531,step=.2,values=new Float32Array(n**3);
+ let min=Infinity,max=-Infinity;
+ for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<n;k++){
+  const v=radius-Math.hypot(i-31.5,j-31.5,k-31.5);
+  values[(i*n+j)*n+k]=v;min=Math.min(min,v);max=Math.max(max,v);
+ }
+ const grid={dims:[n,n,n],values,min,max,origin:[0,0,0],
+  axes:[[step,0,0],[0,step,0],[0,0,step]],periodic:false};
+ const ctx={self:{postMessage(){}},Float32Array,Math};vm.createContext(ctx);
+ vm.runInContext(workerSource+
+  ';this.plan=isoOctreePlan;this.faces=isoOctreeFaces;this.mesh=isoOctreeTriangles;this.regular=isoTriangles;this.stride=isoPreviewStride;',ctx);
+ const plan=ctx.plan(grid,0);
+ assert.equal(plan.ok,true,JSON.stringify(plan.stats));
+ assert.equal(plan.stats.kind,'octree-2to1-preview');
+ assert.ok(plan.stats.leaves<plan.stats.leafBudget);
+ assert.ok(plan.stats.transitionFaces>100,'genuine regional coarse/fine interfaces');
+ assert.ok(Object.keys(plan.stats.surfaceDepths).length>=2,'surface leaves at multiple depths');
+ assert.ok(plan.stats.sampleProbes>0&&plan.stats.sampledToleranceMet);
+ for(const group of ctx.faces(plan.leaves).planes.values()){
+  const lo=group.filter(x=>x.side===0),hi=group.filter(x=>x.side===1);
+  for(const a of lo)for(const b of hi)if(a.loU<b.hiU&&b.loU<a.hiU&&a.loV<b.hiV&&b.loV<a.hiV)
+   assert.ok(Math.abs(plan.leaves[a.index].depth-plan.leaves[b.index].depth)<=1,
+    'face-neighboring octree leaves stay 2:1 balanced by depth');
+ }
+ const surface=ctx.mesh(grid,0,null,'thermal',75000,plan);
+ assert.ok(surface.triangles>1000&&!surface.truncated);
+ assert.ok(surface.metrics.transitionPatches>0&&surface.metrics.faceTriangles>0);
+ assert.ok(Number.isFinite(surface.metrics.isoVertexScalarResidualMax));
+ assert.ok(Number.isFinite(surface.metrics.isoPositionProxyMaxAngstrom));
+ assert.ok(surface.metrics.positionProxySamples>0);
+ const incidence=new Map();
+ let maxAnalyticErrorAngstrom=0,invalid=0;
+ for(let offset=0;offset<surface.positions.length;offset+=9){
+  const vertices=[0,3,6].map(q=>Array.from(surface.positions.slice(offset+q,offset+q+3)));
+  const keys=vertices.map(p=>p.map(x=>Math.round(x*1e5)).join(','));
+  if(new Set(keys).size!==3)invalid++;
+  for(let q=0;q<3;q++){
+   const p=vertices[q],radial=Math.hypot(p[0]/step-31.5,p[1]/step-31.5,p[2]/step-31.5);
+   maxAnalyticErrorAngstrom=Math.max(maxAnalyticErrorAngstrom,Math.abs(radial-radius)*step);
+  }
+  for(const [i,j] of [[0,1],[1,2],[2,0]]){
+   const forward=keys[i]<keys[j],key=[keys[i],keys[j]].sort().join('|');
+   const counts=incidence.get(key)||[0,0];counts[forward?0:1]++;
+   incidence.set(key,counts);
+  }
+ }
+ assert.equal(invalid,0,'no degenerate surface triangles');
+ assert.ok(incidence.size>1000);
+ for(const counts of incidence.values())assert.deepEqual(counts,[1,1],
+  'each closed edge has exactly two oppositely directed incident triangles');
+ const coarse=ctx.regular(grid,0,null,'thermal',75000,ctx.stride(grid,0));
+ let coarseError=0;
+ for(let p=0;p<coarse.positions.length;p+=3){
+  const pos=coarse.positions,radial=Math.hypot(pos[p]/step-31.5,pos[p+1]/step-31.5,pos[p+2]/step-31.5);
+  coarseError=Math.max(coarseError,Math.abs(radial-radius)*step);
+ }
+ assert.ok(maxAnalyticErrorAngstrom<.03,'analytic signed sphere maximum vertex radial error < 0.03 Å');
+ assert.ok(maxAnalyticErrorAngstrom<coarseError*.5,'refined preview improves tested spherical vertex position');
+});
+test('P10.7 skew/periodic octree keeps potential coloring tied to world-coordinate samples',()=>{
+ const n=32,values=new Float32Array(n**3),potentialValues=new Float32Array(n**3);
+ let min=Infinity,max=-Infinity,pmin=Infinity,pmax=-Infinity;
+ for(let i=0;i<n;i++)for(let j=0;j<n;j++)for(let k=0;k<n;k++){
+  const index=(i*n+j)*n+k,v=8.531-Math.hypot(i-15.5,j-15.5,k-15.5);
+  values[index]=v;min=Math.min(min,v);max=Math.max(max,v);
+  const potential=Math.sin(i*.17)+Math.cos(j*.11)+k*.013;
+  potentialValues[index]=potential;pmin=Math.min(pmin,potential);pmax=Math.max(pmax,potential);
+ }
+ const base={dims:[n,n,n],origin:[1,2,-3],axes:[[.2,.02,0],[.01,.25,.02],[.01,0,.3]],periodic:true};
+ const grid={...base,values,min,max},potential={...base,values:potentialValues,min:pmin,max:pmax};
+ const ctx={self:{postMessage(){}},Float32Array,Math};vm.createContext(ctx);
+ vm.runInContext(workerSource+
+  ';this.plan=isoOctreePlan;this.mesh=isoOctreeTriangles;this.at=volumeAtWorld;this.color=scalarColor;',ctx);
+ const plan=ctx.plan(grid,0);assert.equal(plan.ok,true);
+ const mesh=ctx.mesh(grid,0,potential,'viridis',75000,plan);
+ assert.ok(mesh.triangles>100&&!mesh.truncated);
+ assert.equal(mesh.positions.length,mesh.colors.length);
+ for(let i=0;i<mesh.positions.length;i+=Math.max(3,Math.floor(mesh.positions.length/120/3)*3)){
+  const p=Array.from(mesh.positions.slice(i,i+3));
+  const expected=ctx.color(ctx.at(potential,p),potential,'viridis');
+  for(let channel=0;channel<3;channel++)assert.ok(Math.abs(mesh.colors[i+channel]-expected[channel])<1e-5,
+   'potential colors remain sampled from the shared Cartesian world coordinate');
+ }
+});
+test('P10.7 noisy maps fall back to the established safe previews without altering the final mesh',()=>{
+ const g=field([64,64,64]),events=[],self={postMessage:m=>events.push(m)};
+ const ctx={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>0},Math};
+ vm.createContext(ctx);
+ vm.runInContext(workerSource,ctx);
+ const job={grid:0,potential:-1,level:1.2,palette:'thermal',maxTriangles:75000};
+ self.onmessage({data:{requestId:107,grids:[g],jobs:[job],progressive:true}});
+ assert.equal(events.length,2);
+ const preview=events[0].previewSurface;
+ assert.equal(preview.adaptive.kind,'conforming-axis-preview');
+ assert.match(preview.adaptive.octreeFallbackReason,/budget|tolerance/);
+ assert.equal(preview.adaptive.accepted,false);
+ assert.equal(preview.adaptive.sampledToleranceMet,false);
+ assertSame(events[1].results[0],coreCtx.compute(g,job.level,null,job.palette,job.maxTriangles),false);
+ assert.match(app,/octree-2to1-preview/);
+ assert.match(app,/isoPositionProxyMaxAngstrom/);
+ assert.match(app,/benchmarkDevice/);
+});

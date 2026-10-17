@@ -1210,11 +1210,19 @@ try{
   const workerHeavy=await importPage.evaluate(()=>window.__visualTest.performance());
   assert.ok(workerHeavy.volumeWorkerMs>=0&&workerHeavy.volumeTriangles>0);
   assert.ok(workerHeavy.volumePreviews>=1,'P10.3 large grid should have a progressive low-resolution preview');
-  assert.equal(workerHeavy.volumeAdaptivePreview?.kind,'conforming-axis-preview');
-  assert.ok(workerHeavy.volumeAdaptivePreview.axisCells.every(n=>n>0&&n<32),
-   'P10.6 conforming axis grid stays within a bounded preview budget');
-  assert.ok(Number.isFinite(workerHeavy.volumeAdaptivePreview.sampledCenterErrorMax),
-   'P10.6 sampled scalar residual is reported, never called a rigorous iso error bound');
+  assert.equal(workerHeavy.volumeAdaptivePreview?.kind,'octree-2to1-preview');
+  assert.equal(workerHeavy.volumeAdaptivePreview.accepted,true);
+  assert.ok(workerHeavy.volumeAdaptivePreview.leaves>100&&workerHeavy.volumeAdaptivePreview.leaves<4500,
+   'P10.7 true local octree remains below its fixed leaf budget');
+  assert.ok(workerHeavy.volumeAdaptivePreview.transitionFaces>0,
+   'P10.7 preview actually transitions between regional refinement levels');
+  assert.ok(Number.isFinite(workerHeavy.volumeAdaptivePreview.sampledCenterErrorMax));
+  assert.ok(Number.isFinite(workerHeavy.volumeAdaptivePreview.isoVertexScalarResidualMax));
+  assert.ok(Number.isFinite(workerHeavy.volumeAdaptivePreview.isoPositionProxyMaxAngstrom));
+  assert.ok(workerHeavy.benchmarkDevice?.webglVersion?.includes('WebGL'),
+   'P10.7 benchmark capture names the actual browser GPU API');
+  assert.ok(workerHeavy.benchmarkDevice.maxTextureSize>=1024);
+  assert.ok(typeof workerHeavy.benchmarkDevice.browser==='string');
   assert.ok(workerHeavy.managedGeometryBytes>0,'P10.5 GPU-bound vertex attribute backing arrays are measurable');
   assert.ok(workerHeavy.volumeVoxelBytes>=64**3*4,'P10.5 source voxel storage reported separately');
   assert.equal(typeof workerHeavy.managedTextureBytesEstimate,'number');

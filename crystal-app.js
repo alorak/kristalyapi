@@ -1264,7 +1264,7 @@ function drawVolume(forceSync=false){
     appendVolumeSurface(layer,pending[index].dataset,pending[index].item,surface,pot);
     previewObjects.set(index,layer.children.slice(before));
     lastVolumeStats.previews++;
-     if(surface.adaptive?.kind==='conforming-axis-preview')lastVolumeStats.previewAdaptation=surface.adaptive;
+     if(['conforming-axis-preview','octree-2to1-preview'].includes(surface.adaptive?.kind))lastVolumeStats.previewAdaptation=surface.adaptive;
     applyLayerAppearance();refreshPerformancePanel();
    }catch(error){finishError(error);}
    return;
@@ -2026,8 +2026,17 @@ function volumeVoxelBytes(){
 function performanceSnapshot(){
  const render=renderer?.info?.render||{},memory=renderer?.info?.memory||{};
  const sceneBytes=estimateManagedSceneBytes([root]);
+ const gl=renderer?.getContext(),debugGpu=gl?.getExtension('WEBGL_debug_renderer_info');
+ const benchmarkDevice={
+  browser:navigator.userAgent,platform:navigator.platform||'unknown',
+  logicalCores:navigator.hardwareConcurrency??null,deviceMemoryGiB:navigator.deviceMemory??null,
+  pixelRatio:window.devicePixelRatio,viewport:[window.innerWidth,window.innerHeight],
+  webglVersion:gl?.getParameter(gl.VERSION)||null,
+  gpuVendor:gl?.getParameter(debugGpu?.UNMASKED_VENDOR_WEBGL||gl.VENDOR)||null,
+  gpuRenderer:gl?.getParameter(debugGpu?.UNMASKED_RENDERER_WEBGL||gl.RENDERER)||null,
+  maxTextureSize:gl?.getParameter(gl.MAX_TEXTURE_SIZE)||null};
  return {
-  quality:renderQuality,polyFaceStrategy,polyFaceDrawGroups:root?root.children.filter(o=>o.userData.layer==='polyhedra'&&o.isMesh).length:0,
+  benchmarkDevice,quality:renderQuality,polyFaceStrategy,polyFaceDrawGroups:root?root.children.filter(o=>o.userData.layer==='polyhedra'&&o.isMesh).length:0,
    atomLod:atomMesh.map(mesh=>({tier:mesh.userData.atomLodTier,count:mesh.count,
    trianglesPerSphere:(mesh.geometry.getIndex()?.count||0)/3})),
   atoms:atomData.length,visibleAtoms:atomMesh.reduce((n,mesh)=>n+mesh.count,0),
@@ -2061,9 +2070,16 @@ function refreshPerformancePanel(){
   word('Volume ','Hacim ')+x.volumeTriangles.toLocaleString()+word(' triangles · grid stride ',' üçgen · ızgara adımı ')+(x.volumeStride||'—')+(x.volumeTruncated?word(' (limited)',' (sınırlı)'):''),
   word('Polyhedron faces ','Çokyüzlü dolguları ')+x.polyFaceStrategy+word(' · draw groups ',' · çizim grubu ')+x.polyFaceDrawGroups,
    word('Adaptive preview ','Uyarlamalı önizleme ')+
-    (x.volumeAdaptivePreview?(x.volumeAdaptivePreview.accepted?x.volumeAdaptivePreview.axisCells.join('×'):word('uniform fallback','düzenli ızgara yedeği')):'—')+
-    word(' axis cells · sampled center residual ',' eksen hücresi · örnek merkez artığı ')+
-    (x.volumeAdaptivePreview?x.volumeAdaptivePreview.sampledCenterErrorMax.toPrecision(3):'—'),
+    (x.volumeAdaptivePreview?(x.volumeAdaptivePreview.kind==='octree-2to1-preview'?
+     (x.volumeAdaptivePreview.leaves+word(' local octree leaves · transitions ',' yerel octree hücresi · geçişler ')+x.volumeAdaptivePreview.transitionFaces):
+     (x.volumeAdaptivePreview.accepted?x.volumeAdaptivePreview.axisCells.join('×'):word('uniform fallback','düzenli ızgara yedeği ')+
+     (x.volumeAdaptivePreview.octreeFallbackReason?' ('+x.volumeAdaptivePreview.octreeFallbackReason+')':''))):'—')+
+    word(' · sampled scalar probe residual ',' · örneklenmiş skaler artık ')+
+    (x.volumeAdaptivePreview?.sampledCenterErrorMax?.toPrecision(3)||'—'),
+   word('Iso vertex residual (scalar) ','İzo köşesi artığı (skaler) ')+
+    (x.volumeAdaptivePreview?.isoVertexScalarResidualMax?.toPrecision(3)||'—')+
+    word(' · first-order position proxy (Å) ',' · birinci mertebe konum yaklaşımı (Å) ')+
+    (x.volumeAdaptivePreview?.isoPositionProxyMaxAngstrom?.toPrecision(3)||'—'),
    word('Polyhedron templates ','Çokyüzlü şablonları ')+x.polyTemplates.templates+word(' · reused ',' · yeniden kullanım ')+x.polyTemplates.reuses+word(' · bytes ',' · bayt ')+x.polyTemplates.templateBytes,
   word('Polyhedron edges ','Çokyüzlü kenarları ')+(x.polyOutlineVisible?word('visible','görünür'):word('LOD hidden','LOD ile gizli'))+
    word(' · export Worker ',' · dışa aktarım Worker ')+fmt(x.sliceExportWorkerMs)+' ms',
@@ -8598,8 +8614,8 @@ function bind(){
   build();refreshPerformancePanel();
  };
  $('performanceDownload').onclick=()=>download('kristalyapi_performance.json',
-  JSON.stringify({kind:'kristalyapi-render-snapshot',schema:1,recordedAt:new Date().toISOString(),
-   note:'Frame intervals include vsync/browser scheduling and are not GPU execution times. Hardware-dependent timings are informational.',
+  JSON.stringify({kind:'kristalyapi-render-snapshot',schema:2,recordedAt:new Date().toISOString(),
+   note:'Device and GPU information are recorded only locally and downloaded on explicit request. GPU payload bytes estimate is not driver-allocated VRAM, and iso-position proxy is not a certified Hausdorff bound. Frame intervals are not GPU execution times.',
    ...performanceSnapshot()},null,2)+'\n','application/json');
  $('fitBtn').onclick=fit;$('topBtn').onclick=()=>reframe([.00001,.00001,1]);$('frontBtn').onclick=()=>reframe([0,-1,.00001]);$('sideBtn').onclick=()=>reframe([1,0,.00001]);$('projectionBtn').onclick=toggleProjection;
  initExportModal();
