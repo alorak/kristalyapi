@@ -49,7 +49,7 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, TextEncoder, document: {getElementById(){return null;}} };
 vm.createContext(context);
-vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,readCcp4Map,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
+vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,readCcp4Map,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,volumeSignedIsoPair,volumeSurfaceStyleSpec,sliceContourStroke,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
@@ -1254,6 +1254,65 @@ test('P9.1 MRC ORIGIN is Å; conflicting START/ORIGIN and unsupported formats fa
  const notFinite=ccp4Fixture(),header=new DataView(notFinite.buffer,notFinite.byteOffset,notFinite.length);
  header.setFloat32(1024+80,NaN,true);
  assert.throws(()=>api.readCcp4Map(notFinite,'test.map'),/NaN/);
+});
+
+test('P9.2 signed Fo-Fc/CCP4 map gets paired +rho/-rho surfaces without altering scientific samples',()=>{
+ const grid=api.volumeGrid([2,2,2],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],
+  [-3,-1,0,2,-1,3,-2,1],'FO-FC','relative');
+ const initial=Array.from(grid.values);
+ const pair=api.volumeSignedIsoPair(grid,.75);
+ assert.deepEqual(Array.from(pair.map(layer=>layer.value)),[.75,-.75]);
+ assert.equal(pair[0].opacity,.62);
+ assert.notEqual(pair[0].color,pair[1].color);
+ assert.ok(pair.every(layer=>api.validateVolumeIsoLayer(layer,grid).visible));
+ assert.deepEqual(Array.from(grid.values),initial,'surface styles must never alter the physical field');
+ assert.throws(()=>api.volumeSignedIsoPair(grid,0),/± izoyüzey/);
+ assert.throws(()=>api.volumeSignedIsoPair(grid,3),/± izoyüzey/);
+ const positive=api.volumeGrid([2,2,2],[0,0,0],[[1,0,0],[0,1,0],[0,0,1]],
+  Array(8).fill(2),'density','unknown');
+ assert.throws(()=>api.volumeSignedIsoPair(positive,.5),/iki yanında/);
+ const real=api.readCcp4Map(fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5i55_tiny.ccp4')),'real.ccp4');
+ const signed=api.volumeSignedIsoPair(real,.15);
+ assert.deepEqual(Array.from(signed.map(layer=>layer.value)),[.15,-.15]);
+});
+test('P9.2 surface rendering modes expose smooth, flat, wire and hybrid without affecting voxel grid',()=>{
+ assert.deepEqual(JSON.parse(JSON.stringify(api.volumeSurfaceStyleSpec('smooth'))),
+  {filled:true,wire:false,flat:false});
+ assert.deepEqual(JSON.parse(JSON.stringify(api.volumeSurfaceStyleSpec('flat'))),
+  {filled:true,wire:false,flat:true});
+ assert.deepEqual(JSON.parse(JSON.stringify(api.volumeSurfaceStyleSpec('wire'))),
+  {filled:false,wire:true,flat:false});
+ assert.deepEqual(JSON.parse(JSON.stringify(api.volumeSurfaceStyleSpec('hybrid'))),
+  {filled:true,wire:true,flat:false});
+ assert.throws(()=>api.volumeSurfaceStyleSpec('none'),/Bilinmeyen izoyüzey/);
+ assert.match(moduleScript,/flatShading:spec\.flat/);
+ assert.match(moduleScript,/wireframe:true/);
+ assert.match(htmlShell,/id="volumeSurfaceStyle"/);
+ assert.match(htmlShell,/id="volumeIsoPair"/);
+});
+test('P9.2 balanced and sign-filtered contour levels preserve zero-centered comparisons',()=>{
+ const values=Float32Array.from([-4,-2,-1,0,3,8,NaN]);
+ const balanced=api.sliceContourLevels(values,4,null,'balanced');
+ const exact=[-8/3,-4/3,4/3,8/3];
+ balanced.forEach((v,i)=>approx(v,exact[i]));
+ const odd=api.sliceContourLevels(values,5,null,'balanced');
+ assert.ok(odd.includes(0));
+ assert.deepEqual(Array.from(api.sliceContourLevels(values,4,null,'positive').map(x=>Math.sign(x))),[1,1,1,1]);
+ assert.deepEqual(Array.from(api.sliceContourLevels(values,4,null,'negative').map(x=>Math.sign(x))),[-1,-1,-1,-1]);
+ assert.deepEqual(Array.from(api.sliceContourLevels([2,4,6],4,null,'negative')),[]);
+ assert.equal(api.sliceContourLevels([2,4,6],4,null,'balanced').length,4,'no signed range falls back safely');
+ assert.equal(api.sliceContourLevels(values,4,.25,'balanced').length,5);
+ assert.throws(()=>api.sliceContourLevels(values,8,null,'nonsense'),/seviye modu/);
+ const neg=api.sliceContourStroke(-2,false,'signed'),pos=api.sliceContourStroke(2,false,'signed');
+ assert.ok(neg.dash.length>0);
+ assert.equal(pos.dash.length,0);
+ assert.notEqual(pos.color,neg.color);
+ assert.ok(api.sliceContourStroke(0,false,'signed').width>pos.width);
+ assert.deepEqual(Array.from(api.sliceContourStroke(3,false,'mono').dash),[]);
+ assert.throws(()=>api.sliceContourStroke(1,false,'nonsense'),/Kontur çizgi/);
+ assert.match(htmlShell,/id="volumeContourMode"/);
+ assert.match(htmlShell,/id="volumeContourStyle"/);
+ assert.match(moduleScript,/frame,768\)/,'2D export must render a genuine 768px grid');
 });
 test('P9.1 genuine Gemmi monoclinic CCP4 partial map retains signed start, permutations and density',()=>{
  const bytes=fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5i55_tiny.ccp4'));
