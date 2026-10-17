@@ -525,6 +525,7 @@ try{
  await page.locator('#volumeContourCount').fill('10');await page.locator('#volumeContourCount').dispatchEvent('change');
  assert.equal(await page.locator('#volumeSlicePreview').isVisible(),true,'2D slice preview must be visible');
  assert.ok(await canvasInk(page,'#volumeSlicePreview')>10,'contoured slice preview must have sampled pixels');
+ await page.locator('#volumeSlicePreview').scrollIntoViewIfNeeded();
  const previewBounds=await page.locator('#volumeSlicePreview').boundingBox();
  await page.mouse.move(previewBounds.x+previewBounds.width*.2,previewBounds.y+previewBounds.height*.3);
  await page.mouse.down();
