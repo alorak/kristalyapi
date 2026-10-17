@@ -3985,7 +3985,7 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
  const source=weighted?(kind==='weighted-main'?fcf.mtz.weightedMain:fcf.mtz.weightedDifference):fcf?.reflections;
  if(!source?.length)throw Error('İstenen MTZ ağırlıklı harita katsayıları/fazları yok.');
  if(!weighted&&!fcf?.hasPhases)
-  throw Error('FCF/MTZ model fazları yok; Fobs tek başına Fourier haritası üretmez.');
+  throw Error('FCF/MTZ model fazları yok; faz bilgisi eksik, Fobs tek başına Fourier haritası üretmez.');
  if(!weighted&&kind!=='observed'&&!fcf.hasCalc)
   throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
  if(minSignalToNoise>0&&!fcf?.mtz?.optionalColumns.sigma)
