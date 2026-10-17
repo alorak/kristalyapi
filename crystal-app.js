@@ -3581,68 +3581,173 @@ function modelFourierMap(cell,sites,{kind='density',scattering='xray',dMin=1.2,s
   source:'calculated model F; no Fobs; radix-2 FFT'};
  return result;
 }
-/* SHELXL LIST 6 .fcf is CIF reflection data, not a structure file. Fobs alone
-   provides no phases: use explicitly supplied calculated phases for a map. */
+/* SHELXL LIST 6 reflection CIF. Fo is an amplitude (sqrt of measured
+   nonnegative F²), phi_calc is in DEGREES. Never invent experimental phases.
+   Negative measured F² is legitimate after background subtraction; clamp its
+   amplitude to zero and expose the count, not an unqualified success. */
 function readFcf(text){
  if(typeof text!=='string'||text.length>8000000)throw Error('FCF dosyası 8 MB sınırını aşıyor.');
- const tokens=tokenizeCif(text),reflections=[];let i=0;
+ if((text.match(/(?:^|\n)\s*data_[^\s#]+/gi)||[]).length>1)
+  throw Error('Birden çok FCF data_ bloğu desteklenmiyor; yansıma setini ayrı açın.');
+ const tokens=tokenizeCif(text),reflections=[],tags={};let i=0,clippedNegativeFo2=0;
  while(i<tokens.length){
-  const token=tokens[i++];if(token.toLowerCase()!=='loop_')continue;
+  const token=tokens[i++],lower=token.toLowerCase();
+  if(lower!=='loop_'){
+   if(lower.startsWith('_cell_')&&i<tokens.length)tags[lower]=tokens[i++];
+   continue;
+  }
   const keys=[];while(i<tokens.length&&tokens[i].startsWith('_'))keys.push(tokens[i++].toLowerCase().replace(/\./g,'_'));
+  if(!keys.length)continue;
   const field=names=>keys.findIndex(k=>names.includes(k));
   const h=field(['_refln_index_h']),k=field(['_refln_index_k']),l=field(['_refln_index_l']);
   const fo2=field(['_refln_f_squared_meas']),fc2=field(['_refln_f_squared_calc']);
-  const fo=field(['_refln_f_meas']),fc=field(['_refln_f_calc']);
-  const phase=field(['_refln_phase_calc']);
-  if([h,k,l].some(v=>v<0)||fo2<0&&fo<0)continue;
+  const fo=field(['_refln_f_meas']),fc=field(['_refln_f_calc']),phase=field(['_refln_phase_calc']);
+  const reflectionLoop=h>=0&&k>=0&&l>=0&&(fo2>=0||fo>=0);
   while(i+keys.length<=tokens.length&&!tokens[i].startsWith('_')&&
-   !/^(loop_|data_|save_|stop_)$/i.test(tokens[i])&&!/^data_/i.test(tokens[i])){
+   !/^(loop_|data_|save_|stop_|global_)$/i.test(tokens[i])&&!/^data_/i.test(tokens[i])){
    const row=tokens.slice(i,i+keys.length);i+=keys.length;
+   if(!reflectionLoop)continue;
    const indices=[h,k,l].map(pos=>Number(row[pos]));
-   if(indices.some(v=>!Number.isInteger(v)||Math.abs(v)>1000))throw Error('FCF hkl indisleri geçersiz.');
+   if(indices.some(v=>!Number.isInteger(v)||Math.abs(v)>1000))
+    throw Error('FCF hkl indisleri geçersiz.');
    if(!indices.some(Boolean))continue;
-   const observed=fo2>=0?Math.sqrt(Math.max(0,number(row[fo2]))):number(row[fo]);
-   const calculated=fc2>=0?Math.sqrt(Math.max(0,number(row[fc2]))):fc>=0?number(row[fc]):NaN;
+   const measuredSquare=fo2>=0?number(row[fo2]):NaN;
+   if(fo2>=0&&!Number.isFinite(measuredSquare))
+    throw Error('FCF ölçülen F² geçersiz: '+indices.join(','));
+   if(fo2>=0&&measuredSquare<0)clippedNegativeFo2++;
+   const observed=fo2>=0?Math.sqrt(Math.max(0,measuredSquare)):number(row[fo]);
+   const calculatedSquare=fc2>=0?number(row[fc2]):NaN;
+   if(fc2>=0&&(!Number.isFinite(calculatedSquare)||calculatedSquare<0))
+    throw Error('FCF hesaplanan F² geçersiz: '+indices.join(','));
+   const calculated=fc2>=0?Math.sqrt(calculatedSquare):fc>=0?number(row[fc]):NaN;
    const phaseDeg=phase>=0?number(row[phase]):NaN;
-   if(!Number.isFinite(observed)||observed<0)throw Error('FCF gözlenen genlik geçersiz.');
-   reflections.push({h:indices[0],k:indices[1],l:indices[2],fo:observed,fc:calculated,phase:phaseDeg});
+   if(!Number.isFinite(observed)||observed<0||observed>1e9||
+     Number.isFinite(calculated)&&calculated<0)
+    throw Error('FCF gözlenen/hesaplanan genlik geçersiz: '+indices.join(','));
+   if(Number.isFinite(phaseDeg)&&Math.abs(phaseDeg)>1e8)
+    throw Error('FCF faz açısı geçersiz: '+indices.join(','));
+   reflections.push({h:indices[0],k:indices[1],l:indices[2],
+    fo:observed,fc:calculated,phase:phaseDeg});
    if(reflections.length>150000)throw Error('FCF 150.000 yansıma sınırını aşıyor.');
   }
  }
  if(!reflections.length)throw Error('FCF içinde _refln_index_h/k/l ve F²obs / Fobs döngüsü bulunamadı.');
- return {reflections,hasPhases:reflections.every(r=>Number.isFinite(r.phase)),
-  hasCalc:reflections.every(r=>Number.isFinite(r.fc)),source:'SHELXL / IUCr reflection CIF'};
+ const keys=['a','b','c','alpha','beta','gamma'],cellTags=keys.map(k=>
+  '_cell_'+(k.length===1?'length_':'angle_')+k);
+ const present=cellTags.filter(k=>tags[k]!==undefined);
+ if(present.length&&present.length!==6)
+  throw Error('FCF hücre parametreleri eksik; 6 uzunluk/açı alanı gerekli.');
+ const sourceCell=present.length===6?validateCell(Object.fromEntries(keys.map((k,i)=>[k,number(tags[cellTags[i]])]))):null;
+ return {reflections,cell:sourceCell,clippedNegativeFo2,
+  hasPhases:reflections.every(r=>Number.isFinite(r.phase)),
+  hasCalc:reflections.every(r=>Number.isFinite(r.fc)),
+  source:'SHELXL / IUCr reflection CIF'};
 }
-function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2}={}){
- if(!['difference','observed'].includes(kind)||![16,32,64].includes(size)||
-  !Number.isFinite(dMin)||dMin<.35||dMin>50||!fcf?.reflections?.length)
-  throw Error('FCF harita parametreleri geçersiz.');
- if(!fcf.hasPhases)throw Error('FCF faz bilgisi (_refln_phase_calc) yok; Fobs tek başına Fourier haritası üretmez.');
- if(kind==='difference'&&!fcf.hasCalc)throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
- const B=basis(cell),re=new Float64Array(size**3),im=new Float64Array(size**3);
+function validateFcfCell(cell,fcf){
+ validateCell(cell);
+ if(!fcf.cell)return {hasSourceCell:false};
+ for(const k of ['a','b','c']){
+  const a=cell[k],b=fcf.cell[k];
+  if(Math.abs(a-b)>Math.max(.005,Math.max(a,b)*.0005))
+   throw Error('FCF hücresi aktif kristalle uyuşmuyor ('+k+'); farklı yapıya ait yansımalar kullanılamaz.');
+ }
+ for(const k of ['alpha','beta','gamma'])
+  if(Math.abs(cell[k]-fcf.cell[k])>.03)
+   throw Error('FCF hücre açısı aktif kristalle uyuşmuyor ('+k+').');
+ return {hasSourceCell:true};
+}
+/* Canonical P1 Friedel pairs are only equivalent under the real-density,
+   non-anomalous assumption. Conflicts MUST fail closed: never silently use
+   the first of two contradictory measurements or model phases. */
+function fcfReflectionSelection(cell,fcf,{size=32,dMin=1.2}={}){
+ if(!fcf?.reflections?.length||![16,32,64].includes(size)||
+  !Number.isFinite(dMin)||dMin<.35||dMin>50)
+  throw Error('FCF yansıma seçimi parametreleri geçersiz.');
+ const cellCheck=validateFcfCell(cell,fcf),B=basis(cell);
  const det=B[0].dot(new THREE.Vector3().crossVectors(B[1],B[2]));
  const reciprocal=[new THREE.Vector3().crossVectors(B[1],B[2]),
   new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])]
   .map(v=>v.multiplyScalar(1/det));
- const idx=(h,k,l)=>((h+size)%size*size+(k+size)%size)*size+(l+size)%size;
- const seen=new Set();let used=0,skipped=0;
+ const unique=new Map();let duplicates=0,skippedResolution=0,skippedNyquist=0;
  for(const r of fcf.reflections){
-  let {h,k,l}=r;const neg=h<0||h===0&&k<0||h===0&&k===0&&l<0;
+  if(![r.h,r.k,r.l].every(Number.isInteger)||![r.fo,r.fc,r.phase].every(n=>Number.isFinite(n)||Number.isNaN(n))||
+   !Number.isFinite(r.fo)||r.fo<0)
+   throw Error('FCF yansıma verisi geçersiz.');
+  let {h,k,l}=r;
+  const neg=h<0||h===0&&k<0||h===0&&k===0&&l<0;
   if(neg){h=-h;k=-k;l=-l;}
-  const key=[h,k,l].join(','),inverseD=new THREE.Vector3().addScaledVector(reciprocal[0],h)
+  const inverseD=new THREE.Vector3().addScaledVector(reciprocal[0],h)
    .addScaledVector(reciprocal[1],k).addScaledVector(reciprocal[2],l).length();
-  if(seen.has(key))continue;
-  seen.add(key);
-  if(inverseD>1/dMin+1e-10||[h,k,l].some(n=>Math.abs(n)>=size/2)){skipped++;continue;}
-  const amp=kind==='difference'?r.fo-r.fc:r.fo;
-  const radians=r.phase*Math.PI/180*(neg?-1:1),a=idx(h,k,l),b=idx(-h,-k,-l);
-  re[a]=re[b]=amp*Math.cos(radians);im[a]=amp*Math.sin(radians);im[b]=-im[a];used++;
+  if(inverseD>1/dMin+1e-10){skippedResolution++;continue;}
+  if([h,k,l].some(n=>Math.abs(n)>=size/2)){skippedNyquist++;continue;}
+  const rad=Number.isFinite(r.phase)?r.phase*Math.PI/180*(neg?-1:1):NaN;
+  const key=[h,k,l].join(','),old=unique.get(key);
+  if(old){
+   const similar=(a,b)=>!Number.isFinite(a)&&!Number.isFinite(b)||
+    Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=Math.max(.02,.002*Math.max(a,b));
+   const phaseDelta=Number.isFinite(rad)&&Number.isFinite(old.rad)?
+    Math.abs(Math.atan2(Math.sin(rad-old.rad),Math.cos(rad-old.rad))):Infinity;
+   if(!similar(old.fo,r.fo)||!similar(old.fc,r.fc)||
+     (Number.isFinite(rad)||Number.isFinite(old.rad))&&phaseDelta>Math.PI/180)
+    throw Error('FCF yinelenen/Friedel hkl çelişkili: '+key+
+     ' (anomalous Friedel verisi desteklenmiyor).');
+   duplicates++;continue;
+  }
+  unique.set(key,{h,k,l,fo:r.fo,fc:r.fc,rad});
  }
- if(!used)throw Error('Seçilen d_min/ızgarada kullanılabilir FCF yansıması yok.');
- const grid=fourierGridFromCoefficients(cell,size,re,im,kind==='difference'?'FO-FC':'FOBS','göreli F/Å³');
- grid.experimental={kind,used,skipped,observed:fcf.reflections.length,modelPhased:true,
-  warning:'Fobs genlikleri Fcalc fazlarıyla eşlendi. FCF ölçüm ölçeği, eksik Friedel/eşdeğer yansımalar ve simetri kapsamı doğrulanmalı.'};
- return grid;
+ if(!unique.size)throw Error('Seçilen d_min/ızgarada kullanılabilir FCF yansıması yok.');
+ // This measures Fourier-grid P1 sampling, NOT crystallographic completeness.
+ const bounds=B.map(v=>Math.min(size/2-1,Math.floor(v.length()/dMin+1e-9)));
+ let gridP1Possible=0;
+ if(bounds.reduce((n,v)=>n*(2*v+1),1)<=800000){
+  for(let h=-bounds[0];h<=bounds[0];h++)for(let k=-bounds[1];k<=bounds[1];k++)
+   for(let l=-bounds[2];l<=bounds[2];l++){
+    if(!h&&!k&&!l||h<0||h===0&&k<0||h===0&&k===0&&l<0)continue;
+    const inverseD=new THREE.Vector3().addScaledVector(reciprocal[0],h)
+     .addScaledVector(reciprocal[1],k).addScaledVector(reciprocal[2],l).length();
+    if(inverseD<=1/dMin+1e-10)gridP1Possible++;
+   }
+ }
+ return {reflections:[...unique.values()],duplicates,skippedResolution,skippedNyquist,
+  gridP1Possible,sourceCell:cellCheck.hasSourceCell};
+}
+function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMode='raw'}={}){
+ if(!['difference','observed'].includes(kind)||!['raw','lsq'].includes(scaleMode))
+  throw Error('FCF harita türü veya Fo/Fc ölçek seçimi geçersiz.');
+ if(!fcf?.hasPhases)throw Error('FCF faz bilgisi (_refln_phase_calc) yok; Fobs tek başına Fourier haritası üretmez.');
+ if(kind==='difference'&&!fcf.hasCalc)throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
+ const selected=fcfReflectionSelection(cell,fcf,{size,dMin});
+ if(selected.reflections.some(r=>!Number.isFinite(r.rad)))
+  throw Error('FCF yansımalarının tümünde hesaplanan faz gerekli.');
+ let scale=1;
+ if(kind==='difference'&&scaleMode==='lsq'){
+  let numerator=0,denominator=0;
+  for(const r of selected.reflections){numerator+=r.fo*r.fc;denominator+=r.fc*r.fc;}
+  if(denominator<=1e-15||numerator<=0)throw Error('Fo/Fc LSQ ölçeği hesaplanamadı; sıfır Fcalc veya Fo.');
+  scale=numerator/denominator;
+  if(!Number.isFinite(scale)||scale<=0||scale>1e9)throw Error('Fo/Fc LSQ ölçeği geçersiz.');
+ }
+ const re=new Float64Array(size**3),im=new Float64Array(size**3);
+ const idx=(h,k,l)=>((h+size)%size*size+(k+size)%size)*size+(l+size)%size;
+ for(const r of selected.reflections){
+  const amp=kind==='difference'?r.fo-scale*r.fc:r.fo;
+  const a=idx(r.h,r.k,r.l),b=idx(-r.h,-r.k,-r.l);
+  re[a]=re[b]=amp*Math.cos(r.rad);im[a]=amp*Math.sin(r.rad);im[b]=-im[a];
+ }
+ const result=fourierGridFromCoefficients(cell,size,re,im,
+  kind==='difference'?'FO-FC':'FOBS','göreli F/Å³');
+ result.experimental={kind,used:selected.reflections.length,
+  skipped:selected.skippedResolution+selected.skippedNyquist,
+  skippedResolution:selected.skippedResolution,skippedNyquist:selected.skippedNyquist,
+  duplicates:selected.duplicates,observed:fcf.reflections.length,
+  clippedNegativeFo2:fcf.clippedNegativeFo2||0,
+  sourceCell:selected.sourceCell,gridP1Possible:selected.gridP1Possible,
+  gridP1Coverage:selected.gridP1Possible?selected.reflections.length/selected.gridP1Possible:null,
+  scaleMode:kind==='difference'?scaleMode:'not-applicable',fcScale:scale,
+  modelPhased:true,
+  warning:'Fobs, model fazı φcalc ile Fourier toplamına girdi. '+(selected.sourceCell?'FCF/hücre uyumu doğrulandı. ':'FCF hücresiz; aktif hücre ve orijin varsayıldı. ')+
+   'P1 Fourier grid kapsamı, deneysel tamlık değildir; kristal simetri eşdeğerleri/MTZ/ölçüm ağırlıkları genişletilmez.'};
+ return result;
 }
 function xrdCsv(result){
  return ['h,k,l,d_A,2theta_deg,F_real,F_imag,F_squared,LP,powder_intensity',
@@ -3859,10 +3964,15 @@ function initStage3Analyses(){
    if(file.size>8000000)throw Error('FCF dosyası 8 MB sınırını aşıyor.');
    const fcf=readFcf(await file.text());
    if(workspace!==activeWorkspaceId)throw Error('FCF yüklenirken çalışma alanı değişti.');
+   const cellCheck=validateFcfCell(state.cell,fcf);
+   // The FCF is tied to this exact structural origin, not just a workspace.
+   // If the crystal changes after importing the file, demand a fresh FCF.
+   fcf.structureFingerprint=cifScientificFingerprint(state);
    fcfByWorkspace.set(workspace,fcf);
    $('fcfStatus').textContent=fcf.reflections.length+' yansıma yüklendi · Fcalc '+
     (fcf.hasCalc?'var':'yok')+' · faz '+(fcf.hasPhases?'var':'yok')+
-    ' · deneysel genlikler yalnızca mevcut hücreyle eşleştirilerek haritalanır.';
+    ' · '+(cellCheck.hasSourceCell?'FCF hücresi eşleşti':'FCF hücre verisi yok; aktif hücre varsayılıyor')+
+    (fcf.clippedNegativeFo2?' · '+fcf.clippedNegativeFo2+' negatif F², Fo=0 alındı':'');
   }catch(error){inform('SHELX FCF: '+error.message);}
   finally{e.target.value='';}
  };
@@ -3870,14 +3980,20 @@ function initStage3Analyses(){
   try{
    const fcf=fcfByWorkspace.get(activeWorkspaceId);
    if(!fcf)throw Error('Önce SHELX .fcf dosyası yükleyin.');
+   if(fcf.structureFingerprint!==cifScientificFingerprint(state))
+    throw Error('Kristal, FCF yüklenmesinden sonra değişti: doğru yansıma ve orijin için FCF dosyasını yeniden yükleyin.');
    const kind=$('fcfMapKind').value;
-   const g=observedFourierMap(state.cell,fcf,{kind,
+   const g=observedFourierMap(state.cell,fcf,{kind,scaleMode:$('fcfScaleMode').value,
     dMin:Number($('xrdMapResolution').value),size:Number($('xrdMapSize').value)});
    addVolumeDataset(g,kind==='difference'?'SHELX Fo−Fc (model fazlı)':'SHELX Fo (model fazlı)');
    if($('volumeMode').value==='off')$('volumeMode').value='both';
    volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
-   $('fcfStatus').textContent=g.experimental.used+' yansıma kullanıldı, '+g.experimental.skipped+
-    ' çözünürlük/ızgara dışında. '+g.experimental.warning;
+   const e=g.experimental;
+   $('fcfStatus').textContent=e.used+' benzersiz yansıma · '+e.duplicates+' eşdeğer kopya · '+
+    e.skippedResolution+' d_min dışı · '+e.skippedNyquist+' Nyquist dışı'+
+    (e.gridP1Coverage===null?'':(' · P1 ızgara kapsama '+(100*e.gridP1Coverage).toFixed(1)+'%'))+
+    (kind==='difference'?' · Fc ölçeği '+e.fcScale.toFixed(5)+' ('+e.scaleMode+')':'')+
+    (e.clippedNegativeFo2?' · negatif F²: '+e.clippedNegativeFo2:'')+'. '+e.warning;
    setRightSidebarTab('volume');
   }catch(error){inform('FCF haritası: '+error.message);}
  };

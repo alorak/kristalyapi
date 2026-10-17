@@ -59,7 +59,7 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 | **Ölçüm geçmişi** | Ölçüm paneline bitişik ayrı ikon, kayıt sayacı, kayıtların görüntülenmesi ve CSV dışa aktarma. |
 | **İleri koordinasyon / BVS** | Metrik-tam periyodik komşular, koordinasyon ve kısmi doluluk; Baur bozulma indisi, Hoppe ECoN, doğrulanmış tetra/octa topolojide quadratic elongation ile açı varyansı; seçili referans iyon çiftleri için BVS ve eşit bağ varsayımıyla beklenen bağ uzunluğu. |
 | **Best-fit plane · düzlemsellik** | Seçilen atomlardan en iyi uyan düzlem; normal, RMS/maksimum sapma ve düzlemler arası açı. |
-| **Yapı faktörü / toz XRD ve nötron** | IT92 nötr atom X-ışını `f₀(s)` veya nötron koherent `b`; Bragg kesiminden türetilen karşı-uzay taraması, `F(hkl)`, Bragg açıları, LP / Lorentz seçeneği, absorplayıcı element uyarısı; ampirik pseudo-Voigt/Caglioti toz profili, Kα1/Kα2 ikilisi ve ölçüm CSV karşılaştırması; `d_min` + FFT ile model Fourier/Patterson; fazı olan SHELX `.fcf` için `Fo`/`Fo−Fc` haritaları. |
+| **Yapı faktörü / toz XRD ve nötron** | IT92 nötr atom X-ışını `f₀(s)` veya nötron koherent `b`; Bragg kesiminden türetilen karşı-uzay taraması, `F(hkl)`, Bragg açıları, LP / Lorentz seçeneği, absorplayıcı element uyarısı; ampirik pseudo-Voigt/Caglioti toz profili, Kα1/Kα2 ikilisi ve ölçüm CSV karşılaştırması; `d_min` + FFT ile model Fourier/Patterson; fazı olan SHELX `.fcf` için hücre/faz/Friedel doğrulamalı `Fo`/`Fo−Fc` haritaları ve isteğe bağlı Fcalc LSQ ölçeği. |
 | **Hacimsel fizik verileri** | CUBE, CHGCAR, XSF; CHGCAR kollineer/nonkollineer spin bileşenleri; kaynak nicelik/birim seçimi, yoğunluk/potansiyel normalizasyonu; seçilen alanın CUBE/XSF dışa aktarımı; çoklu izoyüzey, güvenli `A + k₁B + k₂C` fark alanı ve `∫Δρ dV`, ekstremum araması, Miller `(hkl)` kesitleri ve yaklaşık Voronoi integrali. |
 | **Nesneler ve katmanlar** | Atom, bağ, hücre, etiket, Miller ve hacimsel katmanların görünürlük, opaklık ve sırası. |
 | **Atom türlerine göre bağlar** | Element çiftine özel min–maks mesafeler ve geometrik öneriler; otomatik XYZ/PDB molekül veya CIF/POSCAR periyodik bağ modu, 300 bağımsız atoma kadar bağlantı bileşenleri, çevrimsel bağ fazlalığı ve öteleme indisli bağ CSV çıktısı. |
@@ -126,6 +126,46 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 **Quantum ESPRESSO girişi:** `pw.x` `&SYSTEM` ve `ATOMIC_POSITIONS` kartı kullanılır; `ibrav=0` için `CELL_PARAMETERS` (`alat`, `bohr`, `angstrom`), ayrıca belgelenmiş `ibrav=1…14`, negatif eşdeğer ayarlar ve `91` desteklenir. `celldm` ve Å cinsinden `A/B/C` girdileri ayrıdır. Konumlar `crystal`, `alat`, `bohr`, `angstrom` birimlerinde dönüştürülür. `crystal_sg` yalnızca eşdeğer olmayan atomları tanımladığı ve uzay grubu ayarları olmadan tam hücre üretilemeyeceği için reddedilir. Bu okuyucu `pw.x` **girdi** dosyası içindir; çıktıda art arda yinelenen model kartları veya QE hesaplama ayarlarını saklamak amaçlanmaz.
 
 **CASTEP girişi:** `.cell` içindeki `%BLOCK LATTICE_CART` / `LATTICE_ABC` ve `%BLOCK POSITIONS_FRAC` / `POSITIONS_ABS` okunur; `ang`, `bohr` ve `nm` uzunluk birimleri işlenir. Simetri üretme anahtarları ve DFT kısıtları aktarılmaz. Üç okuyucuda da yalnızca tarayıcıda işlem yapılır; orijinal bilimsel dosya değiştirilmez.
+
+### Paket 8.2 — FCF yansıma doğruluğu ve Fo−Fc haritaları
+
+**SHELXL LIST 6 / IUCr reflection CIF** içe aktarımı:
+`Fo=sqrt(max(0,F²obs))` ve hesaplanan `Fc` ile kaynakta mevcutsa
+`φcalc` (derece) kullanılır. Negatif ölçülen `F²` sayılır ve
+`Fo=0` kabul edildiği **açıkça bildirilir**. Eksik model fazı
+otomatik tahmin edilmez; fazsız FCF'den `Fo` veya `Fo−Fc` haritası
+üretilmez. Kaynak CIF altı hücre parametresini içeriyorsa aktif
+hücreyle karşılaştırılır; uyuşmazsa işlem reddedilir. Kaynakta hücre
+yoksa aktif hücrenin ve orijinin doğru olduğu **kullanıcı varsayımıdır**.
+FCF yüklendikten sonra kristal bilimsel verileri değiştirilmişse
+yeniden FCF yüklemek gerekir.
+
+Bir Friedel çifti yalnız non-anomal **gerçek yoğunluk**
+varsayımı altında eşlenir; faz/gözlenen genlik/hesaplanan
+genlik çelişkileri sessizce atılmaz, hata üretir. Eşdeğer
+tekrarlar ve `d_min` / Nyquist nedeniyle atlanan yansımalar
+ayrı raporlanır. `P1 ızgara kapsamı`, mevcut FFT aralığının
+hangi yüzdesinde veri bulunduğunu ölçen **göstergedir**;
+kristalografik ölçüm tamlığı, simetri eşdeğerliği veya
+R-factor değildir.
+
+`Fo−Fc` için varsayılan **ham** `Fo-Fc`, isteğe bağlı
+**LSQ Fcalc ölçeği** `s=Σ(Fo Fc)/Σ(Fc²)` ve
+`Fo-sFc` seçenekleri vardır. Bu basit sabit-katsayı
+ölçekleme; çözünürlük kabuğu, anisotropik B-factor,
+yansıma ağırlığı veya cihaz modeli refinmanı değildir.
+Haritalar `φcalc` ile **model-fazlı**, P1 ters Fourier
+uygulaması ve göreli ölçeklidir; gerçek deneysel
+yoğunlukla karşılaştırmadan önce atomik orijin,
+kristal simetrisi, ölçüm ölçeği ve verinin
+tamlığı bağımsız doğrulanmalıdır.
+
+**Henüz desteklenmeyenler:** MTZ binary reflection verisi,
+CCP4 `.map` / `.ccp4` native densite haritaları, CIF2'nin
+bütün reflection sözlükleri, simetri eşdeğerlerinden otomatik
+veri tamamlama, anomalous Friedel farkları ve
+`2Fo-Fc` ağırlıklı harita refinmanı.
+İleri işler [8.2 durum belgesinde](tests/validation/PACKAGE_8_2_STATUS.md).
 
 ### Paket 8.1 — ADP site-symmetry denetimi ve CIF kaynak bütünlüğü
 
