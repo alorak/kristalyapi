@@ -46,6 +46,10 @@ jobs:
         run: python -m pip install scikit-image==0.25.2 scipy==1.15.3
       - name: Gate independent marching-cubes geometry and fragmentation on real maps
         run: python tests/validation/volume_independent_reference.py
+      - name: Test source-fixed signed sampling and physical-grid invariants
+        run: python -m unittest discover -s tests/validation -p 'test_volume_sampling.py' -v
+      - name: Diagnose real-map peak retention, threshold sensitivity and spectral sampling
+        run: python tests/validation/volume_sampling_reference.py
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,6 +59,7 @@ jobs:
             validation-results/volume-surface-10-8.json
             validation-results/volume-highres-10-8-3.json
             validation-results/volume-independent-10-8-4.json
+            validation-results/volume-sampling-10-8-5.json
           if-no-files-found: warn
           retention-days: 30
 
