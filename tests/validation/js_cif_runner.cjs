@@ -44,9 +44,15 @@ function parserFromHtml(filename) {
   const source=script.slice(0,boundary).replace(/^import .*?;\s*$/gm,'');
   const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,document:{getElementById(){return null;}}};
   vm.createContext(context);
-  vm.runInContext(source+'\nthis.__cifParser = cifData;',context,{timeout:15000,filename:src?'browser-crystal-app.js':'browser-index-inline.js'});
+  vm.runInContext(source+'\nthis.__cifParser = cifData; this.__cifExportText = cifExportText; this.__originalCifRecord = originalCifRecord; this.__cifExportPreservingSource = cifExportPreservingSource;',context,{timeout:15000,filename:src?'browser-crystal-app.js':'browser-index-inline.js'});
   if(typeof context.__cifParser!=='function')throw Error('cifData() not found');
-  return context.__cifParser;
+  // Keep the callable parser API stable; expose the SAME production exporter
+  // for independent Gemmi syntax/reference validation.
+  return Object.assign(context.__cifParser,{
+    exportText:context.__cifExportText,
+    originalRecord:context.__originalCifRecord,
+    exportPreservingSource:context.__cifExportPreservingSource
+  });
 }
 function main(){
   const root=path.resolve(__dirname,'../..'),base=__dirname;
