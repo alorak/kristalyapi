@@ -71,11 +71,25 @@ function auditTopology(mesh,grid){
   }
   return false;
  };
- const key=voxel=>voxel.map((v,a)=>{
-  let value=v;
-  if(periodic&&(Math.abs(value)<tolerance||Math.abs(value-span[a])<tolerance))value=0;
-  return String(Math.round(value/tolerance));
- }).join(',');
+ const spatialBins=new Map(),vertices=[];
+ const key=voxel=>{
+  // Float32 Cartesian vertex positions can land on opposite sides of a
+  // fixed quantization bucket even when they identify the exact same edge.
+  // Match adjacent hash buckets geometrically, not by rounding equality.
+  const p=voxel.map((value,axis)=>periodic&&
+   (Math.abs(value)<tolerance||Math.abs(value-span[axis])<tolerance)?0:value);
+  const b=p.map(value=>Math.floor(value/tolerance));
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){
+   for(const id of spatialBins.get([b[0]+dx,b[1]+dy,b[2]+dz].join(','))||[]){
+    const other=vertices[id];
+    if(p.every((x,a)=>Math.abs(x-other[a])<=tolerance*.5))return String(id);
+   }
+  }
+  const id=vertices.length;vertices.push(p);
+  const bucket=b.join(',');
+  if(!spatialBins.has(bucket))spatialBins.set(bucket,[]);
+  spatialBins.get(bucket).push(id);return String(id);
+ };
  for(let i=0;i<mesh.positions.length;i+=9){
   const xyz=[0,3,6].map(k=>Array.from(mesh.positions.slice(i+k,i+k+3)));
   const corner=xyz.map(ctx.toIndex.bind(null,grid)),ids=corner.map(key);
