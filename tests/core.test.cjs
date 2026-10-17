@@ -99,7 +99,7 @@ test('P10.1 frame interval statistics are robust and never used as hard CI timin
  assert.equal(empty.p95Ms,null);
  assert.match(htmlShell,/id="performancePanel"[^>]*hidden/);
  assert.match(htmlShell,/id="atomQuality"/);
- assert.match(moduleScript,/renderer\.info/);
+ assert.match(moduleScript,/renderer\?\.info\?\.render/);
 });
 
 test('P9.3 VESTA 3.5 project imports cell, fractional asymmetric sites, styles, bounds and signed ISURF levels',()=>{
