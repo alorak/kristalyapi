@@ -58,7 +58,9 @@ test('P7.8 zero occupancy is ignored, partial mixed-site occupancies stay distin
               atom('N',.125,0,0,0)];
  const shell=ctx.neighbors(sites,0,B,[.49,.51],0,false,24);
  assert.equal(shell.length,2);
- assert.deepEqual(shell.map(n=>n.element).sort(),['F','O']);
+ // The production function executes in a separate vm context: Array.from
+ // creates the comparison array in the test realm for strict deep equality.
+ assert.deepEqual(Array.from(shell,n=>n.element).sort(),['F','O']);
  const env=ctx.geometry(shell,B);
  assert.equal(env.geometricCN,2);
  assert.ok(Math.abs(env.weightedCN-1)<1e-12);
@@ -120,6 +122,21 @@ test('P7.8 exact minimum-image calculation reaches a translated atom two cells a
  assert.ok(Math.abs(result.distance-best.distance)<1e-9);
  assert.deepEqual([...result.shift],[...best.shift]);
  assert.deepEqual([...result.shift],[1,-2,0]);
+});
+
+test('P7.8 periodic image indices canonicalize negative zero',()=>{
+ const B=[[4,0,0],[0,4,0],[0,0,4]];
+ const fcc=[atom('Cu',0,0,0),atom('Cu',0,.5,.5),
+  atom('Cu',.5,0,.5),atom('Cu',.5,.5,0)];
+ const neighbors=ctx.neighbors(fcc,0,B,[2.82,2.84],0,false,24);
+ assert.equal(neighbors.length,12);
+ for(const neighbor of neighbors)for(const shift of neighbor.shift)
+  assert.equal(Object.is(shift,-0),false,'image indices must be canonical integers');
+ const identical=ctx.minimum([.2,.3,.4],[.2,.3,.4],B);
+ assert.deepEqual(Array.from(identical.shift),[0,0,0]);
+ const skew=[[3,0,0],[2.85,.3,0],[0,0,4]];
+ const shifted=ctx.minimum([0,0,0],[.4,.2,0],skew);
+ for(const index of shifted.shift)assert.equal(Object.is(index,-0),false);
 });
 
 test('P7.8 skew-cell periodic bonds cross two unit cells in both graph and renderer',()=>{
