@@ -14,7 +14,7 @@ const ctx={
  toCart:(d,B)=>{const [x,y,z]=cart(d,B);return {x,y,z,length:()=>Math.hypot(x,y,z)};}
 };
 vm.createContext(ctx);
-vm.runInContext(src.slice(a,b)+';this.neighbors=coordinationNeighbors;this.geometry=coordinationGeometry;this.hull=coordinationHullMetrics',ctx);
+vm.runInContext(src.slice(a,b)+';this.neighbors=coordinationNeighbors;this.geometry=coordinationGeometry;this.hull=coordinationHullMetrics;this.distortion=polyhedralDistortionMetrics',ctx);
 const atom=(symbol,x,y,z,occupancy=1)=>({symbol,x,y,z,occupancy});
 function independentImages(sites,B,range,search=6,centerIndex=0){
  const center=sites[centerIndex],result=[];
@@ -153,4 +153,151 @@ test('P7.8 skew-cell periodic bonds cross two unit cells in both graph and rende
   const distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
   assert.ok(distance>0&&distance<.69);
  }
+});
+
+
+/* Package 7.9: independent analytic fixtures. These tests intentionally use
+   hand-constructed geometries, not production ConvexGeometry or CIF readers. */
+function mockHull(vertices,triangles){
+ const xyz=triangles.flatMap(t=>t.flatMap(i=>vertices[i]));
+ const p={count:xyz.length/3,getX:i=>xyz[3*i],getY:i=>xyz[3*i+1],getZ:i=>xyz[3*i+2]};
+ return {getAttribute:key=>key==='position'?p:null};
+}
+function centeredShell(points){
+ return ctx.geometry(points.map((xyz,i)=>({
+  index:i,element:'O',distance:Math.hypot(...xyz),
+  delta:xyz,shift:[0,0,0],occupancy:1
+ })),[[1,0,0],[0,1,0],[0,0,1]]);
+}
+function faceOutward(vertices,faces){
+ return faces.map(face=>{
+  const [a,b,c]=face.map(i=>vertices[i]),u=b.map((v,k)=>v-a[k]),v=c.map((w,k)=>w-a[k]);
+  const normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  return a.reduce((sum,x,k)=>sum+x*normal[k],0)>0?face:[face[0],face[2],face[1]];
+ });
+}
+
+test('P7.9 ideal octahedron matches VESTA D=0 ECoN=6 lambda=1 variance=0',()=>{
+ const v=[[2,0,0],[-2,0,0],[0,2,0],[0,-2,0],[0,0,2],[0,0,-2]];
+ const faces=[];for(const x of [0,1])for(const y of [2,3])for(const z of [4,5])faces.push([x,y,z]);
+ const hull=mockHull(v,faceOutward(v,faces)),shape=ctx.hull(hull);
+ const env=centeredShell(v);
+ const m=ctx.distortion(env,hull,shape);
+ assert.ok(Math.abs(shape.volume-32/3)<1e-12);
+ assert.equal(m.polyhedronType,'octahedron');
+ assert.equal(m.hullEdgeCount,12);
+ assert.ok(Math.abs(m.meanBondLength-2)<1e-12);
+ assert.ok(Math.abs(m.distortionIndex)<1e-12);
+ assert.ok(Math.abs(m.econ-6)<1e-12);
+ assert.ok(Math.abs(m.quadraticElongation-1)<1e-12);
+ assert.ok(Math.abs(m.bondAngleVariance)<1e-12);
+});
+
+test('P7.9 ideal tetrahedron matches regular tetrahedral analytical values',()=>{
+ const v=[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]];
+ const faces=faceOutward(v,[[0,1,2],[0,1,3],[0,2,3],[1,2,3]]);
+ const hull=mockHull(v,faces),shape=ctx.hull(hull);
+ const m=ctx.distortion(centeredShell(v),hull,shape);
+ assert.ok(Math.abs(shape.volume-8/3)<1e-12);
+ assert.equal(m.polyhedronType,'tetrahedron');
+ assert.equal(m.hullEdgeCount,6);
+ assert.ok(Math.abs(m.distortionIndex)<1e-12);
+ assert.ok(Math.abs(m.econ-4)<1e-12);
+ assert.ok(Math.abs(m.quadraticElongation-1)<1e-12);
+ assert.ok(Math.abs(m.bondAngleVariance)<1e-12);
+ assert.ok(Math.abs(m.idealAngle-Math.acos(-1/3)*180/Math.PI)<1e-12);
+});
+
+test('P7.9 bond length distortion agrees with independent Baur mean and Hoppe weights',()=>{
+ const points=[[1.6,0,0],[-2,0,0],[0,2.3,0],[0,-2,0],[0,0,2],[0,0,-2]];
+ const env=centeredShell(points),m=ctx.distortion(env);
+ const lengths=[1.6,2,2.3,2,2,2],mean=lengths.reduce((a,b)=>a+b,0)/6;
+ const D=lengths.reduce((sum,v)=>sum+Math.abs(v-mean)/mean,0)/6;
+ assert.ok(Math.abs(m.meanBondLength-mean)<1e-12);
+ assert.ok(Math.abs(m.distortionIndex-D)<1e-12);
+ // Official Hoppe reference: lav from lmin, then w_i from lav (power six).
+ const weights=lengths.map(l=>Math.exp(1-(l/1.6)**6));
+ const lav=lengths.reduce((sum,l,i)=>sum+l*weights[i],0)/weights.reduce((a,b)=>a+b,0);
+ const econ=lengths.reduce((sum,l)=>sum+Math.exp(1-(l/lav)**6),0);
+ assert.ok(Math.abs(m.hoppeMean-lav)<1e-12);
+ assert.ok(Math.abs(m.econ-econ)<1e-12);
+ assert.ok(m.econ<6);
+});
+
+test('P7.9 distorted octahedron has nonzero quadratic elongation and angle variance',()=>{
+ const v=[[2.2,.12,0],[-2,0,0],[0,2.0,.1],[0,-2,0],[0,0,2],[0,0,-2]];
+ const faces=[];for(const x of [0,1])for(const y of [2,3])for(const z of [4,5])faces.push([x,y,z]);
+ const hull=mockHull(v,faceOutward(v,faces)),shape=ctx.hull(hull);
+ const m=ctx.distortion(centeredShell(v),hull,shape);
+ assert.equal(m.polyhedronType,'octahedron');
+ assert.ok(m.distortionIndex>0);
+ assert.ok(m.quadraticElongation>1);
+ assert.ok(m.bondAngleVariance>0);
+});
+
+test('P7.9 triangular prism must not be misclassified as an octahedron',()=>{
+ const h=Math.sqrt(3)/2;
+ const v=[[1,0,-1],[-.5,h,-1],[-.5,-h,-1],
+   [1,0,1],[-.5,h,1],[-.5,-h,1]];
+ const faces=faceOutward(v,[[0,2,1],[3,4,5],
+   [0,1,4],[0,4,3],[1,2,5],[1,5,4],[2,0,3],[2,3,5]]);
+ const hull=mockHull(v,faces),shape=ctx.hull(hull);
+ const m=ctx.distortion(centeredShell(v),hull,shape);
+ assert.equal(m.polyhedronType,null);
+ assert.equal(m.quadraticElongation,null);
+ assert.equal(m.bondAngleVariance,null);
+ assert.ok(Number.isFinite(m.econ));
+});
+
+test('P7.9 disordered mixed-site shell flags a geometric-only interpretation',()=>{
+ const env=ctx.geometry([
+  {delta:[1,0,0],distance:1,occupancy:.4,element:'O'},
+  {delta:[1,0,0],distance:1,occupancy:.6,element:'F'},
+  {delta:[-1,0,0],distance:1,occupancy:1,element:'O'}
+ ],[[1,0,0],[0,1,0],[0,0,1]]);
+ const m=ctx.distortion(env);
+ assert.equal(env.geometricCN,3);
+ assert.equal(env.vertexCount,2);
+ assert.equal(env.weightedCN,2);
+ assert.ok(m.occupancyCaveat);
+ assert.ok(Math.abs(m.econ-2)<1e-12);
+});
+
+// The BVS model must share the reciprocal-metric image bounds with the
+// coordination and bond renderer; it must not truncate to [-2,+2].
+ctx.cleanSymbol=s=>s;
+const bvsStart=src.indexOf('const BVS_PARAMETERS=['),bvsEnd=src.indexOf('function bvsCsv(',bvsStart);
+assert.ok(bvsStart>0&&bvsEnd>bvsStart);
+vm.runInContext(src.slice(bvsStart,bvsEnd)+';this.bvs=bondValenceSum',ctx);
+
+test('P7.9 BVS acute cell agrees with exhaustive ±7 reference including shifts >2',()=>{
+ const B=[[3,0,0],[2.85,.3,0],[0,0,4]];
+ const sites=[atom('Na',0,0,0),atom('Cl',.25,0,0,.7)];
+ const cutoff=1.4,got=ctx.bvs(sites,0,B,'Na1-Cl',cutoff),expected=[];
+ for(let x=-7;x<=7;x++)for(let y=-7;y<=7;y++)for(let z=-7;z<=7;z++){
+  const d=Math.hypot(...cart([x+.25,y,z],B));
+  if(d<1e-6||d>cutoff+1e-8)continue;
+  expected.push({shift:[x,y,z],distance:d,contribution:.7*Math.exp((2.15-d)/.37)});
+ }
+ assert.equal(got.count,expected.length);
+ assert.ok(expected.some(n=>Math.max(...n.shift.map(Math.abs))>2));
+ const actual=new Map(got.neighbors.map(n=>[n.shift.join('/'),n]));
+ for(const ref of expected){
+  const n=actual.get(ref.shift.join('/'));assert.ok(n);
+  assert.ok(Math.abs(n.distance-ref.distance)<1e-9);
+  assert.ok(Math.abs(n.contribution-ref.contribution)<1e-8*Math.max(1,ref.contribution));
+ }
+ const sum=expected.reduce((total,n)=>total+n.contribution,0);
+ assert.ok(Math.abs(got.sum-sum)<1e-8*Math.max(1,sum));
+});
+
+test('P7.9 BVS zero-occupancy and invalid input do not emit phantom bonds',()=>{
+ const B=[[4,0,0],[0,4,0],[0,0,4]];
+ const sites=[atom('Na',0,0,0),atom('Cl',.5,0,0,0)];
+ const result=ctx.bvs(sites,0,B,'Na1-Cl',3.5);
+ assert.equal(result.count,0);
+ assert.equal(result.sum,0);
+ const absent=ctx.bvs([atom('Na',0,0,0,0),atom('Cl',.5,0,0)],0,B,'Na1-Cl',3.5);
+ assert.equal(absent.count,0);
+ assert.throws(()=>ctx.bvs([atom('Na',0,0,0),atom('Cl',.5,0,0,1.5)],0,B,'Na1-Cl',3.5),/doluluğu/);
 });
