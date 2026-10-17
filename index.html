@@ -139,6 +139,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
   </div>
   <div class="section" data-right-section="bonds"><h2>Atom türlerine göre bağlar <span class="stage">Aşama 1</span></h2>
+   <label class="field"><span>Bağ arama topolojisi</span><select id="bondMode"><option value="auto" selected>Otomatik (XYZ/PDB molekül; CIF/POSCAR periyodik)</option><option value="molecule">Sonlu molekül / kafes</option><option value="periodic">Periyodik kristal ağı</option></select></label>
+   <div class="actionrow"><button id="bondAnalyze" type="button" class="primary">Bağ ağını analiz et</button><button id="bondNetworkCsv" type="button">Bağ CSV indir</button></div>
+   <div id="bondTopologySummary" class="note" aria-live="polite">Bağ ağı analizi henüz çalıştırılmadı.</div>
+   <p class="hint">Atom çiftleri yarıçap/eşik kurallarıyla aranır (en çok 300 bağımsız atom). Molekül modunda hücre sınırında bağ oluşmaz; kristal modunda periyodik komşular ve hücre ötelemeleri korunur. Çevrim sayısı bir grafik ölçüsüdür, yüzey halkası tanısı değildir.</p>
    <label class="field"><span>Özel eşikler (Å), örn. Si-O:1.4-2.0; Ti-O:1.7-2.3</span><input id="bondRules" type="text" placeholder="Si-O:1.4-2.0; Ti-O:1.7-2.3" style="width:100%"></label>
    <button id="applyBondRules" class="small" style="margin-top:8px">Bağ kurallarını uygula</button>
    <div class="bond-rule-editor">
@@ -906,11 +910,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button type="button" data-export="svg" class="export-option">
     <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · atom, bağ, kafes ve çokyüzlü çizgileri</small></span><span class="export-option-arrow">↓</span>
    </button>
+   <button type="button" data-export="pdf-vector" class="export-option">
+    <span class="export-option-icon">▱</span><span><strong>Vektörel PDF</strong><small>A4 · yakınlaştırılabilir gerçek çizim yolları, raster görsel yok</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="eps" class="export-option">
+    <span class="export-option-icon">✧</span><span><strong>EPS vektör görseli</strong><small>Baskı için PostScript eğrileri · saydamlık beyaza karışır</small></span><span class="export-option-arrow">↓</span>
+   </button>
    <button type="button" data-export="stl" class="export-option">
     <span class="export-option-icon">⬡</span><span><strong>STL 3B yüzey</strong><small>Atom, bağ ve çokyüzlü üçgenleri · renksiz, Å koordinatları</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="glb" class="export-option">
     <span class="export-option-icon">◈</span><span><strong>glTF 2.0 (.glb)</strong><small>Renkli 3B model · atom, bağ ve hücre katmanları</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="vrml" class="export-option">
+    <span class="export-option-icon">⬢</span><span><strong>VRML97 (.wrl)</strong><small>Renkli 3B yapı · Å koordinatları, küre ve bağ silindirleri</small></span><span class="export-option-arrow">↓</span>
    </button>
   </div>
   <div class="export-png-controls"><strong>PNG</strong><label>Çözünürlük <select id="pngScale" aria-label="PNG çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label><input id="pngTransparent" type="checkbox"> Şeffaf arka plan</label></div>
