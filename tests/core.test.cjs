@@ -2822,7 +2822,7 @@ test('P8.2 Friedel conjugacy, circular phase equivalence and conflicting duplica
   '1 0 0 10 8 90',second
  ].join('\n')+'\n';
  const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
- const consistent=p1.readFcf(make('-1 0 0 10 8 -270'));
+ const consistent=p1.readFcf(make('-1 0 0 10 8 270'));
  const map=p1.observedFourierMap(cell,consistent,{kind:'difference',size:16,dMin:1});
  assert.equal(map.experimental.used,1);
  assert.equal(map.experimental.duplicates,1);
@@ -2861,7 +2861,8 @@ test('P8.2 phase-controlled Fo-Fc FFT matches independent one-pair Fourier sum',
  ].join('\n'));
  const g=p1.observedFourierMap(cell,f,{kind:'difference',size:16,dMin:1});
  for(const n of [0,1,2,3,4,8,12,15]){
-  const expected=2*(10-8)/64*Math.cos(Math.PI/2+2*Math.PI*n/16);
+  // F(h)=|F|exp(+i phi); inverse rho uses exp(-2pi i h.x).
+  const expected=2*(10-8)/64*Math.cos(Math.PI/2-2*Math.PI*n/16);
   approx(g.values[api.gridIndex(g,n,0,0)],expected,1e-6);
  }
 });
