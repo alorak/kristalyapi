@@ -2751,8 +2751,10 @@ test('P8.1 fourfold-site Uij has equal in-plane diagonals and zero mixed terms',
  assert.throws(()=>api.cifData(cif(.035,.015,0)),/özel konum ADP/);
 });
 
-test('P8.1 fourteen pinned experimental CIFs preserve source and editable atom multiplicities',()=>{
- const cases=["COD_4335507.cif","Co8.cif","CoO19128.cif","Cod_2100513.cif","Cod_4115344.cif","CsI3Pb.cif","CsSnI3.cif","Cu7Te5.cif","CuCl.cif","Fe.cif","Fe3O4.cif","FePO4.cif","Graphite.cif","H6PbCI3N_mp-977013_symmetrized.cif"];
+test('P8.1 28 pinned experimental CIFs preserve source, provenance and atom multiplicities',()=>{
+ // Excludes known inconclusive real-15 (undefined positions) and real-30
+ // (unterminated string in upstream source); neither is a validated pass.
+ const cases=["COD_4335507.cif","Co8.cif","CoO19128.cif","Cod_2100513.cif","Cod_4115344.cif","CsI3Pb.cif","CsSnI3.cif","Cu7Te5.cif","CuCl.cif","Fe.cif","Fe3O4.cif","FePO4.cif","Graphite.cif","H6PbCI3N_mp-977013_symmetrized.cif","La2CoO4.cif","La4Fe4O12.cif","Li.cif","Li10GeP2S12.cif","Li2O.cif","Li4Fe3Mn1(PO4)4.cif","Li8Fe2NiCoO8.cif","LiFePO4.cif","MgNiF6.cif","OneLineSymmP1.cif","V2O3.cif","bcc_1927.cif","hex_1170.cif","monoc_1028.cif"];
  for(const name of cases){
   const input=fs.readFileSync(path.join(__dirname,'validation','fixtures/real',name),'utf8');
   const structure=api.cifData(input),record=api.originalCifRecord(structure,input);
@@ -2766,5 +2768,8 @@ test('P8.1 fourteen pinned experimental CIFs preserve source and editable atom m
   const parsed=api.cifData(output.text);
   assert.equal(parsed.sites.length,structure.sites.length,'multiplicity '+name);
   approx(parsed.sites[0].x-structure.sites[0].x,.003,1e-5);
+  const preserved=api.originalCifRecord(parsed,output.text).provenance;
+  assert.equal(JSON.stringify(preserved),JSON.stringify(record.provenance),
+   'publication provenance '+name);
  }
 });
