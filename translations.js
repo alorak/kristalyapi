@@ -7,6 +7,7 @@
 (() => {
  'use strict';
  const entries=[
+  ['Performans · Paket 10.7','Performance · Package 10.7'],
   ['Performans · Paket 10.6','Performance · Package 10.6'],
   ['Performans · Paket 10.5','Performance · Package 10.5'],
   ['Çokyüzlü dolgu yöntemi','Polyhedron face renderer'],

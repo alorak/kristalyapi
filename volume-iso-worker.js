@@ -216,6 +216,264 @@ function isoAdaptiveAxisPlan(g,level,minStride,maxAxisNodes=32){
   centerSamples,refinedAxisIntervals:refined,passes}};
 }
 
+
+/* Package 10.7: experimental local octree preview. Rectangles on a coarse
+ * face are tiled by the actual opposite (fine) leaf faces. Both sides fan
+ * identical canonical face triangles to their own cell center: no face T
+ * junctions, including 2:1 interfaces. This only affects progressive preview;
+ * isoTriangles remains the unmodified final scientific extraction. */
+function isoOctreeFaces(leaves){
+ const planes=new Map(),faces=[];
+ for(let index=0;index<leaves.length;index++){
+  const leaf=leaves[index];
+  for(let axis=0;axis<3;axis++){
+   const [u,v]=[0,1,2].filter(n=>n!==axis);
+   for(let side=0;side<=1;side++){
+    const f={index,axis,side,coord:leaf[side?'hi':'lo'][axis],
+     loU:leaf.lo[u],hiU:leaf.hi[u],loV:leaf.lo[v],hiV:leaf.hi[v],u,v};
+    const key=axis+':'+f.coord;
+    if(!planes.has(key))planes.set(key,[]);
+    planes.get(key).push(f);faces.push(f);
+   }
+  }
+ }
+ return {planes,faces};
+}
+function isoOctreeSplit(leaf){
+ const mids=leaf.lo.map((x,a)=>Math.floor((x+leaf.hi[a])/2));
+ const intervals=leaf.lo.map((x,a)=>leaf.hi[a]-x>1?
+  [[x,mids[a]],[mids[a],leaf.hi[a]]]:[[x,leaf.hi[a]]]);
+ const result=[];
+ for(const x of intervals[0])for(const y of intervals[1])for(const z of intervals[2])
+  result.push({lo:[x[0],y[0],z[0]],hi:[x[1],y[1],z[1]],depth:leaf.depth+1});
+ return result;
+}
+function isoOctreePlan(g,level,maxLeaves=4500){
+ const shape=volumeShape(g),scalarTolerance=Math.max(1e-8,(g.max-g.min)*.005);
+ const leaves=[],root={lo:[0,0,0],hi:shape.map(n=>n-1),depth:0};
+ let probes=0,refined=0,overBudget=false;
+ const cornerOffsets=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],
+  [0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+ const examine=leaf=>{
+  const cs=cornerOffsets.map(bit=>leaf.lo.map((x,a)=>bit[a]?leaf.hi[a]:x));
+  const vals=cs.map(p=>volumeVoxel(g,...p));
+  let lo=Math.min(...vals),hi=Math.max(...vals),residual=0;
+  const center=leaf.lo.map((x,a)=>(x+leaf.hi[a])/2);
+  const samplePoints=[center];
+  for(let axis=0;axis<3;axis++)for(let side=0;side<2;side++)
+   samplePoints.push(center.map((x,a)=>a===axis?(side?leaf.hi[a]:leaf.lo[a]):x));
+  for(const p of samplePoints){
+   const actual=volumeSample(g,p),t=p.map((x,a)=>(x-leaf.lo[a])/(leaf.hi[a]-leaf.lo[a]));
+   let predicted=0;
+   for(let c=0;c<8;c++){
+    const bits=cornerOffsets[c];
+    predicted+=vals[c]*bits.reduce((prod,bit,a)=>prod*(bit?t[a]:1-t[a]),1);
+   }
+   residual=Math.max(residual,Math.abs(actual-predicted));
+   lo=Math.min(lo,actual);hi=Math.max(hi,actual);probes++;
+  }
+  return {residual,nearby:lo<=level&&hi>=level};
+ };
+ const queue=[root];
+ while(queue.length){
+  const leaf=queue.pop(),check=examine(leaf);
+  const canSplit=leaf.depth<7&&leaf.hi.some((v,a)=>v-leaf.lo[a]>1);
+  if(check.nearby&&check.residual>scalarTolerance&&canSplit){
+   const children=isoOctreeSplit(leaf);
+   if(leaves.length+queue.length+children.length>maxLeaves){overBudget=true;break;}
+   queue.push(...children);refined++;
+  }else{leaf.error=check.nearby?check.residual:0;leaf.nearby=check.nearby;leaves.push(leaf);}
+ }
+ if(overBudget)return {ok:false,stats:{kind:'octree-2to1-preview',accepted:false,
+  reason:'leaf budget',leafBudget:maxLeaves,scalarTolerance}};
+ let balancePasses=0,transitionFaces=0;
+ for(;balancePasses<9;balancePasses++){
+  const {planes}=isoOctreeFaces(leaves),split=new Set();
+  for(const faces of planes.values()){
+   const low=faces.filter(f=>f.side===0),high=faces.filter(f=>f.side===1);
+   for(const a of low)for(const b of high){
+    if(a.loU>=b.hiU||b.loU>=a.hiU||a.loV>=b.hiV||b.loV>=a.hiV)continue;
+    const da=leaves[a.index].depth,db=leaves[b.index].depth;
+    if(Math.abs(da-db)>1)split.add(da<db?a.index:b.index);
+   }
+  }
+  if(!split.size)break;
+  const grown=[];
+  for(let i=0;i<leaves.length;i++){
+   if(split.has(i))grown.push(...isoOctreeSplit(leaves[i]));
+   else grown.push(leaves[i]);
+  }
+  if(grown.length>maxLeaves){overBudget=true;break;}
+  leaves.splice(0,leaves.length,...grown);
+ }
+ if(overBudget||balancePasses>=9)return {ok:false,stats:{kind:'octree-2to1-preview',accepted:false,
+  reason:'2:1 balancing budget',leafBudget:maxLeaves,scalarTolerance}};
+ let maxError=0,nearbyLeaves=0,leafDepths={},surfaceDepths={};
+ for(const leaf of leaves){
+  const check=examine(leaf);
+  if(check.nearby){nearbyLeaves++;maxError=Math.max(maxError,check.residual);
+   surfaceDepths[leaf.depth]=(surfaceDepths[leaf.depth]||0)+1;}
+  leafDepths[leaf.depth]=(leafDepths[leaf.depth]||0)+1;
+ }
+ const {planes}=isoOctreeFaces(leaves);
+ for(const faces of planes.values()){
+  const low=faces.filter(f=>f.side===0),high=faces.filter(f=>f.side===1);
+  for(const a of low)for(const b of high){
+   if(a.loU>=b.hiU||b.loU>=a.hiU||a.loV>=b.hiV||b.loV>=a.hiV)continue;
+   if(leaves[a.index].depth!==leaves[b.index].depth)transitionFaces++;
+  }
+ }
+ const stats={kind:'octree-2to1-preview',leaves:leaves.length,leafBudget:maxLeaves,
+  leafDepths,surfaceDepths,nearbyLeaves,transitionFaces,
+  balancePasses,refinedNodes:refined,scalarTolerance,
+  sampledCenterErrorMax:maxError,sampledToleranceMet:maxError<=scalarTolerance,
+  sampleProbes:probes,accepted:false};
+ return {ok:maxError<=scalarTolerance,leaves,stats,planes};
+}
+function isoOctreeTriangles(g,level,potential,palette,maxTriangles,plan){
+ const vertices=[],colors=[],residuals=[],positionProxies=[];
+ let surfacePatches=0,transitionPatches=0,faceTriangles=0;
+ const cache=new Map();
+ const point=xyz=>{
+  const key=xyz.join(',');
+  if(!cache.has(key))cache.set(key,[...xyz,volumeSample(g,xyz)]);
+  return cache.get(key);
+ };
+ const edge=(a,b)=>{
+  const t=Math.abs(b[3]-a[3])>1e-14?
+   Math.max(0,Math.min(1,(level-a[3])/(b[3]-a[3]))):.5;
+  return [0,1,2].map(i=>a[i]+(b[i]-a[i])*t);
+ };
+ const [a,b,c]=g.axes,det=volumeDot(a,volumeCross(b,c));
+ const dual=[volumeCross(b,c),volumeCross(c,a),volumeCross(a,b)];
+ const gradient=p=>{
+  const derivatives=p.map((x,axis)=>{
+   const forward=p.slice(),backward=p.slice(),step=.25;
+   forward[axis]+=step;backward[axis]-=step;
+   return (volumeSample(g,forward)-volumeSample(g,backward))/(2*step);
+  });
+  const length=Math.hypot(...[0,1,2].map(i=>
+   (derivatives[0]*dual[0][i]+derivatives[1]*dual[1][i]+derivatives[2]*dual[2][i])/det));
+  return length;
+ };
+ const emit=arr=>{
+  for(const p of arr){
+   const world=volumeWorld(g,...p);
+   vertices.push(...world);
+   const residual=Math.abs(volumeSample(g,p)-level);
+   residuals.push(residual);
+   // First-order local normal displacement proxy, not a Hausdorff bound.
+   const grad=gradient(p);
+   if(grad>1e-9)positionProxies.push(residual/grad);
+   if(potential)colors.push(...scalarColor(volumeAtWorld(potential,world),potential,palette));
+  }
+ };
+ function tetra(center,p,q,r){
+  const pts=[center,p,q,r],inside=pts.filter(x=>x[3]>=level),outside=pts.filter(x=>x[3]<level);
+  if(!inside.length||!outside.length)return;
+  const before=vertices.length;
+  if(inside.length===1)emit(outside.map(o=>edge(inside[0],o)));
+  else if(inside.length===3)emit(inside.map(o=>edge(outside[0],o)).reverse());
+  else{
+   const [a,b]=inside,[c,d]=outside;
+   const p=edge(a,c),q=edge(a,d),r=edge(b,c),t=edge(b,d);
+   emit([p,q,r]);emit([q,t,r]);
+  }
+  // Orient iso triangles toward decreasing scalar, using this tetrahedron's
+  // exact linear gradient. Mixed-case marching edge order is not reliable.
+  const u=p.map((x,i)=>x-center[i]),v=q.map((x,i)=>x-center[i]),
+   w=r.map((x,i)=>x-center[i]),volume=volumeDot(u,volumeCross(v,w));
+  if(Math.abs(volume)<1e-12)return;
+  const dc=[p[3]-center[3],q[3]-center[3],r[3]-center[3]];
+  const co=[volumeCross(v,w),volumeCross(w,u),volumeCross(u,v)];
+  const gradCell=[0,1,2].map(i=>dc.reduce((sum,d,j)=>sum+d*co[j][i],0)/volume);
+  const gradWorld=[0,1,2].map(i=>gradCell.reduce((sum,d,j)=>sum+d*dual[j][i],0)/det);
+  for(let i=before;i<vertices.length;i+=9){
+   const e1=[0,1,2].map(j=>vertices[i+3+j]-vertices[i+j]);
+   const e2=[0,1,2].map(j=>vertices[i+6+j]-vertices[i+j]);
+   if(volumeDot(volumeCross(e1,e2),gradWorld)>0){
+    for(let j=0;j<3;j++){
+     const tmp=vertices[i+3+j];vertices[i+3+j]=vertices[i+6+j];vertices[i+6+j]=tmp;
+     if(potential){const t=colors[i+3+j];colors[i+3+j]=colors[i+6+j];colors[i+6+j]=t;}
+    }
+   }
+  }
+ }
+
+ // Canonical face rectangles are identical from coarse and fine cells.
+ const patches=[],lineEndpoints=new Map();
+ const line=(p,q)=>{
+  const axis=[0,1,2].find(a=>p[a]!==q[a]);
+  if(axis===undefined)return null;
+  const fixed=[0,1,2].filter(a=>a!==axis);
+  return {key:axis+':'+fixed.map(a=>p[a]).join(':'),axis};
+ };
+ const patchCorner=(patch,u,v)=>{
+  const p=[0,0,0];p[patch.f.axis]=patch.f.coord;
+  p[patch.f.u]=u;p[patch.f.v]=v;return p;
+ };
+ for(const f of isoOctreeFaces(plan.leaves).faces){
+  const leaf=plan.leaves[f.index],neighbours=plan.planes.get(f.axis+':'+f.coord)
+   .filter(o=>o.side!==f.side&&o.loU<f.hiU&&f.loU<o.hiU&&o.loV<f.hiV&&f.loV<o.hiV);
+  const rectangles=neighbours.length?neighbours.map(n=>[
+   Math.max(f.loU,n.loU),Math.min(f.hiU,n.hiU),
+   Math.max(f.loV,n.loV),Math.min(f.hiV,n.hiV),n.index]):
+   [[f.loU,f.hiU,f.loV,f.hiV,-1]];
+  for(const [u0,u1,v0,v1,other] of rectangles){
+   const patch={f,u0,u1,v0,v1,transition:other>=0&&plan.leaves[other].depth!==leaf.depth};
+   patches.push(patch);
+   const ring=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]]
+    .map(([u,v])=>patchCorner(patch,u,v));
+   for(let i=0;i<4;i++){
+    const p=ring[i],q=ring[(i+1)%4],descriptor=line(p,q);
+    if(!lineEndpoints.has(descriptor.key))lineEndpoints.set(descriptor.key,[]);
+    lineEndpoints.get(descriptor.key).push(p[descriptor.axis],q[descriptor.axis]);
+   }
+  }
+ }
+ for(const [key,coords] of lineEndpoints)lineEndpoints.set(key,
+  [...new Set(coords)].sort((a,b)=>a-b));
+ // Each patch fans from its shared face center to the perimeter. Edge
+ // breakpoints propagate to all adjacent faces, including orthogonal faces.
+ for(const patch of patches){
+  const {f,u0,u1,v0,v1}=patch,leaf=plan.leaves[f.index];
+  const center=point(leaf.lo.map((x,a)=>(x+leaf.hi[a])/2));
+  const faceCenter=point(patchCorner(patch,(u0+u1)/2,(v0+v1)/2));
+  const corners=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]]
+   .map(([u,v])=>patchCorner(patch,u,v));
+  const ring=[];
+  for(let i=0;i<4;i++){
+   const p=corners[i],q=corners[(i+1)%4],descriptor=line(p,q);
+   const cuts=lineEndpoints.get(descriptor.key)
+    .filter(x=>x>=Math.min(p[descriptor.axis],q[descriptor.axis])&&
+     x<=Math.max(p[descriptor.axis],q[descriptor.axis]));
+   if(p[descriptor.axis]>q[descriptor.axis])cuts.reverse();
+   for(const x of cuts.slice(0,-1)){
+    const xyz=p.slice();xyz[descriptor.axis]=x;ring.push(point(xyz));
+   }
+  }
+  for(let i=0;i<ring.length;i++){
+   tetra(center,faceCenter,ring[i],ring[(i+1)%ring.length]);
+   faceTriangles++;
+  }
+  surfacePatches++;
+  if(patch.transition)transitionPatches++;
+  if(vertices.length/9>maxTriangles)return {truncated:true};
+ }
+ // Avoid spreading more than the bounded 225,000 vertex sample array.
+ const maximum=values=>values.reduce((a,b)=>Math.max(a,b),0);
+ const percentile=(values,p)=>{if(!values.length)return 0;
+  values.sort((a,b)=>a-b);return values[Math.min(values.length-1,Math.ceil(p*values.length)-1)];};
+ return {positions:new Float32Array(vertices),colors:potential?new Float32Array(colors):null,
+  triangles:vertices.length/9,decimation:0,truncated:false,
+  metrics:{surfacePatches,transitionPatches,faceTriangles,
+   isoVertexScalarResidualMax:maximum(residuals),
+   isoVertexScalarResidualP95:percentile(residuals,.95),
+   isoPositionProxyMaxAngstrom:maximum(positionProxies),
+   isoPositionProxyP95Angstrom:percentile(positionProxies,.95),
+   positionProxySamples:positionProxies.length}};
+}
+
 function sliceContourLevels(values,count=8,reference=null,mode='uniform'){
  if(!Number.isInteger(count)||count<2||count>20)throw Error('Kontur sayısı 2–20 olmalı.');
  if(!['uniform','balanced','positive','negative'].includes(mode))
@@ -422,13 +680,24 @@ self.onmessage=event=>{
     throw Error('Invalid isosurface job');
    if(data.progressive&&grid.values.length>=200000){
     const stride=isoPreviewStride(grid,job.level);
-    const axisPlan=isoAdaptiveAxisPlan(grid,job.level,stride);
-     // If the sampled scalar tolerance cannot be met, keep the old coarse
-     // preview and never advertise adaptive acceptance. Final mesh is fixed.
-     const preview=axisPlan.stats.sampledToleranceMet?
+    const octree=isoOctreePlan(grid,job.level);
+    let preview=null,stats=octree.stats;
+    if(octree.ok){
+     const candidate=isoOctreeTriangles(grid,job.level,potential,job.palette,job.maxTriangles,octree);
+     if(!candidate.truncated){
+      preview=candidate;stats={...stats,...candidate.metrics,accepted:true};
+     }else stats={...stats,reason:'triangle budget',accepted:false};
+    }else if(!stats.reason)stats={...stats,reason:'sampled probe tolerance'};
+    if(!preview){
+     const axisPlan=isoAdaptiveAxisPlan(grid,job.level,stride);
+     const axis=axisPlan.stats.sampledToleranceMet?
       isoConformingAxisTriangles(grid,job.level,potential,job.palette,job.maxTriangles,axisPlan.nodes):
       isoTriangles(grid,job.level,potential,job.palette,job.maxTriangles,stride);
-     preview.adaptive={...axisPlan.stats,accepted:axisPlan.stats.sampledToleranceMet&&!preview.truncated};
+     preview=axis;
+     stats={...axisPlan.stats,accepted:axisPlan.stats.sampledToleranceMet&&!axis.truncated,
+      octreeFallbackReason:stats.reason,octreeLeafBudget:octree.stats.leafBudget};
+    }
+    preview.adaptive=stats;
     self.postMessage({requestId,previewIndex:jobIndex,previewSurface:preview},
      [preview.positions.buffer,...(preview.colors?[preview.colors.buffer]:[])]);
    }

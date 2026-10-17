@@ -1,6 +1,18 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
-## Paket 10.6 — Uyumluluklu adaptif önizleme ve çokyüzlü GPU A/B (bu PR)
+## Paket 10.7 — Bölgesel octree, topoloji ve aygıt benchmarkları (bu PR)
+
+| Alan | Uygulama / doğrulama | Sınır |
+| --- | --- | --- |
+| Gerçek yerel uyarlama | 3B octree bölgesel bölünmesi, komşu yapraklarda derinlik farkı ≤1 (2:1), düzlem boyu eksen yayılması yok | 4.500 yaprak ve 75.000 üçgen/izoyüzey bütçesi; sadece büyük hacimlerin geçici önizlemesi |
+| Çatlaksız geçiş | Komşu kaba/ince yüzlerin ortak dikdörtgen yaması; her yamanın ortak yüz merkezi, dik komşu hücre yüzlerine de yayılan tüm ayrıt kırılım noktaları ve tutarlı üçgen yönü | Kendi içine kıvrılan veya sınırda biten fiziksel yüzeyleri kapalı saymaz; bütçe kesilmiş yüzeylerin watertight garantisi yok |
+| Sayısal doğrulama | 64³ analitik işaretli uzaklık küresinde her ayrıt [1,1] ters yönlü üçgenle kapanıyor; en büyük köşe radyal sapması 0,021 Å (kaba düzenli örnekte 0,123 Å); eğik/periyodik/potansiyel renk testi | Küre konum sayısı yalnızca test verisinin analitik referansına göredir; başka veri için global Hausdorff üst sınırı değildir |
+| Fallback ve güvenlik | Maksimum yaprak/üçgen veya %0,5 örnek merkez+yüz skaler artığı tutmazsa önceki eksen/tam düzenli Worker önizlemesine geri dönüş; final sabit marching-tetrahedra birebir | Örnekleme görünmeyen ince detayları kaçırabilir; bilimsel final/export etkilenmez |
+| Cihaz benchmark raporu | İsteğe bağlı JSON: tarayıcı/OS, WebGL sürüm/GPU bilgisi, CPU çekirdek, doku limiti, sahne tahmini yükü, çekim/kare/poly draw-group ölçümleri; gerçek Chromium/WebGL smoke | Tek CI GPU/OS üzerinde doğrulandı; cihazlar arası gerçek performans matrisi bu PR'da toplanmadı; tahmini GPU aktarım yükü gerçek VRAM değildir |
+
+**Sonraki 10.8:** Harici gerçek CCP4/MRC ve potansiyel harita korpusu üzerinde global yüzey örnek/mesafe yakınsaması; birden çok gerçek GPU/OS'ten tekrar edilebilir benchmark JSON'larının karşılaştırılması ve cihaz başına instancing eşiklerinin ancak ölçümle seçilmesi.
+
+## Paket 10.6 — Uyumluluklu adaptif önizleme ve çokyüzlü GPU A/B (tamamlandı)
 
 | Alan | Yapılan iş ve doğrulama | Bilimsel sınır |
 | --- | --- | --- |
