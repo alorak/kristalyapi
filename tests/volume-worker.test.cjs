@@ -206,3 +206,84 @@ test('P10.4 preview sampling density responds to candidate isosurface complexity
  assert.ok(sparse>=dense,'surface-dense preview must not sample more coarsely');
  assert.ok(dense>=4&&sparse<=6);
 });
+
+test('P10.5 interactive 192px raster, 128² line profile and 32² statistics share one worker job',()=>{
+ const g=field([15,17,13]),events=[],self={postMessage:m=>events.push(m)};
+ const ctx={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>7},Math};
+ vm.createContext(ctx);vm.runInContext(workerSource,ctx);
+ vm.runInContext('this.sample=volumeSample;this.world=volumeWorld;',coreCtx);
+ const corners=[coreCtx.world(g,0,0,6),coreCtx.world(g,14,0,6),
+  coreCtx.world(g,14,16,6),coreCtx.world(g,0,16,6)];
+ self.onmessage({data:{requestId:105,type:'slice-preview',grids:[g],slice:{
+  grid:0,potential:-1,axis:2,position:35,size:192,palette:'viridis',corners,
+  contours:{count:8,reference:0,mode:'balanced',step:1}}}});
+ assert.equal(events.length,1);
+ const response=events.pop(),p=response.preview;
+ assert.equal(response.error,undefined);
+ assert.equal(p.slice.values.length,192**2);
+ assert.equal(p.slice.rgba.length,192**2*4);
+ assert.equal(p.matrix.values.length,128**2);
+ assert.equal(p.stats.values.length,32**2);
+ assert.equal(p.matrix.rows,null,'interactive profile transfers values only');
+ assert.equal(p.stats.rows,null,'small summary avoids transferring world rows');
+ assert.ok(p.slice.lines.length>0,'signed contours traced off main thread');
+ for(const size of [192,128,32]){
+  const values=size===192?p.slice.values:size===128?p.matrix.values:p.stats.values;
+  for(const [x,y] of [[0,0],[Math.floor(size/3),Math.floor(size/2)],[size-1,size-1]]){
+   const expected=coreCtx.sample(g,[x*14/(size-1),y*16/(size-1),12*.35]);
+   assert.ok(Math.abs(values[y*size+x]-expected)<1e-5,'same trilinear voxel sample');
+  }
+ }
+ const valid=Array.from(p.stats.values).filter(Number.isFinite);
+ const min=Math.min(...valid),max=Math.max(...valid),mean=valid.reduce((a,b)=>a+b,0)/valid.length;
+ assert.ok(Math.abs(p.stats.min-min)<1e-6);
+ assert.ok(Math.abs(p.stats.max-max)<1e-6);
+ assert.ok(Math.abs(p.stats.mean-mean)<1e-6);
+});
+test('P10.5 interactive Worker rejects malformed preview, preserves Miller holes',()=>{
+ const g=field([6,6,6]),events=[],self={postMessage:m=>events.push(m)};
+ const ctx={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>0},Math};
+ vm.createContext(ctx);vm.runInContext(workerSource,ctx);
+ self.onmessage({data:{requestId:1,type:'slice-preview',grids:[g],slice:{
+  grid:0,potential:-1,axis:0,position:50,size:768,palette:'thermal'}}});
+ assert.match(events.pop().error,/Invalid interactive preview/);
+ const corners=[[400,400,400],[401,400,400],[401,401,400],[400,401,400]];
+ self.onmessage({data:{requestId:2,type:'slice-preview',grids:[g],slice:{
+  grid:0,potential:-1,axis:'hkl',position:50,size:192,palette:'thermal',corners}}});
+ assert.match(events.pop().error,/Slice outside grid/);
+ assert.match(app,/function cancelVolumeSlicePreviewWorker\(\)/);
+ assert.match(app,/cancelVolumeSlicePreviewWorker\(\);\s*\+\+volumeRequestSerial/);
+});
+test('P10.5 scene buffer accounting deduplicates GPU-bound backing arrays and textures',()=>{
+ const source=extract('function estimateManagedSceneBytes(','function performanceSnapshot(){');
+ const ctx={Float32Array,Math,Number,Object,Set};vm.createContext(ctx);
+ vm.runInContext(source+';this.measure=estimateManagedSceneBytes;',ctx);
+ const typed=new Float32Array(24),shared={array:typed};
+ const material={map:{image:{width:64,height:32}}};
+ const geometry={attributes:{position:shared,normal:{array:new Float32Array(12)}}};
+ const children=[{geometry,material},{geometry,material}];
+ const x=ctx.measure([{children}]);
+ assert.equal(x.geometryCount,1);assert.equal(x.textureCount,1);
+ assert.equal(x.geometryBytes,typed.byteLength+12*4);
+ assert.equal(x.textureBytesEstimate,64*32*4);
+ assert.match(app,/managedGeometryBytes:sceneBytes\.geometryBytes/);
+ assert.match(app,/volumeVoxelBytes:volumeVoxelBytes\(\)/);
+});
+
+test('P10.5 interactive Miller profile samples preserve skew Cartesian positions and invalid holes',()=>{
+ const g=field([11,12,13]);
+ const events=[],self={postMessage:message=>events.push(message)};
+ const ctx={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>0},Math};
+ vm.createContext(ctx);vm.runInContext(workerSource,ctx);
+ vm.runInContext('this.at=volumeAtWorld;this.world=volumeWorld;',coreCtx);
+ const corners=[coreCtx.world(g,1,2,4),coreCtx.world(g,9,2,4),
+  coreCtx.world(g,9,10,4),coreCtx.world(g,1,10,4)];
+ self.onmessage({data:{requestId:9,type:'slice-preview',grids:[g],slice:{
+  grid:0,potential:-1,axis:'hkl',position:40,size:192,palette:'thermal',corners}}});
+ const data=events.pop().preview;
+ assert.ok(data&&!data.matrix.rows);
+ const x=43,y=81,size=128,u=x/(size-1),v=y/(size-1);
+ const world=corners[0].map((c,i)=>c+u*(corners[1][i]-c)+v*(corners[3][i]-c));
+ assert.ok(Math.abs(data.matrix.values[y*size+x]-coreCtx.at(g,world))<1e-5);
+ assert.ok(data.stats.valid>0);
+});

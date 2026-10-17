@@ -115,6 +115,20 @@ window.__visualTest={
   drawVolume();
   return performanceSnapshot();
  },
+ heavySlicePreview:()=>{
+  const before=volumeSlicePreviewCanceled;
+  volumeView.axis=2;volumeView.contours=true;volumeView.contourMode='balanced';
+  volumeView.position=25;updateVolumeSliceStats();
+  volumeView.position=55;updateVolumeSliceStats();
+  return {cancelDelta:volumeSlicePreviewCanceled-before,...performanceSnapshot()};
+ },
+ heavySliceLine:()=>{
+  volumeProfileLine=[[.2,.3],[.8,.7]];
+  drawVolumeSlicePreview();
+  return {samples:volumeProfileResult?.rows.length||0,
+   valid:volumeProfileResult?.valid||0,units:volumeProfileResult?.units,
+   stats:document.getElementById('volumeSliceStats').textContent};
+ },
  heavySignature:sync=>{
   if(sync)drawVolume(true);
   const attr=volumeLayer?.children.find(x=>x.isMesh)?.geometry.getAttribute('position');
@@ -1171,9 +1185,25 @@ try{
   const workerHeavy=await importPage.evaluate(()=>window.__visualTest.performance());
   assert.ok(workerHeavy.volumeWorkerMs>=0&&workerHeavy.volumeTriangles>0);
   assert.ok(workerHeavy.volumePreviews>=1,'P10.3 large grid should have a progressive low-resolution preview');
+  assert.ok(workerHeavy.managedGeometryBytes>0,'P10.5 GPU-bound vertex attribute backing arrays are measurable');
+  assert.ok(workerHeavy.volumeVoxelBytes>=64**3*4,'P10.5 source voxel storage reported separately');
+  assert.equal(typeof workerHeavy.managedTextureBytesEstimate,'number');
   assert.equal(typeof workerHeavy.gpuTimerSupported,'boolean');
   if(workerHeavy.gpuRenderMs!==null)assert.ok(workerHeavy.gpuRenderMs>=0);
 
+  const liveStart=await importPage.evaluate(()=>window.__visualTest.heavySlicePreview());
+  assert.ok(liveStart.cancelDelta>=1,'P10.5 superseded interactive 2D Worker must terminate');
+  await importPage.waitForFunction(()=>{
+   const x=window.__visualTest.performance();
+   return x.slicePreviewWorkerMs!==null&&
+    !document.getElementById('volumeSliceStats').textContent.includes('Worker üzerinde');
+  },null,{timeout:30000});
+  const liveSlice=await importPage.evaluate(()=>window.__visualTest.performance());
+  assert.ok(liveSlice.slicePreviewWorkerMs>=0,'P10.5 live 2D raster and matrix computed offline');
+  assert.ok(liveSlice.contourWorkerSegments>0,'P10.5 interactive marching-squares must trace contours');
+  const line=await importPage.evaluate(()=>window.__visualTest.heavySliceLine());
+  assert.equal(line.samples,129,'P10.5 real interactive Worker values feed line interpolation');
+  assert.ok(line.valid>100&&/Å/.test(line.stats),'P10.5 physical line and 32px panel statistics');
   const asyncGeometry=await importPage.evaluate(()=>window.__visualTest.heavySignature(false));
   const syncGeometry=await importPage.evaluate(()=>window.__visualTest.heavySignature(true));
   assert.deepEqual(asyncGeometry,syncGeometry,'Worker and synchronous paths must produce equal world-coordinate surface vertices');
@@ -1186,7 +1216,7 @@ try{
   const finished=await importPage.evaluate(()=>window.__visualTest.performance());
   assert.equal(finished.volumePending,false);
   await fs.writeFile(path.join(artifacts,'package-10-2-volume-worker.json'),
-   JSON.stringify({workerParity,firstHeavy,workerHeavy,cached,cancel,finished,sliceWorkerStats},null,2));
+   JSON.stringify({workerParity,firstHeavy,workerHeavy,liveStart,liveSlice,line,cached,cancel,finished,sliceWorkerStats},null,2));
 
  }finally{await importContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
