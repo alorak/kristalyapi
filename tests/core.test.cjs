@@ -2916,3 +2916,111 @@ test('P8.2 frontend provides scale selection and prevents maps after structure e
  assert.match(moduleScript,/fcf.structureFingerprint=cifScientificFingerprint\(state\)/);
  assert.match(moduleScript,/fcf.structureFingerprint!==cifScientificFingerprint\(state\)/);
 });
+
+
+
+test('P8.2 FCF cell provenance is validated against the active crystal before FFT',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const text=[
+  'data_fcf','_cell_length_a 5','_cell_length_b 5','_cell_length_c 5',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  'loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 64 0'
+ ].join('\n');
+ const fcf=p1.readFcf(text);
+ assert.equal(fcf.cell.a,5);
+ assert.equal(p1.observedFourierMap(cell,fcf,{size:16,dMin:1}).experimental.sourceCell,true);
+ assert.throws(()=>p1.observedFourierMap({...cell,a:6},fcf,{size:16,dMin:1}),/FCF hücresi/);
+ assert.throws(()=>p1.readFcf(text.replace('_cell_length_b 5','_cell_length_b ?')),/sayısal/);
+ assert.throws(()=>p1.readFcf(text.replace('_cell_length_b 5','_cell_other_b 5')),/parametreleri eksik/);
+ assert.throws(()=>p1.readFcf(text.replace('data_fcf','data_fcf\ndata_other')),/Birden çok FCF/);
+});
+
+test('P8.2 phase-conjugate Friedel pair canonicalizes to one reflection',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const body=['data_fcf','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc'];
+ const fcf=p1.readFcf([...body,'1 0 0 100 25 30','-1 0 0 100 25 -30'].join('\n'));
+ const map=p1.observedFourierMap(cell,fcf,{size:16,dMin:1,kind:'difference'});
+ assert.equal(map.experimental.used,1);
+ assert.equal(map.experimental.duplicates,1);
+ assert.equal(map.experimental.observed,2);
+ const plus=p1.readFcf([...body,'1 0 0 100 25 30'].join('\n'));
+ const minus=p1.readFcf([...body,'-1 0 0 100 25 -30'].join('\n'));
+ const positive=p1.observedFourierMap(cell,plus,{size:16,dMin:1});
+ const negative=p1.observedFourierMap(cell,minus,{size:16,dMin:1});
+ for(const ijk of [[0,0,0],[1,2,4],[3,0,7],[15,13,10]]){
+  const idx=api.gridIndex(positive,...ijk);
+  approx(positive.values[idx],negative.values[idx],1e-7);
+  approx(map.values[idx],positive.values[idx],1e-7);
+ }
+ assert.throws(()=>p1.observedFourierMap(cell,p1.readFcf(
+  [...body,'1 0 0 100 25 30','-1 0 0 121 25 -30'].join('\n')),
+  {size:16,dMin:1}),/çelişkili/);
+ assert.throws(()=>p1.observedFourierMap(cell,p1.readFcf(
+  [...body,'1 0 0 100 25 30','-1 0 0 100 25 10'].join('\n')),
+  {size:16,dMin:1}),/çelişkili/);
+});
+
+test('P8.2 Fc LSQ scaling removes a purely multiplicative Fo/Fc mismatch',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const fcf=p1.readFcf(['data_lsq','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 25 0','0 1 0 64 16 90'].join('\n'));
+ const scaled=p1.observedFourierMap(cell,fcf,{kind:'difference',size:16,dMin:1,scaleMode:'lsq'});
+ const raw=p1.observedFourierMap(cell,fcf,{kind:'difference',size:16,dMin:1,scaleMode:'raw'});
+ approx(scaled.experimental.fcScale,2,1e-12);
+ assert.equal(scaled.experimental.scaleMode,'lsq');
+ assert.ok(scaled.values.every(v=>Math.abs(v)<1e-8));
+ assert.ok(raw.values.some(v=>Math.abs(v)>.01));
+ const observed=p1.observedFourierMap(cell,fcf,{kind:'observed',size:16,dMin:1,scaleMode:'lsq'});
+ assert.equal(observed.experimental.fcScale,1);
+ assert.equal(observed.experimental.scaleMode,'not-applicable');
+});
+
+test('P8.2 FFT observed map matches independent direct Fourier summation and signs',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90},vol=125;
+ const fcf=p1.readFcf(['data_fourier','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 25 0 90'].join('\n'));
+ const map=p1.observedFourierMap(cell,fcf,{kind:'observed',size:16,dMin:1});
+ for(const i of [0,1,2,4,8,12,15]){
+  const direct=2*5*Math.cos(Math.PI/2-2*Math.PI*i/16)/vol;
+  approx(map.values[api.gridIndex(map,i,0,0)],direct,2e-7);
+ }
+ const neg=p1.readFcf(['data_fourier','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '-1 0 0 25 0 -90'].join('\n'));
+ const opposite=p1.observedFourierMap(cell,neg,{kind:'observed',size:16,dMin:1});
+ for(const i of [0,4,8,12])approx(map.values[api.gridIndex(map,i,0,0)],
+  opposite.values[api.gridIndex(opposite,i,0,0)],1e-8);
+});
+
+test('P8.2 reflection coverage is P1 grid sampling, not experimental completeness',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const fcf=p1.readFcf(['data_sparse','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 100 64 0','5 0 0 100 64 0','7 0 0 100 64 0'].join('\n'));
+ const map=p1.observedFourierMap(cell,fcf,{size:16,dMin:1});
+ assert.equal(map.experimental.used,1);
+ assert.equal(map.experimental.skippedResolution,2);
+ assert.ok(map.experimental.gridP1Possible>1);
+ assert.ok(map.experimental.gridP1Coverage>0&&map.experimental.gridP1Coverage<1);
+ assert.match(map.experimental.warning,/deneysel tamlık değildir/);
+ const fine=p1.observedFourierMap(cell,fcf,{size:16,dMin:.7});
+ assert.equal(fine.experimental.skippedNyquist,0);
+ assert.equal(fine.experimental.used,2);
+});
+
+test('P8.2 negative measured F squared is clipped and reported without dropping the hkl',()=>{
+ const fcf=p1.readFcf(['data_negative','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
+  '_refln_F_squared_meas','_refln_F_squared_calc','_refln_phase_calc',
+  '1 0 0 -4 25 0','0 1 0 100 25 90'].join('\n'));
+ assert.equal(fcf.clippedNegativeFo2,1);
+ assert.equal(fcf.reflections[0].fo,0);
+ const g=p1.observedFourierMap({a:5,b:5,c:5,alpha:90,beta:90,gamma:90},fcf,
+  {kind:'difference',size:16,dMin:1});
+ assert.equal(g.experimental.clippedNegativeFo2,1);
+ assert.equal(g.experimental.used,2);
+});
