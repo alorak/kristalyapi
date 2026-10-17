@@ -57,7 +57,7 @@ vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJp
 vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
-vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
+vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
@@ -3033,4 +3033,80 @@ test('P8.2 negative measured F squared is clipped and reported without dropping 
   {kind:'difference',size:16,dMin:1});
  assert.equal(g.experimental.clippedNegativeFo2,1);
  assert.equal(g.experimental.used,2);
+});
+
+
+// MTZ fixture uses the CCP4 80-byte preamble and header cards, with float32
+// reflection rows beginning at byte 80. It is synthetic; real Gemmi/CCP4
+// fixtures and non-P1 symmetry expansion remain follow-up validation work.
+function makeP1Mtz({rows=[[1,0,0,10,8,0]],endian='little',
+  spaceGroup=1,lattice='P',batch=0,columns=null,
+  cell=[5,5,5,90,90,90],datasetCell=null,missing='NAN'}={}){
+ const cols=columns||[['H','H',0],['K','H',0],['L','H',0],
+  ['FP','F',1],['FC','F',1],['PHIC','P',1]];
+ const cards=[
+  'VERS MTZ:V1.1','TITLE P1 synthetic fixture',
+  'NCOL '+cols.length+' '+rows.length+' '+batch,
+  'CELL '+cell.join(' '),'SYMINF 1 1 '+lattice+' '+spaceGroup+" 'P 1' PG1",
+  'SYMM X,Y,Z',
+  ...cols.map(([label,type,id])=>'COL '+label+' '+type+' 0 100 '+id),
+  'DCELL 1 '+(datasetCell||cell).join(' '),
+  'VALM '+missing,'END'
+ ];
+ const headerPos=80+rows.length*cols.length*4;
+ const bytes=Buffer.alloc(headerPos+cards.length*80,32),le=endian==='little';
+ bytes.write('MTZ ',0,'ascii');
+ if(le)bytes.writeInt32LE(headerPos/4+1,4);
+ else bytes.writeInt32BE(headerPos/4+1,4);
+ bytes[9]=le?0x40:0x10;
+ rows.forEach((row,i)=>{
+  if(row.length!==cols.length)throw Error('bad test row');
+  row.forEach((v,j)=>{
+   const at=80+4*(i*cols.length+j);
+   if(le)bytes.writeFloatLE(v,at);else bytes.writeFloatBE(v,at);
+  });
+ });
+ cards.forEach((card,i)=>bytes.write(card,headerPos+80*i,'ascii'));
+ return bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+}
+test('P8.2b merged P1 MTZ reads typed FP/FC/PHIC and produces direct-Fourier amplitudes',()=>{
+ const source=makeP1Mtz({rows:[[1,0,0,10,8,0],[-1,0,0,10,8,0]]});
+ const mtz=p1.readMtz(source);
+ assert.equal(mtz.source,'MTZ P1 (merged, model phases)');
+ assert.equal(mtz.mtz.datasetId,1);
+ assert.equal(mtz.mtz.totalRows,2);
+ assert.equal(mtz.mtz.skippedMissing,0);
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const map=p1.observedFourierMap(cell,mtz,{kind:'difference',size:16,dMin:1});
+ assert.equal(map.experimental.used,1);
+ assert.equal(map.experimental.duplicates,1);
+ approx(map.values[api.gridIndex(map,0,0,0)],4/125,1e-7);
+ assert.equal(map.experimental.sourceCell,true);
+ assert.match(htmlShell,/accept="\.fcf,\.cif,\.mtz"/);
+ assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\)\)/);
+});
+test('P8.2b MTZ byte order and missing-number sentinel are validated and counted',()=>{
+ const big=p1.readMtz(makeP1Mtz({endian:'big',rows:[[1,0,0,10,8,90]]}));
+ assert.equal(big.mtz.endianness,'big');
+ assert.equal(big.reflections[0].phase,90);
+ const missing=p1.readMtz(makeP1Mtz({rows:[[1,0,0,10,8,0],[0,1,0,NaN,8,0]]}));
+ assert.equal(missing.reflections.length,1);
+ assert.equal(missing.mtz.skippedMissing,1);
+ const sentinel=p1.readMtz(makeP1Mtz({missing:'-9999',rows:[[1,0,0,10,8,0],[0,1,0,-9999,8,0]]}));
+ assert.equal(sentinel.mtz.skippedMissing,1);
+});
+test('P8.2b MTZ fails closed for non-P1, batch, bad cell and unsafe columns',()=>{
+ assert.throws(()=>p1.readMtz(makeP1Mtz({spaceGroup:19})),/yalnız P1|P1 değil/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({batch:1})),/yalnız birleşik/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({datasetCell:[6,5,5,90,90,90]})),/FCF hücresi/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({columns:[
+  ['H','H',0],['K','H',0],['L','H',0],
+  ['FWT','F',1],['FC','F',1],['PHIC','P',1]]})),/FP\/FOBS/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({columns:[
+  ['H','H',0],['K','H',0],['L','H',0],
+  ['FP','F',1],['FC','F',1],['PHWT','P',1]]})),/PHIC/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({rows:[[1,0,0,10,-1,0]]})),/Fo\/Fc\/PHIC geçersiz/);
+ const corrupt=makeP1Mtz(),data=new DataView(corrupt);
+ data.setInt32(4,10000000,true);
+ assert.throws(()=>p1.readMtz(corrupt),/başlık ofseti/);
 });

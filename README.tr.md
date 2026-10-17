@@ -160,11 +160,9 @@ yoğunlukla karşılaştırmadan önce atomik orijin,
 kristal simetrisi, ölçüm ölçeği ve verinin
 tamlığı bağımsız doğrulanmalıdır.
 
-**Henüz desteklenmeyenler:** MTZ binary reflection verisi,
-CCP4 `.map` / `.ccp4` native densite haritaları, CIF2'nin
-bütün reflection sözlükleri, simetri eşdeğerlerinden otomatik
-veri tamamlama, anomalous Friedel farkları ve
-`2Fo-Fc` ağırlıklı harita refinmanı.
+**Paket 8.2b — sınırlı MTZ girişi:** Birleşik **P1 MTZ** dosyasında türü doğrulanmış, belirsiz olmayan **FP/F/FOBS, FC ve PHIC** sütunları varsa model fazlı Fo/Fo−Fc haritaları üretilebilir. IEEE endian, başlık/veri uzunluğu, P1 simetrisi, veri kümesi hücresi, eksik değer işaretleri ve geçersiz/negatif genlikler kontrol edilir; eksik satırların sayısı rapor edilir. **P1 dışındaki uzay grupları, batch/unmerged veriler, belirsiz veri kümeleri, anomalous çiftler ve FWT/PHWT gibi ön-ağırlıklı harita katsayıları reddedilir**; P1 ölçümüymüş gibi yorumlanmaz. İlk regresyonlar sentetik MTZ üstündedir; gerçek MTZ/harita için bağımsız Gemmi/CCP4 referans doğrulaması hâlâ gereklidir.
+
+**Henüz desteklenmeyenler:** genel MTZ simetri genişletmesi, CCP4 `.map` / `.ccp4` haritaları, CIF2'nin tüm yansıma sözlükleri, anomalous Friedel farkları ve ağırlıklı `2Fo−Fc` harita refinmanı.
 İleri işler [8.2 durum belgesinde](tests/validation/PACKAGE_8_2_STATUS.md).
 
 ### Paket 8.1 — ADP site-symmetry denetimi ve CIF kaynak bütünlüğü

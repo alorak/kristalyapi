@@ -34,12 +34,20 @@ Yalnızca izin verilen ±h FFT matris koordinatlarında katsayılar yerleştiril
 CIF2, çoklu data_/save_ blokları, alan bazlı kayıp raporu, tüm ADP özel konum sınıfları, Hall/orijin ve deneysel belirsizlik modelleri.
 8.2 kapsamında bu alanlara geri dönüş yapılmadı; ayrı bilimsel veri bütünlüğü işleri olarak açık tutuluyor.
 
-## Sonraki alt paket (8.2b)
+## Paket 8.2b — sınırlı MTZ başlangıcı
 
-1. MTZ binary girişinin doğrulanmış okuması (header, endianness, dataset hücresi, sütun türleri, boş/NaN değerler).
-2. MTZ/IUCr referans kümelerinde Fo,Fc,PHIC ve örneklenmiş Fourier haritalarının Gemmi/CCP4 ile bağımsız karşılaştırılması.
-3. Uzay grubu simetrisine göre yansıma tamamlama, anomali ayrımı, FOM/sigma/FREE seçenekleri.
-4. Harita normalizasyonu, çözünürlük kabuğu ölçeği, `2Fo−Fc` ve hacimsel CCP4/MRC dosya uyumluluğu.
+- Tarayıcıda, ek sunucu olmadan **birleşik P1 MTZ** için IEEE little/big endian, 80 bayt önek, başlık işaretçisi, `NCOL/COL`, `CELL/DCELL`, `SYMINF/SYMM`, `VALM` ve yansıma bloğu boyutları doğrulanır.
+- Yalnız belirsiz olmayan türlenmiş **FP/F/FOBS (F), FC (F), PHIC (P)** ve H/K/L (H) sütunları kabul edilir. Birden çok eşleşen sütun otomatik seçilmez; eksik/NaN satırlar sayılarak atlanır; yanlış hücre ve negatif genlik reddedilir.
+- MTZ yansımaları mevcut FCF Fo/Fo−Fc model-fazlı FFT hattına bağlanır. Yüklü kristalin bilimsel fingerprint'i değişirse kullanım engellenir.
+- **Başarı kapsamı dardır:** P1 olmayan uzay grupları, unmerged/batch MTZ, otomatik ASU/simetri tamamlama, anomali ve ağırlıklı FWT/PHWT gibi harita katsayıları bu okuyucudan geçmez. Genel MTZ desteği tamamlandı iddiası yoktur.
+- Sentetik IEEE LE/BE, eksik değer, yanlış veri kümesi hücresi, belirsiz sütun, uzay grubu ve doğrudan Fourier regresyonları eklendi. **Bağımsız gerçek MTZ/Gemmi/CCP4 harita doğrulaması bu PR'da yapılmış sayılmaz.**
+
+## Sonraki alt paket (8.2c)
+
+1. Gerçek MTZ/IUCr veri kümelerinde Fo/Fc/PHIC ve Fourier örneklerinin Gemmi/CCP4 ile bağımsız karşılaştırılması; başlangıç için doğrulanmış P1 fixture.
+2. ASU/uzay grubu simetrisiyle yansıma tamamlama ve ayrı anomalous Friedel yolu; çoklu dataset/kolon açık eşleme arayüzü.
+3. FOM/σ/FREE, harita normalizasyonu ve çözünürlük kabuğu ölçekleri; ağırlıklı `2Fo−Fc` için açık matematiksel model.
+4. CCP4/MRC hacimsel harita uyumluluğu ve Paket 9'a aktarım.
 
 ## Referanslar
 
