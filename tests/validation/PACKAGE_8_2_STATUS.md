@@ -49,7 +49,7 @@ CIF2, çoklu data_/save_ blokları, alan bazlı kayıp raporu, tüm ADP özel ko
 - Belirsiz Fo/Fc/PHIC sütunları kullanıcının açık `datasetId:LABEL` eşlemesiyle seçilebilir; türler denetlenir, FWT/DELFWT/PHWT/PHDELWT ön-ağırlıklı harita katsayıları Fo/Fc gibi alınmaz.
 - Ham veya LSQ ölçekli **ağırlıksız model-fazlı 2Fo−Fc** seçeneği eklendi. σA/FOM/FREE refinman haritası olarak gösterilmez.
 - Bağımsız analitik P-1, orijini kaymış tersinim, P21 vida ekseni, P21/c/P212121 grup kapanışı, uyumsuz metrik ve yanlış faz/sönüm testleri eklendi. Gerçek MTZ/Gemmi/CCP4 **henüz doğrulanmadı**.
-- İngilizce statik sözlükte eksik MTZ metinleri tamamlandı (native regression #88), WebGL smoke testindeki kapalı XRD paneli açma adımı düzeltildi; alt araç çubuğunun yüksekliği artırıldı ve taşma denetimi eklendi.
+- İngilizce statik sözlükte eksik MTZ metinleri tamamlandı (native regression #88), WebGL smoke testindeki kapalı XRD paneli açma adımı düzeltildi; alt araç çubuğunun yüksekliği artırıldı ve taşma denetimi eklendi. İki test iş akışı PR aşamasında da çalışır; Pages dağıtımı PR'da atlanır.
 
 ## Sonraki alt paket (8.2c devamı)
 

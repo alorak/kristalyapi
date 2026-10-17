@@ -3,6 +3,8 @@ name: Validate and deploy crystal studio
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -28,6 +30,7 @@ jobs:
         run: node --test tests/core.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
   deploy:
     needs: validate
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
