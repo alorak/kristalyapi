@@ -1,6 +1,17 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
-## Paket 10.4 — Çokyüzlü şablon önbelleği, 2B kontur/CSV Worker ve görsel önizleme seçimi (bu PR)
+## Paket 10.5 — Etkileşimli 2B Worker, iptal doğruluğu ve bellek görünürlüğü (bu PR)
+
+| Alan | Uygulama / doğrulama | Sınır |
+| --- | --- | --- |
+| Etkileşimli 2B kesit | ≥75.000 vokselde 192² renk+kontur, 128² çizgi profili örnekleri ve 32² bağımsız kesit özeti tek çevrimdışı Worker isteğinde; eski istek iptali, sıra numarası, 12 s zaman aşımı, güvenli eşzamanlı yedek | Küçük haritalar eşzamanlı kalır; 3B düzleme uygulanan 192px CanvasTexture hâlâ ana thread'de hazırlanır |
+| Sayısal sözleşme | Eğik Kartezyen koordinatlar, gerçek Miller çerçevesi/delikleri, işaretli konturlar, fiziksel Å mesafesi ve CSV sayısal anlamı korunur; 192/128/32 natif eşleme ve gerçek Chromium sürükleme testi | 128² profil ara değerleri öncekiyle aynı sayısal örnekleme yaklaşımıdır; doğrudan eğri boyunca 3B yeniden örnekleme değildir |
+| Bellek raporu | Paylaşılan BufferGeometry/InstancedMesh backing ArrayBuffer'ları bir kez sayılır; RGBA8 taban görüntü boyutu tahmini, ham voksel dizileri ve 32 MiB yüzey önbelleği ayrı gösterilir; WebGL gerçek fixture testleri | **Ölçülen VRAM değil**; driver belleği, mipmap, GPU hizalaması, WebGL tutulan kopyalar ve sıkıştırma bilinmiyor |
+| Adaptif yüzey ve çokyüzlü GPU | 10.4'teki doğrulanmış nihai marching-tetrahedra ve tek birleşik çokyüzlü dolgu draw-call yolu değiştirilmez | Yerel, çatlak oluşturmayan adaptif ağ, hata kontrolü ve instancing A/B cihaz karşılaştırmaları sonraki paket; merged 1 draw call'a karşı naif instancing kazanç garanti etmez |
+
+**Sonraki 10.6:** bağımsız triangülasyon/topoloji ve izodeğer hata sınırı testleriyle çatlak üretmeyen yerel adaptif ağın kontrollü prototipi; çokyüzlü çizim A/B ve cihaz/VRAM benchmark matrisi. Bilimsel dışa aktarım, harita değerleri ve görünür sınırlar sonuçlar doğrulanana kadar değiştirilmeyecek.
+
+## Paket 10.4 — Çokyüzlü şablon önbelleği, 2B kontur/CSV Worker ve görsel önizleme seçimi (tamamlandı)
 
 | Alan | Uygulama / kabul | Açık sınır |
 | --- | --- | --- |

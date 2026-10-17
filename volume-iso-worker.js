@@ -1,4 +1,4 @@
-/* Package 10.3 — isolated, offline progressive isosurface and slice worker.
+/* Package 10.5 — isolated, offline progressive isosurface, interactive slice and export worker.
  * Mirrors the pure numeric routine in crystal-app.js; native tests compare
  * the complete position/color arrays with both synthetic and Gemmi grids.
  * No network access, dynamic imports, or mutable editor state. */
@@ -178,7 +178,7 @@ function sliceMatrix(g,job){
  const size=job.size,shape=volumeShape(g),hkl=job.axis==='hkl';
  const floating=hkl?null:[0,1,2].filter(n=>n!==job.axis);
  const corners=job.corners;
- const values=new Float32Array(size*size),rows=new Float64Array(size*size*4);
+ const values=new Float32Array(size*size),rows=job.includeRows===false?null:new Float64Array(size*size*4);
  let min=Infinity,max=-Infinity,sum=0,valid=0;
  for(let j=0;j<size;j++)for(let i=0;i<size;i++){
   const u=i/(size-1),v=j/(size-1),index=j*size+i;
@@ -195,7 +195,7 @@ function sliceMatrix(g,job){
   }
   const value=hkl?volumeAtWorld(g,world):volumeSample(g,coords);
   values[index]=value;min=Math.min(min,value);max=Math.max(max,value);sum+=value;valid++;
-  rows.set([...world,value],index*4);
+  if(rows)rows.set([...world,value],index*4);
  }
  if(!valid)throw Error('Slice outside grid');
  const width=Math.hypot(...corners[1].map((v,k)=>v-corners[0][k]));
@@ -247,7 +247,7 @@ function sliceRaster(grid,potential,job){
 self.onmessage=event=>{
  const data=event.data||{},requestId=data.requestId;
  try{
-  if(!Array.isArray(data.grids)||data.grids.length>6||(!['slice','slice-matrix'].includes(data.type)&&(!Array.isArray(data.jobs)||data.jobs.length>8)))
+  if(!Array.isArray(data.grids)||data.grids.length>6||(!['slice','slice-matrix','slice-preview'].includes(data.type)&&(!Array.isArray(data.jobs)||data.jobs.length>8)))
    throw Error('Invalid volume worker budget');
   for(const g of data.grids){
    const n=g?.dims?.reduce((a,b)=>a*b,1);
@@ -266,7 +266,7 @@ self.onmessage=event=>{
     self.postMessage({requestId,matrix:result},[result.values.buffer,result.rows.buffer]);
     return;
    }
-  if(data.type==='slice'){
+  if(data.type==='slice'||data.type==='slice-preview'){
    const job=data.slice,grid=data.grids[job?.grid],potential=job?.potential<0?null:data.grids[job?.potential];
    if(!grid||job.potential>=data.grids.length||!Number.isInteger(job.size)||
       job.size<64||job.size>1024||!(job.axis==='hkl'||[0,1,2].includes(job.axis))||
@@ -280,7 +280,21 @@ self.onmessage=event=>{
       !['uniform','balanced','positive','negative'].includes(job.contours.mode)||
       !Number.isInteger(job.contours.step)||job.contours.step<1||job.contours.step>8))
     throw Error('Invalid contour settings');
+   if(data.type==='slice-preview'&&(job.size!==192||!Array.isArray(job.corners)||
+      job.corners.length!==4||job.corners.some(p=>!Array.isArray(p)||p.length!==3||
+      p.some(v=>!Number.isFinite(v)))))
+    throw Error('Invalid interactive preview');
+   const started=performance.now();
    const result=sliceRaster(grid,potential,job);
+   if(data.type==='slice-preview'){
+    const base={axis:job.axis,position:job.position,corners:job.corners,includeRows:false};
+    const matrix=sliceMatrix(grid,{...base,size:128});
+    const stats=sliceMatrix(grid,{...base,size:32});
+    const transfer=[result.values.buffer,result.rgba.buffer,matrix.values.buffer,stats.values.buffer];
+    if(result.lines)transfer.push(result.lines.buffer);
+    self.postMessage({requestId,preview:{slice:result,matrix,stats,elapsedMs:performance.now()-started}},transfer);
+    return;
+   }
    const transfer=[result.values.buffer,result.rgba.buffer];
    if(result.lines)transfer.push(result.lines.buffer);
    self.postMessage({requestId,slice:result},transfer);
