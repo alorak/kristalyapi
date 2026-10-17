@@ -81,7 +81,9 @@ def independent_grid(name: str, source: Path) -> dict:
         return {"values": np.asarray(output["data"], dtype=np.float64),
                 "origin": np.asarray(output["origin"], dtype=float),
                 "axes": np.asarray(output["spacing"], dtype=float),
-                "atoms": len(output["atoms"]), "periodic": False}
+                "atoms": len(output["atoms"]), "atomicNumbers": output["atoms"].numbers.tolist(),
+                "atomPositionsA": np.asarray(output["atoms"].positions,dtype=float),
+                "periodic": False}
     if name == "xsf":
         with source.open("r", encoding="utf8") as file:
             values, origin, spans, atoms = read_xsf(file, read_data=True)
@@ -140,12 +142,20 @@ def evaluate(name: str, source: Path, output_dir: Path) -> dict:
                            rtol=2e-6, atol=1e-5)
     assert not frame["failingVoxels"] and not origin["failingVoxels"], f"{name}: Å frame drift"
     assert metadata["periodic"] == reference["periodic"], f"{name}: periodicity differs"
-    # The current CUBE reader intentionally imports scalar fields only; ASE
-    # and VESTA also expose the CUBE atom table. Treat that as a measured gap,
-    # not as a falsely passing structural comparison.
+    # 10.9 resolves the scalar-only CUBE import gap: atom positions must also
+    # be exact in the density map's *unshifted native Cartesian Å frame*.
     atom_gap = metadata["siteCount"] != reference["atoms"]
-    if atom_gap and name != "cube":
+    if atom_gap:
         raise AssertionError(f"{name}: atom count mismatch")
+    atom_comparison = None
+    if name == "cube":
+        assert metadata["displayStructure"]["nonPeriodic"]
+        assert not metadata["displayStructure"]["displayCell"]
+        atom_comparison = compare_array(
+            np.asarray(metadata["displayStructure"]["atomPositionsA"]),
+            reference["atomPositionsA"], rtol=2e-6, atol=1e-5)
+        assert atom_comparison["failingVoxels"] == 0, "CUBE display offsets changed native Å atoms"
+        assert [a["atomicNumber"] for a in metadata["atoms"]] == reference["atomicNumbers"]
     if name == "chgcar":
         assert metadata["quantity"] == "density" and metadata["units"].startswith("e/Å³")
     else:
@@ -181,6 +191,7 @@ def evaluate(name: str, source: Path, output_dir: Path) -> dict:
     return {"source": name, "status": "pass-with-known-gap" if atom_gap else "pass",
             "dimensions": metadata["dims"], "browserSiteCount": metadata["siteCount"],
             "referenceAtomCount": reference["atoms"], "atomImportGap": atom_gap,
+            "atomCoordinateComparison": atom_comparison,
             "periodic": metadata["periodic"],
             "geometryA": {"origin": metadata["origin"], "voxelAxes": metadata["axes"],
                           "frame": frame, "originError": origin},

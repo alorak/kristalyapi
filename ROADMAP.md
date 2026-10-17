@@ -1,5 +1,35 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 10.9 — CUBE atomları, bağımsız XSF dönüşümü ve Worker A/B
+
+- **CUBE atomları:** Atom numarası, nükleer yük ve Bohr/Å koordinatları
+  gerçek dosyadan okunuyor. Kaynak 9 atomun ASE 3.26.0 Kartezyen Å
+  referansına uyumu zorunlu. Yoğunluğun orijinal eksen/orijin/değerleri
+  değişmedi. Yapay görüntüleme kutusu **periyodik değil**, çizilmiyor ve
+  fiziksel hücre hacmiymiş gibi sunulmuyor. Proje JSON'undaki konum ofseti
+  de saklanıp doğrulanıyor.
+- **XSF:** ASE'nin gerçek hesaplama CUBE dosyasından bağımsız yazdığı
+  23×23×24 XSF'deki 12.696 skaler ve Kartezyen Å çerçeve uyuşuyor;
+  XSF `BEGIN_DATAGRID_3Dgrid#1` etiket desteği eklendi. XSF bağımsız
+  bir fiziksel hesaplama **değil**, CUBE'dan dönüşüm; küçük sentetik
+  upstream XSF kontrolü de korunuyor.
+- **Çözünürlük/maliyet:** Gerçek CHGCAR/CUBE ve türetilmiş XSF için
+  32³/48³/64³ örnekleme; mevcut 40 aralık ve **yalnız CI'daki**
+  64 aralık Worker, 75.000 üçgen kotasına bağlı. Tam 48³→64³ alan
+  değişimi **%7,27 / %1,09 / %1,09**; 64³ örnek maliyeti yaklaşık
+  7–9× daha fazla CPU zamanı (tek yerel koşu). CI zaman/bellek için
+  donanıma bağlı sert eşik kullanmaz, yakınsama garantisi vermez.
+- **Açık:** VESTA GUI ekran karşılaştırması yürütülmedi; XSF atomları,
+  CUBE orbital veri dizileri ve bağımsız büyük XSF simülasyonları
+  destek/test kapsamının dışında. Deneysel 5wkd haritasındaki önceki
+  yüksek alan duyarlılığı nedeniyle isteğe bağlı **64 çözünürlük modu
+  henüz yayınlanmadı**.
+- **Sonraki 11:** Geniş format/proje uyumluluğu, yeni kaynak varyantları,
+  VESTA projesi/setting doğrulaması. **Sonraki 12:** İleri koordinasyon,
+  bağ-değer ve kristal kimyası.
+
+[Tam P10.9 protokolü](tests/validation/PACKAGE_10_9_STATUS.md).
+
 ## Paket 10.8.6 — Bağımsız gerçek dosya ve VESTA hazırlık protokolü
 
 - **Kaynaklar:** Sabit `pymatgen-core` commit'inden gerçek Li VASP CHGCAR,

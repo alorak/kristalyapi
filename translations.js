@@ -469,7 +469,7 @@
    'PAW / VASP: CHGCAR is typically valence density and not all-electron density near nuclei. The AECCAR0 + AECCAR2 reference is important for Bader analyses. Do not equate these Voronoi charges with Bader charges.'],
   ['Site başına yükü hesapla','Integrate electrons per site'],['İşlem bekleniyor.','Awaiting calculation.'],
   ['Henüz veri yüklenmedi.','No data loaded yet.'],
-  ['Varsa dosyadaki atomları ve hücreyi kullan','Use atoms and cell from the file, if available'],
+  ['Dosyadaki atomları kullan (hücre varsa)','Use file atoms (and cell only if supplied)'],
   ['Görselleştirme','Visualization'],['3B izoyüzey','3D isosurface'],
   ['2B kesit / yoğunluk haritası','2D slice / density map'],
   ['İzoyüzey + kesit','Isosurface + slice'],['İzodeğer','Isovalue'],

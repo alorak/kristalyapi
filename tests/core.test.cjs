@@ -1234,6 +1234,11 @@ test('Gaussian CUBE parses bohr units, origin, counts and z-fastest scalar data'
  ].join('\n');
  const g=api.readCube(input);
  assert.deepEqual(Array.from(g.dims),[2,2,2]);
+ assert.equal(g.atoms.length,1);
+ assert.equal(g.atoms[0].symbol,'O');
+ assert.equal(g.crystal.nonPeriodic,true);
+ assert.equal(g.crystal.displayCell,false);
+ assert.equal(g.crystal.sites.length,1);
  approx(g.axes[0][0],.529177210903,1e-11);
  approx(g.values[api.gridIndex(g,1,0,1)],5);
  approx(api.volumeSample(g,[1,1,1]),7);
@@ -1241,6 +1246,51 @@ test('Gaussian CUBE parses bohr units, origin, counts and z-fastest scalar data'
  const world=api.volumeWorld(g,1,1,1),back=api.volumeCoord(g,world);
  back.forEach(v=>approx(v,1));
  assert.equal(api.readVolumetric(input,'charge.cube').kind,'CUBE');
+});
+test('P10.9 CUBE atoms, density and display box share unmodified Cartesian Å frame',()=>{
+ const input=[
+  'Skew, translated, two-atom CUBE','values are raw, positions are Bohr',
+  '2 -2 1 0.5','3 0.7 0.1 0','2 0.3 0.6 0','2 0 0.1 1.2',
+  '8 7.9 -1.5 1.5 0.2','1 1.0 1.2 -0.8 0.7',
+  ...Array.from({length:12},(_,i)=>String(i*.03))
+ ].join('\n');
+ const grid=api.readCube(input),structure=grid.crystal;
+ assert.deepEqual(Array.from(grid.dims),[3,2,2]);
+ assert.equal(structure.nonPeriodic,true);
+ assert.match(structure.warning,/CUBE.*örgü/);
+ assert.equal(structure.sites.length,2);
+ const origin=structure.nonPeriodicOrigin;
+ const spans=[structure.cell.a,structure.cell.b,structure.cell.c];
+ const actual=structure.sites.map(site=>[site.x,site.y,site.z].map((f,i)=>f*spans[i]+origin[i]));
+ for(let atom=0;atom<2;atom++)for(let dim=0;dim<3;dim++)
+  approx(actual[atom][dim],grid.atoms[atom].position[dim],1e-9);
+ approx(grid.origin[0],-2*0.529177210903,1e-10);
+ approx(grid.axes[0][1],.1*0.529177210903,1e-10);
+ const stored=api.loadProject(JSON.stringify({format:'kristalyapi-v1',name:'Skew CUBE',
+  cell:structure.cell,sites:structure.sites,nonPeriodic:true,nonPeriodicOrigin:origin}));
+ assert.deepEqual(Array.from(stored.nonPeriodicOrigin),Array.from(origin));
+ assert.throws(()=>api.loadProject(JSON.stringify({cell:structure.cell,sites:structure.sites,
+  nonPeriodic:true,nonPeriodicOrigin:[0,NaN,2]})),/konum ofseti/);
+});
+test('P10.9 Å-unit CUBE atom coordinates and invalid atomic numbers',()=>{
+ const head=['Angstrom CUBE','negative counts mean Angstrom',
+  '1 -1 -2 -3','-2 1 0 0','-2 0 2 0','-2 0 0 3'];
+ const text=[...head,'6 6 -1 3 -5','0 1 2 3 4 5 6 7'].join('\n');
+ const parsed=api.readCube(text);
+ assert.deepEqual(Array.from(parsed.atoms[0].position),[-1,3,-5]);
+ assert.deepEqual(Array.from(parsed.origin),[-1,-2,-3]);
+ assert.throws(()=>api.readCube([...head,'999 6 -1 3 -5','0 1 2 3 4 5 6 7'].join('\n')),/atom numarası/);
+ assert.throws(()=>api.readCube([...head,'6 6 -1 3','0 1 2 3 4 5 6 7'].join('\n')),/atom satırı/);
+});
+test('P10.9 XSF accepts the real ASE DATAGRID_3Dgrid#1 field label',()=>{
+ const txt=['ATOMS','8 0 0 0','BEGIN_BLOCK_DATAGRID_3D','data',
+  'BEGIN_DATAGRID_3Dgrid#1','2 2 2','-2 1 0',
+  '2 0 0','0 2 0','0 0 2','0 1 2 3 4 5 6 7',
+  'END_DATAGRID_3D','END_BLOCK_DATAGRID_3D'].join('\n');
+ const g=api.readXsf(txt);
+ assert.equal(g.values[api.gridIndex(g,1,0,0)],1);
+ assert.deepEqual(Array.from(g.origin),[-2,1,0]);
+ assert.equal(g.crystal,undefined,'nonperiodic ATOMS must not invent a cell');
 });
 test('CHGCAR parses x-fastest VASP storage and correct charge density scaling',()=>{
  const data=['Grid example','1.0','2 0 0','0 2 0','0 0 2','H','1','Direct','0 0 0',

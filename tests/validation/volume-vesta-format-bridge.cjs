@@ -74,6 +74,15 @@ const manifest={protocol:'p10.8.6-real-format-reader',source:path.basename(sourc
  dims:[...grid.dims],origin:[...grid.origin],axes:grid.axes.map(v=>[...v]),
  periodic:!!grid.periodic,min:grid.min,max:grid.max,gridFile:file,
  siteCount:grid.crystal?.sites.length??0,
+ atoms:grid.atoms?.map(atom=>({atomicNumber:atom.atomicNumber,
+  positionA:[...atom.position],nuclearCharge:atom.nuclearCharge}))||null,
+ displayStructure:grid.crystal?.nonPeriodic?{
+  nonPeriodic:true,originA:[...grid.crystal.nonPeriodicOrigin],
+  displayCell:!!grid.crystal.displayCell,
+  cellA:[grid.crystal.cell.a,grid.crystal.cell.b,grid.crystal.cell.c],
+  atomPositionsA:grid.crystal.sites.map(site=>[site.x,site.y,site.z].map((f,i)=>
+   f*[grid.crystal.cell.a,grid.crystal.cell.b,grid.crystal.cell.c][i]+grid.crystal.nonPeriodicOrigin[i]))
+ }:null,
  surface:{isovalue,triangles:iso.triangles,areaA2,decimation:iso.decimation,truncated:iso.truncated}};
 fs.writeFileSync(path.join(outDir,`${format}-bridge.json`),JSON.stringify(manifest,null,2));
 process.stdout.write(JSON.stringify({format,dims:manifest.dims,triangles:iso.triangles})+'\n');
