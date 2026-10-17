@@ -13,7 +13,12 @@ class CombinedReportTest(unittest.TestCase):
         result=combine({'count':2,'counts':{'pass':1,'fail':1},
                         'gate':{'unexpected':['bad']}},{'screenshots':1})
         self.assertEqual(result['scientific']['status'],'fail')
-        self.assertEqual(result['visual']['status'],'pass')
+        self.assertEqual(result['visual']['status'],'inconclusive')
+
+    def test_explicit_visual_status(self):
+        science={'count':1,'counts':{'pass':1}}
+        self.assertEqual(combine(science,{'status':'pass'})['visual']['status'],'pass')
+        self.assertEqual(combine(science,{'status':'fail'})['visual']['status'],'fail')
 
     def test_missing_fixture_is_error(self):
         with self.assertRaises(ValueError):
