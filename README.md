@@ -55,7 +55,7 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 | **Çoklu yapı / faz karşılaştırması** | Ana kristale ek olarak en fazla üç CIF/mCIF fazı; konum, görünürlük, saydamlık ve hücre çizgileri. |
 | **Atom seçimi ve ölçüm** | Atom seçimi, uzaklık (doğrudan/periyodik), açı ve dört atomlu dihedral; renklerle ayrılmış sonuç kartları. |
 | **Ölçüm geçmişi** | Ölçüm paneline bitişik ayrı ikon, kayıt sayacı, kayıtların görüntülenmesi ve CSV dışa aktarma. |
-| **İleri koordinasyon / BVS** | Periyodik komşular, koordinasyon ve parametreleri tanımlanmış iyon çiftleri için bağ-değerliği toplamı. |
+| **İleri koordinasyon / BVS** | Metrik-tam periyodik komşular, koordinasyon ve kısmi doluluk; Baur bozulma indisi, Hoppe ECoN, doğrulanmış tetra/octa topolojide quadratic elongation ile açı varyansı; seçili referans iyon çiftleri için BVS ve eşit bağ varsayımıyla beklenen bağ uzunluğu. |
 | **Best-fit plane · düzlemsellik** | Seçilen atomlardan en iyi uyan düzlem; normal, RMS/maksimum sapma ve düzlemler arası açı. |
 | **Yapı faktörü / toz XRD ve nötron** | IT92 nötr atom X-ışını `f₀(s)` veya nötron koherent `b`; Bragg kesiminden türetilen karşı-uzay taraması, `F(hkl)`, Bragg açıları, LP / Lorentz seçeneği, absorplayıcı element uyarısı; ampirik pseudo-Voigt/Caglioti toz profili, Kα1/Kα2 ikilisi ve ölçüm CSV karşılaştırması; `d_min` + FFT ile model Fourier/Patterson; fazı olan SHELX `.fcf` için `Fo`/`Fo−Fc` haritaları. |
 | **Hacimsel fizik verileri** | CUBE, CHGCAR, XSF; CHGCAR kollineer/nonkollineer spin bileşenleri; kaynak nicelik/birim seçimi, yoğunluk/potansiyel normalizasyonu; seçilen alanın CUBE/XSF dışa aktarımı; çoklu izoyüzey, güvenli `A + k₁B + k₂C` fark alanı ve `∫Δρ dV`, ekstremum araması, Miller `(hkl)` kesitleri ve yaklaşık Voronoi integrali. |
@@ -173,6 +173,28 @@ Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sah
 - Periyodik, tam hücreye hizalı **`e/Å³`** yoğunlukta en yakın çekirdek bölüşümüyle örneklenmiş Voronoi yük integrali. Normalize edilmiş CUBE/XSF yoğunlukları, kullanıcı periyodiklik belirttiğinde ve hücre metriği uyuştuğunda kabul edilir; XSF tekrar eden son ızgara düzlemleri ayrıştırılır. Sonuç ve CSV, asimetrik site ile simetri kopyasını ayrı ayrı işaretler. Büyük ızgarada en fazla 12.000 örnek; bu **Bader (sıfır-akı) analizi değildir**. PAW/VASP CHGCAR'ın çekirdeğe yakın tüm-elektron yoğunluğunu kapsamadığı ve **AECCAR0+AECCAR2** referansının Bader için önemi arayüzde belirtilir. Nicel yükler yakınsama testi ister.
 - Dosyadaki skaler alan **gösterilir**, kuantum kimyasal yoğunluk, elektrostatik potansiyel veya DFT **hesaplanmaz**. Farklı referans sistemindeki alanlar sessizce birleştirilmez.
 - Büyük verilerin sınırları: **24 MB dosya** ve **2,5 milyon voksel**; hacimsel dosyalar sayfa yenilenince yeniden açılmalıdır.
+
+### Nicel kristal kimyası — Paket 7.9
+
+Seçilen atomun koordinasyon paneli, komşu sayısından ayrı olarak
+**Baur bağ uzunluğu bozulma indisini** (`D`) ve **Hoppe etkili
+koordinasyon sayısını** (`ECoN`) gösterir. ECoN, kısmi doluluk
+ağırlıklı CN ile aynı büyüklük değildir: Hoppe ağırlıkları bağ
+uzaklıklarından hesaplanır. Gerçek tetrahedral/oktahedral yüz-topolojisi
+doğrulandığında **quadratic elongation** ve **bağ açısı varyansı**
+eklenir; altı köşeli prizma otomatik olarak oktahedron sayılmaz.
+Kısmi/alternatif dolulukta rapor geometrik yorumla sınırlıdır.
+İlk 24 komşuya kesilme varsa nicel ölçütler verilmez.
+
+BVS'de bağ yarıçapı içindeki periyodik görüntüler, eğik hücrelerde
+`±2` ile sınırlandırılmadan ters örgü metriğine göre taranır. Model
+**yalnızca seçili referans iyon çifti** ve ampirik `R₀/B` parametresi
+içindir; otomatik oksidasyon durumu veya kimyasal bağ derecesi çıkarmaz.
+BVS sonucu yanında, formal yükün eşit bağlar arasında bölündüğü
+varsayımıyla beklenen bağ uzunluğu da bir referans değer olarak
+görüntülenir. Matematiksel tanımlar, sınırlar ve bağımsız regresyonlar
+[`tests/validation/PACKAGE_7_STATUS.md`](tests/validation/PACKAGE_7_STATUS.md)
+içindedir.
 
 ## Bilimsel kapsam ve sınırlar
 

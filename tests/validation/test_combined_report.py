@@ -21,6 +21,7 @@ class CombinedReportTest(unittest.TestCase):
         self.assertEqual(combine(science,{'status':'fail'})['visual']['status'],'fail')
         self.assertEqual(combine(science,{'screenshots':3})['visual']['status'],'inconclusive')
         self.assertEqual(combine(science,None)['visual']['status'],'not_run')
+        self.assertEqual(combine(science,{'status':'not_run'})['visual']['status'],'not_run')
 
     def test_missing_fixture_is_error(self):
         with self.assertRaises(ValueError):
