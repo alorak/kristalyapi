@@ -57,7 +57,7 @@ vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJp
 vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
-vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
+vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
@@ -1088,7 +1088,7 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
   'adpLevel','polyElement','polyCut','polyNeighbors'])assert.ok(quickbar.includes('id="'+id+'"'),id);
  for(const type of ['ball','space','stick','wire'])assert.match(quickbar,new RegExp('<option value="'+type+'"'));
  assert.match(html,/#viewport #stage\{bottom:var\(--quickbar-height\)\}/);
- assert.match(html,/#viewport\{--quickbar-height:80px\}/);
+ assert.match(html,/#viewport\{--quickbar-height:118px\}/);
  assert.match(html,/\.workbench-quickbar\{[^}]*grid-template-columns:minmax\(420px,1fr\) minmax\(345px,auto\)[^}]*overflow-x:auto/);
  assert.match(html,/#app\.right-drawer-open \.quickbar-group:last-child\{justify-self:start\}/);
  assert.doesNotMatch(html,/#app\.right-drawer-open #viewport\{--quickbar-height:142px\}/);
@@ -3040,17 +3040,18 @@ test('P8.2 negative measured F squared is clipped and reported without dropping 
 // reflection rows beginning at byte 80. It is synthetic; real Gemmi/CCP4
 // fixtures and non-P1 symmetry expansion remain follow-up validation work.
 function makeP1Mtz({rows=[[1,0,0,10,8,0]],endian='little',
-  spaceGroup=1,lattice='P',batch=0,columns=null,
-  cell=[5,5,5,90,90,90],datasetCell=null,missing='NAN'}={}){
+  spaceGroup=1,lattice='P',batch=0,columns=null,symmetry=['X,Y,Z'],
+  cell=[5,5,5,90,90,90],datasetCell=null,moreDatasets=[],missing='NAN'}={}){
  const cols=columns||[['H','H',0],['K','H',0],['L','H',0],
   ['FP','F',1],['FC','F',1],['PHIC','P',1]];
  const cards=[
   'VERS MTZ:V1.1','TITLE P1 synthetic fixture',
   'NCOL '+cols.length+' '+rows.length+' '+batch,
-  'CELL '+cell.join(' '),'SYMINF 1 1 '+lattice+' '+spaceGroup+" 'P 1' PG1",
-  'SYMM X,Y,Z',
+  'CELL '+cell.join(' '),'SYMINF '+symmetry.length+' '+symmetry.length+' '+lattice+' '+spaceGroup+" 'P 1' PG1",
+  ...symmetry.map(op=>'SYMM '+op),
   ...cols.map(([label,type,id])=>'COL '+label+' '+type+' 0 100 '+id),
   'DCELL 1 '+(datasetCell||cell).join(' '),
+  ...moreDatasets.map(id=>'DCELL '+id+' '+cell.join(' ')),
   'VALM '+missing,'END'
  ];
  const headerPos=80+rows.length*cols.length*4;
@@ -3083,7 +3084,7 @@ test('P8.2b merged P1 MTZ reads typed FP/FC/PHIC and produces direct-Fourier amp
  approx(map.values[api.gridIndex(map,0,0,0)],4/125,1e-7);
  assert.equal(map.experimental.sourceCell,true);
  assert.match(htmlShell,/accept="\.fcf,\.cif,\.mtz"/);
- assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\)\)/);
+ assert.match(moduleScript,/readMtz\(await file\.arrayBuffer\(\),\{columns:choices\}\)/);
 });
 test('P8.2b MTZ byte order and missing-number sentinel are validated and counted',()=>{
  const big=p1.readMtz(makeP1Mtz({endian:'big',rows:[[1,0,0,10,8,90]]}));
@@ -3096,7 +3097,7 @@ test('P8.2b MTZ byte order and missing-number sentinel are validated and counted
  assert.equal(sentinel.mtz.skippedMissing,1);
 });
 test('P8.2b MTZ fails closed for non-P1, batch, bad cell and unsafe columns',()=>{
- assert.throws(()=>p1.readMtz(makeP1Mtz({spaceGroup:19})),/yalnız P1|P1 değil/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({spaceGroup:19})),/simetri kapsam dışı/);
  assert.throws(()=>p1.readMtz(makeP1Mtz({batch:1})),/yalnız birleşik/);
  assert.throws(()=>p1.readMtz(makeP1Mtz({datasetCell:[6,5,5,90,90,90]})),/FCF hücresi/);
  assert.throws(()=>p1.readMtz(makeP1Mtz({columns:[
@@ -3109,4 +3110,106 @@ test('P8.2b MTZ fails closed for non-P1, batch, bad cell and unsafe columns',()=
  const corrupt=makeP1Mtz(),data=new DataView(corrupt);
  data.setInt32(4,10000000,true);
  assert.throws(()=>p1.readMtz(corrupt),/başlık ofseti/);
+});
+
+test('P8.2c P-1 inversion completes Friedel only with a centrosymmetric model phase',()=>{
+ const symmetry=['X,Y,Z','-X,-Y,-Z'];
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const ok=p1.readMtz(makeP1Mtz({spaceGroup:2,symmetry,rows:[[1,0,0,10,8,0]]}));
+ assert.equal(ok.mtz.spaceGroupNumber,2);
+ assert.equal(ok.mtz.symmetryOperations.length,2);
+ const map=p1.observedFourierMap(cell,ok,{kind:'difference',size:16,dMin:1});
+ assert.equal(map.experimental.used,1);
+ assert.equal(map.experimental.duplicates,1);
+ approx(map.values[api.gridIndex(map,0,0,0)],4/125,1e-7);
+ const impossible=p1.readMtz(makeP1Mtz({spaceGroup:2,symmetry,
+  rows:[[1,0,0,10,8,90]]}));
+ assert.throws(()=>p1.observedFourierMap(cell,impossible,
+  {kind:'difference',size:16,dMin:1}),/Friedel hkl çelişkili/);
+});
+
+test('P8.2c origin-shifted inversion applies the reciprocal-space phase translation',()=>{
+ const sym=['X,Y,Z','-X+1/2,-Y,-Z'];
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const mtz=p1.readMtz(makeP1Mtz({spaceGroup:2,symmetry:sym,
+  rows:[[1,0,0,10,8,90]]}));
+ const transformed=p1.mtzSymmetryReflection(mtz.reflections[0],mtz.mtz.symmetryOperations[1]);
+ assert.deepEqual(JSON.parse(JSON.stringify([transformed.h,transformed.k,transformed.l])),[-1,0,0]);
+ approx(transformed.phase,-90,1e-7);
+ const map=p1.observedFourierMap(cell,mtz,{kind:'difference',size:16,dMin:1});
+ assert.equal(map.experimental.used,1);
+ for(const i of [0,1,4,8,12,15])
+  approx(map.values[api.gridIndex(map,i,0,0)],
+   4/125*Math.cos(Math.PI/2-2*Math.PI*i/16),1e-7);
+});
+
+test('P8.2c P21 screw phase and analytically invariant Fourier grid',()=>{
+ const symmetry=['X,Y,Z','-X,Y+1/2,-Z'];
+ const cell={a:5,b:7,c:8,alpha:90,beta:100,gamma:90};
+ const mtz=p1.readMtz(makeP1Mtz({spaceGroup:4,symmetry,
+  cell:[5,7,8,90,100,90],rows:[[1,1,0,10,8,0]]}));
+ assert.equal(mtz.mtz.symmetryOperations.length,2);
+ const image=p1.mtzSymmetryReflection(mtz.reflections[0],mtz.mtz.symmetryOperations[1]);
+ assert.equal(JSON.stringify([image.h,image.k,image.l]),JSON.stringify([-1,1,0]));
+ approx(image.phase,-180,1e-7);
+ const map=p1.observedFourierMap(cell,mtz,{kind:'difference',size:16,dMin:1});
+ const v=api.volume(api.basis(cell));
+ approx(map.values[api.gridIndex(map,0,0,0)],0,2e-7);
+ approx(map.values[api.gridIndex(map,4,4,0)],-8/v,2e-7);
+ for(const [i,j,k] of [[0,0,0],[4,4,0],[2,7,3],[9,12,8],[15,15,15]])
+  approx(map.values[api.gridIndex(map,i,j,k)],
+   map.values[api.gridIndex(map,(16-i)%16,(j+8)%16,(16-k)%16)],2e-7);
+ const forbidden=p1.readMtz(makeP1Mtz({spaceGroup:4,symmetry,
+  cell:[5,7,8,90,100,90],rows:[[0,1,0,10,8,0]]}));
+ assert.throws(()=>p1.observedFourierMap(cell,forbidden,
+  {kind:'difference',size:16,dMin:1}),/hkl çelişkili/);
+});
+
+test('P8.2c P21/c and P212121 header groups are validated before reflection mapping',()=>{
+ const mono=[5,7,8,90,101,90],orth=[5,7,8,90,90,90];
+ const p21c=['X,Y,Z','-X,Y+1/2,-Z+1/2','-X,-Y,-Z','X,-Y+1/2,Z+1/2'];
+ const p212121=['X,Y,Z','-X+1/2,-Y,Z+1/2','X+1/2,-Y+1/2,-Z','-X,Y+1/2,-Z+1/2'];
+ for(const [spaceGroup,symmetry,cell] of [[14,p21c,mono],[19,p212121,orth]]){
+  const mtz=p1.readMtz(makeP1Mtz({spaceGroup,symmetry,cell,
+   rows:[[1,1,1,10,8,0]]}));
+  assert.equal(mtz.mtz.symmetryOperations.length,4);
+  assert.equal(mtz.mtz.spaceGroupNumber,spaceGroup);
+ }
+ assert.throws(()=>p1.readMtz(makeP1Mtz({spaceGroup:4,
+  symmetry:['X,Y,Z','-X,Y+1/2,-Z'],
+  cell:[5,7,8,92,100,90]})),/metriğiyle uyuşmuyor/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({spaceGroup:4,
+  symmetry:['X,Y,Z','-X,Y+1/3,-Z'],
+  cell:mono})),/kapalı değil/);
+ assert.throws(()=>p1.readMtz(makeP1Mtz({spaceGroup:2,
+  symmetry:['X,Y,Z','X,Y,Z']})),/yinelenen işlem/);
+});
+
+test('P8.2c MTZ duplicate column names require explicit datasetId:LABEL choices',()=>{
+ const columns=[['H','H',0],['K','H',0],['L','H',0],
+  ['FP','F',1],['FP','F',2],['FC','F',1],['PHIC','P',1]];
+ const mtz=makeP1Mtz({columns,moreDatasets:[2],rows:[[1,0,0,10,99,8,0]]});
+ assert.throws(()=>p1.readMtz(mtz),/belirsiz/);
+ const picked=p1.readMtz(mtz,{columns:{fo:'1:FP',fc:'1:FC',phase:'1:PHIC'}});
+ assert.equal(picked.reflections[0].fo,10);
+ assert.equal(JSON.stringify(picked.mtz.columnDetails),JSON.stringify(['1:FP','1:FC','1:PHIC']));
+ const secondary=p1.readMtz(mtz,{columns:{fo:'2:FP',fc:'1:FC',phase:'1:PHIC'}});
+ assert.equal(secondary.reflections[0].fo,99);
+ assert.throws(()=>p1.readMtz(mtz,{columns:{fo:'2:FP',fc:'1:FC',phase:'2:PHIC'}}),/phase.*belirsiz|phase.*eksik/);
+ assert.throws(()=>p1.readMtz(mtz,{columns:{fo:'1:FWT'}}),/FWT/);
+ assert.match(htmlShell,/id="mtzFoColumn"/);
+ assert.match(moduleScript,/datasetId:LABEL/);
+});
+
+test('P8.2c raw and LSQ 2Fo-Fc are model-phased, not sigma-A weighted maps',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const mtz=p1.readMtz(makeP1Mtz({rows:[[1,0,0,10,8,0]]}));
+ const raw=p1.observedFourierMap(cell,mtz,{kind:'twice-observed',size:16,dMin:1});
+ const scaled=p1.observedFourierMap(cell,mtz,{kind:'twice-observed',size:16,dMin:1,scaleMode:'lsq'});
+ approx(raw.values[api.gridIndex(raw,0,0,0)],2*(20-8)/125,1e-7);
+ approx(scaled.experimental.fcScale,1.25,1e-9);
+ approx(scaled.values[api.gridIndex(scaled,0,0,0)],2*(20-10)/125,1e-7);
+ assert.equal(raw.experimental.modelPhased,true);
+ assert.match(raw.experimental.warning,/σA/);
+ assert.match(htmlShell,/value="twice-observed"/);
 });

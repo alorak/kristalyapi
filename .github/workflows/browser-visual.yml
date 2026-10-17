@@ -17,6 +17,22 @@ on:
       - 'tests/browser/**'
       - 'tests/offline.test.mjs'
       - '.github/workflows/browser-visual.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'reciprocal-core.js'
+      - 'reciprocal-page.js'
+      - 'crystal-app.js'
+      - 'styles.css'
+      - 'sw.js'
+      - 'manifest.webmanifest'
+      - 'translations.js'
+      - 'vendor/three/**'
+      - '.github/workflows/pages.yml'
+      - 'tests/browser/**'
+      - 'tests/offline.test.mjs'
+      - '.github/workflows/browser-visual.yml'
   workflow_dispatch:
 
 permissions:

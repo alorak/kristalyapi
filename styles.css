@@ -573,15 +573,16 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 
 /* The lower workbench is a persistent control surface, not a floating overlay
    over the crystal. The WebGL stage reserves its full height. */
-#viewport{--quickbar-height:80px}
+/* Reserve enough space for two-line controls even with localized labels and browser zoom. */
+#viewport{--quickbar-height:118px}
 #viewport #stage{bottom:var(--quickbar-height)}
 #viewport .axis-gizmo{bottom:calc(var(--quickbar-height) + 10px)}
 #viewport #toast{bottom:calc(var(--quickbar-height) + 8px)}
-.workbench-quickbar{position:absolute;z-index:5;left:0;right:0;bottom:0;height:var(--quickbar-height);display:grid;grid-template-columns:minmax(420px,1fr) minmax(345px,auto);gap:8px;align-items:center;padding:3px 9px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#c0d1e1 transparent;background:#f7fbff;border-top:1px solid #ccdce9;box-shadow:0 -4px 15px #294a6910;color:#3a5673}
+.workbench-quickbar{position:absolute;z-index:5;left:0;right:0;bottom:0;height:var(--quickbar-height);display:grid;grid-template-columns:minmax(420px,1fr) minmax(345px,auto);gap:8px;align-items:center;align-content:center;padding:10px 9px;overflow-x:auto;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#c0d1e1 transparent;background:#f7fbff;border-top:1px solid #ccdce9;box-shadow:0 -4px 15px #294a6910;color:#3a5673}
 .quickbar-group{display:flex;flex-direction:column;min-width:0;gap:5px;justify-content:center}
 .quickbar-group+.quickbar-group{border-left:1px solid #dbe6f0;padding-left:9px}
 .quickbar-group:last-child{justify-self:end;width:max-content;max-width:100%}
-.quickbar-group:last-child{transform:translateY(-5px)}
+.quickbar-group:last-child{transform:none}
 #app.right-drawer-open .quickbar-group:last-child{justify-self:start}
 .quickbar-topline{display:flex;align-items:center;min-width:0;gap:5px}
 .quickbar-field{display:flex;flex-direction:column;gap:0;min-width:0;font-size:9px;line-height:1;font-weight:700;color:#607b96;letter-spacing:.1px}

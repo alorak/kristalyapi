@@ -3581,20 +3581,99 @@ function modelFourierMap(cell,sites,{kind='density',scattering='xray',dMin=1.2,s
   source:'calculated model F; no Fobs; radix-2 FFT'};
  return result;
 }
-/* Package 8.2b (bounded scope): merged, P1 MTZ with explicit Fo/Fc/PHIC.
-   MTZ binary layout follows CCP4's 80-byte preamble, float32 reflection
-   records, 80-character header cards, and 1-based header word offset.
-   ASU/symmetry expansion, anomalous data, and map coefficients are *not*
-   silently treated as independent P1 Fo observations. */
-function readMtz(buffer){
+/* Package 8.2c: validated, primitive symmetry for selected merged MTZ
+   space groups; phases transform when h' = R^T h as
+   phi(h') = phi(h) - 360 deg * h.t (F uses exp(+i phi)).
+   Only non-anomalous Fo/Fc with calculated phases can be expanded. */
+function mtzSymmetryOperations(records,sg,cell){
+ // Explicitly bounded subset; neither a general space-group interpreter
+ // nor a substitute for Gemmi/CCP4 validation of an experimental dataset.
+ const orders={1:1,2:2,4:2,14:4,19:4};
+ const expected=orders[sg?.number];
+ if(!expected||sg.lattice!=='P'||sg.nOps!==expected||
+   sg.nPrimitive!==expected||records.length!==expected)
+  throw Error('MTZ uzay grubu/simetri kapsam dışı (P1, P-1, P21, P21/c, P212121 desteklenir).');
+ const mod=v=>((v%1)+1)%1;
+ const round=v=>Math.round(mod(v)*1000000)/1000000%1;
+ const key=op=>op.R.flat().join(',')+'|'+op.t.map(round).join(',');
+ const parse=(entry)=>{
+  const fields=entry.replace(/['"\s]/g,'').toUpperCase().split(',');
+  if(fields.length!==3)throw Error('MTZ SYMM 3 koordinat içermeli.');
+  const R=[],t=[];
+  for(const field of fields){
+   const row=[0,0,0];let shift=0;
+   if(!field||/[^XYZ0-9.+\/-]/.test(field))
+    throw Error('MTZ SYMM ifadesi geçersiz.');
+   const terms=field.replace(/-/g,'+-').split('+').filter(Boolean);
+   for(const term of terms){
+    if(/^-?[XYZ]$/.test(term)){
+     const axis='XYZ'.indexOf(term.replace('-',''));
+     row[axis]+=term.startsWith('-')?-1:1;
+    }else if(/^-?(?:\d+(?:\.\d+)?|\.\d+)(?:\/\d+)?$/.test(term)){
+     const parts=term.split('/'),den=parts[1]?Number(parts[1]):1;
+     if(den===0||den>24)throw Error('MTZ SYMM translasyonu geçersiz.');
+     shift+=Number(parts[0])/den;
+    }else throw Error('MTZ SYMM terimi desteklenmiyor.');
+   }
+   if(row.some(v=>Math.abs(v)>1))throw Error('MTZ SYMM dönüşüm katsayısı geçersiz.');
+   R.push(row);t.push(round(shift));
+  }
+  const det=R[0][0]*(R[1][1]*R[2][2]-R[1][2]*R[2][1])-
+   R[0][1]*(R[1][0]*R[2][2]-R[1][2]*R[2][0])+
+   R[0][2]*(R[1][0]*R[2][1]-R[1][1]*R[2][0]);
+  if(Math.abs(det)!==1)throw Error('MTZ SYMM dönüşümü tekil/geçersiz.');
+  return {R,t};
+ };
+ const ops=records.map(parse),keys=new Set(ops.map(key));
+ if(keys.size!==ops.length)throw Error('MTZ SYMM yinelenen işlem.');
+ const identity={R:[[1,0,0],[0,1,0],[0,0,1]],t:[0,0,0]};
+ if(!keys.has(key(identity)))throw Error('MTZ SYMM kimlik işlemi bulunamadı.');
+ const B=basis(cell),metric=B.map(a=>B.map(b=>a.dot(b))),eps=1e-4;
+ for(const op of ops){
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){
+   let transformed=0;
+   for(let a=0;a<3;a++)for(let b=0;b<3;b++)
+    transformed+=op.R[a][i]*metric[a][b]*op.R[b][j];
+   if(Math.abs(transformed-metric[i][j])>eps*Math.max(1,metric[i][i],metric[j][j]))
+    throw Error('MTZ SYMM dönüşümü hücre metriğiyle uyuşmuyor.');
+  }
+  for(const other of ops){
+   const R=Array.from({length:3},(_,i)=>Array.from({length:3},(_,j)=>
+    op.R[i].reduce((sum,v,k)=>sum+v*other.R[k][j],0)));
+   const t=op.t.map((v,i)=>round(v+op.R[i].reduce((sum,c,k)=>sum+c*other.t[k],0)));
+   if(!keys.has(key({R,t})))throw Error('MTZ SYMM işlemleri grup altında kapalı değil.');
+  }
+ }
+ // Rotation signatures distinguish the supported IT space groups despite
+ // alternative unique-axis settings and legitimate origin shifts.
+ const isInversion=o=>o.R.every((row,i)=>row.every((x,j)=>x===(i===j?-1:0)));
+ const det=o=>o.R[0][0]*(o.R[1][1]*o.R[2][2]-o.R[1][2]*o.R[2][1])-
+  o.R[0][1]*(o.R[1][0]*o.R[2][2]-o.R[1][2]*o.R[2][0])+
+  o.R[0][2]*(o.R[1][0]*o.R[2][1]-o.R[1][1]*o.R[2][0]);
+ if(sg.number===2&&!ops.some(isInversion)||
+   sg.number===4&&ops.some(o=>det(o)<0)||
+   sg.number===14&&(!ops.some(isInversion)||ops.filter(o=>det(o)<0).length!==2)||
+   sg.number===19&&ops.some(o=>det(o)<0))
+  throw Error('MTZ SYMINF numarası ile SYMM işlem türü uyuşmuyor.');
+ return ops;
+}
+function mtzSymmetryReflection(reflection,op){
+ const hkl=[reflection.h,reflection.k,reflection.l];
+ const mapped=[0,1,2].map(j=>hkl.reduce((sum,h,i)=>sum+h*op.R[i][j],0));
+ return {h:mapped[0],k:mapped[1],l:mapped[2],
+  fo:reflection.fo,fc:reflection.fc,
+  phase:reflection.phase-360*hkl.reduce((sum,h,i)=>sum+h*op.t[i],0)};
+}
+/* MTZ rows are IEEE float32, with a CCP4 80-byte preamble and 80-character
+   header cards. Manual mapping uses optional "datasetId:LABEL" notation.
+   FWT/PHWT and anomalous +/- data are not Fo/FC/PHIC substitutes. */
+function readMtz(buffer,{columns:columnChoices={}}={}){
  if(Object.prototype.toString.call(buffer)!=='[object ArrayBuffer]'||
   buffer.byteLength<160||buffer.byteLength>8000000)
   throw Error('MTZ dosyası geçersiz veya 8 MB sınırını aşıyor.');
  const bytes=new Uint8Array(buffer),view=new DataView(buffer);
  if(String.fromCharCode(...bytes.slice(0,4))!=='MTZ ')
   throw Error('MTZ imzası geçersiz.');
- // CCP4 machine stamp: upper nibble at byte 10 is 4 for little-endian,
- // 1 for big-endian IEEE. Refuse legacy/non-IEEE float encodings.
  const stamp=bytes[9]&0xf0;
  if(stamp!==0x40&&stamp!==0x10)
   throw Error('MTZ makine damgası/float biçimi desteklenmiyor.');
@@ -3604,9 +3683,9 @@ function readMtz(buffer){
  if(!Number.isSafeInteger(headerStart)||headerStart<80||
    headerStart>bytes.length-80||headerStart%4)
   throw Error('MTZ başlık ofseti dosya sınırlarının dışında.');
- let ncol=-1,nref=-1,nbatch=-1,globalCell=null,sg=null,identityCount=0;
+ let ncol=-1,nref=-1,nbatch=-1,globalCell=null,sg=null;
  let missingValue=NaN,seenEnd=false;
- const columns=[],datasetCells=new Map();
+ const columns=[],datasetCells=new Map(),symmetryCards=[];
  const parseCell=values=>{
   if(values.length!==6||values.some(v=>!Number.isFinite(Number(v))))
    throw Error('MTZ hücre parametreleri eksik/geçersiz.');
@@ -3635,11 +3714,10 @@ function readMtz(buffer){
    datasetCells.set(id,parseCell(fields.slice(2,8)));
   }else if(key==='SYMINF'){
    if(sg)throw Error('MTZ yinelenen SYMINF kaydı.');
-   sg={nOps:Number(fields[1]),lattice:fields[3]?.toUpperCase(),number:Number(fields[4])};
+   sg={nOps:Number(fields[1]),nPrimitive:Number(fields[2]),
+    lattice:fields[3]?.toUpperCase(),number:Number(fields[4])};
   }else if(key==='SYMM'){
-   if(fields.slice(1).join('').replace(/['"]/g,'').toUpperCase()!=='X,Y,Z')
-    throw Error('MTZ yalnız P1 (kimlik simetrisi) destekler.');
-   identityCount++;
+   symmetryCards.push(line.slice(4).trim());
   }else if(key==='VALM'){
    if(fields[1]?.toUpperCase()!=='NAN'){
     missingValue=Number(fields[1]);
@@ -3655,28 +3733,39 @@ function readMtz(buffer){
   throw Error('MTZ NCOL ile COL sütun sayısı uyuşmuyor.');
  if(80+ncol*nref*4!==headerStart)
   throw Error('MTZ yansıma bloğu ve başlık ofseti uyuşmuyor.');
- if(!sg||sg.number!==1||sg.lattice!=='P'||sg.nOps!==1||identityCount!==1)
-  throw Error('MTZ uzay grubu P1 değil veya simetri bilgisi eksik; ASU genişletme yapılmıyor.');
  if(!globalCell)throw Error('MTZ genel CELL kaydı yok.');
- const unique=(labels,type,mandatory=true)=>{
+ const symmetryOps=mtzSymmetryOperations(symmetryCards,sg,globalCell);
+ if(nref*symmetryOps.length>300000)
+  throw Error('MTZ simetri genişletme bütçesi (300.000 hkl) aşıldı.');
+ if(!columnChoices||typeof columnChoices!=='object'||Array.isArray(columnChoices))
+  throw Error('MTZ sütun eşlemesi geçersiz.');
+ const unique=(role,labels,type)=>{
+  const override=columnChoices[role];
+  let wanted=null,id=null;
+  if(override!==undefined&&override!==null&&String(override).trim()){
+   const match=/^(?:(\d+):)?([A-Z][A-Z0-9_/-]{0,29})$/.exec(String(override).trim().toUpperCase());
+   if(!match)throw Error('MTZ '+role+' eşlemesi geçersiz: datasetId:LABEL kullanın.');
+   id=match[1]===undefined?null:Number(match[1]);wanted=match[2];
+   if(/^(?:FWT|DELFWT|PHWT|PHDELWT|2FOFC|FOFC|FOM)$/.test(wanted))
+    throw Error('MTZ harita katsayısı Fo/Fc/PHIC yerine kullanılamaz: '+wanted);
+  }
   const hits=columns.map((c,i)=>({...c,index:i})).filter(c=>
-   c.type===type&&labels.includes(c.label));
-  if(hits.length!==1&&mandatory)
-   throw Error('MTZ '+labels.join('/')+' sütunu eksik veya belirsiz; otomatik seçim güvenli değil.');
-  return hits[0]||null;
+   c.type===type&&(wanted?c.label===wanted&&(id===null||c.datasetId===id):
+    labels.includes(c.label)));
+  if(hits.length!==1)
+   throw Error('MTZ '+role+' ('+labels.join('/')+') sütunu eksik veya belirsiz; datasetId:LABEL eşleyin.');
+  return hits[0];
  };
- const h=unique(['H'],'H'),k=unique(['K'],'H'),l=unique(['L'],'H');
- const fo=unique(['FP','FOBS','F_OBS','F-OBS','FO','F'],'F');
- const fc=unique(['FC','FCALC','F_CALC','F-CALC'],'F');
- const ph=unique(['PHIC','PHICALC','PHI_CALC','PHI-CALC'],'P');
- const chosen=[fo,fc,ph];
+ const h=unique('h',['H'],'H'),k=unique('k',['K'],'H'),l=unique('l',['L'],'H');
+ const fo=unique('fo',['FP','FOBS','F_OBS','F-OBS','FO','F'],'F');
+ const fc=unique('fc',['FC','FCALC','F_CALC','F-CALC'],'F');
+ const ph=unique('phase',['PHIC','PHICALC','PHI_CALC','PHI-CALC'],'P');
  if(fc.datasetId!==ph.datasetId)
   throw Error('MTZ Fcalc ve PHIC farklı veri kümelerinde; ölçek/faz eşleme belirsiz.');
- for(const col of chosen){
+ for(const col of [fo,fc,ph]){
   if(col.datasetId!==0&&!datasetCells.has(col.datasetId))
    throw Error('MTZ '+col.label+' veri kümesi için DCELL kaydı yok.');
-  const cell=datasetCells.get(col.datasetId)||globalCell;
-  validateFcfCell(globalCell,{cell});
+  validateFcfCell(globalCell,{cell:datasetCells.get(col.datasetId)||globalCell});
  }
  const isMissing=n=>!Number.isFinite(n)||
   Number.isFinite(missingValue)&&n===missingValue;
@@ -3697,9 +3786,12 @@ function readMtz(buffer){
  if(!reflections.length)
   throw Error('MTZ kullanılabilir Fo/Fc/PHIC yansıması içermiyor.');
  return {reflections,cell:globalCell,hasPhases:true,hasCalc:true,
-  clippedNegativeFo2:0,source:'MTZ P1 (merged, model phases)',
+  clippedNegativeFo2:0,source:sg.number===1?'MTZ P1 (merged, model phases)':
+   'MTZ SG '+sg.number+' (merged, model phases)',
   mtz:{skippedMissing,totalRows:nref,datasetId:fc.datasetId,
-   columns:[fo.label,fc.label,ph.label],endianness:little?'little':'big'}};
+   columns:[fo.label,fc.label,ph.label],columnDetails:[fo,fc,ph].map(c=>c.datasetId+':'+c.label),
+   endianness:little?'little':'big',spaceGroupNumber:sg.number,
+   symmetryOperations:symmetryOps,expanded:sg.number!==1}};
 }
 
 /* SHELXL LIST 6 reflection CIF. Fo is an amplitude (sqrt of measured
@@ -3790,7 +3882,7 @@ function fcfReflectionSelection(cell,fcf,{size=32,dMin=1.2}={}){
   new THREE.Vector3().crossVectors(B[2],B[0]),new THREE.Vector3().crossVectors(B[0],B[1])]
   .map(v=>v.multiplyScalar(1/det));
  const unique=new Map();let duplicates=0,skippedResolution=0,skippedNyquist=0;
- for(const r of fcf.reflections){
+ const consider=r=>{
   if(![r.h,r.k,r.l].every(Number.isInteger)||![r.fo,r.fc,r.phase].every(n=>Number.isFinite(n)||Number.isNaN(n))||
    !Number.isFinite(r.fo)||r.fo<0)
    throw Error('FCF yansıma verisi geçersiz.');
@@ -3799,8 +3891,8 @@ function fcfReflectionSelection(cell,fcf,{size=32,dMin=1.2}={}){
   if(neg){h=-h;k=-k;l=-l;}
   const inverseD=new THREE.Vector3().addScaledVector(reciprocal[0],h)
    .addScaledVector(reciprocal[1],k).addScaledVector(reciprocal[2],l).length();
-  if(inverseD>1/dMin+1e-10){skippedResolution++;continue;}
-  if([h,k,l].some(n=>Math.abs(n)>=size/2)){skippedNyquist++;continue;}
+  if(inverseD>1/dMin+1e-10){skippedResolution++;return;}
+  if([h,k,l].some(n=>Math.abs(n)>=size/2)){skippedNyquist++;return;}
   const rad=Number.isFinite(r.phase)?r.phase*Math.PI/180*(neg?-1:1):NaN;
   const key=[h,k,l].join(','),old=unique.get(key);
   if(old){
@@ -3812,9 +3904,15 @@ function fcfReflectionSelection(cell,fcf,{size=32,dMin=1.2}={}){
      (Number.isFinite(rad)||Number.isFinite(old.rad))&&phaseDelta>Math.PI/180)
     throw Error('FCF yinelenen/Friedel hkl çelişkili: '+key+
      ' (anomalous Friedel verisi desteklenmiyor).');
-   duplicates++;continue;
+   duplicates++;return;
   }
   unique.set(key,{h,k,l,fo:r.fo,fc:r.fc,rad});
+ };
+ const symOps=fcf.mtz?.symmetryOperations;
+ for(const reflection of fcf.reflections){
+  if(symOps?.length){
+   for(const op of symOps)consider(mtzSymmetryReflection(reflection,op));
+  }else consider(reflection);
  }
  if(!unique.size)throw Error('Seçilen d_min/ızgarada kullanılabilir FCF yansıması yok.');
  // This measures Fourier-grid P1 sampling, NOT crystallographic completeness.
@@ -3833,15 +3931,15 @@ function fcfReflectionSelection(cell,fcf,{size=32,dMin=1.2}={}){
   gridP1Possible,sourceCell:cellCheck.hasSourceCell};
 }
 function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMode='raw'}={}){
- if(!['difference','observed'].includes(kind)||!['raw','lsq'].includes(scaleMode))
+ if(!['difference','observed','twice-observed'].includes(kind)||!['raw','lsq'].includes(scaleMode))
   throw Error('FCF harita türü veya Fo/Fc ölçek seçimi geçersiz.');
  if(!fcf?.hasPhases)throw Error('FCF faz bilgisi (_refln_phase_calc) yok; Fobs tek başına Fourier haritası üretmez.');
- if(kind==='difference'&&!fcf.hasCalc)throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
+ if(kind!=='observed'&&!fcf.hasCalc)throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
  const selected=fcfReflectionSelection(cell,fcf,{size,dMin});
  if(selected.reflections.some(r=>!Number.isFinite(r.rad)))
   throw Error('FCF yansımalarının tümünde hesaplanan faz gerekli.');
  let scale=1;
- if(kind==='difference'&&scaleMode==='lsq'){
+ if(kind!=='observed'&&scaleMode==='lsq'){
   let numerator=0,denominator=0;
   for(const r of selected.reflections){numerator+=r.fo*r.fc;denominator+=r.fc*r.fc;}
   if(denominator<=1e-15||numerator<=0)throw Error('Fo/Fc LSQ ölçeği hesaplanamadı; sıfır Fcalc veya Fo.');
@@ -3851,12 +3949,12 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
  const re=new Float64Array(size**3),im=new Float64Array(size**3);
  const idx=(h,k,l)=>((h+size)%size*size+(k+size)%size)*size+(l+size)%size;
  for(const r of selected.reflections){
-  const amp=kind==='difference'?r.fo-scale*r.fc:r.fo;
+  const amp=kind==='observed'?r.fo:(kind==='twice-observed'?2*r.fo:r.fo)-scale*r.fc;
   const a=idx(r.h,r.k,r.l),b=idx(-r.h,-r.k,-r.l);
   re[a]=re[b]=amp*Math.cos(r.rad);im[a]=amp*Math.sin(r.rad);im[b]=-im[a];
  }
  const result=fourierGridFromCoefficients(cell,size,re,im,
-  kind==='difference'?'FO-FC':'FOBS','göreli F/Å³');
+  kind==='difference'?'FO-FC':kind==='twice-observed'?'2FO-FC':'FOBS','göreli F/Å³');
  result.experimental={kind,used:selected.reflections.length,
   skipped:selected.skippedResolution+selected.skippedNyquist,
   skippedResolution:selected.skippedResolution,skippedNyquist:selected.skippedNyquist,
@@ -3864,12 +3962,13 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
   clippedNegativeFo2:fcf.clippedNegativeFo2||0,
   sourceCell:selected.sourceCell,gridP1Possible:selected.gridP1Possible,
   gridP1Coverage:selected.gridP1Possible?selected.reflections.length/selected.gridP1Possible:null,
-  scaleMode:kind==='difference'?scaleMode:'not-applicable',fcScale:scale,
+  scaleMode:kind==='observed'?'not-applicable':scaleMode,fcScale:scale,
   modelPhased:true,
   warning:'Fobs, model fazı φcalc ile Fourier toplamına girdi. '+
-   (fcf.mtz?'MTZ P1 ve kaynak hücresi doğrulandı; model orijini kullanıcı sorumluluğundadır. ':
+   (fcf.mtz?'MTZ SG '+fcf.mtz.spaceGroupNumber+' / kaynak hücresi ve sınırlı simetri denetlendi; model orijini kullanıcı sorumluluğundadır. ':
     selected.sourceCell?'FCF/hücre uyumu doğrulandı; model orijinini kontrol edin. ':'FCF hücresiz; aktif hücre ve orijin varsayıldı. ')+
-   'P1 Fourier grid kapsamı, deneysel tamlık değildir; kristal simetri eşdeğerleri/MTZ/ölçüm ağırlıkları genişletilmez.'};
+   'P1 Fourier grid kapsamı, deneysel tamlık değildir; MTZ için desteklenen simetri eşdeğerleri genişletilir, anomalous/FOM/σ/FREE ağırlığı uygulanmaz. ' +
+   (kind==='twice-observed'?'2Fo−Fc ham/LSQ model fazlıdır; σA ağırlıklı refinman haritası değildir. ':'')};
  return result;
 }
 function xrdCsv(result){
@@ -4085,7 +4184,10 @@ function initStage3Analyses(){
   const workspace=activeWorkspaceId;
   try{
    if(file.size>8000000)throw Error('FCF/MTZ dosyası 8 MB sınırını aşıyor.');
-   const fcf=/\.mtz$/i.test(file.name)?readMtz(await file.arrayBuffer()):readFcf(await file.text());
+   const choices={fo:$('mtzFoColumn').value,fc:$('mtzFcColumn').value,
+    phase:$('mtzPhaseColumn').value};
+   const fcf=/\.mtz$/i.test(file.name)?
+    readMtz(await file.arrayBuffer(),{columns:choices}):readFcf(await file.text());
    if(workspace!==activeWorkspaceId)throw Error('FCF yüklenirken çalışma alanı değişti.');
    const cellCheck=validateFcfCell(state.cell,fcf);
    // The FCF is tied to this exact structural origin, not just a workspace.
@@ -4095,7 +4197,7 @@ function initStage3Analyses(){
    $('fcfStatus').textContent=fcf.reflections.length+' yansıma yüklendi · Fcalc '+
     (fcf.hasCalc?'var':'yok')+' · faz '+(fcf.hasPhases?'var':'yok')+
     ' · '+(cellCheck.hasSourceCell?'Kaynak hücresi eşleşti':'FCF hücre verisi yok; aktif hücre varsayılıyor')+
-    (fcf.mtz?' · MTZ P1 birleşik · atlanan eksik satır '+fcf.mtz.skippedMissing:'')+
+    (fcf.mtz?' · MTZ SG '+fcf.mtz.spaceGroupNumber+' ('+fcf.mtz.symmetryOperations.length+' işlem) · '+fcf.mtz.columnDetails.join('/')+' · atlanan eksik satır '+fcf.mtz.skippedMissing:'')+
     (fcf.clippedNegativeFo2?' · '+fcf.clippedNegativeFo2+' negatif F², Fo=0 alındı':'');
   }catch(error){inform('FCF/MTZ: '+error.message);}
   finally{e.target.value='';}
@@ -4109,14 +4211,14 @@ function initStage3Analyses(){
    const kind=$('fcfMapKind').value;
    const g=observedFourierMap(state.cell,fcf,{kind,scaleMode:$('fcfScaleMode').value,
     dMin:Number($('xrdMapResolution').value),size:Number($('xrdMapSize').value)});
-   addVolumeDataset(g,(fcf.mtz?'MTZ':'SHELX')+(kind==='difference'?' Fo−Fc (model fazlı)':' Fo (model fazlı)'));
+   addVolumeDataset(g,(fcf.mtz?'MTZ':'SHELX')+' '+(kind==='difference'?'Fo−Fc':kind==='twice-observed'?'2Fo−Fc':'Fo')+' (model fazlı)');
    if($('volumeMode').value==='off')$('volumeMode').value='both';
    volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
    const e=g.experimental;
    $('fcfStatus').textContent=e.used+' benzersiz yansıma · '+e.duplicates+' eşdeğer kopya · '+
     e.skippedResolution+' d_min dışı · '+e.skippedNyquist+' Nyquist dışı'+
     (e.gridP1Coverage===null?'':(' · P1 ızgara kapsama '+(100*e.gridP1Coverage).toFixed(1)+'%'))+
-    (kind==='difference'?' · Fc ölçeği '+e.fcScale.toFixed(5)+' ('+e.scaleMode+')':'')+
+    (kind!=='observed'?' · Fc ölçeği '+e.fcScale.toFixed(5)+' ('+e.scaleMode+')':'')+
     (e.clippedNegativeFo2?' · negatif F²: '+e.clippedNegativeFo2:'')+
     (fcf.mtz?' · MTZ eksik satır: '+fcf.mtz.skippedMissing:'')+'. '+e.warning;
    setRightSidebarTab('volume');

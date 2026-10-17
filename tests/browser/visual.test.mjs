@@ -124,7 +124,7 @@ async function assertHorizontalQuickbar(page,{drawerOpen=false,mobile=false}={})
    scrollWidth:dock.scrollWidth,clientWidth:dock.clientWidth
   };
  });
- assert.ok(geometry.dock.height<=82,'the bottom dock must stay one compact row: '+JSON.stringify(geometry));
+ assert.ok(geometry.dock.height>=116&&geometry.dock.height<=120,'the bottom dock must reserve 118px without stacking: '+JSON.stringify(geometry));
  assert.ok(geometry.view.right<=geometry.miller.left+1,'the two control groups must stay side by side: '+JSON.stringify(geometry));
  assert.ok(Math.abs((geometry.view.top+geometry.view.bottom)/2-(geometry.miller.top+geometry.miller.bottom)/2)<12,
   'the control groups must share the same vertical row: '+JSON.stringify(geometry));
@@ -728,9 +728,25 @@ try{
  assert.equal(await page.locator('#xrdMapIndex').count(),0);
  assert.equal(await page.locator('#xrdMapResolution').getAttribute('min'),'0.35');
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
- assert.equal(await page.locator('#fcfMapKind option').count(),2);
+ assert.equal(await page.locator('#fcfMapKind option').count(),3);
  assert.equal(await page.locator('#fcfScaleMode option').count(),2);
 
+ // Real user path: restore the XRD drawer after library/workspace navigation
+ // before interacting with its controls. Hidden controls cannot be selected.
+ if(!await page.locator('#fcfScaleMode').isVisible())
+  await page.locator('[data-right-tool="xrd"]').click();
+ await page.locator('#fcfScaleMode').waitFor({state:'visible'});
+ // The persistent bottom toolbar must contain its actual input boxes, even
+ // when a field label wraps; overflow must not cut the last row off.
+ const quickbarClip=await page.locator('#workbenchQuickbar').evaluate(bar=>{
+  const bound=bar.getBoundingClientRect();
+  return [...bar.querySelectorAll('.quickbar-field input,.quickbar-field select')]
+   .filter(el=>getComputedStyle(el).visibility!=='hidden')
+   .map(el=>({id:el.id,top:el.getBoundingClientRect().top,
+    bottom:el.getBoundingClientRect().bottom}))
+   .filter(rect=>rect.top<bound.top+2||rect.bottom>bound.bottom-2);
+ });
+ assert.deepEqual(quickbarClip,[],'quickbar inputs must stay within dock vertical bounds');
  // Real user path: upload an FCF in Chromium, choose nontrivial Fo/Fc
  // normalization, produce the map and surface the fitted scale diagnostics.
  await page.locator('#fcfScaleMode').selectOption('lsq');
@@ -779,6 +795,12 @@ try{
  assert.equal(output4.readUInt32BE(20),Math.round(rect4.height*4),'4× screenshot height must not be clamped');
  await page.setViewportSize({width:1480,height:920});
  await save(page,'26-polyhedron-per-site-instanced',metrics);
+ // A previous volume suite has filled the five-layer budget (including the
+ // earlier FCF layer). Start this independent import with an empty volume set.
+ if(!await page.locator('#clearVolume').isVisible())
+  await page.locator('[data-right-tool="volume"]').click();
+ await page.locator('#clearVolume').click();
+ assert.equal(await page.locator('#volumeActiveDataset option').count(),0);
  await page.locator('[data-right-tool="xrd"]').click();
  assert.equal(await page.locator('#fcfMapAdd').isVisible(),true);
  const fcfFixture=['data_smoke','loop_','_refln_index_h','_refln_index_k','_refln_index_l',
