@@ -20,6 +20,20 @@ The `tests/validation/volume_highres_reference.py` gate uses the original, trace
 - For a synthetic **skew periodic** signed sphere crossing the x-face seam, map both periodic edges to their canonical equivalents and require zero unmatched edges. This is a known-topology test, not an independently observed density.
 - Real CCP4 source values and MTZ-to-map geometry remain protected by P9.1 / P10.8.1–10.8.2 independent Gemmi gates. Experimentally independent CUBE/XSF/CHGCAR files, other MRC vendors, a second surface-meshing implementation, and cross-GPU performance remain unverified.
 
+## Measured real-map findings (CI run 39060603390)
+
+All numbers below compare **48³ to 64³ fully sampled scientific meshes**, not the production view's default stride-2 mesh at 64³.
+
+| Traceable source | Relative area change | Thresholded voxel-volume change | Interpretation |
+| --- | ---: | ---: | --- |
+| 5i55 monoclinic CCP4 | 5.84% | 0.94% | Finite-resolution sensitivity |
+| 5wkd C2 FWT/PHWT map | **62.33%** | **40.85%** | **Not converged** at these tested resolutions |
+| 5wkd C2 DELFWT/PHDELWT map | **52.71%** | 0.40% | Area **not converged** at these tested resolutions |
+
+A non-node isovalue is chosen reproducibly in a nearby *gap between distinct scalar samples across all comparison grids*. This avoids the mathematical ambiguity of a level exactly at a voxel node (which previously produced a zero-area marching-tetrahedra triangle). It does **not** remove or conceal degenerate triangles: true degeneracies, interior cracks and non-manifold edges remain hard CI failures. Adjacent spatial-hash buckets use coordinate-distance matching to avoid false topological cracks caused by Float32 quantization boundaries.
+
+**Do not claim real-map convergence simply because CI passed.** The CI proves the measurement pipeline and specific topology constraints ran without failures, while the high values above indicate follow-up is needed. Recommended next investigation: inspect the source coefficients, isovalue selection and signed contour topology at finer resolution, compare to an independent mesher, and consider an opt-in scientifically justified resolution mode rather than raising the production triangle limit indiscriminately.
+
 ## Run
 
 ```sh
