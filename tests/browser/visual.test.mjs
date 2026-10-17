@@ -484,6 +484,7 @@ try{
  assert.equal(ccp4Info.periodic,false);
  assert.equal(ccp4Info.quantity,'unknown');
  assert.match(await page.locator('#volumeInfo').textContent(),/CCP4\/MRC/);
+ if(!await page.locator('#rightDrawerPane-volume').isVisible())await page.locator('[data-right-tool="volume"]').click();
  await page.locator('#volumeSurfaceStyle').selectOption('hybrid');
  await page.locator('#volumePairThreshold').fill('0.15');
  await page.locator('#volumeIsoPair').click();
