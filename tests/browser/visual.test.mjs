@@ -39,6 +39,8 @@ window.__visualTest={
   return {nonPeriodic:water.nonPeriodic,edges:graph.edges.length,components:graph.components.length,cycleRank:graph.cycleRank};},
  ccp4:()=>densityGrid&&({kind:densityGrid.kind,dims:densityGrid.dims,periodic:densityGrid.periodic,
   mapping:densityGrid.ccp4?.mapping,starts:densityGrid.ccp4?.starts,quantity:densityGrid.quantity}),
+ vestaImport:()=>({name:state.name,sites:state.sites.length,cell:state.cell,bounds:state.bounds,
+  colors:state.sites.map(site=>site.visualColor),warning:state.warning,attached:!!densityGrid}),
  volumeVisual:()=>({isoCount:activeVolumeDataset()?.layers.length,style:volumeView.surfaceStyle,
   values:activeVolumeDataset()?.layers.map(layer=>layer.value),contourMode:volumeView.contourMode,
   contourStyle:volumeView.contourStyle,
@@ -1002,6 +1004,32 @@ try{
    assert.ok(Math.abs(Number(await importPage.locator('#a').inputValue())-item.a)<1e-3);
    assert.ok((await sample(importPage)).ink>20,'imported '+item.name+' must render atoms');
   }
+
+  // Package 9.3: the user selects the real project and its referenced Gemmi
+  // CCP4 map in ONE local picker; no browser path or network fetching.
+  const projectFile=path.join(base,'tests/fixtures/package9-3-signed.vesta');
+  const gridFile=path.join(base,'tests/fixtures/gemmi-5i55_tiny.ccp4');
+  await importPage.locator('#fileInput').setInputFiles([projectFile,gridFile]);
+  await importPage.waitForFunction(()=>window.__visualTest?.vestaImport().name==='P9.3 signed CCP4 preview'&&
+   window.__visualTest?.vestaImport().attached);
+  const vestaState=await importPage.evaluate(()=>window.__visualTest.vestaImport());
+  assert.equal(vestaState.sites,2);
+  assert.equal(vestaState.cell.a,29.45);
+  assert.deepEqual(vestaState.colors,['#c85028','#28b4dc']);
+  assert.deepEqual(vestaState.bounds,[[-.1,1.1],[0,1],[0,1]]);
+  await importPage.waitForFunction(()=>window.__visualTest.volumeVisual().isoCount===2);
+  const vestaVolume=await importPage.evaluate(()=>window.__visualTest.volumeVisual());
+  assert.deepEqual(vestaVolume.values,[.15,-.15]);
+  assert.ok(vestaVolume.fills>=1,'real signed CCP4 ISURF triangles should reach WebGL');
+  await importPage.screenshot({path:path.join(artifacts,'package-9-3-vesta-import.png')});
+  // A project by itself must show atoms, but surface voxels must remain absent.
+  await importPage.locator('#fileInput').setInputFiles(projectFile);
+  await importPage.waitForFunction(()=>window.__visualTest?.vestaImport().name==='P9.3 signed CCP4 preview'&&
+   !window.__visualTest?.vestaImport().attached);
+  assert.match((await importPage.evaluate(()=>window.__visualTest.vestaImport())).warning,
+   /matching .cube\/.xsf\/CHGCAR\/CCP4\/MRC/);
+  assert.equal(await importPage.evaluate(()=>window.__visualTest.volumeVisual().isoCount),undefined);
+
  }finally{await importContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');

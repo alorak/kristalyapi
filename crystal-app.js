@@ -5951,9 +5951,161 @@ function initWorkspaceUi(){
  renderWorkspaceList();
 }
 
+
+/* Package 9.3: bounded VESTA 3.x project subset.
+   A .vesta file does NOT embed its referenced density grid. This parser never
+   follows IMPORT_* paths or interprets an external file as trusted code. */
+function vestaProjectData(source){
+ if(typeof source!=='string'||source.length>4000000)throw Error('VESTA project exceeds the 4 MB text limit.');
+ const cleaned=source.replace(/^\uFEFF/,'');
+ const lines=cleaned.split(/\r?\n/);
+ const version=cleaned.match(/^#VESTA_FORMAT_VERSION\s+(3\.\d+(?:\.\d+)?)/m);
+ if(!version||!lines.some(line=>line.trim()==='CRYSTAL'))
+  throw Error('Expected a VESTA 3.x CRYSTAL project with a format-version header.');
+ const find=key=>lines.findIndex(line=>new RegExp('^\\s*'+key+'(?:\\s|$)').test(line));
+ const tokens=line=>String(line||'').trim().split(/\s+/);
+ const scalar=raw=>Number(String(raw).replace(/[dD]/g,'E'));
+ const finite=raw=>{const n=scalar(raw);if(raw===undefined||raw===''||!Number.isFinite(n))throw Error('Invalid numeric VESTA field.');return n;};
+ const warnings=[];
+ const cellIndex=find('CELLP');
+ if(cellIndex<0)throw Error('VESTA CELLP (unit cell) is missing.');
+ let ci=cellIndex+1;while(ci<lines.length&&!lines[ci].trim())ci++;
+ const c=tokens(lines[ci]);if(c.length<6)throw Error('VESTA CELLP needs six lattice parameters.');
+ const [a,b,cc,alpha,beta,gamma]=c.slice(0,6).map(finite);
+ const cell=validateCell({a,b,c:cc,alpha,beta,gamma});
+ const titleIndex=find('TITLE'),projectName=titleIndex>=0?
+  (lines.slice(titleIndex+1,titleIndex+5).find(line=>line.trim())||'VESTA structure').trim():'VESTA structure';
+ const siteIndex=find('STRUC');
+ if(siteIndex<0)throw Error('VESTA STRUC block is missing (external-only structures are not supported).');
+ const sites=[],byIndex=new Map();
+ let ended=false;
+ for(let i=siteIndex+1;i<lines.length;i++){
+  const line=lines[i].trim();if(!line)continue;
+  if(/^0(?:\s+0){4,}\s*$/.test(line)){ended=true;break;}
+  if(/^[A-Z][A-Z0-9_]*$/.test(line))throw Error('VESTA STRUC missing terminating zero row before '+line+'.');
+  const p=tokens(line);
+  if(!/^[1-9]\d*$/.test(p[0]))continue; // thermal displacement continuation
+  if(p.length<7||!/^[A-Za-z]{1,2}$/.test(p[1]))
+   throw Error('Malformed VESTA STRUC site on line '+(i+1)+'.');
+  const id=Number(p[0]),symbol=cleanSymbol(p[1]);
+  if(!PERIODIC_SYMBOLS.includes(symbol)||byIndex.has(id)||id>100000)
+   throw Error('Duplicate or unsupported VESTA atom identifier at line '+(i+1)+'.');
+  const occ=finite(p[3]),f=p.slice(4,7).map(finite);
+  if(occ<0||occ>1||f.some(n=>Math.abs(n)>1000))
+   throw Error('VESTA site occupancy or fractional coordinates are out of bounds.');
+  const site={symbol,label:String(p[2]).slice(0,80),occupancy:occ,x:f[0],y:f[1],z:f[2]};
+  sites.push(site);byIndex.set(id,site);
+  if(sites.length>1000)throw Error('VESTA import supports at most 1000 asymmetric sites.');
+ }
+ if(!ended||!sites.length)throw Error('VESTA STRUC must contain sites and a terminating zero row.');
+ const groupIndex=find('GROUP');
+ let sgNumber=1,sgSetting='1',symmetryEnabled=false;
+ if(groupIndex>=0){
+  const row=tokens(lines[groupIndex+1]);
+  const n=Number(row[0]);
+  if(Number.isInteger(n)&&n>=1&&n<=230&&n>1){
+   const setting=preferredSetting(n);
+   if(setting&&SPACE_GROUPS[setting]&&validateSymmetryMetric(cell,setting)){
+    sgNumber=n;sgSetting=setting;symmetryEnabled=true;
+    warnings.push('Space-group operations use internal standard settings; custom VESTA SYMOP/TRANM settings are not imported.');
+   }else warnings.push('VESTA non-P1 space group is incompatible or unavailable; supplied sites are displayed as P1 without fabricated symmetry.');
+  }else if(n!==1)warnings.push('Unrecognized VESTA space-group setting; importing listed sites as P1.');
+ }else warnings.push('GROUP is missing; treating the listed fractional sites as P1.');
+ const rgb=p=>{
+  const channels=p.map(Number);
+  return channels.length===3&&channels.every(n=>Number.isInteger(n)&&n>=0&&n<=255)?
+   '#'+channels.map(n=>n.toString(16).padStart(2,'0')).join(''):null;
+ };
+ // SITET is per crystallographic site; ATOMT is per chemical element.
+ const atomIndex=find('ATOMT'),siteStyleIndex=find('SITET'),elementColors=new Map();
+ if(atomIndex>=0)for(let i=atomIndex+1;i<lines.length;i++){
+  const p=tokens(lines[i]);if(p[0]==='0')break;
+  if(p.length<6||!/^\\d+$/.test(p[0]))break;
+  const color=rgb(p.slice(3,6));
+  if(color)elementColors.set(cleanSymbol(p[1]),color);
+ }
+ for(const site of sites)if(elementColors.has(site.symbol))
+  site.visualColor=elementColors.get(site.symbol);
+ if(siteStyleIndex>=0)for(let i=siteStyleIndex+1;i<lines.length;i++){
+  const p=tokens(lines[i]);if(p[0]==='0')break;
+  if(p.length<6||!/^\d+$/.test(p[0]))break;
+  const site=byIndex.get(Number(p[0])),color=rgb(p.slice(3,6));
+  if(site&&color&&p[1]===site.label)site.visualColor=color;
+ }
+ let bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());
+ const boundIndex=find('BOUND');
+ if(boundIndex>=0){
+  let bi=boundIndex+1;while(bi<lines.length&&!lines[bi].trim())bi++;
+  try{
+   const p=tokens(lines[bi]).slice(0,6).map(finite);
+   if(p.length!==6)throw Error('incomplete');
+   bounds=validatedBounds([[p[0],p[1]],[p[2],p[3]],[p[4],p[5]]]);
+  }catch(e){warnings.push('VESTA BOUND exceeds supported −1…2 fractional limits; using one unit cell.');}
+ }
+ const keyValues=key=>{
+  const i=find(key);return i<0?null:tokens(lines[i]).slice(1);
+ };
+ const bonds=keyValues('BONDS');
+ const labels=keyValues('LABEL');
+ const bondRules=[];
+ const bondIndex=find('SBOND');
+ if(bondIndex>=0)for(let i=bondIndex+1;i<lines.length;i++){
+  const p=tokens(lines[i]);if(p[0]==='0')break;
+  if(p.length<5||!/^\d+$/.test(p[0]))break;
+  const from=cleanSymbol(p[1]),to=cleanSymbol(p[2]),min=scalar(p[3]),max=scalar(p[4]);
+  if(PERIODIC_SYMBOLS.includes(from)&&PERIODIC_SYMBOLS.includes(to)&&Number.isFinite(min)&&Number.isFinite(max)&&min>=0&&max>min&&max<=15)
+   bondRules.push(from+'-'+to+':'+min+'-'+max);
+  else warnings.push('At least one VESTA SBOND rule could not be converted.');
+  if(bondRules.length>80){warnings.push('Only 80 bond distance rules were imported.');break;}
+ }
+ const deDuplicatedRules=[...new Map(bondRules.map(rule=>[rule.split(':')[0].split('-').sort().join('-'),rule])).values()];
+ const surfaceIndex=find('ISURF'),surfaces=[];
+ if(surfaceIndex>=0)for(let i=surfaceIndex+1;i<lines.length;i++){
+  const p=tokens(lines[i]);if(/^0(?:\s+0){3,}\s*$/.test(lines[i].trim()))break;
+  if(p.length<6||!/^[-+]?\d+$/.test(p[0]))break;
+  const level=scalar(p[2]),color=rgb(p.slice(3,6));
+  if(!Number.isFinite(level)||Math.abs(level)>1e12||!color){warnings.push('An invalid VESTA ISURF row was skipped.');continue;}
+  if(surfaces.length>=4){warnings.push('Only the first four VESTA isosurfaces are supported per dataset.');break;}
+  surfaces.push({value:level,color,visible:Number(p[0])>0,opacity:.62});
+ }
+ const densityIndex=find('IMPORT_DENSITY');
+ let density=null;
+ if(densityIndex>=0){
+  const p=tokens(lines[densityIndex+1]);
+  if(p.length>=2){
+   const scale=scalar(p[0]),reference=p.slice(1).join(' ').trim().replace(/^["']|["']$/g,'');
+   if(!Number.isFinite(scale)||Math.abs(scale)>1e4||scale===0||!reference||reference.length>500)
+    warnings.push('Unsupported VESTA IMPORT_DENSITY scale or path; the density was not loaded.');
+   else density={reference,scale};
+  }else warnings.push('VESTA IMPORT_DENSITY has no usable referenced filename.');
+ }
+ const unsupported=['IMPORT_STRUCTURE','IMPORT_TEXTURE','IMPORT_ORFFE','VECTR','THERI','SCENE','LMATRIX','PLN2D','HKLPP','POLYP'];
+ const present=unsupported.filter(key=>find(key)>=0);
+ if(present.length)warnings.push('Not transferred: '+present.join(', ')+'.');
+ if(surfaces.length&&!density)warnings.push('ISURF levels require an attached density grid; a .vesta file alone has no voxels.');
+ return {name:projectName.slice(0,150),detail:'VESTA 3.x import · '+sites.length+' sites',cell,sites,
+  sgNumber,sgSetting,symmetryEnabled,bounds,rep:[1,1,1],boundary:true,
+  style:'ball',cut:2.65,cellVisible:true,axes:false,poly:'',polyCenters:[],nonPeriodic:false,
+  bonds:bonds?bonds[0]!=='0':true,labels:labels?labels[0]!=='0':false,
+  autoBond:deDuplicatedRules.length===0,bondRules:deDuplicatedRules.join(';'),
+  warning:warnings.join(' '),vesta:{version:version[1],density,surfaces,warnings}};
+}
+/* The browser's file chooser is the only authority for a companion density
+   file. Basenames are matched exactly; no network, directory or local-path IO. */
+function vestaCompanionMatch(reference,files){
+ const basename=String(reference).split(/[\\/]/).pop().trim();
+ if(!basename||/[\u0000-\u001f]/.test(basename))return null;
+ const matches=Array.from(files||[]).filter(file=>
+  file&&String(file.name).toLowerCase()===basename.toLowerCase()&&
+  /\.(?:cube|cub|xsf|chgcar|chg|map|ccp4|mrc)$|^(?:CHGCAR|CHG)$/i.test(file.name));
+ if(matches.length>1)throw Error('Ambiguous VESTA density attachment: '+basename);
+ return matches[0]||null;
+}
+
 function structureImportData(source,filename){
  const name=String(filename).toLowerCase(),str=String(source);
  if(name.endsWith('.json'))return loadProject(str);
+  if(name.endsWith('.vesta'))return vestaProjectData(str);
  if(name.endsWith('.res')||name.endsWith('.ins')||/^(?=.*^CELL\s)(?=.*^SFAC\s)(?=.*^LATT\s)/ims.test(str))return shelxData(str);
  if(name.endsWith('.cell')||/^\s*%BLOCK\s+LATTICE_(?:CART|ABC)\b/im.test(str))return castepData(str);
  if(/\.(?:in|pwi|pw|qe)$/.test(name)||/&SYSTEM\b/i.test(str)&&/^\s*ATOMIC_POSITIONS\b/im.test(str))return qeData(str);
@@ -5962,17 +6114,73 @@ function structureImportData(source,filename){
  if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))return xyzData(str);
  return poscarData(str);
 }
-async function importFile(file){
+
+async function prepareVestaCompanion(project,selectedFiles){
+ const meta=project.vesta,warnings=meta.warnings;
+ const extras=Array.from(selectedFiles||[]).filter(file=>!String(file.name).toLowerCase().endsWith('.vesta'));
+ if(!meta.density){
+  if(extras.length)warnings.push('Companion files ignored: the VESTA project has no IMPORT_DENSITY reference.');
+  return null;
+ }
+ const file=vestaCompanionMatch(meta.density.reference,extras);
+ if(!file){
+  warnings.push('Density '+meta.density.reference+' is not embedded. Select its matching .cube/.xsf/CHGCAR/CCP4/MRC file together with the .vesta project to draw isosurfaces.');
+  return null;
+ }
+ if(extras.length!==1)warnings.push('Unreferenced extra files were not opened.');
+ try{
+  if(file.size>24000000)throw Error('24 MB grid limit exceeded');
+  const binary=/\.(?:map|ccp4|mrc)$/i.test(file.name);
+  const raw=binary?readCcp4Map(await file.arrayBuffer(),file.name):
+   readVolumetric(await file.text(),file.name);
+  let grid=interpretVolumeUnits(raw,'unknown',{periodic:binary?raw.periodic:!!raw.periodic});
+  const scale=meta.density.scale;
+  if(scale!==1){
+   const values=grid.values.map(value=>value*scale);
+   grid={...grid,...volumeGrid(grid.dims,grid.origin,grid.axes,values,grid.kind,grid.units)};
+   warnings.push('IMPORT_DENSITY multiplier '+scale+' applied to scalar voxels; verify units before quantitative interpretation.');
+  }
+  const B=basis(project.cell),steps=grid.axes.map((axis,i)=>axis.map(v=>v*(grid.periodic?grid.dims[i]:grid.dims[i]-1)));
+  if(steps.some((axis,i)=>axis.some((v,j)=>Math.abs(v-B[i].toArray()[j])>Math.max(.02,Math.abs(B[i].toArray()[j])*.02))))
+   warnings.push('Density grid cell extent differs from CELLP; check Cartesian alignment before quantitative analysis.');
+  return {grid,name:file.name};
+ }catch(error){
+  warnings.push('Referenced density could not be read ('+file.name+'): '+error.message+'. Structure only.');
+  return null;
+ }
+}
+function applyVestaCompanion(project,prepared){
+ if(!prepared)return;
+ const entry=addVolumeDataset(prepared.grid,prepared.name);
+ if(project.vesta.surfaces.length){
+  entry.layers=project.vesta.surfaces.map(layer=>validateVolumeIsoLayer(layer,prepared.grid));
+  if(entry.layers.some(layer=>layer.value<prepared.grid.min||layer.value>prepared.grid.max))
+   project.vesta.warnings.push('Some imported ISURF levels fall outside the grid range and will not render.');
+ }else project.vesta.warnings.push('No ISURF thresholds found; a default isosurface is shown.');
+ $('volumeMode').value='iso';volumeView.mode='iso';
+ volumeRefreshDatasetUi();volumeSyncIsoControls();updateVolumeInfo();volumeControlChanged();
+}
+
+async function importFile(file,selectedFiles=[file]){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
  const workspaceId=activeWorkspaceId;
  const str=await file.text(),name=file.name.toLowerCase();let obj;
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen içe aktarmayı yeniden başlatın.');
  const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
  obj=structureImportData(str,name);
+ const prepared=obj.vesta?await prepareVestaCompanion(obj,selectedFiles):null;
+ if(workspaceId!==activeWorkspaceId)throw Error('File loading changed workspaces; please try again.');
  if(densityGrid)resetVolume();
- state={...state,...obj,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ const {vesta,...structure}=obj;
+ state={...state,...structure,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  if(isCif&&name.endsWith('.json')===false)state.cifOriginal=originalCifRecord(state,str);
- syncControls();build();fit();inform(file.name+' yüklendi · '+state.sites.length+' atom');
+ syncControls();build();
+ if(vesta){
+  applyVestaCompanion(obj,prepared);
+  state.warning=vesta.warnings.join(' ');
+  report(state.warning);
+ }
+ fit();inform(file.name+' yüklendi · '+state.sites.length+' atom'+(prepared?' · density attached':''));
 }
 function cifExportText(state){
  const hasMagnetism=state.sites.some(s=>Array.isArray(s.magneticMoment));
@@ -7418,7 +7626,7 @@ function renderOpenModal(){
   const zone=document.createElement('div');zone.className='open-local';
   const mark=document.createElement('span');mark.textContent='↥';mark.style.fontSize='30px';
   const heading=document.createElement('strong');heading.textContent='Bilgisayarından yapı dosyası seç';
-  const info=document.createElement('span');info.textContent='CIF · mCIF · SHELX RES/INS · QE IN · CASTEP CELL · POSCAR · XYZ · PDB · JSON';
+  const info=document.createElement('span');info.textContent='CIF · mCIF · SHELX · QE · CASTEP · POSCAR · XYZ · PDB · JSON · VESTA 3.x (.vesta + isteğe bağlı harita; birlikte seçin)';
   const choose=document.createElement('button');choose.type='button';choose.className='primary';choose.textContent='Dosyalara göz at';choose.onclick=()=>$('fileInput').click();
   zone.append(mark,heading,info,choose);host.append(zone);return;
  }
@@ -7742,7 +7950,7 @@ function bind(){
   const m={custom:[[1,0,0],[0,1,0],[0,0,1]],fccp:[[0,.5,.5],[.5,0,.5],[.5,.5,0]],bccp:[[-.5,.5,.5],[.5,-.5,.5],[.5,.5,-.5]],fcctype:[[-1,1,1],[1,-1,1],[1,1,-1]],swap:[[0,1,0],[1,0,0],[0,0,-1]],double:[[2,0,0],[0,1,0],[0,0,1]]};setMatrix(m[e.target.value]||m.custom);
  };
  $('transformCell').onclick=applyTransformation;
- initOpenModal();$('fileInput').onchange=async e=>{if(!e.target.files?.[0])return;try{await importFile(e.target.files[0]);closeOpenModal();inform((activeWorkspace()?.label||'Çalışma alanı')+' içine dosya aktarıldı.');}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
+ initOpenModal();$('fileInput').onchange=async e=>{const files=Array.from(e.target.files||[]);if(!files.length)return;try{const projects=files.filter(file=>/\.vesta$/i.test(file.name));if(projects.length>1||!projects.length&&files.length>1)throw Error('Select a single structure, or one .vesta project with its referenced density file.');await importFile(projects[0]||files[0],files);closeOpenModal();inform((activeWorkspace()?.label||'Çalışma alanı')+' içine dosya aktarıldı.');}catch(err){inform('İçe aktarma: '+err.message);}e.target.value='';};
  $('saveBtn').onclick=openExportModal;
  $('undoBtn').onclick=()=>applyHistory('undo');
  $('redoBtn').onclick=()=>applyHistory('redo');

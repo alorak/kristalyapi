@@ -57,6 +57,7 @@ vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJp
 vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
+vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
@@ -65,6 +66,63 @@ vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForH
 vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
+
+test('P9.3 VESTA 3.5 project imports cell, fractional asymmetric sites, styles, bounds and signed ISURF levels',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'fixtures','package9-3-signed.vesta'),'utf8');
+ const project=api.vestaProjectData(src);
+ assert.equal(project.name,'P9.3 signed CCP4 preview');
+ assert.equal(project.vesta.version,'3.5.0');
+ assert.equal(project.cell.a,29.45);approx(project.cell.beta,111.975);
+ assert.equal(project.sites.length,2);
+ assert.equal(project.sites[0].symbol,'Fe');approx(project.sites[1].occupancy,.875);
+ assert.equal(project.sites[0].visualColor,'#c85028');
+ assert.equal(project.sites[1].visualColor,'#28b4dc');
+ assert.deepEqual(JSON.parse(JSON.stringify(project.bounds)),[[-.1,1.1],[0,1],[0,1]]);
+ assert.equal(project.bondRules,'Fe-O:1.4-2.3');
+ assert.equal(project.bonds,true);assert.equal(project.labels,true);
+ assert.equal(project.sgNumber,1);assert.equal(project.symmetryEnabled,false);
+ assert.equal(project.vesta.density.reference,'gemmi-5i55_tiny.ccp4');
+ assert.equal(project.vesta.density.scale,1);
+ assert.deepEqual(JSON.parse(JSON.stringify(project.vesta.surfaces.map(s=>[s.value,s.color,s.visible]))),
+  [[.15,'#2476b8',true],[-.15,'#dd5b4f',true]]);
+ const grid=api.readCcp4Map(fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5i55_tiny.ccp4')),'gemmi-5i55_tiny.ccp4');
+ assert.ok(project.vesta.surfaces.some(s=>s.value>0&&s.value<grid.max));
+ assert.ok(project.vesta.surfaces.some(s=>s.value<0&&s.value>grid.min));
+ assert.deepEqual(Array.from(grid.dims),[6,8,10]);
+ assert.ok(!project.warning.includes('density grid'),'parsing should not pretend to have read external voxels');
+ const imported=api.structureImportData(src,'example.vesta');
+ assert.equal(imported.sites.length,2);
+});
+test('P9.3 companion matching uses explicit selected files only, including relative VESTA paths',()=>{
+ const candidates=[{name:'gemmi-5i55_tiny.ccp4',size:8000},{name:'unrelated.cube',size:20}];
+ assert.equal(api.vestaCompanionMatch('../maps/gemmi-5i55_tiny.ccp4',candidates),candidates[0]);
+ assert.equal(api.vestaCompanionMatch('missing.ccp4',candidates),null);
+ assert.equal(api.vestaCompanionMatch('https://evil.invalid/anything.js',[{name:'anything.js'}]),null);
+ assert.throws(()=>api.vestaCompanionMatch('maps/sample.cube',[{name:'sample.cube'},{name:'SAMPLE.CUBE'}]),/Ambiguous/);
+ assert.match(moduleScript,/const prepared=obj\.vesta\?await prepareVestaCompanion/);
+ assert.match(moduleScript,/applyVestaCompanion\(obj,prepared\)/);
+ assert.match(htmlShell,/id="fileInput"[^>]*multiple[^>]*\.vesta/);
+});
+test('P9.3 VESTA malformed/sparse input fails safely, unsupported settings produce warnings',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'fixtures','package9-3-signed.vesta'),'utf8');
+ assert.throws(()=>api.vestaProjectData('STRUC\n1 C C1 1 0 0 0'),/version/);
+ assert.throws(()=>api.vestaProjectData(src.replace('111.975000','180.000000')),/Açılar/);
+ assert.throws(()=>api.vestaProjectData(src.replace('0.8750','1.5000')),/occupancy/);
+ assert.throws(()=>api.vestaProjectData(src.replace(' 0 0 0 0 0\nBOUND','BOUND')),/STRUC/);
+ assert.throws(()=>api.vestaProjectData(src.replace(' 2 O O1',' 1 O O1')),/Duplicate/);
+ const missing=api.vestaProjectData(src.replace(/IMPORT_DENSITY 1\n \+1\.000000 gemmi-5i55_tiny\.ccp4\n/,''));
+ assert.equal(missing.vesta.density,null);
+ assert.match(missing.warning,/ISURF levels require/);
+ const limited=api.vestaProjectData(src.replace('-0.1000 1.1000','-2.1000 4.1000'));
+ assert.deepEqual(JSON.parse(JSON.stringify(limited.bounds)),[[0,1],[0,1],[0,1]]);
+ assert.match(limited.warning,/BOUND exceeds/);
+ const unknown=api.vestaProjectData(src.replace('GROUP\n 1 1 P 1','GROUP\n 999 1 Unknown'));
+ assert.match(unknown.warning,/space-group/);
+ const noVoxels=api.vestaProjectData(src);
+ assert.equal(noVoxels.vesta.surfaces.length,2);
+ assert.ok(!('values' in noVoxels),'VESTA text must not fabricate voxel data');
+});
+
 test('fractional x/y/z bounds include negative periodic images without unbounded extents',()=>{
  const input=[[-.1,1.1],[0,1],[0,1]];
  assert.equal(JSON.stringify(visualV2.validatedBounds(input)),JSON.stringify(input));
@@ -1038,7 +1096,9 @@ test('tab switch preserves independent scroll offsets, toggles ARIA selection, r
 });
 test('atom badge follows imported structures by updating during every renderSites',()=>{
  assert.match(script,/function renderSites\(\)\{[\s\S]{0,1500}\$\('leftAtomsBadge'\)\.textContent=String\(state\.sites\.length\)/);
- assert.match(script,/async function importFile\(file\)[\s\S]*syncControls\(\);build\(\);fit\(\);/);
+ const importer=script.slice(script.indexOf('async function importFile('),script.indexOf('function cifExportText('));
+ assert.match(importer,/async function importFile\(file,selectedFiles=\[file\]\)/);
+ assert.match(importer,/syncControls\(\);build\(\);[\s\S]*fit\(\);/);
  assert.match(script,/function syncControls\(\)[\s\S]*fillPoly\(\);renderSites\(\);/);
 });
 test('mobile layout hides closed tabbed sidebar and preserves bottom navigation',()=>{

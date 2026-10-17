@@ -7,6 +7,7 @@
 (() => {
  'use strict';
  const entries=[
+  ['CIF · mCIF · SHELX · QE · CASTEP · POSCAR · XYZ · PDB · JSON · VESTA 3.x (.vesta + isteğe bağlı harita; birlikte seçin)','CIF · mCIF · SHELX · QE · CASTEP · POSCAR · XYZ · PDB · JSON · VESTA 3.x (.vesta + optional density map; select together)'],
   ['CUBE, CHGCAR / CHG, XSF DATAGRID_3D ve CCP4/MRC (.map/.ccp4/.mrc). Dosyalar yalnızca tarayıcıda işlenir.','CUBE, CHGCAR / CHG, XSF DATAGRID_3D and CCP4/MRC (.map/.ccp4/.mrc). Files are processed locally in the browser.'],
   ['CUBE / XSF / CCP4-MRC veri türü ve kaynak birimi','CUBE / XSF / CCP4-MRC physical quantity and source units'],
   ['CUBE / XSF periyodik (CCP4/MRC otomatik)','Periodic CUBE / XSF (automatic for CCP4/MRC)'],
