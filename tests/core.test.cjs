@@ -2667,6 +2667,25 @@ test('P8.1 edited CIF retains safe bibliographic loops and multiline provenance'
  approx(api.cifData(repeated).sites[0].y,.125);
 });
 
+test('P8.1 uncertain CIF missing-value tokens are not presented as source citations',()=>{
+ const source=[
+  'data_unknown','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  '_citation_title ?',
+  'loop_','_publ_author_name','?',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si .1 .2 .3'
+ ].join('\n')+'\n';
+ const parsed=api.cifData(source);
+ const record=api.originalCifRecord(parsed,source);
+ assert.equal(record.provenance.scalars.length,0);
+ assert.equal(record.provenance.loops.length,0);
+ const out=api.cifExportText({...parsed,cifOriginal:record,
+  sites:[{...parsed.sites[0],x:.4}]});
+ assert.doesNotMatch(out,/_citation_title|_publ_author_name/);
+});
+
 test('P8.1 source COD identifier is not falsely attributed to an edited structure',()=>{
  const source=[
   'data_cod','_cell_length_a 4','_cell_length_b 4','_cell_length_c 4',
