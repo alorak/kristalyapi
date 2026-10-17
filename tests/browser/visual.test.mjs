@@ -989,7 +989,8 @@ try{
  await page.locator('#performanceBtn').click();
  assert.equal(await page.locator('#performancePanel').isVisible(),true);
  assert.equal(await page.locator('#performanceBtn').getAttribute('aria-expanded'),'true');
- await page.waitForFunction(()=>window.__visualTest.performance().samples>=8);
+ // Software WebGL rendering varies widely on shared CI runners; keep the sample-count check, not a fixed FPS gate.
+ await page.waitForFunction(()=>window.__visualTest.performance().samples>=8,null,{timeout:90000});
  const largeMetrics=await page.evaluate(()=>window.__visualTest.performance());
  assert.equal(largeMetrics.visibleAtoms,12960);
  assert.ok(largeMetrics.gpuTriangles>0&&largeMetrics.drawCalls>=1);
