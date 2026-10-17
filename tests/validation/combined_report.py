@@ -17,7 +17,7 @@ def combine(scientific,visual):
                       'unexpected':unexpected,
                       'status':'fail' if unexpected or counts.get('fail',0) or counts.get('error',0) else
                                'inconclusive' if counts.get('inconclusive',0) else 'pass'},
-        'visual':{'status':visual.get('status') if isinstance(visual,dict) and visual.get('status') in ('pass','fail','inconclusive') else
+        'visual':{'status':visual.get('status') if isinstance(visual,dict) and visual.get('status') in ('pass','fail','inconclusive','not_run') else
                      'inconclusive' if visual is not None else 'not_run',
                   'metrics':visual},
     }
