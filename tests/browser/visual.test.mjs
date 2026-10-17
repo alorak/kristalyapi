@@ -578,6 +578,11 @@ try{
  assert.equal(slicePng.readUInt32BE(20),768,'P9.2 PNG export height');
  const sliceWorkerStats=await page.evaluate(()=>window.__visualTest.performance());
  assert.ok(sliceWorkerStats.sliceExportWorkerMs>=0,'P10.3 PNG raster sampling must run in an offline Worker');
+ assert.ok(sliceWorkerStats.contourWorkerSegments>0,'P10.4 signed contour marching-squares must run in Worker');
+ const [sliceCsvDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#volumeSliceCsv').click()]);
+ const sliceCsv=await fs.readFile(await sliceCsvDownload.path(),'utf8');
+ assert.match(sliceCsv,/x_A,y_A,z_A,value_/);
+ assert.ok(sliceCsv.trim().split('\n').length>200,'P10.4 CSV Worker should return physical sample coordinates');
  await page.locator('#clearVolume').click();
  await page.locator('#volumeSurfaceStyle').selectOption('smooth');
  await page.locator('#volumeContourMode').selectOption('uniform');
@@ -943,6 +948,10 @@ try{
   '125 ideal TiO6 octahedra must have total reference volume 125*a^3/6');
  assert.ok(Math.abs(polyhedra.area-125*Math.sqrt(3)*4*4)<1e-4,
   '125 ideal TiO6 octahedra must have surface 125*sqrt(3)*a^2');
+ const hullCache=await page.evaluate(()=>window.__visualTest.performance().polyTemplates);
+ assert.equal(hullCache.templates,1,'one unique TiO6 convex hull should be computed');
+ assert.equal(hullCache.reuses,124,'other 124 TiO6 polyhedra should reuse local hull and translate vertices');
+ assert.ok(hullCache.templateBytes>0);
  await page.waitForFunction(()=>document.querySelector('#polyElement option:checked')?.textContent.includes('centered polyhedron'));
  await page.locator('#polyMore').click();
  assert.equal(await page.locator('#polyCenterMenu').isVisible(),true,'extra center selector must open above dock');
@@ -980,7 +989,8 @@ try{
  await page.locator('#performanceBtn').click();
  assert.equal(await page.locator('#performancePanel').isVisible(),true);
  assert.equal(await page.locator('#performanceBtn').getAttribute('aria-expanded'),'true');
- await page.waitForFunction(()=>window.__visualTest.performance().samples>=8);
+ // Software WebGL rendering varies widely on shared CI runners; keep the sample-count check, not a fixed FPS gate.
+ await page.waitForFunction(()=>window.__visualTest.performance().samples>=8,null,{timeout:90000});
  const largeMetrics=await page.evaluate(()=>window.__visualTest.performance());
  assert.equal(largeMetrics.visibleAtoms,12960);
  assert.ok(largeMetrics.gpuTriangles>0&&largeMetrics.drawCalls>=1);

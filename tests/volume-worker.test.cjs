@@ -130,3 +130,79 @@ test('P10.3 polyhedron display LOD only changes outline visibility decisions',()
  assert.equal(context.decide(800,20,'fast'),false);
  assert.equal(context.decide(8,1,'fast'),true);
 });
+
+test('P10.4 contour Worker preserves marching-squares levels, saddle choice and holes',()=>{
+ const g=field([13,15,11]);
+ const events=[],self={postMessage:message=>events.push(message)};
+ const context={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>12},Math};
+ vm.createContext(context);vm.runInContext(workerSource,context);
+ const contourSource=extract('function sliceContourLevels(','function sliceImage(');
+ const contourCtx={Float32Array,Math,Number};
+ vm.createContext(contourCtx);
+ vm.runInContext(contourSource+';this.levels=sliceContourLevels;this.trace=sliceContourSegments;',contourCtx);
+ const spec={count:8,reference:0,mode:'balanced',step:1};
+ self.onmessage({data:{requestId:45,type:'slice',grids:[g],slice:{
+  grid:0,potential:-1,axis:2,position:50,size:64,palette:'thermal',contours:spec}}});
+ const result=events.pop().slice;
+ const levels=contourCtx.levels(result.values,spec.count,spec.reference,spec.mode);
+ const reference=contourCtx.trace(result.values,64,levels,1);
+ assert.deepEqual(Array.from(result.levels),Array.from(levels));
+ assert.equal(result.lines.length,reference.segments.length*5);
+ for(let i=0;i<reference.segments.length;i++){
+  const expected=reference.segments[i],offset=i*5;
+  const actual=Array.from(result.lines.slice(offset,offset+4));
+  [expected.x1,expected.y1,expected.x2,expected.y2].forEach((v,j)=>
+   assert.ok(Math.abs(actual[j]-v)<1e-4,'same world-scaled contour segment'));
+  assert.equal(result.lines[offset+4],levels.indexOf(expected.level));
+ }
+ const bad=[];const second={postMessage:m=>bad.push(m)};
+ const ctx2={self:second,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>12},Math};
+ vm.createContext(ctx2);vm.runInContext(workerSource,ctx2);
+ second.onmessage({data:{requestId:46,type:'slice',grids:[g],slice:{
+  grid:0,potential:-1,axis:2,position:50,size:64,palette:'thermal',
+  contours:{count:50,reference:0,mode:'uniform',step:1}}}});
+ assert.match(bad.pop().error,/Invalid contour settings/);
+});
+test('P10.4 CSV matrix Worker matches numeric axial/skew interpolation and units stay in editor',()=>{
+ const g=field([9,10,11]);
+ const results=[],self={postMessage:x=>results.push(x)};
+ const context={self,Float32Array,Float64Array,Uint8ClampedArray,performance:{now:()=>10},Math};
+ vm.createContext(context);vm.runInContext(workerSource,context);
+ vm.runInContext('this.sample=volumeSample;this.world=volumeWorld;this.at=volumeAtWorld;',coreCtx);
+ const at=(i,j,k)=>coreCtx.world(g,i,j,k);
+ const corners=[at(2,1,3),at(7,1,3),at(7,8,3),at(2,8,3)];
+ self.onmessage({data:{requestId:51,type:'slice-matrix',grids:[g],matrix:{
+  grid:0,axis:'hkl',position:50,size:64,corners}}});
+ const result=results.pop().matrix;
+ assert.equal(result.rows.length,64*64*4);
+ assert.equal(result.values.length,64*64);
+ const p=23*64+34,x=result.rows[p*4],y=result.rows[p*4+1],z=result.rows[p*4+2];
+ assert.ok(Math.abs(result.rows[p*4+3]-coreCtx.at(g,[x,y,z]))<1e-5);
+ assert.ok(Math.abs(result.values[p]-result.rows[p*4+3])<1e-5);
+ assert.ok(result.min<=result.mean&&result.mean<=result.max);
+ assert.ok(result.width>0&&result.height>0);
+});
+test('P10.4 polyhedron hull templates translate all vertices and leave normals unchanged',()=>{
+ const part=app.slice(app.indexOf('function appendPolyhedronTemplate('),
+  app.indexOf('function polyhedralDistortionMetrics('));
+ const ctx={};vm.createContext(ctx);
+ vm.runInContext(part+';this.append=appendPolyhedronTemplate;',ctx);
+ const template={positions:new Float32Array([0,1,2,3,4,5]),
+  normals:new Float32Array([1,0,0,0,1,0]),
+  edges:new Float32Array([0,0,0,1,1,1])};
+ const pos=[],norm=[],edge=[];
+ ctx.append(template,{x:4,y:-5,z:6},pos,norm,edge);
+ assert.deepEqual(pos,[4,-4,8,7,-1,11]);
+ assert.deepEqual(norm,[1,0,0,0,1,0]);
+ assert.deepEqual(edge,[4,-5,6,5,-4,7]);
+});
+test('P10.4 preview sampling density responds to candidate isosurface complexity without changing final stride',()=>{
+ const ctx={self:{postMessage(){}},Float32Array,Uint8ClampedArray,performance:{now:()=>0},Math};
+ vm.createContext(ctx);vm.runInContext(workerSource+';this.choose=isoPreviewStride;',ctx);
+ const low=field([64,64,64]);low.values.fill(0);
+ const complex=field([64,64,64]);
+ for(let i=0;i<complex.values.length;i++)complex.values[i]=(i%2)*2-1;
+ const sparse=ctx.choose(low,.5),dense=ctx.choose(complex,0);
+ assert.ok(sparse>=dense,'surface-dense preview must not sample more coarsely');
+ assert.ok(dense>=4&&sparse<=6);
+});
