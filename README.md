@@ -1,250 +1,229 @@
-# Kristal Yapı · 3B Studio
+# Kristal Yapı — Crystal Structure Viewer & Editor
 
-Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi ve editörü**. CIF ve diğer yapı dosyalarını açabilir, aynı oturumda birden çok kristali düzenleyebilir, geometrik/kristalografik analizler yapabilir ve sonuçları dışa aktarabilirsiniz.
+[**English**](README.md) · [Türkçe](README.tr.md)
 
-**Uygulama:** [GitHub Pages](https://alorak.github.io/kristalyapi/) · **Arayüz:** [index.html](index.html) · **Uygulama modülü:** [crystal-app.js](crystal-app.js) · **Geliştirme planı:** [ROADMAP.md](ROADMAP.md)
+A browser-based, **VESTA-inspired crystal structure viewer and editor** for scientific visualization and education. Open CIF and other structure files, work with multiple crystals in a single session, explore crystallographic and geometric analyses, and export your results.
 
-> Bu proje bilimsel görselleştirme ve eğitim amaçlıdır; VESTA'nın veya deneysel/yüksek doğruluklu hesaplama yazılımlarının tüm işlevlerine eşdeğer değildir. [Bilimsel kapsam ve sınırlar](#bilimsel-kapsam-ve-sınırlar) bölümüne bakın.
+**Launch:** [GitHub Pages](https://alorak.github.io/kristalyapi/) · **UI:** [index.html](index.html) · **Application:** [crystal-app.js](crystal-app.js) · **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
-## Hızlı başlangıç
+> This project is not a complete replacement for VESTA or experimental/high-accuracy computational software. See [Scientific scope and limitations](#scientific-scope-and-limitations) before interpreting quantitative results.
 
-1. [Uygulamayı açın](https://alorak.github.io/kristalyapi/).
-2. Üstteki **Aç** düğmesiyle **favoriler**, **örnek yapılar** veya **bilgisayarındaki CIF/PDB vb. dosyalar** arasından seçin. Aynı seçenekler Kütüphane sekmesinde de mevcuttur.
-3. Sol panelde birim hücreyi, süperhücreyi ve atom konumlarını düzenleyin; alt çubuktan görünümü değiştirin.
-4. Sağdaki simgelerden ölçüm, BVS, XRD, Miller düzlemleri veya diğer analizleri açın.
-5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ, PDB, **vektörel SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF veya **1×–4× yüksek çözünürlüklü PNG** dışa aktarın.
+## Quick start
 
-**Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
+1. [Open the application](https://alorak.github.io/kristalyapi/).
+2. Use **Open** to select a bookmarked structure, built-in example, or local CIF/PDB/other supported file. These options are also available in the Library.
+3. Edit unit-cell dimensions, supercells, and atomic sites in the left panel; change the representation using the bottom toolbar.
+4. Open measurement, bond-valence (BVS), diffraction (XRD), Miller-plane, and other analyses using the right-side tool icons.
+5. Use **Save** to export a project JSON, CIF, POSCAR, XYZ, PDB, **vector SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF, or **1×–4× high-resolution PNG**.
 
-Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
+**Languages:** The application starts in **English (EN)** by default. Switch to Turkish with the **EN / TR** controls in the upper-right corner. The preference is stored in your browser. Translations are bundled locally in [translations.js](translations.js); no remote translation service is used.
 
-## Arayüz
+The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
-| Bölüm | İşlev |
+## Interface
+
+| Area | Main functions |
 | --- | --- |
-| Üst menü | **Kristal Yapı** başlığının solunda hamburger simgesi, etkin workspace adı ve sayı rozeti; **Kütüphane** ve **Karşı Uzay** sayfalarında da hamburger kalır. Kompakt simgeli **Aç / Kaydet**, geri alma/yineleme ve **EN / TR** dil seçimi. |
-| Sol panel / **Genel** | Birim hücre parametreleri (`a, b, c, α, β, γ`), süperhücre, `a/b/c` için **− / +**, 1–6 tekrar ve her eksende **−1…2 arasında görünür kesirli sınır** seçimi (örn. −0,1…1,1). |
-| Sol panel / **Atomlar** | Asimetrik atom listesi, Wyckoff, ekle/sil ve site bazında **atom rengi/ölçeği** ile **çokyüzlü rengi/opaklığı**; proje ve Undo/Redo'da korunur. |
-| 3B çalışma alanı | Fareyle döndürme/kaydırma/zoom, bakış yönleri, görünüme sığdırma, perspektif–ortografik geçişi, XYZ yön göstergesi. |
-| Sağdaki ikon şeridi | Seçili aracın içeriğini sola doğru açıp kapatan, birbirinden bağımsız analiz ve ayar çekmeceleri. |
-| Alttaki kompakt çubuk | Model türü (**çokyüzlü dahil**), görünüm seçenekleri, atom boyutu/bağ uzunluğu, **bir veya çok sayıda merkez elementini seçme (+ düğmesi)**, çokyüzlü varsayılan rengi/opaklığı, komşu ve ADP ayarları; ayrıca **Miller h/k/l**, kesit kalınlığı ve düzlem düğmeleri. Dar alanda gruplar alt alta geçmez, yatay kaydırılabilir. |
+| Top bar | Hamburger menu and active workspace name/count next to the **Kristal Yapı** title, also accessible in the **Library** and **Reciprocal Space** pages. Compact **Open / Save**, undo/redo, and **EN / TR** controls. |
+| Left panel / **General** | Unit-cell parameters (`a, b, c, α, β, γ`), supercell, **− / +** controls for `a/b/c`, repeat counts 1–6, and per-axis visible fractional bounds between **−1 and 2** (e.g., −0.1…1.1). |
+| Left panel / **Atoms** | Asymmetric sites, Wyckoff positions, adding/removing sites, per-site **atom color/scale** and **polyhedron color/opacity**; settings persist in project files and undo/redo. |
+| 3D viewport | Mouse rotation, pan, zoom, standard views, fit-to-view, perspective/orthographic projections, XYZ orientation indicator. |
+| Right-side icon rail | Independent collapsible drawers for analysis and settings, expanding toward the viewport. |
+| Compact bottom bar | Representation modes (**including polyhedra**), visibility controls, atom size/bond length, **single or multiple polyhedron center elements (+ button)**, polyhedron default color/opacity, neighbors, ADPs, and **Miller h/k/l**, slice thickness, and plane controls. On narrow screens the groups scroll horizontally. |
 
-### Birden fazla kristal: çalışma alanları
+### Multiple crystal workspaces
 
-- Üst soldaki **üç çizgili simgeye** basarak yapılar arasında geçiş yapabilir veya **+ Yeni yapı ekle** ile en fazla **10 çalışma alanı** açabilirsiniz. Simgedeki rozet açık yapı sayısını gösterir.
-- Kütüphane görünümündeyken de etkin çalışma alanı başlıkta kalır; Kütüphane veya Aç modalından içe aktarılan kristal **o anda etkin olan çalışma alanını** değiştirir, diğerlerini değiştirmez.
-- Her çalışma alanı kendi kristal durumunu, kamerasını, geri alma/yineleme geçmişini ve ölçüm listesini tutar.
-- Çalışma alanları ve etkin seçim `localStorage` içinde geri yüklenir. Depolama kapasitesi/açma izinleri tarayıcıya bağlıdır. Büyük hacimsel veri dizileri kalıcı kayda eklenmez; yenilemeden sonra bu dosyalar yeniden yüklenmelidir.
-- **Geri al / Yinele:** üstteki ikonlar veya `Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z` / `Ctrl+Y`. Metin kutusu odaktayken yerel yazı geri alma davranışı korunur.
+- Use the upper-left **hamburger menu** to switch structures or choose **+ Add new structure** for up to **10 workspaces**. The badge shows the number of open structures.
+- The active workspace remains visible in the Library header. Importing a crystal from the Library or Open dialog replaces **only the currently active workspace**.
+- Each workspace maintains its own crystal state, camera, undo/redo history, and measurements.
+- Workspaces and the active selection are restored from `localStorage`, subject to browser permissions and storage capacity. Large volumetric arrays are not persisted and must be reloaded after refreshing.
+- **Undo / Redo:** top-bar buttons or `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z` / `Ctrl+Y`. Normal text-input undo is preserved when an input has focus.
 
-### Alt görünüm ve Miller kontrolleri
+### Display and Miller controls
 
-- **Dört model:** küre ve çubuk, uzay dolduran, çubuk, tel model.
-- **Sekiz aç/kapat simgesi:** atomlar arası bağlar, elemente göre otomatik bağ uzunluğu, birim hücre çizgileri, sınır atomları, atom sembolleri, yapı içi kristal eksenleri, otomatik döndürme ve termal elipsoitler (ADP). Aktif/pasif durum düğme üzerinde gösterilir.
-- **İki kaydırıcı:** atom boyutu ve bağ uzunluğu sınırı. Ek alanlarda ADP olasılık düzeyi, merkez atom, komşu yarıçapı ve en fazla komşu sayısı bulunur. Komşu seçenekleri, komşuluk/koordinasyon çizimi etkin değilse genel sahneyi anında değiştirmeyebilir.
-- **Bağımsız Miller alanı:** kısa `h`, `k`, `l` kutuları, kesit kalınlığı; **Miller düzlemlerini görüntüle** ve **Süperhücredeki tüm paralel düzlemleri göster** düğmeleri. Miller düzlemlerini açmak için örgü dönüşümü yapmanız gerekmez.
-- Perspektif/ortografik geçişi mevcut hedefi ve yaklaşık kadraj ölçeğini koruyacak şekilde ayarlanmıştır; iki projeksiyonun matematiksel görünümü yine farklıdır.
+- **Four representations:** ball-and-stick, space-filling, stick, and wireframe.
+- **Eight toggles:** bonds, element-based automatic bond cutoff, unit-cell edges, boundary atoms, atom labels, in-scene crystallographic axes, auto-rotation, and thermal ellipsoids (ADPs). Button state indicates whether each is enabled.
+- **Two sliders:** atom size and bond-distance cutoff. Additional settings include the ADP probability level, center species, neighbor radius, and maximum neighbor count. Neighbor settings may not change the scene immediately unless neighbor/coordination display is enabled.
+- **Dedicated Miller controls:** compact `h`, `k`, `l` inputs, slice thickness, **Show Miller planes**, and **Show all parallel planes in the supercell**. No basis transformation is needed to display a plane.
+- Switching between perspective and orthographic projection attempts to preserve the current target and approximate framing, although the projections are mathematically different.
 
-### Sağdaki analiz araçları
+### Analysis tools
 
-Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt sekme veya üst üste çok sayıda kutu gerektirmez:
+Use the vertical icon rail on the right to open these tools without nested secondary tabs:
 
-| Araç | Başlıca işlevler |
+| Tool | Main capabilities |
 | --- | --- |
-| **Yapı bilgileri** | Hücre, simetri, yapı ve seçili kaynağın özeti. |
-| **Çoklu yapı / faz karşılaştırması** | Ana kristale ek olarak en fazla üç CIF/mCIF fazı; konum, görünürlük, saydamlık ve hücre çizgileri. |
-| **Atom seçimi ve ölçüm** | Atom seçimi, uzaklık (doğrudan/periyodik), açı ve dört atomlu dihedral; renklerle ayrılmış sonuç kartları. |
-| **Ölçüm geçmişi** | Ölçüm paneline bitişik ayrı ikon, kayıt sayacı, kayıtların görüntülenmesi ve CSV dışa aktarma. |
-| **İleri koordinasyon / BVS** | Metrik-tam periyodik komşular, koordinasyon ve kısmi doluluk; Baur bozulma indisi, Hoppe ECoN, doğrulanmış tetra/octa topolojide quadratic elongation ile açı varyansı; seçili referans iyon çiftleri için BVS ve eşit bağ varsayımıyla beklenen bağ uzunluğu. |
-| **Best-fit plane · düzlemsellik** | Seçilen atomlardan en iyi uyan düzlem; normal, RMS/maksimum sapma ve düzlemler arası açı. |
-| **Yapı faktörü / toz XRD ve nötron** | IT92 nötr atom X-ışını `f₀(s)` veya nötron koherent `b`; Bragg kesiminden türetilen karşı-uzay taraması, `F(hkl)`, Bragg açıları, LP / Lorentz seçeneği, absorplayıcı element uyarısı; ampirik pseudo-Voigt/Caglioti toz profili, Kα1/Kα2 ikilisi ve ölçüm CSV karşılaştırması; `d_min` + FFT ile model Fourier/Patterson; fazı olan SHELX `.fcf` için `Fo`/`Fo−Fc` haritaları. |
-| **Hacimsel fizik verileri** | CUBE, CHGCAR, XSF; CHGCAR kollineer/nonkollineer spin bileşenleri; kaynak nicelik/birim seçimi, yoğunluk/potansiyel normalizasyonu; seçilen alanın CUBE/XSF dışa aktarımı; çoklu izoyüzey, güvenli `A + k₁B + k₂C` fark alanı ve `∫Δρ dV`, ekstremum araması, Miller `(hkl)` kesitleri ve yaklaşık Voronoi integrali. |
-| **Nesneler ve katmanlar** | Atom, bağ, hücre, etiket, Miller ve hacimsel katmanların görünürlük, opaklık ve sırası. |
-| **Atom türlerine göre bağlar** | Element çiftine özel min–maks mesafeler ve geometrik öneriler; otomatik XYZ/PDB molekül veya CIF/POSCAR periyodik bağ modu, 300 bağımsız atoma kadar bağlantı bileşenleri, çevrimsel bağ fazlalığı ve öteleme indisli bağ CSV çıktısı. |
-| **Örgü dönüşümü** | 3×3 baz dönüşümleri, primitive/konvansiyonel hücre, Niggli ve kısa baz, Moyo simetri analizi. |
-| **Miller düzlemleri ve morfoloji** | Bağımsız düzlem katmanları, kesit/slab, `{hkl}` yüz aileleri ve geometrik morfoloji. |
-| **Kristalografik simetri** | Uzay grubu/setting, simetri işlemleri, Wyckoff eşleşmeleri ve simetriyle genişletme. |
+| **Structure information** | Overview of cell, symmetry, structure, and selected source. |
+| **Multi-structure / phase comparison** | Up to three additional CIF/mCIF phases alongside the main crystal; placement, visibility, transparency, and cell edges. |
+| **Atom selection and measurements** | Atom picking; direct/periodic distances, angles, four-atom dihedrals; color-coded result cards. |
+| **Measurement history** | Separate nearby icon, count, saved results, and CSV export. |
+| **Advanced coordination / BVS** | Metric-complete periodic neighbors, coordination, partial occupancy, Baur distortion, Hoppe ECoN, quadratic elongation and angle variance for validated tetrahedral/octahedral topology, reference-pair BVS and equal-bond expected lengths. |
+| **Best-fit plane / planarity** | Plane normal, RMS/maximum deviation, and angles between fitted planes. |
+| **Structure factors / powder XRD / neutrons** | IT92 X-ray `f₀(s)` or coherent neutron `b`, Bragg-derived reciprocal-space coverage, `F(hkl)`, Bragg angles, optional LP/Lorentz, absorption warnings, empirical pseudo-Voigt/Caglioti profiles, Kα1/Kα2 doublet, measured-CSV comparison, model Fourier/Patterson via `d_min` + FFT, phased SHELX `.fcf` Fo and Fo−Fc maps. |
+| **Volumetric physical fields** | CUBE/CHGCAR/XSF, collinear/noncollinear CHGCAR spin, quantity/unit selection, density/potential conversion, CUBE/XSF export, multiple isosurfaces, guarded `A + k₁B + k₂C` difference fields and `∫Δρ dV`, extrema, Miller slices, approximate Voronoi integration. |
+| **Objects and layers** | Visibility, opacity, and order of atom, bond, cell, label, Miller, and volumetric layers. |
+| **Element-pair bonds** | Pair-specific minimum/maximum distances and geometric suggestions; automatic molecular XYZ/PDB or periodic CIF/POSCAR modes, connectivity for up to 300 independent atoms, redundant cyclic bonds, translation-indexed bond CSV. |
+| **Lattice transformations** | 3×3 basis transformations, primitive/conventional cells, Niggli and short bases, Moyo symmetry detection. |
+| **Miller planes and morphology** | Independent plane layers, slices/slabs, `{hkl}` face families, geometric morphology. |
+| **Crystallographic symmetry** | Space-group settings, symmetry operators, Wyckoff matches, and expansion by symmetry. |
 
-## Karşı Uzay ve Kırınım
+## Reciprocal space and diffraction
 
-Üst menüdeki **Karşı Uzay** (`#karsi-uzay`) tam genişlikli bir kavram laboratuvarıdır; etkin çalışma alanındaki yapıyı (simetriyle genişletilmiş P1 listesi) salt okunur kullanır ve editördeki IT92 `f₀(s)`, ADP ve `F(hkl)` hesaplarını paylaşır. Dört sekmesi vardır:
+The **Reciprocal Space** page (`#karsi-uzay`) is a full-width conceptual laboratory. It reads the active structure (its symmetry-expanded P1 atom list) without changing the editor and reuses the editor's IT92 `f₀(s)`, ADP, and `F(hkl)` calculations.
 
-| Sekme | İçerik | Kapsam ve sınır |
+| Tab | Content | Scope and limitations |
 | --- | --- | --- |
-| **Gerçek ↔ karşı örgü** | Birim hücrede `(hkl)` düzlem ailesi ve ona dik `G(hkl)`; `d`, `|G| = 1/d`, `a*, b*, c*`, `α*, β*, γ*`, `V* = 1/V`; `|F|²` ile ağırlıklandırılmış 3B karşı örgü; atom katkılarını uç uca ekleyen **yapı faktörü fazör diyagramı** (kapalı çokgen = sistematik sönüm) | Kristalografik kural `aᵢ·bⱼ = δᵢⱼ`; konvansiyonel hücre kullanılır, merkezleme sönümlerle görünür |
-| **Ewald küresi ve toz halkaları** | Seçilen `[uvw]` düzlemindeki Ewald kesiti, kristal dönüşü `ω`, küreye değen yansımalar ve kırınan ışınlar; **Sonraki Bragg konumu** düğmesi; toz modunda `1/d` kabuklarının küreyi kesmesi; düz dedektörde Debye–Scherrer halkaları ve LP dahil toz deseni | Kinematik model; halkalar `r = D·tan 2θ`, `D = 100 mm` ve `2θ ≤ 70°` ile çizilir |
-| **Bölge ekseni deseni (SAED)** | `[uvw]` bölge ekseni için sıfırıncı Laue bölgesi; relativistik elektron dalgaboyu, Mott–Bethe elektron saçılma çarpanı, uyarılma hatası ve kalınlığa bağlı `sinc²` biçim çarpanı; kinematik olarak sönük konumlar ayrıca işaretlenir | Dinamik ve çift kırınım hesaplanmaz (ör. Si [110]'da (002) gerçek desende görülebilir); HOLZ çizgileri yok |
-| **Brillouin bölgesi ve bantlar** | Yapıyı kendisine taşıyan saf ötelemelerden primitive örgü, primitive karşı örgünün Wigner–Seitz hücresi (birinci Brillouin bölgesi), Bravais türü, Setyawan–Curtarolo (2010) yüksek simetri noktaları/yolu ve **boş örgü** (serbest elektron) bantları | Yol CUB, FCC, BCC, TET, ORC ve HEX için tanımlıdır; etiketler kullanıcının a, b, c eksenlerine göredir. Boş örgüde kristal potansiyeli sıfırdır, bant aralığı açılmaz |
+| **Direct ↔ reciprocal lattice** | `(hkl)` plane family and perpendicular `G(hkl)`, `d`, `|G| = 1/d`, `a*, b*, c*`, `α*, β*, γ*`, `V* = 1/V`; 3D reciprocal lattice weighted by `|F|²`; **structure-factor phasor diagram** with head-to-tail atomic contributions (closed polygon = systematic extinction). | Crystallographic duality `aᵢ·bⱼ = δᵢⱼ`; conventional cell is used, with centering represented by extinctions. |
+| **Ewald sphere and powder rings** | Ewald section in selected `[uvw]` plane, crystal rotation `ω`, sphere-intersecting reflections and diffracted beams, **Next Bragg position**, reciprocal `1/d` shells in powder mode, Debye–Scherrer rings on a flat detector and an LP-aware powder pattern. | Kinematic approximation; rings follow `r = D·tan 2θ`, with `D = 100 mm` and `2θ ≤ 70°`. |
+| **Zone-axis pattern (SAED)** | Zero-order Laue zone for `[uvw]`; relativistic electron wavelength, Mott–Bethe electron scattering factor, excitation error, and thickness-dependent `sinc²` shape factor. Kinematically forbidden positions are marked separately. | No dynamical or double diffraction (e.g., Si [110] (002) can appear experimentally), and no HOLZ lines. |
+| **Brillouin zone and bands** | Primitive lattice from pure translations preserving the crystal, Wigner–Seitz cell of the primitive reciprocal lattice (first Brillouin zone), Bravais type, Setyawan–Curtarolo (2010) high-symmetry points/path, and **empty-lattice** (free-electron) bands. | Paths for CUB, FCC, BCC, TET, ORC, and HEX; labels refer to the user's a/b/c axes. The zero-potential empty-lattice model cannot open a band gap. |
 
-Bilimsel çekirdek bağımsız bir modüldedir ([`reciprocal-core.js`](reciprocal-core.js)); arayüz [`reciprocal-page.js`](reciprocal-page.js) içindedir. Çekirdek testleri dual baz, `d(hkl)`, Bragg geometrisi, saf ötelemeler, FCC/BCC/SC/HEX bölge geometrisi ve hacmi, özel noktaların bölge yüzeyinde olması ve boş örgü enerjilerini analitik değerlere karşı sınar.
+The scientific core is [`reciprocal-core.js`](reciprocal-core.js), and the UI is [`reciprocal-page.js`](reciprocal-page.js). Tests compare dual bases, `d(hkl)`, Bragg geometry, pure translations, SC/BCC/FCC/HEX zone geometry and volume, special-point boundary placement, and empty-lattice energies with analytical references.
 
-## Kütüphane ve COD
+## Library and the Crystallography Open Database (COD)
 
-**Kütüphane** tam genişlikli sayfadır ve dört alt sekmesi vardır:
+The full-width **Library** page has four tabs:
 
-1. **COD'da ara:** ana arama ölçütleri solda, **Arama sonuçları** sağda. COD numarası, ad/formül, uzay grubu, gerekli/hariç elementler ve gelişmiş yayın/hacim/element sayısı filtreleri. Arama sonucu yer imlerine eklenebilir, CIF olarak açılabilir veya içe aktarılabilir. **COD ID üzerine tıklandığında ayrıntı modalı** açılır.
-2. **Örnek Yapılar:** solda yedi örneğin **açılır menü yerine listesi**, sağda seçili yapının hücre bilgileri, açıklaması, favori düğmesi ve içe aktarma. Si, NaCl, CsCl, elmas, FCC Cu, BaTiO₃ ve grafit bulunur. **Yeni P1 oluştur** seçeneği de vardır.
-3. **Yer imleri:** COD kayıtlarının yerel listesi; kaydedilmiş kayıtları bulma, içe aktarma ve yer imi JSON'unu dışa aktarma.
-4. **Cloudflare Worker · COD API:** yalnızca isteğe bağlı Worker adresini kaydetme, test etme ve temizleme. Arama sayfasında yer kaplamaz.
+1. **Search COD:** search criteria on the left and results on the right. Filter by COD ID, name/formula, space group, required/excluded elements, publication, volume, and number of elements. Bookmark, open as CIF, or import results. Clicking a **COD ID** opens a details dialog.
+2. **Examples:** a list of seven built-in structures—Si, NaCl, CsCl, diamond, FCC Cu, BaTiO₃, and graphite—with details, favorites, and import controls. **Create new P1** is also available.
+3. **Bookmarks:** locally saved COD records; search, import, and export bookmark JSON.
+4. **Cloudflare Worker · COD API:** configure, test, or clear an optional Worker endpoint without cluttering the search page.
 
-### COD bağlantı yöntemleri
+### COD connection methods
 
-| Mod | Davranış |
+| Mode | Behavior |
 | --- | --- |
-| **Otomatik** | Worker ayarlıysa onu dener; uygun standart filtrelerde OPTIMADE, diğerlerinde klasik COD JSON aramasını kullanır. |
-| **Yalnız kendi Cloudflare Worker API** | Kullanıcının dağıttığı Worker ağ geçidini kullanır. |
-| **Yalnız doğrudan OPTIMADE API** | Yalnız OPTIMADE'nin desteklediği filtrelerle çalışır. |
-| **Yalnız doğrudan COD klasik API / CIF** | COD'un klasik `result.php?format=json` API'sini kullanır. |
+| **Automatic** | Tries a configured Worker; uses OPTIMADE for supported standard filters, otherwise the classic COD JSON search. |
+| **Cloudflare Worker API only** | Uses the user's deployed Worker gateway. |
+| **Direct OPTIMADE API only** | Supports only OPTIMADE-compatible filters. |
+| **Direct classic COD API / CIF only** | Uses the classic COD `result.php?format=json` API. |
 
-Resmî uç noktalar: [COD klasik JSON](https://www.crystallography.net/cod/result.php?format=json), [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Aramayı tarayıcıdan yürütmek **CORS iznine** bağlıdır. Çevrimiçi içe aktarım başarısız olursa **Dosyadan** ile indirilen CIF'i açabilirsiniz; bu yol COD API CORS'una bağlı değildir. İsteğe bağlı Worker için [kurulum, güvenlik ve dağıtım rehberi](worker/README.md) bulunur. **GitHub Pages dağıtımı Worker'ı otomatik yayınlamaz.**
+Official endpoints: [classic COD JSON](https://www.crystallography.net/cod/result.php?format=json) and [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Direct browser requests depend on the upstream server allowing **CORS**. If online import fails, download the CIF and use **Open from file**, which is independent of COD API CORS. The optional Worker has a [setup, security, and deployment guide](worker/README.md). **Deploying to GitHub Pages does not automatically deploy the Worker.**
 
-### COD üstverisi: klasik API, OPTIMADE ve Worker
+### COD metadata: classic API, OPTIMADE, and Worker
 
-Klasik COD JSON yanıtları `sg`, `a`, `b`, `c`, `vol`, `authors`, `doi` gibi alanlar döndürür. OPTIMADE yanıtlarında aynı COD üstverisi `attributes._cod_sg`, `_cod_a`, `_cod_vol`, `_cod_authors`, `_cod_doi` adlarını kullanır. **`normalizeCodRecord()` artık iki biçimi de eşleyerek doğrudan OPTIMADE ve Cloudflare Worker üzerinden gelen sonuçları aynı alanlara dönüştürür.** Deneysel hata payları (`siga`, `sigvol` vb.) ve yayın/rafinman üstverileri de desteklenir.
+The classic COD JSON API returns fields such as `sg`, `a`, `b`, `c`, `vol`, `authors`, and `doi`. OPTIMADE exposes equivalent metadata as `attributes._cod_sg`, `_cod_a`, `_cod_vol`, `_cod_authors`, and `_cod_doi`. **`normalizeCodRecord()` maps both formats to the same fields**, whether data arrives directly through OPTIMADE or through a Cloudflare Worker. Experimental uncertainties (`siga`, `sigvol`, etc.), publication details, and refinement metadata are also supported.
 
-Örneğin [COD 4335507](https://www.crystallography.net/cod/4335507.html) için `C 1 2/m 1`, `a=16.646 ± 0.002 Å`, `b=4.419 ± 0.0006 Å`, `c=7.4834 ± 0.001 Å`, `β=106.893 ± 0.002°`, `V=526.72 ± 0.12 Å³` ve yayın üstverileri gösterilebilir.
+For example, [COD 4335507](https://www.crystallography.net/cod/4335507.html) can display `C 1 2/m 1`, `a=16.646 ± 0.002 Å`, `b=4.419 ± 0.0006 Å`, `c=7.4834 ± 0.001 Å`, `β=106.893 ± 0.002°`, `V=526.72 ± 0.12 Å³`, and publication data.
 
-- **COD ID modalı:** Yalnız mevcut alanları gösterir; kimyasal ad/formül, yayın/DOI, örgü ölçüleri ve belirsizlikler, sıcaklık, uzay grubu, radyasyon türü ve rafinman metrikleri ayrı kartlarda sunulur. Açıldığında seçili bağlantı yöntemine göre ayrıntıları sorgular; başarısız bağlantıda mevcut satır üstverisini gösterir. **COD'da görüntüle** ve **CIF içe aktar** düğmeleri vardır.
-- **Veri bulunurluğu:** Bütün COD kayıtlarında bütün alanlar dolu olmayabilir. Yok olan alanlar için deneysel değer uydurulmaz. Worker'ın ayarlanmış ve erişilebilir olması gerekir.
+- **COD ID dialog:** shows only available data, with separate cards for name/formula, publications/DOI, lattice metrics and uncertainties, temperature, space group, radiation, and refinement. It attempts to fetch details using the selected connection method, falling back to metadata already present in the result row. Includes **View on COD** and **Import CIF** actions.
+- **Data availability:** some COD records lack fields; missing experimental numbers are never fabricated. A configured Worker must be reachable.
 
-Eski sürümlerde `_cod_` alanlarının eksik eşlenmesi nedeniyle görülen sahte boşluklar için klasik COD ve OPTIMADE fixture'larının aynı bilgileri üretmesi artık regresyon testlerinde doğrulanır.
+Regression fixtures now verify that classic COD and OPTIMADE records produce equivalent metadata, preventing false gaps from incomplete `_cod_` mapping.
 
-## Dosya biçimleri
 
-| İşlem | Destek |
+## File formats
+
+| Operation | Supported formats |
 | --- | --- |
-| **İçe aktar** | CIF / yaygın mCIF yapısal altkümesi, **SHELXL `.res/.ins`**, **Quantum ESPRESSO `pw.x` `.in/.pwi`**, **CASTEP `.cell`**, VASP POSCAR/CONTCAR, basit XYZ, **PDB/ENT** (CRYST1 + ilk MODEL, ATOM/HETATM, ANISOU), Kristal Yapı proje JSON'u. |
-| **Dışa aktar** | Proje JSON, CIF, POSCAR, XYZ (görünür süperhücre atomları), **PDB** (birim hücrede P1 atomları), **SVG yapı görünümü**, **STL üçgen yüzeyi**, **glTF 2.0 (.glb) renkli 3B modeli**, PNG. |
-| **Hacimsel alan** | Gaussian CUBE (`.cube`, `.cub`), VASP CHGCAR/CHG, XCrySDen XSF DATAGRID_3D. |
+| **Import** | CIF / common structural subset of mCIF, **SHELXL `.res/.ins`**, **Quantum ESPRESSO `pw.x` `.in/.pwi`**, **CASTEP `.cell`**, VASP POSCAR/CONTCAR, simple XYZ, **PDB/ENT** (CRYST1 + first MODEL, ATOM/HETATM, ANISOU), and Kristal Yapı project JSON. |
+| **Export** | Project JSON, CIF, POSCAR, XYZ (visible supercell atoms), **PDB** (P1 atoms within the unit cell), **vector structure SVG**, **STL mesh**, **colored glTF 2.0 (.glb) 3D model**, and PNG. Additional publication formats are described below. |
+| **Volumetric data** | Gaussian CUBE (`.cube`/`.cub`), VASP CHGCAR/CHG, XCrySDen XSF DATAGRID_3D. |
 
-İçe aktarılan ve **değiştirilmemiş** bir kaynak CIF, aynı oturumda dışa aktarılırken özgün metni **birebir** korur. **Paket 8.1:** Kristal düzenlendiğinde güvenli, kaynakla ilişkilendirilebilir bibliyografik `_publ_author_*`, `_citation_*` ve `_journal_*` skaler/loop alanları da (boyut ve sözdizimi sınırları içinde) yeniden üretilen CIF'ye taşınır. Yapıya bağlı `_atom_site_*`, `_geom_*`, `_refine_*` ve deneysel kayıtlar eski yapı için kalabileceğinden otomatik taşınmaz; değiştirilen yapının eski `_cod_database_code` kimliği yeniden kullanılmaz. Kimyasal bileşim değişirse özgün formül/kimyasal isimler de yeniden üretilen dosyadan çıkarılır. **Tüm CIF varyantları/metadata için kayıpsız round-trip garantisi yoktur.** Bu kaynak-koruma davranışı orijinal dosya metninin bellekte tutulduğu oturumla sınırlıdır; proje JSON veya sayfa yenilenmesi kaynak dosyanın byte düzeyinde korunduğu anlamına gelmez. Bilimsel arşiv için orijinal CIF'i ayrıca saklayın. XYZ dosyaları hücre verisi içermez; uygulama görüntüleme için yapay bir kutu kullanır. PDB desteği **kristalografik koordinat altkümesidir**: CRYST1 Hermann–Mauguin sembolü eşlenebiliyorsa asimetrik atomlara simetri uygulanır; sembol tanınmıyor veya metrikle uyuşmuyorsa açık uyarı verilir. Element sütunu boşsa atom adı/hizalama üzerinden tahmin yapılır ve uyarılır (özellikle protein `CA` atom adı kalsiyumla karıştırılmamalıdır). Zincir/rezidü topolojisi korunmaz. PDB'nin sabit ondalık sütunları nedeniyle koordinat, doluluk ve ANISOU aktarımında biçimin yuvarlama sınırları geçerlidir.
+An imported, **unmodified CIF** is re-exported with its exact original text during the same session. **Package 8.1:** when a structure is edited, safe source-attributable bibliographic scalar and loop fields (`_publ_author_*`, `_citation_*`, and `_journal_*`) are carried into the regenerated CIF within size and syntax limits. Structure-dependent `_atom_site_*`, `_geom_*`, `_refine_*`, and experimental records are not automatically copied, as they may describe the *old* structure. The old `_cod_database_code` is not reused for a modified structure. If the composition changes, the original formula and chemical names are also omitted. **Lossless round-tripping is not guaranteed for every CIF dialect or metadata field.** Exact-source preservation applies only while the original text remains in memory; project JSON and page refreshes do not preserve the original CIF byte-for-byte. Keep the original CIF separately for scientific archiving.
 
-**SHELXL yapı girişi:** `.res/.ins` dosyalarındaki `CELL`, `LATT`, `SYMM`, `SFAC`, `FVAR` ve atom satırları okunur. Merkezleme/tersinme dahil simetri işlemleri açık **P1** atomlarına genişletilir; kısmi doluluklar ve desteklenen `Uiso/Uij` alanları taşınır. `PART` düzensizlik grupları, bağ/restraint/rafine parametreleri proje nesnesine birebir aktarılmaz; `.fcf` yapı dosyası değil, ayrı Fourier veri girişidir. Tanınmayan doluluk değişkenlerinde yükleme hata verir.
+XYZ carries no unit-cell information, so the viewer uses a synthetic visualization box. PDB support is a **crystallographic-coordinate subset**: the asymmetric atoms are symmetry-expanded when the CRYST1 Hermann–Mauguin symbol is recognized and compatible with the metric, otherwise a warning is shown. Missing element columns are inferred from atom-name alignment with a warning (a protein `CA` atom name must not be mistaken for calcium). Chain/residue topology is not preserved. PDB fixed-width decimals impose rounding limits on positions, occupancies, and ANISOU data.
 
-**Quantum ESPRESSO girişi:** `pw.x` `&SYSTEM` ve `ATOMIC_POSITIONS` kartı kullanılır; `ibrav=0` için `CELL_PARAMETERS` (`alat`, `bohr`, `angstrom`), ayrıca belgelenmiş `ibrav=1…14`, negatif eşdeğer ayarlar ve `91` desteklenir. `celldm` ve Å cinsinden `A/B/C` girdileri ayrıdır. Konumlar `crystal`, `alat`, `bohr`, `angstrom` birimlerinde dönüştürülür. `crystal_sg` yalnızca eşdeğer olmayan atomları tanımladığı ve uzay grubu ayarları olmadan tam hücre üretilemeyeceği için reddedilir. Bu okuyucu `pw.x` **girdi** dosyası içindir; çıktıda art arda yinelenen model kartları veya QE hesaplama ayarlarını saklamak amaçlanmaz.
+**SHELXL structural input:** `.res/.ins` files are parsed for `CELL`, `LATT`, `SYMM`, `SFAC`, `FVAR`, and atom records. Symmetry, including centering/inversion, is expanded into explicit **P1** atoms. Partial occupancy and supported `Uiso/Uij` fields are retained. `PART` disorder grouping and bonding/restraints/refinement settings are not preserved one-to-one in the project. A `.fcf` is a separate Fourier-data input, not a structure file. Unknown occupancy variables cause a load error.
 
-**CASTEP girişi:** `.cell` içindeki `%BLOCK LATTICE_CART` / `LATTICE_ABC` ve `%BLOCK POSITIONS_FRAC` / `POSITIONS_ABS` okunur; `ang`, `bohr` ve `nm` uzunluk birimleri işlenir. Simetri üretme anahtarları ve DFT kısıtları aktarılmaz. Üç okuyucuda da yalnızca tarayıcıda işlem yapılır; orijinal bilimsel dosya değiştirilmez.
+**Quantum ESPRESSO input:** reads `pw.x` `&SYSTEM` and `ATOMIC_POSITIONS`. Supports `CELL_PARAMETERS` for `ibrav=0` (`alat`, `bohr`, `angstrom`), documented `ibrav=1…14` forms, negative equivalents, and `91`. Distinguishes `celldm` from `A/B/C` values in Å and converts `crystal`, `alat`, `bohr`, and `angstrom` atomic positions. `crystal_sg` is rejected because it lists only symmetry-inequivalent atoms and cannot generate the whole cell without complete space-group settings. This reader targets `pw.x` **input** files, not output files with repeated model cards, and does not retain QE calculation settings.
 
-### Paket 8.1 — ADP site-symmetry denetimi ve CIF kaynak bütünlüğü
+**CASTEP input:** reads `%BLOCK LATTICE_CART` / `LATTICE_ABC` and `%BLOCK POSITIONS_FRAC` / `POSITIONS_ABS`, including `ang`, `bohr`, and `nm` units. Symmetry-generation flags and DFT constraints are not imported. All three readers process files locally in the browser without modifying the original scientific files.
 
-CIF/mCIF içe aktarımında özel konumdaki bir atomun anizotropik yer değiştirme
-tensörü, siteyi kendi üzerine götüren her geçerli simetri işlemi için
-Kartezyen kovaryans biçiminde karşılaştırılır. Hücre/simetri tutarlılığı
-korunurken CIF'nin sonlu sayı basamağından gelen küçük farklar (en az
-0,002 Å² veya tensör büyüklüğünün %3'ü) tolere edilir; açık çelişkiler
-dosyanın hatalı ADP'sini doğruymuş gibi göstermemek için **hata** verir.
-Genel konumdaki atomlarda tensörün dönmesi normaldir ve hata sayılmaz.
+### Package 8.1 — ADP site-symmetry validation and CIF provenance
 
-Bilimsel doğrulama kapısındaki 30 gerçek/10 sentetik CIF veri kümesi korunur.
-Ayrıca kaynak/reference belirsizliği taşımayan **28 gerçek, sabitlenmiş CIF** için kaynak metni ve atom
-koordinatları değiştirildikten sonraki yeniden içe aktarma testleri,
-ayna/dört katlı eksen özel konumları için analitik tensör referansları
-eklendi. Bu çalışmalar özel konumdaki tüm Wyckoff/ADP sınıflarını veya
-deneysel kaynak hatalarını kapsayan tam bir doğruluk iddiası değildir.
+When importing CIF/mCIF, the anisotropic displacement tensor of an atom on a special position is compared in Cartesian covariance form under every valid symmetry operation that maps the site onto itself. Small differences from finite precision in CIF numbers are tolerated—at least **0.002 Å² or 3% of the tensor magnitude**—while preserving cell/symmetry consistency. Clear contradictions generate an **error**, rather than depicting an invalid ADP as correct. Tensor rotation at a general-position site is normal and does not generate an error.
 
-## Kristalografi ve sayısal özellikler
+The scientific validation gate retains **30 real + 10 synthetic CIF** cases. Additional re-import tests modify source text and coordinates in **28 pinned real CIFs** with unambiguous source/reference information; analytic tensor references cover mirror and fourfold-axis special positions. These tests do **not** establish full correctness for every special-position Wyckoff/ADP class or every experimental-source error.
 
-### Hücre, simetri ve atomlar
+## Crystallographic and numerical capabilities
 
-- Gerçek örgü metriğiyle kesirli ↔ Kartezyen koordinatlar, eğik/triklinik hücre ve periyodik komşu ölçümü.
-- **230 uzay grubu**, uygulamanın gömülü referans tablolarında **274 ayar/setting**; simetri işlemleri, asimetrik konum genişletme ve Wyckoff eşleştirme.
-- **Moyo WASM 0.21.0** ile otomatik uzay grubu/Hall setting analizi; seçilen tolerans ve güvenli eşleştirme kontrolleriyle konvansiyonel–primitive dönüşümler.
-- Unimodüler kısa baz, kanonik **Niggli indirgemesi**, FCC/BCC ve özel 3×3 hücre dönüşümleri. Dönüştürme işlemleri fiziksel koordinat ve uygun ADP tensörlerini yeni baza taşır; sonuç gerektiğinde açık **P1** olarak kaydedilir.
-- CIF içindeki `Uiso/Biso` ve `Uij/Bij` alanlarından yönlenmiş **termal elipsoitler**; uygun olmayan tensörler görselleştirilmez.
-- Süperhücre tekrarları 1–6; Three.js **InstancedMesh** ile atomlar türlerine, bağlar tek bir geometriye göre gruplanır. Güvenlik üst sınırı **20.000 görüntülenen atom** ve **65.000 bağdır**. Bunlar FPS garantisi değildir: GPU, WebGL, etiketler, ADP, çokyüzlü ve sahne karmaşıklığı sonucu etkiler. **5.000 atomdan sonra** daha seyrek küre ağına geçilir.
-- Sınır aralıkları her eksen için normalleştirilmiş kesirli koordinatlarda seçilebilir (örn. `x: −0.1…1.1`); süperhücre tekrarları uç aralığa eklenir. Bağların periyodik gösterimi özel sınır aralıklarında görsel atom listesi üzerinden yapılır.
-- Çokyüzlü model alt çubukta bağımsız seçenek olarak bulunur. Başlatıldığında **4–8 komşuya sahip merkez türü** öncelikli seçilir (ör. BaTiO₃'te Ba yerine Ti). Merkez türü seçiminin yanındaki **+** ile birden fazla element aynı anda işaretlenebilir; ek türler element renkleriyle ayrıştırılır (site bazındaki renk geçersiz kılmaları korunur). Çoklu seçim JSON projelerinde ve Undo/Redo'da korunur. Aynı fiziksel sitenin komşuları bir kez hesaplanıp süperhücre kopyalarına taşınır. Yüzeyler **tek renk/alpha öznitelikli mesh**, kenarlar **tek çizim geometrisi** olarak gruplanır. Geometrik yükü sınırlamak için tüm seçili türlerin toplamında **2400 çokyüzlü** üst sınırı vardır; aşıldığında veya seçili türlerde uygun koordinasyon bulunmadığında kullanıcıya açık uyarı gösterilir. Bu çizim elektronik bağ düzeni değildir.
-- Yüksek çözünürlüklü PNG'de ekran kartının **MAX_TEXTURE_SIZE, MAX_RENDERBUFFER_SIZE ve MAX_VIEWPORT_DIMS** sınırları önceden kontrol edilir; gerçek WebGL çizim tamponu istenen ölçüyü sağlamazsa dosya oluşturulmaz. 24 MP uygulama sınırı korunur. Düz WebGL çizgisi 4× çıktıda bir piksele sıkışmasın diye, PNG render sırasında hücre çizgilerine geçici, derinlik testli kalın geometriler eklenir; normal interaktif sahne bundan etkilenmez.
-- **SVG yapı görünümü** ekrandaki kamera projeksiyonundan gerçek SVG vektör öğeleriyle üretilir: renkli atom daireleri, bağ/kafes çizgileri, çokyüzlü yüz ve kenarları ile desteklenen diğer geometri katmanları. SVG içine raster ekran görüntüsü gömülmez. Şeffaf arka plan seçilebilir. Perspektifte atomlar yaklaşık dairesel izdüşüm ve ressam-sıralamalı örtüşme ile gösterildiğinden WebGL'nin tam derinlik tamponu/aydınlatmasıyla piksel eşdeğeri değildir; hacimsel alan dokuları SVG'ye dahil edilmez. Karmaşık sahneler 60.000 vektör öğesinde güvenli biçimde sınırlandırılır.
-- **STL** ikili çıktısı atom, bağ, çokyüzlü, eksen ve termal elipsoit yüzey üçgenlerini yazar; instanced atom ve bağ geometrileri ayrı nesnelere açılır. STL renksiz ve **birimsiz** olduğundan fiziksel koordinat değerleri Å kabul edilmelidir. Birleşik/manifold tek gövde oluşturma yapılmaz; baskı için gerekirse mesh birleştirme ve onarım kullanılmalıdır. En fazla **1 milyon üçgen** dışa aktarılır.
-- **glTF 2.0 / .glb** çıktısı renkli 3B sahneyi ve mümkün olduğunca instanced mesh geometrisini korur. 3B model dosyasında Kartezyen **Å sayı değerleri** kullanılır; glTF görüntüleyicileri bu uzunlukları metre varsayabileceğinden başka yazılımda ölçek açıkça ayarlanmalıdır. SVG/STL/glTF dışa aktarımları hacimsel ızgara/izoyüzey dokularını içermez; bunları CUBE/XSF ile kaydedin. Resmi Three.js exporter modülleri depo içinde çevrimdışı erişilebilir.
+### Unit cells, symmetry, atoms, and rendering
 
-### Geometrik analiz ve Miller
+- Fractional ↔ Cartesian coordinates using the **actual lattice metric**, including oblique/triclinic cells and periodic-neighbor measurements.
+- **230 space groups** and **274 settings** in bundled reference tables, with symmetry operations, asymmetric-position expansion, and Wyckoff matching.
+- Automatic space-group/Hall-setting analysis with **Moyo WASM 0.21.0**, user-selected tolerance, safe matching checks, and conventional/primitive conversions.
+- Unimodular short bases, canonical **Niggli reduction**, FCC/BCC, and custom 3×3 cell transformations. Physical coordinates and applicable ADP tensors transform with the basis; results can be saved as explicit **P1** atoms when necessary.
+- Oriented **thermal ellipsoids** from CIF `Uiso/Biso` and `Uij/Bij`. Invalid tensors are not displayed.
+- Supercell repetitions 1–6. Three.js **InstancedMesh** groups atoms by type and bonds by shared geometry. Safety limits are **20,000 visible atoms** and **65,000 bonds**; these are not FPS guarantees. GPU, WebGL, labels, ADPs, polyhedra, and scene complexity affect performance. Above **5,000 atoms**, a lower-density sphere mesh is selected.
+- Per-axis visible bounds in normalized fractional coordinates, e.g., `x: −0.1…1.1`, in addition to supercell repetition. Periodic bonds with custom bounds use the displayed-atom list.
+- The **polyhedron representation** is available directly in the bottom toolbar. On activation, center species with **4–8 neighbors** are prioritized (e.g., Ti rather than Ba in BaTiO₃). The **+** control allows multiple center elements simultaneously; additional species are distinguished by element colors while retaining per-site overrides. This selection persists in JSON and undo/redo. Each physical site's neighbors are computed once and copied into its supercell instances. Faces share a colored/alpha mesh and edges share line geometry. The total limit is **2,400 polyhedra** across all selected species; exceeding it, or finding no suitable coordination, produces a visible warning. These shapes do not establish electronic bond orders.
+- High-resolution PNG checks **MAX_TEXTURE_SIZE, MAX_RENDERBUFFER_SIZE, and MAX_VIEWPORT_DIMS**, as well as the actual WebGL drawing buffer; if the requested output cannot be rendered, no file is created. A **24 MP** application limit applies. Temporary depth-tested, thick cell-edge geometry prevents ordinary thin WebGL lines from shrinking to one pixel at 4× export; the normal interactive scene is unaffected.
+- **Structure SVG** is composed of real vector primitives projected from the active camera: colored atom circles, bonds/cell edges, polyhedron faces/edges, and supported geometry layers, rather than an embedded raster screenshot. A transparent background is available. Perspective atom circles and painter-order overlap are approximate; SVG is not pixel-identical to WebGL depth buffering/lighting and excludes volumetric textures. Complex scenes are capped at **60,000 vector elements**.
+- Binary **STL** includes triangular surfaces of atoms, bonds, polyhedra, axes, and thermal ellipsoids; instanced atom/bond geometries become separate objects. STL has no color or units, so exported coordinate numbers should be interpreted as **Å**. No single manifold solid is generated; 3D printing may require mesh joining/repair. At most **one million triangles** are exported.
+- **glTF 2.0 / .glb** preserves a colored 3D scene and instanced geometry where possible. Cartesian coordinates are stored as numerical **Å values**; some glTF viewers assume meters, so set the scale explicitly. SVG/STL/glTF omit volumetric grids and isosurface textures; save those as CUBE/XSF. Official Three.js exporters are bundled for offline use.
 
-- Elemente göre yaklaşık bağ eşikleri, özel atom-türü çift kuralları, koordinasyon çokyüzlüleri ve periyodik uzaklıklar.
-- Atomlar arası uzunluk, açı, dihedral; ayrı ölçüm geçmişi ve CSV.
-- Seçilen oksidasyon durumu/iyon çifti için **BVS**: Brese–O'Keeffe `R₀` ve `B=0,37 Å` modeline dayalı bağ-değerliği hesabı. İyon yükleri otomatik tayin edilmez; parametresi bulunmayan çift için sayı uydurulmaz.
-- **Best-fit plane**: en küçük kareler düzlemi, RMS/maksimum düzlemsellik sapması ve iki düzlemin açısı; seçili periyodik atom görüntülerini otomatik açma (`unwrap`) yapılmaz.
-- Tam hücre metriğinden **Miller `(hkl)` düzlemleri** ve `d(hkl)`; bağımsız düzlemler/katmanlar, sonlu süperhücreye düşen tüm paralel düzlemler, kalınlıklı görsel kesit ve vakumlu **P1 slab** üretimi. Slab üretimi yüzey relaksasyonu veya DFT değildir.
-- `{hkl}` yüz aileleri, seçilen **uzay grubunun nokta grubu** altında eşdeğer Miller indisleri (triklinik–kübik tüm sistemler), isteğe bağlı ± çifti, kesişen yarı uzaylardan **geometrik kristal morfolojisi**; yüzey alanı ve hacim. Eski proje morfolojileri aynı geometriyle yüklenir. Bu, yüzey enerjisine dayalı **Wulff hesaplaması değildir**.
-- **Model XRD ve nötron**: Bragg konumları, `F(hkl)`, `|F|²`, göreli ideal yansıma yoğunlukları ve CSV. `maxIndex` küpü yerine **2θ sınırından hesaplanan `d_min` karşı-uzay küresi** taranır; hekzagonal/trigonal ailelerin ve büyük hücrelerin yansımaları indis kesimine takılmaz. Çok büyük taramalarda hesaplama bütçesi aşılırsa hata verilir. X-ışınında **International Tables IT92 nötr atom 4-Gauss + sabit `f₀(s)`** (Z=1–98); nötronda doğal element koherent saçılma uzunlukları (bilinen 90 element, fm). Doluluk, Uiso ve eğik hücrelerde Kartezyen tensöre dönüştürülmüş Uij içerilir. Seçilebilir sabit dalga boylu toz düzeltmesi X-ışınında **Lorentz–polarizasyon**, nötronda **polarizasyonsuz Lorentz `1/(sin²θ cosθ)`** çarpanı uygular; TOF geometrisi modellenmez. B, Cd, Sm, Eu, Gd içeren nötron yapılarında **karmaşık b / absorpsiyon ihmal edildi** uyarısı gösterilir. Anomal saçılma `f′/f″`, gerçek absorpsiyon düzeltmesi, izotop-açık kompozisyon ve Rietveld rafinmanı hesaplanmaz. Tablolar [Gemmi 0.7.4 / IT92 / Neutron92](https://gemmi.readthedocs.io/en/stable/scattering.html) üzerinden doğrulandı.
-- **Ampirik toz profili**: Yansımalara alanı 1'e normalize edilmiş Gaussian/Lorentz karışımı pseudo-Voigt uygulanır. `FWHM² = U tan²θ + V tanθ + W` (°²), `η` Lorentz payı, tarama adımı 0,005–0,2°; Cu Kα1/Kα2 varsayılan 1,54060/1,54443 Å ve ikili oranı 2:1, kullanıcı tarafından değiştirilebilir. Şiddet oranına göre iki çizginin dağılımı korunur; genişlik yaklaşımı sabit bir ölçüm cihazına kalibre edilmiş değildir. CSV (`2theta_deg,intensity`, virgül/sekme/noktalı virgül) yüklenip aynı eksende maksimum 100'e normalize edilerek gösterilir; **ölçüm üzerinden otomatik fit, arka plan çıkarımı veya Rietveld inceltmesi yapılmaz.** Hesaplanan profil ayrıca CSV olarak indirilir.
+### Geometric analysis, diffraction, and Miller planes
 
-  Profil modeli ve genişlik tanımı için bilimsel kaynak: [IUCr — X-ray powder diffraction in education: Bragg peak profiles](https://journals.iucr.org/j/issues/2021/06/00/gj5272/index.html).
-- **Model Fourier/Patterson**: Hesaplanan model `F(hkl)` için **Å cinsinden `d_min` küresel çözünürlük kesimi** ve radix-2 **FFT ile 16³, 32³ veya 64³ periyodik ızgara**. Izgara Nyquist sınırı karşılanmazsa açık hata verir; hesaplama bütçesi sınırlıdır. Patterson `|F|²` katsayılarından üretilir. Bunlar **deneysel Fobs veya ölçülmüş yoğunluk değildir**; sonlu yansıma aralığı yüzünden çözünürlük/halkalanma etkileri vardır.
-- **SHELX `.fcf` (deneysel genlik + model fazı)**: `_refln_F_squared_meas` / `_refln_F_meas`, `_refln_phase_calc` ve fark için `_refln_F_squared_calc` / `_refln_F_calc` olan CIF yansıma döngüsüyle **Fo** ve **Fo−Fc** FFT haritası. Ölçülmüş genlikler **hesaplanmış fazlarla** birleştirilir; saf gözlemsel faz veya tam deneysel elektron yoğunluğu değildir. Faz içermeyen FCF (örn. bazı `LIST 4` çıktıları) açık hatayla reddedilir. Hücre eşleşmesi, yansıma kapsamı, ölçek, sistematik sönmeler ve simetri kullanıcının kontrolünü gerektirir; burada `.mtz`, Rietveld veya elektron yoğunluğu rafinmanı yoktur.
-- **Manyetik mCIF (sınırlı görselleştirme)**: `_atom_site_moment.Cartn_*` ve `crystalaxis_*` vektörleri okunur; `_space_group_symop_magn_operation.xyz` ve `_space_group_symop_magn_centering.xyz` işlemlerinde uzaysal dönme + eksenel vektör determinantı + zaman tersleme uygulanır. Momentler renkli oklar olarak ayrı katmanda gösterilir (en fazla 600 ok); proje JSON'unda saklanır ve düzenleme sonrası açık P1 konumlarıyla `.mcif` dışa aktarılabilir. **Manyetik Bragg saçılması, BNS grup kataloğu, k-vektörü/superspace işlemleri, SAXIS dönüşümü ve manyetik rafinman desteklenmez.**
-- **Madelung/Ewald**: Kullanıcının açıkça yazdığı asimetrik site numarası, benzersiz atom etiketi veya tür iyon yükleriyle nötr ve tam dolu hücre için gerçek/karşı-uzay ve self düzeltmeli nokta-yük modeli; simetriyle genişletilmiş iyonlara **kaynak asimetrik site** yükü taşınır, potansiyel listesinde kaynak site ve simetri kopyası birlikte gösterilir. Hücre enerjisi (eV) ve site potansiyelleri (eV/e) NaCl Madelung sabiti referansıyla testlidir. Polarizasyon, dielektrik perdeleme ve elektronik yapı hesaplaması değildir.
+- Element-dependent approximate bond cutoffs, pair-specific overrides, coordination polyhedra, and periodic distances.
+- Interatomic distances, angles, dihedrals; separate measurement history with CSV export.
+- **Bond-valence sums (BVS)** for explicitly selected oxidation states/ion pairs, using Brese–O'Keeffe `R₀` and `B = 0.37 Å`. The application does not automatically assign ionic charges or invent missing pair parameters.
+- **Best-fit plane:** least-squares plane, RMS/maximum planarity deviation, and the angle between two planes. Selected periodic images are not automatically unwrapped.
+- **Miller `(hkl)` planes** and `d(hkl)` using the complete cell metric; independent plane/layer objects, all parallel planes within a finite supercell, finite-thickness visual slices, and **P1 slabs** with vacuum. Slab construction is not surface relaxation or DFT.
+- **`{hkl}` face families** with point-group-equivalent Miller indices for all crystal systems (triclinic through cubic), optional ± pairing, and **geometric crystal morphology** from intersecting half-spaces, including surface area and volume. Previous project morphologies load with equivalent geometry. This is **not** surface-energy-based Wulff construction.
+- **Model XRD and neutron diffraction:** Bragg angles, `F(hkl)`, `|F|²`, relative ideal reflection intensities, and CSV. Reflections are enumerated in a **reciprocal-space sphere with `d_min` derived from the 2θ cutoff**, instead of an arbitrary `maxIndex` cube, avoiding accidental rejection of reflections in hexagonal/trigonal systems and large cells. Very large scans raise an explicit computational-budget error. X-rays use **International Tables IT92 neutral-atom four-Gaussian-plus-constant `f₀(s)`** (`Z=1–98`); neutrons use coherent natural-element scattering lengths (90 known elements, fm). Occupancy, `Uiso`, and Cartesian-transformed `Uij` for oblique cells are included. Optional fixed-wavelength powder corrections apply **Lorentz–polarization** to X-rays or the **unpolarized Lorentz `1/(sin²θ cosθ)`** factor to neutrons. No TOF geometry is modeled. A warning flags **neglected complex `b` / absorption** for neutron structures with B, Cd, Sm, Eu, or Gd. No anomalous `f′/f″`, true absorption correction, isotope-resolved mixtures, or Rietveld refinement. Tables are checked against [Gemmi 0.7.4 / IT92 / Neutron92](https://gemmi.readthedocs.io/en/stable/scattering.html).
+- **Empirical powder profiles:** area-normalized pseudo-Voigt Gaussian/Lorentz mixture, with `FWHM² = U tan²θ + V tanθ + W` (°²), Lorentzian fraction `η`, 0.005–0.2° sampling, and user-adjustable Cu Kα1/Kα2 defaults **1.54060/1.54443 Å** at a 2:1 ratio. The lines retain their relative contributions. Broadening is **not calibrated to an instrument**. CSV (`2theta_deg,intensity`; comma, tab, or semicolon) can be overlaid after scaling each profile to a maximum of 100. **There is no automatic fitting, background subtraction, or Rietveld refinement from measurements.** The simulated profile can be exported as CSV.
 
-### Çoklu faz ve hacimsel veriler
+  Scientific reference for profile and peak-width conventions: [IUCr — X-ray powder diffraction in education: Bragg peak profiles](https://journals.iucr.org/j/issues/2021/06/00/gj5272/index.html).
+- **Model Fourier/Patterson maps:** calculated `F(hkl)` with a spherical **`d_min` resolution cutoff in Å** and radix-2 FFT on **16³, 32³, or 64³ periodic grids**. The grid is checked against the Nyquist criterion and the computation is budget-limited. Patterson maps use `|F|²`. These are **not experimental Fobs or observed intensities**; finite reflection ranges introduce resolution/truncation artifacts.
+- **SHELX `.fcf` experimental amplitudes + model phases:** Fourier maps of **Fo** and **Fo−Fc** from reflection CIF loops containing `_refln_F_squared_meas` / `_refln_F_meas`, `_refln_phase_calc`, and `_refln_F_squared_calc` / `_refln_F_calc` for differences. Measured amplitudes are combined with **calculated phases**, not direct experimentally observed phases or a complete experimental electron-density reconstruction. Phase-less FCF (including some `LIST 4` output) is rejected. Users must verify matching cells, reflection coverage, scaling, systematic absences, and symmetry. No `.mtz`, Rietveld, or density refinement.
+- **Magnetic mCIF (limited visualization):** reads `_atom_site_moment.Cartn_*` and `crystalaxis_*` vectors; applies spatial rotations, axial-vector determinant, and time-reversal terms from `_space_group_symop_magn_operation.xyz` / `_space_group_symop_magn_centering.xyz`. Moments are shown as colored arrows in a separate layer (maximum **600**), stored in JSON, and can be exported with explicit P1 sites to `.mcif` after edits. **Magnetic Bragg scattering, a BNS-group catalog, k-vector/superspace operations, SAXIS transformation, and magnetic refinement are unsupported.**
+- **Madelung/Ewald point-charge model:** for a neutral, fully occupied cell with manually assigned charges keyed by asymmetric-site number, unique atom label, or element species. Real-, reciprocal-, and self-interaction terms are included. Symmetry-generated ions retain the source asymmetric-site charge, and output potentials identify source site and symmetry copy. Cell energy (eV) and site potential (eV/e) are tested against the NaCl Madelung-constant reference. This does not simulate polarization, dielectric screening, or electronic structure.
 
-- Ana yapı ile **en fazla üç ek faz** aynı Kartezyen Å sahnesinde görüntülenebilir. Her faz için konum/hizalama, renk, saydamlık ve hücre sınırları seçilebilir. Otomatik atom eşleştirme ve gerinim analizi yapılmaz.
-- Aynı uzaysal çerçevede **en fazla beş hacimsel alan**; alan başına en fazla **dört izoyüzey** ve toplam en fazla **sekiz etkin izoyüzey**.
-- Etkin alanın **Gaussian CUBE** (`.cube`, negatif boyut kayıtlarıyla Å uzunluğu) veya **XCrySDen XSF DATAGRID_3D** (`.xsf`) olarak indirimi: Δρ, CHGCAR spin bileşenleri ve Fourier/FCF dahil her katman için geçerlidir. Skaler değerler yeniden ölçeklenmez; nicelik ve fiziksel birim yorumda yazılır. Dahili z-en-hızlı sıra CUBE'a, XSF x-en-hızlı sıraya çevrilir; periyodik XSF'nin yinelenen sınır düzlemleri oluşturulur. CUBE/XSF formatı birim semantiğini standart olarak zorunlu kılmadığından başka programda değerleri yorumlarken yorum başlığını ve kaynak birimini kontrol edin.
 
-  XSF gridi ve periyodik sınır düzlemleri için [XCrySDen biçim tanımı](https://www.xcrysden.org/doc/XSF.html) izlenir.
-- Eğik ızgara vektörlerinde trilineer örnekleme; 2B kesit ve renk skalası, CSV/PNG; **2–20 seviyeli marching-squares kontur haritası**, etkileşimli çizgi profili ve çizgi CSV; uygun ikinci alanla yüzey/kesit renklendirme.
-- Kaynak CUBE/XSF alanı için **elektron yoğunluğu, potansiyel veya bilinmiyor** türü ve girdi birimi yükleme sırasında seçilir; `e/bohr³ → e/Å³` ve `Hartree/e → V` dönüştürmeleri uygulanabilir. **CHGCAR'ın ilk bloğu** toplam yoğunluktur; varsa takip eden **kollineer `m_z` veya nonkollineer `m_x/m_y/m_z`** ızgaraları PAW augmentation kayıtlarının ardından otomatik okunur, hücre hacmine bölünerek `μB/Å³` alanları olarak eklenir. Spin eksenlerinin yorumu VASP **SAXIS** ayarına bağlıdır; augmentation matrisi ayrıca analiz edilmez.
-- Bilinmeyen nicelikler veya birbirinden farklı fiziksel türler **`A + k₁B + k₂C`** ile birleştirilemez; C isteğe bağlıdır ve üç kaynak tek geçişte fark yoğunluğu üretebilir. Farklı ızgara çözünürlükleri Kartezyen interpolasyonla eşleştirilir. Türetilen alanın **`∫(A + k₁B + k₂C) dV`** integrali birimiyle raporlanır (periyodik ızgarada voksel toplamı, açık uçlu ızgarada trapez); sayısal hata kaynak çözünürlüğüne bağlıdır. 3B komşulukta yerel maksimum/minimum listesinde işaretli `≥`/`≤` eşikleri, Kartezyen Å ve **kesirli ızgara koordinatları**, üç eksenli parabolik **alt-voksel konum tahmini** ve hücreyle hizalı periyodik alanda isteğe bağlı **simetri eşdeğerlerini birleştirme** bulunur. Bu yaklaşık işlem tam 3B Hessian veya kritik nokta sınıflandırması değildir.
-- Görüntülenen kristalin `(hkl)` yönünde **eğik sayısal kesit** ve çok seviyeli konturlar; kesit gerçek ızgara hacmine kırpılır ve CSV/PNG olarak aktarılır. Harita üzerinde çizilen profilin yatay ekseni piksellerle değil, **Å cinsinden gerçek Kartezyen mesafeyle** belirlenir; kenar dışı geçersiz Miller pikselleri sahte yoğunluk çizgileriyle birleştirilmez.
-- Periyodik, tam hücreye hizalı **`e/Å³`** yoğunlukta en yakın çekirdek bölüşümüyle örneklenmiş Voronoi yük integrali. Normalize edilmiş CUBE/XSF yoğunlukları, kullanıcı periyodiklik belirttiğinde ve hücre metriği uyuştuğunda kabul edilir; XSF tekrar eden son ızgara düzlemleri ayrıştırılır. Sonuç ve CSV, asimetrik site ile simetri kopyasını ayrı ayrı işaretler. Büyük ızgarada en fazla 12.000 örnek; bu **Bader (sıfır-akı) analizi değildir**. PAW/VASP CHGCAR'ın çekirdeğe yakın tüm-elektron yoğunluğunu kapsamadığı ve **AECCAR0+AECCAR2** referansının Bader için önemi arayüzde belirtilir. Nicel yükler yakınsama testi ister.
-- Dosyadaki skaler alan **gösterilir**, kuantum kimyasal yoğunluk, elektrostatik potansiyel veya DFT **hesaplanmaz**. Farklı referans sistemindeki alanlar sessizce birleştirilmez.
-- Büyük verilerin sınırları: **24 MB dosya** ve **2,5 milyon voksel**; hacimsel dosyalar sayfa yenilenince yeniden açılmalıdır.
+### Multi-phase structures and volumetric data
 
-### Nicel kristal kimyası — Paket 7.9
+- Display the main crystal together with **up to three extra phases** in a shared Cartesian Å scene. Each phase supports positioning/alignment, color, transparency, and cell boundaries. Automatic atom matching and strain analysis are not included.
+- Up to **five volumetric fields** in the same spatial coordinate frame, with up to **four isosurfaces per field** and **eight simultaneously active isosurfaces** in total.
+- Export any active volumetric field—including Δρ, CHGCAR spin components, and Fourier/FCF maps—as **Gaussian CUBE** (`.cube`, negative-dimension records indicating Å length) or **XCrySDen XSF DATAGRID_3D** (`.xsf`). Scalar values are not rescaled; quantity and physical units are written in comments. Internal z-fastest ordering is converted for CUBE and x-fastest ordering for XSF. Periodic XSF duplicate boundary planes are generated. Because CUBE/XSF do not strictly enforce units, check the comments and source units in other applications.
 
-Seçilen atomun koordinasyon paneli, komşu sayısından ayrı olarak
-**Baur bağ uzunluğu bozulma indisini** (`D`) ve **Hoppe etkili
-koordinasyon sayısını** (`ECoN`) gösterir. ECoN, kısmi doluluk
-ağırlıklı CN ile aynı büyüklük değildir: Hoppe ağırlıkları bağ
-uzaklıklarından hesaplanır. Gerçek tetrahedral/oktahedral yüz-topolojisi
-doğrulandığında **quadratic elongation** ve **bağ açısı varyansı**
-eklenir; altı köşeli prizma otomatik olarak oktahedron sayılmaz.
-Kısmi/alternatif dolulukta rapor geometrik yorumla sınırlıdır.
-İlk 24 komşuya kesilme varsa nicel ölçütler verilmez.
+  The [XCrySDen XSF specification](https://www.xcrysden.org/doc/XSF.html) is followed for grid order and periodic boundaries.
+- Trilinear sampling for skewed grid vectors; 2D slicing with color scale and CSV/PNG; **2–20-level marching-squares contour maps**; interactive line profiles with CSV; and optional coloring of surfaces or slices by a compatible second field.
+- When loading a CUBE/XSF field, specify **electron density**, **potential**, or **unknown**, together with the source unit. Conversions include `e/bohr³ → e/Å³` and `Hartree/e → V`. The **first CHGCAR block** is total density. If available, subsequent collinear `m_z` or noncollinear `m_x/m_y/m_z` grids are parsed after PAW augmentation records and added as `μB/Å³` fields after division by cell volume. Spin axes depend on VASP **SAXIS**; the augmentation matrix is not separately analyzed.
+- The guarded **`A + k₁B + k₂C`** operation requires compatible, known physical quantities; C is optional. Differing grid resolutions are matched through Cartesian interpolation. The resulting **`∫(A + k₁B + k₂C) dV`** is reported with units (voxel sum on periodic grids; trapezoidal integration on open-ended grids). Numerical accuracy depends on source resolution. Local 3D maxima/minima support signed `≥`/`≤` thresholds, Cartesian Å and **fractional grid coordinates**, axis-wise parabolic **sub-voxel location estimates**, and optional symmetry-equivalent merging for cell-aligned periodic fields. This is not a full 3D Hessian or critical-point classification.
+- **Oblique `(hkl)` numerical slices** with multilevel contours are clipped to the actual grid extent and exported as CSV/PNG. Profile axes use real **Cartesian distance in Å**, not pixel distances; invalid out-of-grid pixels are not connected into fictitious density lines.
+- Approximate **Voronoi charge integration** by sampling an `e/Å³` periodic density and assigning each sample to the nearest nucleus. Normalized CUBE/XSF densities are accepted when periodicity is declared and the cell metric agrees; repeated terminal XSF grid planes are removed. Results and CSV identify asymmetric sites and symmetry copies separately. Sampling is capped at **12,000 points** on large grids. This is **not zero-flux Bader analysis**. The UI warns that PAW/VASP CHGCAR lacks all-electron density near the nuclei and notes the relevance of **AECCAR0+AECCAR2** for Bader work. Quantitative charges need convergence testing.
+- The tool **displays supplied scalar fields**; it does not calculate quantum-chemical electron density, electrostatic potentials, or **DFT**. Fields with incompatible reference frames are not silently combined.
+- Large-data limits: **24 MB per file** and **2.5 million voxels**. Volumetric files must be reopened after a page refresh.
 
-BVS'de bağ yarıçapı içindeki periyodik görüntüler, eğik hücrelerde
-`±2` ile sınırlandırılmadan ters örgü metriğine göre taranır. Model
-**yalnızca seçili referans iyon çifti** ve ampirik `R₀/B` parametresi
-içindir; otomatik oksidasyon durumu veya kimyasal bağ derecesi çıkarmaz.
-BVS sonucu yanında, formal yükün eşit bağlar arasında bölündüğü
-varsayımıyla beklenen bağ uzunluğu da bir referans değer olarak
-görüntülenir. Matematiksel tanımlar, sınırlar ve bağımsız regresyonlar
-[`tests/validation/PACKAGE_7_STATUS.md`](tests/validation/PACKAGE_7_STATUS.md)
-içindedir.
+### Quantitative crystal chemistry — Package 7.9
 
-## Bilimsel kapsam ve sınırlar
+The selected atom's coordination panel reports the **Baur bond-length distortion index** (`D`) and **Hoppe effective coordination number** (`ECoN`), separately from ordinary neighbor count. ECoN is not the same as occupancy-weighted coordination number: Hoppe weights are derived from bond distances. Where genuine tetrahedral or octahedral face topology is verified, **quadratic elongation** and **bond-angle variance** are available. A six-vertex prism is not automatically treated as an octahedron. Partial/alternative occupancy limits the result to geometrical interpretation; quantitative indices are withheld when the neighbor list was truncated to the first 24.
 
-- **Bu araç tam VESTA eşdeğeri değildir.** Manyetik mCIF'in yalnızca desteklenen site-moment ve 3B simetri altkümesi vardır; tam manyetik grup/superspace kataloğu, bütün CIF varyantları ve tüm Hall ayarlarının serbest seçimi yoktur.
-- Bir CIF açık simetri işlemleri vermiyorsa tanınan uzay grubunun referans setting/orijini kullanılabilir; alternatif setting/orijin durumlarında sonucu bağımsız doğrulayın.
-- Bağ çizgileri ve koordinasyon, geometrik eşiklere dayalı **yorumlayıcı görselleştirmedir**; gerçek kimyasal bağların varlığını/bağ mertebesini ispatlamaz.
-- Yüzey oluşturma, BVS, model saçılma, Fourier/Patterson, ampirik toz profili ve nokta-iyon Madelung fiziksel modellerin sınırlandırılmış alt kümeleridir. **Yüzey enerjisi, Wulff dengesi, atomik relaksasyon, ölçümden cihaz profili inceltmesi, anomal saçılma ve DFT** hesaplanmaz.
-- CIF dosyasını düzenleyip tekrar dışa aktarmak kaynak deneysel üstverinin her etiketini korumayabilir. Kaynak CIF'le ve bağımsız bilimsel programlarla karşılaştırma önerilir.
-- Referans kontrolleri, sınırlar ve planlanan çalışmalar için [bilimsel CIF doğrulaması](tests/validation/README.md) ve [VESTA yol haritası](ROADMAP.md) sayfalarını inceleyin.
+For BVS, the periodic images within the bond radius are enumerated using the reciprocal metric, **without a hard ±2 image restriction** in skew cells. The model applies **only to a selected reference ion pair** with empirical `R₀/B` parameters; it does not infer oxidation states or chemical bond order. A reference expected bond length assumes formal charge is shared equally between bonds. Equations, limitations, and independent regression cases are documented in [`tests/validation/PACKAGE_7_STATUS.md`](tests/validation/PACKAGE_7_STATUS.md).
 
-### VESTA ile güncel başlıca farklar
+## Scientific scope and limitations
 
-- **P0 — Çevrimdışı paket:** Three.js, Moyo WASM ve uygulamanın tamamı aynı dağıtımdan yüklenir; sürümlü Service Worker ve PWA manifesti eklendi. İlk ziyarette bütün uygulama dosyalarının önbelleğe alınması gerekir. Kullanıcının hacimsel dosyaları, COD/Worker çağrıları ve daha önce indirilmemiş CIF'ler çevrimdışı kullanılamaz.
-- **P1 — Paket A + Paket B (bilimsel doğruluk):** XRD `d_min` küresel taraması, fiziksel tür/birim kontrollü CUBE/XSF, minimum eşiği, PDB CRYST1/element doğrulaması ve simetri site kimlikleri (A); nötron Lorentz/absorpsiyon uyarıları, `d_min`/FFT tabanlı Fourier 64³, üç kaynaklı Δρ, PAW/AECCAR uyarıları ve PDB element alanı büyük-harf dışa aktarımı (B) eklendi.
-- **P1 — Fiziksel hesaplamalar (model + deneysel FCF altkümesi):** IT92 ve doğal nötron `b`, model Fourier/Patterson, fazlı SHELX `.fcf` Fo/Fo−Fc FFT, örneklenmiş Voronoi ve iyonik Ewald; ampirik toz profili/ölçüm CSV; CUBE/XSF hacimsel dışa aktarımı mevcut. **Kalan:** `.mtz` ve fazsız FCF çözümleri, anomal saçılma, izotop çözünürlüğü, gerçek cihaz profili inceltmesi/RIETAN-FP eşdeğeri, Bader analizi ve geniş yakınsama benchmarkları.
-- **P1 — Dosya ve simetri kapsamı:** PDB/ENT kristal koordinatları ve ANISOU, CHGCAR spin ızgaraları, sınırlı mCIF moment/simetri görselleştirmesi eklendi. **Kalan:** `.vesta` projeleri, geniş biyomoleküler/kuantum kimyası biçimleri, tam BNS/manyetik süperuzay grupları, SAXIS düzeltmesi ve ayrıntılı setting/orijin dönüşümleri.
-- **P2 — Morfoloji ve sahne:** Kübik olmayan `{hkl}` için tam nokta grubu eşdeğerleri, çoklu faz CIF dışa aktarımı ve VESTA düzeyinde nesne/per-site stil esnekliği eksik.
-- **P2 — Yayın/3B dışa aktarım:** 1×–4× ve en fazla **24 MP** PNG, şeffaf zemin, **vektörel yapı SVG**, **kayıpsız RGB TIFF** (150/300/600 DPI baskı metaverisi), **A4 raster PDF**, **gerçek Bezier tabanlı vektör PDF/EPS**, **STL**, **renkli VRML97 (.wrl)** ve **glTF (.glb)** var. Vektör çıktıları hacimsel alanı içermez, EPS saydamlığı beyaza düzleştirir. Ancak WebGL ışık/depth tamponuyla birebir vektör eşdeğeri, manifold STL birleşimi, hacimsel izoyüzeylerin 3B çıktısı ve büyük-atomlu sahnelerde garantili yüksek FPS henüz yok.
+- **This is not feature-for-feature equivalent to VESTA.** Magnetic mCIF support covers a subset of site moments and 3D symmetry; there is no complete magnetic-group/superspace catalog, support for every CIF variant, or unrestricted selection of all Hall settings.
+- If a CIF lacks explicit symmetry operators, a reference setting/origin for the recognized space group may be used. Verify structures independently when alternative settings or origins matter.
+- Bond lines and coordination are **geometric interpretations**, not experimental proof of chemical bonds or bond order.
+- Surface generation, BVS, model diffraction, Fourier/Patterson, empirical powder profiles, and point-ion Madelung are limited physical models. **Surface energies, Wulff equilibrium, atomic relaxation, instrument-profile refinement, anomalous scattering, and DFT** are not computed.
+- Editing and re-exporting a CIF may not retain every item of experimental source metadata. Compare against the original CIF and independent scientific software.
+- See [scientific CIF validation](tests/validation/README.md) and the [VESTA-oriented roadmap](ROADMAP.md) for references, test limits, and planned improvements.
 
-Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/) ve [geliştirme yol haritası](ROADMAP.md).
+### Main differences from VESTA today
 
-## Çevrimdışı çalışma (COD hariç)
+- **P0 — Offline distribution:** Three.js, Moyo WASM, and application assets are served together with a versioned service worker and PWA manifest. They must first be cached online. User volumetric files, COD/Worker requests, and CIFs not downloaded previously remain unavailable offline.
+- **P1 — Scientific correctness, Packages A + B:** reciprocal `d_min` spherical XRD scan; physical-quantity/unit validation for CUBE/XSF; minimum thresholds; PDB CRYST1 and element checks; symmetry site identities (A); neutron Lorentz/absorption warnings; `d_min`/FFT Fourier to 64³; three-source Δρ; PAW/AECCAR caveats; uppercased PDB element columns on export (B).
+- **P1 — Physical models and experimental FCF subset:** IT92 and natural-neutron `b`, model Fourier/Patterson, phased SHELX `.fcf` Fo/Fo−Fc FFT, sampled Voronoi charges and ionic Ewald, empirical powder/measurement CSV, and volumetric CUBE/XSF export. **Still missing:** `.mtz` and phase-less FCF workflows, anomalous scattering, isotope-specific composition, true instrument profile fitting/RIETAN-FP equivalence, Bader analysis, and broad convergence benchmarks.
+- **P1 — File and symmetry breadth:** PDB/ENT crystallographic coordinates with ANISOU, CHGCAR spin grids, and limited mCIF moment/symmetry visualization are present. **Still missing:** `.vesta` projects, many biomolecular/quantum-chemistry formats, full BNS/magnetic superspace groups, SAXIS corrections, and detailed alternative-setting/origin conversions.
+- **P2 — Morphology and scene:** remaining gaps include some full point-group equivalents for non-cubic `{hkl}` cases, multi-phase CIF export, and VESTA-level object/per-site styling flexibility.
+- **P2 — Publication and 3D export:** available formats include **1×–4× PNG up to 24 MP**, transparent backgrounds, **vector structure SVG**, **lossless RGB TIFF** (150/300/600 DPI print metadata), **A4 raster PDF**, **true Bézier-based vector PDF/EPS**, **STL**, **colored VRML97 (.wrl)**, and **glTF (.glb)**. Vector outputs exclude volumetric fields; EPS flattens transparency onto white. Pixel-equivalence with WebGL depth/lighting, manifold STL unions, 3D output of volumetric isosurfaces, and guaranteed high FPS in very large scenes remain unavailable.
 
-**Service Worker + PWA manifesti mevcuttur.** HTTPS üzerindeki ilk başarılı ziyarette bütün uygulama kabuğu, Three.js ES modülleri, Moyo WASM, Türkçe/İngilizce çeviriler ve Karşı Uzay sayfası bir arada önbelleğe alınır. Bu önbellek hazır olduktan sonra aynı tarayıcı profilinde, aynı site adresinden yeniden açılış ve yerel bilimsel hesaplamalar ağ olmadan çalışabilir. İlk kurulum internet gerektirir; önbellek tarayıcı tarafından silinirse tekrar çevrimiçi ziyaret gerekir.
+For comparison, see [official VESTA features](https://jp-minerals.org/vesta/en/) and the [project roadmap](ROADMAP.md).
 
-- Service Worker yalnız **aynı alan adındaki sabit uygulama dosyalarına** yanıt verir. COD, kullanıcı ayarlı Cloudflare Worker, diğer API'ler ve dış bağlantılar önbelleğe alınmaz.
-- Yeni dağıtımda `sw.js` içindeki `CACHE_NAME` sürümünü artırın. Yeni sürüm bütün dosyaları başarıyla indirdikten sonra etkinleşir; açık eski sekmeler kapatıldıktan sonra geçiş olur. Eksik dosya varsa eski çalışan sürüm korunur.
-- Hacimsel veri dosyalarının baytları proje kalıcı kaydına dahil edilmez ve sayfa yenilendiğinde yeniden yüklenmesi gerekir. Yerel CIF/POSCAR/XYZ dosyalarını kullanıcı tekrar açabilir; uzak COD verisine çevrimdışı erişilemez.
-- Çevrimdışı testi Service Worker aktivasyonundan sonra DevTools ağ bağlantısını keserek veya tarayıcıdaki çevrimdışı senaryoyla yapın. `file://` şeması desteklenmez; HTTPS veya localhost kullanılmalı.
+## Offline operation (except COD)
 
-## Yerel geliştirme ve test
+A **service worker and PWA manifest** are included. After the first successful HTTPS visit, the application shell, Three.js ES modules, Moyo WASM, English/Turkish translations, and Reciprocal Space page are cached together. Once installation finishes, the same URL can be reopened under the same browser profile and local scientific computations can run **without network connectivity**. Installation requires the internet; if the browser evicts the cache, revisit online.
 
-Node.js **22+** ve Python 3 ile yerel statik sunucu çalıştırabilirsiniz. Yayındaki GitHub Pages iş akışı Moyo WASM dosyalarını otomatik ekler; yerel çalıştırmada yükleyin:
+- The service worker handles only **static same-origin app assets**. COD, user-configured Cloudflare Workers, other APIs, and external links are not cached.
+- For a new deployment, increment `CACHE_NAME` in `sw.js`. The new version activates only when all required assets have downloaded successfully, generally after older open tabs close. If files are missing, the old working cache is retained.
+- Volumetric file bytes are not saved with persistent projects and must be reopened after refresh. Local CIF/POSCAR/XYZ may be opened again by the user; remote COD data is not available offline.
+- Test offline mode after service-worker activation using the browser's network-offline controls. The `file://` scheme is unsupported; use HTTPS or localhost.
+
+## Local development and tests
+
+Use **Node.js 22+** and Python 3 to run a local static server. The GitHub Pages workflow automatically bundles Moyo WASM; for local use install and copy it manually:
 
 ```sh
 npm install --no-save --ignore-scripts @spglib/moyo-wasm@0.21.0
@@ -254,27 +233,27 @@ cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/
 python3 -m http.server 8000
 ```
 
-Sonra **http://localhost:8000** adresini açın. Dosyayı doğrudan `file://` ile çalıştırmak yerine yerel sunucu kullanın; WASM ve modül yüklemesi uygun MIME/orijin gerektirir.
+Then open **http://localhost:8000**. Use a local HTTP server instead of opening the file directly using `file://`, since WASM and ES modules require appropriate MIME types and origins.
 
-**Node regresyon testleri** (ek paket gerektirmez):
+**Node regression tests** (no extra packages):
 
 ```sh
 node --test tests/core.test.cjs tests/worker.test.mjs tests/reciprocal.test.mjs
 ```
 
-**Gerçek Chromium/WebGL görsel testi** (Playwright + Three.js bağımlılıkları ve tarayıcı kurulumu gerekir): `node tests/browser/visual.test.mjs`. **Bağımsız CIF doğruluğu** Gemmi 0.7.4 referanslarını ve sabitlenmiş CIF örneklerini kullanır; komutlar ve kurallar [tests/validation/README.md](tests/validation/README.md) dosyasındadır.
+**Real Chromium/WebGL visual tests** require Playwright, Three.js dependencies, and an installed browser: `node tests/browser/visual.test.mjs`. **Independent CIF accuracy validation** uses Gemmi 0.7.4 references and pinned CIF fixtures; commands and gates are documented in [tests/validation/README.md](tests/validation/README.md).
 
-GitHub Actions iş akışları:
+GitHub Actions workflows:
 
-- [pages.yml](.github/workflows/pages.yml): `main` dalında Node testleri, Moyo WASM paketleme ve GitHub Pages yayını.
-- [browser-visual.yml](.github/workflows/browser-visual.yml): `main` üzerindeki ilgili değişikliklerde/elle Chromium ile WebGL görsel testi ve ekran görüntüsü artifact'leri.
-- [cif-validation.yml](.github/workflows/cif-validation.yml): bağımsız CIF/Gemmi kontrolü; ölçüm/gate ve elle `strict` modu.
+- [pages.yml](.github/workflows/pages.yml): Node tests, Moyo WASM packaging, and GitHub Pages deployment on `main`.
+- [browser-visual.yml](.github/workflows/browser-visual.yml): Chromium/WebGL visual tests and screenshot artifacts on relevant `main` changes or manual invocation.
+- [cif-validation.yml](.github/workflows/cif-validation.yml): independent CIF/Gemmi verification, with measurement/gating modes and optional manual `strict` mode.
 
-GitHub Pages ayarlarında **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilmelidir. Worker bağımsız olarak dağıtılır; ayrıntılar [worker/README.md](worker/README.md) dosyasındadır.
+Set **Settings → Pages → Build and deployment → Source: GitHub Actions** in GitHub. The optional Worker is deployed separately; see [worker/README.md](worker/README.md).
 
-## Kaynaklar ve lisans notları
+## Sources and license notes
 
-- 3B motoru: [Three.js](https://threejs.org/), sürüm **0.186.1**, GitHub Pages'e paketlenen [MIT lisanslı yerel ES modülleri](vendor/three/README.md).
-- Otomatik simetri: [moyo-wasm](https://github.com/spglib/moyo/tree/main/moyo-wasm), sürüm 0.21.0; dağıtıma eklenen [MIT](licenses/LICENSE-MOYO-MIT.txt) ve [Apache-2.0](licenses/LICENSE-MOYO-APACHE.txt) lisansları.
-- Uzay grubu/Wyckoff referans tabloları: [spglib](https://github.com/spglib/spglib) ve [wyckoff](https://github.com/anoopkcn/wyckoff) kaynaklarından türetilmiş veriler. Atıf/lisans bildirimleri uygulama kaynağında yer alır.
-- COD kaynak/API: [Crystallography Open Database](https://www.crystallography.net/cod/) ve [resmî REST API açıklaması](https://wiki.crystallography.net/RESTful_API/).
+- 3D engine: [Three.js](https://threejs.org/), version **0.186.1**, bundled as [MIT-licensed local ES modules](vendor/three/README.md).
+- Automatic symmetry: [moyo-wasm](https://github.com/spglib/moyo/tree/main/moyo-wasm), version **0.21.0**; bundled [MIT](licenses/LICENSE-MOYO-MIT.txt) and [Apache-2.0](licenses/LICENSE-MOYO-APACHE.txt) notices.
+- Space-group/Wyckoff reference data derived from [spglib](https://github.com/spglib/spglib) and [wyckoff](https://github.com/anoopkcn/wyckoff); attribution/license notices are included in the application source.
+- COD data/API: [Crystallography Open Database](https://www.crystallography.net/cod/) and its [official REST API documentation](https://wiki.crystallography.net/RESTful_API/).
