@@ -4341,7 +4341,10 @@ function cifProvenanceSafeValue(value){
 function cifProvenanceFromSource(source){
  const t=tokenizeCif(source),scalars=[],loops=[],seen=new Set();
  const eligible=key=>/^_(?:publ_author|citation|journal)_[a-z0-9_]+$/.test(key);
- const safeText=v=>typeof v==='string'&&v.length<=8192&&!v.startsWith('_')&&
+ // CIF '?' and '.' are missing-value tokens, distinct from quoted literal
+ // strings with those characters. The existing tokenizer erases that distinction.
+ // Omit such bibliography cells instead of silently changing their semantics.
+ const safeText=v=>typeof v==='string'&&v!=='.'&&v!=='?'&&v.length<=8192&&!v.startsWith('_')&&
   !v.split('\n').some(line=>line.startsWith(';'))&&
   !/[\0\x01-\x08\x0b\x0c\x0e-\x1f]/.test(v);
  let i=0,total=0;
