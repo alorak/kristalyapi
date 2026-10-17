@@ -5368,8 +5368,12 @@ function cifExportText(state){
  const symmetry=!hasMagnetism&&state.symmetryEnabled&&state.sgNumber>1;
  const outSites=state.sites;
  const c=validateCell(state.cell),q=['data_'+safeName(state.name),'_audit_creation_method              \'Kristal Yapi Browser Studio\'',"_symmetry_space_group_name_H-M    '"+(symmetry?SPACE_NAMES[state.sgNumber]:'P 1')+"'",'_symmetry_Int_Tables_number       '+(symmetry?state.sgNumber:1)];
+ const changedComposition=!!state.cifComposition&&cifCompositionSignature(state.sites)!==state.cifComposition;
+ const modifiedSource=!!state.cifOriginal&&state.cifOriginal.fingerprint!==cifScientificFingerprint(state);
  for(const [tag,value] of Object.entries(cifMetaValid(state.cifMeta))){
-  if(tag==='_chemical_formula_sum'&&state.cifComposition&&cifCompositionSignature(state.sites)!==state.cifComposition)continue;
+  // A changed chemical identity invalidates names/formula, while a changed
+  // source structure must not masquerade as its original COD deposition.
+  if(changedComposition&&tag.startsWith('_chemical_')||modifiedSource&&tag==='_cod_database_code')continue;
   q.push(tag+' '+cifQuoted(value));
  }
  // Only non-structural literature provenance is inherited from an edited CIF.
@@ -5429,7 +5433,7 @@ function exportCif(){
  const output=cifExportPreservingSource(state);
  download(safeName(state.name)+(state.sites.some(s=>s.magneticMoment)?'.mcif':'.cif'),output.text);
  if(state.cifOriginal&&!output.original)
-  inform('Kristal değişti: CIF yeniden üretildi (P1 / desteklenen alanlar). Kaynaktaki tüm CIF meta verileri korunmayabilir.');
+  inform('Kristal değişti: CIF yeniden üretildi. Yazar ve yayın kaynakları korunabilir; yapıya bağlı ölçüm/rafinman kayıtları ve eski depo kimliği taşınmadı. Orijinal CIF arşivini ayrıca saklayın.');
 }
 function exportPoscar(){
  const outSites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
