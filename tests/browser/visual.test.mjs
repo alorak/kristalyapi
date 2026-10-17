@@ -729,6 +729,7 @@ try{
  assert.equal(await page.locator('#xrdMapResolution').getAttribute('min'),'0.35');
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
  assert.equal(await page.locator('#fcfMapKind option').count(),2);
+ assert.equal(await page.locator('#fcfScaleMode option').count(),2);
  assert.equal(await page.locator('#volumePeakRefine').isChecked(),true);
  assert.equal(await page.locator('#volumePeakMerge').isChecked(),false);
  assert.match(await page.locator('#volumeMathIntegral').textContent(),/Volume integral/);
@@ -767,7 +768,7 @@ try{
  await page.waitForFunction(()=>document.getElementById('fcfStatus')?.textContent.includes('2 yansıma'));
  await page.locator('#fcfMapAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#volumeActiveDataset option').length===1);
- assert.match(await page.locator('#fcfStatus').textContent(),/yansıma kullanıldı/);
+ assert.match(await page.locator('#fcfStatus').textContent(),/benzersiz yansıma/);
  const polyhedra=await page.evaluate(()=>window.__visualTest.perovskitePolys());
  assert.deepEqual({center:polyhedra.center,count:polyhedra.count,meshes:polyhedra.meshes,edges:polyhedra.edges},
   {center:'Ti',count:125,meshes:1,edges:1},'5×5×5 BaTiO3 should render all 125 Ti octahedra in two draw objects');
