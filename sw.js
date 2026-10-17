@@ -2,9 +2,9 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-17-v1';
+const CACHE_NAME=CACHE_PREFIX+'2026-10-17-v2';
 const APP_FILES=[
- './','./index.html','./styles.css','./crystal-app.js','./translations.js',
+ './','./index.html','./styles.css','./crystal-app.js','./volume-iso-worker.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./favicon.svg','./manifest.webmanifest',
  './vendor/three/build/three.module.js','./vendor/three/build/three.core.js',
  './vendor/three/examples/jsm/controls/OrbitControls.js',

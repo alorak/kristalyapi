@@ -121,7 +121,7 @@ function frameTimingStats(values){
  const percentile=p=>sample[Math.min(sample.length-1,Math.ceil(p*sample.length)-1)];
  return {samples:sample.length,medianMs:percentile(.5),p95Ms:percentile(.95)};
 }
-let renderQuality='auto',lastBuildMs=0,lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false};
+let renderQuality='auto',lastBuildMs=0,lastBuildPhases={atomsMs:0,bondsMs:0,polyhedraMs:0},lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false,workerMs:0,cacheHits:0,pending:false};
 let frameTimings=[],previousFrameTimestamp=0,performanceFrameCounter=0;
 const bondGeometry=new THREE.CylinderGeometry(1,1,1,9);
 const atomMaterials=new Map();
@@ -1024,7 +1024,72 @@ function volumeSliceMesh(g){
  const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,opacity:.85,depthWrite:false});
  return new THREE.Mesh(geometry,material);
 }
+// Package 10.2: bounded triangulation cache, cancellation, and Web Worker offload.
+const VOLUME_WORKER_THRESHOLD=75000,VOLUME_SURFACE_CACHE_BYTES=32*1024*1024;
+const volumeGridIds=new WeakMap(),volumeSurfaceCache=new Map();
+let nextVolumeGridId=1,volumeSurfaceCacheSize=0,volumeRequestSerial=0,volumeActiveWorker=null,volumeCancelledJobs=0;
+function volumeGridIdentity(grid){
+ if(!grid)return 0;
+ if(!volumeGridIds.has(grid))volumeGridIds.set(grid,nextVolumeGridId++);
+ return volumeGridIds.get(grid);
+}
+function volumeSurfaceCacheKey(grid,level,potential,palette,maxTriangles){
+ return [volumeGridIdentity(grid),String(level),volumeGridIdentity(potential),palette,maxTriangles].join(':');
+}
+function cachedVolumeSurface(key){
+ const item=volumeSurfaceCache.get(key);if(!item)return null;
+ volumeSurfaceCache.delete(key);volumeSurfaceCache.set(key,item);
+ return item.surface;
+}
+function storeVolumeSurface(key,surface){
+ const bytes=surface.positions.byteLength+(surface.colors?.byteLength||0);
+ if(bytes>VOLUME_SURFACE_CACHE_BYTES)return;
+ if(volumeSurfaceCache.has(key)){
+  const previous=volumeSurfaceCache.get(key);volumeSurfaceCacheSize-=previous.bytes;volumeSurfaceCache.delete(key);
+ }
+ volumeSurfaceCache.set(key,{surface,bytes});volumeSurfaceCacheSize+=bytes;
+ while(volumeSurfaceCacheSize>VOLUME_SURFACE_CACHE_BYTES){
+  const first=volumeSurfaceCache.keys().next().value;
+  const item=volumeSurfaceCache.get(first);volumeSurfaceCacheSize-=item.bytes;volumeSurfaceCache.delete(first);
+ }
+}
+function cancelVolumeWorker(){
+ ++volumeRequestSerial;
+ if(volumeActiveWorker){volumeActiveWorker.terminate();volumeActiveWorker=null;volumeCancelledJobs++;}
+}
+function serializeVolumeWorkerGrid(grid){
+ return {dims:grid.dims.slice(),origin:grid.origin.slice(),axes:grid.axes.map(v=>v.slice()),
+  values:grid.values.slice(),min:grid.min,max:grid.max,periodic:!!grid.periodic};
+}
+function appendVolumeSurface(target,dataset,item,surface,pot){
+ if(!surface.triangles)return;
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
+ if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
+ geo.computeVertexNormals();
+ const spec=volumeSurfaceStyleSpec(volumeView.surfaceStyle);
+ if(spec.filled){
+  const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:item.color,vertexColors:!!pot,
+   side:THREE.DoubleSide,transparent:true,opacity:item.opacity,depthWrite:false,shininess:45,
+   flatShading:spec.flat,polygonOffset:spec.wire,polygonOffsetFactor:1,polygonOffsetUnits:1});
+  const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;target.add(mesh);
+ }
+ if(spec.wire){
+  const mat=new THREE.MeshBasicMaterial({color:pot?0xffffff:(spec.filled?'#263b51':item.color),
+   vertexColors:!!pot,side:THREE.DoubleSide,transparent:true,
+   opacity:spec.filled?Math.min(1,item.opacity+.12):item.opacity,
+   depthWrite:false,wireframe:true});
+  const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;target.add(mesh);
+ }
+}
+function consumeVolumeSurface(target,dataset,item,surface,potential,key){
+ storeVolumeSurface(key,surface);
+ lastVolumeStats.triangles+=surface.triangles;
+ lastVolumeStats.stride=Math.max(lastVolumeStats.stride,surface.decimation);
+ lastVolumeStats.truncated=lastVolumeStats.truncated||surface.truncated;
+ appendVolumeSurface(target,dataset,item,surface,potential);
+}
 function clearVolumeLayer(){
+ cancelVolumeWorker();
  if(!volumeLayer)return;
  if(volumeLayer.parent)volumeLayer.parent.remove(volumeLayer);
  const released=new Set();
@@ -1038,53 +1103,89 @@ function clearVolumeLayer(){
  });
  volumeLayer=null;
 }
-function drawVolume(){
+function drawVolume(forceSync=false){
  const started=performance.now();
  clearVolumeLayer();
- lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false};
+ lastVolumeStats={ms:0,triangles:0,stride:0,truncated:false,workerMs:0,cacheHits:0,pending:false};
  if(!root||!densityGrid||volumeView.mode==='off')return;
+ updateVolumeInfo();
+ const requestId=volumeRequestSerial;
  volumeLayer=new THREE.Group();volumeLayer.name='Volumetric data';
- const pot=volumeView.potential&&potentialGrid?potentialGrid:null;
+ const layer=volumeLayer,pot=volumeView.potential&&potentialGrid?potentialGrid:null;
+ const tasks=[],triangleLimit=Math.floor(75000/VOLUME_TOTAL_SURFACE_LIMIT)*2;
+ let totalSurfaceLimitReached=false;
  if(volumeView.mode==='iso'||volumeView.mode==='both'){
-  let drawn=0,truncated=false;
+  let count=0;
   for(const dataset of volumeDatasets){
    if(!dataset.visible||!volumeGridCompatible(densityGrid,dataset.grid))continue;
    for(const item of dataset.layers){
     if(!item.visible)continue;
-    if(++drawn>VOLUME_TOTAL_SURFACE_LIMIT){truncated=true;break;}
-    const surface=isoTriangles(dataset.grid,item.value,pot,volumeView.palette,Math.floor(75000/VOLUME_TOTAL_SURFACE_LIMIT)*2);
-    lastVolumeStats.triangles+=surface.triangles;
-    lastVolumeStats.stride=Math.max(lastVolumeStats.stride,surface.decimation);
-    lastVolumeStats.truncated=lastVolumeStats.truncated||surface.truncated;
-    if(surface.triangles){
-     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(surface.positions,3));
-     if(pot)geo.setAttribute('color',new THREE.BufferAttribute(surface.colors,3));
-     geo.computeVertexNormals();
-     const spec=volumeSurfaceStyleSpec(volumeView.surfaceStyle);
-     if(spec.filled){
-      const mat=new THREE.MeshPhongMaterial({color:pot?0xffffff:item.color,vertexColors:!!pot,
-       side:THREE.DoubleSide,transparent:true,opacity:item.opacity,depthWrite:false,shininess:45,
-       flatShading:spec.flat,polygonOffset:spec.wire,polygonOffsetFactor:1,polygonOffsetUnits:1});
-      const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
-     }
-     if(spec.wire){
-      const mat=new THREE.MeshBasicMaterial({color:pot?0xffffff:(spec.filled?'#263b51':item.color),
-       vertexColors:!!pot,side:THREE.DoubleSide,transparent:true,
-       opacity:spec.filled?Math.min(1,item.opacity+.12):item.opacity,
-       depthWrite:false,wireframe:true});
-      const mesh=new THREE.Mesh(geo,mat);mesh.userData.dataset=dataset.name;volumeLayer.add(mesh);
-     }
-    }
-    if(surface.truncated)truncated=true;
+    if(++count>VOLUME_TOTAL_SURFACE_LIMIT){totalSurfaceLimitReached=true;break;}
+    tasks.push({dataset,item,key:volumeSurfaceCacheKey(dataset.grid,item.value,pot,volumeView.palette,triangleLimit)});
    }
   }
-  if(truncated)$('volumeInfo').textContent+=' · Yüzey/üçgen sınırı uygulandı';
  }
- if(volumeView.mode==='slice'||volumeView.mode==='both')volumeLayer.add(volumeSliceMesh(densityGrid));
- addLayerObject(volumeLayer,'volume');applyLayerAppearance();
- lastVolumeStats.ms=performance.now()-started;refreshPerformancePanel();
+ const pending=[];
+ const process=(task,surface)=>consumeVolumeSurface(layer,task.dataset,task.item,surface,pot,task.key);
+ const workerEligible=!forceSync&&typeof Worker==='function'&&
+  tasks.some(task=>task.dataset.grid.values.length>=VOLUME_WORKER_THRESHOLD);
+ for(const task of tasks){
+  const cached=forceSync?null:cachedVolumeSurface(task.key);
+  if(cached){lastVolumeStats.cacheHits++;process(task,cached);}
+  else if(workerEligible)pending.push(task);
+  else process(task,isoTriangles(task.dataset.grid,task.item.value,pot,volumeView.palette,triangleLimit));
+ }
+ if(totalSurfaceLimitReached)lastVolumeStats.truncated=true;
+ if(volumeView.mode==='slice'||volumeView.mode==='both')layer.add(volumeSliceMesh(densityGrid));
+ addLayerObject(layer,'volume');applyLayerAppearance();
+ if(lastVolumeStats.truncated&&!$('volumeInfo').textContent.includes('Yüzey/üçgen sınırı uygulandı'))$('volumeInfo').textContent+=' · Yüzey/üçgen sınırı uygulandı';
+ lastVolumeStats.ms=performance.now()-started;
+ if(!pending.length){refreshPerformancePanel();return;}
+ let worker;
+ try{worker=new Worker('./volume-iso-worker.js');}
+ catch(error){console.warn('Hacimsel Worker açılamadı; eşzamanlı çizim:',error);drawVolume(true);return;}
+ volumeActiveWorker=worker;lastVolumeStats.pending=true;
+ $('volumeInfo').textContent+=' · İzoyüzey arka planda oluşturuluyor…';
+ const grids=[],indices=new Map(),gridIndexFor=grid=>{
+  if(!grid)return -1;
+  if(!indices.has(grid)){indices.set(grid,grids.length);grids.push(serializeVolumeWorkerGrid(grid));}
+  return indices.get(grid);
+ };
+ const jobs=pending.map(task=>({grid:gridIndexFor(task.dataset.grid),potential:gridIndexFor(pot),
+  level:task.item.value,palette:volumeView.palette,maxTriangles:triangleLimit}));
+ const finishError=error=>{
+  if(requestId!==volumeRequestSerial||layer!==volumeLayer)return;
+  volumeActiveWorker=null;worker.terminate();
+  console.warn('Hacimsel arka plan çizimi başarısız; ana iş parçacığına geçiliyor:',error);
+  inform('Hacimsel Worker kullanılamadı; güvenli çizim modu uygulanıyor.');
+  drawVolume(true);
+ };
+ worker.onmessage=event=>{
+  if(requestId!==volumeRequestSerial||layer!==volumeLayer)return;
+  const payload=event.data||{};
+  if(payload.requestId!==requestId||payload.error||!Array.isArray(payload.results)||
+   payload.results.length!==pending.length)return finishError(payload.error||'Invalid worker response');
+  try{
+   for(let i=0;i<pending.length;i++){
+    const surface=payload.results[i];
+    if(!(surface.positions instanceof Float32Array)||!Number.isInteger(surface.triangles)||
+       surface.triangles<0||surface.triangles>triangleLimit+1||
+       surface.positions.length!==surface.triangles*9||
+       (pot&&(!(surface.colors instanceof Float32Array)||surface.colors.length!==surface.positions.length)))
+     throw Error('Invalid worker triangles');
+    process(pending[i],surface);
+   }
+   volumeActiveWorker=null;worker.terminate();
+   lastVolumeStats.pending=false;lastVolumeStats.workerMs=Number(payload.elapsedMs)||0;
+   $('volumeInfo').textContent=$('volumeInfo').textContent.replace(' · İzoyüzey arka planda oluşturuluyor…','');
+   if(lastVolumeStats.truncated&&!$('volumeInfo').textContent.includes('Yüzey/üçgen sınırı uygulandı'))$('volumeInfo').textContent+=' · Yüzey/üçgen sınırı uygulandı';
+   applyLayerAppearance();refreshPerformancePanel();
+  }catch(error){finishError(error);}
+ };
+ worker.onerror=event=>{event.preventDefault();finishError(event.message||'Worker error');};
+ try{worker.postMessage({requestId,grids,jobs},grids.map(g=>g.values.buffer));}
+ catch(error){finishError(error);}
 }
-
 function updateVolumeInfo(){
  if(!densityGrid){$('volumeInfo').textContent='Henüz veri yüklenmedi.';return;}
  const g=densityGrid;
@@ -1398,7 +1499,8 @@ async function loadVolumeFile(file,asPotential=false,additional=false){
  if(!asPotential&&!additional)fit();
 }
 function resetVolume(){
- clearVolumeLayer();densityGrid=null;potentialGrid=null;volumeDatasets=[];activeVolumeIndex=0;volumeColorIndex='';
+ clearVolumeLayer();volumeSurfaceCache.clear();volumeSurfaceCacheSize=0;
+ densityGrid=null;potentialGrid=null;volumeDatasets=[];activeVolumeIndex=0;volumeColorIndex='';
  $('volumeMathIntegral').textContent='Hacim integrali henüz hesaplanmadı.';
  lastVolumePeaks=null;$('volumePeakResults').textContent='Önce bir alan yükleyin.';
  lastVoronoi=null;$('volumeVoronoiResults').textContent='İşlem bekleniyor.';
@@ -1610,6 +1712,9 @@ function performanceSnapshot(){
   atoms:atomData.length,visibleAtoms:atomMesh.reduce((n,mesh)=>n+mesh.count,0),
   bonds:root?root.children.filter(mesh=>mesh.userData.layer==='bonds'&&mesh.isInstancedMesh).reduce((n,mesh)=>n+mesh.count,0):0,
   polyhedra:root?root.children.filter(mesh=>mesh.userData.layer==='polyhedra'&&mesh.isMesh).reduce((n,mesh)=>n+(mesh.userData.polyhedraCount||0),0):0,
+  buildPhases:{...lastBuildPhases},volumeWorkerMs:lastVolumeStats.workerMs,
+  volumeCacheHits:lastVolumeStats.cacheHits,volumePending:lastVolumeStats.pending,
+  volumeCancelledJobs,volumeCacheBytes:volumeSurfaceCacheSize,
   volumeTriangles:lastVolumeStats.triangles,volumeStride:lastVolumeStats.stride,
   volumeTruncated:lastVolumeStats.truncated,buildMs:lastBuildMs,volumeBuildMs:lastVolumeStats.ms,
   drawCalls:render.calls||0,gpuTriangles:render.triangles||0,geometries:memory.geometries||0,
@@ -1623,7 +1728,8 @@ function refreshPerformancePanel(){
  $('performanceMetrics').textContent=[
   word('Atoms ','Atom ')+x.visibleAtoms.toLocaleString()+' / '+x.atoms.toLocaleString()+' · '+word('bonds ','bağ ')+x.bonds.toLocaleString()+' · '+word('polyhedra ','çokyüzlü ')+x.polyhedra,
   'Atom LOD '+(x.atomLod.map(item=>item.tier+': '+item.count+' ('+item.trianglesPerSphere+' tris/atom)').join(', ')||'—'),
-  word('CPU build ','CPU oluşturma ')+fmt(x.buildMs)+' ms · '+word('volume ','hacim ')+fmt(x.volumeBuildMs)+' ms',
+  word('CPU build ','CPU oluşturma ')+fmt(x.buildMs)+' ms · '+word('atoms ','atomlar ')+fmt(x.buildPhases.atomsMs)+' · '+word('bonds ','bağlar ')+fmt(x.buildPhases.bondsMs)+' · '+word('poly ','çokyüzlü ')+fmt(x.buildPhases.polyhedraMs),
+  word('Volume (main) ','Hacim (ana) ')+fmt(x.volumeBuildMs)+' ms · Worker '+fmt(x.volumeWorkerMs)+' ms · '+word('cache hits ','önbellek isabeti ')+x.volumeCacheHits+(x.volumePending?word(' (processing)',' (işleniyor)'):'')+word(' · canceled ',' · iptal ')+x.volumeCancelledJobs,
   word('Volume ','Hacim ')+x.volumeTriangles.toLocaleString()+word(' triangles · grid stride ',' üçgen · ızgara adımı ')+(x.volumeStride||'—')+(x.volumeTruncated?word(' (limited)',' (sınırlı)'):''),
   'WebGL '+x.drawCalls+word(' draw calls · ',' çizim çağrısı · ')+x.gpuTriangles.toLocaleString()+word(' triangles · ',' üçgen · ')+x.geometries+word(' geometries',' geometri'),
   word('Frame intervals ','Kare aralıkları ')+fmt(x.medianMs)+' / '+fmt(x.p95Ms)+word(' ms (median / p95, ',' ms (ortanca / p95, ')+x.samples+word(' samples)',' örnek)')
@@ -3151,6 +3257,7 @@ function build(){
   const arrow=new THREE.ArrowHelper(dir,item.pos.clone(),length,0xd7698b,length*.28,Math.max(.07,length*.13));
   addLayerObject(arrow,'magnetic');magneticArrows++;
  }
+ const bondStarted=performance.now();
  const rules=parseBondRules(state.bondRules),bondPeriodic=bondIsPeriodic(state.bondMode,state.nonPeriodic);
  const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
  const key=(x,y,z)=>x+','+y+','+z;
@@ -3180,9 +3287,11 @@ function build(){
   else bondMat.dispose();
   if(periodic?.truncated)capReached=true;
  }
+ const bondFinished=performance.now();
  addCellLines(B,state.rep);drawMillerPlane(B);drawMorphology(B,center);drawOverlayStructures(B,center);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
  if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');}
+ const polyStarted=performance.now();
  let polyCount=0,polyTruncated=false,polyFailed=0,polyMissing=[],polyArea=0,polyVolume=0;
  if(state.polyCenters.length){
   const centers=new Set(state.polyCenters);
@@ -3231,6 +3340,7 @@ function build(){
   }
   polyMissing=[...produced].filter(([,count])=>!count).map(([symbol])=>symbol);
  }
+ lastBuildPhases={atomsMs:bondStarted-buildStarted,bondsMs:bondFinished-bondStarted,polyhedraMs:performance.now()-polyStarted};
  drawSelection();
  drawVolume();
  updateAtomLod();
