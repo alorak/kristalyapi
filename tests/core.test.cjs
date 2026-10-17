@@ -2447,3 +2447,62 @@ test('reciprocal-space page is routed, wired to the editor and deployed with its
  assert.match(workflow,/cp reciprocal-page\.js public\/reciprocal-page\.js/);
  assert.match(workflow,/tests\/reciprocal\.test\.mjs/);
 });
+
+
+test('P7.6 CIF untouched source is exported byte-for-byte, including unsupported tags',()=>{
+ const input=[
+  'data_p76',
+  '_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  "_custom_experimental_note 'must remain verbatim'",
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si 0.125 0.25 0.375'
+ ].join('\n')+'\n';
+ const structure=api.cifData(input);
+ const record=api.originalCifRecord(structure,input);
+ const preserved=api.cifExportPreservingSource({...structure,cifOriginal:record});
+ assert.equal(preserved.original,true);
+ assert.equal(preserved.text,input);
+ assert.match(preserved.text,/_custom_experimental_note/);
+});
+
+test('P7.6 CIF changed structure must not silently reuse original source',()=>{
+ const input=[
+  'data_p76','_cell_length_a 5','_cell_length_b 6','_cell_length_c 7',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si 0.125 0.25 0.375'
+ ].join('\n')+'\n';
+ const structure=api.cifData(input);
+ const record=api.originalCifRecord(structure,input);
+ const changed={...structure,sites:structure.sites.map((site,i)=>i?site:{...site,x:site.x+.125}),cifOriginal:record};
+ const output=api.cifExportPreservingSource(changed);
+ assert.equal(output.original,false);
+ const parsed=api.cifData(output.text);
+ approx(parsed.sites[0].x,.25,1e-6);
+ assert.notEqual(output.text,input);
+});
+
+test('P7.6 CIF roundtrip retains partial occupancies and anisotropic ADP',()=>{
+ const input=[
+  'data_p76','_cell_length_a 6','_cell_length_b 7','_cell_length_c 8',
+  '_cell_angle_alpha 76','_cell_angle_beta 84','_cell_angle_gamma 101',
+  'loop_','_atom_site_label','_atom_site_type_symbol',
+  '_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  '_atom_site_occupancy','Si1 Si .125 .25 .375 .65',
+  'loop_','_atom_site_aniso_label','_atom_site_aniso_U_11',
+  '_atom_site_aniso_U_22','_atom_site_aniso_U_33',
+  '_atom_site_aniso_U_12','_atom_site_aniso_U_13','_atom_site_aniso_U_23',
+  'Si1 .04 .03 .02 .001 -.002 .003'
+ ].join('\n')+'\n';
+ const first=api.cifData(input);
+ const exported=api.cifExportText(first);
+ const second=api.cifData(exported);
+ assert.equal(second.sites.length,1);
+ approx(second.sites[0].occupancy,.65,1e-6);
+ for(const axis of ['x','y','z'])approx(second.sites[0][axis],first.sites[0][axis],1e-6);
+ assert.ok(Array.isArray(second.sites[0].adp));
+ first.sites[0].adp.forEach((value,i)=>approx(second.sites[0].adp[i],value,1e-6));
+});
