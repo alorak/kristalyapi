@@ -71,6 +71,10 @@ window.__visualTest={
  p12BvsResult:()=>lastBvs&&({pair:lastBvs.pair,count:lastBvs.count,
   weightedCount:lastBvs.weightedCount,sum:lastBvs.sum,periodic:lastBvs.periodic,
   warnings:lastBvs.warnings,reference:lastBvs.parameterSource}),
+ p13Experimental:()=>({sites:state.sites.map((site,index)=>({index,element:site.symbol,
+  label:site.label,occupancy:site.occupancy})),warning:state.warning,
+  bvs:lastBvs&&({pair:lastBvs.pair,count:lastBvs.count,sum:lastBvs.sum,
+   uncertainty:lastBvs.occupancyDistribution,alternatives:lastBvs.centerAlternatives})}),
  perovskitePolys:()=>{resetVolume();loadPreset('perovskite');state.rep=[5,5,5];state.style='poly';state.poly='';
   state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
  syncedPolyCenter:()=>{resetVolume();loadPreset('perovskite');state.style='poly';state.poly='';
@@ -1269,6 +1273,34 @@ try{
    assert.ok(Math.abs(Number(await importPage.locator('#a').inputValue())-item.a)<1e-3);
    assert.ok((await sample(importPage)).ink>20,'imported '+item.name+' must render atoms');
   }
+
+  // P13: import the unmodified IUCr supplemental CIF with data_global + data_I,
+  // then exercise the real center-selector/BVS drawer on a 72.2% K / 27.8% Na site.
+  await importPage.locator('#fileInput').setInputFiles(path.join(base,
+   'tests/validation/fixtures/experimental/IUCr_wm5651_KNaCaSiO.cif'));
+  await importPage.waitForFunction(()=>window.__visualTest?.p13Experimental().sites.length===40);
+  const realCif=await importPage.evaluate(()=>window.__visualTest.p13Experimental());
+  assert.equal(realCif.sites.length,40,'IUCr P-1 crystal must expand to 40 atoms');
+  assert.match(realCif.warning,/data_global/,
+   'source .cif must not be misclassified as SHELX because it embeds a SHELX listing');
+  const k1=realCif.sites.find(site=>site.label==='K1_1');
+  assert.ok(k1,'K1 must survive symmetry expansion and source-label propagation');
+  assert.equal(k1.occupancy,.722);
+  await importPage.locator('[data-right-tool="bvs"]').click();
+  await importPage.locator('#analysisCenter').selectOption(String(k1.index));
+  await importPage.locator('#bvsPair').selectOption('K1-O');
+  await importPage.locator('#bvsCutoff').fill('3.2');
+  await importPage.locator('#analyzeBvs').click();
+  const realBvs=(await importPage.evaluate(()=>window.__visualTest.p13Experimental())).bvs;
+  assert.equal(realBvs.count,7);
+  assert.ok(Math.abs(realBvs.sum-1.2848484568444043)<1e-6);
+  assert.ok(realBvs.alternatives?.complete);
+  assert.deepEqual(realBvs.alternatives.scenarios.map(site=>[site.element,site.occupancy]),
+   [['K',.722],['Na',.278]]);
+  assert.ok(realBvs.alternatives.conditionalStandardDeviation>.3);
+  assert.match(await importPage.locator('#bvsResult').textContent(),
+   /Alternatif merkez.*K 72\.2%.*Na 27\.8%.*Türlere göre koşullu ortalama=.*model σ=/s);
+  await importPage.screenshot({path:path.join(artifacts,'p13-experimental-kna-bvs.png')});
 
   // Package 9.3: the user selects the real project and its referenced Gemmi
   // CCP4 map in ONE local picker; no browser path or network fetching.

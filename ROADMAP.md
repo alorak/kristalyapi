@@ -1,5 +1,35 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 13 — Gerçek deneysel CIF, alternatif merkez BVS ve bağımsız Gemmi/ASE kapısı
+
+- **Gerçek kaynaklı korpus:** SHA-256'sı sabitlenmiş 1965 NaCl, 1963 rutil
+  TiO₂ ve 2022 IUCr K₁.₅₂Na₀.₄₈Ca₃Si₃O₁₀ CIF'leri. Sonuncusundaki
+  metadata `data_global` + `data_I` ayrımı ve dosyaya eklenmiş SHELX
+  rafinman metninin yanlış format seçtirmesi düzeltilerek **40 simetri atomu**
+  ve iki **K/Na alternatif konumu** kayıpsız okunuyor. Birden çok kristal
+  bloğunu sessizce birleştirmek hâlâ yasak.
+- **Doluluk modelinin kapsamı:** Ligandların eş konumdaki türleri birbirini
+  dışlar; farklı periyodik ligand görüntülerinin doluluğu **bağımsız**
+  varsayılır. Koşullu BVS ortalaması, standart sapma, mümkün sınırlar ve
+  en fazla 4096 durum için kesin P05/P95 raporlanır. Aynı merkezde %72,2 K /
+  %27,8 Na gibi türler için ayrı iyon BVS'leri ve karışımın koşullu
+  ortalaması/σ gösterilir. Bu model gerçek uzamsal korelasyonları, konumsal
+  hata çubuklarını veya kendi başına oksidasyon durumunu ölçmez.
+- **Bağımsız kalite kapısı:** CI'da Gemmi 0.7.5 tüm simetri atomlarını, ASE
+  3.26.0 ise sekiz gerçek CIF BVS örneğindeki **her periyodik ligand
+  görüntüsünü, uzaklığı ve katkıyı** doğrular. IUCr'nin yayımlanmış K1–O
+  mesafeleri de kontrol edilir; özgün dosya SHA-256'ları ve JSON sonuç
+  arşivlenir. Chromium, gerçek CIF ile BVS panelini açıp koşullu K/Na
+  sonuçlarını görsel olarak sınar.
+- **VESTA farkı:** Henüz VESTA yürütülmedi. Doğrulanan şey VESTA eşitliği
+  değil, kaynağa ve iki bağımsız bilimsel kütüphaneye sayısal uyumdur.
+- **Sonraki Paket 14:** Aynı kristal/hücre, atom etiketi ve kesimle VESTA 3
+  GUI üzerinde yan yana koordinasyon/bağ uzunluğu/görsel ekran kayıtları ve
+  gerektiğinde VESTA setting eşleme matrisi. VESTA kurulumu ve gerçek
+  gözlem olmadan “eşdeğer” iddiası yazılmayacak.
+
+[Paket 13 kaynak, test, model ve manuel VESTA protokolü](tests/validation/PACKAGE_13_STATUS.md).
+
 ## Paket 12 — IUCr kaynaklı BVS, kısmi doluluk ve bağımsız ASE koordinasyon kapısı
 
 - **Bağ-değerliği parametreleri:** IUCr `bvparm2020.cif` derlemesinden

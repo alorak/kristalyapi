@@ -58,6 +58,7 @@ vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorE
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
+vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
@@ -459,6 +460,27 @@ test('CIF: unknown explicit occupancy must never become full occupancy', () => {
 test('CIF: distinct data blocks cannot silently combine cells and atomic sites', () => {
  const blocks=header+'data_second\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nSi1 Si 0 0 0\n';
  assert.throws(()=>api.cifData(blocks),/birden çok data_/);
+});
+test('P13 CIF: IUCr data_global metadata and one crystal are isolated, never merged',()=>{
+ const one='data_global\n_journal_paper_doi 10.1107/demo\n_publ_section_title "Metadata only"\n'+
+  header+'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nSi1 Si .1 .2 .3\n';
+ const result=api.cifData(one);
+ assert.equal(result.sites.length,1);
+ assert.equal(result.name,'demo');
+ assert.match(result.warning,/data_global/);
+ assert.throws(()=>api.cifData(one+'data_other\n_cell_length_a 6\n'),/birden çok data_/);
+ assert.throws(()=>api.cifData(one.replace('data_global','data_other_meta')),/birden çok data_/);
+});
+test('P13 actual IUCr .cif containing an embedded SHELX archive cannot be misclassified as .res',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'validation/fixtures/experimental/IUCr_wm5651_KNaCaSiO.cif'),'utf8');
+ assert.match(src,/^CELL\s/m);
+ assert.match(src,/^SFAC\s/m);
+ assert.match(src,/^LATT\s/m);
+ const crystal=api.structureImportData(src,'IUCr_wm5651_KNaCaSiO.cif');
+ assert.equal(crystal.sites.length,40);
+ assert.match(crystal.warning,/data_global/);
+ assert.equal(crystal.sites.find(site=>site.label==='K1_1').occupancy,.722);
+ assert.equal(crystal.sites.find(site=>site.label==='Na1_1').occupancy,.278);
 });
 test('CIF: exact source round-trip is retained until scientific state changes', () => {
  const cif=header+'_extra_original_record 123.4(5)\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nSi1 Si 0 0 0\n';
@@ -2378,6 +2400,40 @@ test('P12 nonperiodic molecules never receive fabricated periodic BVS neighbors'
  assert.equal(open.count,0);assert.equal(open.sum,0);assert.equal(open.periodic,false);
  assert.ok(open.warnings.some(s=>s.includes('ligand bulunamadı')));
  assert.equal(wrapped.count,1);approx(wrapped.mean,1.2,1e-9);
+});
+test('P13 exact local disorder probability counts each periodic ligand image independently',()=>{
+ const cell={a:5.64,b:5.64,c:5.64,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Na',x:0,y:0,z:0},
+  {symbol:'Cl',x:.5,y:0,z:0,occupancy:.6},
+  {symbol:'O',x:.5,y:0,z:0,occupancy:.4}];
+ const result=api.bondValenceSum(sites,0,cell,'Na1-Cl',3.0),d=result.occupancyDistribution;
+ const v=Math.exp((2.15-2.82)/.37);
+ assert.equal(result.count,2);
+ assert.equal(d.positions,2);assert.equal(d.uncertainPositions,2);
+ assert.equal(d.exactQuantiles,true);
+ approx(d.mean,1.2*v,1e-12);approx(d.mean,result.sum,1e-12);
+ approx(d.standardDeviation,Math.sqrt(2*.6*.4)*v,1e-12);
+ approx(d.minimum,0,1e-12);approx(d.maximum,2*v,1e-12);
+ approx(d.quantiles.p05,0,1e-12);
+ approx(d.quantiles.median,v,1e-12);approx(d.quantiles.p95,2*v,1e-12);
+ assert.ok(result.warnings.some(message=>message.includes('bağımsız yerel')));
+});
+test('P13 center-site K/Na disorder reports separate reference-pair scenarios, not invented valences',()=>{
+ const cell={a:5.64,b:5.64,c:5.64,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'K',x:0,y:0,z:0,occupancy:.722},
+  {symbol:'Na',x:0,y:0,z:0,occupancy:.278},
+  {symbol:'O',x:.5,y:0,z:0,occupancy:1}];
+ const grouped=api.bvsCenterAlternatives(sites,0,cell,'K1-O',3.0),s=grouped.scenarios;
+ assert.deepEqual([...s.map(x=>x.element)],['K','Na']);
+ assert.deepEqual([...s.map(x=>x.pair)],['K1-O','Na1-O']);
+ assert.equal(grouped.complete,true);
+ assert.equal(grouped.charge,1);
+ assert.equal(grouped.totalOccupancy,1);
+ const expectedMean=.722*s[0].sum+.278*s[1].sum;
+ approx(grouped.conditionalMean,expectedMean,1e-12);
+ approx(grouped.conditionalStandardDeviation,
+  Math.sqrt(.722*.278)*Math.abs(s[0].sum-s[1].sum),1e-12);
+ assert.equal(api.bondValenceSum(sites,0,cell,'K1-O',3.0).occupancyDistribution.standardDeviation,0);
 });
 test('stage3 best-fit plane: zero RMS for exact plane and stable tilted plane',()=>{
  const plane=api.leastSquaresPlane([[0,0,3],[1,0,3],[0,1,3],[1,1,3]]);
