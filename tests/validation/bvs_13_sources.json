@@ -1,0 +1,39 @@
+{
+  "protocol": "package13-real-refined-cif-sources",
+  "sources": [
+    {
+      "id": "cod1000041",
+      "path": "tests/validation/fixtures/experimental/COD_1000041_NaCl.cif",
+      "url": "https://www.crystallography.net/cod/1000041.cif",
+      "sha256": "02d4f4fa315f7b97147256118acc7f9f20190d7246c3ea7209cfb8bd5d6e1fed",
+      "publication": "Abrahams & Bernstein, Acta Crystallographica 18 (1965), 926–932, DOI 10.1107/S0365110X65002244",
+      "rights": "COD public-domain deposition; original experimental paper attributed"
+    },
+    {
+      "id": "cod9009083",
+      "path": "tests/validation/fixtures/experimental/COD_9009083_rutile.cif",
+      "url": "https://www.crystallography.net/cod/9009083.cif",
+      "sha256": "e36061ba775e5ba3771426654a9348cfbcec6d18834ba2d29388816fc5eae1f9",
+      "publication": "Wyckoff, Crystal Structures, Vol. 1 (1963), 239–444; AMCSD 0011762 via COD",
+      "rights": "Original AMCSD experimental dataset; source requests scientific attribution"
+    },
+    {
+      "id": "iucrwm5651",
+      "path": "tests/validation/fixtures/experimental/IUCr_wm5651_KNaCaSiO.cif",
+      "url": "https://journals.iucr.org/e/issues/2022/07/00/wm5651/wm5651sup1.cif",
+      "sha256": "33f1e7ee6a28730b9aef68c8bd16ca683363d9c6ad3f81b1a86f5ea57edd5a0d",
+      "publication": "Volker Kahlenberg, Acta Crystallographica E78 (2022), 727–731, DOI 10.1107/S2056989022006193",
+      "rights": "Open access CC BY with attribution to the author and IUCr source; raw supporting CIF"
+    }
+  ],
+  "cases": [
+    {"id":"cod-nacl-Na1", "source":"cod1000041", "centerLabel":"Na1", "element":"Na", "pair":"Na1-Cl", "cutoff":3.5},
+    {"id":"cod-rutile-Ti", "source":"cod9009083", "centerLabel":"Ti", "element":"Ti", "pair":"Ti4-O", "cutoff":2.4},
+    {"id":"iucr-silicate-K1", "source":"iucrwm5651", "centerLabel":"K1", "element":"K", "pair":"K1-O", "cutoff":3.2},
+    {"id":"iucr-silicate-Na1", "source":"iucrwm5651", "centerLabel":"Na1", "element":"Na", "pair":"Na1-O", "cutoff":3.2},
+    {"id":"iucr-silicate-K2", "source":"iucrwm5651", "centerLabel":"K2", "element":"K", "pair":"K1-O", "cutoff":3.5},
+    {"id":"iucr-silicate-Na2", "source":"iucrwm5651", "centerLabel":"Na2", "element":"Na", "pair":"Na1-O", "cutoff":3.5},
+    {"id":"iucr-silicate-Ca1", "source":"iucrwm5651", "centerLabel":"Ca1", "element":"Ca", "pair":"Ca2-O", "cutoff":3.1},
+    {"id":"iucr-silicate-Si1", "source":"iucrwm5651", "centerLabel":"Si1", "element":"Si", "pair":"Si4-O", "cutoff":2.0}
+  ]
+}

@@ -1,0 +1,502 @@
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in          #
+# Acta Crystallographica Section E. It conforms to the requirements of       #
+# Notes for Authors for Acta Crystallographica Section E, and has been       #
+# peer reviewed under the auspices of the IUCr Commission on Journals.       #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary is obtainable from          #
+# ftp://ftp.iucr.org/pub/cif_core.dic.                                       #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s)     #
+# in this CIF. For information consult the CIF software page                 #
+# http://www.iucr.org/resources/cif/software.                                #
+#                                                                            #
+# This file may be used for bona fide research purposes within the           #
+# scientific community so long as proper attribution is given to the journal # 
+# article from which it was obtained.                                        #
+#                                                                            #
+##############################################################################
+data_global
+_audit_creation_method     'WinGX routine CIF_UPDATE'
+_audit_conform_dict_name     cif_core.dic
+_audit_conform_dict_version     2.4.3
+_journal_data_validation_number     ?
+_journal_date_recd_electronic     2022-06-07
+_journal_date_accepted     2022-06-13
+_journal_name_full     'Acta Crystallographica, Section E'
+_journal_year     2022
+_journal_volume     78
+_journal_issue      7
+_journal_page_first     0
+_journal_page_last     0
+_journal_paper_category     GI
+_journal_paper_doi     10.1107/S2056989022006193
+_journal_coeditor_code     WM5651
+_publ_contact_author_name
+;
+Kahlenberg, Volker
+;
+_publ_contact_author_address
+;
+University of Innsbruck
+Institute of Mineralogy and Petrography
+Innrain 52
+A-6020 Innsbruck
+Austria
+;
+_publ_contact_author_email     'volker.kahlenberg@uibk.ac.at'
+_publ_contact_author_fax     ?
+_publ_contact_author_phone     ?
+_publ_section_title
+;
+Crystal structure of (K~1.5~Na~0.5~)Ca~3~Si~3~O~10~
+;
+_publ_section_title_footnote     .
+loop_
+    _publ_author_name
+    _publ_author_footnote
+    _publ_author_address
+    'Kahlenberg, Volker' .
+;
+University of Innsbruck, Institute of Mineralogy & Petrography, Innrain 52,
+A-6020 Innsbruck,
+Austria
+;
+_publ_section_synopsis
+;
+A new phase in the quaternary system K~2~O--Na~2~O--CaO--SiO~2~ with idealized
+composition (K~1.5~Na~0.5~)Ca~3~Si~3~O~10~ has been structurally
+characterized. The results indicate the existence of a solid-solution series
+K~2--~<i>~x~</i>Na<i>~x~</i>Ca~3~Si~3~O~10~.
+;
+data_I
+_audit_creation_method     'WinGX routine CIF_UPDATE'
+_audit_conform_dict_name     cif_core.dic
+_audit_conform_dict_version     2.4.3
+_chemical_name_systematic
+;
+Di(potassium, sodium) tricalcium trisilicate
+;
+_chemical_formula_sum     'Ca3 K1.52 Na0.48 O10 Si3'
+_chemical_formula_iupac     '(K1.5 Na0.5) Ca3 Si3 O10'
+_chemical_formula_weight     435.0
+_symmetry_cell_setting     triclinic
+_symmetry_space_group_name_H-M     'P -1'
+_symmetry_space_group_name_Hall     '-P 1'
+loop_
+    _symmetry_equiv_pos_as_xyz
+    'x, y, z'
+    '-x, -y, -z'
+_cell_length_a     5.6269(12)
+_cell_length_b     7.3728(16)
+_cell_length_c     11.884(2)
+_cell_angle_alpha     85.512(16)
+_cell_angle_beta     80.428(16)
+_cell_angle_gamma     88.275(18)
+_cell_volume     484.59(17)
+_cell_formula_units_Z     2
+_cell_measurement_reflns_used     395
+_cell_measurement_theta_min     7.495
+_cell_measurement_theta_max     26.692
+_cell_measurement_temperature     296(2)
+_exptl_crystal_description     'fragment'
+_exptl_crystal_colour     colourless
+_exptl_crystal_size_max     0.13
+_exptl_crystal_size_mid     0.11
+_exptl_crystal_size_min     0.08
+_exptl_crystal_density_diffrn     2.981
+_exptl_crystal_density_method     'not measured'
+_exptl_crystal_F_000     432
+_exptl_absorpt_coefficient_mu     2.797
+_exptl_absorpt_correction_type     multi-scan
+_exptl_absorpt_process_details
+;
+(<i>CrysAlisPro</i>; Rigaku OD, 2020)
+;
+_exptl_absorpt_correction_T_min     0.98312
+_exptl_absorpt_correction_T_max     1
+_exptl_special_details     ?
+_diffrn_ambient_temperature     296(2)
+_diffrn_source     'fine-focus sealed X-ray tube'
+_diffrn_radiation_type     MoK\a
+_diffrn_radiation_wavelength     0.71073
+_diffrn_radiation_monochromator     graphite
+_diffrn_measurement_device_type     'Rigaku Oxford Diffraction Gemini-R Ultra'
+_diffrn_measurement_device     'four-circle diffractometer'
+_diffrn_measurement_method     '\w (1\% width)'
+_diffrn_detector     'CCD plate'
+_diffrn_detector_area_resol_mean     10.3575
+_diffrn_reflns_number     3075
+_diffrn_reflns_av_R_equivalents     0.0613
+_diffrn_reflns_av_unetI/netI     0.1142
+_diffrn_reflns_theta_min     3.38
+_diffrn_reflns_theta_max     25.75
+_diffrn_reflns_theta_full     25.75
+_diffrn_measured_fraction_theta_max     0.979
+_diffrn_measured_fraction_theta_full     0.979
+_diffrn_reflns_limit_h_min     -5
+_diffrn_reflns_limit_h_max     6
+_diffrn_reflns_limit_k_min     -8
+_diffrn_reflns_limit_k_max     8
+_diffrn_reflns_limit_l_min     -12
+_diffrn_reflns_limit_l_max     14
+_diffrn_radiation_probe     x-ray
+_refine_special_details
+;
+ Refinement of F^2^ against ALL reflections.  The weighted R-factor wR and
+ goodness of fit S are based on F^2^, conventional R-factors R are based
+ on F, with F set to zero for negative F^2^. The threshold expression of
+ F^2^ > 2\s(F^2^) is used only for calculating R-factors(gt) etc. and is
+ not relevant to the choice of reflections for refinement.  R-factors based
+ on F^2^ are statistically about twice as large as those based on F, and R-
+ factors based on ALL data will be even larger.
+;
+_reflns_number_total     1803
+_reflns_number_gt     1136
+_reflns_threshold_expression     >2\s(I)
+_refine_ls_structure_factor_coef     Fsqd
+_refine_ls_matrix_type     full
+_refine_ls_R_factor_all     0.0978
+_refine_ls_R_factor_gt     0.0477
+_refine_ls_wR_factor_gt     0.0741
+_refine_ls_wR_factor_ref     0.0953
+_refine_ls_goodness_of_fit_ref     0.928
+_refine_ls_restrained_S_all     0.928
+_refine_ls_number_reflns     1803
+_refine_ls_number_parameters     166
+_refine_ls_number_restraints     0
+_refine_ls_hydrogen_treatment     .
+_refine_ls_weighting_scheme     calc
+_refine_ls_weighting_details
+         'calc w=1/[\s^2^(Fo^2^)+(0.0000P)^2^+0.0000P] where P=(Fo^2^+2Fc^2^)/3'
+_atom_sites_solution_hydrogens     .
+_atom_sites_solution_primary     direct
+_atom_sites_solution_secondary     difmap
+_refine_ls_shift/su_max     0
+_refine_ls_shift/su_mean     0
+_refine_diff_density_max     0.648
+_refine_diff_density_min     -0.704
+_refine_ls_extinction_method     SHELXL
+_refine_ls_extinction_coef     0.0051(9)
+_refine_ls_extinction_expression
+                                    Fc^*^=kFc[1+0.001xFc^2^\l^3^/sin(2\q)]^-1/4^
+loop_
+    _atom_type_symbol
+    _atom_type_description
+    _atom_type_scat_dispersion_real
+    _atom_type_scat_dispersion_imag
+    _atom_type_scat_source
+    Ca Ca 0.2262 0.3064 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    K K 0.2009 0.2494 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    O O 0.0106 0.006 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    Si Si 0.0817 0.0704 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    Na Na 0.0362 0.0249 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+_computing_data_collection
+;
+CrysAlisPro (Rigaku OD, 2020)
+;
+_computing_cell_refinement
+;
+CrysAlisPro (Rigaku OD, 2020)
+;
+_computing_data_reduction
+;
+CrysAlisPro (Rigaku OD, 2020)
+;
+_computing_structure_refinement
+;
+SHELXL-97 (Sheldrick, 2008)
+;
+_computing_molecular_graphics
+;
+<i>VESTA-3</i> (Momma & Izumi, 2011)
+;
+_computing_publication_material
+;
+publCIF (Westrip, 2010) and WinGX (Farrugia, 2012)
+;
+loop_
+    _atom_site_type_symbol
+    _atom_site_label
+    _atom_site_fract_x
+    _atom_site_fract_y
+    _atom_site_fract_z
+    _atom_site_U_iso_or_equiv
+    _atom_site_adp_type
+    _atom_site_calc_flag
+    _atom_site_refinement_flags
+    _atom_site_occupancy
+    _atom_site_symmetry_multiplicity
+    _atom_site_disorder_assembly
+    _atom_site_disorder_group
+    Si Si1 0.7505(4) 0.2700(2) 0.42127(14) 0.0064(4) Uani d . 1 1 . .
+    Si Si2 0.3436(3) 0.8195(2) 0.15169(14) 0.0057(4) Uani d . 1 1 . .
+    Si Si3 0.6353(4) 0.7469(2) -0.09005(14) 0.0063(4) Uani d . 1 1 . .
+    Ca Ca1 0.7935(3) 0.75603(18) 0.37520(10) 0.0078(4) Uani d . 1 1 . .
+    Ca Ca2 0.8349(3) 0.53250(18) 0.13875(10) 0.0077(4) Uani d . 1 1 . .
+    Ca Ca3 0.2749(3) 0.50391(18) 0.33919(10) 0.0088(4) Uani d . 1 1 . .
+    K K1 0.2761(3) 0.0390(2) 0.37787(13) 0.0147(8) Uani d P 0.722(18) 1 . .
+    K K2 0.8337(3) 0.0630(2) 0.15192(14) 0.0187(7) Uani d P 0.799(17) 1 . .
+    Na Na1 0.2761(3) 0.0390(2) 0.37787(13) 0.0147(8) Uani d P 0.278(18) 1 . .
+    Na Na2 0.8337(3) 0.0630(2) 0.15192(14) 0.0187(7) Uani d P 0.201(17) 1 . .
+    O O1 0.7932(10) 0.0677(6) 0.3755(3) 0.0160(12) Uani d . 1 1 . .
+    O O2 0.5384(9) 0.6946(6) 0.5425(3) 0.0141(12) Uani d . 1 1 . .
+    O O3 0.8687(9) 0.4303(6) 0.3269(3) 0.0118(11) Uani d . 1 1 . .
+    O O4 0.1173(9) 0.7175(7) 0.4662(3) 0.0137(12) Uani d . 1 1 . .
+    O O5 0.0887(8) 0.7390(6) 0.2054(3) 0.0086(11) Uani d . 1 1 . .
+    O O6 0.5451(8) 0.7526(6) 0.2295(3) 0.0081(11) Uani d . 1 1 . .
+    O O7 0.4227(9) 0.7652(7) 0.0206(3) 0.0183(13) Uani d . 1 1 . .
+    O O8 0.6806(9) 0.9569(6) -0.1462(4) 0.0167(12) Uani d . 1 1 . .
+    O O9 0.4718(9) 0.3596(6) 0.1794(3) 0.0112(11) Uani d . 1 1 . .
+    O O10 0.8778(9) 0.6693(6) -0.0507(3) 0.0114(11) Uani d . 1 1 . .
+loop_
+    _atom_site_aniso_label
+    _atom_site_aniso_U_11
+    _atom_site_aniso_U_22
+    _atom_site_aniso_U_33
+    _atom_site_aniso_U_12
+    _atom_site_aniso_U_13
+    _atom_site_aniso_U_23
+    Si1 0.0067(11) 0.0044(9) 0.0081(9) 0.0023(8) -0.0017(8) -0.0006(7)
+    Si2 0.0051(11) 0.0060(9) 0.0056(8) 0.0006(8) -0.0003(7) 0.0007(7)
+    Si3 0.0064(11) 0.0057(10) 0.0064(8) 0.0014(8) -0.0009(7) 0.0007(7)
+    Ca1 0.0076(8) 0.0084(7) 0.0076(6) 0.0013(6) -0.0019(6) -0.0009(5)
+    Ca2 0.0092(8) 0.0084(7) 0.0054(6) 0.0005(6) -0.0010(5) -0.0008(5)
+    Ca3 0.0100(9) 0.0067(7) 0.0097(7) 0.0011(6) -0.0019(6) 0.0001(6)
+    K1 0.0169(13) 0.0110(11) 0.0182(11) -0.0014(8) -0.0079(8) -0.0029(7)
+    K2 0.0092(12) 0.0192(11) 0.0258(11) 0.0009(8) -0.0023(8) 0.0084(8)
+    Na1 0.0169(13) 0.0110(11) 0.0182(11) -0.0014(8) -0.0079(8) -0.0029(7)
+    Na2 0.0092(12) 0.0192(11) 0.0258(11) 0.0009(8) -0.0023(8) 0.0084(8)
+    O1 0.030(4) 0.009(3) 0.009(2) 0.003(2) -0.003(2) -0.0027(19)
+    O2 0.011(3) 0.016(3) 0.012(2) 0.005(2) 0.007(2) 0.002(2)
+    O3 0.014(3) 0.016(3) 0.006(2) -0.001(2) -0.002(2) 0.0024(19)
+    O4 0.019(3) 0.016(3) 0.010(2) 0.007(2) -0.012(2) -0.004(2)
+    O5 0.008(3) 0.011(3) 0.007(2) 0.000(2) -0.0015(19) 0.0013(19)
+    O6 0.007(3) 0.008(2) 0.011(2) -0.001(2) -0.0037(19) -0.0009(19)
+    O7 0.010(3) 0.032(3) 0.012(2) -0.001(2) -0.001(2) -0.005(2)
+    O8 0.014(3) 0.006(3) 0.029(3) -0.001(2) -0.001(2) 0.001(2)
+    O9 0.008(3) 0.015(3) 0.012(2) -0.001(2) -0.003(2) -0.005(2)
+    O10 0.013(3) 0.009(3) 0.013(2) 0.000(2) -0.007(2) 0.0053(19)
+_geom_special_details
+;
+ All s.u.'s (except the s.u. in the dihedral angle between two l.s. planes)
+ are estimated using the full covariance matrix.  The cell s.u.'s are taken
+ into account individually in the estimation of s.u.'s in distances, angles
+ and torsion angles; correlations between s.u.'s in cell parameters are only
+ used when they are defined by crystal symmetry.  An approximate (isotropic)
+ treatment of cell s.u.'s is used for estimating s.u.'s involving l.s. planes.
+;
+loop_
+    _geom_bond_atom_site_label_1
+    _geom_bond_atom_site_label_2
+    _geom_bond_site_symmetry_2
+    _geom_bond_distance
+    _geom_bond_publ_flag
+    Si1 O1 . 1.625(5) ?
+    Si1 O2 2_666 1.630(5) ?
+    Si1 O3 . 1.640(4) ?
+    Si1 O4 2_666 1.645(5) ?
+    Si2 O5 . 1.583(5) ?
+    Si2 O6 . 1.621(5) ?
+    Si2 O7 . 1.625(5) ?
+    Si2 O8 2_675 1.647(5) ?
+    Si3 O9 2_665 1.575(5) ?
+    Si3 O10 . 1.591(5) ?
+    Si3 O7 . 1.635(5) ?
+    Si3 O8 . 1.648(5) ?
+    Ca1 O4 1_655 2.268(5) ?
+    Ca1 O2 . 2.273(4) ?
+    Ca1 O1 1_565 2.298(5) ?
+    Ca1 O5 1_655 2.400(4) ?
+    Ca1 O6 . 2.401(5) ?
+    Ca1 O3 . 2.520(5) ?
+    Ca2 O10 2_765 2.336(5) ?
+    Ca2 O3 . 2.339(4) ?
+    Ca2 O10 . 2.371(4) ?
+    Ca2 O5 1_655 2.383(5) ?
+    Ca2 O9 . 2.401(5) ?
+    Ca2 O6 . 2.447(5) ?
+    Ca3 O2 2_666 2.302(5) ?
+    Ca3 O4 . 2.321(5) ?
+    Ca3 O9 . 2.347(4) ?
+    Ca3 O3 1_455 2.396(5) ?
+    Ca3 O6 . 2.551(4) ?
+    Ca3 O5 . 2.578(5) ?
+    K1 O2 2_666 2.566(5) ?
+    K1 O4 1_545 2.636(5) ?
+    K1 O8 2_665 2.721(5) ?
+    K1 O1 1_455 2.724(6) ?
+    K1 O1 . 2.919(6) ?
+    K1 O1 2_656 2.940(4) ?
+    K1 O6 1_545 3.060(5) ?
+    K2 O1 . 2.631(4) ?
+    K2 O10 2_765 2.674(5) ?
+    K2 O8 2_765 2.722(6) ?
+    K2 O5 1_645 2.834(5) ?
+    K2 O6 1_545 2.850(5) ?
+    K2 O7 2_665 2.891(5) ?
+    K2 O8 2_665 2.915(6) ?
+    K2 O9 . 2.942(5) ?
+loop_
+    _geom_angle_atom_site_label_1
+    _geom_angle_atom_site_label_2
+    _geom_angle_atom_site_label_3
+    _geom_angle_site_symmetry_1
+    _geom_angle_site_symmetry_3
+    _geom_angle
+    _geom_angle_publ_flag
+    O1 Si1 O2 . 2_666 108.4(3) ?
+    O1 Si1 O3 . . 112.9(2) ?
+    O2 Si1 O3 2_666 . 110.6(3) ?
+    O1 Si1 O4 . 2_666 109.5(3) ?
+    O2 Si1 O4 2_666 2_666 109.3(2) ?
+    O3 Si1 O4 . 2_666 106.0(3) ?
+    O5 Si2 O6 . . 110.8(2) ?
+    O5 Si2 O7 . . 110.8(3) ?
+    O6 Si2 O7 . . 111.2(3) ?
+    O5 Si2 O8 . 2_675 108.0(3) ?
+    O6 Si2 O8 . 2_675 109.2(3) ?
+    O7 Si2 O8 . 2_675 106.6(3) ?
+    O9 Si3 O10 2_665 . 117.6(3) ?
+    O9 Si3 O7 2_665 . 107.4(3) ?
+    O10 Si3 O7 . . 110.6(3) ?
+    O9 Si3 O8 2_665 . 107.0(3) ?
+    O10 Si3 O8 . . 108.6(3) ?
+    O7 Si3 O8 . . 104.8(3) ?
+    O4 Ca1 O2 1_655 . 90.97(17) ?
+    O4 Ca1 O1 1_655 1_565 93.65(19) ?
+    O2 Ca1 O1 . 1_565 98.53(17) ?
+    O4 Ca1 O5 1_655 1_655 83.90(16) ?
+    O2 Ca1 O5 . 1_655 165.18(17) ?
+    O1 Ca1 O5 1_565 1_655 95.68(16) ?
+    O4 Ca1 O6 1_655 . 160.71(16) ?
+    O2 Ca1 O6 . . 104.81(17) ?
+    O1 Ca1 O6 1_565 . 94.87(17) ?
+    O5 Ca1 O6 1_655 . 78.06(15) ?
+    O4 Ca1 O3 1_655 . 85.90(18) ?
+    O2 Ca1 O3 . . 96.41(16) ?
+    O1 Ca1 O3 1_565 . 165.06(15) ?
+    O5 Ca1 O3 1_655 . 69.41(14) ?
+    O6 Ca1 O3 . . 81.43(16) ?
+    O10 Ca2 O3 2_765 . 96.18(17) ?
+    O10 Ca2 O10 2_765 . 81.53(18) ?
+    O3 Ca2 O10 . . 167.70(18) ?
+    O10 Ca2 O5 2_765 1_655 100.65(17) ?
+    O3 Ca2 O5 . 1_655 72.82(15) ?
+    O10 Ca2 O5 . 1_655 95.65(15) ?
+    O10 Ca2 O9 2_765 . 103.91(17) ?
+    O3 Ca2 O9 . . 82.88(16) ?
+    O10 Ca2 O9 . . 109.41(16) ?
+    O5 Ca2 O9 1_655 . 147.01(15) ?
+    O10 Ca2 O6 2_765 . 177.90(17) ?
+    O3 Ca2 O6 . . 84.25(16) ?
+    O10 Ca2 O6 . . 97.62(16) ?
+    O5 Ca2 O6 1_655 . 77.50(16) ?
+    O9 Ca2 O6 . . 78.18(16) ?
+    O2 Ca3 O4 2_666 . 100.44(16) ?
+    O2 Ca3 O9 2_666 . 90.05(17) ?
+    O4 Ca3 O9 . . 164.28(17) ?
+    O2 Ca3 O3 2_666 1_455 115.01(16) ?
+    O4 Ca3 O3 . 1_455 87.68(18) ?
+    O9 Ca3 O3 . 1_455 98.54(17) ?
+    O2 Ca3 O6 2_666 . 114.66(18) ?
+    O4 Ca3 O6 . . 87.83(15) ?
+    O9 Ca3 O6 . . 77.10(15) ?
+    O3 Ca3 O6 1_455 . 130.11(16) ?
+    O2 Ca3 O5 2_666 . 176.47(17) ?
+    O4 Ca3 O5 . . 78.99(15) ?
+    O9 Ca3 O5 . . 89.82(15) ?
+    O3 Ca3 O5 1_455 . 68.49(15) ?
+    O6 Ca3 O5 . . 61.88(15) ?
+    Si2 O7 Si3 . . 148.7(4) ?
+    Si2 O8 Si3 2_675 . 156.4(3) ?
+_iucr_refine_instructions_details
+;
+TITL    K15Na5_7
+REM     Startmodell nach 195185-ICSD in space group P -1
+REM     Freie Verfeinerung liefert K 3.03 & Na 0.97 a.p.Zelle
+REM     Daher Restaint mit 3 K pro Zelle
+CELL    0.71073   5.6269   7.3728  11.8840   85.512   80.428   88.275
+ZERR     2        0.0012   0.0016   0.0020    0.016    0.016    0.018
+LATT    1
+SFAC     Ca   K    O    Si      Na
+UNIT       6  3.03   20    6     0.97
+L.S.    10
+FMAP     2
+PLAN    10
+SHEL 999 0.818
+ACTA
+BOND    $H
+TEMP     23.00
+EXYZ K1 Na1
+EADP K1 Na1
+EXYZ K2 Na2
+EADP K2 Na2
+SUMP 3 0.0001 2 1.000 3 1.000
+WGHT    0.000000
+EXTI    0.005078
+FVAR       1.69032   0.72230   0.79926
+SI1   4    0.750497    0.270001    0.421270    11.00000    0.00666    0.00437 =
+         0.00809   -0.00062   -0.00166    0.00230
+SI2   4    0.343598    0.819473    0.151688    11.00000    0.00513    0.00603 =
+         0.00558    0.00071   -0.00034    0.00059
+SI3   4    0.635276    0.746893   -0.090049    11.00000    0.00644    0.00566 =
+         0.00641    0.00073   -0.00088    0.00140
+CA1   1    0.793522    0.756027    0.375195    11.00000    0.00758    0.00841 =
+         0.00763   -0.00090   -0.00190    0.00127
+CA2   1    0.834926    0.532499    0.138747    11.00000    0.00919    0.00841 =
+         0.00535   -0.00085   -0.00105    0.00053
+CA3   1    0.274940    0.503912    0.339192    11.00000    0.01004    0.00670 =
+         0.00968    0.00011   -0.00192    0.00112
+K1    2    0.276066    0.039026    0.377866    21.00000    0.01687    0.01097 =
+         0.01824   -0.00290   -0.00785   -0.00138
+K2    2    0.833746    0.063016    0.151919    31.00000    0.00920    0.01923 =
+         0.02581    0.00843   -0.00230    0.00092
+NA1   5    0.276066    0.039026    0.377866   -21.00000    0.01687    0.01097 =
+         0.01824   -0.00290   -0.00785   -0.00138
+NA2   5    0.833746    0.063016    0.151919   -31.00000    0.00920    0.01923 =
+         0.02581    0.00843   -0.00230    0.00092
+O1    3    0.793161    0.067732    0.375480    11.00000    0.02959    0.00896 =
+         0.00948   -0.00275   -0.00305    0.00303
+O2    3    0.538428    0.694609    0.542456    11.00000    0.01097    0.01589 =
+         0.01161    0.00189    0.00659    0.00531
+O3    3    0.868672    0.430326    0.326878    11.00000    0.01352    0.01575 =
+         0.00586    0.00239   -0.00174   -0.00082
+O4    3    0.117276    0.717471    0.466210    11.00000    0.01863    0.01646 =
+         0.00955   -0.00444   -0.01248    0.00665
+O5    3    0.088674    0.738954    0.205370    11.00000    0.00793    0.01056 =
+         0.00716    0.00133   -0.00153   -0.00022
+O6    3    0.545120    0.752644    0.229511    11.00000    0.00667    0.00755 =
+         0.01077   -0.00094   -0.00366   -0.00058
+O7    3    0.422736    0.765173    0.020630    11.00000    0.01019    0.03248 =
+         0.01242   -0.00502   -0.00119   -0.00053
+O8    3    0.680630    0.956945   -0.146238    11.00000    0.01443    0.00597 =
+         0.02853    0.00137   -0.00105   -0.00127
+O9    3    0.471827    0.359605    0.179423    11.00000    0.00824    0.01467 =
+         0.01173   -0.00470   -0.00311   -0.00086
+O10   3    0.877848    0.669316   -0.050670    11.00000    0.01279    0.00912 =
+         0.01304    0.00527   -0.00708    0.00018
+HKLF 4
+REM     K15Na5_7
+REM R1 =  0.0477 for   1136 Fo > 4sig(Fo)  and  0.0978 for all   1803 data
+REM    166 parameters refined using      0 restraints
+END
+WGHT      0.0000      0.0000
+REM Highest difference peak  0.648,  deepest hole -0.704,  1-sigma level  0.174
+Q1    1   1.0780  0.6670 -0.0216  11.00000  0.05    0.65
+Q2    1   0.5568  0.9540 -0.1760  11.00000  0.05    0.64
+Q3    1   0.8423  0.5138  0.2817  11.00000  0.05    0.63
+Q4    1   0.1217  0.5823  0.5373  11.00000  0.05    0.60
+Q5    1   0.0009  0.9256  0.4401  11.00000  0.05    0.60
+Q6    1   0.4503  0.4721  0.1366  11.00000  0.05    0.59
+Q7    1   0.9358 -0.0561  0.1174  11.00000  0.05    0.59
+Q8    1   0.5436  0.5740  0.0060  11.00000  0.05    0.58
+Q9    1   0.8295  0.8055  0.2610  11.00000  0.05    0.58
+Q10   1   0.7610  0.9854 -0.2019  11.00000  0.05    0.58
+;

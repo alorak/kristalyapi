@@ -20,6 +20,33 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Experimental CIF and local disorder uncertainty (Package 13)
+
+The importer now accepts a metadata-only **`data_global` CIF block** followed
+by exactly one structural block, without accidentally mixing unrelated blocks;
+ambiguous multiple structures remain rejected. It also prioritizes the real
+`.cif` format over any **embedded SHELX refinement listing** in its appendix.
+This enables the original
+experimental 2022 IUCr **K/Na-disordered silicate**, including 40 symmetry-
+expanded atoms and 72.2% K / 27.8% Na sharing one crystallographic site.
+
+The BVS panel distinguishes individual center-species scenarios, reports a
+**species-conditional mean and standard deviation**, and—for partially occupied
+ligands—an **independent-site occupancy distribution** with physical bounds
+and exact 5th/95th percentiles when its state space stays within 4096 states.
+Alternatives at the same site are mutually exclusive. These are model results,
+not measured uncertainties, local-disorder correlations, oxidation assignments
+or proofs of chemical bonding.
+
+The mandatory CI gate pins three raw experimental CIFs and their SHA-256:
+**COD NaCl (1965), COD rutile TiO₂ (1963) and IUCr K/Na silicate (2022)**.
+Eight real-structure BVS scenarios verify **every expanded atom, periodic
+ligand image, distance and individual bond-valence contribution** with the
+independent **Gemmi 0.7.5 + ASE 3.26.0** libraries; published IUCr K1–O
+bond distances provide an additional experimental check. A true VESTA GUI
+side-by-side comparison has **not** been run.
+[P13 sources, evidence and explicit VESTA comparison protocol](tests/validation/PACKAGE_13_STATUS.md).
+
 ## Crystallographic coordination and bond valence (Package 12)
 
 The BVS tool now offers **19 explicitly charged cation–anion parameter sets**

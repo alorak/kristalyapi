@@ -4044,6 +4044,51 @@ function bvsDisorderGroups(sites,periodic=true){
  }
  return groups;
 }
+/* P13: this is an explicit *independent local site* occupancy model, not
+   an error bar on measured distances or proof of disorder correlations.
+   One physical ligand image is one categorical variable: mutually exclusive
+   species at coincident coordinates cannot simultaneously contribute. */
+function bvsOccupancyDistribution(neighbors,sites){
+ const positions=new Map();
+ for(const neighbor of neighbors){
+  const site=sites[neighbor.index],position=[site.x,site.y,site.z]
+   .map((v,i)=>Math.round((Number(v)+neighbor.shift[i])*100000)).join('/');
+  if(!positions.has(position))positions.set(position,[]);
+  positions.get(position).push({probability:neighbor.occupancy,
+   valence:neighbor.contribution/neighbor.occupancy});
+ }
+ let mean=0,variance=0,minimum=0,maximum=0,uncertainPositions=0;
+ let states=[{value:0,probability:1}];
+ for(const options of positions.values()){
+  const occupancy=options.reduce((v,o)=>v+o.probability,0);
+  if(occupancy>1+1e-5)throw Error('BVS koşullu ligand konumunda doluluk toplamı 1’i aşıyor.');
+  const alternatives=[...options];
+  if(occupancy<1-1e-8)alternatives.push({probability:Math.max(0,1-occupancy),valence:0});
+  const expected=options.reduce((v,o)=>v+o.probability*o.valence,0);
+  const second=options.reduce((v,o)=>v+o.probability*o.valence*o.valence,0);
+  mean+=expected;variance+=Math.max(0,second-expected*expected);
+  minimum+=Math.min(...alternatives.map(o=>o.valence));
+  maximum+=Math.max(...alternatives.map(o=>o.valence));
+  if(alternatives.length>1&&second-expected*expected>1e-12)uncertainPositions++;
+  if(states){
+   if(states.length*alternatives.length>4096)states=null;
+   else states=states.flatMap(prev=>alternatives.map(o=>({
+    value:prev.value+o.valence,probability:prev.probability*o.probability
+   })));
+  }
+ }
+ let quantiles=null;
+ if(states){
+  states.sort((a,b)=>a.value-b.value);
+  const quantile=q=>{let cumulative=0;
+   for(const s of states){cumulative+=s.probability;if(cumulative>=q-1e-12)return s.value;}
+   return states.at(-1)?.value??0;};
+  quantiles={p05:quantile(.05),median:quantile(.5),p95:quantile(.95)};
+ }
+ return {mean,standardDeviation:Math.sqrt(variance),minimum,maximum,
+  positions:positions.size,uncertainPositions,exactQuantiles:!!quantiles,quantiles,
+  assumption:'Bağımsız ligand konumları ve aynı konumda birbirini dışlayan türler; gerçek yerel korelasyonlar bilinmiyor.'};
+}
 function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5,periodic=true){
  const parameter=BVS_PARAMETERS.find(p=>p.key===key);
  if(!parameter)throw Error('Bu katyon/anyon ve oksidasyon durumu için R₀ parametresi yok.');
@@ -4080,6 +4125,7 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5,periodic=true){
  }
  neighbors.sort((a,b)=>a.distance-b.distance||a.index-b.index);
  const sum=neighbors.reduce((total,n)=>total+n.contribution,0);
+ const occupancyDistribution=bvsOccupancyDistribution(neighbors,sites);
  const mean=neighbors.length?neighbors.reduce((total,n)=>total+n.distance,0)/neighbors.length:0;
  // For a hypothetical equal-bond environment, solve the BVS equation
  // with occupancy weights. This is a reference estimate, not a structural
@@ -4102,14 +4148,42 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5,periodic=true){
  if(!neighbors.length&&centerOcc>0)warnings.push('Bu iyon çifti ve kesim için ligand bulunamadı; 0 v.u. kimyasal valans değildir.');
  if(neighbors.length&&Math.abs(sum-parameter.charge)>Math.max(.25,parameter.charge*.2))
   warnings.push('BVS ile seçilen formal valans arasında belirgin fark var; yük ataması, yapı ve kesim yarıçapı doğrulanmalı.');
+ if(occupancyDistribution.uncertainPositions)
+  warnings.push('Doluluk dağılımı yalnız bağımsız yerel ligand konumları varsayımıdır; gerçek disorder korelasyonları bilinmiyor.');
  return {pair:key,r0:parameter.r0,b:parameter.b,parameterRef:parameter.ref,
   parameterSource:'IUCr bvparm2020.cif',anionCharge:parameter.anionCharge,
   referenceCharge:parameter.charge,centerIndex,centerOccupancy:centerOcc,
   valenceResidual:sum-parameter.charge,periodic,
-  mixedLigandSites:mixedLigandGroups.size,nearCutoffContribution,warnings,
+  mixedLigandSites:mixedLigandGroups.size,nearCutoffContribution,warnings,occupancyDistribution,
   count:neighbors.length,sum,mean,weightedCount,expectedBondLength,
   min:neighbors[0]?.distance??null,
   max:neighbors.length?neighbors.at(-1).distance:null,neighbors};
+}
+/* Compare the alternative cations at one coincident site without assigning
+   an oxidation state: only parameters with the *already selected* charge
+   and anion are eligible. The mixture is conditional on a cation existing. */
+function bvsCenterAlternatives(sites,centerIndex,cell,key,cutoff=3.5,periodic=true){
+ const selected=BVS_PARAMETERS.find(p=>p.key===key);
+ if(!selected||!sites[centerIndex])return null;
+ const group=[...bvsDisorderGroups(sites,periodic).values()]
+  .find(items=>items.some(item=>item.index===centerIndex));
+ if(!group||group.length<2)return null;
+ if(group.length>12)throw Error('BVS alternatif merkezde çok fazla iyon türü var.');
+ const scenarios=group.map(item=>{
+  const match=BVS_PARAMETERS.find(p=>p.cation===item.element&&
+   p.anion===selected.anion&&p.charge===selected.charge);
+  if(!match)return {index:item.index,element:item.element,occupancy:item.occupancy,pair:null,sum:null};
+  const result=bondValenceSum(sites,item.index,cell,match.key,cutoff,periodic);
+  return {index:item.index,element:item.element,occupancy:item.occupancy,
+   pair:match.key,sum:result.sum,standardDeviation:result.occupancyDistribution.standardDeviation};
+ });
+ const totalOccupancy=group.reduce((v,item)=>v+item.occupancy,0),complete=scenarios.every(s=>s.pair);
+ const conditionalMean=complete?scenarios.reduce((v,s)=>v+s.occupancy*s.sum,0)/totalOccupancy:null;
+ const conditionalVariance=complete?scenarios.reduce((v,s)=>v+s.occupancy*
+  ((s.sum-conditionalMean)**2+s.standardDeviation**2),0)/totalOccupancy:null;
+ return {scenarios,totalOccupancy,complete,charge:selected.charge,anion:selected.anion,
+  conditionalMean,conditionalStandardDeviation:conditionalVariance===null?null:Math.sqrt(conditionalVariance),
+  assumption:'Merkez türleri ayrık ve koşullu; ligandlar bağımsız kabul edilir. Gerçek yerel tür-korelasyonları ölçülmedi.'};
 }
 function bvsCsv(result){
  return ['neighbor,shift_x,shift_y,shift_z,distance_A,occupancy,bond_valence',
@@ -5130,6 +5204,7 @@ function renderWorkspaceXrd(){
  }
 }
 function renderWorkspaceBvs(){
+ const uncertainty=lastBvs?.occupancyDistribution,alternatives=lastBvs?.centerAlternatives;
  $('bvsResult').textContent=lastBvs?
   'Geometrik ligand CN='+lastBvs.count+' · Doluluk ağırlıklı CN='+lastBvs.weightedCount.toFixed(2)+
   ' · BVS='+lastBvs.sum.toFixed(4)+' v.u. · Seçili formal +'+lastBvs.referenceCharge+
@@ -5139,6 +5214,16 @@ function renderWorkspaceBvs(){
   'Ortalama bağ='+lastBvs.mean.toFixed(4)+' Å · min/maks='+
   String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å'+
   (lastBvs.expectedBondLength!==null?' · eşit bağ varsayımı='+lastBvs.expectedBondLength.toFixed(4)+' Å':'')+
+  (uncertainty?.uncertainPositions? '\nBağımsız konum doluluğu modeli: σ(BVS)='+uncertainty.standardDeviation.toFixed(4)+
+   ' v.u. · mümkün min/maks='+uncertainty.minimum.toFixed(4)+'/'+uncertainty.maximum.toFixed(4)+' v.u.'+
+   (uncertainty.quantiles?' · P05–P95='+uncertainty.quantiles.p05.toFixed(4)+'–'+uncertainty.quantiles.p95.toFixed(4)+' v.u.':' · tam kuantil (4096 durum sınırı) hesaplanmadı'):
+   '')+
+  (alternatives?'\nAlternatif merkez (aynı seçili formal +'+alternatives.charge+', '+alternatives.anion+'): '+
+   alternatives.scenarios.map(s=>s.element+' '+(100*s.occupancy).toFixed(1)+'%'+
+    (s.pair?' → BVS '+s.sum.toFixed(4):' → R₀/B mevcut değil')).join(' · ')+
+   (alternatives.complete?'\nTürlere göre koşullu ortalama='+alternatives.conditionalMean.toFixed(4)+
+    ' v.u. · model σ='+alternatives.conditionalStandardDeviation.toFixed(4)+' v.u.':'\nEksik parametre nedeniyle karışım ortalaması yok.')+
+   '\nNot: merkez/ligand korelasyonları bilinmiyor; bu sonuç oksidasyon kanıtı değildir.':'')+
   (lastBvs.warnings?.length?'\nDikkat: '+lastBvs.warnings.join(' '):'\nBVS bir oksidasyon veya bağ kanıtı değildir.'):
   'Atom ve referans parametresi seçin.';
  $('bvsResult').style.whiteSpace='pre-line';
@@ -5178,8 +5263,9 @@ function initStage3Analyses(){
    const physIndex=state.symmetryEnabled?sites.findIndex(s=>s.symbol===input.symbol&&
     ['x','y','z'].every(k=>Math.abs(frac(s[k])-frac(input[k]))<1e-5)):index;
    if(physIndex<0)throw Error('Simetri genişletilmiş koordinasyon merkezi bulunamadı.');
-   lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,
-    Number($('bvsCutoff').value),!state.nonPeriodic);
+   const cutoff=Number($('bvsCutoff').value),periodic=!state.nonPeriodic;
+   lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,cutoff,periodic);
+   lastBvs.centerAlternatives=bvsCenterAlternatives(sites,physIndex,state.cell,pair.value,cutoff,periodic);
    renderWorkspaceBvs();
   }catch(err){lastBvs=null;inform('BVS: '+err.message);}
  };
@@ -5830,10 +5916,22 @@ function rotateMagneticMoment(moment,operation,cell){
 }
 
 function cifData(src){
- // Mixing two data_ blocks could silently combine one crystal's cell
- // with another crystal's atoms. Require an explicit per-block importer.
- const blocks=src.match(/(?:^|\n)[ \t]*data_[^\s#]+/gi)||[];
- if(blocks.length>1)throw Error('CIF birden çok data_ bloğu içeriyor. Farklı kristalleri birleştirmemek için tek yapı bloğu seçin.');
+ // A genuine IUCr supplementary CIF can have a metadata-only data_global
+ // followed by precisely one structural data_ block. Isolate that block:
+ // never mix its cell/atom loops with the global records or a second crystal.
+ const markers=[...src.matchAll(/(?:^|\n)[ \t]*data_([^\s#]+)/gi)];
+ let excludedGlobal=false;
+ if(markers.length>1){
+  const blocks=markers.map((m,i)=>({
+   name:m[1],body:src.slice(m.index+(m[0][0]==='\n'?1:0),markers[i+1]?.index??src.length)
+  }));
+  const structures=blocks.filter(b=>/_cell_length_a\b/i.test(b.body)&&/_atom_site_fract_x\b/i.test(b.body));
+  const globals=blocks.filter(b=>b.name.toLowerCase()==='global'&&
+   !/_cell_length_a\b|_atom_site_fract_x\b/i.test(b.body));
+  if(structures.length!==1||globals.length!==blocks.length-1)
+   throw Error('CIF birden çok data_ bloğu içeriyor. Farklı kristalleri birleştirmemek için tek yapı bloğu seçin.');
+  src=structures[0].body;excludedGlobal=true;
+ }
  const t=tokenizeCif(src),tags={},loops=[];let i=0;
  while(i<t.length){
   const k=t[i++];if(k.toLowerCase()==='loop_'){const cols=[];while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());if(!cols.length)continue;const rows=[];while(i<t.length&&!t[i].startsWith('_')&&!/^(loop_|data_|save_|stop_)$/i.test(t[i])&&!/^data_/i.test(t[i])){const row=t.slice(i,i+cols.length);if(row.length<cols.length)break;rows.push(row);i+=cols.length;}if(cols.length===1&&rows.length===1&&cols[0].startsWith('_cell_'))tags[cols[0]]=rows[0][0];loops.push({cols,rows});}
@@ -5964,7 +6062,9 @@ function cifData(src){
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
  const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
- return {name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,warning:assumption,cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
+ return {name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,
+  warning:[assumption,excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
+  cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){
  let sum=0;const terms=expr.replace(/\s+/g,'').replace(/−/g,'-').match(/[+-]?[^+-]+/g)||[];
@@ -6950,10 +7050,14 @@ function structureImportData(source,filename){
  const name=String(filename).toLowerCase(),str=String(source);
  if(name.endsWith('.json'))return loadProject(str);
   if(name.endsWith('.vesta'))return vestaProjectData(str);
- if(name.endsWith('.res')||name.endsWith('.ins')||/^(?=.*^CELL\s)(?=.*^SFAC\s)(?=.*^LATT\s)/ims.test(str))return shelxData(str);
+ // IUCr supplemental CIFs may contain a trailing embedded SHELX refinement
+ // listing (CELL/LATT/SFAC). Respect explicit filenames and CIF data headers
+ // before the content-only SHELX heuristic: a .cif must not silently become .res.
+ if(name.endsWith('.res')||name.endsWith('.ins'))return shelxData(str);
+ if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))return cifData(str);
+ if(/^(?=.*^CELL\s)(?=.*^SFAC\s)(?=.*^LATT\s)/ims.test(str))return shelxData(str);
  if(name.endsWith('.cell')||/^\s*%BLOCK\s+LATTICE_(?:CART|ABC)\b/im.test(str))return castepData(str);
  if(/\.(?:in|pwi|pw|qe)$/.test(name)||/&SYSTEM\b/i.test(str)&&/^\s*ATOMIC_POSITIONS\b/im.test(str))return qeData(str);
- if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))return cifData(str);
  if(name.endsWith('.pdb')||name.endsWith('.ent')||/^(?:HEADER|CRYST1|ATOM  |HETATM|MODEL )/m.test(str))return pdbData(str);
  if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))return xyzData(str);
  return poscarData(str);

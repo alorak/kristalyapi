@@ -20,6 +20,30 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Deneysel CIF ve yerel karma doluluk belirsizliği (Paket 13)
+
+CIF okuyucu artık yalnızca üstveri içeren **`data_global` bloğundan sonra tek
+bir kristal yapı bloğunu** güvenli biçimde kabul ediyor; birden fazla gerçek
+yapı bloğu karıştırılmadan reddediliyor. Ekinde **SHELX rafinman metni**
+taşıyan `.cif` dosyası da yanlışlıkla `.res` gibi yorumlanmıyor. Böylece IUCr'nin 2022 tarihli,
+**K/Na kısmi doluluklu silikat** çalışmasının özgün ek CIF'i 40 simetri atomuyla
+yükleniyor. Aynı kristalografik konumu **%72,2 K / %27,8 Na** paylaşabiliyor.
+
+BVS paneli, aynı merkezdeki farklı iyon türlerinin hesaplarını, **türe göre
+koşullu ortalama ve standart sapmayı** ayrı gösteriyor. Kısmi ligandlar için
+**bağımsız konum modeli** ile olası minimum/maksimum ve en fazla 4096 durumdan
+kesin %5–%95 kuantilleri hesaplanıyor. Aynı konumdaki türler birbirini
+dışlıyor. Bunlar ölçülmüş konum hataları, atom korelasyonları, oksidasyon
+atayımı veya bağ kanıtı değildir.
+
+Zorunlu bilimsel CI'da SHA-256 ile sabitlenmiş **üç gerçek deneysel CIF**
+(1965 NaCl, 1963 rutil TiO₂, 2022 IUCr K/Na silikat) ve **sekiz BVS merkezi**
+bağımsız **Gemmi 0.7.5 + ASE 3.26.0** ile doğrulanıyor: tüm simetri atomları,
+periyodik komşu görüntüleri, mesafeler ve bağ-değeri katkıları eşleşiyor.
+IUCr'de yayımlanmış K1–O uzaklıkları da ayrı kontrol ediliyor. **Gerçek VESTA
+GUI karşılaştırması yapılmadı.**
+[Paket 13 kaynakları, ölçümler ve elle VESTA karşılaştırması](tests/validation/PACKAGE_13_STATUS.md).
+
 ## Kristal kimyası: koordinasyon ve bağ değerliği (Paket 12)
 
 **BVS** panelinde artık [IUCr 2020 bağ-değerliği derlemesinden](https://www.iucr.org/what-we-do/digital-standards/data/datasets/bond-valence-parameters)
