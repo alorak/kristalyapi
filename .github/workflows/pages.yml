@@ -64,6 +64,10 @@ jobs:
         run: python tests/validation/bvs_12_reference.py
       - name: Gate P13 source-fixed experimental CIF structures and mixed-center BVS against Gemmi + ASE
         run: python tests/validation/bvs_13_experimental.py
+      - name: Gate P14 official VESTA-manual geometric/BVS equations against independent real-CIF ASE data
+        run: python tests/validation/vesta_14_manual_reference.py
+      - name: Reject uncaptured or unversioned VESTA GUI evidence
+        run: python -m unittest discover -s tests/validation -p 'test_vesta_14_gui_evidence.py' -v
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,6 +83,8 @@ jobs:
             validation-results/volume-11-multifield-scientific.json
             validation-results/bvs-12-ase-ion-pairs.json
             validation-results/bvs-13-experimental-cif-ase-gemmi.json
+            validation-results/vesta-14-manual-reference.json
+            validation-results/vesta-14-difference-matrix.csv
           if-no-files-found: warn
           retention-days: 30
 

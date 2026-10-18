@@ -71,6 +71,7 @@ window.__visualTest={
  p12BvsResult:()=>lastBvs&&({pair:lastBvs.pair,count:lastBvs.count,
   weightedCount:lastBvs.weightedCount,sum:lastBvs.sum,periodic:lastBvs.periodic,
   warnings:lastBvs.warnings,reference:lastBvs.parameterSource}),
+ p14VestaProjection:()=>lastBvs&&vesta3ManualBvsProjection(lastBvs),
  p13Experimental:()=>({sites:state.sites.map((site,index)=>({index,element:site.symbol,
   label:site.label,occupancy:site.occupancy})),warning:state.warning,
   bvs:lastBvs&&({pair:lastBvs.pair,count:lastBvs.count,sum:lastBvs.sum,
@@ -1247,6 +1248,12 @@ try{
  assert.ok(Number.isFinite(p12Result.sum)&&p12Result.sum>0);
  assert.equal(p12Result.reference,'IUCr bvparm2020.cif');
  assert.match(await page.locator('#bvsResult').textContent(),/Geometrik ligand CN=6.*BVS=.*IUCr 2020/s);
+ const p14Projection=await page.evaluate(()=>window.__visualTest.p14VestaProjection());
+ assert.equal(p14Projection.guiExecuted,false,'manual formula must never masquerade as real VESTA GUI data');
+ assert.equal(p14Projection.actualVestaSum,null);
+ assert.equal(p14Projection.modelB,.37);
+ assert.ok(Math.abs(p14Projection.deltaParameter)<1e-10,'Ti4-O has identical B values');
+ assert.match(await page.locator('#bvsResult').textContent(),/VESTA 3 kılavuz denklemi.*GUI ölçümü DEĞİL/s);
  await page.locator('#analysisCenter').selectOption(String(ba.index));
  assert.deepEqual(await page.locator('#bvsPair option').evaluateAll(items=>items.map(el=>el.value)),['Ba2-O']);
  await page.locator('#analyzeBvs').click();
@@ -1301,6 +1308,9 @@ try{
   assert.match(await importPage.locator('#bvsResult').textContent(),
    /Alternatif merkez.*K 72\.2%.*Na 27\.8%.*Türlere göre koşullu ortalama=.*model σ=/s);
   await importPage.screenshot({path:path.join(artifacts,'p13-experimental-kna-bvs.png')});
+  assert.match(await importPage.locator('#bvsResult').textContent(),
+   /VESTA 3 kılavuz denklemi.*Gerçek VESTA sonucu/s);
+  await importPage.screenshot({path:path.join(artifacts,'p14-vesta-manual-projection.png')});
 
   // Package 9.3: the user selects the real project and its referenced Gemmi
   // CCP4 map in ONE local picker; no browser path or network fetching.

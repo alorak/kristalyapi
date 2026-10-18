@@ -20,6 +20,25 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## VESTA 3 kılavuz denklemiyle doğrulama ve GUI kanıtı (Paket 14)
+
+BVS paneli artık **gerçek VESTA GUI sonucu olmadığını açıkça belirten** bir
+referans hesap gösteriyor. [VESTA 3 resmî kılavuzunda](https://jp-minerals.org/vesta/en/doc/VESTAch11.html)
+`B = 0,37 Å` sabit; uygulamadaki IUCr 2020 `Cu²⁺–O²⁻` çiftinde ise
+`B = 0,36 Å`. Aynı seçili `R₀` ve aynı periyodik komşuluk kullanılarak
+**B parametresi farkının** etkisi ve **ligand doluluğu varsayımının** etkisi
+ayrı hesaplanıyor. Bu sayılar VESTA masaüstü programından **ölçülmedi**.
+
+Zorunlu bağımsız Gemmi/ASE testinde deneysel sekiz ortam için bağ uzunlukları,
+**Baur D, Hoppe ECoN ve VESTA'nın sabit-B kılavuz formülü** doğrulanıyor.
+CSV fark matrisinde gerçek VESTA GUI sütunları **boş** bırakılıyor.
+Yerel incelemede VESTA 3.5.8'in özgün 2016 parametre tablosundaki 19 çiftin
+tamamının aynı `R₀` için `B = 0,37 Å` seçeneği bulundu; Cu için uygulama
+ile referans kodu farklı. Telif koşulları nedeniyle VESTA ikilileri/parametre
+dosyası depoya dağıtılmıyor. Başsız ortamda gerçek VESTA GUI çalıştırması
+tamamlanamadı; gerçek ekran ve metin kayıtlarının doğrulanması için araç hazır.
+[Paket 14 fark matrisi, bilimsel sınırlar ve ölçüm protokolü](tests/validation/PACKAGE_14_STATUS.md).
+
 ## Deneysel CIF ve yerel karma doluluk belirsizliği (Paket 13)
 
 CIF okuyucu artık yalnızca üstveri içeren **`data_global` bloğundan sonra tek
