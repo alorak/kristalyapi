@@ -302,6 +302,18 @@ test('P7.9 BVS zero-occupancy and invalid input do not emit phantom bonds',()=>{
  assert.throws(()=>ctx.bvs([atom('Na',0,0,0),atom('Cl',.5,0,0,1.5)],0,B,'Na1-Cl',3.5),/doluluğu/);
 });
 
+test('P12 nonperiodic geometric coordination does not join opposite display-box walls',()=>{
+ const B=[[6,0,0],[0,6,0],[0,0,6]],sites=[atom('Na',.1,.5,.5),atom('Cl',.9,.5,.5)];
+ const periodic=ctx.neighbors(sites,0,B,[0,2],0,false,24,true);
+ const open=ctx.neighbors(sites,0,B,[0,2],0,false,24,false);
+ assert.equal(periodic.length,1);
+ assert.deepEqual([...periodic[0].shift],[-1,0,0]);
+ assert.equal(open.length,0);
+ const unwrapped=[atom('Na',.05,.5,.5),atom('Cl',1.15,.5,.5)];
+ assert.equal(ctx.neighbors(unwrapped,0,B,[0,2],0,false,24,false).length,0,
+  'molecular fractional coordinates outside the display box must not be wrapped');
+});
+
 
 test('P7.9 expected equal bond length uses formal charge and occupancy-weighted neighbor count',()=>{
  const B=[[5.64,0,0],[0,5.64,0],[0,0,5.64]];

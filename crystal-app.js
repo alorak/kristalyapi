@@ -2390,9 +2390,9 @@ function coordinationImageBounds(B,radius,offset){
    Occupancy is retained as an *expected* contribution, not treated as a
    chemical bond order. Distinct partially occupied species may share one
    geometric vertex; the visual hull must not duplicate that vertex. */
-function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=24){
+function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=24,periodic=true){
  if(!sites[centerIndex])throw Error('Koordinasyon merkezi bulunamadı.');
- const fraction=s=>[frac(Number(s.x)),frac(Number(s.y)),frac(Number(s.z))];
+ const fraction=s=>[s.x,s.y,s.z].map(v=>periodic?frac(Number(v)):Number(v));
  const occupation=s=>{
   const n=Number(s.occupancy??1);
   if(!Number.isFinite(n)||n<0||n>1)throw Error('Koordinasyon atom doluluğu 0–1 arasında olmalı.');
@@ -2410,7 +2410,8 @@ function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=2
   if(end.some(n=>!Number.isFinite(n)))throw Error('Koordinasyon atom koordinatları geçersiz.');
   const range=bondRange(center.symbol,site.symbol,rules,cut,auto);
   if(!range.every(Number.isFinite)||range[0]<0||range[1]<range[0])throw Error('Koordinasyon bağ aralığı geçersiz.');
-  const offset=end.map((v,k)=>v-start[k]),limits=coordinationImageBounds(B,range[1],offset);
+  const offset=end.map((v,k)=>v-start[k]),limits=periodic?
+   coordinationImageBounds(B,range[1],offset):[[0,0],[0,0],[0,0]];
   const [xs,ys,zs]=limits;
   const nImages=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
   candidates+=nImages;
@@ -3997,17 +3998,53 @@ function describeMeasurement(){
  return {structure:state.name,atoms:labels,values};
 }
 
-/* Stage 3: geometrically distinct periodic neighbor images with occupancy-aware
-   bond-valence estimates. Oxidation-state/parameter selection is EXPLICIT. */
+/* P12: IUCr bvparm2020.cif (2020-12-09), each line's reference code preserved.
+   https://www.iucr.org/what-we-do/digital-standards/data/datasets/bond-valence-parameters
+   These are selected, explicitly charged cation/anion pairs, not a periodic
+   table-wide predictor. The R0/B pair must stay matched to its source row. */
 const BVS_PARAMETERS=[
- {key:'Na1-Cl',cation:'Na',anion:'Cl',charge:1,r0:2.15,label:'Na(I)–Cl(-I)  R₀ 2.150 Å'},
- {key:'Na1-O',cation:'Na',anion:'O',charge:1,r0:1.80,label:'Na(I)–O(-II)  R₀ 1.800 Å'},
- {key:'Fe2-O',cation:'Fe',anion:'O',charge:2,r0:1.734,label:'Fe(II)–O(-II)  R₀ 1.734 Å'},
- {key:'Fe3-O',cation:'Fe',anion:'O',charge:3,r0:1.759,label:'Fe(III)–O(-II)  R₀ 1.759 Å'},
- {key:'Si4-O',cation:'Si',anion:'O',charge:4,r0:1.624,label:'Si(IV)–O(-II)  R₀ 1.624 Å'},
- {key:'Al3-O',cation:'Al',anion:'O',charge:3,r0:1.651,label:'Al(III)–O(-II)  R₀ 1.651 Å'}
+ {key:'Na1-Cl',cation:'Na',anion:'Cl',charge:1,anionCharge:-1,r0:2.150,b:.37,ref:'b'},
+ {key:'Na1-O',cation:'Na',anion:'O',charge:1,anionCharge:-2,r0:1.803,b:.37,ref:'a'},
+ {key:'K1-O',cation:'K',anion:'O',charge:1,anionCharge:-2,r0:2.132,b:.37,ref:'a'},
+ {key:'K1-Cl',cation:'K',anion:'Cl',charge:1,anionCharge:-1,r0:2.519,b:.37,ref:'a'},
+ {key:'Mg2-O',cation:'Mg',anion:'O',charge:2,anionCharge:-2,r0:1.693,b:.37,ref:'a'},
+ {key:'Ca2-O',cation:'Ca',anion:'O',charge:2,anionCharge:-2,r0:1.967,b:.37,ref:'a'},
+ {key:'Sr2-O',cation:'Sr',anion:'O',charge:2,anionCharge:-2,r0:2.118,b:.37,ref:'a'},
+ {key:'Ba2-O',cation:'Ba',anion:'O',charge:2,anionCharge:-2,r0:2.285,b:.37,ref:'a'},
+ {key:'Ti3-O',cation:'Ti',anion:'O',charge:3,anionCharge:-2,r0:1.791,b:.37,ref:'b'},
+ {key:'Ti4-O',cation:'Ti',anion:'O',charge:4,anionCharge:-2,r0:1.815,b:.37,ref:'a'},
+ {key:'Fe2-O',cation:'Fe',anion:'O',charge:2,anionCharge:-2,r0:1.734,b:.37,ref:'a'},
+ {key:'Fe3-O',cation:'Fe',anion:'O',charge:3,anionCharge:-2,r0:1.759,b:.37,ref:'a'},
+ {key:'Mn2-O',cation:'Mn',anion:'O',charge:2,anionCharge:-2,r0:1.790,b:.37,ref:'a'},
+ {key:'Mn3-O',cation:'Mn',anion:'O',charge:3,anionCharge:-2,r0:1.760,b:.37,ref:'a'},
+ {key:'Mn4-O',cation:'Mn',anion:'O',charge:4,anionCharge:-2,r0:1.753,b:.37,ref:'a'},
+ {key:'Zn2-O',cation:'Zn',anion:'O',charge:2,anionCharge:-2,r0:1.704,b:.37,ref:'a'},
+ {key:'Cu2-O',cation:'Cu',anion:'O',charge:2,anionCharge:-2,r0:1.679,b:.36,ref:'bj'},
+ {key:'Si4-O',cation:'Si',anion:'O',charge:4,anionCharge:-2,r0:1.624,b:.37,ref:'b'},
+ {key:'Al3-O',cation:'Al',anion:'O',charge:3,anionCharge:-2,r0:1.651,b:.37,ref:'a'}
 ];
-function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
+for(const p of BVS_PARAMETERS)p.label=p.cation+'(+'+p.charge+')–'+p.anion+'('+p.anionCharge+') · R₀ '+p.r0.toFixed(3)+' Å / B '+p.b.toFixed(3)+' Å';
+/* Coincident alternatives are mutually exclusive disordered site species.
+   Check their occupancy sum without folding away the actual species data. */
+function bvsDisorderGroups(sites,periodic=true){
+ const groups=new Map();
+ for(let i=0;i<sites.length;i++){
+  const s=sites[i],occupancy=Number(s.occupancy??1),coordinates=[s.x,s.y,s.z].map(Number);
+  if(!Number.isFinite(occupancy)||occupancy<0||occupancy>1||coordinates.some(v=>!Number.isFinite(v)))
+   throw Error('BVS atom koordinatı veya doluluğu geçersiz.');
+  if(!occupancy)continue;
+  const key=coordinates.map(v=>periodic?
+   ((Math.round(frac(v)*100000)%100000)+100000)%100000:Math.round(v*100000)).join('/');
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push({index:i,element:cleanSymbol(s.symbol),occupancy});
+ }
+ for(const group of groups.values()){
+  if(group.length>1&&group.reduce((sum,v)=>sum+v.occupancy,0)>1+1e-5)
+   throw Error('Aynı kristalografik konumdaki alternatif atom dolulukları toplamı 1’i aşıyor.');
+ }
+ return groups;
+}
+function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5,periodic=true){
  const parameter=BVS_PARAMETERS.find(p=>p.key===key);
  if(!parameter)throw Error('Bu katyon/anyon ve oksidasyon durumu için R₀ parametresi yok.');
  if(!Number.isFinite(cutoff)||cutoff<1||cutoff>5)throw Error('BVS mesafe sınırı 1–5 Å olmalı.');
@@ -4018,6 +4055,9 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
  if(c.some(v=>!Number.isFinite(v)))throw Error('BVS merkez atom koordinatı geçersiz.');
  const centerOcc=Number(center.occupancy??1);
  if(!Number.isFinite(centerOcc)||centerOcc<0||centerOcc>1)throw Error('BVS merkez atom doluluğu geçersiz.');
+ const groups=bvsDisorderGroups(sites,periodic),groupByIndex=new Map();
+ for(const group of groups.values())for(const item of group)groupByIndex.set(item.index,group);
+ const centerGroup=groupByIndex.get(centerIndex)||[];
  const neighbors=[];let candidates=0;
  if(centerOcc>0)for(let j=0;j<sites.length;j++){
   if(cleanSymbol(sites[j].symbol)!==parameter.anion)continue;
@@ -4026,14 +4066,14 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
   if(![...site,occupation].every(Number.isFinite)||occupation<0||occupation>1)throw Error('Atom doluluğu veya koordinatı geçersiz.');
   if(occupation===0)continue;
   const offset=site.map((v,k)=>v-c[k]);
-  const [xs,ys,zs]=coordinationImageBounds(B,cutoff,offset);
+  const [xs,ys,zs]=periodic?coordinationImageBounds(B,cutoff,offset):[[0,0],[0,0],[0,0]];
   candidates+=(xs[1]-xs[0]+1)*(ys[1]-ys[0]+1)*(zs[1]-zs[0]+1);
   if(candidates>200000)throw Error('BVS periyodik arama sınırı aşıldı; kesim yarıçapını küçültün.');
   for(let x=xs[0];x<=xs[1];x++)for(let y=ys[0];y<=ys[1];y++)for(let z=zs[0];z<=zs[1];z++){
    const dist=toCart([offset[0]+x,offset[1]+y,offset[2]+z],B).length();
    if(dist<1e-6||dist>cutoff+1e-8)continue;
    if(neighbors.length>=20000)throw Error('BVS 20.000 komşu sınırını aştı.');
-   const value=Math.exp((parameter.r0-dist)/.37)*occupation;
+   const value=Math.exp((parameter.r0-dist)/parameter.b)*occupation;
    neighbors.push({index:j,label:s.label||parameter.anion+(j+1),shift:[x,y,z],distance:dist,
     occupancy:occupation,contribution:value});
   }
@@ -4046,8 +4086,27 @@ function bondValenceSum(sites,centerIndex,cell,key,cutoff=3.5){
  // refinement or a prediction of unknown atom positions.
  const weightedCount=neighbors.reduce((total,n)=>total+n.occupancy,0);
  const expectedBondLength=weightedCount>0?
-  parameter.r0-.37*Math.log(parameter.charge/weightedCount):null;
- return {pair:key,r0:parameter.r0,b:.37,referenceCharge:parameter.charge,centerIndex,
+  parameter.r0-parameter.b*Math.log(parameter.charge/weightedCount):null;
+ const mixedLigandGroups=new Set(neighbors.filter(n=>(groupByIndex.get(n.index)||[]).length>1)
+  .map(n=>groupByIndex.get(n.index).map(v=>v.index).join('/')));
+ const warnings=[];
+ if(centerOcc===0)warnings.push('Merkez atomun doluluğu sıfır: kimyasal BVS yorumu yapılamaz.');
+ else if(centerOcc<1)warnings.push('BVS merkez atomun mevcut olduğu koşul için hesaplandı; merkez doluluğu ile çarpılmadı.');
+ if(centerGroup.length>1)warnings.push('Merkezde alternatif iyon türleri var: her biri için oksidasyon durumu ayrı doğrulanmalıdır.');
+ if(neighbors.some(n=>n.occupancy<1)||mixedLigandGroups.size)
+  warnings.push('Kısmi/alternatif ligand türleri katkıları dolulukla ağırlıklandı; toplam koşullu ortalamadır, tek bir yerel çevre değildir.');
+ const nearCutoff=neighbors.filter(n=>n.distance>=cutoff-.2);
+ const nearCutoffContribution=nearCutoff.reduce((total,n)=>total+n.contribution,0);
+ if(nearCutoff.length&&nearCutoffContribution>sum*.01)
+  warnings.push('Bazı BVS katkıları mesafe kesiminin son 0,2 Å aralığında; kesime duyarlılık kontrol edilmeli.');
+ if(!neighbors.length&&centerOcc>0)warnings.push('Bu iyon çifti ve kesim için ligand bulunamadı; 0 v.u. kimyasal valans değildir.');
+ if(neighbors.length&&Math.abs(sum-parameter.charge)>Math.max(.25,parameter.charge*.2))
+  warnings.push('BVS ile seçilen formal valans arasında belirgin fark var; yük ataması, yapı ve kesim yarıçapı doğrulanmalı.');
+ return {pair:key,r0:parameter.r0,b:parameter.b,parameterRef:parameter.ref,
+  parameterSource:'IUCr bvparm2020.cif',anionCharge:parameter.anionCharge,
+  referenceCharge:parameter.charge,centerIndex,centerOccupancy:centerOcc,
+  valenceResidual:sum-parameter.charge,periodic,
+  mixedLigandSites:mixedLigandGroups.size,nearCutoffContribution,warnings,
   count:neighbors.length,sum,mean,weightedCount,expectedBondLength,
   min:neighbors[0]?.distance??null,
   max:neighbors.length?neighbors.at(-1).distance:null,neighbors};
@@ -5071,12 +5130,29 @@ function renderWorkspaceXrd(){
  }
 }
 function renderWorkspaceBvs(){
- $('bvsResult').textContent=lastBvs?'CN='+lastBvs.count+' · BVS='+lastBvs.sum.toFixed(4)+' v.u.'+
-  ' · referans yükseltgenme +'+lastBvs.referenceCharge+
-  ' · ort. bağ='+lastBvs.mean.toFixed(4)+' Å'+
-  ' · min/maks='+String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å'+
-  (lastBvs.expectedBondLength!==null?' · eşit bağ varsayımıyla beklenen='+lastBvs.expectedBondLength.toFixed(4)+' Å':''):
+ $('bvsResult').textContent=lastBvs?
+  'Geometrik ligand CN='+lastBvs.count+' · Doluluk ağırlıklı CN='+lastBvs.weightedCount.toFixed(2)+
+  ' · BVS='+lastBvs.sum.toFixed(4)+' v.u. · Seçili formal +'+lastBvs.referenceCharge+
+  ' · sapma='+lastBvs.valenceResidual.toFixed(4)+' v.u.\n'+
+  'R₀='+lastBvs.r0.toFixed(3)+' Å · B='+lastBvs.b.toFixed(3)+' Å · IUCr 2020 ['+lastBvs.parameterRef+']'+
+  ' · '+(lastBvs.periodic?'periyodik':'periyodik olmayan')+' komşuluk\n'+
+  'Ortalama bağ='+lastBvs.mean.toFixed(4)+' Å · min/maks='+
+  String(lastBvs.min?.toFixed(3)??'—')+'/'+String(lastBvs.max?.toFixed(3)??'—')+' Å'+
+  (lastBvs.expectedBondLength!==null?' · eşit bağ varsayımı='+lastBvs.expectedBondLength.toFixed(4)+' Å':'')+
+  (lastBvs.warnings?.length?'\nDikkat: '+lastBvs.warnings.join(' '):'\nBVS bir oksidasyon veya bağ kanıtı değildir.'):
   'Atom ve referans parametresi seçin.';
+ $('bvsResult').style.whiteSpace='pre-line';
+}
+function refreshBvsPairOptions(){
+ const center=$('analysisCenter'),picker=$('bvsPair');if(!center||!picker)return;
+ const current=picker.value,site=state.sites[Number(center.value)];
+ const pairs=site?BVS_PARAMETERS.filter(p=>p.cation===cleanSymbol(site.symbol)):[];
+ picker.replaceChildren();
+ if(!pairs.length){const option=document.createElement('option');option.value='';
+  option.textContent='Bu katyon için doğrulanmış R₀/B çifti yok';picker.append(option);picker.disabled=true;return;}
+ picker.disabled=false;
+ for(const p of pairs){const option=document.createElement('option');option.value=p.key;option.textContent=p.label;picker.append(option);}
+ if(pairs.some(p=>p.key===current))picker.value=current;
 }
 function refreshStage3Atoms(){
  const picker=$('analysisCenter');if(!picker)return;
@@ -5088,12 +5164,12 @@ function refreshStage3Atoms(){
   picker.append(option);
  });
  if([...picker.options].some(option=>option.value===prev))picker.value=prev;
+ refreshBvsPairOptions();
 }
 function initStage3Analyses(){
- const pair=$('bvsPair');pair.replaceChildren();
- for(const p of BVS_PARAMETERS){
-  const option=document.createElement('option');option.value=p.key;option.textContent=p.label;pair.append(option);
- }
+ const pair=$('bvsPair');
+ $('analysisCenter').onchange=()=>{lastBvs=null;refreshBvsPairOptions();renderWorkspaceBvs();};
+ pair.onchange=()=>{lastBvs=null;renderWorkspaceBvs();};
  $('analyzeBvs').onclick=()=>{
   try{
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
@@ -5102,7 +5178,8 @@ function initStage3Analyses(){
    const physIndex=state.symmetryEnabled?sites.findIndex(s=>s.symbol===input.symbol&&
     ['x','y','z'].every(k=>Math.abs(frac(s[k])-frac(input[k]))<1e-5)):index;
    if(physIndex<0)throw Error('Simetri genişletilmiş koordinasyon merkezi bulunamadı.');
-   lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,Number($('bvsCutoff').value));
+   lastBvs=bondValenceSum(sites,physIndex,state.cell,pair.value,
+    Number($('bvsCutoff').value),!state.nonPeriodic);
    renderWorkspaceBvs();
   }catch(err){lastBvs=null;inform('BVS: '+err.message);}
  };
@@ -5238,7 +5315,7 @@ function renderCoordinationSummary(){
  if(!selected.length||!atomData[selected[0]]){node.textContent='Koordinasyon çevresini görmek için bir atom seçin.';return;}
  const B=basis(state.cell),sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
  const atom=atomData[selected[0]],rules=parseBondRules(state.bondRules);
- const shell=coordinationNeighbors(sites,atom.idx,B,rules,state.cut,state.autoBond,24);
+ const shell=coordinationNeighbors(sites,atom.idx,B,rules,state.cut,state.autoBond,24,!state.nonPeriodic);
  const counts=new Map();for(const n of shell)counts.set(n.element,(counts.get(n.element)||0)+1);
  const environment=coordinationGeometry(shell,B);
  const head=document.createElement('div');head.textContent='Geometrik komşu: '+shell.length+(shell.length===24?' (ilk 24)':'')+

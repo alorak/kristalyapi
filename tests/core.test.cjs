@@ -2318,6 +2318,67 @@ test('stage3 BVS: partial ligand occupancy scales contributions, no oxidation in
  assert.equal(result.count,2);
  approx(result.sum,Math.exp((2.15-2.82)/.37),1e-6);
 });
+test('P12 IUCr 2020 referenced R0/B pairs retain oxidation and fitted softness',()=>{
+ const list=api.BVS_PARAMETERS;
+ assert.equal(list.length,19);
+ assert.equal(new Set(list.map(p=>p.key)).size,list.length);
+ for(const p of list){
+  assert.ok(p.charge>0&&p.anionCharge<0);
+  assert.ok(p.r0>0&&p.b>0&&p.ref);
+  assert.match(p.label,/R₀.*B/);
+ }
+ const cu=list.find(p=>p.key==='Cu2-O');
+ assert.deepEqual([cu.r0,cu.b,cu.ref],[1.679,.36,'bj']);
+ const na=list.find(p=>p.key==='Na1-O');
+ assert.equal(na.r0,1.803,'IUCr 2020 source value, not rounded legacy 1.80');
+});
+test('P12 independent ideal MgO and SrTiO3 BVS coordination and residuals',()=>{
+ const mgCell={a:4.212,b:4.212,c:4.212,alpha:90,beta:90,gamma:90};
+ const fcc=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]];
+ const rocksalt=[...fcc.map(([x,y,z])=>({symbol:'Mg',x,y,z})),
+  ...fcc.map(([x,y,z])=>({symbol:'O',x:(x+.5)%1,y:(y+.5)%1,z:(z+.5)%1}))];
+ const mg=api.bondValenceSum(rocksalt,0,mgCell,'Mg2-O',3.1);
+ assert.equal(mg.count,6);approx(mg.mean,2.106,1e-7);
+ approx(mg.sum,6*Math.exp((1.693-2.106)/.37),1e-10);
+ assert.ok(Math.abs(mg.valenceResidual)<.08);
+ const a=3.905,perovskite=[{symbol:'Sr',x:0,y:0,z:0},
+  {symbol:'Ti',x:.5,y:.5,z:.5},
+  ...[[.5,.5,0],[.5,0,.5],[0,.5,.5]].map(([x,y,z])=>({symbol:'O',x,y,z}))];
+ const srCell={a,b:a,c:a,alpha:90,beta:90,gamma:90};
+ const ti=api.bondValenceSum(perovskite,1,srCell,'Ti4-O',3.15);
+ const sr=api.bondValenceSum(perovskite,0,srCell,'Sr2-O',3.15);
+ assert.equal(ti.count,6);assert.equal(sr.count,12);
+ approx(ti.mean,a/2,1e-10);approx(sr.mean,a/Math.sqrt(2),1e-10);
+ approx(ti.sum,6*Math.exp((1.815-a/2)/.37),1e-10);
+ approx(sr.sum,12*Math.exp((2.118-a/Math.sqrt(2))/.37),1e-10);
+});
+test('P12 BVS alternative occupied sites remain conditional, not invented oxidation',()=>{
+ const cell={a:5.64,b:5.64,c:5.64,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Na',x:0,y:0,z:0,occupancy:.5},
+  {symbol:'K',x:0,y:0,z:0,occupancy:.5},
+  {symbol:'Cl',x:.5,y:0,z:0,occupancy:.6},
+  {symbol:'O',x:.5,y:0,z:0,occupancy:.4}];
+ const result=api.bondValenceSum(sites,0,cell,'Na1-Cl',3.0);
+ assert.equal(result.count,2);
+ approx(result.weightedCount,1.2,1e-12);
+ approx(result.sum,1.2*Math.exp((2.15-2.82)/.37),1e-10);
+ assert.equal(result.centerOccupancy,.5);
+ assert.equal(result.mixedLigandSites,1);
+ assert.ok(result.warnings.some(s=>s.includes('Merkezde alternatif')));
+ assert.ok(result.warnings.some(s=>s.includes('Kısmi/alternatif')));
+ assert.ok(result.warnings.some(s=>s.includes('merkez atomun mevcut')));
+ assert.throws(()=>api.bondValenceSum([...sites.slice(0,3),
+  {...sites[3],occupancy:.5}],0,cell,'Na1-Cl',3),/toplamı 1’i aşıyor/);
+});
+test('P12 nonperiodic molecules never receive fabricated periodic BVS neighbors',()=>{
+ const cell={a:6,b:6,c:6,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Na',x:.1,y:.5,z:.5},{symbol:'Cl',x:.9,y:.5,z:.5}];
+ const open=api.bondValenceSum(sites,0,cell,'Na1-Cl',3.5,false);
+ const wrapped=api.bondValenceSum(sites,0,cell,'Na1-Cl',3.5,true);
+ assert.equal(open.count,0);assert.equal(open.sum,0);assert.equal(open.periodic,false);
+ assert.ok(open.warnings.some(s=>s.includes('ligand bulunamadı')));
+ assert.equal(wrapped.count,1);approx(wrapped.mean,1.2,1e-9);
+});
 test('stage3 best-fit plane: zero RMS for exact plane and stable tilted plane',()=>{
  const plane=api.leastSquaresPlane([[0,0,3],[1,0,3],[0,1,3],[1,1,3]]);
  approx(plane.rms,0,1e-10);

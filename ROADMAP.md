@@ -1,5 +1,32 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 12 — IUCr kaynaklı BVS, kısmi doluluk ve bağımsız ASE koordinasyon kapısı
+
+- **Bağ-değerliği parametreleri:** IUCr `bvparm2020.cif` derlemesinden
+  doğrulanabilir kaynak kodlarıyla **19 açık katyon–anyon/oksidasyon çifti**;
+  her çiftte `R₀` ve `B` birlikte saklanır (Cu²⁺–O²⁻ için `B=0,36 Å`).
+  Parametresi bulunmayan element/oksidasyon durumu için değer uydurulmaz.
+- **Kimyasal ayrım:** Seçilen atomla uyumlu çift filtresi, geometrik ligand
+  komşu sayısı, doluluk ağırlıklı CN, BVS ile **kullanıcı seçimi formal
+  valans** arasındaki sapma. Kısmi merkez/ligand, karma konum, uzaklık kesimi
+  ve belirgin formal-valans uyuşmazlığı açık uyarılır. Bu bir otomatik
+  oksidasyon tayini değildir; yalnızca seçili iyon çiftinin koşullu modelidir.
+- **Periyodik/moleküler davranış:** Eğik hücrede tam görüntü araması sürer;
+  periyodik olmayan XSF/CUBE moleküllerinde yapay kutunun karşı duvarlarından
+  sahte koordinasyon/BVS bağlantısı oluşturulmaz.
+- **Bağımsız doğrulama:** Zorunlu CI'da **ASE 3.26.0**, ideal NaCl/MgO/
+  SrTiO₃, aşırı eğik hücre, birbirini dışlayan karma atom konumları,
+  molekül, farklı `B` ve kesim-sınırı dahil **9 senaryonun tüm görüntü
+  kaymaları, bağ uzunlukları ve katkılarını** karşılaştırır. Kaynak IUCr
+  satırları sabit sayısal değerlerle denetlenir. Bu **gerçek deneysel CIF
+  korpusu veya VESTA GUI doğrulaması değildir**.
+- **Sonraki Paket 13:** Gerçek deneysel CIF temelli, kaynak kimliği sabitlenmiş
+  kristal-kimya korpusu; yerel karma doluluk konfigürasyonlarının koşullu
+  dağılımları ve koordinasyon belirsizliği. Daha sonra VESTA ile aynı ayar
+  ve kesimlerde doğrudan GUI/CSV fark matrisi.
+
+[Paket 12 test protokolü, bağımsız veri ve açık sınırlar](tests/validation/PACKAGE_12_STATUS.md).
+
 ## Paket 11 — Çok alanlı CUBE/XSF ve VESTA ayar güvenliği
 
 - **CUBE çoklu alan:** Voksel içinde sırayla yazılan `NVAL` alanları ve

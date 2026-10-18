@@ -363,14 +363,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <div class="section" data-right-section="bvs"><h2>İleri koordinasyon / BVS</h2>
-   <p class="hint">Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/0,37 Å]. Komşular periyodik görüntülerden bulunur; kısmi doluluk ağırlıklandırılır.</p>
+   <p class="hint">Oksidasyon durumu kullanıcı tarafından seçilir; uygulama tahmin etmez. Bağ değerliği: s = exp[(R₀−d)/B]. Periyodik kristallerde görüntüler; moleküler yapılarda yalnız gerçek atomlar kullanılır. Kısmi doluluk, ligand katkılarını ağırlıklandırır.</p>
    <label class="field"><span>Merkez atom (asimetrik / P1 liste)</span><select id="analysisCenter"></select></label>
    <label class="field"><span>Cation–anion referans çifti</span><select id="bvsPair"></select></label>
    <label class="field"><span>BVS komşu mesafesi (Å)</span><input id="bvsCutoff" type="number" min="1" max="5" step=".1" value="3.5"></label>
    <button class="primary" id="analyzeBvs" type="button">Koordinasyon / BVS hesapla</button>
    <div id="bvsResult" class="note">Atom ve referans parametresi seçin.</div>
    <div class="actionrow"><button id="exportBvs" type="button">Komşu CSV</button></div>
-   <p class="hint">Brese–O’Keeffe (1991) R₀ parametreleri kullanılır. BVS koordinasyon/eşdeğer oksidasyon durumu kanıtı değildir. Özellikle farklı katyon-valans türlerinde sınırlıdır.</p>
+   <p class="hint">Seçilmiş R₀/B değerleri <a href="https://www.iucr.org/what-we-do/digital-standards/data/datasets/bond-valence-parameters" target="_blank" rel="noopener noreferrer">IUCr bvparm2020</a> kaynak kayıtlarından gelir; her çiftte parametre referans kodu gösterilir. Karma doluluklu sonuç tek bir gerçekleşmiş yerel çevreyi temsil etmez. BVS yükseltgenme durumu veya bağ kanıtı değildir.</p>
    <div class="note"><strong>Madelung potansiyeli · Ewald noktasal iyon modeli</strong>
     <label class="field"><span>Açık iyon yükleri (e)</span><input id="madelungCharges" placeholder="Na:+1, Cl:-1 veya 1:+2, 2:-2"></label>
     <button type="button" id="madelungCalculate">Elektrostatik enerji ve site potansiyelleri</button>

@@ -66,6 +66,11 @@ window.__visualTest={
   state.style='poly';state.cut=2.18;build();
   selected=[atomData.findIndex(atom=>atom.site.symbol==='Ti')];
   renderCoordinationSummary();return document.getElementById('coordinationInfo').textContent;},
+ p12Perovskite:()=>{resetVolume();loadPreset('perovskite');refreshStage3Atoms();
+  return state.sites.map((site,index)=>({index,symbol:site.symbol}));},
+ p12BvsResult:()=>lastBvs&&({pair:lastBvs.pair,count:lastBvs.count,
+  weightedCount:lastBvs.weightedCount,sum:lastBvs.sum,periodic:lastBvs.periodic,
+  warnings:lastBvs.warnings,reference:lastBvs.parameterSource}),
  perovskitePolys:()=>{resetVolume();loadPreset('perovskite');state.rep=[5,5,5];state.style='poly';state.poly='';
   state.bounds=[[0,1],[0,1],[0,1]];state.boundary=false;build();fit();return window.__visualTest.polyStats();},
  syncedPolyCenter:()=>{resetVolume();loadPreset('perovskite');state.style='poly';state.poly='';
@@ -1219,6 +1224,32 @@ try{
   assert.ok(offlineWorker.triangles>0);
   await offlinePage.screenshot({path:path.join(artifacts,'rs-05-offline.png')});
  }finally{await offlineContext.close();}
+ // Package 12: actual right-drawer interaction exercises cation-only IUCr
+ // pairs, periodic ligand image counting, and visible science provenance.
+ const p12Sites=await page.evaluate(()=>window.__visualTest.p12Perovskite());
+ const ti=p12Sites.find(site=>site.symbol==='Ti'),ba=p12Sites.find(site=>site.symbol==='Ba');
+ assert.ok(ti&&ba,'BaTiO3 preset must contain both cation centers');
+ await page.locator('[data-right-tool="bvs"]').click();
+ await page.locator('#analysisCenter').selectOption(String(ti.index));
+ const tiPairs=await page.locator('#bvsPair option').evaluateAll(items=>items.map(el=>el.value));
+ assert.deepEqual(tiPairs,['Ti3-O','Ti4-O'],'Ti center must offer Ti oxidation pairs only');
+ await page.locator('#bvsPair').selectOption('Ti4-O');
+ await page.locator('#bvsCutoff').fill('3.1');
+ await page.locator('#analyzeBvs').click();
+ let p12Result=await page.evaluate(()=>window.__visualTest.p12BvsResult());
+ assert.equal(p12Result.pair,'Ti4-O');
+ assert.equal(p12Result.count,6,'Ti-O octahedral shell must retain six periodic images');
+ assert.equal(p12Result.weightedCount,6);
+ assert.ok(Number.isFinite(p12Result.sum)&&p12Result.sum>0);
+ assert.equal(p12Result.reference,'IUCr bvparm2020.cif');
+ assert.match(await page.locator('#bvsResult').textContent(),/Geometrik ligand CN=6.*BVS=.*IUCr 2020/s);
+ await page.locator('#analysisCenter').selectOption(String(ba.index));
+ assert.deepEqual(await page.locator('#bvsPair option').evaluateAll(items=>items.map(el=>el.value)),['Ba2-O']);
+ await page.locator('#analyzeBvs').click();
+ p12Result=await page.evaluate(()=>window.__visualTest.p12BvsResult());
+ assert.equal(p12Result.count,12,'Ba-O cubic shell must have twelve geometric neighbors');
+ assert.equal(p12Result.weightedCount,12);
+ await page.screenshot({path:path.join(artifacts,'p12-bvs-coordination.png')});
  // Exercise the real file picker handler, state assignment and WebGL rebuild
  // for all three newly supported crystallographic structure formats.
  const importContext=await browser.newContext({viewport:{width:1280,height:800}});

@@ -20,6 +20,27 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Crystallographic coordination and bond valence (Package 12)
+
+The BVS tool now offers **19 explicitly charged cation–anion parameter sets**
+transcribed from the [IUCr 2020 bond-valence parameter compilation](https://www.iucr.org/what-we-do/digital-standards/data/datasets/bond-valence-parameters).
+Both `R₀` and the **pair-specific `B`** (including Cu(II)–O with `B = 0.36 Å`)
+are retained with the source reference code. Select a central atom to see only
+compatible ion-pair choices. The result distinguishes **geometric coordination
+number**, **occupancy-weighted coordination number**, calculated **BVS**, and
+the signed mismatch with the *user-selected* formal valence. It reports
+partial/mixed-site and cutoff warnings, including unusually large mismatches.
+Nonperiodic CUBE/XSF molecules are not linked through their display-box walls.
+
+A **required independent ASE 3.26.0 scientific CI gate** compares every
+periodic image, shift, bond distance and weighted contribution in nine
+analytical NaCl/MgO/perovskite, skew-cell, mixed-occupancy, molecular and
+cutoff examples. These test geometries are **not experimental structure
+determinations**. Alternative sites are treated as an **occupancy-weighted
+conditional average**, not a physical claim that mutually exclusive atoms
+coexist. BVS cannot establish oxidation state, bond order, or VESTA numerical
+parity. [P12 validation and scope](tests/validation/PACKAGE_12_STATUS.md).
+
 ## Multi-field CUBE/XSF and safer VESTA settings (Package 11)
 
 CUBE files can now load **up to five interleaved fields per voxel** through
@@ -343,7 +364,7 @@ The scientific validation gate retains **30 real + 10 synthetic CIF** cases. Add
 
 - Element-dependent approximate bond cutoffs, pair-specific overrides, coordination polyhedra, and periodic distances.
 - Interatomic distances, angles, dihedrals; separate measurement history with CSV export.
-- **Bond-valence sums (BVS)** for explicitly selected oxidation states/ion pairs, using Brese–O'Keeffe `R₀` and `B = 0.37 Å`. The application does not automatically assign ionic charges or invent missing pair parameters.
+- **Bond-valence sums (BVS)** for explicitly selected oxidation states/ion pairs, using referenced empirical `R₀` and pair-specific `B` from IUCr 2020. The application does not automatically assign ionic charges or invent missing pair parameters.
 - **Best-fit plane:** least-squares plane, RMS/maximum planarity deviation, and the angle between two planes. Selected periodic images are not automatically unwrapped.
 - **Miller `(hkl)` planes** and `d(hkl)` using the complete cell metric; independent plane/layer objects, all parallel planes within a finite supercell, finite-thickness visual slices, and **P1 slabs** with vacuum. Slab construction is not surface relaxation or DFT.
 - **`{hkl}` face families** with point-group-equivalent Miller indices for all crystal systems (triclinic through cubic), optional ± pairing, and **geometric crystal morphology** from intersecting half-spaces, including surface area and volume. Previous project morphologies load with equivalent geometry. This is **not** surface-energy-based Wulff construction.
@@ -376,7 +397,7 @@ The scientific validation gate retains **30 real + 10 synthetic CIF** cases. Add
 
 The selected atom's coordination panel reports the **Baur bond-length distortion index** (`D`) and **Hoppe effective coordination number** (`ECoN`), separately from ordinary neighbor count. ECoN is not the same as occupancy-weighted coordination number: Hoppe weights are derived from bond distances. Where genuine tetrahedral or octahedral face topology is verified, **quadratic elongation** and **bond-angle variance** are available. A six-vertex prism is not automatically treated as an octahedron. Partial/alternative occupancy limits the result to geometrical interpretation; quantitative indices are withheld when the neighbor list was truncated to the first 24.
 
-For BVS, the periodic images within the bond radius are enumerated using the reciprocal metric, **without a hard ±2 image restriction** in skew cells. The model applies **only to a selected reference ion pair** with empirical `R₀/B` parameters; it does not infer oxidation states or chemical bond order. A reference expected bond length assumes formal charge is shared equally between bonds. Equations, limitations, and independent regression cases are documented in [`tests/validation/PACKAGE_7_STATUS.md`](tests/validation/PACKAGE_7_STATUS.md).
+For BVS, the periodic images within the bond radius are enumerated using the reciprocal metric, **without a hard ±2 image restriction** in skew cells; nonperiodic molecular data excludes periodic images. The model applies **only to a selected reference ion pair** with empirical `R₀/B` parameters; it does not infer oxidation states or chemical bond order. A reference expected bond length assumes formal charge is shared equally between bonds. Earlier definitions remain in [`tests/validation/PACKAGE_7_STATUS.md`](tests/validation/PACKAGE_7_STATUS.md); the independently validated P12 model and caveats are in [`tests/validation/PACKAGE_12_STATUS.md`](tests/validation/PACKAGE_12_STATUS.md).
 
 ## Scientific scope and limitations
 

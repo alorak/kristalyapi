@@ -20,6 +20,26 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Kristal kimyası: koordinasyon ve bağ değerliği (Paket 12)
+
+**BVS** panelinde artık [IUCr 2020 bağ-değerliği derlemesinden](https://www.iucr.org/what-we-do/digital-standards/data/datasets/bond-valence-parameters)
+alınmış **19 açık yüklü katyon–anyon çifti** bulunuyor. Her satırın `R₀`,
+**çifte özel `B`** (Cu(II)–O için `0,36 Å` dahil) ve kaynak kodu korunuyor.
+Merkez atom değiştirildiğinde yalnız uygun parametreler seçilebiliyor.
+Sonuç **geometrik komşu sayısı**, **doluluk ağırlıklı CN**, **BVS** ve
+kullanıcının seçtiği formal valansla **işaretli farkı** ayrı gösteriyor.
+Karışık/kısmi doluluk, kesim duyarlılığı ve büyük BVS sapmaları uyarılıyor.
+Periyodik olmayan CUBE/XSF molekülleri yapay kutu duvarından bağlanmıyor.
+
+Zorunlu **bağımsız ASE 3.26.0 CI testi**, dokuz NaCl/MgO/perovskit,
+eğik hücre, karma doluluk, molekül ve sınır senaryosundaki **her görüntü
+kaymasını, komşu uzaklığını ve ağırlıklı katkıyı** karşılaştırıyor.
+Bunlar deneysel yapı belirlemeleri değil, analitik referans geometrilerdir.
+Alternatif konumlardan doğan toplam **koşullu doluluk ortalamasıdır**;
+birbirini dışlayan atomların aynı anda bulunduğunu kanıtlamaz. BVS oksidasyon
+durumu, bağ derecesi veya VESTA ile bire bir eşdeğerlik kanıtı değildir.
+[Paket 12 bilimsel protokolü ve sınırları](tests/validation/PACKAGE_12_STATUS.md).
+
 ## Çok alanlı CUBE/XSF ve VESTA setting güvenliği (Paket 11)
 
 CUBE `NVAL` ile voksel başına iç içe saklanan **en fazla beş alanı** veya
@@ -376,7 +396,7 @@ deneysel kaynak hatalarını kapsayan tam bir doğruluk iddiası değildir.
 
 - Elemente göre yaklaşık bağ eşikleri, özel atom-türü çift kuralları, koordinasyon çokyüzlüleri ve periyodik uzaklıklar.
 - Atomlar arası uzunluk, açı, dihedral; ayrı ölçüm geçmişi ve CSV.
-- Seçilen oksidasyon durumu/iyon çifti için **BVS**: Brese–O'Keeffe `R₀` ve `B=0,37 Å` modeline dayalı bağ-değerliği hesabı. İyon yükleri otomatik tayin edilmez; parametresi bulunmayan çift için sayı uydurulmaz.
+- Seçilen oksidasyon durumu/iyon çifti için **BVS**: IUCr 2020 kayıtlarından alınan `R₀` ve **çifte özgü `B`** parametreleriyle bağ-değerliği hesabı. İyon yükleri otomatik tayin edilmez; parametresi bulunmayan çift için sayı uydurulmaz.
 - **Best-fit plane**: en küçük kareler düzlemi, RMS/maksimum düzlemsellik sapması ve iki düzlemin açısı; seçili periyodik atom görüntülerini otomatik açma (`unwrap`) yapılmaz.
 - Tam hücre metriğinden **Miller `(hkl)` düzlemleri** ve `d(hkl)`; bağımsız düzlemler/katmanlar, sonlu süperhücreye düşen tüm paralel düzlemler, kalınlıklı görsel kesit ve vakumlu **P1 slab** üretimi. Slab üretimi yüzey relaksasyonu veya DFT değildir.
 - `{hkl}` yüz aileleri, seçilen **uzay grubunun nokta grubu** altında eşdeğer Miller indisleri (triklinik–kübik tüm sistemler), isteğe bağlı ± çifti, kesişen yarı uzaylardan **geometrik kristal morfolojisi**; yüzey alanı ve hacim. Eski proje morfolojileri aynı geometriyle yüklenir. Bu, yüzey enerjisine dayalı **Wulff hesaplaması değildir**.
@@ -417,14 +437,17 @@ Kısmi/alternatif dolulukta rapor geometrik yorumla sınırlıdır.
 İlk 24 komşuya kesilme varsa nicel ölçütler verilmez.
 
 BVS'de bağ yarıçapı içindeki periyodik görüntüler, eğik hücrelerde
-`±2` ile sınırlandırılmadan ters örgü metriğine göre taranır. Model
+`±2` ile sınırlandırılmadan ters örgü metriğine göre taranır; periyodik
+olmayan moleküler verilerde görüntü eklenmez. Model
 **yalnızca seçili referans iyon çifti** ve ampirik `R₀/B` parametresi
 içindir; otomatik oksidasyon durumu veya kimyasal bağ derecesi çıkarmaz.
 BVS sonucu yanında, formal yükün eşit bağlar arasında bölündüğü
 varsayımıyla beklenen bağ uzunluğu da bir referans değer olarak
 görüntülenir. Matematiksel tanımlar, sınırlar ve bağımsız regresyonlar
 [`tests/validation/PACKAGE_7_STATUS.md`](tests/validation/PACKAGE_7_STATUS.md)
-içindedir.
+içindedir. Paket 12 bağımsız bilimsel karşılaştırmaları ve kısıtları
+[`tests/validation/PACKAGE_12_STATUS.md`](tests/validation/PACKAGE_12_STATUS.md)
+dosyasında ayrıca sunulur.
 
 ## Bilimsel kapsam ve sınırlar
 
