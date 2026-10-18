@@ -1,0 +1,19 @@
+{
+  "vestaGuiExecuted": false,
+  "version": "3.5.8",
+  "platform": "Record the actual desktop OS",
+  "cases": [
+    {
+      "id": "iucr-silicate-K1",
+      "centerLabel": "K1",
+      "cutoffA": 3.2,
+      "r0A": 2.132,
+      "bA": 0.37,
+      "bondDistancesA": [],
+      "screenshotPath": "actual-gui-k1.png",
+      "screenshotSha256": "REPLACE_AFTER_REAL_CAPTURE",
+      "consoleTextPath": "actual-gui-k1-textarea.txt",
+      "consoleTextSha256": "REPLACE_AFTER_REAL_CAPTURE"
+    }
+  ]
+}

@@ -4185,6 +4185,28 @@ function bvsCenterAlternatives(sites,centerIndex,cell,key,cutoff=3.5,periodic=tr
   conditionalMean,conditionalStandardDeviation:conditionalVariance===null?null:Math.sqrt(conditionalVariance),
   assumption:'Merkez türleri ayrık ve koşullu; ligandlar bağımsız kabul edilir. Gerçek yerel tür-korelasyonları ölçülmedi.'};
 }
+/* P14: apply the *published VESTA 3 manual equation* to the same selected
+   neighbors and R0. This is not a measurement made by the VESTA GUI.
+   Separating the fixed-B (.37 A) and occupancy conventions makes differences
+   explicit; different VESTA coordination settings or R0 choices remain open. */
+function vesta3ManualBvsProjection(result){
+ if(!result||!Number.isFinite(result.r0)||!Number.isFinite(result.b)||result.b<=0||
+    !Array.isArray(result.neighbors))throw Error('VESTA kılavuz karşılaştırması için geçerli BVS verisi gerekli.');
+ let unweighted=0,weighted=0;
+ for(const neighbor of result.neighbors){
+  const d=Number(neighbor.distance),occupancy=Number(neighbor.occupancy);
+  if(!Number.isFinite(d)||d<=0||!Number.isFinite(occupancy)||occupancy<0||occupancy>1)
+   throw Error('VESTA kılavuz karşılaştırmasında mesafe veya doluluk geçersiz.');
+  const valence=Math.exp((result.r0-d)/.37);
+  unweighted+=valence;weighted+=valence*occupancy;
+ }
+ return {model:'VESTA 3 kullanıcı kılavuzu §11.4.3, aynı R₀ ve aynı komşuluk; GUI ölçümü değildir',
+  modelB:.37,selectedR0:result.r0,selectedB:result.b,
+  fullBondSum:unweighted,occupancyWeightedSum:weighted,
+  deltaParameter:Number(result.sum)-weighted,
+  deltaOccupancy:weighted-unweighted,
+  guiExecuted:false,actualVestaSum:null};
+}
 function bvsCsv(result){
  return ['neighbor,shift_x,shift_y,shift_z,distance_A,occupancy,bond_valence',
   ...result.neighbors.map(n=>[n.label,...n.shift,n.distance.toFixed(8),n.occupancy,n.contribution.toFixed(8)].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n')+'\n';
@@ -5205,6 +5227,7 @@ function renderWorkspaceXrd(){
 }
 function renderWorkspaceBvs(){
  const uncertainty=lastBvs?.occupancyDistribution,alternatives=lastBvs?.centerAlternatives;
+ const vestaProjection=lastBvs?vesta3ManualBvsProjection(lastBvs):null;
  $('bvsResult').textContent=lastBvs?
   'Geometrik ligand CN='+lastBvs.count+' · Doluluk ağırlıklı CN='+lastBvs.weightedCount.toFixed(2)+
   ' · BVS='+lastBvs.sum.toFixed(4)+' v.u. · Seçili formal +'+lastBvs.referenceCharge+
@@ -5224,6 +5247,12 @@ function renderWorkspaceBvs(){
    (alternatives.complete?'\nTürlere göre koşullu ortalama='+alternatives.conditionalMean.toFixed(4)+
     ' v.u. · model σ='+alternatives.conditionalStandardDeviation.toFixed(4)+' v.u.':'\nEksik parametre nedeniyle karışım ortalaması yok.')+
    '\nNot: merkez/ligand korelasyonları bilinmiyor; bu sonuç oksidasyon kanıtı değildir.':'')+
+  '\nVESTA 3 kılavuz denklemi (GUI ölçümü DEĞİL; aynı R₀, B=0.370 Å, aynı komşular): '+
+  'tam katkı='+vestaProjection.fullBondSum.toFixed(4)+
+  ', doluluk ağırlıklı='+vestaProjection.occupancyWeightedSum.toFixed(4)+' v.u.'+
+  ' · yalnız B farkı='+vestaProjection.deltaParameter.toFixed(4)+
+  ', doluluk varsayımı farkı='+vestaProjection.deltaOccupancy.toFixed(4)+' v.u.'+
+  '\nGerçek VESTA sonucu için aynı R₀/B, kesim, site ve GUI çıktısı ayrıca doğrulanmalı.'+
   (lastBvs.warnings?.length?'\nDikkat: '+lastBvs.warnings.join(' '):'\nBVS bir oksidasyon veya bağ kanıtı değildir.'):
   'Atom ve referans parametresi seçin.';
  $('bvsResult').style.whiteSpace='pre-line';

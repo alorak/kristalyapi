@@ -58,7 +58,7 @@ vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorE
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
-vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives});',context);
+vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives,vesta3ManualBvsProjection});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
@@ -2434,6 +2434,30 @@ test('P13 center-site K/Na disorder reports separate reference-pair scenarios, n
  approx(grouped.conditionalStandardDeviation,
   Math.sqrt(.722*.278)*Math.abs(s[0].sum-s[1].sum),1e-12);
  assert.equal(api.bondValenceSum(sites,0,cell,'K1-O',3.0).occupancyDistribution.standardDeviation,0);
+});
+test('P14 VESTA 3 manual projection explicitly isolates fixed B=0.37 from Cu(II) fitted B=0.36',()=>{
+ const cell={a:6,b:6,c:6,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Cu',x:0,y:0,z:0},{symbol:'O',x:.3,y:0,z:0}];
+ const model=api.bondValenceSum(sites,0,cell,'Cu2-O',2,false);
+ const v=api.vesta3ManualBvsProjection(model);
+ approx(model.sum,Math.exp((1.679-1.8)/.36),1e-12);
+ approx(v.fullBondSum,Math.exp((1.679-1.8)/.37),1e-12);
+ approx(v.occupancyWeightedSum,v.fullBondSum,1e-12);
+ approx(v.deltaParameter,model.sum-v.fullBondSum,1e-12);
+ approx(v.deltaOccupancy,0,1e-12);
+ assert.equal(v.selectedB,.36);assert.equal(v.modelB,.37);
+ assert.equal(v.guiExecuted,false);assert.equal(v.actualVestaSum,null);
+});
+test('P14 occupancy convention is separate from B when reference B already equals 0.37',()=>{
+ const cell={a:6,b:6,c:6,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Na',x:0,y:0,z:0},{symbol:'Cl',x:.3,y:0,z:0,occupancy:.35}];
+ const result=api.bondValenceSum(sites,0,cell,'Na1-Cl',2,false);
+ const v=api.vesta3ManualBvsProjection(result);
+ approx(v.fullBondSum,Math.exp((2.15-1.8)/.37),1e-12);
+ approx(v.occupancyWeightedSum,.35*v.fullBondSum,1e-12);
+ approx(v.deltaParameter,0,1e-12);
+ approx(v.deltaOccupancy,-.65*v.fullBondSum,1e-12);
+ assert.throws(()=>api.vesta3ManualBvsProjection({r0:1,b:.37,neighbors:[{distance:1,occupancy:1.1}],sum:0}),/geçersiz/);
 });
 test('stage3 best-fit plane: zero RMS for exact plane and stable tilted plane',()=>{
  const plane=api.leastSquaresPlane([[0,0,3],[1,0,3],[0,1,3],[1,1,3]]);

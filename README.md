@@ -20,6 +20,28 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## VESTA 3 manual-equation comparison and honest GUI evidence (Package 14)
+
+The BVS panel now shows an explicitly **non-GUI, manual-equation projection**:
+VESTA 3 documents a fixed `B = 0.37 Å`, while our source-pinned IUCr 2020
+`Cu(II)–O` pair deliberately uses `B = 0.36 Å`. At the same selected `R₀`
+and exact neighbor images, the panel separates the **B-parameter effect**
+from **ligand occupancy weighting**. These numbers are mathematical
+comparisons with the [official VESTA 3 manual](https://jp-minerals.org/vesta/en/doc/VESTAch11.html),
+**not values measured from VESTA's desktop interface**.
+
+An independent Gemmi/ASE CI gate now checks **Baur distortion D, Hoppe ECoN,
+bond lengths and fixed-B BVS** in eight real experimental CIF environments,
+and produces a CSV difference matrix with actual VESTA GUI columns **blank**.
+We also inspected the actual VESTA 3.5.8 distribution's 2016 parameter table
+locally: all 19 supported `R₀` pairs have a compatible `B = 0.37 Å` entry,
+including Cu–O with a *different reference* than the application's .36 Å
+entry. VESTA binaries and its copyrighted parameter file are not distributed
+with this project. A VESTA GUI execution could not be completed in this
+headless environment; an optional capture auditor is ready for real
+screenshots and text-area measurements.
+[P14 comparison protocol, precise limits and measurements](tests/validation/PACKAGE_14_STATUS.md).
+
 ## Experimental CIF and local disorder uncertainty (Package 13)
 
 The importer now accepts a metadata-only **`data_global` CIF block** followed

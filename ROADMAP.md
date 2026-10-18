@@ -1,5 +1,27 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket 14 — VESTA 3 resmî denklemleriyle 8 deneysel ortam ve açık fark matrisi
+
+- **Paket 13 eksik kontrolü:** PR #85'in birleşmiş `main` ağacıyla dosya farkı
+  **sıfır**; Paket 13 için ilave PR gerekmiyor.
+- **VESTA'nın gerçek kaynak dağıtımından öğrenilen fark:** VESTA 3.5.8
+  paketindeki 2016 BVS derlemesinde mevcut 19 çiftin hepsinde seçili
+  `R₀`'yla `B=0,37 Å` satırı mevcut. Uygulama `Cu²⁺–O²⁻` için farklı
+  referanslı **`B=0,36 Å`** kullanır; panel sabit-B kılavuz yansımasını,
+  doluluklu ve tam katkıları ayrı gösterir. VESTA paketleri **dağıtılmaz**.
+- **Bağımsız ölçüm:** Sekiz deneysel CIF merkezinde Baur D, Hoppe ECoN,
+  bağ uzaklıkları ve sabit-B BVS hesapları üretim JS / bağımsız Gemmi/ASE
+  hesapları arasında eşleşir. JSON + CSV fark matrisi zorunlu CI'a girer.
+- **Dürüstlük:** Bu **VESTA GUI ölçümü değil**, yayımlanmış formüllerin
+  karşılaştırmasıdır. Başsız ortamda `DISPLAY` yok; sanal ekran kurulumu
+  izin nedeniyle engellendi. Gerçek VESTA metin/ekran kayıtları gelene
+  kadar `actualVestaBvs` boş ve GUI durumu `not-run` tutulur.
+- **Sonraki Paket 15:** VESTA 3 GUI'de elle alınmış bağ/koordinasyon
+  sonuçları ve SHA sabit ekran görüntüleriyle doğrudan eşdeğerlik/fark
+  matrisi; özel setting ve karma site görselleştirme sapmaları.
+
+[P14 testler, VESTA veri sürümü ve gerçek GUI ölçüm protokolü](tests/validation/PACKAGE_14_STATUS.md).
+
 ## Paket 13 — Gerçek deneysel CIF, alternatif merkez BVS ve bağımsız Gemmi/ASE kapısı
 
 - **Gerçek kaynaklı korpus:** SHA-256'sı sabitlenmiş 1965 NaCl, 1963 rutil

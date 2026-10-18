@@ -27,7 +27,10 @@ assert.ok(end>0,'Production module bootstrap boundary missing');
 const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,URL,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(context);
 vm.runInContext(script.slice(0,end).replace(/^import .*?;\s*$/gm,'')+
- '\nthis.bvs=bondValenceSum;this.centerAlternatives=bvsCenterAlternatives;',context);
+ '\nthis.bvs=bondValenceSum;this.centerAlternatives=bvsCenterAlternatives;'+
+ 'this.vestaProjection=vesta3ManualBvsProjection;this.coordGeometry=coordinationGeometry;'+
+ 'this.polyMetric=polyhedralDistortionMetrics;this.basisForP14=basis;'+
+ 'this.bvsParameters=BVS_PARAMETERS;',context);
 
 const structures=new Map();
 for(const entry of manifest.sources){
@@ -46,9 +49,22 @@ const results=manifest.cases.map(item=>{
  assert.ok(centerIndex>=0,'Experimental CIF center not found: '+item.id);
  const bvs=context.bvs(structure.sites,centerIndex,structure.cell,item.pair,item.cutoff,true);
  const alternatives=context.centerAlternatives(structure.sites,centerIndex,structure.cell,item.pair,item.cutoff,true);
+ const central=structure.sites[centerIndex],neighbors=bvs.neighbors.map(n=>{
+  const ligand=structure.sites[n.index];
+  return {index:n.index,element:ligand.symbol,distance:n.distance,shift:n.shift,
+   occupancy:n.occupancy,delta:[ligand.x+n.shift[0]-central.x,
+    ligand.y+n.shift[1]-central.y,ligand.z+n.shift[2]-central.z]};
+ });
+ const environment=context.coordGeometry(neighbors,context.basisForP14(structure.cell));
+ const geometric=context.polyMetric(environment);
  return {id:item.id,source:item.source,sha256:structure.sha256,name:structure.name,
   cell:structure.cell,sites:structure.sites.map(s=>({element:s.symbol,label:s.label,
    x:s.x,y:s.y,z:s.z,occupancy:s.occupancy})),sgNumber:structure.sgNumber,
-  warning:structure.warning,centerIndex,bvs,centerAlternatives:alternatives};
+  warning:structure.warning,centerIndex,bvs,centerAlternatives:alternatives,
+  vestaManualProjection:context.vestaProjection(bvs),
+  vestaManualGeometry:{coordination:environment.geometricCN,uniqueVertices:environment.vertexCount,
+   weightedCoordination:environment.weightedCN,meanDistance:geometric.meanBondLength,
+   baurDistortion:geometric.distortionIndex,hoppeMean:geometric.hoppeMean,
+   hoppeEcon:geometric.econ,occupancyCaveat:geometric.occupancyCaveat}};
 });
-process.stdout.write(JSON.stringify({cases:results})+'\n');
+process.stdout.write(JSON.stringify({cases:results,parameters:context.bvsParameters})+'\n');
