@@ -1199,10 +1199,18 @@ try{
 
  await page.locator('#semiconductorNav').click();
  await page.waitForFunction(()=>!document.getElementById('semiconductorPage').hidden&&
-  document.querySelectorAll('#scBandChart path').length>=2);
+  document.querySelectorAll('#scBandChart path').length>=2&&
+  document.querySelectorAll('#scChainChart [data-energy-level]').length===8);
  assert.equal(await page.locator('#app').evaluate(el=>getComputedStyle(el).display),'none',
   'editor must not occupy space behind the semiconductor lesson');
  assert.match(await page.locator('#scSourceDetail').textContent(),/8 atom/);
+ assert.equal(await page.locator('#scChainChart [data-chain-atom]').count(),8);
+ await page.locator('#scChainAtoms').evaluate(el=>{el.value='2';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),2,
+  'two atoms must split one atomic energy into two levels');
+ await page.locator('#scChainAtoms').evaluate(el=>{el.value='32';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),32,
+  'N atoms must create exactly N levels in the finite tight-binding chain');
  const gapBefore=await page.locator('#scBandSummary').textContent();
  await page.locator('#scPotential').evaluate(el=>{el.value='0.9';el.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.notEqual(await page.locator('#scBandSummary').textContent(),gapBefore,'potential changes band splitting');

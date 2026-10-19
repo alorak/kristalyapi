@@ -34,6 +34,11 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
   **ideal Fermi–Dirac** occupation model. The current structure's cell parameter
   can be used only as the educational model period. These are **not** real
   electronic bands of silicon or GaAs and are not first-principles calculations.
+  A linked **From Atoms to a Band** experiment shows the exactly N discrete
+  tight-binding energies of an open N-atom chain (N = 1–64) alongside the
+  related infinite periodic chain's one Bloch band. Its hopping strength
+  is independent of the period; a one-orbital band does not generate a
+  real semiconductor valence–conduction gap.
 - Both pages are included in the offline shell. See [todo.md](todo.md) for
   scientific validation, advanced lessons and follow-up tasks.
 

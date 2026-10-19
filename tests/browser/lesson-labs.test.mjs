@@ -8,6 +8,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const base=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const artifacts=path.join(base,'tests/browser/artifacts');
+await fs.mkdir(artifacts,{recursive:true});
 const type=file=>file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':
  file.endsWith('.wasm')?'application/wasm':file.endsWith('.svg')?'image/svg+xml':'text/html';
 const server=http.createServer(async(req,res)=>{
@@ -46,8 +48,33 @@ try{
  assert.notEqual(await page.locator('#pwWaveSvg path').last().getAttribute('d'),waveBefore);
  await page.locator('#pwWavePlay').click();
  assert.equal(await page.locator('#pwWavePlay').getAttribute('aria-pressed'),'false');
+ await page.locator('#semiconductorNav').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#scChainChart [data-energy-level]').length===8);
+ assert.equal(await page.locator('#scChainChart [data-chain-atom]').count(),8,
+  'the atom chain and its spectrum must share the same N');
+ await page.locator('#scChainAtoms').evaluate(el=>{el.value='2';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),2,
+  'a two-atom chain produces exactly two orbital levels');
+ assert.match(await page.locator('#scChainSummary').textContent(),/1[.,]600 eV/,
+  'for N=2 the energy splitting must equal 2|t|');
+ await page.locator('#scChainAtoms').evaluate(el=>{el.value='64';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),64,
+  'N=64 must produce 64 discrete eigenstates');
+ await page.locator('#scChainHopping').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.match(await page.locator('#scChainSummary').textContent(),/0[.,]000 eV/,
+  'vanishing hopping restores the degenerate atomic levels');
+ await page.locator('#scChainHopping').evaluate(el=>{el.value='0.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ await page.locator('#scChainPlay').click();
+ await page.waitForTimeout(790);
+ assert.ok(Number(await page.locator('#scChainAtomsOutput').textContent())>=2,
+  'the progression must advance beyond the single atom');
+ await page.locator('#scChainPlay').click();
+ assert.equal(await page.locator('#scChainPlay').getAttribute('aria-pressed'),'false');
+ await page.locator('#scChainAtoms').evaluate(el=>{el.value='32';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ await page.locator('#scChainChart').scrollIntoViewIfNeeded();
+ await page.screenshot({path:path.join(artifacts,'lesson-05-atom-to-band.png'),timeout:30000});
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
- console.log('Focused XRD Bragg and WebGL lesson passed.');
+ console.log('Focused XRD Bragg/WebGL and atom-to-band semiconductor labs passed.');
 }finally{
  await browser?.close();
  await new Promise(resolve=>server.close(resolve));

@@ -1,4 +1,5 @@
-import {braggTwoTheta,braggInterference,twoWaveBands,fermiDirac,KB_EV_K} from './lesson-core.js';
+import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
+ tightBindingBandEnergy,fermiDirac,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -107,6 +108,57 @@ function braggWaveDiagram(svg,theta,values){
    paths[j].setAttribute('d',points.join(' '));
   }
  };
+}
+
+/* The discrete spectrum uses OPEN boundaries; the smooth E(k) curve beside it
+ * is the infinite PERIODIC chain, not the eigenvalues of that finite chain. */
+function tightBindingDiagram(svg,count,hopping,period){
+ const english=window.CrystalI18n?.language==='en';
+ const tr=(turkish,en)=>english?en:turkish;
+ clearChart(svg,'Atomic levels becoming one tight-binding band');
+ const txt=(x,y,value,color='#536b84',size=14,weight=600,anchor='start')=>svgNode(svg,'text',
+  {x,y,fill:color,'font-size':size,'font-weight':weight,'text-anchor':anchor},value);
+ const line=(x1,y1,x2,y2,color='#d6e3ee',width=1,other={})=>svgNode(svg,'line',
+  {x1,y1,x2,y2,stroke:color,'stroke-width':width,...other});
+ txt(24,30,tr('Bir atom → ayrık seviyelerin çoğalması','One atom → splitting into discrete levels'),'#284a6b',16,700);
+ const start=150,end=845,atomsY=79;
+ line(start,atomsY,end,atomsY,'#c8d8e8',2);
+ for(let i=0;i<count;i++){
+  const x=count===1?(start+end)/2:start+(end-start)*i/(count-1);
+  svgNode(svg,'circle',{cx:x,cy:atomsY,r:count>48?4:count>24?5.7:8,
+   fill:'#5c9ed5',stroke:'#fff','stroke-width':1.4,'data-chain-atom':i});
+ }
+ txt(24,83,`${count} ${tr('atom','atoms')}`,'#23689d',14,700);
+ line(449,114,449,365,'#dbe6f1',1);
+ txt(24,133,tr('Sonlu açık zincir: N enerji seviyesi','Finite open chain: N energy levels'),'#284a6b',15,700);
+ txt(487,133,tr('Sonsuz periyodik zincir: E(k)','Infinite periodic chain: E(k)'),'#284a6b',15,700);
+ const scale=Math.max(.22,2*hopping)*1.19;
+ const Y=energy=>274-energy/scale*93;
+ const yTop=Y(2*hopping),yBottom=Y(-2*hopping);
+ svgNode(svg,'rect',{x:196,y:yTop,width:218,height:Math.max(1,yBottom-yTop),
+  fill:'#e8f2fd','fill-opacity':.7});
+ for(const e of [2*hopping,0,-2*hopping]){
+  const y=Y(e);
+  line(189,y,419,y,e===0?'#aec3d8':'#ceddeb',1,{'stroke-dasharray':'4 5'});
+  txt(179,y+4,`${e>=0?'+':''}${number(e,1)}`, '#62758c',11,500,'end');
+ }
+ const levels=tightBindingChainLevels(count,hopping);
+ for(const [i,energy] of levels.entries())line(214,Y(energy),398,Y(energy),
+  '#1f6da8',count>=32?1.4:2.8,{'stroke-opacity':count>=32?.76:.95,'data-energy-level':i});
+ txt(203,374,tr('Enerji E (eV)','Energy E (eV)'),'#71849c',11,500);
+ const x0=493,x1=847,mid=(x0+x1)/2;
+ line(x0,274,x1,274,'#c1d1e0');
+ line(mid,159,mid,359,'#dce7f1',1,{'stroke-dasharray':'5 5'});
+ const points=Array.from({length:181},(_,i)=>{
+  const kr=-1+2*i/180;
+  return [x0+(x1-x0)*i/180,tightBindingBandEnergy(kr,hopping)];
+ });
+ svgNode(svg,'path',{d:linePath(points,p=>[p[0],Y(p[1])]),fill:'none',
+  stroke:'#c7782d','stroke-width':3.5,'stroke-linejoin':'round'});
+ for(const [x,label] of [[x0,'−π/a'],[mid,'0'],[x1,'π/a']]){
+  line(x,356,x,362,'#73879b');txt(x,377,label,'#536b83',12,600,'middle');
+ }
+ txt(486,168,`π/a = ${number(Math.PI/period,3)} Å⁻¹`,'#7e5e34',12,600);
 }
 
 export function initPowderLesson(host){
@@ -262,6 +314,42 @@ export function initPowderLesson(host){
 export function initSemiconductorLesson(host){
  let visible=false;
  const chart=$('scBandChart'),fermiChart=$('scFermiChart');
+ const chainChart=$('scChainChart'),chainStages=[1,2,4,8,16,32,64];
+ let chainTimer=0,chainRunning=false;
+ function stopChain(){
+  clearInterval(chainTimer);chainTimer=0;chainRunning=false;
+  $('scChainPlay').textContent='1 atomdan 64 atoma canlandır';
+  $('scChainPlay').setAttribute('aria-pressed','false');
+ }
+ function renderChain(){
+  if(!visible)return;
+  const count=Number($('scChainAtoms').value),hopping=Number($('scChainHopping').value);
+  const period=Number($('scPeriod').value);
+  const levels=tightBindingChainLevels(count,hopping);
+  $('scChainAtomsOutput').textContent=String(count);
+  $('scChainHoppingOutput').textContent=number(hopping,2)+' eV';
+  $('scChainSummary').replaceChildren(
+   metric('Ayrık enerji seviyesi',String(levels.length)),
+   metric('Sonlu enerji aralığı',number(levels.at(-1)-levels[0],3)+' eV'),
+   metric('Sonsuz bant genişliği',number(4*hopping,3)+' eV'),
+   metric('Zincir periyodu a',number(period,2)+' Å'));
+  tightBindingDiagram(chainChart,count,hopping,period);
+ }
+ $('scChainAtoms').addEventListener('input',()=>{stopChain();renderChain();});
+ $('scChainHopping').addEventListener('input',()=>{stopChain();renderChain();});
+ $('scChainPlay').addEventListener('click',()=>{
+  if(chainRunning){stopChain();return;}
+  chainRunning=true;
+  $('scChainPlay').textContent='Animasyonu durdur';
+  $('scChainPlay').setAttribute('aria-pressed','true');
+  let stage=0;
+  const next=()=>{
+   if(stage>=chainStages.length){stopChain();return;}
+   $('scChainAtoms').value=String(chainStages[stage++]);
+   renderChain();
+  };
+  next();chainTimer=setInterval(next,700);
+ });
  const params=[
   ['scPeriod','scPeriodOutput',2,' Å'],['scPotential','scPotentialOutput',2,' eV'],
   ['scMass','scMassOutput',2,''],['scTemperature','scTemperatureOutput',0,' K'],
@@ -271,6 +359,7 @@ export function initSemiconductorLesson(host){
   if(!visible)return;
   const structure=host.structure();
   setSource('scSourceName','scSourceDetail',structure);
+  renderChain();
   for(const [input,output,digits,unit] of params)$(output).textContent=number($(input).value,digits)+unit;
   const period=Number($('scPeriod').value),potential=Number($('scPotential').value);
   const mass=Number($('scMass').value);
@@ -313,5 +402,5 @@ export function initSemiconductorLesson(host){
   else {const original=$('scUseCell').textContent;$('scUseCell').textContent='a, 2–8 Å model aralığı dışında';setTimeout(()=>$('scUseCell').textContent=original,2400);}
  });
  window.addEventListener('crystal-language-change',render);
- return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible)render();},refresh:render};
+ return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible)render();else stopChain();},refresh:render};
 }

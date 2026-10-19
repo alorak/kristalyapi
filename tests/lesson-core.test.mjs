@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {braggTwoTheta,braggInterference,twoWaveBands,fermiDirac,KB_EV_K} from '../lesson-core.js';
+import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
+ tightBindingBandEnergy,fermiDirac,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -40,6 +41,38 @@ test('E(k) scales with effective mass and period for a free electron',()=>{
  const reference=twoWaveBands(0.5,4,1,0).lower;
  assert.ok(Math.abs(twoWaveBands(0.5,4,2,0).lower-reference/2)<1e-12);
  assert.ok(Math.abs(twoWaveBands(0.5,8,1,0).lower-reference/4)<1e-12);
+});
+
+test('open tight-binding chain splits one level into exactly N eigenlevels',()=>{
+ const t=0.8;
+ assert.deepEqual(tightBindingChainLevels(1,t),[0]);
+ const two=tightBindingChainLevels(2,t);
+ assert.ok(Math.abs(two[0]+t)<1e-12&&Math.abs(two[1]-t)<1e-12);
+ const three=tightBindingChainLevels(3,t);
+ assert.ok(Math.abs(three[0]+Math.SQRT2*t)<1e-12);
+ assert.ok(Math.abs(three[1])<1e-12&&Math.abs(three[2]-Math.SQRT2*t)<1e-12);
+ for(const N of [1,2,3,8,64]){
+  const levels=tightBindingChainLevels(N,t);
+  assert.equal(levels.length,N);
+  assert.ok(levels.every((e,i)=>Number.isFinite(e)&&(i===0||e>=levels[i-1])));
+  assert.ok(levels.every(e=>Math.abs(e)<2*t+1e-12));
+ }
+ assert.deepEqual(tightBindingChainLevels(3,0),[0,0,0]);
+ assert.throws(()=>tightBindingChainLevels(0,t));
+ assert.throws(()=>tightBindingChainLevels(129,t));
+ assert.throws(()=>tightBindingChainLevels(8,-1));
+});
+
+test('infinite periodic tight-binding band has 4t width and is k-even',()=>{
+ const t=0.75;
+ assert.ok(Math.abs(tightBindingBandEnergy(0,t)+2*t)<1e-12);
+ assert.ok(Math.abs(tightBindingBandEnergy(1,t)-2*t)<1e-12);
+ assert.ok(Math.abs(tightBindingBandEnergy(-1,t)-2*t)<1e-12);
+ assert.equal(tightBindingBandEnergy(0.4,t),tightBindingBandEnergy(-0.4,t));
+ const finite=tightBindingChainLevels(64,t);
+ assert.ok(finite.at(-1)-finite[0]<4*t);
+ assert.ok(finite.at(-1)-finite[0]>3.99*t,'open chain approaches periodic band width');
+ assert.throws(()=>tightBindingBandEnergy(1.1,t));
 });
 
 test('Fermi Dirac at EF is 1/2, satisfies particle-hole symmetry and temperature limits',()=>{
