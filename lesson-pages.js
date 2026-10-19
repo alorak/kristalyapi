@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,fermiDirac,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,fermiDirac,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -161,6 +161,65 @@ function tightBindingDiagram(svg,count,hopping,period){
  txt(486,168,`π/a = ${number(Math.PI/period,3)} Å⁻¹`,'#7e5e34',12,600);
 }
 
+/* A/B orbitals per cell: two Bloch eigenvalues at every wave vector. The
+ * highlighted energy interval is globally forbidden in this ideal model. */
+function twoOrbitalDiagram(svg,intra,inter,delta,period){
+ const english=window.CrystalI18n?.language==='en';
+ const tr=(turkish,en)=>english?en:turkish;
+ clearChart(svg,'Two-orbital tight-binding valence/conduction bands and gap');
+ const txt=(x,y,value,color='#536b84',size=13,weight=600,anchor='start')=>svgNode(svg,'text',
+  {x,y,fill:color,'font-size':size,'font-weight':weight,'text-anchor':anchor},value);
+ const line=(x1,y1,x2,y2,color='#d6e3ee',width=1,extra={})=>svgNode(svg,'line',
+  {x1,y1,x2,y2,stroke:color,'stroke-width':width,...extra});
+ txt(24,28,tr('Bir hücre: A ve B orbitalleri','One cell: A and B orbitals'),'#284a6b',16,700);
+ const xStart=156,step=54,yAtoms=72;
+ for(let i=0;i<11;i++){
+  const internal=i%2===0;
+  line(xStart+i*step,yAtoms,xStart+(i+1)*step,yAtoms,internal?'#2563a9':'#cc8752',
+   2.2+2.5*(internal?intra:inter)/2,{'data-dual-bond':internal?'intra':'inter'});
+ }
+ for(let i=0;i<12;i++){
+  svgNode(svg,'circle',{cx:xStart+i*step,cy:yAtoms,r:10.5,fill:i%2?'#f3aa65':'#6daadc',
+   stroke:'#fff','stroke-width':1.8,'data-dual-atom':i});
+ }
+ txt(xStart,yAtoms+27,'A','#23689d',11,700,'middle');
+ txt(xStart+step,yAtoms+27,'B','#bd6a31',11,700,'middle');
+ txt(xStart+step/2,yAtoms-17,'t₁','#2563a9',12,700,'middle');
+ txt(xStart+step*1.5,yAtoms-17,'t₂','#bd6a31',12,700,'middle');
+ line(36,116,860,116,'#dae5f0');
+ txt(25,137,tr('İki Bloch bandı · periyodik sonsuz A/B zinciri','Two Bloch bands · infinite periodic A/B chain'),
+  '#284a6b',15,700);
+ const x0=96,x1=838,ymid=258;
+ const ymax=Math.max(.35,Math.hypot(delta/2,intra+inter))*1.2;
+ const X=k=>x0+(k+1)/2*(x1-x0),Y=e=>ymid-90*e/ymax;
+ const gap=twoOrbitalBandGap(intra,inter,delta),halfGap=gap/2;
+ // Neither Bloch band has states in this energy interval (in this model).
+ if(gap>1e-9)svgNode(svg,'rect',{x:x0,y:Y(halfGap),width:x1-x0,height:Y(-halfGap)-Y(halfGap),
+  fill:'#c7ead6','fill-opacity':0.5,'data-gap-region':'true'});
+ for(const k of [-1,0,1])line(X(k),153,X(k),352,'#e1eaf3',1,{'stroke-dasharray':k===0?'5 4':'3 6'});
+ line(x0,ymid,x1,ymid,'#c3d2e2',1,{'stroke-dasharray':'4 5'});
+ const samples=Array.from({length:241},(_,i)=>{
+  const k=-1+2*i/240;return {k,...twoOrbitalBands(k,intra,inter,delta)};
+ });
+ svgNode(svg,'path',{d:linePath(samples,p=>[X(p.k),Y(p.valence)]),fill:'none',
+  stroke:'#2675b7','stroke-width':3.3,'data-dual-band':'valence'});
+ svgNode(svg,'path',{d:linePath(samples,p=>[X(p.k),Y(p.conduction)]),fill:'none',
+  stroke:'#e58c42','stroke-width':3.3,'data-dual-band':'conduction'});
+ txt(117,Y(samples[120].conduction)-11,tr('İletim bandı','Conduction band'),'#b96526',13,700);
+ txt(117,Y(samples[120].valence)+19,tr('Değerlik bandı','Valence band'),'#225e96',13,700);
+ const gx=x1-16,g1=Y(halfGap),g2=Y(-halfGap);
+ if(gap>1e-9){
+  line(gx,g1,gx,g2,'#24946c',2.5);
+  line(gx-7,g1,gx+7,g1,'#24946c',2);
+  line(gx-7,g2,gx+7,g2,'#24946c',2);
+ }
+ txt(x1-22,ymid-6,gap<1e-9?tr('E₍g₎ = 0 · temas','E₍g₎ = 0 · touching'):
+  `E₍g₎ = ${number(gap,2)} eV`,'#177d59',13,700,'end');
+ for(const [k,label] of [[-1,'−π/a'],[0,'0'],[1,'π/a']])
+  txt(X(k),370,label,'#576f88',12,600,'middle');
+ txt(25,164,`π/a = ${number(Math.PI/period,3)} Å⁻¹`,'#6e8196',12,600);
+}
+
 export function initPowderLesson(host){
  let visible=false,selectedIndex=0,lastPattern=null,planeViewer=null,planeMetrics=null;
  let selectedWave=null,thetaOverride=null,waveDrawing=null,waveFrame=0,wavePlaying=false,lastWavePaint=0;
@@ -315,6 +374,10 @@ export function initSemiconductorLesson(host){
  let visible=false;
  const chart=$('scBandChart'),fermiChart=$('scFermiChart');
  const chainChart=$('scChainChart'),chainStages=[1,2,4,8,16,32,64];
+ const dualChart=$('scDualChart');
+ const dualPresets={metal:[1,1,0],dimer:[1.2,.8,0],ionic:[1,1,1.2]};
+ const dualButtons={metal:'scDualMetal',dimer:'scDualDimer',ionic:'scDualIonic'};
+ let dualPreset='dimer';
  let chainTimer=0,chainRunning=false;
  function stopChain(){
   clearInterval(chainTimer);chainTimer=0;chainRunning=false;
@@ -350,6 +413,30 @@ export function initSemiconductorLesson(host){
   };
   next();chainTimer=setInterval(next,700);
  });
+ function renderDual(){
+  if(!visible)return;
+  const intra=Number($('scDualIntra').value),inter=Number($('scDualInter').value);
+  const delta=Number($('scDualDelta').value),period=Number($('scPeriod').value);
+  const gap=twoOrbitalBandGap(intra,inter,delta);
+  $('scDualIntraOutput').textContent=number(intra,2)+' eV';
+  $('scDualInterOutput').textContent=number(inter,2)+' eV';
+  $('scDualDeltaOutput').textContent=number(delta,2)+' eV';
+  $('scDualSummary').replaceChildren(
+   metric('Yasak bant aralığı Eg',number(gap,3)+' eV'),
+   metric('Değerlik bandı üstü Ev',number(-gap/2,3)+' eV'),
+   metric('İletim bandı altı Ec',number(gap/2,3)+' eV'),
+   metric('BZ sınırı |k|',number(Math.PI/period,3)+' Å⁻¹'));
+  for(const [key,id] of Object.entries(dualButtons))
+   $(id).setAttribute('aria-pressed',String(dualPreset===key));
+  twoOrbitalDiagram(dualChart,intra,inter,delta,period);
+ }
+ for(const id of ['scDualIntra','scDualInter','scDualDelta'])
+  $(id).addEventListener('input',()=>{dualPreset=null;renderDual();});
+ for(const [key,id] of Object.entries(dualButtons))$(id).addEventListener('click',()=>{
+  dualPreset=key;
+  ['scDualIntra','scDualInter','scDualDelta'].forEach((input,i)=>$(input).value=String(dualPresets[key][i]));
+  renderDual();
+ });
  const params=[
   ['scPeriod','scPeriodOutput',2,' Å'],['scPotential','scPotentialOutput',2,' eV'],
   ['scMass','scMassOutput',2,''],['scTemperature','scTemperatureOutput',0,' K'],
@@ -360,6 +447,7 @@ export function initSemiconductorLesson(host){
   const structure=host.structure();
   setSource('scSourceName','scSourceDetail',structure);
   renderChain();
+  renderDual();
   for(const [input,output,digits,unit] of params)$(output).textContent=number($(input).value,digits)+unit;
   const period=Number($('scPeriod').value),potential=Number($('scPotential').value);
   const mass=Number($('scMass').value);

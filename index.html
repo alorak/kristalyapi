@@ -999,6 +999,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel lesson-dual-lab" aria-label="İki orbitalden değerlik ve iletim bantları laboratuvarı">
+   <div class="lesson-panel-head"><h3>İki orbital → değerlik ve iletim bantları</h3><span class="lesson-pill">2. aşama · A/B birim hücresi</span></div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <p class="lesson-crystal-help">Bir hücrede A ve B olmak üzere iki orbital bulunur. Hücre içi ve hücreler arası bağlaşımı veya A/B orbital enerji farkını değiştirerek bant aralığını açıp kapatın.</p>
+     <div class="lesson-dual-presets" role="group" aria-label="İki orbital örnek durumları">
+      <button type="button" class="lesson-action" id="scDualMetal">Bantlar temas etsin</button>
+      <button type="button" class="lesson-action" id="scDualDimer">Bağlaşım farkı</button>
+      <button type="button" class="lesson-action" id="scDualIonic">Orbital enerji farkı</button>
+     </div>
+     <label class="lesson-field"><span>Hücre içi bağlaşım t₁ <output id="scDualIntraOutput">—</output></span><input id="scDualIntra" type="range" min="0" max="2" step="0.05" value="1.2"></label>
+     <label class="lesson-field"><span>Hücreler arası bağlaşım t₂ <output id="scDualInterOutput">—</output></span><input id="scDualInter" type="range" min="0" max="2" step="0.05" value="0.8"></label>
+     <label class="lesson-field"><span>A/B orbital enerji farkı Δ <output id="scDualDeltaOutput">—</output></span><input id="scDualDelta" type="range" min="0" max="2.5" step="0.05" value="0"></label>
+     <div id="scDualSummary" class="lesson-chain-readout" aria-live="polite"></div>
+     <div class="lesson-explain"><strong>Öğretici modelin sınırı</strong> Sonsuz periyodik 1B zincirde, hücre başına iki orbitalden iki bant çıkar. Alt bant iki elektron/hücre (spin dahil) ile doluysa değerlik, üstü boşsa iletim bandı olarak yorumlanır. E_g yalnızca bu modelin aralığıdır; gerçek Si/GaAs değeri veya aşağıdaki bağımsız Fermi örneğinin E_g parametresi değildir.</div>
+    </div>
+    <div class="lesson-chain-figure">
+     <svg id="scDualChart" viewBox="0 0 900 390" role="img" aria-label="A/B orbital zinciri ile değerlik ve iletim bantlarının k uzayındaki ayrılması"></svg>
+     <p class="lesson-crystal-help">H(k): köşegen enerjiler ±Δ/2, köşegen dışı etkileşim −(t₁ + t₂e⁻ⁱᵏᵃ). E±(k) = ±√[(Δ/2)² + t₁² + t₂² + 2t₁t₂ cos(ka)]. t₁,t₂ ≥ 0 için Eg = √[Δ² + 4(t₁ − t₂)²]. Burada a iki-orbitalli A/B hücresinin periyodudur; sayısal değeri alttaki a sürgüsüyle paylaşılır.</p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>

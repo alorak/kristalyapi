@@ -1211,6 +1211,14 @@ try{
  await page.locator('#scChainAtoms').evaluate(el=>{el.value='32';el.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),32,
   'N atoms must create exactly N levels in the finite tight-binding chain');
+ assert.equal(await page.locator('#scDualChart [data-dual-band]').count(),2,
+  'two-orbital model must render distinct valence and conduction Bloch bands');
+ assert.match(await page.locator('#scDualSummary').textContent(),/0[.,]800 eV/,
+  'bond dimerization must open the expected two-orbital gap');
+ await page.locator('#scDualMetal').click();
+ assert.equal(await page.locator('#scDualChart [data-gap-region]').count(),0,
+  'when both hoppings and orbital energies agree, the bands touch');
+ await page.locator('#scDualDimer').click();
  const gapBefore=await page.locator('#scBandSummary').textContent();
  await page.locator('#scPotential').evaluate(el=>{el.value='0.9';el.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.notEqual(await page.locator('#scBandSummary').textContent(),gapBefore,'potential changes band splitting');

@@ -53,6 +53,25 @@ export function tightBindingBandEnergy(kReduced,hoppingEV,centerEV=0){
  return centerEV-2*hoppingEV*Math.cos(Math.PI*kReduced);
 }
 
+/* Two orbitals A/B per primitive cell; a minimal Rice–Mele / SSH-type 1D
+   Bloch Hamiltonian. Its off-diagonal hopping is -(tIn+tOut exp(-ika));
+   diagonal on-site energies are +/- delta/2 about centerEV.
+   For nonnegative hoppings the direct fundamental gap lies at |ka|=pi:
+   Eg = sqrt(delta^2 + 4(tIn-tOut)^2). Spin and interactions are omitted. */
+export function twoOrbitalBands(kReduced,intraEV,interEV,onsiteDeltaEV=0,centerEV=0){
+ if(!Number.isFinite(kReduced)||Math.abs(kReduced)>1||
+    ![intraEV,interEV,onsiteDeltaEV,centerEV].every(Number.isFinite)||
+    intraEV<0||interEV<0)throw Error('Geçersiz iki-orbital bant parametreleri.');
+ const ka=Math.PI*kReduced;
+ const re=intraEV+interEV*Math.cos(ka),im=interEV*Math.sin(ka);
+ const halfSplit=Math.hypot(onsiteDeltaEV/2,re,im);
+ return {valence:centerEV-halfSplit,conduction:centerEV+halfSplit};
+}
+export function twoOrbitalBandGap(intraEV,interEV,onsiteDeltaEV=0){
+ const edge=twoOrbitalBands(1,intraEV,interEV,onsiteDeltaEV);
+ return edge.conduction-edge.valence;
+}
+
 export function fermiDirac(energyEV,fermiEV,temperatureK){
  if(![energyEV,fermiEV,temperatureK].every(Number.isFinite)||temperatureK<=0)
   throw Error('Fermi dağılımı: sonlu enerji ve pozitif sıcaklık gerekli.');

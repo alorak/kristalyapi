@@ -38,7 +38,14 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
   tight-binding energies of an open N-atom chain (N = 1–64) alongside the
   related infinite periodic chain's one Bloch band. Its hopping strength
   is independent of the period; a one-orbital band does not generate a
-  real semiconductor valence–conduction gap.
+  real semiconductor valence–conduction gap. A follow-on **two-orbital A/B
+  unit-cell lab** shows separate valence and conduction branches. Uniform
+  hoppings with equal on-site energies touch at the Brillouin-zone edge;
+  unequal intra-/inter-cell hoppings or an A/B on-site detuning open the
+  analytically checked gap `Eg = sqrt(delta² + 4(t1 − t2)²)`. Three presets,
+  interactive sliders and a highlighted forbidden region make this visible.
+  This minimal 1D model is not a computed Si/GaAs gap; the Fermi example's
+  independent `Eg` parameter is intentionally unchanged.
 - Both pages are included in the offline shell. See [todo.md](todo.md) for
   scientific validation, advanced lessons and follow-up tasks.
 
