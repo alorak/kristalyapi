@@ -16,6 +16,21 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 4. Sağdaki simgelerden ölçüm, BVS, XRD, Miller düzlemleri veya diğer analizleri açın.
 5. Üstteki **Kaydet** düğmesiyle proje JSON'u, CIF, POSCAR, XYZ, PDB, **vektörel SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF veya **1×–4× yüksek çözünürlüklü PNG** dışa aktarın.
 
+### Yeni ders laboratuvarları (MVP)
+
+- **Toz Kırınımı** (`#toz-kirinimi`): Üst menüden açılır; etkin yapının IT92
+  modelinden Bragg yansıma/profilini hesaplar. λ, 2θ üst sınırı, sabit pseudo-Voigt
+  genişliği ve LP seçimi değişir. (hkl) seçimi, Bragg açısı ve d aralığı görünür.
+  Bu gerçek cihaz profil ince ayarı veya Rietveld analizi değildir.
+- **Yarıiletken Fiziği** (`#yariiletken-fizigi`): Üst menüden açılır; iki
+  düzlem dalgalı **1B yaklaşık serbest elektron** bant modeli ile ayrı
+  **ideal Fermi–Dirac** doluluk modelini etkileşimli gösterir. Etkin yapının
+  `a` değeri yalnızca öğretici 1B model periyoduna aktarılabilir. Eğriler
+  gerçek Si/GaAs elektronik bantları ya da DFT sonucu değildir.
+- Her iki sayfa çevrimdışı uygulama kabuğuna dahildir. Bilimsel geliştirme
+  sırası, ileri ders deneyleri, cihaz/model sınırlamaları ve kabul testleri
+  için [todo.md](todo.md) dosyasını inceleyin.
+
 **Dil:** Uygulama ilk açılışta **İngilizce (EN)** gelir; üst sağdaki **EN / TR** düğmeleriyle Türkçeye geçebilirsiniz. Seçim bu tarayıcıda saklanır. Arayüz çevirileri [translations.js](translations.js) dosyasında yerel olarak tutulur; uzak çeviri servisi kullanılmaz.
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.

@@ -16,6 +16,21 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 4. Open measurement, bond-valence (BVS), diffraction (XRD), Miller-plane, and other analyses using the right-side tool icons.
 5. Use **Save** to export a project JSON, CIF, POSCAR, XYZ, PDB, **vector SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF, or **1×–4× high-resolution PNG**.
 
+### New teaching laboratory MVPs
+
+- **Powder Diffraction** (`#toz-kirinimi`): a standalone page sharing the
+  active structure's tested IT92 powder pattern/profile engine. Change the
+  wavelength, 2θ range, empirical FWHM and Lorentz–polarization correction;
+  inspect labelled reflections, d-spacings and Bragg angles. This is neither
+  calibrated instrumental profile fitting nor Rietveld refinement.
+- **Semiconductor Physics** (`#yariiletken-fizigi`): a standalone interactive
+  **1D two-plane-wave nearly-free-electron** band demonstration and a separate
+  **ideal Fermi–Dirac** occupation model. The current structure's cell parameter
+  can be used only as the educational model period. These are **not** real
+  electronic bands of silicon or GaAs and are not first-principles calculations.
+- Both pages are included in the offline shell. See [todo.md](todo.md) for
+  scientific validation, advanced lessons and follow-up tasks.
+
 **Languages:** The application starts in **English (EN)** by default. Switch to Turkish with the **EN / TR** controls in the upper-right corner. The preference is stored in your browser. Translations are bundled locally in [translations.js](translations.js); no remote translation service is used.
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.

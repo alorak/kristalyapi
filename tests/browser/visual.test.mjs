@@ -1141,6 +1141,35 @@ try{
  await page.locator('[data-open-tab="examples"]').click();
  await page.locator('#openList .open-item').first().click();
  await page.waitForFunction(()=>document.getElementById('openModal').hidden);
+ // Both new course MVPs must be reachable through the top navigation and
+ // calculate from the active crystal without fetching remote resources.
+ await page.locator('#powderNav').click();
+ await page.waitForFunction(()=>!document.getElementById('powderPage').hidden&&
+  document.querySelectorAll('#pwPeaks button').length>2);
+ assert.equal(await page.locator('#app').evaluate(el=>getComputedStyle(el).display),'none',
+  'editor must not occupy space behind the powder lesson');
+ assert.match(await page.locator('#pwSourceDetail').textContent(),/8 atom/);
+ assert.match(await page.locator('#pwPeaks').textContent(),/28[.,]44°/,'Si {111} family may be indexed with negative signs');
+ assert.ok(await page.locator('#pwChart path').count()>=1,'calculated powder profile must be drawn');
+ const powderBefore=await page.locator('#pwSummary').textContent();
+ await page.locator('#pwLambda').evaluate(el=>{el.value='1.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.notEqual(await page.locator('#pwSummary').textContent(),powderBefore,'wavelength slider recalculates Bragg peaks');
+ await page.locator('#pwPeaks button').first().click();
+ assert.match(await page.locator('#pwBragg').textContent(),/Bragg/);
+ await page.screenshot({path:path.join(artifacts,'lesson-01-powder-mvp.png')});
+
+ await page.locator('#semiconductorNav').click();
+ await page.waitForFunction(()=>!document.getElementById('semiconductorPage').hidden&&
+  document.querySelectorAll('#scBandChart path').length>=2);
+ assert.equal(await page.locator('#app').evaluate(el=>getComputedStyle(el).display),'none',
+  'editor must not occupy space behind the semiconductor lesson');
+ assert.match(await page.locator('#scSourceDetail').textContent(),/8 atom/);
+ const gapBefore=await page.locator('#scBandSummary').textContent();
+ await page.locator('#scPotential').evaluate(el=>{el.value='0.9';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.notEqual(await page.locator('#scBandSummary').textContent(),gapBefore,'potential changes band splitting');
+ assert.match(await page.locator('#scFermiSummary').textContent(),/0[.,]500/,'f(EF)=1/2');
+ await page.screenshot({path:path.join(artifacts,'lesson-02-semiconductor-mvp.png')});
+
  await page.locator('#reciprocalNav').click();
  await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&document.getElementById('app').hidden);
  const reciprocalPalette=await page.evaluate(()=>{
