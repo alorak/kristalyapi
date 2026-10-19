@@ -35,6 +35,24 @@ export function twoWaveBands(kReduced,periodA,massRatio,potentialEV){
  return {lower:middle-split,upper:middle+split};
 }
 
+/* One orbital per atom, nearest-neighbour hopping -t in a finite OPEN chain.
+   Exactly N eigenlevels, ordered from low to high. In the infinite PERIODIC
+   limit the related Bloch dispersion is E(k) = eps0 - 2t cos(ka).
+   Neither model by itself produces distinct valence/conduction bands or a gap. */
+export function tightBindingChainLevels(atomCount,hoppingEV,centerEV=0){
+ if(!Number.isInteger(atomCount)||atomCount<1||atomCount>128||
+    !Number.isFinite(hoppingEV)||hoppingEV<0||!Number.isFinite(centerEV))
+  throw Error('Atom zinciri: N = 1–128 ve sonlu |t| ≥ 0 gerekli.');
+ if(atomCount===1||hoppingEV===0)return Array(atomCount).fill(centerEV);
+ return Array.from({length:atomCount},(_,m)=>
+  centerEV-2*hoppingEV*Math.cos(Math.PI*(m+1)/(atomCount+1)));
+}
+export function tightBindingBandEnergy(kReduced,hoppingEV,centerEV=0){
+ if(!Number.isFinite(kReduced)||Math.abs(kReduced)>1||!Number.isFinite(hoppingEV)||
+    hoppingEV<0||!Number.isFinite(centerEV))throw Error('Geçersiz Bloch bant parametresi.');
+ return centerEV-2*hoppingEV*Math.cos(Math.PI*kReduced);
+}
+
 export function fermiDirac(energyEV,fermiEV,temperatureK){
  if(![energyEV,fermiEV,temperatureK].every(Number.isFinite)||temperatureK<=0)
   throw Error('Fermi dağılımı: sonlu enerji ve pozitif sıcaklık gerekli.');

@@ -71,8 +71,13 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
 
 ### E3 — Atomdan banda gerçek ders akışı
 
-- [ ] Atomik ayrık seviyeler → iki atom → N atom zinciri → bant animasyonu,
-  enerjilerin sayısı ve düzey yoğunluğu açık tutulsun.
+- [x] Tek orbitalin seviyesi → iki atomun ayrılması → N = 1…64 sonlu açık
+  zincirin **tam N özdeğeri** → ayrı, sonsuz periyodik zincirin Bloch bandı.
+  En yakın komşu tight-binding modeli, |t| sürgüsü ve N canlandırması;
+  atom sayısı/enerji genişliği ile açık/periyodik sınır ayrımını etiketle.
+- [ ] Bu tek-orbital bandının üstüne ikinci orbital/birim hücre veya
+  iki-sublatris modeli ekleyerek gerçek **yasaklı bant aralığının oluşumunu**
+  gösterecek ayrı, testli ders üret (mevcut tek bantta gap yoktur).
 - [ ] Bloch teoremi, periyodik potansiyel, birinci Brillouin bölgesi; mevcut
   karşı örgü/BZ sahnesine ders bağlantısı.
 - [ ] Yaklaşık serbest elektron (1B Kronig–Penney / iki dalga) ve tight-binding

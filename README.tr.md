@@ -33,7 +33,11 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
   düzlem dalgalı **1B yaklaşık serbest elektron** bant modeli ile ayrı
   **ideal Fermi–Dirac** doluluk modelini etkileşimli gösterir. Etkin yapının
   `a` değeri yalnızca öğretici 1B model periyoduna aktarılabilir. Eğriler
-  gerçek Si/GaAs elektronik bantları ya da DFT sonucu değildir.
+  gerçek Si/GaAs elektronik bantları ya da DFT sonucu değildir. Ayrı
+  **Atomdan Banda** deneyinde N = 1–64 açık zincirin tam N tight-binding
+  enerji seviyesi ve sonsuz periyodik zincirin tek Bloch bandı birlikte
+  çizilir; |t| ile enerji aralığı, N ile seviye sıklığı değişir. Tek
+  orbital modeli kendi başına değerlik–iletim bandı aralığı üretmez.
 - Her iki sayfa çevrimdışı uygulama kabuğuna dahildir. Bilimsel geliştirme
   sırası, ileri ders deneyleri, cihaz/model sınırlamaları ve kabul testleri
   için [todo.md](todo.md) dosyasını inceleyin.

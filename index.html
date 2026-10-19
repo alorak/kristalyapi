@@ -983,6 +983,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <a class="lib-cod-link" href="#kristal">← Kristale dön</a>
   </div>
   <div class="lesson-source" aria-live="polite"><span>Etkin kristal</span><strong id="scSourceName">—</strong><span id="scSourceDetail">—</span></div>
+  <section class="lesson-panel lesson-chain-lab" aria-label="Atomdan enerji bandına geçiş laboratuvarı">
+   <div class="lesson-panel-head"><h3>Atomdan enerji bandına · N atomluk zincir</h3><span class="lesson-pill">1B · tek orbital · tight-binding</span></div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <label class="lesson-field"><span>Atom sayısı N <output id="scChainAtomsOutput">8</output></span><input id="scChainAtoms" type="range" min="1" max="64" step="1" value="8"></label>
+     <label class="lesson-field"><span>Komşu bağlaşımı |t| <output id="scChainHoppingOutput">—</output></span><input id="scChainHopping" type="range" min="0" max="1.5" step="0.05" value="0.8"></label>
+     <button type="button" id="scChainPlay" class="lesson-action lesson-chain-play" aria-pressed="false">1 atomdan 64 atoma canlandır</button>
+     <div id="scChainSummary" class="lesson-chain-readout" aria-live="polite"></div>
+     <div class="lesson-explain"><strong>Fiziksel sınır</strong>N atomlu açık zincirin tek-orbital ve en yakın komşu modeli gösterilir. Her atom bir orbital, N atom N enerji seviyesi sağlar (spin sayılmaz). Sağdaki sürekli E(k) ayrı olarak sonsuz periyodik zincirin sınırıdır. Bu tek bant modeli gerçek Si/GaAs bantlarını veya değerlik–iletim aralığını hesaplamaz.</div>
+    </div>
+    <div class="lesson-chain-figure">
+     <svg id="scChainChart" viewBox="0 0 900 390" role="img" aria-label="Atom zincirinin N ayrık enerji seviyesi ve sonsuz periyodik zincirin tek bandı"></svg>
+     <p class="lesson-crystal-help">Açık zincir: Eₘ = ε₀ − 2|t| cos(mπ/(N+1)). Periyodik sonsuz zincir: E(k) = ε₀ − 2|t| cos(ka). Zincir periyodu a, aşağıdaki 1B potansiyel bölümündeki sürgüyle paylaşılır.</p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>
