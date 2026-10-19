@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {braggTwoTheta,twoWaveBands,fermiDirac,KB_EV_K} from '../lesson-core.js';
+import {braggTwoTheta,braggInterference,twoWaveBands,fermiDirac,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -8,6 +8,21 @@ test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>
  assert.ok(Math.abs(angle-28.44)<0.03,angle);
  assert.equal(braggTwoTheta(1,3),null,'unreachable Bragg condition');
  assert.throws(()=>braggTwoTheta(0,1));
+});
+
+test('two-plane Bragg phase has maxima at integral path difference and cancellation at half-order',()=>{
+ const d=5.431/Math.sqrt(3),lambda=1.5406;
+ const theta=braggTwoTheta(d,lambda)/2;
+ const peak=braggInterference(d,lambda,theta);
+ assert.ok(Math.abs(peak.pathDifference-lambda)<1e-12);
+ assert.ok(Math.abs(peak.phaseRadians-2*Math.PI)<1e-12);
+ assert.ok(Math.abs(peak.relativeIntensity-1)<1e-12);
+ const destructive=braggInterference(d,lambda,Math.asin(.5*lambda/(2*d))*180/Math.PI);
+ assert.ok(destructive.relativeIntensity<1e-12,'half-wavelength path difference cancels');
+ const thirdHalf=braggInterference(d,lambda,Math.asin(1.5*lambda/(2*d))*180/Math.PI);
+ assert.ok(thirdHalf.relativeIntensity<1e-12,'1.5 wavelength path difference cancels');
+ assert.throws(()=>braggInterference(0,lambda,theta));
+ assert.throws(()=>braggInterference(d,lambda,90));
 });
 
 test('two-wave Hamiltonian opens exactly 2|VG| at the Brillouin-zone edge',()=>{

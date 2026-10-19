@@ -1173,8 +1173,29 @@ try{
  assert.notEqual(await page.locator('#pwSummary').textContent(),powderBefore,'wavelength slider recalculates Bragg peaks');
  await page.locator('#pwPeaks button').first().click();
  assert.match(await page.locator('#pwBragg').textContent(),/Bragg/);
+ await page.waitForFunction(()=>document.querySelectorAll('#pwWaveSvg path').length===3);
+ const constructive=await page.locator('#pwPhaseReadout .lesson-metric').last().textContent();
+ assert.match(constructive,/100[.,]0%/,'two coherent waves must constructively interfere at Bragg angle');
+ const raysAtBragg=await page.locator('#pwCrystal3d canvas').evaluate(canvas=>canvas.toDataURL());
+ await page.locator('#pwTheta').evaluate(el=>{el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ const offBragg=await page.locator('#pwPhaseReadout .lesson-metric').last().textContent();
+ assert.notEqual(offBragg,constructive,'glancing angle must change the ideal interference');
+ assert.notEqual(await page.locator('#pwCrystal3d canvas').evaluate(canvas=>canvas.toDataURL()),raysAtBragg,
+  'incident and outgoing 3D beam arrows must follow glancing angle');
+ await page.locator('#pwMatchBragg').click();
+ assert.equal(await page.locator('#pwPhaseReadout .lesson-metric').last().textContent(),constructive,
+  'Bragg reset returns to the constructive maximum');
+ const waveBefore=await page.locator('#pwWaveSvg path').last().getAttribute('d');
+ await page.locator('#pwWavePlay').click();
+ await page.waitForTimeout(180);
+ assert.notEqual(await page.locator('#pwWaveSvg path').last().getAttribute('d'),waveBefore,
+  'animation must visibly advance wave phase');
+ await page.locator('#pwWavePlay').click();
+ assert.equal(await page.locator('#pwWavePlay').getAttribute('aria-pressed'),'false');
  await page.screenshot({path:path.join(artifacts,'lesson-01-powder-mvp.png')});
  await page.screenshot({path:path.join(artifacts,'lesson-03-powder-miller-3d.png')});
+ await page.locator('#pwWaveSvg').scrollIntoViewIfNeeded();
+ await page.screenshot({path:path.join(artifacts,'lesson-04-bragg-interference.png')});
 
  await page.locator('#semiconductorNav').click();
  await page.waitForFunction(()=>!document.getElementById('semiconductorPage').hidden&&

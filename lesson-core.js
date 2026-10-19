@@ -8,6 +8,18 @@ export function braggTwoTheta(dAngstrom,wavelengthAngstrom){
  return argument>1?null:2*Math.asin(argument)*180/Math.PI;
 }
 
+/* Two equally weighted coherent waves scattered at successive lattice planes.
+   This is a teaching illustration of geometric path difference, NOT the
+   structure factor, powder-profile intensity or a dynamical XRD solver. */
+export function braggInterference(dAngstrom,wavelengthAngstrom,thetaDeg){
+ if(!(dAngstrom>0&&wavelengthAngstrom>0)||!Number.isFinite(thetaDeg)||thetaDeg<0||thetaDeg>=90)
+  throw Error('Bragg girişimi: d, λ pozitif ve 0 ≤ θ < 90° olmalı.');
+ const pathDifference=2*dAngstrom*Math.sin(thetaDeg*Math.PI/180);
+ const order=pathDifference/wavelengthAngstrom;
+ const phaseRadians=2*Math.PI*order;
+ return {pathDifference,order,phaseRadians,relativeIntensity:Math.cos(phaseRadians/2)**2};
+}
+
 /* Two-plane-wave nearly-free-electron Hamiltonian folded into the 1D BZ.
    The second branch represents the nearest reciprocal vector at either edge.
    The model is most informative near |k|=pi/a, not a full material band solver. */

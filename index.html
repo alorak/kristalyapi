@@ -953,6 +953,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="lesson-explain">Pikin konumu düzlemler arası mesafe ve ışığın dalga boyuyla belirlenir. Şiddeti ise atomların yapı faktörü katkıları belirler. Daha fazla karşı-uzay gösterimi için <a href="#karsi-uzay">Karşı Uzay</a> sayfasını açın.</div>
    </section>
   </div>
+  <section class="lesson-panel lesson-bragg-lab" aria-label="Bragg ışınları ve faz girişimi laboratuvarı">
+   <div class="lesson-panel-head"><h3>Bragg ışınları ve faz girişimi</h3><span class="lesson-pill">İdeal iki-düzlem öğretici modeli</span></div>
+   <div class="lesson-bragg-lab-grid">
+    <div class="lesson-bragg-controls">
+     <label class="lesson-field"><span>Yüzeyle geliş açısı θ <output id="pwThetaOutput">—</output></span>
+      <input id="pwTheta" type="range" min="0" max="89.9" step="0.1" value="15" aria-label="Yüzeyle geliş açısı"></label>
+     <div class="lesson-bragg-actions">
+      <button type="button" class="lesson-action" id="pwMatchBragg">Bragg açısına getir</button>
+      <button type="button" class="lesson-action" id="pwWavePlay" aria-pressed="false">Animasyonu oynat</button>
+     </div>
+     <div id="pwPhaseReadout" class="lesson-bragg-readout" aria-live="polite"></div>
+     <div class="lesson-explain"><strong>Bu grafik neyi gösterir?</strong>Ardışık iki düzlemden saçılan eşit genlikli dalgaların faz farkı ve ideal girişimi. Bu, hesaplanan toz pik şiddeti veya gerçek cihaz sinyali değildir. Mavi/turuncu 3B oklar tek bir kristalit için şematik gelen/saçılan ışın yönleridir.</div>
+    </div>
+    <div class="lesson-bragg-wave">
+     <svg id="pwWaveSvg" viewBox="0 0 790 370" role="img" aria-label="Bragg ışın geometrisi ve iki dalganın girişim animasyonu"></svg>
+     <p class="lesson-crystal-help">2d sin θ = nλ olduğunda dalgalar aynı fazda buluşur. Açıdan kaynaklanan yol farkı için Δφ = 2π · (2d sin θ / λ).</p>
+    </div>
+   </div>
+  </section>
  </div>
 </main>
 

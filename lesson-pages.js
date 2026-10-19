@@ -1,4 +1,4 @@
-import {braggTwoTheta,twoWaveBands,fermiDirac,KB_EV_K} from './lesson-core.js';
+import {braggTwoTheta,braggInterference,twoWaveBands,fermiDirac,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -55,9 +55,98 @@ function metric(label,value){
  return item;
 }
 
+/* Bragg's two-plane path difference is shown next to a two-wave interference
+ * trace. Unlike the computed powder profile this never claims real intensity. */
+function braggWaveDiagram(svg,theta,values){
+ const english=window.CrystalI18n?.language==='en';
+ clearChart(svg,'Two coherent waves from consecutive lattice planes');
+ const title=(tr,en)=>english?en:tr;
+ const line=(x1,y1,x2,y2,color,width=2,extra={})=>svgNode(svg,'line',
+  {x1,y1,x2,y2,stroke:color,'stroke-width':width,'stroke-linecap':'round',...extra});
+ const label=(x,y,value,color='#526b83',size=13)=>svgNode(svg,'text',
+  {x,y,fill:color,'font-size':size,'font-weight':600},value);
+ function arrow(x1,y1,x2,y2,color){
+  line(x1,y1,x2,y2,color,4);
+  const a=Math.atan2(y2-y1,x2-x1),s=12;
+  svgNode(svg,'polygon',{points:`${x2},${y2} ${x2-s*Math.cos(a-.4)},${y2-s*Math.sin(a-.4)} ${x2-s*Math.cos(a+.4)},${y2-s*Math.sin(a+.4)}`,fill:color});
+ }
+ label(26,28,title('Ardışık düzlemler ve ışın yönleri','Successive planes and ray directions'));
+ line(55,115,740,115,'#abbacb',2);
+ line(55,161,740,161,'#cbd5e1',2,{'stroke-dasharray':'7 5'});
+ label(615,105,title('Düzlem 1','Plane 1'));label(615,153,title('Düzlem 2','Plane 2'));
+ line(76,115,76,161,'#64748b',1.8);
+ line(69,115,83,115,'#64748b');line(69,161,83,161,'#64748b');label(89,143,'d','#334155',15);
+ const radians=theta*Math.PI/180,cx=318,cy=115,length=90;
+ arrow(cx-length*Math.cos(radians),cy-length*Math.sin(radians),cx,cy,'#1674c4');
+ arrow(cx,cy,cx+length*Math.cos(radians),cy-length*Math.sin(radians),'#dc6948');
+ label(cx-154*Math.cos(radians)-22,Math.max(39,cy-124*Math.sin(radians)),title('Gelen','Incident'),'#1674c4');
+ label(cx+110*Math.cos(radians),Math.max(39,cy-110*Math.sin(radians)),title('Saçılan','Diffracted'),'#b64f32');
+ label(cx+18,cy-14,`θ = ${number(theta,1)}°`,'#485e74');
+ line(36,190,754,190,'#dbe6f1',1);
+ label(26,214,title('Aynı noktadaki dalga karşılaştırması','Two waves at a shared observation point'));
+ const traces=[
+  {baseline:252,label:title('Dalga 1','Wave 1'),color:'#1674c4'},
+  {baseline:298,label:title('Dalga 2','Wave 2'),color:'#dd7942'},
+  {baseline:331,label:title('Toplam','Sum'),color:'#148a74'}
+ ];
+ const paths=[];
+ for(const trace of traces){
+  line(156,trace.baseline,750,trace.baseline,'#d9e4ef',1,{'stroke-dasharray':'4 5'});
+  label(27,trace.baseline+4,trace.label,trace.color,13);
+  paths.push(svgNode(svg,'path',{stroke:trace.color,'stroke-width':2.5,fill:'none'}));
+ }
+ return (time=0)=>{
+  for(let j=0;j<3;j++){
+   const points=[];
+   for(let i=0;i<=150;i++){
+    const x=156+594*i/150,k=5*Math.PI*i/150-time;
+    const a=Math.sin(k),b=Math.sin(k+values.phaseRadians);
+    const y=traces[j].baseline-(j===0?a*14:j===1?b*14:(a+b)*17);
+    points.push(`${i?'L':'M'}${x.toFixed(2)},${y.toFixed(2)}`);
+   }
+   paths[j].setAttribute('d',points.join(' '));
+  }
+ };
+}
+
 export function initPowderLesson(host){
  let visible=false,selectedIndex=0,lastPattern=null,planeViewer=null,planeMetrics=null;
+ let selectedWave=null,thetaOverride=null,waveDrawing=null,waveFrame=0,wavePlaying=false,lastWavePaint=0;
  const chart=$('pwChart'),list=$('pwPeaks'),summary=$('pwSummary'),bragg=$('pwBragg');
+ function setWavePlaying(playing){
+  wavePlaying=!!playing&&!!selectedWave&&visible;
+  cancelAnimationFrame(waveFrame);
+  $('pwWavePlay').setAttribute('aria-pressed',String(wavePlaying));
+  $('pwWavePlay').textContent=wavePlaying?'Animasyonu durdur':'Animasyonu oynat';
+  if(wavePlaying)waveFrame=requestAnimationFrame(function tick(now){
+   if(!wavePlaying||!visible)return;
+   if(now-lastWavePaint>=40){waveDrawing?.(now/550);lastWavePaint=now;}
+   waveFrame=requestAnimationFrame(tick);
+  });
+ }
+ function redrawBraggLab(){
+  if(!selectedWave)return;
+  const {d,lambda,braggAngle}=selectedWave;
+  const theta=thetaOverride===null?braggAngle:thetaOverride;
+  const values=braggInterference(d,lambda,theta);
+  $('pwTheta').value=String(theta);
+  $('pwThetaOutput').textContent=number(theta,2)+'°';
+  $('pwPhaseReadout').replaceChildren(
+   metric('Bragg açısı θB',number(braggAngle,3)+'°'),
+   metric('Yol farkı ΔL',number(values.pathDifference,4)+' Å'),
+   metric('Faz farkı Δφ',number(values.phaseRadians/Math.PI,3)+'π rad'),
+   metric('İki-dalga I/Imax',number(values.relativeIntensity*100,1)+'%'));
+  waveDrawing=braggWaveDiagram($('pwWaveSvg'),theta,values);
+  waveDrawing(wavePlaying?performance.now()/550:0);
+  planeViewer?.setAngle?.(theta);
+ }
+ function disableBraggLab(){
+  selectedWave=null;setWavePlaying(false);waveDrawing=null;
+  $('pwPhaseReadout').replaceChildren();
+  clearChart($('pwWaveSvg'),'Bragg yansıması seçilmedi');
+  $('pwThetaOutput').textContent='—';
+  $('pwMatchBragg').disabled=true;$('pwWavePlay').disabled=true;$('pwTheta').disabled=true;
+ }
  function highlightPlanes(structure,chosen){
   if(!chosen){
    planeViewer?.clear?.();
@@ -80,7 +169,7 @@ export function initPowderLesson(host){
    }
   }catch(error){planeMetrics=null;$('pwPlaneStats').textContent='3B çizim kullanılamıyor: '+(error.message||String(error));}
  }
- function choose(index){selectedIndex=index;render();}
+ function choose(index){selectedIndex=index;thetaOverride=null;render();}
  function render(){
   if(!visible)return;
   const structure=host.structure();
@@ -139,6 +228,9 @@ export function initPowderLesson(host){
    if(groups.length){
     const chosen=groups[selectedIndex];
     highlightPlanes(structure,chosen);
+    selectedWave={d:chosen.d,lambda,braggAngle:chosen.angle/2};
+    $('pwMatchBragg').disabled=false;$('pwWavePlay').disabled=false;$('pwTheta').disabled=false;
+    redrawBraggLab();
     bragg.append(metric('Miller indisleri',`(${chosen.hkl.join(' ')})`),
      metric('Düzlem aralığı',number(chosen.d,4)+' Å'),
      metric('Bragg açısı θ',number(chosen.angle/2,3)+'°'),
@@ -148,18 +240,23 @@ export function initPowderLesson(host){
      $('pwStatus').textContent='Bragg model tutarlılığı kontrol edilemedi.';
    }else{
     highlightPlanes(structure,null);
+    disableBraggLab();
     bragg.textContent='Düzlem seçmek için açı sınırını veya dalga boyunu değiştirin.';
    }
   }catch(error){
    lastPattern=null;
    clearChart(chart,'Hesaplama hatası');summary.replaceChildren();list.replaceChildren();bragg.replaceChildren();
    planeViewer?.clear?.();planeMetrics=null;$('pwPlaneHkl').textContent='—';$('pwPlaneStats').textContent='—';
+   disableBraggLab();
    $('pwStatus').textContent=error.message||'Hesaplama yapılamadı.';
   }
  }
- for(const id of ['pwLambda','pwMaxAngle','pwWidth','pwLp'])$(id).addEventListener('input',()=>{selectedIndex=0;render();});
+ for(const id of ['pwLambda','pwMaxAngle','pwWidth','pwLp'])$(id).addEventListener('input',()=>{selectedIndex=0;thetaOverride=null;render();});
+ $('pwTheta').addEventListener('input',()=>{thetaOverride=Number($('pwTheta').value);redrawBraggLab();});
+ $('pwMatchBragg').addEventListener('click',()=>{thetaOverride=null;redrawBraggLab();});
+ $('pwWavePlay').addEventListener('click',()=>setWavePlaying(!wavePlaying));
  window.addEventListener('crystal-language-change',render);
- return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}},refresh:render};
+ return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}else setWavePlaying(false);},refresh:render};
 }
 
 export function initSemiconductorLesson(host){

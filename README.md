@@ -24,7 +24,10 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
   click a peak in the plot or reflection list to highlight its indexed `(hkl)`
   plane slices and normal in a rotatable **3D unit cell**, alongside its
   d-spacing and Bragg angle. Symmetry-equivalent reflections sharing a powder
-  peak are not all highlighted yet. This is neither
+  peak are not all highlighted yet. A separate Bragg-wave teaching panel links
+  a glancing-angle slider with schematic incident/diffracted 3D ray arrows,
+  path difference `2d sinθ` and ideal two-wave phase interference. That
+  interference trace is not the calculated powder intensity. This is neither
   calibrated instrumental profile fitting nor Rietveld refinement.
 - **Semiconductor Physics** (`#yariiletken-fizigi`): a standalone interactive
   **1D two-plane-wave nearly-free-electron** band demonstration and a separate
