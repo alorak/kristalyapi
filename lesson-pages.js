@@ -81,7 +81,7 @@ function braggWaveDiagram(svg,theta,values){
  arrow(cx,cy,cx+length*Math.cos(radians),cy-length*Math.sin(radians),'#dc6948');
  label(cx-154*Math.cos(radians)-22,Math.max(39,cy-124*Math.sin(radians)),title('Gelen','Incident'),'#1674c4');
  label(cx+110*Math.cos(radians),Math.max(39,cy-110*Math.sin(radians)),title('Saçılan','Diffracted'),'#b64f32');
- label(cx+18,cy-14,`θ = ${number(theta,1)}°`,'#485e74');
+ label(cx+18,cy+27,`θ = ${number(theta,1)}°`,'#485e74');
  line(36,190,754,190,'#dbe6f1',1);
  label(26,214,title('Aynı noktadaki dalga karşılaştırması','Two waves at a shared observation point'));
  const traces=[
@@ -256,7 +256,7 @@ export function initPowderLesson(host){
  $('pwMatchBragg').addEventListener('click',()=>{thetaOverride=null;redrawBraggLab();});
  $('pwWavePlay').addEventListener('click',()=>setWavePlaying(!wavePlaying));
  window.addEventListener('crystal-language-change',render);
- return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}else setWavePlaying(false);},refresh:render};
+ return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}else{setWavePlaying(false);planeViewer?.suspend?.();}},refresh:render};
 }
 
 export function initSemiconductorLesson(host){

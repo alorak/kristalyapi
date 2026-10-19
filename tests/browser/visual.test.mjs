@@ -1207,7 +1207,7 @@ try{
  await page.locator('#scPotential').evaluate(el=>{el.value='0.9';el.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.notEqual(await page.locator('#scBandSummary').textContent(),gapBefore,'potential changes band splitting');
  assert.match(await page.locator('#scFermiSummary').textContent(),/0[.,]500/,'f(EF)=1/2');
- await page.screenshot({path:path.join(artifacts,'lesson-02-semiconductor-mvp.png')});
+ await page.screenshot({path:path.join(artifacts,'lesson-02-semiconductor-mvp.png'),timeout:60000});
 
  await page.locator('#reciprocalNav').click();
  await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&document.getElementById('app').hidden);

@@ -142,6 +142,8 @@ export function createPowderPlanesView(container,{elementColor}){
   return {planes:planes.length,atoms,limited:structure.sites.length>atoms,
    planeLimited:planes.length===16};
  }
- return {update,resize,setAngle,clear(){disposeMeshes();previousKey=null;resize();},
+ return {update,resize,setAngle,
+  suspend(){renderer.setSize(1,1,false);},
+  clear(){disposeMeshes();previousKey=null;resize();},
   dispose(){observer.disconnect();controls.dispose();disposeMeshes();renderer.dispose();}};
 }

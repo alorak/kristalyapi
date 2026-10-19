@@ -62,6 +62,8 @@ jobs:
           mkdir -p vendor
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
+      - name: Verify linked education labs in Chromium
+        run: node tests/browser/lesson-labs.test.mjs
       - name: Render real WebGL scenes and compare screenshots
         id: visual
         run: node tests/browser/visual.test.mjs
