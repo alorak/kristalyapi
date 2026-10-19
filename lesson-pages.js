@@ -1,4 +1,5 @@
 import {braggTwoTheta,twoWaveBands,fermiDirac,KB_EV_K} from './lesson-core.js';
+import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
 const NS='http://www.w3.org/2000/svg';
@@ -55,8 +56,31 @@ function metric(label,value){
 }
 
 export function initPowderLesson(host){
- let visible=false,selectedIndex=0,lastPattern=null;
+ let visible=false,selectedIndex=0,lastPattern=null,planeViewer=null,planeMetrics=null;
  const chart=$('pwChart'),list=$('pwPeaks'),summary=$('pwSummary'),bragg=$('pwBragg');
+ function highlightPlanes(structure,chosen){
+  if(!chosen){
+   planeViewer?.clear?.();
+   planeMetrics=null;
+   $('pwPlaneHkl').textContent='—';
+   $('pwPlaneStats').textContent='Bir yansıma seçin.';
+   return;
+  }
+  const hkl=chosen.hkl;
+  $('pwPlaneHkl').textContent=`(${hkl.join(' ')})`;
+  try{
+   if(!planeViewer)planeViewer=createPowderPlanesView($('pwCrystal3d'),{elementColor:host.elementColor});
+   const result=planeViewer.update(structure,hkl);
+   if(result)planeMetrics=result;
+   if(planeMetrics){
+    const english=window.CrystalI18n?.language==='en';
+    $('pwPlaneStats').textContent=english?
+     `${planeMetrics.planes} clipped planes · ${planeMetrics.atoms} atoms${planeMetrics.limited?' (first 1200)':''}${planeMetrics.planeLimited?' (up to 16 planes)':''}`:
+     `${planeMetrics.planes} hücre-içi düzlem · ${planeMetrics.atoms} atom${planeMetrics.limited?' (ilk 1200)':''}${planeMetrics.planeLimited?' (en fazla 16 düzlem)':''}`;
+   }
+  }catch(error){planeMetrics=null;$('pwPlaneStats').textContent='3B çizim kullanılamıyor: '+(error.message||String(error));}
+ }
+ function choose(index){selectedIndex=index;render();}
  function render(){
   if(!visible)return;
   const structure=host.structure();
@@ -77,6 +101,21 @@ export function initPowderLesson(host){
    const axes=plotFrame(chart,{xMin:0,xMax:maxAngle,yMax:100,xTitle:'2θ (derece)',yTitle:'Göreli şiddet (%)'});
    svgNode(chart,'path',{d:linePath(profile.angles.map((angle,i)=>[angle,profile.relative[i]]),
     ([angle,intensity])=>[axes.X(angle),axes.Y(intensity)]),stroke:'#1674c4','stroke-width':2.2,fill:'none'});
+   // Large, keyboard-focusable hit strips allow direct selection on the XRD
+   // graph; the same index is used by the reflection list and 3D viewer.
+   groups.forEach((group,index)=>{
+    const x=axes.X(group.angle);
+    const hit=svgNode(chart,'rect',{x:x-7,y:20,width:14,height:252,
+     fill:'#f59e0b','fill-opacity':0,'class':'lesson-peak-hit',
+     'data-peak-index':index,role:'button',tabindex:0,
+     'aria-pressed':String(index===selectedIndex),
+     'aria-label':`(${group.hkl.join(' ')}) · ${number(group.angle)}°`});
+    svgNode(hit,'title',{},`(${group.hkl.join(' ')}) · ${number(group.angle)}°`);
+    hit.addEventListener('click',()=>choose(index));
+    hit.addEventListener('keydown',event=>{
+     if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(index);}
+    });
+   });
    if(groups.length){
     const chosen=groups[selectedIndex];
     svgNode(chart,'line',{x1:axes.X(chosen.angle),x2:axes.X(chosen.angle),y1:20,y2:272,
@@ -93,12 +132,13 @@ export function initPowderLesson(host){
     button.type='button';button.className='lesson-peak'+(index===selectedIndex?' chosen':'');
     button.setAttribute('aria-pressed',String(index===selectedIndex));
     button.textContent=`(${group.hkl.join(' ')})  ·  ${number(group.angle)}°  ·  ${number(group.relative,1)}%`;
-    button.addEventListener('click',()=>{selectedIndex=index;render();});
+    button.addEventListener('click',()=>choose(index));
     list.appendChild(button);
    });
    bragg.replaceChildren();
    if(groups.length){
     const chosen=groups[selectedIndex];
+    highlightPlanes(structure,chosen);
     bragg.append(metric('Miller indisleri',`(${chosen.hkl.join(' ')})`),
      metric('Düzlem aralığı',number(chosen.d,4)+' Å'),
      metric('Bragg açısı θ',number(chosen.angle/2,3)+'°'),
@@ -106,16 +146,20 @@ export function initPowderLesson(host){
     const value=braggTwoTheta(chosen.d,lambda);
     if(value!==null&&Math.abs(value-chosen.angle)>0.001)
      $('pwStatus').textContent='Bragg model tutarlılığı kontrol edilemedi.';
-   }else bragg.textContent='Düzlem seçmek için açı sınırını veya dalga boyunu değiştirin.';
+   }else{
+    highlightPlanes(structure,null);
+    bragg.textContent='Düzlem seçmek için açı sınırını veya dalga boyunu değiştirin.';
+   }
   }catch(error){
    lastPattern=null;
    clearChart(chart,'Hesaplama hatası');summary.replaceChildren();list.replaceChildren();bragg.replaceChildren();
+   planeViewer?.clear?.();planeMetrics=null;$('pwPlaneHkl').textContent='—';$('pwPlaneStats').textContent='—';
    $('pwStatus').textContent=error.message||'Hesaplama yapılamadı.';
   }
  }
  for(const id of ['pwLambda','pwMaxAngle','pwWidth','pwLp'])$(id).addEventListener('input',()=>{selectedIndex=0;render();});
  window.addEventListener('crystal-language-change',render);
- return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible)render();},refresh:render};
+ return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}},refresh:render};
 }
 
 export function initSemiconductorLesson(host){

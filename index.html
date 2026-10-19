@@ -927,8 +927,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </section>
    <section class="lesson-panel lesson-results" aria-label="Hesaplanan toz kırınım deseni">
     <div class="lesson-panel-head"><h3>Hesaplanan kırınım deseni</h3><span class="lesson-pill">2θ / göreli şiddet</span></div>
-    <svg id="pwChart" class="lesson-chart" viewBox="0 0 900 325" role="img" aria-label="Hesaplanan X-ışını toz kırınımı grafiği"></svg>
-    <div id="pwSummary" class="lesson-metrics" aria-live="polite"></div>
+    <div class="lesson-xrd-workbench">
+     <div class="lesson-xrd-plot">
+      <svg id="pwChart" class="lesson-chart lesson-chart-clickable" viewBox="0 0 900 325" role="group" aria-label="Pik seçilebilen X-ışını toz kırınımı grafiği"></svg>
+      <div id="pwSummary" class="lesson-metrics" aria-live="polite"></div>
+     </div>
+     <div class="lesson-crystal-card">
+      <div class="lesson-panel-head"><h3>3B Miller düzlemleri</h3><span class="lesson-pill">Döndür · yakınlaştır</span></div>
+      <div id="pwCrystal3d" class="lesson-crystal-view" role="group" aria-label="Seçili yansımanın 3B birim hücredeki Miller düzlemleri"></div>
+      <div class="lesson-crystal-caption" aria-live="polite"><strong id="pwPlaneHkl">—</strong><span id="pwPlaneStats">Bir yansıma seçin.</span></div>
+      <p class="lesson-crystal-help">Grafikteki bir pike veya aşağıdaki yansıma listesine tıklayın. Turuncu yüzeyler seçilen (hkl) düzlem ailesinin birim hücre içindeki kesitleridir. Aynı pike ait diğer simetri eşdeğerleri ayrıca çizilmez.</p>
+     </div>
+    </div>
    </section>
   </div>
   <div class="lesson-bottom">

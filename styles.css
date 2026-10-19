@@ -898,6 +898,19 @@ body.lesson-open #app{display:none!important}
 .lesson-explain strong{display:block;margin-bottom:3px}
 .lesson-explain a{color:#1769b0;font-weight:600}
 .lesson-chart{display:block;width:100%;height:auto;min-height:260px;overflow:visible;background:#fbfdff;border-radius:9px}
+.lesson-xrd-workbench{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:16px;align-items:stretch}
+.lesson-xrd-plot{min-width:0}
+.lesson-chart-clickable .lesson-peak-hit{cursor:pointer;outline:none}
+.lesson-chart-clickable .lesson-peak-hit:focus-visible{stroke:#e39a29;stroke-width:2;fill:#fde6b2;fill-opacity:.35}
+.lesson-crystal-card{min-width:0;background:#f8fbff;border:1px solid #deebf7;border-radius:11px;padding:12px}
+.lesson-crystal-card .lesson-panel-head{margin-bottom:12px}
+.lesson-crystal-card .lesson-panel-head h3{font-size:13px}
+.lesson-crystal-view{width:100%;height:270px;background:radial-gradient(ellipse at center,#fdfefe 20%,#e7f2fd 100%);border-radius:9px;overflow:hidden;position:relative}
+.lesson-crystal-view canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.lesson-crystal-view canvas:active{cursor:grabbing}
+.lesson-crystal-caption{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:#526b83}
+.lesson-crystal-caption strong{font-size:14px;color:#ac5c13}
+.lesson-crystal-help{font-size:11px;color:#71849a;line-height:1.55;margin:9px 0 1px}
 .lesson-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:15px}
 .lesson-metric{background:#f5f9fd;border:1px solid #e3edf7;border-radius:9px;padding:11px 12px;min-width:0}
 .lesson-metric span{display:block;font-size:11px;color:#637c92;margin-bottom:5px}
@@ -915,7 +928,9 @@ body.lesson-open #app{display:none!important}
 .main-nav::-webkit-scrollbar{display:none}
 .main-nav a{white-space:nowrap}
 @media(max-width:1020px){.lesson-layout{grid-template-columns:280px minmax(0,1fr)}.lesson-panel{padding:16px}.lesson-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1200px){.lesson-xrd-workbench{grid-template-columns:1fr}.lesson-crystal-view{height:320px}}
 @media(max-width:760px){.lesson-layout,.lesson-bottom{grid-template-columns:1fr}.lesson-chart{min-height:210px}.lesson-page{height:calc(100dvh - 54px)}.lesson-wrap{padding-top:16px}.main-nav{max-width:46vw;padding-left:7px}.main-nav a{padding:7px 10px;font-size:12px}}
+@media(max-width:760px){.lesson-crystal-view{height:270px}}
 @media(max-width:500px){.lesson-metrics{grid-template-columns:1fr 1fr}.lesson-peak-list{grid-template-columns:1fr}.lesson-bragg{grid-template-columns:1fr 1fr}header .brand{min-width:0}.brand-home{font-size:14px}.main-nav{max-width:42vw}.lesson-panel-head{flex-wrap:wrap}}
 .rs-button{align-self:flex-start;background:#fff;color:#1a67a9;border:1px solid #c9dbee;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:650}
 .rs-button:hover:not(:disabled){background:#edf4fb;border-color:#9fc1e2}
