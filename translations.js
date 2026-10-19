@@ -68,6 +68,7 @@
   ['Göreli şiddet (%)','Relative intensity (%)'],
   ['Enerji (eV)','Energy (eV)'],
   ['Doluluk f(E)','Occupation f(E)'],
+  ['1B · iki dalga','1D · two waves'],
   ['sin θ = λ · n','sin θ = nλ'],
   ['0,40 eV','0.40 eV'],
   ['0,00 eV','0.00 eV'],
@@ -778,6 +779,9 @@
  ];
  const dictionary=new Map(entries);
  const parts=[
+  [' ayırt edilebilir pik grubu · ',' distinguishable peak groups · '],
+  [' yansıma · varsayımsal profil',' reflections · illustrative profile'],
+  [' atom · ',' atoms · '],
   [' merkezli çokyüzlü','-centered polyhedron'],
   ['Kesirli: ','Fractional: '],
   [' · doluluk: ',' · occupancy: '],
