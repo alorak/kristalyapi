@@ -67,7 +67,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </head>
 <body>
 <header>
- <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="reciprocalNav" href="#karsi-uzay">Karşı Uzay</a></nav></div>
+ <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="reciprocalNav" href="#karsi-uzay">Karşı Uzay</a><a id="powderNav" href="#toz-kirinimi">Toz Kırınımı</a><a id="semiconductorNav" href="#yariiletken-fizigi">Yarıiletken Fiziği</a></nav></div>
  <div class="actions">
   <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
   <div class="history-toolbar workspace-action" role="group" aria-label="Kristal düzenleme geçmişi">
@@ -904,6 +904,85 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="rs-concept rs-warning"><strong>Model sınırı</strong> Bu yaklaşımda kristal potansiyeli sıfırdır: bantlar yalnız katlanmadan doğar ve bölge sınırlarında yasak enerji aralığı açılmaz. Gerçek yarı iletkenlerdeki bant aralığı (ör. Si, GaAs) kristal potansiyelinden kaynaklanır ve burada hesaplanmaz.</div>
    </div>
   </section>
+ </div>
+</main>
+
+<main id="powderPage" class="lesson-page" hidden aria-label="X-ışını toz kırınımı laboratuvarı">
+ <div class="library-wrap lesson-wrap">
+  <div class="library-header">
+   <div><div class="library-eyebrow">Kristal Yapı / Etkileşimli ders · MVP</div><h2>X-Işını Toz Kırınımı</h2>
+    <p>Seçili kristalden hesaplanan Bragg yansımaları, kırınım profili ve (hkl) düzlemleri arasındaki ilişkiyi keşfedin.</p></div>
+   <a class="lib-cod-link" href="#kristal">← Kristale dön</a>
+  </div>
+  <div class="lesson-source" aria-live="polite"><span>Etkin kristal</span><strong id="pwSourceName">—</strong><span id="pwSourceDetail">—</span></div>
+  <div class="lesson-layout">
+   <section class="lesson-panel lesson-controls" aria-label="Toz kırınımı ayarları">
+    <div class="lesson-panel-head"><h3>Deney ayarları</h3><span class="lesson-pill">Canlı model</span></div>
+    <label class="lesson-field"><span>Dalga boyu λ <output id="pwLambdaOutput">1,5406 Å</output></span><input id="pwLambda" type="range" min="0.7" max="2.3" step="0.0001" value="1.5406"></label>
+    <label class="lesson-field"><span>2θ üst sınırı <output id="pwAngleOutput">80°</output></span><input id="pwMaxAngle" type="range" min="35" max="120" step="5" value="80"></label>
+    <label class="lesson-field"><span>Profil FWHM <output id="pwWidthOutput">0,12°</output></span><input id="pwWidth" type="range" min="0.05" max="0.7" step="0.01" value="0.12"></label>
+    <label class="lesson-check"><input id="pwLp" type="checkbox" checked> Lorentz–polarizasyon çarpanı</label>
+    <div id="pwStatus" class="lesson-status" role="status">Hesaplama bekleniyor.</div>
+    <div class="lesson-explain"><strong>Bilimsel sınır</strong> Kinematik toz deseni; IT92 nötr atom saçılma faktörleri ve sabit genişlikli pseudo-Voigt profil. Cihaz kalibrasyonu, numune absorpsiyonu ve Rietveld rafinmanı değildir.</div>
+   </section>
+   <section class="lesson-panel lesson-results" aria-label="Hesaplanan toz kırınım deseni">
+    <div class="lesson-panel-head"><h3>Hesaplanan kırınım deseni</h3><span class="lesson-pill">2θ / göreli şiddet</span></div>
+    <svg id="pwChart" class="lesson-chart" viewBox="0 0 900 325" role="img" aria-label="Hesaplanan X-ışını toz kırınımı grafiği"></svg>
+    <div id="pwSummary" class="lesson-metrics" aria-live="polite"></div>
+   </section>
+  </div>
+  <div class="lesson-bottom">
+   <section class="lesson-panel">
+    <div class="lesson-panel-head"><h3>Yansımalar · (hkl)</h3><span class="lesson-pill">Pik seç</span></div>
+    <div id="pwPeaks" class="lesson-peak-list" role="group" aria-label="Hesaplanan yansımaları seç"></div>
+   </section>
+   <section class="lesson-panel">
+    <div class="lesson-panel-head"><h3>Bragg koşulu</h3><span class="lesson-pill">Seçili yansıma</span></div>
+    <div id="pwBragg" class="lesson-bragg" aria-live="polite"></div>
+    <p class="lesson-formula">2d<sub>hkl</sub> sin θ = λ · n <span>(MVP'de n = 1)</span></p>
+    <div class="lesson-explain">Pikin konumu düzlemler arası mesafe ve ışığın dalga boyuyla belirlenir. Şiddeti ise atomların yapı faktörü katkıları belirler. Daha fazla karşı-uzay gösterimi için <a href="#karsi-uzay">Karşı Uzay</a> sayfasını açın.</div>
+   </section>
+  </div>
+ </div>
+</main>
+
+<main id="semiconductorPage" class="lesson-page" hidden aria-label="Yarıiletken fiziği laboratuvarı">
+ <div class="library-wrap lesson-wrap">
+  <div class="library-header">
+   <div><div class="library-eyebrow">Kristal Yapı / Etkileşimli ders · MVP</div><h2>Yarıiletken Fiziği</h2>
+    <p>Kristal periyodundan enerji bantlarına ve Fermi–Dirac doluluğuna. Modeller idealize edilmiş olup gerçek bir malzemenin DFT hesaplaması değildir.</p></div>
+   <a class="lib-cod-link" href="#kristal">← Kristale dön</a>
+  </div>
+  <div class="lesson-source" aria-live="polite"><span>Etkin kristal</span><strong id="scSourceName">—</strong><span id="scSourceDetail">—</span></div>
+  <div class="lesson-layout">
+   <section class="lesson-panel lesson-controls">
+    <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>
+    <label class="lesson-field"><span>Zincir periyodu a <output id="scPeriodOutput">5,43 Å</output></span><input id="scPeriod" type="range" min="2" max="8" step="0.01" value="5.43"></label>
+    <button id="scUseCell" type="button" class="lesson-action">Etkin kristalin a uzunluğunu kullan</button>
+    <label class="lesson-field"><span><span>Potansiyel bileşeni |V<sub>G</sub>|</span><output id="scPotentialOutput">0,40 eV</output></span><input id="scPotential" type="range" min="0" max="1.5" step="0.02" value="0.4"></label>
+    <label class="lesson-field"><span>Model etkin kütlesi m*/mₑ <output id="scMassOutput">1,00</output></span><input id="scMass" type="range" min="0.2" max="2" step="0.05" value="1"></label>
+    <div class="lesson-explain"><strong>Model sınırı</strong> Serbest elektronun iki karşılıklı düzlem-dalga bileşeni arasındaki etkileşim gösterilir. Bu eğriler gerçek Si veya GaAs bantları değildir. Etkin kristal yalnızca <em>a</em> uzunluğu için başlangıç değeri sağlar.</div>
+   </section>
+   <section class="lesson-panel lesson-results">
+    <div class="lesson-panel-head"><h3>E(k) · enerji bantlarının açılması</h3><span class="lesson-pill">Birinci Brillouin bölgesi</span></div>
+    <svg id="scBandChart" class="lesson-chart" viewBox="0 0 900 325" role="img" aria-label="Bir boyutlu yaklaşık serbest elektron bant diyagramı"></svg>
+    <div id="scBandSummary" class="lesson-metrics" aria-live="polite"></div>
+   </section>
+  </div>
+  <div class="lesson-layout lesson-secondary">
+   <section class="lesson-panel lesson-controls">
+    <div class="lesson-panel-head"><h3>Fermi–Dirac istatistiği</h3><span class="lesson-pill">Ayrı ideal model</span></div>
+    <label class="lesson-field"><span>Sıcaklık <output id="scTemperatureOutput">300 K</output></span><input id="scTemperature" type="range" min="100" max="600" step="10" value="300"></label>
+    <label class="lesson-field"><span><span>Fermi seviyesi E<sub>F</sub></span><output id="scFermiOutput">0,00 eV</output></span><input id="scFermi" type="range" min="-0.5" max="0.5" step="0.01" value="0"></label>
+    <label class="lesson-field"><span><span>Örnek bant aralığı E<sub>g</sub></span><output id="scGapOutput">1,10 eV</output></span><input id="scGap" type="range" min="0.3" max="3" step="0.05" value="1.1"></label>
+    <div class="lesson-explain"><strong>Önemli:</strong> Bu bölümde E<sub>g</sub> bağımsız seçilen öğretici bir parametredir; yukarıdaki |V<sub>G</sub>| modelinin veya etkin kristalin hesaplanmış bant aralığı değildir. E<sub>F</sub> sürgüsü gerçek katkı yoğunluğunu çözmez.</div>
+   </section>
+   <section class="lesson-panel lesson-results">
+    <div class="lesson-panel-head"><h3>Enerjiye göre doluluk olasılığı</h3><span class="lesson-pill">f(E)</span></div>
+    <svg id="scFermiChart" class="lesson-chart" viewBox="0 0 900 325" role="img" aria-label="Sıcaklık ve Fermi seviyesine bağlı Fermi Dirac dağılımı"></svg>
+    <div id="scFermiSummary" class="lesson-metrics" aria-live="polite"></div>
+   </section>
+  </div>
  </div>
 </main>
 

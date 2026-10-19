@@ -870,6 +870,53 @@ body.reciprocal-open #app{display:none}
 .rs-table td{padding:5px 8px;border-top:1px solid #edf1f6;color:#26394f}
 @media(max-width:1100px){.rs-grid{grid-template-columns:1fr}.rs-phasor-layout,.rs-powder-layout{grid-template-columns:1fr}}
 @media(max-width:700px){.rs-views{grid-template-columns:1fr}.rs-view{height:300px}#reciprocalPage .lib-tabs{overflow-x:auto;flex-wrap:nowrap}#reciprocalPage .lib-tabs button{white-space:nowrap}}
+
+/* Two science-education MVP pages share a light, independently scrollable shell. */
+body.lesson-open .workspace-action:not(.workspace-launcher){display:none!important}
+body.lesson-open #app{display:none!important}
+.lesson-page[hidden]{display:none!important}
+.lesson-page{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f3f7fb;color:#233b55}
+.lesson-wrap{padding-top:23px;padding-bottom:65px;max-width:1600px}
+.lesson-source{display:flex;align-items:center;flex-wrap:wrap;gap:11px;background:#e8f1fa;border:1px solid #d6e5f3;border-radius:11px;padding:11px 15px;margin-bottom:20px;font-size:13px;color:#526980}
+.lesson-source>span:first-child{color:#657f9d;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.lesson-source strong{color:#214c74}
+.lesson-layout{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr);gap:16px;align-items:stretch}
+.lesson-secondary{margin-top:16px}
+.lesson-bottom{display:grid;grid-template-columns:minmax(270px,1fr) minmax(300px,1fr);gap:16px;margin-top:16px}
+.lesson-panel{border:1px solid #d8e4f0;background:#fff;border-radius:14px;padding:19px 21px;min-width:0;box-shadow:0 3px 15px rgba(24,55,87,.045)}
+.lesson-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+.lesson-panel h3{font-size:16px;margin:0;color:#263c55;letter-spacing:-.25px}
+.lesson-pill{border-radius:999px;background:#edf5ff;border:1px solid #d5e6f8;padding:5px 9px;color:#4179aa;font-size:10px;white-space:nowrap;font-weight:700}
+.lesson-field{display:block;margin-bottom:19px}
+.lesson-field>span{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:600;color:#415970}
+.lesson-field output{font-variant-numeric:tabular-nums;color:#1867b0;font-size:12px;white-space:nowrap}
+.lesson-field input[type=range]{width:100%;display:block;margin-top:12px;accent-color:#3182ce}
+.lesson-check{display:flex;align-items:center;gap:9px;font-size:12px;color:#415970;margin-bottom:17px}
+.lesson-check input{accent-color:#3182ce}
+.lesson-status{border-radius:8px;background:#ecf5ff;color:#246090;padding:10px 12px;font-size:12px;line-height:1.5;margin-bottom:14px}
+.lesson-explain{border-left:3px solid #d2a454;border-radius:4px;background:#fffbf1;padding:11px 12px;color:#715935;font-size:12px;line-height:1.65}
+.lesson-explain strong{display:block;margin-bottom:3px}
+.lesson-explain a{color:#1769b0;font-weight:600}
+.lesson-chart{display:block;width:100%;height:auto;min-height:260px;overflow:visible;background:#fbfdff;border-radius:9px}
+.lesson-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:15px}
+.lesson-metric{background:#f5f9fd;border:1px solid #e3edf7;border-radius:9px;padding:11px 12px;min-width:0}
+.lesson-metric span{display:block;font-size:11px;color:#637c92;margin-bottom:5px}
+.lesson-metric strong{font-size:15px;color:#174f81;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.lesson-peak-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:270px;overflow:auto}
+.lesson-peak{border:1px solid #d8e4f0;background:#f8fbff;color:#415b73;font-size:12px;border-radius:8px;padding:9px 11px;text-align:left}
+.lesson-peak:hover:not(:disabled){background:#eef6fe;border-color:#91bfe5}
+.lesson-peak.chosen{background:#e3f1ff;color:#155c96;border-color:#4899db;box-shadow:inset 0 0 0 1px #a7cdeb}
+.lesson-bragg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.lesson-formula{border-radius:9px;background:#eff5fb;padding:13px 15px;font-weight:700;color:#234f77;font-size:16px;margin:15px 0}
+.lesson-formula span{font-size:11px;color:#72869a;font-weight:400}
+.lesson-action{background:#eaf4ff;border:1px solid #c9dfef;color:#245b88;font-size:12px;padding:9px 12px;width:100%;margin:-5px 0 16px}
+.lesson-action:hover:not(:disabled){background:#dbeeff;border-color:#9cc9eb}
+.main-nav{max-width:min(54vw,710px);overflow-x:auto;scrollbar-width:none}
+.main-nav::-webkit-scrollbar{display:none}
+.main-nav a{white-space:nowrap}
+@media(max-width:1020px){.lesson-layout{grid-template-columns:280px minmax(0,1fr)}.lesson-panel{padding:16px}.lesson-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.lesson-layout,.lesson-bottom{grid-template-columns:1fr}.lesson-chart{min-height:210px}.lesson-page{height:calc(100dvh - 54px)}.lesson-wrap{padding-top:16px}.main-nav{max-width:46vw;padding-left:7px}.main-nav a{padding:7px 10px;font-size:12px}}
+@media(max-width:500px){.lesson-metrics{grid-template-columns:1fr 1fr}.lesson-peak-list{grid-template-columns:1fr}.lesson-bragg{grid-template-columns:1fr 1fr}header .brand{min-width:0}.brand-home{font-size:14px}.main-nav{max-width:42vw}.lesson-panel-head{flex-wrap:wrap}}
 .rs-button{align-self:flex-start;background:#fff;color:#1a67a9;border:1px solid #c9dbee;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:650}
 .rs-button:hover:not(:disabled){background:#edf4fb;border-color:#9fc1e2}
 
