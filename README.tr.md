@@ -24,7 +24,10 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
   seçildiğinde yanındaki **döndürülebilir 3B kristalde** o Miller düzlem
   üyesinin birim hücreyle kesişen yüzeyleri ve normal yönü vurgulanır;
   Bragg açısı ve d aralığı birlikte güncellenir. Bir toz pikindeki bütün
-  simetri eşdeğerleri henüz birlikte gösterilmez.
+  simetri eşdeğerleri henüz birlikte gösterilmez. Alt bölümde geliş açısı
+  değiştirilerek 3B gelen/saçılan ışın okları, iki ardışık düzlemden saçılan
+  dalganın `2d sinθ` yol farkı, `Δφ` fazı ve **ideal iki-dalga girişimi**
+  incelenir. Bu görsel girişim eğrisi hesaplanan toz pik şiddeti değildir.
   Bu gerçek cihaz profil ince ayarı veya Rietveld analizi değildir.
 - **Yarıiletken Fiziği** (`#yariiletken-fizigi`): Üst menüden açılır; iki
   düzlem dalgalı **1B yaklaşık serbest elektron** bant modeli ile ayrı

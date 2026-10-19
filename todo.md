@@ -24,8 +24,13 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
   grubuna göre eşdeğer üyeleri **ayrı ayrı** seçilebilir kıl; basit kübik
   indis permütasyonu tüm simetrilere uygulanamaz. `#karsi-uzay` ile (hkl)
   seçimi/bakış senkronizasyonu ekle.
-- [ ] Gelen/yansıyan ışın faz animasyonu ve yapıcı/yıkıcı girişim; Bragg açısı
-  ile kırınım dedektör açısını ayrı çiz.
+- [x] Seçili hkl düzleminin normaline göre dönen gelen/saçılan 3B ışın
+  yönleri; açı sürgüsü, Bragg'a dön kontrolü ve ardışık iki düzlemin
+  `ΔL=2d sinθ`, `Δφ=2πΔL/λ` yol/faz farkını çizerek iki ideal dalganın
+  yapıcı/yıkıcı girişimini canlandır. Bragg açısı θ ve dedektör 2θ ayrımı.
+- [ ] Gerçek toz örneğine özgü çok-kristalit yönelim ortalaması ve 2θ
+  Debye–Scherrer konisini de ayrı bir görselleştirmeye bağla; mevcut iki
+  dalgalı girişim animasyonunun hesaplanan XRD şiddeti olmadığını koru.
 - [ ] Kullanıcı atomu, doluluğu ve hücreyi değiştirdiğinde `F(hkl)` kompleks
   fazörleri ile eşzamanlı pik/eksilme gösterimi. BCC (100), FCC (100),
   diamond Si (200) sönme regresyonları.

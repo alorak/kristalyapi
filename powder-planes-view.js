@@ -74,6 +74,7 @@ export function createPowderPlanesView(container,{elementColor}){
  scene.add(new THREE.HemisphereLight(0xffffff,0xb6c7dd,2));
  const light=new THREE.DirectionalLight(0xffffff,1.7);light.position.set(4,-5,8);scene.add(light);
  const root=new THREE.Group();scene.add(root);
+ const rays=new THREE.Group();scene.add(rays);
  const camera=new THREE.PerspectiveCamera(35,1,.01,10000);camera.up.set(0,0,1);
  const controls=new OrbitControls(camera,renderer.domElement);
  controls.enableDamping=false;
@@ -85,16 +86,37 @@ export function createPowderPlanesView(container,{elementColor}){
  };
  const observer=new ResizeObserver(resize);observer.observe(container);
  let previousKey=null;
- const disposeMeshes=()=>{
+ let beamFrame=null;
+ const disposeGroup=group=>{
   const materials=new Set(),geometries=new Set();
-  root.traverse(object=>{
+  group.traverse(object=>{
    if(object.geometry)geometries.add(object.geometry);
    if(object.material)for(const material of Array.isArray(object.material)?object.material:[object.material])materials.add(material);
   });
-  root.clear();
+  group.clear();
   materials.forEach(material=>material.dispose());
   geometries.forEach(geometry=>geometry.dispose());
  };
+ const disposeMeshes=()=>{
+  disposeGroup(root);disposeGroup(rays);beamFrame=null;
+ };
+ function setAngle(thetaDeg){
+  if(!beamFrame||!Number.isFinite(thetaDeg))return;
+  disposeGroup(rays);
+  const theta=thetaDeg*Math.PI/180;
+  const {origin,normal,length}=beamFrame;
+  // Rays follow the specular Bragg construction for one crystallite. Their
+  // direction is illustrative; the powder profile averages orientations.
+  let tangent=R.cross(normal,[0,0,1]);
+  if(R.norm(tangent)<1e-7)tangent=R.cross(normal,[0,1,0]);
+  tangent=R.scale(tangent,1/R.norm(tangent));
+  const incoming=R.sub(R.scale(tangent,Math.cos(theta)),R.scale(normal,Math.sin(theta)));
+  const outgoing=R.add(R.scale(tangent,Math.cos(theta)),R.scale(normal,Math.sin(theta)));
+  const start=R.sub(origin,R.scale(incoming,length));
+  rays.add(new THREE.ArrowHelper(vector(incoming),vector(start),length,0x2181cf,length*.11,length*.055));
+  rays.add(new THREE.ArrowHelper(vector(outgoing),vector(origin),length,0xd65a3e,length*.11,length*.055));
+  renderer.render(scene,camera);
+ }
  function update(structure,hkl){
   const key=JSON.stringify([structure.cell,structure.sites,hkl]);
   if(previousKey===key){resize();return null;}
@@ -107,6 +129,10 @@ export function createPowderPlanesView(container,{elementColor}){
   root.add(cellWireframe(A));
   const atoms=addAtoms(root,structure.sites,A,elementColor);
   addPlanes(root,hkl,A);
+  const middle=planes[Math.floor(planes.length/2)];
+  const planeOrigin=middle?R.scale(middle.points.reduce(R.add,[0,0,0]),1/middle.points.length):center;
+  const normal=R.gVector(hkl,R.reciprocalVectors(A));
+  beamFrame={origin:planeOrigin,normal:R.scale(normal,1/R.norm(normal)),length:radius*.85};
   controls.target.set(...center);
   const dir=vector([1.4,-2,1.5]).normalize();
   camera.position.copy(vector(center).addScaledVector(dir,radius*3.8));
@@ -116,6 +142,8 @@ export function createPowderPlanesView(container,{elementColor}){
   return {planes:planes.length,atoms,limited:structure.sites.length>atoms,
    planeLimited:planes.length===16};
  }
- return {update,resize,clear(){disposeMeshes();previousKey=null;resize();},
+ return {update,resize,setAngle,
+  suspend(){renderer.setSize(1,1,false);},
+  clear(){disposeMeshes();previousKey=null;resize();},
   dispose(){observer.disconnect();controls.dispose();disposeMeshes();renderer.dispose();}};
 }
