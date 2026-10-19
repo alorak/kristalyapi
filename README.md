@@ -28,7 +28,11 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
   a glancing-angle slider with schematic incident/diffracted 3D ray arrows,
   path difference `2d sinθ` and ideal two-wave phase interference. That
   interference trace is not the calculated powder intensity. This is neither
-  calibrated instrumental profile fitting nor Rietveld refinement.
+  calibrated instrumental profile fitting nor Rietveld refinement. A new
+  **structure-factor phasor lab** accepts any nonzero `(hkl)` (even reflections
+  missing from the powder peaks), draws the complex IT92 atomic contributions
+  head to tail and shows `F(hkl)` and `|F|²`. Numerical cancellations are
+  demonstrated without equating them automatically to symmetry absences.
 - **Semiconductor Physics** (`#yariiletken-fizigi`): a standalone interactive
   **1D two-plane-wave nearly-free-electron** band demonstration and a separate
   **ideal Fermi–Dirac** occupation model. The current structure's cell parameter
@@ -44,6 +48,10 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
   unequal intra-/inter-cell hoppings or an A/B on-site detuning open the
   analytically checked gap `Eg = sqrt(delta² + 4(t1 − t2)²)`. Three presets,
   interactive sliders and a highlighted forbidden region make this visible.
+  A new **k selector** on the two-orbital chart highlights both band states
+  and their normalized **A/B orbital character** percentages. At an exact band
+  touching those weights are left undefined; orbital weights do not represent
+  carrier occupations.
   This minimal 1D model is not a computed Si/GaAs gap; the Fermi example's
   independent `Eg` parameter is intentionally unchanged.
 - Both pages are included in the offline shell. See [todo.md](todo.md) for

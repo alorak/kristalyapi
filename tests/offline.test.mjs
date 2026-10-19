@@ -64,3 +64,16 @@ test('activation removes only old Kristal Yapı shell caches',async()=>{
  assert.deepEqual(sw.deletes,['kristalyapi-shell-old','kristalyapi-shell-2026-10-16-v1','kristalyapi-shell-2026-10-16-v2','kristalyapi-shell-2026-10-16-v3']);
  assert.equal(sw.claimed,1);
 });
+
+test('all GitHub Actions jobs run only for PRs merged into main and check out the trusted merge',()=>{
+ for(const name of ['pages.yml','browser-visual.yml']){
+  const content=readFileSync(new URL('../.github/workflows/'+name,import.meta.url),'utf8');
+  assert.match(content,/^  pull_request_target:\s*\n    types: \[closed\]\s*\n    branches: \[main\]/m,name);
+  assert.doesNotMatch(content,/^  (?:push|pull_request|workflow_dispatch|schedule):/m,name);
+  assert.match(content,/^    if: github\.event\.pull_request\.merged == true$/m,name);
+  assert.match(content,/ref: \$\{\{ github\.event\.pull_request\.merge_commit_sha \}\}/,name);
+  assert.doesNotMatch(content,/pull_request\.head\.(?:sha|ref)/,name);
+ }
+ const pages=readFileSync(new URL('../.github/workflows/pages.yml',import.meta.url),'utf8');
+ assert.match(pages,/  deploy:\n    needs: validate\n    if: github\.event\.pull_request\.merged == true/);
+});

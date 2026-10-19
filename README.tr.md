@@ -28,7 +28,12 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
   değiştirilerek 3B gelen/saçılan ışın okları, iki ardışık düzlemden saçılan
   dalganın `2d sinθ` yol farkı, `Δφ` fazı ve **ideal iki-dalga girişimi**
   incelenir. Bu görsel girişim eğrisi hesaplanan toz pik şiddeti değildir.
-  Bu gerçek cihaz profil ince ayarı veya Rietveld analizi değildir.
+  Bu gerçek cihaz profil ince ayarı veya Rietveld analizi değildir. Yeni
+  **yapı faktörü fazör deneyi**, toz pikinde bulunmayan sönmüş yansımalar
+  dahil sıfır olmayan `(hkl)` indislerini alır; atomların IT92 karmaşık
+  katkılarını uç uca, `F(hkl)` ve `|F|²` ile birlikte gösterir. Sayısal
+  sönmenin doğrudan uzay grubu tarafından kanıtlanmış sistematik yokluk
+  anlamına gelmediği özellikle belirtilir.
 - **Yarıiletken Fiziği** (`#yariiletken-fizigi`): Üst menüden açılır; iki
   düzlem dalgalı **1B yaklaşık serbest elektron** bant modeli ile ayrı
   **ideal Fermi–Dirac** doluluk modelini etkileşimli gösterir. Etkin yapının
@@ -45,7 +50,10 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
   `Eg = sqrt(delta² + 4(t1 − t2)²)` sayısal olarak sınanır. Üç örnek
   seçimi, sürgüler ve boş enerji bölgesi birlikte gösterilir. Bu 1B modelin
   değeri gerçek Si/GaAs aralığı değildir; bağımsız Fermi örneğinin `Eg`
-  sürgüsüyle kendiliğinden eşitlenmez.
+  sürgüsüyle kendiliğinden eşitlenmez. İki orbitalli grafikte yeni bir
+  **k seçimi**, iki bandın seçili özdurumlarını ve **A/B orbital karakteri**
+  yüzdelerini gösterir. Tam bant temasında özvektör tekil olmadığı için
+  yüzdeler atanmaz; bu ağırlıklar elektron/delik doluluğu değildir.
 - Her iki sayfa çevrimdışı uygulama kabuğuna dahildir. Bilimsel geliştirme
   sırası, ileri ders deneyleri, cihaz/model sınırlamaları ve kabul testleri
   için [todo.md](todo.md) dosyasını inceleyin.

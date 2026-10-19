@@ -1,11 +1,11 @@
 name: Validate and deploy crystal studio
 
 on:
-  push:
+  # Run privileged Pages deployment only for a PR already merged into main.
+  # Never check out a pull request head on this privileged event.
+  pull_request_target:
+    types: [closed]
     branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,10 +18,13 @@ concurrency:
 
 jobs:
   validate:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -90,7 +93,7 @@ jobs:
 
   deploy:
     needs: validate
-    if: github.event_name != 'pull_request'
+    if: github.event.pull_request.merged == true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -98,6 +101,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:

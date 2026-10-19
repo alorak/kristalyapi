@@ -972,6 +972,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel lesson-phasor-lab" aria-label="Yapı faktörü ve sönme fazör laboratuvarı">
+   <div class="lesson-panel-head"><h3>Yapı faktörü: atom fazörleri ve sönme</h3><span class="lesson-pill">Seçili (hkl) · gerçek kristal</span></div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <p class="lesson-crystal-help">Aynı (hkl) yansımasına katkı veren atomların karmaşık genliklerini uç uca toplayın. Oklar birbirini götürürse pik çok zayıf olabilir veya görünmez.</p>
+     <div class="lesson-hkl-inputs" role="group" aria-label="Yapı faktörü için Miller indisleri">
+      <label>h <input id="pwFh" type="number" min="-12" max="12" step="1" value="2"></label>
+      <label>k <input id="pwFk" type="number" min="-12" max="12" step="1" value="0"></label>
+      <label>l <input id="pwFl" type="number" min="-12" max="12" step="1" value="0"></label>
+     </div>
+     <div class="lesson-phasor-actions" role="group" aria-label="Yapı faktörü yansıma örnekleri">
+      <button type="button" class="lesson-action" id="pwUsePeak">Seçili piki kullan</button>
+      <button type="button" class="lesson-action" id="pwF100">(100)</button>
+      <button type="button" class="lesson-action" id="pwF200">(200)</button>
+      <button type="button" class="lesson-action" id="pwF220">(220)</button>
+     </div>
+     <div id="pwPhasorSummary" class="lesson-chain-readout" aria-live="polite"></div>
+     <div class="lesson-explain"><strong>Önemli ayrım</strong> Bu hesap IT92 X-ışını atomik saçılma çarpanları, doluluk ve mevcut atom konumlarına dayanır. Sayısal F ≈ 0, katkıların bu modelde söndüğünü gösterir; sistematik yokluk kararı için simetri de incelenmelidir. Gösterim hesaplanan toz profili değildir.</div>
+    </div>
+    <div class="lesson-chain-figure">
+     <svg id="pwPhasorSvg" viewBox="0 0 900 390" role="img" aria-label="Atomlardan gelen karmaşık yapı faktörü katkılarının vektörel toplamı"></svg>
+     <p class="lesson-crystal-help">Mavi/turuncu oklar atom katkılarını; yeşil ok toplam F(hkl) vektörünü gösterir. Çok atomlu yapılarda ilk 30 katkı ayrı, kalanların tam toplamı tek okla gösterilir. (000) bir kırınım piki değildir.</p>
+    </div>
+   </div>
+  </section>
  </div>
 </main>
 
@@ -1012,11 +1037,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label class="lesson-field"><span>Hücre içi bağlaşım t₁ <output id="scDualIntraOutput">—</output></span><input id="scDualIntra" type="range" min="0" max="2" step="0.05" value="1.2"></label>
      <label class="lesson-field"><span>Hücreler arası bağlaşım t₂ <output id="scDualInterOutput">—</output></span><input id="scDualInter" type="range" min="0" max="2" step="0.05" value="0.8"></label>
      <label class="lesson-field"><span>A/B orbital enerji farkı Δ <output id="scDualDeltaOutput">—</output></span><input id="scDualDelta" type="range" min="0" max="2.5" step="0.05" value="0"></label>
+     <label class="lesson-field"><span>Seçili dalga vektörü k/(π/a) <output id="scDualKOutput">0,50</output></span><input id="scDualK" type="range" min="-1" max="1" step="0.01" value="0.5"></label>
      <div id="scDualSummary" class="lesson-chain-readout" aria-live="polite"></div>
+     <div id="scDualWeights" class="lesson-orbital-weights" aria-live="polite"></div>
      <div class="lesson-explain"><strong>Öğretici modelin sınırı</strong> Sonsuz periyodik 1B zincirde, hücre başına iki orbitalden iki bant çıkar. Alt bant iki elektron/hücre (spin dahil) ile doluysa değerlik, üstü boşsa iletim bandı olarak yorumlanır. E_g yalnızca bu modelin aralığıdır; gerçek Si/GaAs değeri veya aşağıdaki bağımsız Fermi örneğinin E_g parametresi değildir.</div>
     </div>
     <div class="lesson-chain-figure">
      <svg id="scDualChart" viewBox="0 0 900 390" role="img" aria-label="A/B orbital zinciri ile değerlik ve iletim bantlarının k uzayındaki ayrılması"></svg>
+     <p class="lesson-crystal-help">Bant eğrisine tıklayarak k seçin. A/B yüzdeleri dalga fonksiyonunun orbital karakteridir; elektron doluluğu veya taşıyıcı sayısı değildir. Tam bant temasında karakter tekil değildir.</p>
      <p class="lesson-crystal-help">H(k): köşegen enerjiler ±Δ/2, köşegen dışı etkileşim −(t₁ + t₂e⁻ⁱᵏᵃ). E±(k) = ±√[(Δ/2)² + t₁² + t₂² + 2t₁t₂ cos(ka)]. t₁,t₂ ≥ 0 için Eg = √[Δ² + 4(t₁ − t₂)²]. Burada a iki-orbitalli A/B hücresinin periyodudur; sayısal değeri alttaki a sürgüsüyle paylaşılır.</p>
     </div>
    </div>

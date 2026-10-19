@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,fermiDirac,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -163,7 +163,7 @@ function tightBindingDiagram(svg,count,hopping,period){
 
 /* A/B orbitals per cell: two Bloch eigenvalues at every wave vector. The
  * highlighted energy interval is globally forbidden in this ideal model. */
-function twoOrbitalDiagram(svg,intra,inter,delta,period){
+function twoOrbitalDiagram(svg,intra,inter,delta,period,selectedK){
  const english=window.CrystalI18n?.language==='en';
  const tr=(turkish,en)=>english?en:turkish;
  clearChart(svg,'Two-orbital tight-binding valence/conduction bands and gap');
@@ -205,6 +205,12 @@ function twoOrbitalDiagram(svg,intra,inter,delta,period){
   stroke:'#2675b7','stroke-width':3.3,'data-dual-band':'valence'});
  svgNode(svg,'path',{d:linePath(samples,p=>[X(p.k),Y(p.conduction)]),fill:'none',
   stroke:'#e58c42','stroke-width':3.3,'data-dual-band':'conduction'});
+ const selection=twoOrbitalBands(selectedK,intra,inter,delta);
+ line(X(selectedK),148,X(selectedK),352,'#8b5cf6',2,{'stroke-dasharray':'5 5','data-dual-k':'true'});
+ for(const [band,color] of [['valence','#2675b7'],['conduction','#e58c42']]){
+  svgNode(svg,'circle',{cx:X(selectedK),cy:Y(selection[band]),r:6.5,fill:color,
+   stroke:'#fff','stroke-width':2.5,'data-selected-band':band});
+ }
  txt(117,Y(samples[120].conduction)-11,tr('İletim bandı','Conduction band'),'#b96526',13,700);
  txt(117,Y(samples[120].valence)+19,tr('Değerlik bandı','Valence band'),'#225e96',13,700);
  const gx=x1-16,g1=Y(halfGap),g2=Y(-halfGap);
@@ -220,10 +226,85 @@ function twoOrbitalDiagram(svg,intra,inter,delta,period){
  txt(25,164,`π/a = ${number(Math.PI/period,3)} Å⁻¹`,'#6e8196',12,600);
 }
 
+/* A physically calculated polygon of complex per-site X-ray amplitudes.
+ * The final arrow always uses the full sum, including any grouped sites. */
+function structurePhasorDiagram(svg,host,structure,hkl){
+ const english=window.CrystalI18n?.language==='en';
+ const tr=(turkish,en)=>english?en:turkish;
+ clearChart(svg,'Atom-resolved X-ray structure-factor phasors');
+ const [h,k,l]=hkl,{sites,cell}=structure;
+ const total=host.structureFactor(h,k,l,sites,cell,'xray');
+ const visibleSites=sites.slice(0,30);
+ const terms=visibleSites.map((site,index)=>{
+  const {real,imag}=host.structureFactor(h,k,l,[site],cell,'xray');
+  return {real,imag,label:`${index+1}. ${site.symbol||'?'}`};
+ });
+ if(sites.length>30){
+  const partial=terms.reduce((sum,p)=>({real:sum.real+p.real,imag:sum.imag+p.imag}),{real:0,imag:0});
+  terms.push({real:total.real-partial.real,imag:total.imag-partial.imag,
+   label:tr(`${sites.length-30} diğer atom`,`${sites.length-30} other atoms`)});
+ }
+ const points=[{real:0,imag:0}];
+ for(const term of terms){const last=points.at(-1);points.push({real:last.real+term.real,imag:last.imag+term.imag});}
+ const extrema={minX:Math.min(0,...points.map(p=>p.real)),maxX:Math.max(0,...points.map(p=>p.real)),
+  minY:Math.min(0,...points.map(p=>p.imag)),maxY:Math.max(0,...points.map(p=>p.imag))};
+ const span=Math.max(extrema.maxX-extrema.minX,extrema.maxY-extrema.minY,1);
+ const scale=Math.min(690/(extrema.maxX-extrema.minX+span*.24),270/(extrema.maxY-extrema.minY+span*.24));
+ const centerX=(extrema.minX+extrema.maxX)/2,centerY=(extrema.minY+extrema.maxY)/2;
+ const X=x=>450+(x-centerX)*scale,Y=y=>195-(y-centerY)*scale;
+ const line=(a,b,color,width,extra={})=>svgNode(svg,'line',{
+  x1:X(a.real),y1:Y(a.imag),x2:X(b.real),y2:Y(b.imag),stroke:color,
+  'stroke-width':width,'stroke-linecap':'round',...extra});
+ const defs=svgNode(svg,'defs');
+ for(const [id,color] of [['term','#397dbc'],['group','#d48948'],['result','#238867']]){
+  const marker=svgNode(defs,'marker',{id:`pw-${id}-arrow`,markerWidth:8,markerHeight:8,
+   refX:7,refY:3,orient:'auto',markerUnits:'strokeWidth'});
+  svgNode(marker,'path',{d:'M0 0 L7 3 L0 6 Z',fill:color});
+ }
+ const zero={real:0,imag:0};
+ line({real:extrema.minX-span*.15,imag:0},{real:extrema.maxX+span*.15,imag:0},'#cbd8e7',1);
+ line({real:0,imag:extrema.minY-span*.15},{real:0,imag:extrema.maxY+span*.15},'#cbd8e7',1);
+ svgNode(svg,'text',{x:22,y:28,'font-size':16,fill:'#294965','font-weight':700},
+  `F(${h} ${k} ${l}) = Σ fⱼ exp(2πi · hkl·rⱼ)`);
+ svgNode(svg,'text',{x:22,y:368,'font-size':13,fill:'#5c7088'},tr('Re F → · Im F ↑','Re F → · Im F ↑'));
+ const small=Math.max(1e-7,Math.hypot(total.real,total.imag)*1e-8);
+ terms.forEach((term,i)=>{
+  const grouped=i===30,color=grouped?'#d48948':'#397dbc';
+  if(Math.hypot(term.real,term.imag)<small)return;
+  const segment=line(points[i],points[i+1],color,2.8,{
+   'marker-end':`url(#pw-${grouped?'group':'term'}-arrow)`,'data-phasor-arrow':i});
+  svgNode(segment,'title',{},`${term.label}: ${number(term.real,3)} + ${number(term.imag,3)}i`);
+ });
+ const magnitude=Math.hypot(total.real,total.imag);
+ if(magnitude>=1e-7)line(zero,total,'#238867',4,
+  {'marker-end':'url(#pw-result-arrow)','data-phasor-result':'true'});
+ svgNode(svg,'circle',{cx:X(total.real),cy:Y(total.imag),r:5.5,fill:'#238867',stroke:'#fff','stroke-width':2});
+ svgNode(svg,'circle',{cx:X(0),cy:Y(0),r:3.3,fill:'#64748b'});
+ svgNode(svg,'text',{x:870,y:28,'text-anchor':'end',fill:'#238867','font-size':16,'font-weight':700},
+  `|F| = ${number(magnitude,3)}`);
+ return total;
+}
+
 export function initPowderLesson(host){
  let visible=false,selectedIndex=0,lastPattern=null,planeViewer=null,planeMetrics=null;
  let selectedWave=null,thetaOverride=null,waveDrawing=null,waveFrame=0,wavePlaying=false,lastWavePaint=0;
  const chart=$('pwChart'),list=$('pwPeaks'),summary=$('pwSummary'),bragg=$('pwBragg');
+ function updatePhasors(structure=host.structure()){
+  const values=['pwFh','pwFk','pwFl'].map(id=>$(id).value.trim());
+  const hkl=values.map(Number),output=$('pwPhasorSummary');
+  const valid=values.every(value=>value!=='')&&hkl.every(value=>Number.isInteger(value)&&Math.abs(value)<=12)&&hkl.some(Boolean);
+  if(!valid){clearChart($('pwPhasorSvg'),'Geçerli ve sıfırdan farklı (hkl) gerekli.');
+   output.replaceChildren(metric('Yansıma','Geçerli (hkl) seçin'));return;}
+  try{
+   const result=structurePhasorDiagram($('pwPhasorSvg'),host,structure,hkl);
+   const magnitude=Math.hypot(result.real,result.imag);
+   output.replaceChildren(metric('Yansıma',`(${hkl.join(' ')})`),
+    metric('|F(hkl)|',number(magnitude,3)),metric('|F|²',number(result.intensity,3)),
+    metric('Sayısal sonuç',result.intensity<1e-8?'F ≈ 0 · sönme':'F ≠ 0 · katkı var'));
+  }catch(error){clearChart($('pwPhasorSvg'),'Yapı faktörü hesaplanamadı');
+   output.replaceChildren(metric('Hesaplama hatası',error.message||String(error)));}
+ }
+ function useHkl(hkl){if(!hkl)return;['pwFh','pwFk','pwFl'].forEach((id,i)=>$(id).value=String(hkl[i]));updatePhasors();}
  function setWavePlaying(playing){
   wavePlaying=!!playing&&!!selectedWave&&visible;
   cancelAnimationFrame(waveFrame);
@@ -280,7 +361,10 @@ export function initPowderLesson(host){
    }
   }catch(error){planeMetrics=null;$('pwPlaneStats').textContent='3B çizim kullanılamıyor: '+(error.message||String(error));}
  }
- function choose(index){selectedIndex=index;thetaOverride=null;render();}
+ function choose(index){selectedIndex=index;thetaOverride=null;
+  const hkl=lastPattern?.groups?.[index]?.hkl;
+  if(hkl)['pwFh','pwFk','pwFl'].forEach((id,i)=>$(id).value=String(hkl[i]));
+  render();}
  function render(){
   if(!visible)return;
   const structure=host.structure();
@@ -354,6 +438,7 @@ export function initPowderLesson(host){
     disableBraggLab();
     bragg.textContent='Düzlem seçmek için açı sınırını veya dalga boyunu değiştirin.';
    }
+   updatePhasors(structure);
   }catch(error){
    lastPattern=null;
    clearChart(chart,'Hesaplama hatası');summary.replaceChildren();list.replaceChildren();bragg.replaceChildren();
@@ -366,6 +451,10 @@ export function initPowderLesson(host){
  $('pwTheta').addEventListener('input',()=>{thetaOverride=Number($('pwTheta').value);redrawBraggLab();});
  $('pwMatchBragg').addEventListener('click',()=>{thetaOverride=null;redrawBraggLab();});
  $('pwWavePlay').addEventListener('click',()=>setWavePlaying(!wavePlaying));
+ for(const id of ['pwFh','pwFk','pwFl'])$(id).addEventListener('input',()=>{if(visible)updatePhasors();});
+ $('pwUsePeak').addEventListener('click',()=>useHkl(lastPattern?.groups?.[selectedIndex]?.hkl));
+ for(const [id,hkl] of [['pwF100',[1,0,0]],['pwF200',[2,0,0]],['pwF220',[2,2,0]]])
+  $(id).addEventListener('click',()=>useHkl(hkl));
  window.addEventListener('crystal-language-change',render);
  return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}else{setWavePlaying(false);planeViewer?.suspend?.();}},refresh:render};
 }
@@ -417,10 +506,12 @@ export function initSemiconductorLesson(host){
   if(!visible)return;
   const intra=Number($('scDualIntra').value),inter=Number($('scDualInter').value);
   const delta=Number($('scDualDelta').value),period=Number($('scPeriod').value);
+  const selectedK=Number($('scDualK').value);
   const gap=twoOrbitalBandGap(intra,inter,delta);
   $('scDualIntraOutput').textContent=number(intra,2)+' eV';
   $('scDualInterOutput').textContent=number(inter,2)+' eV';
   $('scDualDeltaOutput').textContent=number(delta,2)+' eV';
+  $('scDualKOutput').textContent=number(selectedK,2);
   $('scDualSummary').replaceChildren(
    metric('Yasak bant aralığı Eg',number(gap,3)+' eV'),
    metric('Değerlik bandı üstü Ev',number(-gap/2,3)+' eV'),
@@ -428,10 +519,41 @@ export function initSemiconductorLesson(host){
    metric('BZ sınırı |k|',number(Math.PI/period,3)+' Å⁻¹'));
   for(const [key,id] of Object.entries(dualButtons))
    $(id).setAttribute('aria-pressed',String(dualPreset===key));
-  twoOrbitalDiagram(dualChart,intra,inter,delta,period);
+  twoOrbitalDiagram(dualChart,intra,inter,delta,period,selectedK);
+  const weights=twoOrbitalWeights(selectedK,intra,inter,delta);
+  const target=$('scDualWeights');target.replaceChildren();
+  const heading=document.createElement('strong');heading.textContent='Seçili k için A/B orbital karakteri';
+  target.appendChild(heading);
+  if(weights.degenerate){
+   const note=document.createElement('p');note.textContent='Bant temasında orbital karakteri tekil değildir.';
+   target.appendChild(note);
+  }else{
+   for(const [band,title] of [['valence','Değerlik bandı'],['conduction','İletim bandı']]){
+    const item=document.createElement('div');item.className='lesson-orbital-row';
+    const label=document.createElement('span');label.textContent=title;
+    const bar=document.createElement('div');bar.className='lesson-orbital-bar';
+    bar.setAttribute('role','img');
+    bar.setAttribute('aria-label',`${title}: A ${number(weights[band].A*100,1)}%, B ${number(weights[band].B*100,1)}%`);
+    const a=document.createElement('span');a.className='lesson-orbital-A';a.style.width=(weights[band].A*100)+'%';
+    const b=document.createElement('span');b.className='lesson-orbital-B';b.style.width=(weights[band].B*100)+'%';
+    bar.append(a,b);
+    const detail=document.createElement('small');detail.textContent=`A ${number(weights[band].A*100,1)}% · B ${number(weights[band].B*100,1)}%`;
+    item.append(label,bar,detail);target.appendChild(item);
+   }
+  }
  }
  for(const id of ['scDualIntra','scDualInter','scDualDelta'])
   $(id).addEventListener('input',()=>{dualPreset=null;renderDual();});
+ $('scDualK').addEventListener('input',renderDual);
+ dualChart.addEventListener('click',event=>{
+  const point=dualChart.createSVGPoint();point.x=event.clientX;point.y=event.clientY;
+  const matrix=dualChart.getScreenCTM();if(!matrix)return;
+  const local=point.matrixTransform(matrix.inverse());
+  if(local.y<148||local.y>352)return;
+  const selectedK=Math.max(-1,Math.min(1,(local.x-96)/(838-96)*2-1));
+  $('scDualK').value=String(Math.round(selectedK*100)/100);
+  renderDual();
+ });
  for(const [key,id] of Object.entries(dualButtons))$(id).addEventListener('click',()=>{
   dualPreset=key;
   ['scDualIntra','scDualInter','scDualDelta'].forEach((input,i)=>$(input).value=String(dualPresets[key][i]));

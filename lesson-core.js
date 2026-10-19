@@ -72,6 +72,21 @@ export function twoOrbitalBandGap(intraEV,interEV,onsiteDeltaEV=0){
  return edge.conduction-edge.valence;
 }
 
+/* Squared A/B coefficients of the two normalized Bloch eigenvectors. At a
+   genuine band touching the eigenvectors are not unique, so do not assign a
+   misleading orbital character. These are NOT Fermi occupations. */
+export function twoOrbitalWeights(kReduced,intraEV,interEV,onsiteDeltaEV=0){
+ const {valence,conduction}=twoOrbitalBands(kReduced,intraEV,interEV,onsiteDeltaEV);
+ const radius=(conduction-valence)/2;
+ if(radius<1e-12)return {degenerate:true,valence:null,conduction:null};
+ const conductionA=(1+onsiteDeltaEV/(2*radius))/2;
+ return {
+  degenerate:false,
+  valence:{A:1-conductionA,B:conductionA},
+  conduction:{A:conductionA,B:1-conductionA}
+ };
+}
+
 export function fermiDirac(energyEV,fermiEV,temperatureK){
  if(![energyEV,fermiEV,temperatureK].every(Number.isFinite)||temperatureK<=0)
   throw Error('Fermi dağılımı: sonlu enerji ve pozitif sıcaklık gerekli.');
