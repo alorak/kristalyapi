@@ -16,8 +16,14 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
 
 ### E2 — XRD'yi ders ve ölçüm laboratuvarına geliştirme
 
-- [ ] Seçilen pike karşılık gelen `(hkl)` düzlemlerini aynı sayfadaki 3B
-  kristalde vurgula; `#karsi-uzay` ile ayar paylaşımı, simetriye duyarlı aile.
+- [x] XRD grafik pikine **veya** (hkl) listesine tıklayınca aynı sayfada 3B
+  birim hücrede seçilen düzlem üyesinin kesitlerini vurgula; hücre köşelerini,
+  atomları ve `G(hkl)` yönünü göster. `#karsi-uzay` ile test edilen
+  `planeCellPolygons` geometrisini paylaş, orbital bakış ve mobil ölçekleme ekle.
+- [ ] Tek bir toz pikinde çakışan farklı `(hkl)` üyelerini ve kristal nokta
+  grubuna göre eşdeğer üyeleri **ayrı ayrı** seçilebilir kıl; basit kübik
+  indis permütasyonu tüm simetrilere uygulanamaz. `#karsi-uzay` ile (hkl)
+  seçimi/bakış senkronizasyonu ekle.
 - [ ] Gelen/yansıyan ışın faz animasyonu ve yapıcı/yıkıcı girişim; Bragg açısı
   ile kırınım dedektör açısını ayrı çiz.
 - [ ] Kullanıcı atomu, doluluğu ve hücreyi değiştirdiğinde `F(hkl)` kompleks

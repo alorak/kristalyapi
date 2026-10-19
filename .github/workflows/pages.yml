@@ -119,6 +119,7 @@ jobs:
           cp reciprocal-page.js public/reciprocal-page.js
           cp lesson-core.js public/lesson-core.js
           cp lesson-pages.js public/lesson-pages.js
+          cp powder-planes-view.js public/powder-planes-view.js
           cp favicon.svg public/favicon.svg
           cp translations.js public/translations.js
           cp -R vendor/three public/vendor/three
@@ -133,6 +134,7 @@ jobs:
           test -s public/manifest.webmanifest
           test -s public/lesson-core.js
           test -s public/lesson-pages.js
+          test -s public/powder-planes-view.js
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

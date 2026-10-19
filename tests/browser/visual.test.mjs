@@ -1151,12 +1151,30 @@ try{
  assert.match(await page.locator('#pwSourceDetail').textContent(),/8 atom/);
  assert.match(await page.locator('#pwPeaks').textContent(),/28[.,]44°/,'Si {111} family may be indexed with negative signs');
  assert.ok(await page.locator('#pwChart path').count()>=1,'calculated powder profile must be drawn');
+ await page.waitForFunction(()=>document.querySelector('#pwCrystal3d canvas')&&
+  /hücre-içi düzlem|clipped planes/.test(document.querySelector('#pwPlaneStats').textContent));
+ assert.ok(await canvasInk(page,'#pwCrystal3d canvas')>70,
+  'Miller 3D viewer must render unit cell, atoms, and highlighted planes');
+ assert.equal(await page.locator('#pwPlaneHkl').textContent(),
+  '('+(await page.locator('#pwPeaks button').first().textContent()).split(')')[0].slice(1)+')');
+ const initialHkl=await page.locator('#pwPlaneHkl').textContent();
+ const initialImage=await page.locator('#pwCrystal3d canvas').evaluate(canvas=>canvas.toDataURL());
+ await page.locator('#pwChart .lesson-peak-hit').nth(1).click();
+ assert.notEqual(await page.locator('#pwPlaneHkl').textContent(),initialHkl,
+  'clicking a peak on the XRD graph selects its Miller planes');
+ const secondImage=await page.locator('#pwCrystal3d canvas').evaluate(canvas=>canvas.toDataURL());
+ assert.notEqual(secondImage,initialImage,'a different (hkl) must change the rendered 3D planes');
+ assert.equal(await page.locator('#pwPeaks button').nth(1).getAttribute('aria-pressed'),'true');
+ await page.locator('#pwPeaks button').first().click();
+ assert.equal(await page.locator('#pwPlaneHkl').textContent(),initialHkl,
+  'choosing from the reflection list must restore the selected plane');
  const powderBefore=await page.locator('#pwSummary').textContent();
  await page.locator('#pwLambda').evaluate(el=>{el.value='1.8';el.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.notEqual(await page.locator('#pwSummary').textContent(),powderBefore,'wavelength slider recalculates Bragg peaks');
  await page.locator('#pwPeaks button').first().click();
  assert.match(await page.locator('#pwBragg').textContent(),/Bragg/);
  await page.screenshot({path:path.join(artifacts,'lesson-01-powder-mvp.png')});
+ await page.screenshot({path:path.join(artifacts,'lesson-03-powder-miller-3d.png')});
 
  await page.locator('#semiconductorNav').click();
  await page.waitForFunction(()=>!document.getElementById('semiconductorPage').hidden&&

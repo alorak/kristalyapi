@@ -21,7 +21,10 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 - **Powder Diffraction** (`#toz-kirinimi`): a standalone page sharing the
   active structure's tested IT92 powder pattern/profile engine. Change the
   wavelength, 2θ range, empirical FWHM and Lorentz–polarization correction;
-  inspect labelled reflections, d-spacings and Bragg angles. This is neither
+  click a peak in the plot or reflection list to highlight its indexed `(hkl)`
+  plane slices and normal in a rotatable **3D unit cell**, alongside its
+  d-spacing and Bragg angle. Symmetry-equivalent reflections sharing a powder
+  peak are not all highlighted yet. This is neither
   calibrated instrumental profile fitting nor Rietveld refinement.
 - **Semiconductor Physics** (`#yariiletken-fizigi`): a standalone interactive
   **1D two-plane-wave nearly-free-electron** band demonstration and a separate

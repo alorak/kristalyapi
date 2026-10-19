@@ -20,7 +20,11 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 - **Toz Kırınımı** (`#toz-kirinimi`): Üst menüden açılır; etkin yapının IT92
   modelinden Bragg yansıma/profilini hesaplar. λ, 2θ üst sınırı, sabit pseudo-Voigt
-  genişliği ve LP seçimi değişir. (hkl) seçimi, Bragg açısı ve d aralığı görünür.
+  genişliği ve LP seçimi değişir. Grafikteki pik veya listeden bir `(hkl)`
+  seçildiğinde yanındaki **döndürülebilir 3B kristalde** o Miller düzlem
+  üyesinin birim hücreyle kesişen yüzeyleri ve normal yönü vurgulanır;
+  Bragg açısı ve d aralığı birlikte güncellenir. Bir toz pikindeki bütün
+  simetri eşdeğerleri henüz birlikte gösterilmez.
   Bu gerçek cihaz profil ince ayarı veya Rietveld analizi değildir.
 - **Yarıiletken Fiziği** (`#yariiletken-fizigi`): Üst menüden açılır; iki
   düzlem dalgalı **1B yaklaşık serbest elektron** bant modeli ile ayrı
