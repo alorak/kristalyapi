@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,fermiDirac,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,fermiDirac,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -73,6 +73,39 @@ test('infinite periodic tight-binding band has 4t width and is k-even',()=>{
  assert.ok(finite.at(-1)-finite[0]<4*t);
  assert.ok(finite.at(-1)-finite[0]>3.99*t,'open chain approaches periodic band width');
  assert.throws(()=>tightBindingBandEnergy(1.1,t));
+});
+
+test('equal two-orbital bonds and equal on-site energies close the gap at the zone boundary',()=>{
+ const bands=twoOrbitalBands(1,1,1,0);
+ assert.ok(Math.abs(bands.valence)<1e-12&&Math.abs(bands.conduction)<1e-12);
+ assert.ok(twoOrbitalBandGap(1,1,0)<1e-12);
+ const middle=twoOrbitalBands(0,1,1,0);
+ assert.ok(Math.abs(middle.valence+2)<1e-12&&Math.abs(middle.conduction-2)<1e-12);
+});
+
+test('bond dimerization and orbital detuning separately open an exact forbidden gap',()=>{
+ assert.ok(Math.abs(twoOrbitalBandGap(1.2,.8,0)-.8)<1e-12);
+ assert.ok(Math.abs(twoOrbitalBandGap(1,1,1.2)-1.2)<1e-12);
+ assert.ok(Math.abs(twoOrbitalBandGap(1.2,.8,1.2)-Math.hypot(.8,1.2))<1e-12);
+ assert.ok(Math.abs(twoOrbitalBandGap(0,0,1.5)-1.5)<1e-12);
+});
+
+test('two-orbital valence/conduction branches stay ordered and gap is global minimum',()=>{
+ const t1=1.25,t2=.75,delta=.65,gap=twoOrbitalBandGap(t1,t2,delta);
+ for(let i=0;i<=200;i++){
+  const k=-1+i/100;
+  const b=twoOrbitalBands(k,t1,t2,delta);
+  assert.ok(b.valence<=b.conduction);
+  assert.ok(b.conduction-b.valence>=gap-1e-12);
+  assert.deepEqual(b,twoOrbitalBands(-k,t1,t2,delta));
+ }
+ const offset=twoOrbitalBands(.5,t1,t2,delta,3);
+ const standard=twoOrbitalBands(.5,t1,t2,delta);
+ assert.ok(Math.abs(offset.valence-standard.valence-3)<1e-12);
+ assert.throws(()=>twoOrbitalBands(1.01,1,1,0));
+ assert.throws(()=>twoOrbitalBands(0,-1,1,0));
+ assert.throws(()=>twoOrbitalBandGap(1,-1,0));
+ assert.throws(()=>twoOrbitalBands(0,1,1,Number.NaN));
 });
 
 test('Fermi Dirac at EF is 1/2, satisfies particle-hole symmetry and temperature limits',()=>{

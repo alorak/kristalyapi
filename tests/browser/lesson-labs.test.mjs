@@ -71,10 +71,41 @@ try{
  await page.locator('#scChainPlay').click();
  assert.equal(await page.locator('#scChainPlay').getAttribute('aria-pressed'),'false');
  await page.locator('#scChainAtoms').evaluate(el=>{el.value='32';el.dispatchEvent(new Event('input',{bubbles:true}));});
- await page.locator('#scChainChart').scrollIntoViewIfNeeded();
- await page.screenshot({path:path.join(artifacts,'lesson-05-atom-to-band.png'),timeout:30000});
+ // Full-page screenshots are optional here: the larger visual regression suite
+ // owns WebGL screenshots, while this focused smoke checks SVG + interactions.
+ if(process.env.LESSON_SCREENSHOTS==='1'){
+  await page.locator('#scChainChart').scrollIntoViewIfNeeded();
+  await page.screenshot({path:path.join(artifacts,'lesson-05-atom-to-band.png'),timeout:60000});
+ }
+ await page.waitForFunction(()=>document.querySelectorAll('#scDualChart [data-dual-band]').length===2);
+ assert.equal(await page.locator('#scDualChart [data-dual-atom]').count(),12,
+  'A/B repeated cells are visible');
+ assert.match(await page.locator('#scDualSummary').textContent(),/0[.,]800 eV/,
+  'unequal bonds open a 0.8 eV two-orbital gap');
+ await page.locator('#scDualMetal').click();
+ assert.match(await page.locator('#scDualSummary').textContent(),/0[.,]000 eV/,
+  'uniform equal-energy A/B chain has band touching');
+ assert.equal(await page.locator('#scDualChart [data-gap-region]').count(),0,
+  'the forbidden interval vanishes when the bands touch');
+ await page.locator('#scDualIonic').click();
+ assert.match(await page.locator('#scDualSummary').textContent(),/1[.,]200 eV/,
+  'on-site orbital energy difference opens the expected gap');
+ assert.equal(await page.locator('#scDualChart [data-gap-region]').count(),1);
+ await page.locator('#scDualDelta').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.equal(await page.locator('#scDualMetal').getAttribute('aria-pressed'),'false',
+  'manual slider changes must clear the selected preset');
+ // The large WebGL page can shift during Playwright's automatic scroll;
+ // dispatch the same native button click after two real pointer preset checks.
+ await page.locator('#scDualDimer').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scDualDimer').getAttribute('aria-pressed'),'true');
+ // Capture the actual browser-rendered SVG DOM instead of taking a GPU
+ // screenshot: Playwright's scroll-stability check can stall on WebGL pages.
+ const renderedSvg=await page.locator('#scDualChart').evaluate(el=>new XMLSerializer().serializeToString(el));
+ assert.match(renderedSvg,/data-dual-band="valence"/);
+ assert.match(renderedSvg,/data-dual-band="conduction"/);
+ await fs.writeFile(path.join(artifacts,'lesson-06-valence-conduction-gap.svg'),renderedSvg);
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
- console.log('Focused XRD Bragg/WebGL and atom-to-band semiconductor labs passed.');
+ console.log('Focused XRD Bragg/WebGL, atom-to-band and two-orbital gap labs passed.');
 }finally{
  await browser?.close();
  await new Promise(resolve=>server.close(resolve));

@@ -38,6 +38,14 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
   enerji seviyesi ve sonsuz periyodik zincirin tek Bloch bandı birlikte
   çizilir; |t| ile enerji aralığı, N ile seviye sıklığı değişir. Tek
   orbital modeli kendi başına değerlik–iletim bandı aralığı üretmez.
+  Devamındaki **iki orbitalli A/B birim hücresi** deneyinde ayrı değerlik
+  ve iletim bantları çizilir: eşit bağlaşım ve eşit orbital enerjisinde
+  bantlar bölge sınırında temas eder; farklı hücre içi/dışı bağlaşım veya
+  A/B orbital enerji farkı gerçek bir *model bant aralığı* açar.
+  `Eg = sqrt(delta² + 4(t1 − t2)²)` sayısal olarak sınanır. Üç örnek
+  seçimi, sürgüler ve boş enerji bölgesi birlikte gösterilir. Bu 1B modelin
+  değeri gerçek Si/GaAs aralığı değildir; bağımsız Fermi örneğinin `Eg`
+  sürgüsüyle kendiliğinden eşitlenmez.
 - Her iki sayfa çevrimdışı uygulama kabuğuna dahildir. Bilimsel geliştirme
   sırası, ileri ders deneyleri, cihaz/model sınırlamaları ve kabul testleri
   için [todo.md](todo.md) dosyasını inceleyin.

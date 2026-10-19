@@ -75,9 +75,16 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
   zincirin **tam N özdeğeri** → ayrı, sonsuz periyodik zincirin Bloch bandı.
   En yakın komşu tight-binding modeli, |t| sürgüsü ve N canlandırması;
   atom sayısı/enerji genişliği ile açık/periyodik sınır ayrımını etiketle.
-- [ ] Bu tek-orbital bandının üstüne ikinci orbital/birim hücre veya
-  iki-sublatris modeli ekleyerek gerçek **yasaklı bant aralığının oluşumunu**
-  gösterecek ayrı, testli ders üret (mevcut tek bantta gap yoktur).
+- [x] Tek orbitalli deneyden sonra **iki A/B orbital/birim hücreli** sonsuz
+  periyodik 1B model ekle. İki Bloch bandı, t₁/t₂ bağlaşım farkı ve Δ
+  orbital enerji farkından `Eg = sqrt(Δ² + 4(t₁ − t₂)²)` model aralığını
+  göster. Bandın teması, bağlaşım kaynaklı aralık, enerji kaynaklı aralık
+  için üç örnek, sürgüler, boş enerji bölgesi, bağımsız birim ve tarayıcı
+  testleri. Gerçek Si/GaAs bandı veya Fermi panelindeki serbest `Eg` ile
+  özdeşleştirilmez.
+- [ ] İki orbitalli model için doluluk/filling (spin, yarı dolu alt bant),
+  gerçek uzay Bloch genlikleri ve k-bağımlı orbital karakteri çiz; atomik
+  sınırdan valans/iletim doluluğuna kontrollü geçişi aç.
 - [ ] Bloch teoremi, periyodik potansiyel, birinci Brillouin bölgesi; mevcut
   karşı örgü/BZ sahnesine ders bağlantısı.
 - [ ] Yaklaşık serbest elektron (1B Kronig–Penney / iki dalga) ve tight-binding
