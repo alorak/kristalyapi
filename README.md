@@ -14,7 +14,12 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 2. Use **Open** to select a bookmarked structure, built-in example, or local CIF/PDB/other supported file. These options are also available in the Library.
 3. Edit unit-cell dimensions, supercells, and atomic sites in the left panel; change the representation using the bottom toolbar.
 4. Open measurement, bond-valence (BVS), diffraction (XRD), Miller-plane, and other analyses using the right-side tool icons.
+
 5. Use **Save** to export a project JSON, CIF, POSCAR, XYZ, PDB, **vector SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF, or **1×–4× high-resolution PNG**.
+
+The **Crystal Defects** tool (right toolbar) materializes display-only repetitions as explicit P1 atoms, then creates one **vacancy**, **substitution**, or **interstitial** at a time. It supports Undo and CIF/POSCAR export. The model is geometric only: no charge states, atomic relaxation, or defect formation energies are calculated. Loaded volumetric maps/comparison phases are protected from being silently discarded.
+
+The **Miller** panel also provides independent **bottom/top vacuum padding** (0–80 Å each). Unlike cutting a surface slab, it preserves the displayed crystal atoms, materializes them as a P1 supercell, extends the lattice vector normal to the `ab` plane, and shifts the atoms by the specified bottom padding. Use Undo or export CIF/POSCAR after the change; no relaxation or surface-energy calculation is performed.
 
 ### New teaching laboratory MVPs
 
