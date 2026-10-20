@@ -1,7 +1,9 @@
 name: CIF crystal accuracy · Gemmi reference
 
 on:
-  push:
+  # Run only after a PR is merged into main, using the trusted merge commit.
+  pull_request_target:
+    types: [closed]
     branches: [main]
     paths:
       - 'index.html'
@@ -20,16 +22,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: cif-accuracy-${{ github.ref }}
-  cancel-in-progress: true
+  group: cif-accuracy-${{ github.event.pull_request.merge_commit_sha || github.sha }}
+  cancel-in-progress: false
 
 jobs:
   scientific-validation:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     name: 30 real + 10 synthetic CIF accuracy
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.pull_request.merge_commit_sha }}
 
       - name: Install Python and Node
         uses: actions/setup-python@v5
@@ -39,8 +44,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install pinned scientific reference
-        run: python -m pip install --disable-pip-version-check gemmi==0.7.4
+      - name: Install pinned independent scientific test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            gemmi==0.7.4 numpy==2.1.3 scipy==1.15.3 \
+            scikit-image==0.25.2 ase==3.26.0
 
       - name: Validate measurement engine and pinned fixtures
         run: python -m unittest discover -s tests/validation -p 'test_*.py' -v

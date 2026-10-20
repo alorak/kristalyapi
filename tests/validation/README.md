@@ -51,7 +51,7 @@ beklenen hata nedeniyle açıkça kayıtlıdır; başarılı kabul edilmez.
 ## Yerelde çalıştırma
 
 ```bash
-python -m pip install gemmi==0.7.4
+python -m pip install gemmi==0.7.4 numpy==2.1.3 scipy==1.15.3 scikit-image==0.25.2 ase==3.26.0
 node --version   # Node.js 22 önerilir
 python tests/validation/validate.py --out-dir validation-results --gate
 ```
@@ -91,7 +91,7 @@ doğrulandığı iddia edilmez. [Paket 8.1 sınırları](PACKAGE_8_1_STATUS.md).
 
 ## GitHub Actions
 
-[**CIF crystal accuracy · Gemmi reference**](../../.github/workflows/cif-validation.yml) iş akışı **yalnızca `main` dalına ilgili dosyalar merge/push edildiğinde** veya elle `workflow_dispatch` ile çalışır. PR açılınca tetiklenmez. Sonuçlar GitHub Actions **Summary** görünümüne yazılır ve `browser.json`, `reference.json`, `report.json`, `report.md` dosyaları 30 günlük artifact olarak saklanır.
+[**CIF crystal accuracy · Gemmi reference**](../../.github/workflows/cif-validation.yml) iş akışı **yalnızca ilgili dosyaları değiştiren bir PR `main` dalına birleştirildiğinde** veya elle `workflow_dispatch` ile çalışır. Doğrudan push ya da PR açılışıyla tetiklenmez; testler birleştirme commit'i üzerinde koşar. Sonuçlar GitHub Actions **Summary** görünümüne yazılır ve `browser.json`, `reference.json`, `report.json`, `report.md` dosyaları 30 günlük artifact olarak saklanır.
 
 - Varsayılan: **scientific gate**, herhangi bir `fail` / `error` veya yeni/
   nedeni değişen `inconclusive` CI işini başarısız yapar. Yalnız manifestte
