@@ -360,6 +360,41 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Geometrik noktasal kusur modelidir. Yük durumu, kusur oluşum enerjisi, atom relaksasyonu ve DFT hesabı yapılmaz.</p>
   </div>
 
+  <div class="section" data-right-section="qe">
+   <h2>DFT / Quantum ESPRESSO <span class="stage">Dosya alışverişi</span></h2>
+   <p class="hint">Hesaplamayı tarayıcı çalıştırmaz. QE pw.x giriş dosyası üretin; sonucu kendi bilgisayarınızda hesaplayıp burada okuyun. Hiçbir yapı veya çıktı sunucuya gönderilmez.</p>
+   <div class="qe-workflow">
+    <strong class="measure-subheading">1 · Hesaplama girdisini oluştur</strong>
+    <div class="qe-form-grid">
+     <label class="field"><span>Hesap türü</span><select id="qeCalcType"><option value="relax">Relaksasyon · sabit hücre</option><option value="scf">DFT · tek nokta enerji (SCF)</option></select></label>
+     <label class="field"><span>Elektron doluluğu</span><select id="qeOccupation"><option value="fixed">Sabit · yalıtkan / yarıiletken</option><option value="smearing">Smearing · metal</option></select></label>
+     <label class="field"><span>ecutwfc (Ry)</span><input id="qeEcutwfc" type="number" min="10" max="300" step="5" value="50"></label>
+     <label class="field"><span>ecutrho (Ry)</span><input id="qeEcutrho" type="number" min="10" max="2400" step="10" value="400"></label>
+    </div>
+    <p class="hint">K-noktası ızgarası · vakumlu c yönünde çoğunlukla kz=1 seçilir; nihai değer için yakınsama testi gerekir.</p>
+    <div class="triple">
+     <label class="field compact"><span>kx</span><input id="qeKx" type="number" min="1" max="24" step="1" value="4"></label>
+     <label class="field compact"><span>ky</span><input id="qeKy" type="number" min="1" max="24" step="1" value="4"></label>
+     <label class="field compact"><span>kz</span><input id="qeKz" type="number" min="1" max="24" step="1" value="1"></label>
+    </div>
+    <label class="field"><span>Kuvvet yakınsaması (Ry/Bohr)</span><input id="qeForceThreshold" type="number" min="0.000001" max="0.01" step="0.0001" value="0.001"></label>
+    <label class="field"><span>Alt sabit atom tabakası (Å, 0 = serbest)</span><input id="qeFreezeBottom" type="number" min="0" max="100" step=".5" value="0"></label>
+    <label class="field"><span>Pseudopotansiyel dosyaları · Element=dosya.UPF</span><textarea id="qePseudoFiles" rows="3" spellcheck="false" placeholder="Si=Si.pbe.UPF"></textarea></label>
+    <button type="button" id="qePseudoAuto">Element adlarından taslak oluştur</button>
+    <p class="hint">UPF adları başlangıçta yalnız taslaktır: gerçek dosyaları indirip ./pseudo dizinine yerleştirin. 50/400 Ry, k-ızgarası, spin ve smearing örnek değerlerdir; fiziksel yakınsama ve uygun pseudopotansiyel seçimi kullanıcı sorumluluğundadır. Kısmi doluluk desteklenmez.</p>
+    <button type="button" id="qeExportPw" class="primary">Quantum ESPRESSO (.in) indir</button>
+    <div id="qeExportStatus" class="note" role="status">Girdi dosyası henüz hazırlanmadı.</div>
+   </div>
+   <div class="qe-workflow">
+    <strong class="measure-subheading">2 · Tamamlanan hesabın sonucunu oku</strong>
+    <label class="field"><span>pw.x çıktı dosyası (.out)</span><input id="qeOutputFile" type="file" accept=".out,.log,.txt"></label>
+    <button type="button" id="qeParseOutput">Sonucu oku ve önizle</button>
+    <div id="qeImportSummary" class="note" role="status" aria-live="polite">Hesaplama çıktısı henüz seçilmedi.</div>
+    <button type="button" class="primary" id="qeApplyGeometry" disabled>Relakse atom konumlarını uygula</button>
+    <p class="hint">Geometri yalnız tamamlanmış relaksasyondan ve mevcut kristalle atom sayısı/türleri eşleştiğinde aktarılır. SCF çıktısı enerji olarak görüntülenir. İçe aktarılan yapı Geri Al ile eski haline döndürülebilir.</p>
+   </div>
+  </div>
+
   <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>
    <div id="layerManager" class="layer-manager" aria-label="Kristal görünüm katmanları"></div>
@@ -689,6 +724,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button type="button" class="right-tool" data-right-tool="lattice" aria-label="Örgü dönüşümü" title="Örgü dönüşümü" aria-controls="rightDrawerPane-lattice" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zm5 0v16m6-16v16M4 9h16M4 15h16m-5-8 2 2-2 2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="miller" aria-label="Miller düzlemleri ve morfoloji" title="Miller düzlemleri · kesit · slab · morfoloji" aria-controls="rightDrawerPane-miller" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 7-10h11l-7 10zM5 20h14m-8-9 6-3"/><path d="M10 6 5 16" stroke-dasharray="2 2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="defects" aria-label="Kristal kusurları" title="Vakans · ikame · arayer" aria-controls="rightDrawerPane-defects" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM12 4v16M4 12h16" stroke-dasharray="3 2"/><circle cx="8" cy="8" r="2"/><path d="m16 15 4 4m0-4 4-4"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="qe" aria-label="DFT / Quantum ESPRESSO" title="DFT hesabı · dosya dışa/içe aktarma" aria-controls="rightDrawerPane-qe" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/><circle cx="12" cy="12" r="2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="symmetry" aria-label="Kristalografik simetri" title="Kristalografik simetri" aria-controls="rightDrawerPane-symmetry" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 1 6M20 3v5h-5M12 5v14M5 12h14"/></svg></button>
   </nav>
  </aside>
