@@ -253,3 +253,68 @@ export function idealDiodeMinorityProfile(state,side,distanceCm){
  const excessCm3=base*state.relativeExcess*Math.exp(-distanceCm/length);
  return {equilibriumCm3:base,excessCm3,concentrationCm3:base+excessCm3};
 }
+
+
+/* P4 pedagogical dark-diode two-branch equivalent circuit at 300 K.
+ * I(Vj)=I01(expm1(Vj/VT))+I02(expm1(Vj/(2VT)))+Vj/Rsh;
+ * Va=Vj+I*Rs (passive sign convention). I01 comes from P3.
+ * I02/I01 is a selectable illustrative ratio, NOT a fitted material property.
+ * No avalanche, Zener, illumination, high injection or self-heating. */
+export function realDiodeState({acceptorsCm3=1e16,donorsCm3=1e16,
+ appliedBiasV=0,areaMm2=1,recombinationRatio=1e4,
+ seriesOhms=25,shuntOhms=1e8,
+ includeRecombination=true,includeSeries=true,includeShunt=true}={}){
+ if(![acceptorsCm3,donorsCm3,appliedBiasV,areaMm2,recombinationRatio,
+   seriesOhms,shuntOhms].every(Number.isFinite)||
+  acceptorsCm3<=0||donorsCm3<=0||areaMm2<=0||recombinationRatio<0||
+  seriesOhms<0||shuntOhms<=0||Math.abs(appliedBiasV)>0.55||
+  typeof includeRecombination!=='boolean'||typeof includeSeries!=='boolean'||
+  typeof includeShunt!=='boolean')
+  throw Error('Gerçek diyot: katkı/alan pozitif, dirençler geçerli, |V| ≤ 0,55 V olmalı.');
+ const baseline=idealDiodeState({acceptorsCm3,donorsCm3,areaMm2,appliedBiasV});
+ const thermalVoltageV=baseline.thermalVoltageV;
+ const diffusionSaturationA=baseline.saturationCurrentA;
+ const recombinationSaturationA=includeRecombination?
+  diffusionSaturationA*recombinationRatio:0;
+ const activeSeriesOhms=includeSeries?seriesOhms:0;
+ const activeShuntOhms=includeShunt?shuntOhms:Infinity;
+ const branches=voltage=>{
+  const diffusionCurrentA=diffusionSaturationA*Math.expm1(voltage/thermalVoltageV);
+  const recombinationCurrentA=recombinationSaturationA*
+   Math.expm1(voltage/(2*thermalVoltageV));
+  const shuntCurrentA=includeShunt?voltage/shuntOhms:0;
+  return {diffusionCurrentA,recombinationCurrentA,shuntCurrentA,
+   currentA:diffusionCurrentA+recombinationCurrentA+shuntCurrentA};
+ };
+ let junctionVoltageV=appliedBiasV;
+ // The junction-voltage equation is monotonic because each branch has dI/dV>0.
+ // Bracketing + bisection avoids Newton divergence at high forward currents.
+ if(activeSeriesOhms>0){
+  let low=appliedBiasV-1,high=appliedBiasV+1;
+  for(let i=0;i<84;i++){
+   const mid=(low+high)/2;
+   const residual=mid+activeSeriesOhms*branches(mid).currentA-appliedBiasV;
+   if(residual>0)high=mid;else low=mid;
+  }
+  junctionVoltageV=(low+high)/2;
+ }
+ const currents=branches(junctionVoltageV);
+ const exp1=diffusionSaturationA*Math.exp(junctionVoltageV/thermalVoltageV);
+ const exp2=recombinationSaturationA*Math.exp(junctionVoltageV/(2*thermalVoltageV));
+ // Branch-slope ratio, meaningful only in forward conduction when shunt is small.
+ const effectiveIdeality=(exp1+exp2)>0?(exp1+exp2)/(exp1+exp2/2):1;
+ const boundaryFactor=Math.exp(junctionVoltageV/thermalVoltageV);
+ const injectionRatio=Math.max(
+  baseline.electronMinorityP0Cm3*boundaryFactor/acceptorsCm3,
+  baseline.holeMinorityN0Cm3*boundaryFactor/donorsCm3);
+ return {...currents,appliedBiasV,junctionVoltageV,
+  seriesVoltageV:currents.currentA*activeSeriesOhms,
+  seriesOhms:activeSeriesOhms,shuntOhms:activeShuntOhms,
+  recombinationRatio,areaMm2,acceptorsCm3,donorsCm3,
+  includeRecombination,includeSeries,includeShunt,thermalVoltageV,
+  diffusionSaturationA,recombinationSaturationA,
+  idealCurrentA:baseline.currentA,
+  effectiveIdeality,injectionRatio,lowInjection:injectionRatio<0.1,
+  depletionValid:baseline.junction.builtInPotentialV-junctionVoltageV>3*thermalVoltageV,
+  builtInPotentialV:baseline.junction.builtInPotentialV};
+}
