@@ -6565,6 +6565,255 @@ function qeBravaisVectors(ibrav,p){
  }
  return structureVectorRows(v,'QE');
 }
+
+/* Optional offline Quantum ESPRESSO interoperability: produces inputs and
+   reads completed pw.x outputs. Nothing is submitted to a remote solver. */
+const QE_MASS_NUMBERS=[
+ 1.008,4.0026,6.94,9.0122,10.81,12.011,14.007,15.999,18.998,20.180,
+ 22.990,24.305,26.982,28.085,30.974,32.06,35.45,39.948,39.098,40.078,
+ 44.956,47.867,50.942,51.996,54.938,55.845,58.933,58.693,63.546,65.38,
+ 69.723,72.630,74.922,78.971,79.904,83.798,85.468,87.62,88.906,91.224,
+ 92.906,95.95,98,101.07,102.905,106.42,107.868,112.414,114.818,118.710,
+ 121.760,127.60,126.904,131.293,132.905,137.327,138.905,140.116,140.908,144.242,
+ 145,150.36,151.964,157.25,158.925,162.5,164.930,167.259,168.934,173.045,174.967,
+ 178.49,180.948,183.84,186.207,190.23,192.217,195.084,196.967,200.592,204.38,
+ 207.2,208.980,209,210,222,223,226,227,232.038,231.036,238.029,237,
+ 244,243,247,247,251,252,257,258,259,266,267,268,
+ 269,270,277,278,281,282,285,286,289,290,293,294,294
+];
+function qeCalculationStructure(crystal){
+ if(crystal.nonPeriodic)throw Error('QE giriş dosyası için periyodik kristal hücresi gerekli.');
+ const physical=crystal.symmetryEnabled?expandSites(crystal.sites,crystal.sgSetting,1000,crystal.cell):crystal.sites;
+ const model=defectSupercellModel(crystal.cell,physical,crystal.rep);
+ if(model.sites.some(s=>!Number.isFinite(Number(s.occupancy??1))||Math.abs(Number(s.occupancy??1)-1)>1e-5))
+  throw Error('Kısmi doluluk ve düzensiz konumlar DFT atomu olarak otomatik seçilemez. Önce açık, tam doluluklu bir yapı hazırlayın.');
+ for(const site of model.sites){
+  if(disorderTag(site.disorderGroup)||disorderTag(site.disorderAssembly))
+   throw Error('Kısmi doluluk olmasa da alternatif düzensiz atom grubu QE için açıkça seçilmeli.');
+  if(Array.isArray(site.magneticMoment)&&site.magneticMoment.some(m=>Number.isFinite(Number(m))&&Math.abs(Number(m))>1e-8))
+   throw Error('Manyetik moment içeren yapı için spinli QE girdisi bu aşamada desteklenmiyor.');
+  if(!PERIODIC_SYMBOLS.includes(site.symbol)||!QE_MASS_NUMBERS[PERIODIC_SYMBOLS.indexOf(site.symbol)])
+   throw Error('QE için tanınmayan atom türü: '+site.symbol);
+  if(['x','y','z'].some(k=>!Number.isFinite(Number(site[k]))))throw Error('QE için geçersiz atom koordinatı.');
+ }
+ return model;
+}
+function qePwInputText(model,config){
+ const c=validateCell(model.cell),sites=model.sites;
+ if(!Array.isArray(sites)||!sites.length||sites.length>1000)throw Error('QE için 1–1000 atomlu bir P1 hücre gerekli.');
+ const species=[...new Set(sites.map(site=>site.symbol))];
+ if(species.some(sp=>!PERIODIC_SYMBOLS.includes(sp)))throw Error('QE girişinde bilinmeyen element simgesi.');
+ const calc=String(config.calculation||'relax');
+ if(!['relax','scf'].includes(calc))throw Error('QE hesaplama türü scf veya relax olmalı.');
+ const finiteRange=(name,value,min,max)=>{
+  if(value===undefined||value===null||String(value).trim()===''||!Number.isFinite(Number(value))||Number(value)<min||Number(value)>max)
+   throw Error('QE '+name+' '+min+'–'+max+' aralığında olmalı.');
+  return Number(value);
+ };
+ const ecutwfc=finiteRange('ecutwfc (Ry)',config.ecutwfc,10,300),ecutrho=finiteRange('ecutrho (Ry)',config.ecutrho,ecutwfc,2400);
+ const kpoints=[config.kx,config.ky,config.kz].map((n,i)=>{
+  const val=finiteRange(['kx','ky','kz'][i],n,1,24);
+  if(!Number.isInteger(val))throw Error('QE k-örgüsü tam sayı olmalı.');
+  return val;
+ });
+ const frozen=finiteRange('sabit alt katman (Å)',config.freezeBottom??0,0,100);
+ const force=finiteRange('kuvvet yakınsaması (Ry/Bohr)',config.forceThreshold??0.001,0.000001,0.01);
+ const occupations=String(config.occupations||'fixed');
+ if(!['fixed','smearing'].includes(occupations))throw Error('QE doluluk seçimi geçersiz.');
+ const pseudoMap=new Map();
+ for(const line of String(config.pseudoFiles||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean)){
+  const match=line.match(/^([A-Z][a-z]?)\s*=\s*([A-Za-z0-9][A-Za-z0-9_.+-]*\.upf)$/i);
+  if(!match)throw Error('Pseudopotansiyel satırı Element=dosya.UPF biçiminde olmalı; yol veya boşluk kullanmayın: '+line);
+  if(pseudoMap.has(match[1]))throw Error('Pseudopotansiyel elementi tekrarlandı: '+match[1]);
+  pseudoMap.set(match[1],match[2]);
+ }
+ for(const sp of species)if(!pseudoMap.has(sp))throw Error(sp+' için gerçek pseudopotansiyel dosyasının adını girin (örn. '+sp+'=dosya.UPF).');
+ const B=basis(c);
+ const norm=new THREE.Vector3().crossVectors(B[0],B[1]).normalize();
+ const heights=sites.map(s=>toCart([frac(+s.x),frac(+s.y),frac(+s.z)],B).dot(norm));
+ const lowest=Math.min(...heights);
+ let fixedCount=0;
+ const prefix='kristalyapi';
+ const lines=[
+  '! Kristal Yapi: giris dosyasi; gercek UPF dosyalarini ./pseudo icine kopyalayin.',
+  '! Kesim enerjisi, k-noktalari, spinsiz varsayim ve pseudopotansiyeller icin yakinssama testi gereklidir.',
+  "&CONTROL",
+  " calculation = '"+calc+"',",
+  " prefix = '"+prefix+"',",
+  " pseudo_dir = './pseudo',",
+  " outdir = './tmp',",
+  " tprnfor = .true.,",
+  " tstress = .true.,",
+  ...(calc==='relax'?[" forc_conv_thr = "+force.toExponential(2).replace("e","d")+","," nstep = 100,"]:[]),
+  "/",
+  "&SYSTEM",
+  " ibrav = 0,",
+  " nat = "+sites.length+",",
+  " ntyp = "+species.length+",",
+  " ecutwfc = "+ecutwfc.toFixed(2)+",",
+  " ecutrho = "+ecutrho.toFixed(2)+",",
+  " occupations = '"+occupations+"',"
+ ];
+ if(occupations==='smearing')lines.push(" smearing = 'mv',"," degauss = 0.02,");
+ lines.push("/", "&ELECTRONS", " conv_thr = 1.0d-8,", " mixing_beta = 0.3,", "/");
+ if(calc==='relax')lines.push("&IONS"," ion_dynamics = 'bfgs',","/"); 
+ lines.push("ATOMIC_SPECIES");
+ for(const sp of species)lines.push(sp+" "+QE_MASS_NUMBERS[PERIODIC_SYMBOLS.indexOf(sp)].toFixed(5)+" "+pseudoMap.get(sp));
+ lines.push("CELL_PARAMETERS angstrom");
+ for(const v of B)lines.push(v.toArray().map(x=>x.toFixed(10)).join(" "));
+ lines.push("ATOMIC_POSITIONS crystal");
+ for(let i=0;i<sites.length;i++){
+  const s=sites[i],siteHeight=heights[i],fix=calc==='relax'&&frozen>0&&siteHeight-lowest<=frozen+1e-8;
+  if(fix)fixedCount++;
+  lines.push(s.symbol+" "+[s.x,s.y,s.z].map(n=>frac(Number(n)).toFixed(10)).join(" ")+(fix?" 0 0 0":""));
+ }
+ lines.push("K_POINTS automatic",kpoints.join(" ")+" 0 0 0","");
+ return {text:lines.join('\n'),atoms:sites.length,species,fixedCount};
+}
+function qePwOutputData(source,referenceCell){
+ const value=String(source||'');
+ if(!value||value.length>16e6)throw Error('QE çıktı dosyası boş veya 16 MB sınırını aşıyor.');
+ if(!/JOB\s+DONE\./i.test(value))throw Error('QE çıktısı tamamlanmamış: JOB DONE bulunamadı. Yarım hesaplama sonucu uygulanamaz.');
+ const number='([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eEdD][+-]?\\d+)?)';
+ const float=x=>Number(String(x).replace(/[dD]/g,'e'));
+ const energyReg=new RegExp('(?:^|\\n)\\s*(?:!\\s*)?(?:total energy|Final energy)\\s*=\\s*'+number+'\\s*Ry\\b','gi');
+ const energies=[...value.matchAll(energyReg)].map(m=>({position:m.index,ry:float(m[1])})).filter(item=>Number.isFinite(item.ry));
+ if(!energies.length)throw Error('QE çıktısında Ry biriminde toplam enerji bulunamadı.');
+ const forceReg=new RegExp('Total force\\s*=\\s*'+number,'gi');
+ const forces=[...value.matchAll(forceReg)].map(m=>float(m[1])).filter(Number.isFinite);
+ const lastEnergy=energies.at(-1).ry;
+ const start=value.lastIndexOf('Begin final coordinates'),end=value.lastIndexOf('End final coordinates');
+ let newCell=null,newSites=null,hasFinalCoordinates=false;
+ if(start>=0){
+  if(end<start)throw Error('QE nihai koordinat bloğu tamamlanmamış.');
+  hasFinalCoordinates=true;
+  const lines=value.slice(start,end).replace(/\r/g,'').split('\n');
+  const dataUnit=(header,keyword)=>{
+   const rest=header.replace(new RegExp('^\\s*'+keyword+'\\s*','i'),'').trim();
+   const m=rest.match(/^(?:\(\s*([a-z]+)(?:\s*=\s*([0-9.+\-eEdD]+))?\s*\)|\{\s*([a-z]+)\s*\}|([a-z]+))?/i);
+   return {unit:(m?.[1]||m?.[3]||m?.[4]||'alat').toLowerCase(),alat:m?.[2]?float(m[2]):NaN};
+  };
+  const latticeMatch=value.match(/lattice parameter\s*\(alat\)\s*=\s*([0-9.+\-eEdD]+)\s*a\.u\./i);
+  const outputAlat=latticeMatch?float(latticeMatch[1])*BOHR_TO_ANGSTROM:NaN;
+  const cellIdx=lines.findIndex(l=>/^\s*CELL_PARAMETERS\b/i.test(l));
+  let nextBasis;
+  if(cellIdx>=0){
+   const u=dataUnit(lines[cellIdx],'CELL_PARAMETERS');
+   if(!['angstrom','bohr','alat'].includes(u.unit))throw Error('QE çıktı hücre birimi desteklenmiyor: '+u.unit);
+   const scale=u.unit==='angstrom'?1:u.unit==='bohr'?BOHR_TO_ANGSTROM:Number.isFinite(u.alat)?u.alat*BOHR_TO_ANGSTROM:outputAlat;
+   if(!Number.isFinite(scale)||scale<=0)throw Error('QE alat ölçüsü bulunamadı.');
+   const rows=lines.slice(cellIdx+1,cellIdx+4).map(line=>line.trim().split(/\s+/).slice(0,3).map(float));
+   if(rows.length!==3||rows.some(row=>row.length!==3||row.some(x=>!Number.isFinite(x))))throw Error('QE son hücre matrisi okunamadı.');
+   nextBasis=rows.map(row=>new THREE.Vector3(...row.map(x=>x*scale)));
+   newCell=validateCell(metric(nextBasis));
+  }else{
+   newCell=validateCell(referenceCell);
+   nextBasis=basis(newCell);
+  }
+  const posIdx=lines.findIndex(l=>/^\s*ATOMIC_POSITIONS\b/i.test(l));
+  if(posIdx<0)throw Error('QE son koordinat bloğunda ATOMIC_POSITIONS yok.');
+  const u=dataUnit(lines[posIdx],'ATOMIC_POSITIONS');
+  if(!['angstrom','bohr','alat','crystal'].includes(u.unit))throw Error('QE atom koordinatı birimi desteklenmiyor: '+u.unit);
+  const scale=u.unit==='angstrom'?1:u.unit==='bohr'?BOHR_TO_ANGSTROM:Number.isFinite(u.alat)?u.alat*BOHR_TO_ANGSTROM:outputAlat;
+  if(u.unit==='alat'&&(!Number.isFinite(scale)||scale<=0))throw Error('QE koordinatları için alat bilinmiyor.');
+  newSites=[];
+  for(const line of lines.slice(posIdx+1)){
+   const match=line.trim().match(/^([A-Za-z]{1,3}\d*)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)/);
+   if(!match)break;
+   const symbol=cleanSymbol(match[1]),xyz=match.slice(2,5).map(float);
+   if(!PERIODIC_SYMBOLS.includes(symbol)||xyz.some(x=>!Number.isFinite(x)))throw Error('QE çıktı atom satırı geçersiz.');
+   const fracPos=u.unit==='crystal'?xyz:toFrac(new THREE.Vector3(...xyz.map(x=>x*scale)),nextBasis);
+   if(fracPos.some(x=>!Number.isFinite(x)))throw Error('QE çıktı koordinat dönüşümü başarısız.');
+   newSites.push({symbol,x:frac(fracPos[0]),y:frac(fracPos[1]),z:frac(fracPos[2]),occupancy:1});
+   if(newSites.length>1000)throw Error('QE çıktı 1000 atom sınırını aşıyor.');
+  }
+  if(!newSites.length)throw Error('QE son koordinatlarda atom bulunamadı.');
+ }
+ return {
+  energyRy:lastEnergy,energyEv:lastEnergy*13.605693122994,
+  energiesRy:energies.map(e=>e.ry),totalForceRyBohr:forces.length?forces.at(-1):null,
+  cell:newCell,sites:newSites,hasFinalCoordinates,
+  geometryConverged:/bfgs converged|convergence has been achieved in\s+\d+\s+steps/i.test(value)
+ };
+}
+
+
+let qePendingOutput=null,qePendingFingerprint=null;
+function qeStructureFingerprint(){
+ return JSON.stringify([state.cell,state.sites,state.rep,state.sgSetting,state.symmetryEnabled,state.nonPeriodic]);
+}
+function qeEnsurePseudoNames(){
+ const input=$('qePseudoFiles');
+ if(input.value.trim())return;
+ try{
+  const m=qeCalculationStructure(state),species=[...new Set(m.sites.map(s=>s.symbol))];
+  input.value=species.map(sp=>sp+'='+sp+'.UPF').join('\n');
+ }catch(error){$('qeExportStatus').textContent=error.message;}
+}
+function qeExportPwInput(){
+ try{
+  qeEnsurePseudoNames();
+  const model=qeCalculationStructure(state);
+  const result=qePwInputText(model,{
+   calculation:$('qeCalcType').value,ecutwfc:$('qeEcutwfc').value,ecutrho:$('qeEcutrho').value,
+   kx:$('qeKx').value,ky:$('qeKy').value,kz:$('qeKz').value,
+   freezeBottom:$('qeFreezeBottom').value,forceThreshold:$('qeForceThreshold').value,occupations:$('qeOccupation').value,
+   pseudoFiles:$('qePseudoFiles').value
+  });
+  download(safeName(state.name)+'_'+$('qeCalcType').value+'.in',result.text);
+  $('qeExportStatus').textContent=result.atoms+' açık P1 atomu · '+result.species.length+' element · '+result.fixedCount+' sabit atom. UPF dosyalarını kendi bilgisayarınızda ./pseudo içine yerleştirin.';
+ }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
+}
+async function qePreviewOutputFile(){
+ const file=$('qeOutputFile').files?.[0];
+ qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;
+ if(!file){$('qeImportSummary').textContent='Önce .out dosyası seçin.';return;}
+ if(file.size>16e6){$('qeImportSummary').textContent='QE çıktı dosyası 16 MB sınırını aşıyor.';return;}
+ const workspaceId=activeWorkspaceId;
+ try{
+  const raw=await file.text();
+  if(workspaceId!==activeWorkspaceId||$('qeOutputFile').files?.[0]!==file)throw Error('Dosya veya çalışma alanı değişti; sonucu yeniden seçin.');
+  const model=qeCalculationStructure(state);
+  const parsed=qePwOutputData(raw,model.cell);
+  if(parsed.sites){
+   if(parsed.sites.length!==model.sites.length)throw Error('Sonuç '+parsed.sites.length+' atom içeriyor; mevcut yapı '+model.sites.length+' atom. Doğru başlangıç yapısını yükleyin.');
+   for(let i=0;i<parsed.sites.length;i++)
+    if(parsed.sites[i].symbol!==model.sites[i].symbol)
+     throw Error((i+1)+'. atomun elementi farklı: '+parsed.sites[i].symbol+' / '+model.sites[i].symbol+'. Kaynak kristali ve hesaplama çıktısını eşleştirin.');
+  }
+  qePendingOutput=parsed;qePendingFingerprint=qeStructureFingerprint();
+  $('qeApplyGeometry').disabled=!parsed.hasFinalCoordinates;
+  $('qeImportSummary').textContent='Toplam enerji: '+parsed.energyRy.toFixed(8)+' Ry ('+parsed.energyEv.toFixed(6)+' eV).'+
+   (parsed.totalForceRyBohr===null?'':' Son toplam kuvvet: '+parsed.totalForceRyBohr.toExponential(3)+' Ry/Bohr.')+
+   (parsed.hasFinalCoordinates?' Son konumlar: '+parsed.sites.length+' atom · relaksasyon '+(parsed.geometryConverged?'yakınsama raporlandı':'yakınsama teyit edilemedi')+'. Uygula ile P1 yapıya aktarabilirsiniz.':' SCF enerji sonucu; yeni atom koordinatları yok.');
+ }catch(error){$('qeImportSummary').textContent=error.message;inform('QE sonuç içe aktarma: '+error.message);}
+}
+function qeApplyOutputGeometry(){
+ try{
+  if(!qePendingOutput?.hasFinalCoordinates)throw Error('Önce tamamlanmış bir QE relaksasyon çıktısı açın.');
+  if(qePendingFingerprint!==qeStructureFingerprint())throw Error('Kristal yapı önizlemeden sonra değişti. QE çıktısını yeniden yükleyin.');
+  if(densityGrid||potentialGrid||(state.overlays||[]).length)
+   throw Error('Hacimsel veri veya ek faz mevcut; verileri korumak için relakse yapıyı ayrı bir çalışma alanına aktarın.');
+  const model=qeCalculationStructure(state),result=qePendingOutput;
+  const sites=result.sites.map((site,i)=>{
+   const out={...model.sites[i],...site,label:model.sites[i].label};
+   for(const k of ['adp','uIso','magneticMoment','sourceSiteIndex','symmetryOperationIndex'])delete out[k];
+   return out;
+  });
+  const previous=state;
+  state={...state,cell:result.cell,sites,rep:[1,1,1],sgNumber:1,sgSetting:'1',
+   symmetryEnabled:false,cifOriginal:null,cifMeta:{},cifComposition:'',planeLayers:[],morphology:[],
+   morphVisible:false,plane:{...state.plane,visible:false,slab:false},overlays:[],
+   name:state.name+' · QE relaksasyon',detail:'Quantum ESPRESSO · E = '+result.energyRy.toFixed(8)+' Ry',
+   warning:'Relakse konumlar QE çıktı dosyasından aktarıldı. Elektronik yakınsama, pseudopotansiyel, k-örnekleme ve kuvvet eşikleri ayrıca denetlenmelidir.'};
+  selected=[];lastBvs=null;lastXrd=null;syncControls();
+  if(build()===false){state=previous;syncControls();build();throw Error('Relakse kristal çizimi başarısız.');}
+  fit();qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;
+  $('qeImportSummary').textContent='Relakse yapı uygulandı · '+sites.length+' atom · E = '+result.energyRy.toFixed(8)+' Ry. Geri Al ve Kaydet kullanılabilir.';
+  inform('Quantum ESPRESSO relakse atom konumları aktarıldı.');
+ }catch(error){$('qeImportSummary').textContent=error.message;inform('QE sonuç uygulama: '+error.message);}
+}
+
 function qeData(source){
  const raw=String(source).replace(/\r/g,'').split('\n'),lines=raw.map(s=>s.replace(/[!#].*$/,'').trim());
  const sys=String(source).match(/&SYSTEM\b([\s\S]*?)\//i)?.[1];
@@ -9128,8 +9377,8 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','qe','symmetry'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','DFT / Quantum ESPRESSO','Kristalografik simetri'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -9216,6 +9465,11 @@ function bind(){
  $('defectPrepare').onclick=prepareDefectCell;
  $('defectKind').onchange=updateDefectMode;
  $('defectApply').onclick=applyPointDefect;
+ $('qePseudoAuto').onclick=()=>{ $('qePseudoFiles').value='';qeEnsurePseudoNames();};
+ $('qeExportPw').onclick=qeExportPwInput;
+ $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
+ $('qeParseOutput').onclick=qePreviewOutputFile;
+ $('qeApplyGeometry').onclick=qeApplyOutputGeometry;
  $('addMillerLayer').onclick=()=>{try{addMillerLayer();}catch(e){inform(e.message);}};
  $('morphVisible').onchange=e=>{state.morphVisible=e.target.checked;build();};
  $('morphAdd').onclick=()=>{

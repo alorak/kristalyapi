@@ -69,6 +69,7 @@ vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForH
 vm.runInContext('this.perfApi={atomLodTier,frameTimingStats};',context);
 const perfApi=context.perfApi;
 vm.runInContext('this.defectApi={defectSupercellModel,pointDefectModel,boundaryVacuumModel};',context);
+vm.runInContext('this.qeWorkflowApi={qeCalculationStructure,qePwInputText,qePwOutputData,QE_MASS_NUMBERS};',context);
 vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -798,6 +799,82 @@ test('Miller tool exposes independent upper and lower vacuum fields',()=>{
  assert.match(moduleScript,/\$\('addBoundaryVacuum'\)\.onclick=applyBoundaryVacuum/);
 });
 
+
+test('QE export creates explicit P1 relax input with validated UPF mapping and fixed lower atoms',()=>{
+ const model={cell:{a:5,b:5,c:15,alpha:90,beta:90,gamma:90},sites:[
+  {symbol:'Si',x:0,y:0,z:.25,occupancy:1},
+  {symbol:'Si',x:.25,y:.25,z:.60,occupancy:1}]};
+ const cfg={calculation:'relax',ecutwfc:50,ecutrho:400,kx:4,ky:4,kz:1,
+  freezeBottom:1,occupations:'fixed',pseudoFiles:'Si=Si.pbe.UPF'};
+ const result=context.qeWorkflowApi.qePwInputText(model,cfg);
+ assert.equal(result.atoms,2);assert.equal(result.fixedCount,1);
+ assert.match(result.text,/calculation = 'relax'/);
+ assert.match(result.text,/ibrav = 0/);assert.match(result.text,/nat = 2/);
+ assert.match(result.text,/ATOMIC_SPECIES\nSi 28\.08500 Si\.pbe\.UPF/);
+ assert.match(result.text,/CELL_PARAMETERS angstrom/);
+ assert.match(result.text,/ATOMIC_POSITIONS crystal\nSi 0\.0000000000 0\.0000000000 0\.2500000000 0 0 0/);
+ assert.match(result.text,/K_POINTS automatic\n4 4 1 0 0 0/);
+ assert.match(result.text,/&IONS\n ion_dynamics = 'bfgs'/);
+ assert.match(result.text,/forc_conv_thr = 1\.00d-3/);
+ assert.equal(context.qeWorkflowApi.QE_MASS_NUMBERS.length,118);
+ const roundTrip=api.qeData(result.text);
+ assert.equal(roundTrip.sites.length,2);
+ approx(roundTrip.cell.c,15);
+ assert.equal(roundTrip.sites[1].symbol,'Si');
+ const scf=context.qeWorkflowApi.qePwInputText(model,{...cfg,calculation:'scf'});
+ assert.doesNotMatch(scf.text,/&IONS/);
+ assert.match(scf.text,/ATOMIC_POSITIONS crystal\nSi 0\.0000000000 0\.0000000000 0\.2500000000\n/);
+});
+test('QE input rejects missing pseudopotentials and partial occupancy',()=>{
+ const model={cell:cubic,sites:[{symbol:'Si',x:0,y:0,z:0,occupancy:1}]};
+ const cfg={calculation:'relax',ecutwfc:50,ecutrho:400,kx:2,ky:2,kz:2,freezeBottom:0,occupations:'fixed',pseudoFiles:'Si=Si.UPF'};
+ assert.throws(()=>context.qeWorkflowApi.qePwInputText(model,{...cfg,pseudoFiles:''}),/Si için/);
+ assert.throws(()=>context.qeWorkflowApi.qePwInputText(model,{...cfg,pseudoFiles:'Si=../unsafe.UPF'}),/Element=dosya.UPF/);
+ assert.throws(()=>context.qeWorkflowApi.qePwInputText(model,{...cfg,kz:2.5}),/tam sayı/);
+ assert.throws(()=>context.qeWorkflowApi.qePwInputText(model,{...cfg,ecutrho:20}),/ecutrho/);
+ assert.throws(()=>context.qeWorkflowApi.qeCalculationStructure({...model,rep:[1,1,1],symmetryEnabled:false,nonPeriodic:false,
+  sites:[{...model.sites[0],occupancy:.5}]}),/Kısmi doluluk/);
+});
+test('QE completed relax output reads final energy, updated cell, fractional coordinates',()=>{
+ const output=[
+  'Program PWSCF v.7.5','lattice parameter (alat) = 10.0 a.u.',
+  '!    total energy = -10.00000000 Ry',
+  'bfgs converged in 4 scf cycles',
+  'Final energy = -10.25000000 Ry',
+  'Begin final coordinates',
+  'CELL_PARAMETERS (angstrom)',
+  '5.0 0.0 0.0','0.0 5.0 0.0','0.0 0.0 15.0',
+  'ATOMIC_POSITIONS (crystal)',
+  'Si 0.000000 0.000000 0.250000',
+  'Si 0.250000 0.250000 0.350000',
+  'End final coordinates','JOB DONE.'
+ ].join('\n');
+ const result=context.qeWorkflowApi.qePwOutputData(output,cubic);
+ assert.equal(result.hasFinalCoordinates,true);assert.equal(result.geometryConverged,true);
+ assert.equal(result.sites.length,2);assert.equal(result.sites[1].symbol,'Si');
+ approx(result.cell.c,15);approx(result.energyRy,-10.25);
+ approx(result.energyEv,-10.25*13.605693122994);
+ approx(result.sites[1].z,.35);
+});
+test('QE output converts Angstrom positions and reads energy-only SCF safely',()=>{
+ const out=['! total energy = -7.2 Ry','Begin final coordinates',
+ 'ATOMIC_POSITIONS (angstrom)','Si 2.5 0 1.25','End final coordinates','JOB DONE.'].join('\n');
+ const result=context.qeWorkflowApi.qePwOutputData(out,cubic);
+ approx(result.sites[0].x,.5);approx(result.sites[0].z,.25);
+ const scf=context.qeWorkflowApi.qePwOutputData('! total energy = -6.5 Ry\nJOB DONE.',cubic);
+ assert.equal(scf.sites,null);assert.equal(scf.hasFinalCoordinates,false);
+ assert.throws(()=>context.qeWorkflowApi.qePwOutputData('! total energy = -5.0 Ry\nBegin final coordinates',cubic),/JOB DONE/);
+ assert.throws(()=>context.qeWorkflowApi.qePwOutputData('JOB DONE.',cubic),/toplam enerji/);
+});
+test('QE controls are accessible without remote calculation',()=>{
+ for(const id of ['qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
+  'qeFreezeBottom','qeForceThreshold','qePseudoFiles','qeExportPw','qeOutputFile','qeParseOutput','qeApplyGeometry'])
+  assert.match(htmlShell,new RegExp('id="'+id+'"'));
+ assert.match(htmlShell,/data-right-tool="qe"/);
+ assert.match(moduleScript,/qeApplyOutputGeometry/);
+ assert.match(moduleScript,/qePwOutputData/);
+});
+
 test('Miller slab surface vectors form primitive orientation',()=>{
   const cell=api.examples('fcc').cell,B=api.basis(cell);
   const surface=api.surfaceVectors(1,1,1,B);
@@ -1274,9 +1351,9 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','qe','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,14);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,15);
  assert.match(rail,/data-right-tool="measurement"[\s\S]*?data-right-tool="history"/);
  assert.match(html,/\.right-drawer-pane>\.section\[data-right-section\]>h2:first-child\{display:none\}/);
  assert.ok(!html.includes('Bilimsel kapsam</h2>'),'redundant scientific scope block should be removed');
