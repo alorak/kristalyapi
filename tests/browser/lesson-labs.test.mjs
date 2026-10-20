@@ -297,9 +297,13 @@ try{
  assert.equal(await page.locator('#scRealIdeal').getAttribute('aria-pressed'),'true');
  assert.equal(await page.locator('#scRealRecombination').getAttribute('aria-pressed'),'false');
  assert.notEqual(await page.locator('#scRealSummary .lesson-metric').first().textContent(),realInitially);
- assert.equal(await page.locator('#scRealSummary .lesson-metric').first().textContent(),
-  await page.locator('#scRealSummary .lesson-metric').nth(1).textContent(),
-  'with all nonideal effects disabled P3 and P4 give the same current');
+ const currentReadouts=await page.locator('#scRealSummary .lesson-metric').allTextContents();
+ const readoutCurrent=text=>text.match(/[−-]?\d+(?:[.,]\d+)?\s*(?:pA|nA|µA|mA|A)\s*$/)?.[0];
+ const p4Current=readoutCurrent(currentReadouts[0]);
+ const p3Current=readoutCurrent(currentReadouts[1]);
+ assert.ok(p4Current&&p3Current,'both diode readouts must contain a numeric current and unit');
+ assert.equal(p4Current,p3Current,
+  'with all nonideal effects disabled P3 and P4 must give the same displayed current');
  await page.locator('#scRealAll').evaluate(button=>button.click());
  assert.equal(await page.locator('#scRealAll').getAttribute('aria-pressed'),'true');
  await page.locator('#scRealVoltage').evaluate(input=>{
