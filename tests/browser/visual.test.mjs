@@ -32,6 +32,27 @@ window.__visualTest={
  select:ids=>{selected=[...ids];drawSelection();},
  repeat:()=>[...state.rep],
  instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==='bonds').length}),
+ codDisorderScene:()=>{
+  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
+  const B=basis(state.cell),network=bondNetwork(physical,state.cell,{periodic:true,cut:2.65,auto:true});
+  const pair=e=>[physical[e.i].symbol,physical[e.j].symbol].sort().join('-');
+  const rendered=atomMesh.flatMap(mesh=>mesh.userData.instanceAtomIndices.map(index=>({
+   element:atomData[index].site.symbol,opacity:mesh.material.opacity,
+   transparent:mesh.material.transparent
+  })));
+  const byElement=element=>physical.filter(site=>site.symbol===element).length;
+  return {sites:physical.length,drawn:atomData.length,instances:rendered.length,
+   mo:byElement('Mo'),s:byElement('S'),cs:byElement('Cs'),
+   weighted:physical.reduce((sum,site)=>sum+Number(site.occupancy??1),0),
+   csRender:rendered.filter(atom=>atom.element==='Cs'),
+   orderedOpacity:rendered.filter(atom=>atom.element!=='Cs').map(atom=>atom.opacity),
+   csCsEdges:network.edges.filter(e=>pair(e)==='Cs-Cs').length,
+   moSEdges:network.edges.filter(e=>pair(e)==='Mo-S').length,
+   drawnCsLinks:bondPairs.filter(([i,j])=>atomData[i].site.symbol==='Cs'||atomData[j].site.symbol==='Cs').length,
+   moShells:physical.flatMap((site,i)=>site.symbol==='Mo'?
+    [coordinationNeighbors(physical,i,B,new Map(),2.65,true,24).filter(n=>n.element==='S').length]:[])
+  };
+ },
  bounds:()=>state.bounds.map(a=>[...a]),
  morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
  moleculeBonds:()=>{const water=xyzData('3\\nH2O\\nO 0 0 0\\nH .9584 0 0\\nH -.239 0 .927');
@@ -576,6 +597,25 @@ try{
  await page.waitForTimeout(650);
  await save(page,'02-silicon-top',metrics);
  assert.notEqual(metrics['01-silicon-perspective'].sum,metrics['02-silicon-top'].sum,'camera view should change canvas pixels');
+ // Real CIF + WebGL regression: ten crystallographic sites do not mean ten fully
+ // occupied atoms; alternative Cs coordinates never become spurious Cs bonds.
+ await page.locator('#fileInput').setInputFiles(path.join(base,'tests/fixtures/COD_1561664_Cs_H2O_MoS2.cif'));
+ await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('1561664'),null,{timeout:20000});
+ const codDisorder=await page.evaluate(()=>window.__visualTest.codDisorderScene());
+ assert.deepEqual([codDisorder.sites,codDisorder.mo,codDisorder.s,codDisorder.cs],[10,2,4,4]);
+ assert.equal(codDisorder.drawn,10,'3D scene must show the ten resolved positions');
+ assert.equal(codDisorder.instances,10,'all ten positions must reach WebGL instancing');
+ assert.ok(Math.abs(codDisorder.weighted-6.24)<1e-7,'site occupancies imply 6.24 weighted atoms');
+ assert.equal(codDisorder.csRender.length,4);
+ assert.ok(codDisorder.csRender.every(atom=>atom.transparent&&atom.opacity<1),
+  'partial Cs occupancies must use visible translucent materials');
+ assert.ok(codDisorder.orderedOpacity.every(opacity=>opacity===1),
+  'Mo and S sites remain opaque');
+ assert.equal(codDisorder.csCsEdges,0,'alternative Cs sites must not be bonded');
+ assert.equal(codDisorder.drawnCsLinks,0,'rendered bond pairs must not include Cs links');
+ assert.equal(codDisorder.moSEdges,12,'Mo centers must keep six Mo-S neighbors');
+ assert.deepEqual(codDisorder.moShells,[6,6]);
+ await save(page,'03a-cod-1561664-disorder',metrics);
  await page.locator('#fileInput').setInputFiles(path.join(base,'tests/validation/fixtures/real/COD_4335507.cif'));
  await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('4335507'),null,{timeout:20000});
  await save(page,'03-cod-4335507',metrics);
