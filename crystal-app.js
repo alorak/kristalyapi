@@ -3024,6 +3024,108 @@ function applySurfaceSlab(){
  }catch(e){inform(e.message);}
 }
 
+
+
+/* Add asymmetric vacuum normal to the ab face without cutting the crystal. */
+function applyBoundaryVacuum(){
+ const message=$('boundaryVacuumResult');
+ try{
+  if(state.nonPeriodic)throw Error('Üst/alt vakum ekleme periyodik kristal hücresi gerektirir.');
+  if(densityGrid||potentialGrid||(state.overlays||[]).length)
+   throw Error('Hacim haritası veya ek faz yüklü. Bunları korumak için vakumu ayrı bir çalışma alanında ekleyin.');
+  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+  const expanded=defectSupercellModel(state.cell,physical,state.rep);
+  const model=boundaryVacuumModel(expanded.cell,expanded.sites,$('vacuumTop').value,$('vacuumBottom').value);
+  const oldCell=state.cell;
+  model.sites.forEach((atom,i)=>{
+   if(atom.adp)atom.adp=adpFromCartesian(adpToCartesian(physical[i%physical.length].adp,oldCell),model.cell);
+  });
+  const previous=state;
+  state={...state,cell:model.cell,sites:model.sites,rep:[1,1,1],sgNumber:1,sgSetting:'1',
+   symmetryEnabled:false,cifOriginal:null,cifMeta:{},cifComposition:'',
+   plane:{...state.plane,visible:false,slab:false},planeLayers:[],morphology:[],morphVisible:false,
+   name:state.name+' · üst/alt vakum',detail:'ab yüzey normali boyunca alt '+model.bottom+' Å / üst '+model.top+' Å vakum',
+   warning:'Vakum atom konumları korunarak geometrik eklendi; yüzey relaksasyonu ve enerji hesabı yapılmadı.'};
+  selected=[];lastBvs=null;lastXrd=null;syncControls();
+  if(build()===false){state=previous;syncControls();build();throw Error('Vakumlu yapı çizimi başarısız.');}
+  fit();
+  message.textContent='Alt '+model.bottom+' Å · üst '+model.top+' Å; yeni c = '+model.cell.c.toFixed(3)+' Å · '+model.sites.length+' atom. Kaydet menüsünden dışa aktarılabilir.';
+  inform('Alt '+model.bottom+' Å ve üst '+model.top+' Å vakum eklendi.');
+ }catch(error){message.textContent=error.message;inform('Üst/alt vakum: '+error.message);}
+}
+
+
+/* Point defects operate on explicit P1 sites, not display-only repeats. */
+function defectSupercellModel(cell,sites,rep){
+ const valid=validateCell(cell);
+ if(!Array.isArray(rep)||rep.length!==3||rep.some(n=>!Number.isInteger(n)||n<1||n>6))throw Error('Tekrar sayıları 1–6 arasında olmalı.');
+ if(!Array.isArray(sites)||!sites.length)throw Error('Önce kristal yapısı açın.');
+ const [nx,ny,nz]=rep,total=sites.length*nx*ny*nz;
+ if(total>1000)throw Error('Kusur düzenleyicisi 1000 atom sınırını aşar; süperhücreyi küçültün.');
+ const nextCell=validateCell({...valid,a:valid.a*nx,b:valid.b*ny,c:valid.c*nz}),out=[];
+ for(let i=0;i<nx;i++)for(let j=0;j<ny;j++)for(let k=0;k<nz;k++)for(const site of sites){
+  const n=out.length+1;
+  out.push({...site,label:String(site.symbol)+n,
+   x:(frac(Number(site.x))+i)/nx,y:(frac(Number(site.y))+j)/ny,z:(frac(Number(site.z))+k)/nz});
+ }
+ return {cell:nextCell,sites:out};
+}
+function pointDefectModel(cell,sites,request){
+ validateCell(cell);
+ if(!Array.isArray(sites)||!sites.length||sites.length>1000)throw Error('1–1000 açık P1 atomu gerekli.');
+ const kind=request?.kind,out=sites.map(x=>({...x})),index=Number(request?.index),target=out[index];
+ if(!['vacancy','substitution','interstitial'].includes(kind))throw Error('Geçersiz kusur türü.');
+ if(kind!=='interstitial'&&(!Number.isInteger(index)||index<0||index>=out.length))throw Error('Geçerli atom seçin.');
+ if(kind==='vacancy'){
+  if(out.length<2)throw Error('Son atom silinemez.');
+  const atom=out.splice(index,1)[0];
+  return {sites:out,description:atom.symbol+' vakansı · '+(index+1)+'. atom'};
+ }
+ const raw=String(request?.symbol??'').trim(),symbol=raw.charAt(0).toUpperCase()+raw.slice(1).toLowerCase();
+ if(!PERIODIC_SYMBOLS.includes(symbol))throw Error('Geçerli element simgesi girin (B, Si, Fe...).');
+ if(kind==='substitution'){
+  if(target.symbol===symbol)throw Error('İkame elementi mevcut atomdan farklı olmalı.');
+  const atom={...target,symbol,label:symbol+'_def'+(index+1)};
+  for(const key of ['adp','uIso','visualColor','visualScale','polyColor','polyOpacity','magneticMoment'])delete atom[key];
+  out[index]=atom;
+  return {sites:out,description:target.symbol+' → '+symbol+' ikame · '+(index+1)+'. atom'};
+ }
+ if([request.x,request.y,request.z].some(v=>v===undefined||v===null||String(v).trim()===''))throw Error('Arayer koordinatlarını boş bırakmayın.');
+ const coords=[Number(request.x),Number(request.y),Number(request.z)];
+ if(coords.some(v=>!Number.isFinite(v)||v<0||v>=1))throw Error('Arayer koordinatları 0 ≤ x,y,z < 1 olmalı.');
+ if(out.length>=1000)throw Error('1000 atom sınırı.');
+ const B=basis(cell);
+ let nearest=Infinity;
+ for(const site of out){
+  const delta=coords.map((v,i)=>v-Number(site[['x','y','z'][i]]));
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)for(let k=-1;k<=1;k++)
+   nearest=Math.min(nearest,toCart([delta[0]+i,delta[1]+j,delta[2]+k],B).length());
+ }
+ if(nearest<.35)throw Error('Arayer atomu mevcut bir atomla çakışıyor (< 0,35 Å).');
+ out.push({symbol,label:symbol+'_i'+(out.length+1),x:coords[0],y:coords[1],z:coords[2],occupancy:1});
+ return {sites:out,description:symbol+' arayer atomu · en yakın atom '+nearest.toFixed(2)+' Å'};
+}
+
+
+/* Extend the crystal cell above and below its ab faces without deleting atoms.
+   For skew cells, vacuum is measured along the ab surface normal (Å). */
+function boundaryVacuumModel(cell,sites,top,bottom){
+ const c=validateCell(cell),up=Number(top),down=Number(bottom);
+ if([top,bottom].some(v=>v===undefined||v===null||String(v).trim()==='')||
+    !Number.isFinite(up)||!Number.isFinite(down)||up<0||down<0||up>80||down>80||up+down<=0)
+  throw Error('Üst/alt vakum 0–80 Å olmalı; en az biri sıfırdan büyük olmalı.');
+ if(!Array.isArray(sites)||!sites.length||sites.length>1000)throw Error('Vakum modeli 1–1000 açık atom gerektirir.');
+ const B=basis(c),n=new THREE.Vector3().crossVectors(B[0],B[1]).normalize();
+ const nextBasis=[B[0],B[1],B[2].clone().addScaledVector(n,up+down)];
+ const nextCell=validateCell(metric(nextBasis));
+ const newSites=sites.map(site=>{
+  const cart=toCart([frac(Number(site.x)),frac(Number(site.y)),frac(Number(site.z))],B).addScaledVector(n,down);
+  const next=toFrac(cart,nextBasis);
+  return {...site,x:frac(next[0]),y:frac(next[1]),z:Math.min(1-1e-10,Math.max(0,next[2]))};
+ });
+ return {cell:nextCell,sites:newSites,top:up,bottom:down};
+}
+
 function matrixDet(P){return P[0][0]*(P[1][1]*P[2][2]-P[1][2]*P[2][1])-P[0][1]*(P[1][0]*P[2][2]-P[1][2]*P[2][0])+P[0][2]*(P[1][0]*P[2][1]-P[1][1]*P[2][0]);}
 function matrixInverse(P){
  const d=matrixDet(P);if(Math.abs(d)<1e-8)throw Error('Dönüşüm matrisi tekil.');
@@ -5623,6 +5725,66 @@ function renderBondRuleEditor(){
  if(!rules.size){const hint=document.createElement('small');hint.textContent='Henüz özel kural yok.';container.append(hint);}
 }
 
+
+function updateDefectMode(){
+ const kind=$('defectKind').value;
+ $('defectTargetField').hidden=kind==='interstitial';
+ $('defectElementField').hidden=kind==='vacancy';
+ $('defectCoordinateFields').hidden=kind!=='interstitial';
+}
+function refreshDefectControls(){
+ const target=$('defectTarget');if(!target)return;
+ const previous=target.value;target.replaceChildren();
+ state.sites.forEach((atom,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=(i+1)+'. '+atom.symbol+' ('+['x','y','z'].map(k=>Number(atom[k]).toFixed(3)).join(', ')+')';
+  target.append(option);
+ });
+ if([...target.options].some(opt=>opt.value===previous))target.value=previous;
+ const ready=!state.symmetryEnabled&&state.sgNumber===1&&state.rep.every(n=>n===1);
+ $('defectPreparationSummary').textContent=ready
+  ?'P1 hazır · '+state.sites.length+' atom. Düzenleme yalnız seçilen konumu etkiler.'
+  :'Önce '+state.rep.join(' × ')+' görüntüleme tekrarını gerçek P1 süperhücreye dönüştürün.';
+ $('defectPrepare').disabled=ready;$('defectApply').disabled=!ready;updateDefectMode();
+}
+function prepareDefectCell(){
+ try{
+  if(!state.symmetryEnabled&&state.sgNumber===1&&state.rep.every(n=>n===1)){inform('Yapı zaten P1 olarak hazır.');return;}
+  if(densityGrid||(state.overlays||[]).length)throw Error('Hacim haritası veya ek faz yüklü. Mevcut verileri korumak için kusuru ayrı bir çalışma alanında oluşturun.');
+  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
+  const result=defectSupercellModel(state.cell,physical,state.rep),oldCell=state.cell;
+  result.sites.forEach((atom,i)=>{if(atom.adp)atom.adp=adpFromCartesian(adpToCartesian(physical[i%physical.length].adp,oldCell),result.cell);});
+  const previous=state;
+  state={...state,...result,rep:[1,1,1],sgNumber:1,sgSetting:'1',symmetryEnabled:false,
+   cifOriginal:null,cifMeta:{},cifComposition:'',overlays:[],morphology:[],morphVisible:false,planeLayers:[],
+   plane:{...state.plane,visible:false,slab:false},name:state.name+' · P1 süperhücre',
+   detail:'Kusur hazırlığı · açık P1 atom konumları',
+   warning:'Süperhücre açık P1 atomlarına dönüştürüldü; simetri artık otomatik çoğaltılmaz.'};
+  selected=[];lastBvs=null;lastXrd=null;
+  syncControls();
+  if(build()===false){state=previous;syncControls();build();throw Error('Süperhücre çizimi başarısız.');}
+  fit();$('defectResult').textContent=result.sites.length+' atomlu P1 süperhücre hazır.';
+ }catch(error){$('defectResult').textContent=error.message;inform('Kusur hazırlığı: '+error.message);}
+}
+function applyPointDefect(){
+ try{
+  if(state.symmetryEnabled||state.sgNumber!==1||state.rep.some(n=>n!==1))
+   throw Error('Önce Süperhücreyi P1 olarak hazırla butonuna basın.');
+  if(densityGrid||(state.overlays||[]).length)throw Error('Hacim haritası veya ek faz yüklü. Kusuru ayrı bir çalışma alanında oluşturun.');
+  const result=pointDefectModel(state.cell,state.sites,{
+   kind:$('defectKind').value,index:Number($('defectTarget').value),
+   symbol:$('defectElement').value,x:$('defectX').value,y:$('defectY').value,z:$('defectZ').value});
+  const previous=state;
+  state={...state,sites:result.sites,cifOriginal:null,cifMeta:{},cifComposition:'',
+   detail:'Noktasal kusur · '+result.description,
+   warning:'Geometrik kusur modelidir. Yük durumu, oluşum enerjisi ve relaksasyon hesaplanmaz.'};
+  selected=[];lastBvs=null;lastXrd=null;syncControls();
+  if(build()===false){state=previous;syncControls();build();throw Error('Kusurlu yapı çizimi başarısız.');}
+  $('defectResult').textContent=result.description+' · '+result.sites.length+' atom. Kaydet menüsünden CIF/POSCAR dışa aktarabilirsiniz.';
+  inform(result.description+' oluşturuldu.');
+ }catch(error){$('defectResult').textContent=error.message;inform('Kristal kusuru: '+error.message);}
+}
+
 function renderSites(){
  refreshStage3Atoms();
  const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
@@ -5631,6 +5793,7 @@ function renderSites(){
   if(state.symmetryEnabled&&state.sites.length<=60){try{const id=identifyWyckoff(site,state.sgSetting);wp.textContent=id.matches.length===1?id.matches[0]:(id.matches.length?id.matches.join('/'):'m='+id.multiplicity);wp.title='Eşdeğer konum sayısı: '+id.multiplicity+' · '+(id.matches.length?id.matches.join(', '):'kesin Wyckoff konumu eşleşmedi');}catch(e){wp.textContent='?';wp.title=e.message;}}else wp.textContent='—';tr.append(wp);
   const td=document.createElement('td'),btn=document.createElement('button');btn.className='del';btn.textContent='×';btn.title='Atom konumunu sil';btn.disabled=state.sites.length<2;btn.addEventListener('click',()=>{state.sites.splice(i,1);state.warning='';fillPoly();renderSites();build();});td.append(btn);tr.append(td);rows.append(tr);});
  renderSiteStyleControls();
+ refreshDefectControls();
 }
 function renderSiteStyleControls(){
  const select=$('siteStyleSite'),index=Math.min(Math.max(0,Number(select.value)||0),state.sites.length-1);
@@ -8833,8 +8996,8 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristalografik simetri'];
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -8917,6 +9080,10 @@ function bind(){
  $('bondRuleAdd').onclick=()=>{try{state.bondRules=setPairBondRule(state.bondRules,$('bondPairA').value,$('bondPairB').value,Number($('bondMin').value),Number($('bondMax').value));$('bondRules').value=state.bondRules;renderBondRuleEditor();build();}catch(e){inform(e.message);}};
  $('applyPlane').onclick=()=>{try{previewPlane();build();}catch(e){inform(e.message);}};
  $('createSlab').onclick=applySurfaceSlab;
+ $('addBoundaryVacuum').onclick=applyBoundaryVacuum;
+ $('defectPrepare').onclick=prepareDefectCell;
+ $('defectKind').onchange=updateDefectMode;
+ $('defectApply').onclick=applyPointDefect;
  $('addMillerLayer').onclick=()=>{try{addMillerLayer();}catch(e){inform(e.message);}};
  $('morphVisible').onchange=e=>{state.morphVisible=e.target.checked;build();};
  $('morphAdd').onclick=()=>{
