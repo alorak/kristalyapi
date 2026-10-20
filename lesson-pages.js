@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -737,6 +737,188 @@ export function initSemiconductorLesson(host){
   $('scDopingFeedback').textContent=(correct?'Doğru! ':'Henüz değil. ')+detail;
   $('scDopingFeedback').setAttribute('data-result',correct?'correct':'retry');
  });
+
+ // P2: static 1D PN depletion approximation; the first two steps explicitly
+ // illustrate ideas only, not a time-dependent drift-diffusion solution.
+ let pnPhase='steady';
+ const pnPhaseIds={separate:'scPnSeparate',diffuse:'scPnDiffuse',steady:'scPnSteady'};
+ function renderPn(){
+  if(!visible)return;
+  const acceptorsCm3=10**Number($('scPnAcceptors').value);
+  const donorsCm3=10**Number($('scPnDonors').value);
+  const voltage=Number($('scPnBias').value);
+  const effectiveBias=pnPhase==='steady'?voltage:0;
+  const j=idealPnJunction({acceptorsCm3,donorsCm3,
+   appliedBiasV:effectiveBias,temperatureK:300});
+  $('scPnAcceptorsOutput').textContent=formatDensity(acceptorsCm3);
+  $('scPnDonorsOutput').textContent=formatDensity(donorsCm3);
+  $('scPnBiasOutput').textContent=(voltage>0?'+':'')+number(voltage,2)+' V';
+  $('scPnBias').disabled=pnPhase!=='steady';
+  $('scPnPrediction').disabled=pnPhase!=='steady';
+  $('scPnCheck').disabled=pnPhase!=='steady';
+  Object.entries(pnPhaseIds).forEach(([phase,id])=>
+   $(id).setAttribute('aria-pressed',String(phase===pnPhase)));
+  const unitWidth=cm=>number(cm*1e4,3)+' µm';
+  if(pnPhase==='separate'){
+   $('scPnSummary').replaceChildren(
+    metric('Aşama','Temas öncesi'),metric('Tükenim bölgesi','Henüz oluşmadı'));
+   $('scPnExplanation').textContent='İki parça temas etmiyor. p bölgesinde holler, n bölgesinde elektronlar çoğunluktadır. Henüz ortak bir PN geçiş bölgesi ve ona ait yerleşik alan yoktur.';
+  }else if(pnPhase==='diffuse'){
+   $('scPnSummary').replaceChildren(
+    metric('Elektron difüzyonu','n → p'),metric('Hol difüzyonu','p → n'));
+   $('scPnExplanation').textContent='İlk anda elektronlar n’den p’ye, holler p’den n’ye yayılır. Geride kalan A⁻ ve D⁺ sabit iyonları alan oluşturur. Bu şema bir zaman çözümü değildir; nihai genişliği görmek için 3. adımı seç.';
+  }else{
+   $('scPnSummary').replaceChildren(
+    metric('Yerleşik potansiyel Vbi',number(j.builtInPotentialV,3)+' V'),
+    metric('Etkin bariyer Vbi − Va',number(j.barrierV,3)+' V'),
+    metric('Tükenim genişliği W',unitWidth(j.depletionWidthCm)),
+    metric('p tarafı · xp',unitWidth(j.pWidthCm)),
+    metric('n tarafı · xn',unitWidth(j.nWidthCm)),
+    metric('En büyük |E|',number(j.peakFieldVcm/1000,1)+' kV/cm'));
+   $('scPnExplanation').textContent=voltage===0?
+    'Termal dengede difüzyon ve sürüklenme akımları birbirini dengeler; toplam akım sıfırdır fakat tükenim bölgesinde elektrik alan vardır. Sabit A⁻ solda, D⁺ sağdadır; E alanı n’den p’ye yönelir.':
+    voltage>0?
+     'İleri öngerilim, eklem bariyerini azaltır ve tükenim bölgesini daraltır. Taşıyıcı enjeksiyonu ve diyot akımı bu elektrostatik modelin dışındadır.':
+     'Ters öngerilim, bariyeri büyütür ve tükenim bölgesini genişletir. Sızıntı ve kırılma mekanizmaları bu modelde çözülmez.';
+  }
+  const charge=$('scPnChargeChart');
+  clearChart(charge,'p solda, n sağda; iyonlaşmış katkılar ve PN eklemi');
+  const textAt=(svg,x,y,value,color='#476681',size=14,align='start')=>
+   svgNode(svg,'text',{x,y,fill:color,'font-size':size,
+    'font-weight':650,'text-anchor':align},value);
+  const drawLine=(svg,x1,y1,x2,y2,color='#93a8bd',width=1.5,extra={})=>
+   svgNode(svg,'line',{x1,y1,x2,y2,stroke:color,'stroke-width':width,...extra});
+  svgNode(charge,'rect',{x:34,y:48,width:416,height:140,rx:12,fill:'#fff1e5'});
+  svgNode(charge,'rect',{x:450,y:48,width:416,height:140,rx:12,fill:'#e5f2ff'});
+  textAt(charge,55,32,'p-tipi · holler','#af6b2f',17);
+  textAt(charge,845,32,'n-tipi · elektronlar','#236b9c',17,'end');
+  drawLine(charge,450,41,450,206,'#617a94',1.8,{'stroke-dasharray':'5 5'});
+  textAt(charge,450,222,'x = 0 · metalürjik eklem','#506984',12,'middle');
+  const domain=2,scale=416/domain;
+  let pEdge=450,nEdge=450;
+  if(pnPhase==='steady'){
+   pEdge=Math.max(35,450-j.pWidthCm*1e4*scale);
+   nEdge=Math.min(865,450+j.nWidthCm*1e4*scale);
+   svgNode(charge,'rect',{x:pEdge,y:48,width:450-pEdge,height:140,fill:'#fbd8c4',
+    'data-pn-depletion':'p'});
+   svgNode(charge,'rect',{x:450,y:48,width:nEdge-450,height:140,fill:'#c9e1fa',
+    'data-pn-depletion':'n'});
+   for(const [start,end,sign,color,side] of [
+    [pEdge,450,'−','#bc6331','acceptor'],
+    [450,nEdge,'+','#226eb0','donor']]){
+    const width=end-start,n=Math.max(0,Math.min(20,Math.floor(width/20)));
+    for(let i=0;i<n;i++){
+     const x=start+width*(i+.5)/n;
+     const y=70+(i%3)*42;
+     svgNode(charge,'circle',{cx:x,cy:y,r:9,fill:'#fff',stroke:color,
+      'stroke-width':2,'data-pn-ion':side});
+     textAt(charge,x,y+4,sign,color,13,'middle');
+    }
+   }
+   drawLine(charge,pEdge,194,pEdge,206,'#8b9db0',1);
+   drawLine(charge,nEdge,194,nEdge,206,'#8b9db0',1);
+   textAt(charge,238,233,'xp = '+unitWidth(j.pWidthCm),'#a55e2a',12,'middle');
+   textAt(charge,675,233,'xn = '+unitWidth(j.nWidthCm),'#246a9c',12,'middle');
+   drawLine(charge,572,247,340,247,'#8a3360',3.5,{'data-pn-field-arrow':'n-to-p'});
+   svgNode(charge,'polygon',{points:'326,247 345,239 345,255',fill:'#8a3360'});
+   textAt(charge,450,261,'E: n → p (←)','#8a3360',12,'middle');
+  }else if(pnPhase==='diffuse'){
+   for(const [x,dir,label,color] of [
+    [560,-1,'e⁻ : n → p','#256ba1'],[340,1,'h⁺ : p → n','#bc7838']]){
+    drawLine(charge,x,119,x+dir*170,119,color,4,
+     {'data-pn-diffusion':dir<0?'electron':'hole'});
+    const tip=x+dir*170;
+    svgNode(charge,'polygon',{points:dir<0?
+     (tip-12)+',119 '+(tip+9)+',111 '+(tip+9)+',127':
+     (tip+12)+',119 '+(tip-9)+',111 '+(tip-9)+',127',fill:color});
+    textAt(charge,x,106,label,color,14,'middle');
+   }
+   textAt(charge,450,232,'Geçici yayılma · nitel anlatım','#596f85',13,'middle');
+  }else{
+   drawLine(charge,442,48,442,188,'#fff',10);
+   textAt(charge,450,237,'Temas henüz yok','#596f85',13,'middle');
+  }
+  // Mobile carriers are drawn only outside the indicated depletion widths.
+  const pSpan=Math.max(0,pEdge-52),nSpan=Math.max(0,847-nEdge);
+  for(let i=0;i<5;i++){
+   const y=75+(i%2)*60;
+   if(pSpan>32){
+    const x=52+pSpan*(i+.5)/5;
+    svgNode(charge,'circle',{cx:x,cy:y,r:8,fill:'#fff',
+     stroke:'#c47c38','stroke-width':2,'data-pn-mobile':'hole'});
+    textAt(charge,x,y+4,'+','#ba783a',12,'middle');
+   }
+   if(nSpan>32){
+    const nx=nEdge+nSpan*(i+.5)/5;
+    svgNode(charge,'circle',{cx:nx,cy:y,r:8,fill:'#227ac2',
+     stroke:'#fff','stroke-width':1.5,'data-pn-mobile':'electron'});
+    textAt(charge,nx,y+4,'−','#fff',12,'middle');
+   }
+  }
+  const field=$('scPnFieldChart');
+  clearChart(field,'Tükenim yaklaşımında elektrik alan ve potansiyel profili');
+  if(pnPhase!=='steady'){
+   textAt(field,450,175,'Nicel profil yalnızca 3. aşamada gösterilir.','#516d86',18,'middle');
+   textAt(field,450,205,'İlk difüzyon geçici bir süreçtir; burada Poisson-difüzyon zaman çözümü yapılmıyor.','#647b90',13,'middle');
+  }else{
+   const left={start:80,end:425},right={start:530,end:868};
+   const X=(panel,um)=>panel.start+(um+domain)/(2*domain)*(panel.end-panel.start);
+   const yE=e=>102+Math.min(1.04,-e/j.peakFieldVcm)*169;
+   const yPhi=v=>282-v/j.barrierV*180;
+   textAt(field,18,28,'Elektrik alan E(x) · n → p','#9d3d63',16);
+   textAt(field,488,28,'Elektrostatik potansiyel φ(x)','#286c9e',16);
+   for(const [panel,yBase] of [[left,102],[right,282]]){
+    drawLine(field,panel.start,54,panel.start,304,'#93a8bd',1.2);
+    drawLine(field,panel.start,yBase,panel.end,yBase,'#93a8bd',1.2);
+    for(const microns of [-2,-1,0,1,2]){
+     const x=X(panel,microns);
+     drawLine(field,x,54,x,304,'#edf1f5',1);
+     textAt(field,x,325,String(microns),'#70859a',11,'middle');
+    }
+   }
+   textAt(field,248,352,'x (µm) · p ← 0 → n','#668099',12,'middle');
+   textAt(field,700,352,'x (µm) · p ← 0 → n','#668099',12,'middle');
+   const samples=Array.from({length:241},(_,i)=>{
+    const xUm=-domain+2*domain*i/240;
+    return {xUm,...pnJunctionProfile(j,xUm*1e-4)};
+   });
+   svgNode(field,'path',{d:linePath(samples,p=>[
+    X(left,p.xUm),yE(p.fieldVcm)]),fill:'none',stroke:'#b02f64',
+    'stroke-width':3.5,'data-pn-field-curve':'true'});
+   svgNode(field,'path',{d:linePath(samples,p=>[
+    X(right,p.xUm),yPhi(p.potentialV)]),fill:'none',stroke:'#227ac2',
+    'stroke-width':3.5,'data-pn-potential-curve':'true'});
+   svgNode(field,'circle',{cx:X(left,0),cy:yE(-j.peakFieldVcm),r:5,
+    fill:'#b02f64','data-pn-peak':'true'});
+   textAt(field,88,72,'E = 0','#7a8899',12);
+   textAt(field,90,291,'−'+number(j.peakFieldVcm/1000,1)+' kV/cm','#9b3460',12);
+   textAt(field,544,291,'0 V','#657e96',12);
+   textAt(field,544,96,number(j.barrierV,3)+' V','#216b9c',12);
+  }
+  $('scPnValidity').textContent=pnPhase!=='steady'?
+   'Bu aşama hareketin yönünü anlatır; sayısal Poisson çözümü yalnızca üçüncü aşamanın statik tükenim profili içindir.':
+   (voltage===0?'Termal denge, uygulanan gerilim sıfırdır.':
+    'Dış gerilim altında termal denge varsayılmaz; burada yalnızca durağan tükenim genişliği yaklaştırması kullanılır.')+
+   ' Grafikler x ekseninde ±2 µm sabit fiziksel ölçeklidir; çok dar tükenim bölgeleri ince görünebilir.';
+ }
+ for(const [phase,id] of Object.entries(pnPhaseIds))
+  $(id).addEventListener('click',()=>{
+   pnPhase=phase;
+   $('scPnPrediction').value='';
+   $('scPnFeedback').textContent='';
+   $('scPnFeedback').removeAttribute('data-result');
+   renderPn();
+  });
+ for(const id of ['scPnAcceptors','scPnDonors','scPnBias'])
+  $(id).addEventListener('input',renderPn);
+ $('scPnCheck').addEventListener('click',()=>{
+  const selected=$('scPnPrediction').value;
+  if(!selected){$('scPnFeedback').textContent='Önce bir yanıt seç.';return;}
+  const correct=selected==='n-to-p';
+  $('scPnFeedback').textContent=(correct?'Doğru! ':'Bir daha düşün: ')+
+   'Tükenimde n tarafında pozitif D⁺, p tarafında negatif A⁻ iyonları kalır. Alan pozitiften negatife, yani n’den p’ye (sola) yönelir. Elektronların elektriksel sürüklenme yönü ise alanın tersidir. Katkılama laboratuvarında A⁻/D⁺ kökenini tekrar inceleyebilirsin.';
+  $('scPnFeedback').setAttribute('data-result',correct?'correct':'retry');
+ });
  const guideStages=[
   {title:'1 · Tek atom: ayrık seviye',
    explanation:'Bir atomun tek orbitali bu modelde tek enerji seviyesi verir. Önce tahminini seç, sonra grafiği güncelle.',
@@ -816,6 +998,7 @@ export function initSemiconductorLesson(host){
   renderChain();
   renderDual();
   renderDoping();
+  renderPn();
   for(const [input,output,digits,unit] of params)$(output).textContent=number($(input).value,digits)+unit;
   const period=Number($('scPeriod').value),potential=Number($('scPotential').value);
   const mass=Number($('scMass').value);
