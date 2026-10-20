@@ -152,3 +152,53 @@ export function idealDopedCarriers({donorsCm3=0,acceptorsCm3=0,temperatureK=300}
   majority:Math.abs(delta)<intrinsicCm3*1e-12?'intrinsic':delta>0?'electrons':'holes',
   nondegenerate};
 }
+
+/* P2 abrupt, one-dimensional Si-like PN homojunction in the depletion
+ * approximation. x<0 is p, x>0 is n. At zero bias E points from n to p.
+ * Bias changes the electrostatic barrier but this does not solve carrier
+ * injection, diffusion currents or time-dependent junction formation.
+ * Sources: MIT OCW 6.012 lecture 4 and 6.720J lecture 13. */
+export function idealPnJunction({acceptorsCm3=1e16,donorsCm3=1e16,
+ appliedBiasV=0,temperatureK=300}={}){
+ if(![acceptorsCm3,donorsCm3,appliedBiasV,temperatureK].every(Number.isFinite)||
+  acceptorsCm3<=0||donorsCm3<=0||temperatureK<250||temperatureK>450)
+  throw Error('PN modeli: Na, Nd > 0 ve 250 ≤ T ≤ 450 K gerekli.');
+ const intrinsicCm3=idealDopedCarriers({temperatureK}).intrinsicCm3;
+ if(acceptorsCm3<=intrinsicCm3||donorsCm3<=intrinsicCm3)
+  throw Error('PN modeli katkılı her iki bölgenin ni üstünde yoğunluk gerektirir.');
+ const q=1.602176634e-19,epsilonFcm=11.7*8.8541878128e-14;
+ const builtInPotentialV=KB_EV_K*temperatureK*
+  Math.log(acceptorsCm3*donorsCm3/(intrinsicCm3**2));
+ const barrierV=builtInPotentialV-appliedBiasV;
+ if(!(barrierV>0))
+  throw Error('İleri öngerilim modelin pozitif bariyer aralığını aşıyor.');
+ const depletionWidthCm=Math.sqrt((2*epsilonFcm*barrierV/q)*
+  (1/acceptorsCm3+1/donorsCm3));
+ const pWidthCm=depletionWidthCm*donorsCm3/(acceptorsCm3+donorsCm3);
+ const nWidthCm=depletionWidthCm*acceptorsCm3/(acceptorsCm3+donorsCm3);
+ const peakFieldVcm=q*acceptorsCm3*pWidthCm/epsilonFcm;
+ return {acceptorsCm3,donorsCm3,appliedBiasV,temperatureK,intrinsicCm3,
+  builtInPotentialV,barrierV,depletionWidthCm,pWidthCm,nWidthCm,
+  peakFieldVcm,permittivityFcm:epsilonFcm};
+}
+
+export function pnJunctionProfile(junction,xCm){
+ if(!junction||!Number.isFinite(xCm))
+  throw Error('PN profili: geçerli eklem ve x koordinatı gerekli.');
+ const {pWidthCm,nWidthCm,acceptorsCm3,donorsCm3,permittivityFcm,
+  peakFieldVcm,barrierV}=junction;
+ const q=1.602176634e-19;
+ if(xCm<=-pWidthCm)return {chargeCcm3:0,fieldVcm:0,potentialV:0};
+ if(xCm>=nWidthCm)return {chargeCcm3:0,fieldVcm:0,potentialV:barrierV};
+ if(xCm<0){
+  const local=xCm+pWidthCm;
+  return {chargeCcm3:-q*acceptorsCm3,
+   fieldVcm:-q*acceptorsCm3*local/permittivityFcm,
+   potentialV:q*acceptorsCm3*local*local/(2*permittivityFcm)};
+ }
+ const pStep=q*acceptorsCm3*pWidthCm*pWidthCm/(2*permittivityFcm);
+ return {chargeCcm3:q*donorsCm3,
+  fieldVcm:-peakFieldVcm+q*donorsCm3*xCm/permittivityFcm,
+  potentialV:pStep+peakFieldVcm*xCm-
+   q*donorsCm3*xCm*xCm/(2*permittivityFcm)};
+}
