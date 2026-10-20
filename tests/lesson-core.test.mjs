@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -197,4 +197,56 @@ test('P1 compensated doping, temperature and input limits',()=>{
  assert.throws(()=>idealDopedCarriers({acceptorsCm3:NaN}));
  assert.throws(()=>idealDopedCarriers({temperatureK:0}));
  assert.throws(()=>idealDopedCarriers({temperatureK:500}));
+});
+
+test('P2 PN junction neutral charge, field direction and integrated barrier',()=>{
+ const j=idealPnJunction();
+ assert.ok(j.builtInPotentialV>0.6&&j.builtInPotentialV<0.9);
+ assert.ok(Math.abs(j.pWidthCm-j.nWidthCm)<1e-16);
+ assert.ok(Math.abs(j.acceptorsCm3*j.pWidthCm-
+  j.donorsCm3*j.nWidthCm)/(j.acceptorsCm3*j.pWidthCm)<1e-12,
+  'fixed acceptor and donor sheet charges must balance');
+ const left=pnJunctionProfile(j,-j.pWidthCm);
+ const middle=pnJunctionProfile(j,0);
+ const right=pnJunctionProfile(j,j.nWidthCm);
+ const pInner=pnJunctionProfile(j,-j.pWidthCm/2);
+ const nInner=pnJunctionProfile(j,j.nWidthCm/2);
+ assert.equal(left.fieldVcm,0);
+ assert.equal(right.fieldVcm,0);
+ assert.ok(pInner.chargeCcm3<0&&nInner.chargeCcm3>0);
+ assert.ok(pInner.fieldVcm<0&&middle.fieldVcm<0&&nInner.fieldVcm<0,
+  'E must point from n to p (negative x)');
+ assert.ok(Math.abs(middle.fieldVcm+j.peakFieldVcm)<1e-9);
+ assert.equal(left.potentialV,0);
+ assert.ok(Math.abs(right.potentialV-j.barrierV)<1e-12);
+ assert.ok(middle.potentialV>0&&middle.potentialV<j.barrierV);
+ let integral=0;
+ for(let i=0;i<2000;i++){
+  const x0=-j.pWidthCm+j.depletionWidthCm*i/2000;
+  const x1=-j.pWidthCm+j.depletionWidthCm*(i+1)/2000;
+  integral+=-(pnJunctionProfile(j,x0).fieldVcm+
+   pnJunctionProfile(j,x1).fieldVcm)/2*(x1-x0);
+ }
+ assert.ok(Math.abs(integral-j.barrierV)/j.barrierV<1e-6,
+  'integral of -E dx must equal barrier voltage');
+});
+
+test('P2 forward/reverse bias and one-sided doping alter the depletion width',()=>{
+ const equilibrium=idealPnJunction();
+ const forward=idealPnJunction({appliedBiasV:0.3});
+ const reverse=idealPnJunction({appliedBiasV:-0.4});
+ assert.ok(forward.depletionWidthCm<equilibrium.depletionWidthCm);
+ assert.ok(reverse.depletionWidthCm>equilibrium.depletionWidthCm);
+ assert.ok(forward.peakFieldVcm<equilibrium.peakFieldVcm);
+ assert.ok(reverse.peakFieldVcm>equilibrium.peakFieldVcm);
+ const asym=idealPnJunction({acceptorsCm3:1e15,donorsCm3:1e18});
+ assert.ok(asym.pWidthCm>asym.nWidthCm*900);
+ const dense=idealPnJunction({acceptorsCm3:1e18,donorsCm3:1e18});
+ assert.ok(dense.depletionWidthCm<equilibrium.depletionWidthCm);
+ assert.throws(()=>idealPnJunction({acceptorsCm3:0}));
+ assert.throws(()=>idealPnJunction({donorsCm3:-1}));
+ assert.throws(()=>idealPnJunction({appliedBiasV:10}));
+ assert.throws(()=>idealPnJunction({temperatureK:0}));
+ assert.throws(()=>pnJunctionProfile(null,0));
+ assert.throws(()=>pnJunctionProfile(equilibrium,NaN));
 });
