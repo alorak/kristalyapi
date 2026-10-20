@@ -288,6 +288,36 @@ try{
  await page.locator('#scDiodePrediction').selectOption('positive');
  await page.locator('#scDiodeCheck').evaluate(button=>button.click());
  assert.match(await page.locator('#scDiodeFeedback').textContent(),/Doğru!/);
+ // P4 real-diode lab: two I-V curves, individual mechanism toggles and feedback.
+ assert.equal(await page.locator('#scRealIvChart [data-real-iv-forward]').count(),2);
+ assert.equal(await page.locator('#scRealIvChart [data-real-iv-reverse]').count(),2);
+ assert.equal(await page.locator('#scRealBranchesChart [data-real-branch]').count(),3);
+ const realInitially=await page.locator('#scRealSummary .lesson-metric').first().textContent();
+ await page.locator('#scRealIdeal').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scRealIdeal').getAttribute('aria-pressed'),'true');
+ assert.equal(await page.locator('#scRealRecombination').getAttribute('aria-pressed'),'false');
+ assert.notEqual(await page.locator('#scRealSummary .lesson-metric').first().textContent(),realInitially);
+ assert.equal(await page.locator('#scRealSummary .lesson-metric').first().textContent(),
+  await page.locator('#scRealSummary .lesson-metric').nth(1).textContent(),
+  'with all nonideal effects disabled P3 and P4 give the same current');
+ await page.locator('#scRealAll').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scRealAll').getAttribute('aria-pressed'),'true');
+ await page.locator('#scRealVoltage').evaluate(input=>{
+  input.value='-0.3';input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ assert.match(await page.locator('#scRealSummary .lesson-metric').first().textContent(),/−/);
+ assert.equal(await page.locator('#scRealIvChart [data-real-point]').count(),2);
+ await page.locator('#scRealSeries').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scRealSeries').getAttribute('aria-pressed'),'false');
+ await page.locator('#scRealUseDiode').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scRealVoltage').inputValue(),
+  await page.locator('#scDiodeVoltage').inputValue());
+ await page.locator('#scRealPrediction').selectOption('recombination');
+ await page.locator('#scRealCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scRealFeedback').textContent(),/Birlikte düzeltelim/);
+ await page.locator('#scRealPrediction').selectOption('series');
+ await page.locator('#scRealCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scRealFeedback').textContent(),/Doğru!/);
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
  console.log('Focused XRD Bragg/WebGL, atom-to-band and two-orbital gap labs passed.');
 }finally{
