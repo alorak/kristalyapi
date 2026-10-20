@@ -280,8 +280,8 @@ export function realDiodeState({acceptorsCm3=1e16,donorsCm3=1e16,
  const activeShuntOhms=includeShunt?shuntOhms:Infinity;
  const branches=voltage=>{
   const diffusionCurrentA=diffusionSaturationA*Math.expm1(voltage/thermalVoltageV);
-  const recombinationCurrentA=recombinationSaturationA*
-   Math.expm1(voltage/(2*thermalVoltageV));
+  const recombinationCurrentA=includeRecombination?
+   recombinationSaturationA*Math.expm1(voltage/(2*thermalVoltageV)):0;
   const shuntCurrentA=includeShunt?voltage/shuntOhms:0;
   return {diffusionCurrentA,recombinationCurrentA,shuntCurrentA,
    currentA:diffusionCurrentA+recombinationCurrentA+shuntCurrentA};
@@ -308,7 +308,7 @@ export function realDiodeState({acceptorsCm3=1e16,donorsCm3=1e16,
   baseline.electronMinorityP0Cm3*boundaryFactor/acceptorsCm3,
   baseline.holeMinorityN0Cm3*boundaryFactor/donorsCm3);
  return {...currents,appliedBiasV,junctionVoltageV,
-  seriesVoltageV:currents.currentA*activeSeriesOhms,
+  seriesVoltageV:includeSeries?currents.currentA*activeSeriesOhms:0,
   seriesOhms:activeSeriesOhms,shuntOhms:activeShuntOhms,
   recombinationRatio,areaMm2,acceptorsCm3,donorsCm3,
   includeRecombination,includeSeries,includeShunt,thermalVoltageV,
