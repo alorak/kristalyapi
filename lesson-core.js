@@ -202,3 +202,54 @@ export function pnJunctionProfile(junction,xCm){
   potentialV:pStep+peakFieldVcm*xCm-
    q*donorsCm3*xCm*xCm/(2*permittivityFcm)};
 }
+
+/* P3 ideal diffusion diode at 300 K in a low-injection, long-base
+ * approximation. p (x<0), n (x>0); current is defined positive from p
+ * contact into the junction (forward bias). No resistive drop, trap-assisted
+ * recombination, avalanche or surface leakage. MIT OCW 6.720J lecture 14. */
+export function idealDiodeState({acceptorsCm3=1e16,donorsCm3=1e16,
+ appliedBiasV=0,areaMm2=1}={}){
+ if(![acceptorsCm3,donorsCm3,appliedBiasV,areaMm2].every(Number.isFinite)||
+  acceptorsCm3<=0||donorsCm3<=0||areaMm2<=0)
+  throw Error('İdeal diyot: Na, Nd ve alan pozitif/sonlu olmalıdır.');
+ const temperatureK=300;
+ const junction=idealPnJunction({acceptorsCm3,donorsCm3,appliedBiasV,temperatureK});
+ const thermalVoltageV=KB_EV_K*temperatureK;
+ const intrinsicCm3=junction.intrinsicCm3;
+ const electronMinorityP0Cm3=intrinsicCm3**2/acceptorsCm3;
+ const holeMinorityN0Cm3=intrinsicCm3**2/donorsCm3;
+ // Fixed illustrative 300 K transport assumptions (not fitted to CIF data).
+ const electronDiffusivityCm2s=25,holeDiffusivityCm2s=10;
+ const electronDiffusionLengthCm=0.002,holeDiffusionLengthCm=0.001;
+ const q=1.602176634e-19,areaCm2=areaMm2/100;
+ const saturationDensityAcm2=q*(
+  electronDiffusivityCm2s/electronDiffusionLengthCm*electronMinorityP0Cm3+
+  holeDiffusivityCm2s/holeDiffusionLengthCm*holeMinorityN0Cm3);
+ const saturationCurrentA=saturationDensityAcm2*areaCm2;
+ const relativeExcess=Math.expm1(appliedBiasV/thermalVoltageV);
+ const boundaryFactor=1+relativeExcess;
+ const currentA=saturationCurrentA*relativeExcess;
+ const injectionRatio=Math.max(
+  electronMinorityP0Cm3*boundaryFactor/acceptorsCm3,
+  holeMinorityN0Cm3*boundaryFactor/donorsCm3);
+ return {acceptorsCm3,donorsCm3,appliedBiasV,temperatureK,areaMm2,areaCm2,
+  thermalVoltageV,intrinsicCm3,junction,
+  electronMinorityP0Cm3,holeMinorityN0Cm3,
+  electronDiffusivityCm2s,holeDiffusivityCm2s,
+  electronDiffusionLengthCm,holeDiffusionLengthCm,
+  saturationDensityAcm2,saturationCurrentA,currentA,
+  relativeExcess,boundaryFactor,injectionRatio,
+  lowInjection:injectionRatio<0.1,
+  depletionValid:junction.barrierV>3*thermalVoltageV};
+}
+
+/* Distance is measured outwards from the corresponding depletion edge,
+ * rather than from the metallurgical junction. */
+export function idealDiodeMinorityProfile(state,side,distanceCm){
+ if(!state||!['p','n'].includes(side)||!Number.isFinite(distanceCm)||distanceCm<0)
+  throw Error('Diyot profili: p/n tarafı ve pozitif sonlu uzaklık gerekli.');
+ const base=side==='p'?state.electronMinorityP0Cm3:state.holeMinorityN0Cm3;
+ const length=side==='p'?state.electronDiffusionLengthCm:state.holeDiffusionLengthCm;
+ const excessCm3=base*state.relativeExcess*Math.exp(-distanceCm/length);
+ return {equilibriumCm3:base,excessCm3,concentrationCm3:base+excessCm3};
+}
