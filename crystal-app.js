@@ -2342,6 +2342,68 @@ function partialOccupancyOpacity(occupancy){
  if(!Number.isFinite(occ)||occ>=1-1e-6)return 1;
  return Math.round((.3+.6*Math.max(0,occ))*20)/20;
 }
+const DISORDER_VIEW_KEY='kristalyapi.disorder-view.v1';
+let disorderView='all',lastDisorderSummary=null;
+try{const stored=localStorage.getItem(DISORDER_VIEW_KEY);if(['all','dominant','ordered'].includes(stored))disorderView=stored;}catch(error){/* Private browsing and unit tests. */}
+/* Rendering preference only: preserve the complete CIF data and occupancies.
+   A representative group is a visual aid, not a simulated disorder realization. */
+function disorderDisplayIndices(sites,mode='all'){
+ if(!['all','dominant','ordered'].includes(mode))throw Error('Geçersiz düzensizlik görünümü.');
+ const result=new Set();if(mode==='all'){sites.forEach((_,i)=>result.add(i));return result;}
+ const scores=new Map();
+ if(mode==='dominant')sites.forEach((site,index)=>{
+  const assembly=disorderTag(site.disorderAssembly),group=disorderTag(site.disorderGroup);
+  if(!assembly||!group)return;
+  if(!scores.has(assembly))scores.set(assembly,new Map());
+  const candidates=scores.get(assembly);
+  if(!candidates.has(group))candidates.set(group,{sum:0,count:0,first:index});
+  const item=candidates.get(group),occ=Number(site.occupancy??1);
+  item.sum+=Number.isFinite(occ)?Math.max(0,Math.min(1,occ)):1;item.count++;
+ });
+ const best=new Map();for(const [assembly,groups] of scores){
+  const ranked=[...groups].sort((a,b)=>b[1].sum/b[1].count-a[1].sum/a[1].count||a[1].first-b[1].first);
+  if(ranked.length>1)best.set(assembly,ranked[0][0]);
+ }
+ sites.forEach((site,index)=>{
+  if(mode==='ordered'){if(Number(site.occupancy??1)>=1-1e-6)result.add(index);return;}
+  const assembly=disorderTag(site.disorderAssembly),group=disorderTag(site.disorderGroup);
+  if(!assembly||!group||!best.has(assembly)||best.get(assembly)===group)result.add(index);
+ });
+ return result;
+}
+function disorderOccupancySummary(sites,formula=''){
+ const weighted=sites.reduce((sum,site)=>sum+Number(site.occupancy??1),0);
+ const partial=sites.filter(site=>Number(site.occupancy??1)<1-1e-6);
+ const elements=new Set(sites.map(site=>cleanSymbol(site.symbol)));
+ const missing=[...new Set(String(formula).match(/[A-Z][a-z]?/g)||[])].filter(symbol=>
+  PERIODIC_SYMBOLS.includes(symbol)&&!elements.has(symbol));
+ return {positions:sites.length,weighted,partial:partial.length,elements:elements.size,missing,
+  partialElements:[...new Set(partial.map(site=>site.symbol))].map(symbol=>({symbol,
+   positions:partial.filter(site=>site.symbol===symbol).length,
+   weighted:partial.filter(site=>site.symbol===symbol).reduce((sum,site)=>sum+Number(site.occupancy??1),0)}))};
+}
+function renderDisorderSummary(){
+ const panel=$('siteOccupancySummary'),metric=$('infoWeightedBox'),control=$('disorderViewControl');
+ if(!lastDisorderSummary){panel.hidden=true;metric.hidden=true;control.hidden=true;return;}
+ const {full,displayed,details}=lastDisorderSummary;
+ metric.hidden=!details.partial;$('infoWeighted').textContent=Number(details.weighted.toFixed(4)).toString();
+ control.hidden=!details.partial;$('disorderView').value=disorderView;
+ const relevant=details.partial>0||details.missing.length>0||displayed.length!==full.length;
+ panel.hidden=!relevant;if(!relevant)return;
+ const tr=window.CrystalI18n?.language==='tr';
+ const pieces=[tr?`Konum: ${details.positions}; koordinatı bilinen element türü: ${details.elements}; doluluk ağırlıklı atom: ${Number(details.weighted.toFixed(4))}.`:
+  `Sites: ${details.positions}; elements with resolved coordinates: ${details.elements}; occupancy-weighted atoms: ${Number(details.weighted.toFixed(4))}.`];
+ if(details.partialElements.length)pieces.push(details.partialElements.map(item=>
+  `${item.symbol}: ${item.positions} ${tr?'konum':'sites'} → ${Number(item.weighted.toFixed(4))} ${tr?'ağırlıklı atom':'weighted atoms'}`).join(' · ')+'.');
+ if(displayed.length!==full.length)pieces.push(tr?`Görünüm filtresi ${displayed.length}/${full.length} konumu çiziyor; CIF verisi değiştirilmedi.`:
+  `Display filter renders ${displayed.length}/${full.length} sites; CIF data remains unchanged.`);
+ if(details.missing.length)pieces.push(tr?`Formülde olup konumu çözümlenmemiş elementler: ${details.missing.join(', ')}. Formül atom konumlarıyla aynı şey değildir.`:
+  `Elements in the formula without resolved atomic coordinates: ${details.missing.join(', ')}. The formula is not a list of located sites.`);
+ pieces.push(tr?'Saydam küre kısmi doluluğu belirtir; aynı anda tüm alternatif konumların dolu olduğu anlamına gelmez. Temsilî görünüm fiziksel bir yapı kestirimi değildir.':
+  'Translucent spheres indicate partial occupancy, not simultaneous population of every alternative. Representative view is not a predicted physical structure.');
+ panel.replaceChildren();const title=document.createElement('strong');title.textContent=tr?'Kristalografik konum ve doluluk':'Crystallographic sites and occupancy';panel.append(title);
+ for(const sentence of pieces){const item=document.createElement('p');item.textContent=sentence;panel.append(item);}
+}
 function bondIsPeriodic(mode='auto',nonPeriodic=false){
  if(!['auto','molecule','periodic'].includes(mode))throw Error('Geçersiz bağ arama modu.');
  return mode==='periodic'||mode==='auto'&&!nonPeriodic;
@@ -3827,6 +3889,9 @@ function build(){
  const B=basis(state.cell);const center=toCart(state.rep.map(v=>v/2),B);clearRoot();root.position.copy(center).multiplyScalar(-1);
  if(state.symmetryEnabled&&!validateSymmetryMetric(state.cell,state.sgSetting))throw Error('Uzay grubu simetrisi hücre metrikleriyle uyumsuz. Hücreyi veya uzay grubunu düzeltin.');
  const physical=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
+ const shownSiteIds=disorderDisplayIndices(physical,disorderView);
+ const visiblePhysical=[],visibleSiteIndex=new Map();
+ physical.forEach((site,index)=>{if(shownSiteIds.has(index)){visibleSiteIndex.set(index,visiblePhysical.length);visiblePhysical.push(site);}});
  const atomOrigin=state.nonPeriodic?new THREE.Vector3(...(state.nonPeriodicOrigin||[0,0,0])):null;
  if(state.poly&&state.poly!==state.polyCenters?.[0])state.polyCenters=[state.poly];
  state.polyCenters=normalizedPolyCenters(state.polyCenters,state.poly,physical);
@@ -3840,6 +3905,7 @@ function build(){
  }
  const positions=new Set(),entry=[];
  for(let s=0;s<physical.length;s++){
+  if(!shownSiteIds.has(s))continue;
   const site=physical[s];site.symbol=cleanSymbol(site.symbol);for(const k of ['x','y','z'])if(!Number.isFinite(Number(site[k])))throw Error('Atom koordinatları sayısal olmalıdır.');
   const f=[frac(+site.x),frac(+site.y),frac(+site.z)];
   const ranges=visibleTranslations(f,state.bounds,state.rep,state.boundary);
@@ -3913,7 +3979,7 @@ function build(){
  for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
  const adjacency=Array.from({length:entry.length},()=>[]);
  let capReached=false,alternativeBondsSkipped=0;
- const partialSites=physical.filter(site=>partialOccupancyOpacity(site.occupancy)<1).length;
+ const partialSites=visiblePhysical.filter(site=>partialOccupancyOpacity(site.occupancy)<1).length;
  for(let i=0;i<entry.length;i++){
   const p=entry[i].pos,b=ck(p);
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
@@ -3932,7 +3998,7 @@ function build(){
   const radius=state.style==='wire'?.012:state.style==='stick'?.095:.055;
   const defaultBounds=state.bounds.every(([a,b])=>a===0&&b===1);
   const periodic=state.plane.slab||!defaultBounds||!bondPeriodic?null:
-   periodicBondSegments(physical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
+   periodicBondSegments(visiblePhysical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
   const segments=periodic?periodic.segments:bondPairs.filter(([i,j])=>atomRender[i].visible&&atomRender[j].visible).map(([i,j])=>[entry[i].pos,entry[j].pos]);
   if(segments.length)addInstancedCylinders(segments,radius,bondMat,'bonds');
   else bondMat.dispose();
@@ -3954,7 +4020,7 @@ function build(){
   for(let i=0;i<entry.length;i++){
    if(!atomRender[i].visible||!centers.has(entry[i].site.symbol))continue;
    if(!cache.has(entry[i].idx)){
-    const neighbors=coordinationNeighbors(physical,entry[i].idx,B,polyRules,polyCutoff,
+    const neighbors=coordinationNeighbors(visiblePhysical,visibleSiteIndex.get(entry[i].idx),B,polyRules,polyCutoff,
      state.polyCut>0?false:state.autoBond,state.polyNeighbors||12);
     cache.set(entry[i].idx,coordinationGeometry(neighbors,B));
    }
@@ -4049,10 +4115,12 @@ function build(){
  drawStage3Planes();
  applyLayerAppearance();updatePolyhedronLod();
  renderLayerManager();
- $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür atom · '+bondPairs.length+' geometrik bağ';
+ $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';$('totalSummary').textContent=entry.filter(visibleAtom).length+' görünür konum · '+bondPairs.length+' geometrik bağ';
  $('infoName').textContent=state.name;$('infoDetail').textContent=state.detail||'P1 (açık atom konumları)';
  $('infoVolume').textContent=state.nonPeriodic?'— (görüntüleme kutusu)':volume(B).toFixed(2);
  $('infoSites').textContent=physical.length;
+ lastDisorderSummary={full:physical,displayed:visiblePhysical,details:disorderOccupancySummary(physical,state.cifMeta?._chemical_formula_sum||'')};
+ renderDisorderSummary();
  const elems=[...new Set(state.sites.map(s=>s.symbol))];$('legend').replaceChildren(...elems.map(el=>{const x=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.backgroundColor=elementColor(el);x.append(sw,document.createTextNode(el));return x;}));
  recordHistoryChange();
  persistLastCrystal();
@@ -5836,9 +5904,11 @@ function applyPointDefect(){
 function renderSites(){
  refreshStage3Atoms();
  const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
- state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);tr.append(td);}
+ state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);if(k==='symbol'&&site.label){const label=document.createElement('span');label.className='site-atom-label';label.textContent=site.label;label.title='CIF atom etiketi: '+site.label;td.append(label);}tr.append(td);}
   const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#55718e;white-space:nowrap';
   if(state.symmetryEnabled&&state.sites.length<=60){try{const id=identifyWyckoff(site,state.sgSetting);wp.textContent=id.matches.length===1?id.matches[0]:(id.matches.length?id.matches.join('/'):'m='+id.multiplicity);wp.title='Eşdeğer konum sayısı: '+id.multiplicity+' · '+(id.matches.length?id.matches.join(', '):'kesin Wyckoff konumu eşleşmedi');}catch(e){wp.textContent='?';wp.title=e.message;}}else wp.textContent='—';tr.append(wp);
+  const occTd=document.createElement('td'),occSpan=document.createElement('span');const occ=Number(site.occupancy??1);occSpan.className='site-occupancy'+(occ<1-1e-6?' partial':'');occSpan.textContent=(100*occ).toFixed(occ<1?1:0).replace(/\.0$/,'')+'%';occSpan.title='Kristalografik konum doluluğu: '+occ;occTd.append(occSpan);tr.append(occTd);
+  const disorderTd=document.createElement('td'),assembly=disorderTag(site.disorderAssembly),group=disorderTag(site.disorderGroup);disorderTd.className='site-disorder-cell';disorderTd.textContent=group?(assembly?assembly+'/'+group:group):'—';disorderTd.title=group?'Alternatif grup · '+(assembly||'belirtilmedi')+' / '+group:'Düzenli atom konumu';tr.append(disorderTd);
   const td=document.createElement('td'),btn=document.createElement('button');btn.className='del';btn.textContent='×';btn.title='Atom konumunu sil';btn.disabled=state.sites.length<2;btn.addEventListener('click',()=>{state.sites.splice(i,1);state.warning='';fillPoly();renderSites();build();});td.append(btn);tr.append(td);rows.append(tr);});
  renderSiteStyleControls();
  refreshDefectControls();
@@ -9192,6 +9262,12 @@ function bind(){
  $('applyCell').onclick=applyCell;$('applyRepeat').onclick=applyRepeat;$('repeatOne').onclick=()=>{state.rep=[1,1,1];syncControls();build();fit();};
  $('applyBounds').onclick=applyBounds;
  $('resetBounds').onclick=()=>{state.bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());syncControls();build();};
+ $('disorderView').onchange=event=>{
+  const mode=event.target.value;if(!['all','dominant','ordered'].includes(mode))return;
+  disorderView=mode;try{localStorage.setItem(DISORDER_VIEW_KEY,mode);}catch(error){/* unavailable */}
+  selected=[];build();
+ };
+ window.addEventListener('crystal-language-change',renderDisorderSummary);
  $('siteStyleSite').onchange=renderSiteStyleControls;
  for(const [id,field] of [['siteStyleColor','visualColor'],['siteStyleScale','visualScale'],['sitePolyColor','polyColor'],['sitePolyOpacity','polyOpacity']])
   $(id).onchange=event=>updateSiteVisual(field,event.target.value);
