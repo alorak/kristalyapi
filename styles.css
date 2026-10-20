@@ -979,6 +979,22 @@ body.lesson-open #app{display:none!important}
 .lesson-doping-lab #scDopingValidity{margin-top:12px;color:#80511e}
 .lesson-doping-lab input:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:600px){.lesson-doping-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.lesson-doping-presets .lesson-action{font-size:10px;padding:8px 3px}.lesson-doping-lab .lesson-chain-readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lesson-pn-lab{margin:16px 0;border-color:#c8e2eb}
+.lesson-pn-lab>.lesson-guide-intro{margin:0 0 15px}
+.lesson-pn-steps{margin-bottom:17px}
+.lesson-pn-lab .lesson-chain-controls .lesson-field{margin-bottom:12px}
+.lesson-pn-readout{grid-template-columns:repeat(2,minmax(0,1fr));margin:16px 0}
+.lesson-pn-readout .lesson-metric strong{font-size:13px}
+.lesson-pn-graphics{display:grid;gap:8px;align-content:start}
+.lesson-pn-graphics svg{max-height:none;background:#fbfdff}
+.lesson-pn-legend{display:flex;gap:12px;flex-wrap:wrap;padding:2px 4px;color:#47627c;font-size:11px}
+.lesson-pn-legend span{display:inline-flex;align-items:center;gap:5px}
+.lesson-pn-legend i{display:inline-flex;justify-content:center;align-items:center;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #a7bacb}
+.lesson-pn-negative{background:#bc6331}.lesson-pn-positive{background:#227ac2}
+.lesson-pn-electron{background:#227ac2}.lesson-pn-hole{background:#fff;border-color:#c47c38!important}
+.lesson-pn-lab #scPnValidity{color:#7d5b24;font-size:11px;line-height:1.6;margin-top:0}
+.lesson-pn-lab input:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:600px){.lesson-pn-steps .lesson-action{font-size:11px;padding:8px 4px}.lesson-pn-graphics{overflow-x:auto}.lesson-pn-graphics svg{min-width:610px}.lesson-pn-legend{gap:8px;font-size:10px}.lesson-pn-readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .lesson-guide{margin-bottom:16px;border-color:#bcd8f2;background:linear-gradient(135deg,#ffffff,#f8fbff)}
 .lesson-guide-intro{font-size:13px;color:#4a657e;line-height:1.65;margin:-7px 0 15px}
 .lesson-guide-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:13px}
