@@ -255,6 +255,39 @@ try{
  await page.locator('#scPnPrediction').selectOption('n-to-p');
  await page.locator('#scPnCheck').evaluate(button=>button.click());
  assert.match(await page.locator('#scPnFeedback').textContent(),/Doğru!/);
+
+ // P3 ideal diode: forward/reverse I-V, minority profiles, P2 coupling,
+ // low-injection validity and pedagogical explanation.
+ assert.equal(await page.locator('#scDiodeIvChart [data-diode-iv-forward]').count(),1);
+ assert.equal(await page.locator('#scDiodeIvChart [data-diode-iv-reverse]').count(),1);
+ assert.equal(await page.locator('#scDiodeCarrierChart [data-diode-minority]').count(),2);
+ assert.equal(await page.locator('#scDiodeIvChart [data-diode-point="forward"]').count(),1);
+ const diodeForward=await page.locator('#scDiodeSummary .lesson-metric').first().textContent();
+ assert.match(diodeForward,/µA|mA/);
+ await page.locator('#scDiodeReverse').evaluate(button=>button.click());
+ const diodeReverse=await page.locator('#scDiodeSummary .lesson-metric').first().textContent();
+ assert.notEqual(diodeForward,diodeReverse);
+ assert.match(diodeReverse,/−/,'reverse current must be negative');
+ assert.equal(await page.locator('#scDiodeIvChart [data-diode-point="reverse"]').count(),1);
+ assert.equal(await page.locator('#scDiodeCarrierChart [data-bias-sign="-1"]').count(),2);
+ await page.locator('#scDiodeZero').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDiodeSummary .lesson-metric').first().textContent(),/0[.,]000 pA/);
+ assert.equal(await page.locator('#scDiodeCarrierChart [data-bias-sign="0"]').count(),2);
+ await page.locator('#scDiodeForward').evaluate(button=>button.click());
+ const diodeOriginal=await page.locator('#scDiodeSummary .lesson-metric').first().textContent();
+ await page.locator('#scDiodeArea').evaluate(el=>{
+  el.value='3';el.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ assert.notEqual(await page.locator('#scDiodeSummary .lesson-metric').first().textContent(),diodeOriginal);
+ await page.locator('#scDiodeUsePn').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDiodeAcceptorsOutput').textContent(),/10¹⁵/);
+ assert.match(await page.locator('#scDiodeDonorsOutput').textContent(),/10¹⁸/);
+ await page.locator('#scDiodePrediction').selectOption('negative');
+ await page.locator('#scDiodeCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDiodeFeedback').textContent(),/Birlikte düzeltelim/);
+ await page.locator('#scDiodePrediction').selectOption('positive');
+ await page.locator('#scDiodeCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDiodeFeedback').textContent(),/Doğru!/);
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
  console.log('Focused XRD Bragg/WebGL, atom-to-band and two-orbital gap labs passed.');
 }finally{
