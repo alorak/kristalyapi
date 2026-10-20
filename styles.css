@@ -995,6 +995,18 @@ body.lesson-open #app{display:none!important}
 .lesson-pn-lab #scPnValidity{color:#7d5b24;font-size:11px;line-height:1.6;margin-top:0}
 .lesson-pn-lab input:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:600px){.lesson-pn-steps .lesson-action{font-size:11px;padding:8px 4px}.lesson-pn-graphics{overflow-x:auto}.lesson-pn-graphics svg{min-width:610px}.lesson-pn-legend{gap:8px;font-size:10px}.lesson-pn-readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lesson-diode-lab{margin:16px 0;border-color:#d4dfeb}
+.lesson-diode-lab>.lesson-guide-intro{margin:0 0 14px}
+.lesson-diode-presets{margin:0 0 16px}
+.lesson-diode-presets .lesson-action{min-height:47px;font-size:11px;font-weight:700}
+.lesson-diode-lab .lesson-chain-controls .lesson-field{margin-bottom:12px}
+.lesson-diode-copy{border-radius:8px;margin:4px 0 14px;cursor:pointer;background:#f3f8fe}
+.lesson-diode-readout{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:6px}
+.lesson-diode-readout .lesson-metric strong{font-size:12px}
+.lesson-diode-graphics{display:grid;gap:8px;align-content:start}
+.lesson-diode-graphics svg{max-height:none;background:#fbfdff}
+.lesson-diode-lab #scDiodeValidity{margin-top:2px;font-size:11px;line-height:1.6;color:#80521f}
+@media(max-width:600px){.lesson-diode-presets .lesson-action{font-size:10px;padding:8px 4px}.lesson-diode-graphics{overflow-x:auto}.lesson-diode-graphics svg{min-width:610px}.lesson-diode-readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .lesson-guide{margin-bottom:16px;border-color:#bcd8f2;background:linear-gradient(135deg,#ffffff,#f8fbff)}
 .lesson-guide-intro{font-size:13px;color:#4a657e;line-height:1.65;margin:-7px 0 15px}
 .lesson-guide-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:13px}

@@ -1161,6 +1161,46 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel lesson-diode-lab" aria-label="PN diyotunun akım-gerilim karakteristiği ve azınlık taşıyıcıları">
+   <div class="lesson-panel-head"><h3>İdeal diyot · akım, gerilim ve taşıyıcı enjeksiyonu</h3><span class="lesson-pill">P3 · Shockley modeli</span></div>
+   <p class="lesson-guide-intro">P2'deki elektriksel bariyer, ileri kutuplamada küçülür ve iki taraftan <strong>azınlık taşıyıcı enjeksiyonu</strong> başlar. Ters kutuplamada bariyer büyür; ideal diyotun akımı küçük bir ters doyma akımına yaklaşır. Aşağıdaki deneyde aynı gerilim <strong>akımı, bariyeri ve taşıyıcı profillerini birlikte</strong> değiştirir.</p>
+   <div class="lesson-dual-presets lesson-diode-presets" role="group" aria-label="Diyotun kutuplama durumunu seç">
+    <button type="button" class="lesson-action" id="scDiodeReverse" aria-pressed="false">Ters kutuplama · −0,30 V</button>
+    <button type="button" class="lesson-action" id="scDiodeZero" aria-pressed="false">Sıfır gerilim · 0 V</button>
+    <button type="button" class="lesson-action" id="scDiodeForward" aria-pressed="true">İleri kutuplama · +0,45 V</button>
+   </div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <label class="lesson-field"><span>Uygulanan gerilim V<sub>a</sub> <output id="scDiodeVoltageOutput">+0,45 V</output></span><input id="scDiodeVoltage" type="range" min="-0.5" max="0.55" step="0.025" value="0.45"></label>
+     <label class="lesson-field"><span>p-tipi akseptör N<sub>A</sub> <output id="scDiodeAcceptorsOutput">10¹⁶ cm⁻³</output></span><input id="scDiodeAcceptors" type="range" min="15" max="18" step="0.5" value="16"></label>
+     <label class="lesson-field"><span>n-tipi donör N<sub>D</sub> <output id="scDiodeDonorsOutput">10¹⁶ cm⁻³</output></span><input id="scDiodeDonors" type="range" min="15" max="18" step="0.5" value="16"></label>
+     <label class="lesson-field"><span>Diyot alanı <output id="scDiodeAreaOutput">1,0 mm²</output></span><input id="scDiodeArea" type="range" min="0.2" max="5" step="0.2" value="1"></label>
+     <button type="button" id="scDiodeUsePn" class="lesson-action lesson-diode-copy">Yukarıdaki P2 katkı yoğunluklarını kullan</button>
+     <div id="scDiodeSummary" class="lesson-chain-readout lesson-diode-readout" aria-live="polite"></div>
+     <div id="scDiodeExplanation" class="lesson-doping-explanation" aria-live="polite"></div>
+     <div class="lesson-guide-body lesson-doping-question">
+      <label class="lesson-guide-question" for="scDiodePrediction">Tahmin et: seçili gerilimde diyotun net akımı nasıldır?
+       <select id="scDiodePrediction">
+        <option value="">Yanıtını seç</option>
+        <option value="positive">İleri yönde pozitif akım</option>
+        <option value="zero">Net akım sıfır</option>
+        <option value="negative">Küçük, ters yönde negatif akım</option>
+       </select>
+      </label>
+      <div class="lesson-guide-actions"><button type="button" class="lesson-action" id="scDiodeCheck">Yanıtı kontrol et</button></div>
+      <p id="scDiodeFeedback" class="lesson-guide-feedback" aria-live="polite"></p>
+     </div>
+    </div>
+    <div class="lesson-chain-figure lesson-diode-graphics">
+     <svg id="scDiodeCarrierChart" viewBox="0 0 900 280" role="img" aria-label="p ve n tarafında azınlık taşıyıcıların enjeksiyonu veya çekilmesi, difüzyon uzunlukları"></svg>
+     <p class="lesson-crystal-help">Mavi: <strong>p tarafına enjekte olan azınlık elektronları</strong>; turuncu: <strong>n tarafına enjekte olan azınlık holleri</strong>. Grafikte y ekseni <em>denge değerinden sapmanın, seçili sınırdaki mutlak sapmaya oranını</em> gösterir; gerçek cm⁻³ yoğunluklar soldaki sayısal çıktılardadır.</p>
+     <svg id="scDiodeIvChart" viewBox="0 0 900 375" role="img" aria-label="İleri kutuplamada üstel akım ve ters kutuplamada doyma akımı için iki ölçekli grafik"></svg>
+     <p class="lesson-crystal-help"><strong>Solda:</strong> ileri kutuplamadaki akım (mA), doğrusal ölçekte. <strong>Sağda:</strong> ters kutuplamadaki akımın I/I<sub>s</sub> oranı; −1 değeri ters doyma sınırıdır. Nokta, seçili gerilimi gösterir.</p>
+     <div class="lesson-explain"><strong>Model sınırı:</strong> 300 K'de ideal uzun tabanlı PN diyot, düşük enjeksiyon ve difüzyon akımı varsayılır. T = 300 K için sabit D<sub>n</sub> = 25, D<sub>p</sub> = 10 cm²/s, L<sub>n</sub> = 20 µm ve L<sub>p</sub> = 10 µm öğretici değerleri kullanılır. I = I<sub>s</sub>(e<sup>V/V<sub>T</sub></sup> − 1). Seri direnç, tükenim bölgesinde yeniden birleşme, yüksek enjeksiyon, kırılma ve gerçek malzemeye özgü parametreler modellenmez.</div>
+     <p id="scDiodeValidity" class="lesson-crystal-help" aria-live="polite"></p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>

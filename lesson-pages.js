@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -919,6 +919,198 @@ export function initSemiconductorLesson(host){
    'Tükenimde n tarafında pozitif D⁺, p tarafında negatif A⁻ iyonları kalır. Alan pozitiften negatife, yani n’den p’ye (sola) yönelir. Elektronların elektriksel sürüklenme yönü ise alanın tersidir. Katkılama laboratuvarında A⁻/D⁺ kökenini tekrar inceleyebilirsin.';
   $('scPnFeedback').setAttribute('data-result',correct?'correct':'retry');
  });
+
+ // P3 ideal Shockley diode. Current and minority profiles share the SAME Is
+ // and junction electrostatics, but this is a low-injection teaching model.
+ let diodePreset='forward';
+ const diodePresets={reverse:['scDiodeReverse',-.3],
+  zero:['scDiodeZero',0],forward:['scDiodeForward',.45]};
+ const currentText=amps=>{
+  const abs=Math.abs(amps),sign=amps<0?'−':'';
+  if(abs<1e-9)return sign+number(abs*1e12,3)+' pA';
+  if(abs<1e-6)return sign+number(abs*1e9,3)+' nA';
+  if(abs<1e-3)return sign+number(abs*1e6,3)+' µA';
+  return sign+number(abs*1e3,3)+' mA';
+ };
+ function clearDiodePrediction(){
+  $('scDiodePrediction').value='';
+  $('scDiodeFeedback').textContent='';
+  $('scDiodeFeedback').removeAttribute('data-result');
+ }
+ function renderDiode(){
+  if(!visible)return;
+  const voltage=Number($('scDiodeVoltage').value),
+   areaMm2=Number($('scDiodeArea').value),
+   acceptorsCm3=10**Number($('scDiodeAcceptors').value),
+   donorsCm3=10**Number($('scDiodeDonors').value);
+  const s=idealDiodeState({acceptorsCm3,donorsCm3,
+   appliedBiasV:voltage,areaMm2});
+  $('scDiodeVoltageOutput').textContent=(voltage>0?'+':'')+number(voltage,3)+' V';
+  $('scDiodeAreaOutput').textContent=number(areaMm2,1)+' mm²';
+  $('scDiodeAcceptorsOutput').textContent=formatDensity(acceptorsCm3);
+  $('scDiodeDonorsOutput').textContent=formatDensity(donorsCm3);
+  Object.entries(diodePresets).forEach(([key,[id]])=>
+   $(id).setAttribute('aria-pressed',String(diodePreset===key)));
+  $('scDiodeSummary').replaceChildren(
+   metric('Diyot akımı · I',currentText(s.currentA)),
+   metric('Ters doyma · Is',currentText(s.saturationCurrentA)),
+   metric('Bariyer · Vbi − Va',number(s.junction.barrierV,3)+' V'),
+   metric('Tükenim genişliği',number(s.junction.depletionWidthCm*1e4,3)+' µm'),
+   metric('p tarafı azınlık nₚ(kenar)',
+    formatDensity(s.electronMinorityP0Cm3*s.boundaryFactor)),
+   metric('n tarafı azınlık pₙ(kenar)',
+    formatDensity(s.holeMinorityN0Cm3*s.boundaryFactor)));
+  $('scDiodeExplanation').textContent=voltage>0?
+   'İleri kutuplamada bariyer azalır. p tarafına elektron, n tarafına hol enjekte edilir; kenar yoğunlukları exp(V/VT) ile artar. Nötr bölgelerde fazla taşıyıcılar difüzyon ve yeniden birleşmeyle azalır, akım üstel büyür.':
+   voltage<0?
+    'Ters kutuplamada bariyer artar; azınlık taşıyıcılar geçiş kenarından çekilir. İdeal modelde akım −Is değerine yaklaşır. Gerçekte tükenim bölgesindeki üretim, sızıntı ve kırılma ek akımlar oluşturabilir.':
+    'Sıfır dış gerilimde iki yönlü taşıyıcı akışı birbirini dengeler; net akım I=0, kenardaki azınlık yoğunlukları denge değerlerindedir.';
+  const problems=[];
+  if(!s.lowInjection)problems.push('Yüksek enjeksiyon sınırı: kenardaki azınlık yoğunluğu çoğunluğun %10’unu aştı; Shockley yaklaşımı güvenilir değildir.');
+  if(!s.depletionValid)problems.push('Bariyer 3 VT altına indi; basit tükenim yaklaşımı geçerliliğini kaybedebilir.');
+  $('scDiodeValidity').textContent=problems.length?problems.join(' '):
+   'Modelin seçili ayarı düşük enjeksiyon ve pozitif bariyer aralığındadır. D=25/10 cm²/s ve L=20/10 µm öğretici sabitleri gerçek Si örneği için ölçüm yerine geçmez.';
+  const drawText=(svg,x,y,label,color='#4b6882',size=13,align='start')=>
+   svgNode(svg,'text',{x,y,fill:color,'font-size':size,
+    'font-weight':650,'text-anchor':align},label);
+  const drawLine=(svg,x1,y1,x2,y2,color='#9db1c3',width=1,other={})=>
+   svgNode(svg,'line',{x1,y1,x2,y2,stroke:color,'stroke-width':width,...other});
+  const carrier=$('scDiodeCarrierChart');
+  clearChart(carrier,'Azınlık elektron ve hollerin sınırdan nötr bölgeye üstel yayılımı');
+  svgNode(carrier,'rect',{x:65,y:40,width:385,height:203,fill:'#fdf0e6',rx:9});
+  svgNode(carrier,'rect',{x:450,y:40,width:385,height:203,fill:'#e8f4ff',rx:9});
+  drawText(carrier,78,25,'p bölgesi · azınlık e⁻','#286ca0',16);
+  drawText(carrier,822,25,'n bölgesi · azınlık h⁺','#be7132',16,'end');
+  drawLine(carrier,450,35,450,249,'#8499ad',1.6,{'stroke-dasharray':'6 6'});
+  drawLine(carrier,68,144,833,144,'#91a7bd',1.8);
+  drawText(carrier,452,265,'Tükenim bölgesi sınırları · x/L ölçeği','#647d94',12,'middle');
+  drawText(carrier,75,154,'Denge Δ=0','#7d8996',11);
+  const sideData=[
+   {side:'p',color:'#227ac2',start:75,end:450,name:'electron'},
+   {side:'n',color:'#d98236',start:450,end:825,name:'hole'}
+  ];
+  const sense=voltage===0?0:voltage>0?1:-1;
+  for(const side of sideData){
+   const samples=Array.from({length:121},(_,i)=>{
+    const fraction=i/120,x=side.start+(side.end-side.start)*fraction;
+    const distance=side.side==='p'?(1-fraction)*4.5:fraction*4.5;
+    const profile=idealDiodeMinorityProfile(s,side.side,
+     distance*(side.side==='p'?s.electronDiffusionLengthCm:s.holeDiffusionLengthCm));
+    const excess=profile.excessCm3;
+    const edgeExcess=(side.side==='p'?s.electronMinorityP0Cm3:s.holeMinorityN0Cm3)*s.relativeExcess;
+    const relative=edgeExcess===0?0:excess/Math.abs(edgeExcess);
+    return [x,144-relative*78];
+   });
+   svgNode(carrier,'path',{d:linePath(samples,p=>p),fill:'none',
+    stroke:side.color,'stroke-width':4,
+    'data-diode-minority':side.name,'data-bias-sign':String(sense)});
+  }
+  if(sense!==0){
+   const arrow=(x1,x2,y,color,ident)=>{
+    drawLine(carrier,x1,y,x2,y,color,3.5,{'data-diode-flow':ident});
+    const d=x2>x1?1:-1;
+    svgNode(carrier,'polygon',{points:
+     (x2+d*11)+','+y+' '+(x2-d*7)+','+(y-7)+' '+(x2-d*7)+','+(y+7),fill:color});
+   };
+   const forward=voltage>0;
+   arrow(forward?385:265,forward?265:385,66,'#227ac2','electron');
+   arrow(forward?515:635,forward?635:515,66,'#d98236','hole');
+   drawText(carrier,450,230,forward?
+    'İleri: iki tarafta enjeksiyon ↑':'Ters: kenardan azınlık taşıyıcı çekilmesi ↓',
+    '#385f7a',13,'middle');
+  }else{
+   drawText(carrier,450,226,'Net enjeksiyon yok · Δn = Δp = 0','#55738d',13,'middle');
+  }
+  const iv=$('scDiodeIvChart');
+  clearChart(iv,'Şokley diyotunun ileri üstel akımı ve ters doyma akımı');
+  const vT=s.thermalVoltageV,rect={top:60,bottom:302};
+  const panels=[{x0:70,x1:415},{x0:537,x1:864}];
+  drawText(iv,22,23,'İleri kutuplama · I (mA)','#256da4',16);
+  drawText(iv,485,23,'Ters kutuplama · I / Is','#b16c35',16);
+  // Two scales prevent a visually misleading vanishing reverse branch.
+  const xForward=v=>panels[0].x0+v/.55*(panels[0].x1-panels[0].x0);
+  const positiveMax=s.saturationCurrentA*Math.expm1(.55/vT)*1e3;
+  const yForward=ampsMilli=>rect.bottom-
+   ampsMilli/positiveMax*(rect.bottom-rect.top);
+  const xReverse=v=>panels[1].x0+(v+.5)/.5*(panels[1].x1-panels[1].x0);
+  const yReverse=ratio=>rect.bottom-(ratio+1.1)/1.2*(rect.bottom-rect.top);
+  for(const [panel,name] of [[panels[0],'forward'],[panels[1],'reverse']]){
+   drawLine(iv,panel.x0,rect.top,panel.x0,rect.bottom,'#879db0',1.4);
+   drawLine(iv,panel.x0,rect.bottom,panel.x1,rect.bottom,'#879db0',1.4);
+   for(let step=0;step<=4;step++){
+    const y=rect.bottom-(rect.bottom-rect.top)*step/4;
+    drawLine(iv,panel.x0,y,panel.x1,y,'#e5ecf4',1);
+    const value=name==='forward'?positiveMax*step/4:-1.1+1.2*step/4;
+    drawText(iv,panel.x0-8,y+4,number(value,name==='forward'?
+     (positiveMax>=1?2:positiveMax>=.01?3:positiveMax>=.0001?5:7):1),
+     '#73889c',11,'end');
+   }
+  }
+  for(let i=0;i<=5;i++){
+   const vf=.55*i/5,vr=-.5+i*.1;
+   const xf=xForward(vf),xr=xReverse(vr);
+   drawLine(iv,xf,rect.bottom,xf,rect.bottom+5);
+   drawLine(iv,xr,rect.bottom,xr,rect.bottom+5);
+   drawText(iv,xf,rect.bottom+21,number(vf,2),'#71869a',11,'middle');
+   drawText(iv,xr,rect.bottom+21,number(vr,1),'#71869a',11,'middle');
+  }
+  const positive=Array.from({length:111},(_,i)=>{
+   const v=.55*i/110;
+   return {v,currentMilli:s.saturationCurrentA*Math.expm1(v/vT)*1e3};
+  });
+  svgNode(iv,'path',{d:linePath(positive,p=>[
+   xForward(p.v),yForward(p.currentMilli)]),fill:'none',stroke:'#227ac2',
+   'stroke-width':3.7,'data-diode-iv-forward':'true'});
+  const negative=Array.from({length:101},(_,i)=>{
+   const v=-.5+i*.005;
+   return {v,ratio:Math.expm1(v/vT)};
+  });
+  svgNode(iv,'path',{d:linePath(negative,p=>[
+   xReverse(p.v),yReverse(p.ratio)]),fill:'none',stroke:'#d98236',
+   'stroke-width':3.5,'data-diode-iv-reverse':'true'});
+  if(voltage>=0){
+   const dotY=yForward(s.currentA*1e3);
+   svgNode(iv,'circle',{cx:xForward(voltage),cy:dotY,r:6,fill:'#227ac2',
+    stroke:'#fff','stroke-width':2.5,'data-diode-point':'forward'});
+  }else{
+   svgNode(iv,'circle',{cx:xReverse(voltage),cy:yReverse(s.relativeExcess),
+    r:6,fill:'#d98236',stroke:'#fff','stroke-width':2.5,
+    'data-diode-point':'reverse'});
+  }
+  drawText(iv,244,361,'Uygulanan gerilim Va (V)','#5b748c',13,'middle');
+  drawText(iv,701,361,'Uygulanan gerilim Va (V)','#5b748c',13,'middle');
+  drawText(iv,733,51,'I → −Is (ters doyma)','#ac703b',11,'middle');
+ }
+ for(const [key,[id,voltage]] of Object.entries(diodePresets))
+  $(id).addEventListener('click',()=>{
+   diodePreset=key;
+   $('scDiodeVoltage').value=String(voltage);
+   clearDiodePrediction();renderDiode();
+  });
+ for(const id of ['scDiodeVoltage','scDiodeArea','scDiodeAcceptors','scDiodeDonors'])
+  $(id).addEventListener('input',()=>{
+   diodePreset=null;clearDiodePrediction();renderDiode();
+  });
+ $('scDiodeUsePn').addEventListener('click',()=>{
+  $('scDiodeAcceptors').value=$('scPnAcceptors').value;
+  $('scDiodeDonors').value=$('scPnDonors').value;
+  clearDiodePrediction();renderDiode();
+ });
+ $('scDiodeCheck').addEventListener('click',()=>{
+  const selected=$('scDiodePrediction').value;
+  if(!selected){$('scDiodeFeedback').textContent='Önce bir yanıt seç.';return;}
+  const applied=Number($('scDiodeVoltage').value);
+  const expected=applied>0?'positive':applied<0?'negative':'zero';
+  const correct=selected===expected;
+  const why=applied>0?
+   'İleri gerilim bariyeri azaltır; sınırdaki azınlık yoğunlukları e^(V/VT) ile artar ve ideal difüzyon akımı pozitiftir.':
+   applied<0?
+    'Ters gerilim kenardaki azınlıkları çeker; ideal Shockley akımı yaklaşık −Is ile sınırlanır. Gerçek diyotta sızıntı veya kırılma olabilir.':
+    'V=0 için difüzyon ve sürüklenme katkıları dengelenir; net akım tam sıfırdır.';
+  $('scDiodeFeedback').textContent=(correct?'Doğru! ':'Birlikte düzeltelim: ')+why+
+   ' İlgili grafik ve P2 tükenim bölümündeki bariyer açıklamasına bakabilirsin.';
+  $('scDiodeFeedback').setAttribute('data-result',correct?'correct':'retry');
+ });
  const guideStages=[
   {title:'1 · Tek atom: ayrık seviye',
    explanation:'Bir atomun tek orbitali bu modelde tek enerji seviyesi verir. Önce tahminini seç, sonra grafiği güncelle.',
@@ -999,6 +1191,7 @@ export function initSemiconductorLesson(host){
   renderDual();
   renderDoping();
   renderPn();
+  renderDiode();
   for(const [input,output,digits,unit] of params)$(output).textContent=number($(input).value,digits)+unit;
   const period=Number($('scPeriod').value),potential=Number($('scPotential').value);
   const mass=Number($('scMass').value);
