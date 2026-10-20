@@ -7818,6 +7818,8 @@ const COD_MAX_VISIBLE=600;
 const COD_OPTIMADE_BASE=COD_BASE+'/optimade/v1/structures';
 const COD_CACHE_NAME='kristalyapi.cod.cif.v1';
 const COD_WORKER_KEY='kristalyapi.cod.worker-url.v1';
+// Used only when no valid custom Worker URL has been saved in this browser.
+const COD_DEFAULT_WORKER_BASE='https://kristalyapi-cod-api.aoakkirman.workers.dev';
 let codWorkerBase='';
 let codBookmarks=[],codResults=[],codPage=0,codPane='search',codBusy=false,codAbort=null,codGeneration=0;
 function codCifUrl(id){
@@ -8520,10 +8522,14 @@ function showCodManualImport(record,error){
 function initLibrary(){
  initCodDetail();
  const store=codStore();
- try{codWorkerBase=codValidateWorkerBase(store?.getItem(COD_WORKER_KEY)||'');}
- catch(e){codWorkerBase='';}
+ let customWorker='';
+ try{customWorker=codValidateWorkerBase(store?.getItem(COD_WORKER_KEY)||'');}
+ catch(e){customWorker='';}
+ codWorkerBase=customWorker||COD_DEFAULT_WORKER_BASE;
  $('codWorkerUrl').value=codWorkerBase;
- $('codWorkerStatus').textContent=codWorkerBase?'Worker ayarlı. Otomatik modda ilk bağlantı Worker üzerinden yapılır.':'Worker tanımlı değil. COD\'a doğrudan bağlanılır.';
+ $('codWorkerStatus').textContent=customWorker?
+  'Özel Worker ayarlı. Otomatik modda önce kayıtlı Worker denenir.':
+  'Varsayılan COD Worker etkin. Otomatik modda önce bu Worker denenir.';
  codBookmarks=store?loadCodBookmarks(store):[];
  presetFavoriteKeys=loadPresetFavorites(store);
  codBookmarkCount();renderCodBookmarks();renderCodResults();
@@ -8566,9 +8572,8 @@ function initLibrary(){
  };
  $('codWorkerClear').onclick=()=>{
   try{codStore()?.removeItem(COD_WORKER_KEY);}catch(e){}
-  codWorkerBase='';$('codWorkerUrl').value='';
-  if($('codConnection').value==='worker')$('codConnection').value='auto';
-  codWorkerStatus('Worker kaldırıldı. Doğrudan COD erişimi kullanılacak.');
+  codWorkerBase=COD_DEFAULT_WORKER_BASE;$('codWorkerUrl').value=codWorkerBase;
+  codWorkerStatus('Özel ayar kaldırıldı. Varsayılan COD Worker yeniden etkin.','ready');
  };
  $('codWorkerTest').onclick=async()=>{
   let base;

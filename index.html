@@ -703,15 +703,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="lib-panel-footer">
       <div class="lib-field lib-connection"><span>Bağlantı yöntemi</span>
         <select id="codConnection" aria-label="COD bağlantı yöntemi">
-          <option value="auto">Otomatik (Worker ayarlıysa önce Worker)</option>
-          <option value="worker">Yalnız kendi Cloudflare Worker API</option>
+          <option value="auto">Otomatik (önce varsayılan veya özel Worker)</option>
+          <option value="worker">Yalnız Cloudflare Worker API</option>
           <option value="optimade">Yalnız doğrudan OPTIMADE API</option>
           <option value="direct">Yalnız doğrudan COD klasik API / CIF</option>
         </select>
       </div>
       <div class="lib-actions"><button id="codReset" type="reset">Sıfırla</button><button id="codExample" type="button">La–Mn–Ge–In örneği</button><button id="codSubmit" type="submit" class="primary">⌕ COD'da ara</button></div>
     </div>
-    <p class="lib-privacy">Otomatik bağlantıda kaydedilmiş Worker önceliklidir. Yapı dosyaları gerektiğinde manuel içe aktarılabilir.</p>
+    <p class="lib-privacy">Otomatik bağlantıda önce kayıtlı özel Worker, yoksa varsayılan COD Worker denenir. Gerekirse doğrudan COD bağlantısına geçilir.</p>
    </form>
    <section id="codResultsBox" class="lib-panel lib-results" aria-live="polite">
     <div class="lib-results-head"><h3>Arama sonuçları <span id="codResultCount"></span></h3><div id="codResultsActions" class="lib-pager"></div></div>
@@ -725,13 +725,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <section id="libWorkerPane" class="lib-panel cod-worker-settings" role="tabpanel" aria-labelledby="libWorkerTab" hidden>
    <div class="lib-panel-head"><h3>Cloudflare Worker · COD API bağlantısı</h3><p>Bağlantıyı buradan yönet; arama filtreleri COD'da ara sekmesinde kalır.</p></div>
    <div class="cod-worker-controls">
-    <input id="codWorkerUrl" type="url" spellcheck="false" autocomplete="off" aria-label="Cloudflare Worker HTTPS adresi" placeholder="https://kristalyapi-cod-api.hesabiniz.workers.dev">
+    <input id="codWorkerUrl" type="url" spellcheck="false" autocomplete="off" aria-label="Cloudflare Worker HTTPS adresi" placeholder="https://kristalyapi-cod-api.aoakkirman.workers.dev">
     <button id="codWorkerSave" type="button">Kaydet</button>
     <button id="codWorkerTest" type="button">Bağlantıyı test et</button>
-    <button id="codWorkerClear" type="button">Temizle</button>
+    <button id="codWorkerClear" type="button">Varsayılana dön</button>
    </div>
-   <div id="codWorkerStatus" class="cod-worker-status" role="status">Worker tanımlı değil. COD'a doğrudan bağlanılır.</div>
-   <div class="lib-worker-instructions">Worker dağıtıldıktan sonra HTTPS adresini kaydetmen yeterli. Adres yalnızca bu tarayıcıda tutulur ve API anahtarı gerekmez. <strong>COD'da ara</strong> sekmesinde bağlantı yöntemi <em>Otomatik</em> olduğunda önce kayıtlı Worker denenir.</div>
+   <div id="codWorkerStatus" class="cod-worker-status" role="status">Varsayılan COD Worker etkin. Otomatik modda önce bu Worker denenir.</div>
+   <div class="lib-worker-instructions">Varsayılan Worker: <strong>kristalyapi-cod-api.aoakkirman.workers.dev</strong>. Özel bir adres kaydedersen yalnızca bu tarayıcıda tutulur ve öncelikli kullanılır. <strong>Varsayılana dön</strong> özel ayarı siler. <strong>COD'da ara</strong> bölümünün <em>Otomatik</em> modunda önce Worker denenir; bağlantı kurulamazsa doğrudan COD'ya geçilir.</div>
   </section>
 
   <section id="codImportHelp" class="lib-panel cod-import-help" hidden aria-live="polite">

@@ -341,18 +341,18 @@ Bilimsel çekirdek bağımsız bir modüldedir ([`reciprocal-core.js`](reciproca
 1. **COD'da ara:** ana arama ölçütleri solda, **Arama sonuçları** sağda. COD numarası, ad/formül, uzay grubu, gerekli/hariç elementler ve gelişmiş yayın/hacim/element sayısı filtreleri. Arama sonucu yer imlerine eklenebilir, CIF olarak açılabilir veya içe aktarılabilir. **COD ID üzerine tıklandığında ayrıntı modalı** açılır.
 2. **Örnek Yapılar:** solda yedi örneğin **açılır menü yerine listesi**, sağda seçili yapının hücre bilgileri, açıklaması, favori düğmesi ve içe aktarma. Si, NaCl, CsCl, elmas, FCC Cu, BaTiO₃ ve grafit bulunur. **Yeni P1 oluştur** seçeneği de vardır.
 3. **Yer imleri:** COD kayıtlarının yerel listesi; kaydedilmiş kayıtları bulma, içe aktarma ve yer imi JSON'unu dışa aktarma.
-4. **Cloudflare Worker · COD API:** yalnızca isteğe bağlı Worker adresini kaydetme, test etme ve temizleme. Arama sayfasında yer kaplamaz.
+4. **Cloudflare Worker · COD API:** varsayılan Worker adresini görüntüleme, test etme, özel adres kaydetme ve varsayılana dönme. Arama sayfasında yer kaplamaz.
 
 ### COD bağlantı yöntemleri
 
 | Mod | Davranış |
 | --- | --- |
-| **Otomatik** | Worker ayarlıysa onu dener; uygun standart filtrelerde OPTIMADE, diğerlerinde klasik COD JSON aramasını kullanır. |
-| **Yalnız kendi Cloudflare Worker API** | Kullanıcının dağıttığı Worker ağ geçidini kullanır. |
+| **Otomatik** | Kayıtlı özel Worker varsa önce onu, yoksa varsayılan Worker'ı dener; Worker erişilemezse doğrudan COD'a döner. Uygun filtrelerde OPTIMADE, diğerlerinde klasik COD JSON kullanılır. |
+| **Yalnız Cloudflare Worker API** | Kayıtlı özel Worker'ı veya varsayılan Worker'ı kullanır; doğrudan COD'a geçmez. |
 | **Yalnız doğrudan OPTIMADE API** | Yalnız OPTIMADE'nin desteklediği filtrelerle çalışır. |
 | **Yalnız doğrudan COD klasik API / CIF** | COD'un klasik `result.php?format=json` API'sini kullanır. |
 
-Resmî uç noktalar: [COD klasik JSON](https://www.crystallography.net/cod/result.php?format=json), [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Aramayı tarayıcıdan yürütmek **CORS iznine** bağlıdır. Çevrimiçi içe aktarım başarısız olursa **Dosyadan** ile indirilen CIF'i açabilirsiniz; bu yol COD API CORS'una bağlı değildir. İsteğe bağlı Worker için [kurulum, güvenlik ve dağıtım rehberi](worker/README.md) bulunur. **GitHub Pages dağıtımı Worker'ı otomatik yayınlamaz.**
+Resmî uç noktalar: [COD klasik JSON](https://www.crystallography.net/cod/result.php?format=json), [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Aramayı tarayıcıdan yürütmek **CORS iznine** bağlıdır. Çevrimiçi içe aktarım başarısız olursa **Dosyadan** ile indirilen CIF'i açabilirsiniz; bu yol COD API CORS'una bağlı değildir. Varsayılan Worker adresi `https://kristalyapi-cod-api.aoakkirman.workers.dev` olarak tanımlıdır. Tarayıcıya kaydedilmiş geçerli özel adres varsa önceliklidir; **Varsayılana dön** yalnızca bu özel ayarı siler. Worker için [kurulum, güvenlik ve dağıtım rehberi](worker/README.md) bulunur. **GitHub Pages dağıtımı Worker'ı otomatik yayınlamaz.**
 
 ### COD üstverisi: klasik API, OPTIMADE ve Worker
 

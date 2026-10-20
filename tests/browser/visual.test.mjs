@@ -441,6 +441,38 @@ try{
  assert.equal(await page.locator('#libWorkerPane').isVisible(),true);
  assert.equal(await page.locator('#codSearchForm').isVisible(),false,'Worker settings must not share the search pane');
  assert.equal(await page.locator('#codWorkerUrl').isVisible(),true);
+ // With no stored custom endpoint, the built-in COD Worker must be visible
+ // and the automatic search must actually route through that Worker.
+ const defaultCodWorker='https://kristalyapi-cod-api.aoakkirman.workers.dev';
+ assert.equal(await page.locator('#codWorkerUrl').inputValue(),defaultCodWorker);
+ assert.match(await page.locator('#codWorkerStatus').textContent(),/Varsayılan/);
+ const defaultWorkerCalls=[];
+ const defaultWorkerRoute=async route=>{
+  defaultWorkerCalls.push(route.request().url());
+  await route.fulfill({status:200,contentType:'application/json',
+   body:JSON.stringify({data:[{id:'4335507',
+    attributes:{chemical_formula_reduced:'Si',_cod_formula:'- Si -'}}]})});
+ };
+ await page.route(defaultCodWorker+'/api/**',defaultWorkerRoute);
+ await page.locator('#libSearchTab').click();
+ await page.locator('#codConnection').selectOption('auto');
+ await page.locator('#codId').fill('4335507');
+ await page.locator('#codSubmit').click();
+ await page.waitForFunction(()=>document.querySelector('#codResults .lib-cod-id')?.textContent==='4335507');
+ assert.ok(defaultWorkerCalls.some(url=>url.startsWith(defaultCodWorker+'/api/structures')),
+  'default COD Worker must handle automatic searches when no custom URL exists');
+ await page.locator('#codReset').click();
+ await page.unroute(defaultCodWorker+'/api/**',defaultWorkerRoute);
+ await page.locator('#libWorkerTab').click();
+ // An explicit override wins; clearing it restores the default instead of
+ // accidentally disabling the Worker and bypassing CORS.
+ await page.locator('#codWorkerUrl').fill('https://custom-worker.example');
+ await page.locator('#codWorkerSave').click();
+ assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.cod.worker-url.v1')),
+  'https://custom-worker.example');
+ await page.locator('#codWorkerClear').click();
+ assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.cod.worker-url.v1')),null);
+ assert.equal(await page.locator('#codWorkerUrl').inputValue(),defaultCodWorker);
  await page.screenshot({path:path.join(artifacts,'13-library-worker.png'),animations:'disabled'});
  await page.locator('#libPresetsTab').click();
  assert.equal(await page.locator('#presetList .preset-list-row').count(),7);
