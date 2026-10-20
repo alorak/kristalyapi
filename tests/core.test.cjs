@@ -58,6 +58,7 @@ vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorE
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
+vm.runInContext('Object.assign(this.api,{disorderTag,sitesAreAlternatives,partialOccupancyOpacity});',context);
 vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives,vesta3ManualBvsProjection});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
@@ -3870,4 +3871,60 @@ test('P8.2d optional SIGFP, explicit FREE exclusion, empirical FOM and true weig
   p1.readMtz(makeP1Mtz()),{size:16,dMin:1,freeFlagValue:0}),/FREE/);
  assert.throws(()=>p1.observedFourierMap(cubic,
   p1.readMtz(makeP1Mtz()),{size:16,dMin:1,fomMode:'multiply'}),/FOM/);
+});
+
+test('CIF disorder groups: alternative Cs sites in COD 1561664 are never bonded',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'fixtures','COD_1561664_Cs_H2O_MoS2.cif'),'utf8');
+ const crystal=api.cifData(src);
+ const count=symbol=>crystal.sites.filter(s=>s.symbol===symbol).length;
+ // P2₁/m, Z=2: 2 Mo + 4 S + two 2e Cs sites (Cs1, Cs2); O/H of water are not located.
+ assert.equal(crystal.sites.length,10);
+ assert.deepEqual([count('Mo'),count('S'),count('Cs')],[2,4,4]);
+ const cs1=crystal.sites.find(s=>s.label.startsWith('Cs1')),cs2=crystal.sites.find(s=>s.label.startsWith('Cs2'));
+ assert.equal(cs1.disorderAssembly,'A');assert.equal(cs1.disorderGroup,'1');
+ assert.equal(cs2.disorderAssembly,'A');assert.equal(cs2.disorderGroup,'2');
+ const mo=crystal.sites.find(s=>s.symbol==='Mo');
+ assert.equal(mo.disorderGroup,undefined,"'.' must stay an ordered site");
+ assert.equal(crystal.sites.find(s=>s.symbol==='S').disorderGroup,undefined,'assembly without group is ordered');
+ const network=api.bondNetwork(crystal.sites,crystal.cell,{periodic:true,cut:2.65,auto:true});
+ const pair=e=>[crystal.sites[e.i].symbol,crystal.sites[e.j].symbol].sort().join('-');
+ // Without disorder handling Cs1–Cs2 (0.85 Å) and Cs2–Cs2′ (2.28 Å) were drawn as bonds.
+ assert.equal(network.edges.filter(e=>pair(e)==='Cs-Cs').length,0);
+ // Each Mo keeps its six Mo–S bonds (2.40–2.54 Å).
+ assert.equal(network.edges.filter(e=>pair(e)==='Mo-S').length,12);
+ const B=api.basis(crystal.cell);
+ const csPoints=crystal.sites.filter(s=>s.symbol==='Cs').map(s=>api.toCart([s.x,s.y,s.z],B));
+ const nearCs=p=>csPoints.some(q=>Math.hypot(p.x-q.x,p.y-q.y,p.z-q.z)<1e-6);
+ const drawn=api.periodicBondSegments(crystal.sites,[1,1,1],B,new Map(),2.65,6500,true);
+ assert.ok(drawn.segments.length>0);
+ assert.equal(drawn.segments.filter(([p,q])=>nearCs(p)||nearCs(q)).length,0,'no Cs bond may be drawn in the cell');
+ // Disorder tags survive CIF export and re-import.
+ const roundtrip=api.cifData(api.cifExportText({...crystal,name:'Disorder roundtrip'}));
+ const back=roundtrip.sites.find(s=>s.label.startsWith('Cs2'));
+ assert.equal(back.disorderAssembly,'A');assert.equal(back.disorderGroup,'2');
+ // …and the project / last-crystal JSON path.
+ const project=api.loadProject(JSON.stringify({cell:crystal.cell,sites:crystal.sites,sgNumber:1,sgSetting:'1'}));
+ assert.equal(project.sites.find(s=>s.label.startsWith('Cs1')).disorderGroup,'1');
+});
+
+test('Alternative-site rule is conservative for ordered and fully occupied atoms',()=>{
+ const at=(symbol,occupancy,extra={})=>({symbol,occupancy,x:0,y:0,z:0,...extra});
+ assert.equal(api.disorderTag('.'),'');assert.equal(api.disorderTag('?'),'');
+ assert.equal(api.disorderTag('0'),'');assert.equal(api.disorderTag('01'),'1');assert.equal(api.disorderTag(' -2 '),'-2');
+ // Different groups of one assembly (also the implicit empty assembly).
+ assert.equal(api.sitesAreAlternatives(at('C',.6,{disorderGroup:'1'}),at('C',.4,{disorderGroup:'2'}),1.5),true);
+ assert.equal(api.sitesAreAlternatives(at('C',.6,{disorderAssembly:'A',disorderGroup:'1'}),
+  at('C',.4,{disorderAssembly:'B',disorderGroup:'2'}),1.5),false,'different assemblies are independent');
+ // Negative group: own symmetry copies are alternatives, atoms of one copy are bonded.
+ const neg=(copy)=>at('C',.5,{disorderGroup:'-1',disorderCopy:copy});
+ assert.equal(api.sitesAreAlternatives(neg(0),neg(1),1.5),true);
+ assert.equal(api.sitesAreAlternatives(neg(0),neg(0),1.5),false);
+ // Untagged partial sites: only physically impossible contacts are alternatives.
+ assert.equal(api.sitesAreAlternatives(at('Cs',.07),at('Cs',.07),2.28),true);
+ assert.equal(api.sitesAreAlternatives(at('C',.5),at('C',.5),1.5),false,'normal C–C contact stays bonded');
+ assert.equal(api.sitesAreAlternatives(at('O',.6),at('H',.6),.5),false,'occupancies summing above 1 must coexist');
+ assert.equal(api.sitesAreAlternatives(at('Mo',1),at('Mo',1),.5),false,'ordered atoms are never hidden');
+ const same=at('Cs',.05);assert.equal(api.sitesAreAlternatives(same,same,0),false);
+ assert.equal(api.partialOccupancyOpacity(1),1);assert.equal(api.partialOccupancyOpacity(undefined),1);
+ assert.equal(api.partialOccupancyOpacity(.5),.6);assert.ok(api.partialOccupancyOpacity(.05)>=.3);
 });

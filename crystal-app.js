@@ -2306,6 +2306,42 @@ function bondRange(a,b,rules,cut,auto=false){
  const estimate=1.2*((RADII[a]||1.1)+(RADII[b]||1.1));
  return [.35,auto?Math.min(cut,estimate):cut];
 }
+/* CIF disorder model (_atom_site_disorder_assembly / _atom_site_disorder_group).
+   '.', '?' and group 0 mean "ordered". Numeric tags are normalized (01 → 1). */
+function disorderTag(value){
+ let s=String(value??'').trim();
+ if(!s||s==='.'||s==='?')return '';
+ if(/^[+-]?\d+$/.test(s))s=String(Number(s));
+ return s==='0'?'':s.slice(0,32);
+}
+/* Two sites are alternatives (never occupied at the same time) when
+   - they are different disorder groups of the same assembly, or
+   - they are different symmetry copies of one negative (SHELX PART −n) group, or
+   - both are partially occupied, their occupancies sum to ≤ 1 and they are
+     closer than half of their summed radii (physically unable to coexist).
+   Bonds are never drawn or counted between alternatives. Translational
+   images of one site (same object) are never alternatives of each other. */
+function sitesAreAlternatives(a,b,distance){
+ if(!a||!b||a===b)return false;
+ const ga=disorderTag(a.disorderGroup),gb=disorderTag(b.disorderGroup);
+ if(ga&&gb&&disorderTag(a.disorderAssembly)===disorderTag(b.disorderAssembly)){
+  if(ga!==gb)return true;
+  if(ga.startsWith('-')){
+   const ca=a.disorderCopy??a.symmetryOperationIndex,cb=b.disorderCopy??b.symmetryOperationIndex;
+   if(Number.isInteger(ca)&&Number.isInteger(cb)&&ca!==cb)return true;
+  }
+ }
+ const oa=Number(a.occupancy??1),ob=Number(b.occupancy??1);
+ if(!(oa<1-1e-6&&ob<1-1e-6&&oa+ob<=1+1e-4)||!Number.isFinite(distance))return false;
+ const ra=RADII[cleanSymbol(a.symbol)]||1.1,rb=RADII[cleanSymbol(b.symbol)]||1.1;
+ return distance<.5*(ra+rb);
+}
+/* Partially occupied sites are drawn translucent in proportion to occupancy. */
+function partialOccupancyOpacity(occupancy){
+ const occ=Number(occupancy??1);
+ if(!Number.isFinite(occ)||occ>=1-1e-6)return 1;
+ return Math.round((.3+.6*Math.max(0,occ))*20)/20;
+}
 function bondIsPeriodic(mode='auto',nonPeriodic=false){
  if(!['auto','molecule','periodic'].includes(mode))throw Error('Geçersiz bağ arama modu.');
  return mode==='periodic'||mode==='auto'&&!nonPeriodic;
@@ -2332,6 +2368,7 @@ function bondNetwork(sites,cell,{periodic=false,rules=new Map(),cut=2.65,auto=tr
    if(!periodic&&i===j)continue;
    const delta=[0,1,2].map(k=>f[j][k]-f[i][k]+shift[k]),distance=toCart(delta,B).length();
    if(distance<Math.max(min,1e-5)-1e-6||distance>max+1e-6)continue;
+   if(sitesAreAlternatives(sites[i],sites[j],distance))continue;
    if(edges.length>=20000)throw Error('Bağ ağı 20.000 kenar sınırını aşıyor.');
    edges.push({i,j,shift,distance});
    const a=find(i),b=find(j);if(a!==b)parent[a]=b;
@@ -2644,6 +2681,7 @@ function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false){
    const delta=[fractional[j][0]-fractional[i][0]+x,fractional[j][1]-fractional[i][1]+y,fractional[j][2]-fractional[i][2]+z];
    const dist=toCart(delta,B).length();
    if(dist>range[1]+1e-6||dist<range[0]-1e-6)continue;
+   if(sitesAreAlternatives(sites[i],sites[j],dist))continue;
    neighbors.push([i,j,[x,y,z],dist]);
   }
  }
@@ -3824,8 +3862,10 @@ function build(){
   const shown=visibleAtom(item);
   atomRender[i]={size,visible:shown};
   const color=visualHex(item.site.visualColor,elementColor(item.site.symbol));
-  if(!instanceGroups.has(item.site.symbol))instanceGroups.set(item.site.symbol,[]);
-  if(shown)instanceGroups.get(item.site.symbol).push({index:i,pos:item.pos,size,color});
+  const occupancyOpacity=partialOccupancyOpacity(item.site.occupancy);
+  const groupKey=item.site.symbol+'|'+occupancyOpacity;
+  if(!instanceGroups.has(groupKey))instanceGroups.set(groupKey,[]);
+  if(shown)instanceGroups.get(groupKey).push({index:i,pos:item.pos,size,color,opacity:occupancyOpacity});
   if(state.adpVisible&&shown&&(item.site.adp||Number.isFinite(item.site.uIso))){
    try{
     const ellipsoid=adpEllipsoid(item.site,state.cell,state.adpLevel||50);
@@ -3841,9 +3881,10 @@ function build(){
  }
  // A material and one draw call per element rather than one Mesh per atom.
  const instanceDummy=new THREE.Object3D();
- for(const [symbol,instances] of instanceGroups){
+ for(const instances of instanceGroups.values()){
   if(!instances.length)continue;
-  const mat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.33,metalness:0,opacity:atomOpacity,transparent:atomOpacity<1});
+  const opacity=atomOpacity*instances[0].opacity,partial=instances[0].opacity<1;
+  const mat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.33,metalness:0,opacity,transparent:opacity<1,depthWrite:!partial});
   const mesh=new THREE.InstancedMesh(sphereGeometry,mat,instances.length);
   mesh.userData.maxAtomRadius=Math.max(...instances.map(item=>item.size));
   mesh.userData.instanceAtomIndices=instances.map(item=>item.index);
@@ -3868,7 +3909,8 @@ function build(){
  const key=(x,y,z)=>x+','+y+','+z;
  for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
  const adjacency=Array.from({length:entry.length},()=>[]);
- let capReached=false;
+ let capReached=false,alternativeBondsSkipped=0;
+ const partialSites=physical.filter(site=>partialOccupancyOpacity(site.occupancy)<1).length;
  for(let i=0;i<entry.length;i++){
   const p=entry[i].pos,b=ck(p);
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
@@ -3876,6 +3918,7 @@ function build(){
     if(j<=i)continue;
     if(!bondPeriodic&&[0,1,2].some(k=>Math.floor(entry[i].frac[k]+1e-7)!==Math.floor(entry[j].frac[k]+1e-7)))continue;
     const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut,state.autoBond);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
+    if(sitesAreAlternatives(entry[i].site,entry[j].site,d)){alternativeBondsSkipped++;continue;}
     if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
     bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
    }
@@ -4017,6 +4060,8 @@ function build(){
  refreshPerformancePanel();
  report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',
   capReached?'Bağ sayısı üst sınıra ulaştı; daha küçük bir yapı veya eşik seçin.':'',
+  partialSites?'Doluluğu 1’den küçük '+partialSites+' konum doluluk oranına göre saydam çizildi.':'',
+  alternativeBondsSkipped?'Aynı anda bulunamayan alternatif (düzensiz) konumlar arasında bağ çizilmedi.':'',
   state.polyCenters.length&&!polyCount?state.polyCenters.join(', ')+' için eşik içinde en az dört komşulu çokyüzlü oluşturulamadı; merkez atomu veya bağ eşiğini değiştirin.':'',
   polyCount&&polyMissing.length?'Seçili '+polyMissing.join(', ')+' merkezi için uygun çokyüzlü oluşmadı; komşu eşiğini kontrol edin.':'',
   polyTruncated?'Çokyüzlü sayısı '+MAX_POLYHEDRA+' sınırına ulaştı; geri kalanı çizilmedi. Tekrar sayısını azaltın.':'',
@@ -6170,11 +6215,14 @@ function cifData(src){
   const f=lp.cols.findIndex(k=>k==='_atom_site_fract_x'),fy=lp.cols.indexOf('_atom_site_fract_y'),fz=lp.cols.indexOf('_atom_site_fract_z');
   if(f>=0&&fy>=0&&fz>=0){const el=lp.cols.indexOf('_atom_site_type_symbol'),label=lp.cols.indexOf('_atom_site_label'),occ=lp.cols.indexOf('_atom_site_occupancy');
    const iso=lp.cols.indexOf('_atom_site_u_iso_or_equiv'),biso=lp.cols.indexOf('_atom_site_b_iso_or_equiv');
+   const assembly=lp.cols.indexOf('_atom_site_disorder_assembly'),disorderGroup=lp.cols.indexOf('_atom_site_disorder_group');
    for(const row of lp.rows){const x=number(row[f]),y=number(row[fy]),z=number(row[fz]);if(![x,y,z].every(Number.isFinite))throw Error('CIF atom koordinatı eksik veya geçersiz: '+(label>=0?row[label]:'atom '+(sites.length+1)));const raw=el>=0?row[el]:(label>=0?row[label]:'X');
     const occupancy=occ<0?1:number(row[occ]);
     if(!Number.isFinite(occupancy)||occupancy<0||occupancy>1)
      throw Error('CIF atom doluluğu eksik, bilinmiyor veya 0–1 dışında: '+(label>=0?row[label]:'atom '+(sites.length+1)));
     const atom={symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy};
+    const group=disorderGroup>=0?disorderTag(row[disorderGroup]):'';
+    if(group){atom.disorderGroup=group;const a=assembly>=0?disorderTag(row[assembly]):'';if(a)atom.disorderAssembly=a;}
     const uv=iso>=0?number(row[iso]):biso>=0?number(row[biso])/(8*Math.PI*Math.PI):NaN;
     if(Number.isFinite(uv)&&uv>0)atom.uIso=uv;
     sites.push(atom);}}
@@ -6251,6 +6299,8 @@ function cifData(src){
    continue;
   }
   const next={...site,x:xyz[0],y:xyz[1],z:xyz[2],label:site.label+(operations.length>1?'_'+(j+1):'')};
+  // A negative CIF/SHELX disorder group is not connected to its own symmetry copies.
+  if(site.disorderGroup?.startsWith('-'))next.disorderCopy=j;
   if(magneticMoment)next.magneticMoment=magneticMoment;
   if(transformedADP)next.adp=transformedADP;
   present.push(next);out.push(next);
@@ -6687,6 +6737,11 @@ function loadProject(json){
  const sites=obj.sites.map((v,i)=>{
   const s={symbol:cleanSymbol(v.symbol),label:String(v.label||('Atom '+i)).slice(0,80),x:+v.x,y:+v.y,z:+v.z,occupancy:Number(v.occupancy??1)};
   Object.assign(s,validatedVisualSite(v));
+  const group=disorderTag(v.disorderGroup),assembly=disorderTag(v.disorderAssembly);
+  if(group){
+   s.disorderGroup=group;if(assembly)s.disorderAssembly=assembly;
+   if(Number.isInteger(v.disorderCopy)&&v.disorderCopy>=0&&v.disorderCopy<1000)s.disorderCopy=v.disorderCopy;
+  }
   if(v.adp!==undefined){adpMatrix(v.adp);s.adp=v.adp.slice();}
   if(v.uIso!==undefined){s.uIso=Number(v.uIso);if(!Number.isFinite(s.uIso)||s.uIso<=0)throw Error('Geçersiz izotropik ADP.');}
   if(v.magneticMoment!==undefined){
@@ -7371,9 +7426,13 @@ function cifExportText(state){
  const withIso=outSites.some(s=>Number.isFinite(s.uIso));
  q.push('loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','_atom_site_occupancy');
  if(withIso)q.push('_atom_site_U_iso_or_equiv');
+ const withDisorder=outSites.some(s=>disorderTag(s.disorderGroup));
+ if(withDisorder)q.push('_atom_site_disorder_assembly','_atom_site_disorder_group');
+ const disorderCell=v=>{const tag=disorderTag(v);return /^[A-Za-z0-9+\-]+$/.test(tag)?tag:'.';};
  outSites.forEach((s,i)=>{
   const row=(safeName(s.label)||s.symbol+(i+1))+' '+s.symbol+' '+[s.x,s.y,s.z].map(v=>frac(+v).toFixed(8)).join(' ')+' '+Number(s.occupancy??1).toFixed(4);
-  q.push(row+(withIso?' '+(Number.isFinite(s.uIso)?s.uIso.toFixed(8):'?'):''));
+  q.push(row+(withIso?' '+(Number.isFinite(s.uIso)?s.uIso.toFixed(8):'?'):'')+
+   (withDisorder?' '+disorderCell(s.disorderAssembly)+' '+disorderCell(s.disorderGroup):''));
  });
  const aniso=outSites.filter(s=>s.adp);
  if(aniso.length){

@@ -105,6 +105,11 @@ test('P7.8 malformed and degenerate geometry cannot pass as valid hull',()=>{
 });
 
 
+// Bond search skips mutually exclusive (disordered) sites through this helper.
+const g=src.indexOf('function disorderTag('),h=src.indexOf('function bondIsPeriodic(',g);
+assert.ok(g>=0&&h>g);
+Object.assign(ctx,{RADII:{},cleanSymbol:s=>String(s)});
+vm.runInContext(src.slice(g,h),ctx);
 // Verify the other periodic features use the same metric-bounded image logic.
 const c=src.indexOf('function minimumPeriodicImage('),d=src.indexOf('function planeNormal(',c);
 assert.ok(c>=0&&d>c);
