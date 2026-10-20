@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -249,4 +249,64 @@ test('P2 forward/reverse bias and one-sided doping alter the depletion width',()
  assert.throws(()=>idealPnJunction({temperatureK:0}));
  assert.throws(()=>pnJunctionProfile(null,0));
  assert.throws(()=>pnJunctionProfile(equilibrium,NaN));
+});
+
+test('P3 ideal Shockley diode has zero, exponential forward and reverse saturation current',()=>{
+ const zero=idealDiodeState({appliedBiasV:0});
+ assert.equal(zero.currentA,0);
+ assert.ok(zero.saturationCurrentA>0);
+ assert.equal(zero.boundaryFactor,1);
+ const forward=idealDiodeState({appliedBiasV:.3});
+ const higher=idealDiodeState({appliedBiasV:.4});
+ const reverse=idealDiodeState({appliedBiasV:-.3});
+ assert.ok(forward.currentA>0&&higher.currentA>forward.currentA);
+ assert.ok(reverse.currentA<0);
+ assert.ok(Math.abs(reverse.currentA/reverse.saturationCurrentA+1)<1e-4);
+ const shockley=Math.expm1(.3/(KB_EV_K*300));
+ assert.ok(Math.abs(forward.currentA/forward.saturationCurrentA-shockley)/shockley<1e-12,
+  'Shockley exponential factor');
+ assert.ok(forward.junction.depletionWidthCm<zero.junction.depletionWidthCm);
+ assert.ok(reverse.junction.depletionWidthCm>zero.junction.depletionWidthCm);
+ assert.equal(forward.lowInjection,true);
+});
+
+test('P3 diode area and dopant density affect current through physical Is',()=>{
+ const a=idealDiodeState({appliedBiasV:.4,areaMm2:1});
+ const triple=idealDiodeState({appliedBiasV:.4,areaMm2:3});
+ assert.ok(Math.abs(triple.currentA/a.currentA-3)<1e-12);
+ assert.ok(Math.abs(triple.saturationCurrentA/a.saturationCurrentA-3)<1e-12);
+ const lightlyDoped=idealDiodeState({acceptorsCm3:1e15,
+  donorsCm3:1e15,appliedBiasV:.4});
+ assert.ok(lightlyDoped.saturationCurrentA>a.saturationCurrentA,
+  'less doping means more equilibrium minority carriers and larger Is in this model');
+ const hotForward=idealDiodeState({acceptorsCm3:1e15,
+  donorsCm3:1e15,appliedBiasV:.55});
+ assert.equal(hotForward.lowInjection,false);
+ assert.equal(hotForward.depletionValid,false);
+ assert.throws(()=>idealDiodeState({areaMm2:0}));
+ assert.throws(()=>idealDiodeState({donorsCm3:-1}));
+ assert.throws(()=>idealDiodeState({appliedBiasV:2}));
+});
+
+test('P3 minority injection and extraction obey the diffusion-length exponential',()=>{
+ const forward=idealDiodeState({appliedBiasV:.25});
+ for(const [side,length] of [['p',forward.electronDiffusionLengthCm],
+  ['n',forward.holeDiffusionLengthCm]]){
+  const edge=idealDiodeMinorityProfile(forward,side,0);
+  const step=idealDiodeMinorityProfile(forward,side,length);
+  assert.ok(edge.excessCm3>0&&step.excessCm3>0);
+  assert.ok(Math.abs(step.excessCm3/edge.excessCm3-Math.exp(-1))<1e-12);
+  assert.ok(edge.concentrationCm3>edge.equilibriumCm3);
+ }
+ const reverse=idealDiodeState({appliedBiasV:-.3});
+ for(const side of ['p','n']){
+  const edge=idealDiodeMinorityProfile(reverse,side,0);
+  assert.ok(edge.concentrationCm3>0);
+  assert.ok(edge.concentrationCm3<edge.equilibriumCm3);
+  assert.ok(edge.excessCm3<0);
+ }
+ const noBias=idealDiodeMinorityProfile(idealDiodeState(), 'p',0);
+ assert.equal(noBias.excessCm3,0);
+ assert.throws(()=>idealDiodeMinorityProfile(forward,'bad',0));
+ assert.throws(()=>idealDiodeMinorityProfile(forward,'p',-1));
 });
