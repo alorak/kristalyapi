@@ -207,7 +207,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div id="leftAtomsPane" class="left-tab-panel" role="tabpanel" aria-labelledby="leftAtomsTab" hidden>
   <div class="section"><h2>Asimetrik konumlar / atomlar <span id="siteCount">0</span></h2>
-    <div style="overflow-x:auto"><table class="site-table"><thead><tr><th>Atom</th><th>x</th><th>y</th><th>z</th><th>WP</th><th></th></tr></thead><tbody id="siteRows"></tbody></table></div>
+    <div style="overflow-x:auto"><table class="site-table"><thead><tr><th>Atom / etiket</th><th>x</th><th>y</th><th>z</th><th>WP</th><th>Doluluk</th><th>Grup</th><th></th></tr></thead><tbody id="siteRows"></tbody></table></div>
     <div class="actionrow" style="margin-top:9px"><button id="addAtom">+ Atom ekle</button></div>
     <div class="site-style-panel"><strong>Atom / çokyüzlü görünümü</strong>
      <label class="field"><span>Atom konumu</span><select id="siteStyleSite"></select></label>
@@ -364,7 +364,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>
    <div id="layerManager" class="layer-manager" aria-label="Kristal görünüm katmanları"></div>
   </div>
-  <div class="section" data-right-section="info"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div><div class="metrics" style="margin-top:10px"><div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div><div class="metric"><strong id="infoSites">—</strong><small>Hücrede atom</small></div></div><div id="legend" class="legend"></div><div id="notice" class="notice"></div></div>
+  <div class="section" data-right-section="info"><h2>Yapı bilgileri</h2><div class="info"><small>Kristal yapısı</small><strong id="infoName">—</strong><small id="infoDetail"></small></div>
+   <div class="metrics" style="margin-top:10px">
+    <div class="metric"><strong id="infoVolume">—</strong><small>Hücre hacmi (Å³)</small></div>
+    <div class="metric"><strong id="infoSites">—</strong><small>Hücrede konum</small></div>
+    <div class="metric" id="infoWeightedBox" hidden><strong id="infoWeighted">—</strong><small>Doluluk ağırlıklı atom</small></div>
+   </div>
+   <div class="disorder-view-control" id="disorderViewControl" hidden>
+    <label class="field"><span>Alternatif konumların görünümü</span>
+     <select id="disorderView" aria-label="Düzensiz konumları görüntüleme yöntemi">
+      <option value="all">Tüm konumlar · saydam</option>
+      <option value="dominant">Baskın alternatif grup</option>
+      <option value="ordered">Yalnız tam dolu konumlar</option>
+     </select>
+    </label>
+    <small>Görünüm filtresi hesaplama verisini veya CIF dosyasını değiştirmez.</small>
+   </div>
+   <div id="siteOccupancySummary" class="occupancy-summary" aria-live="polite" hidden></div>
+   <div id="legend" class="legend"></div><div id="notice" class="notice"></div></div>
   <div class="section" data-right-section="comparison"><h2>Çoklu yapı / faz karşılaştırması</h2>
    <p class="hint">En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.</p>
    <input type="file" id="overlayFile" accept=".cif,.mcif" hidden>
