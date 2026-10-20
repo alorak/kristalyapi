@@ -331,6 +331,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div id="rightDrawerContent" class="right-drawer-content" hidden></div>
   <div id="rightTabContent" hidden>
    <div id="rightStructurePane">
+
+  <div class="section" data-right-section="defects">
+   <h2>Kristal kusurları <span class="stage">P1 modeli</span></h2>
+   <p class="hint">Vakans, ikame ve arayer atomu için önce görüntüleme tekrarlarını gerçek P1 atomlarına dönüştürün.</p>
+   <div class="defect-workflow">
+    <strong class="measure-subheading">1 · Kristali hazırla</strong>
+    <div id="defectPreparationSummary" class="note" aria-live="polite">Kristal atomları hazırlanıyor.</div>
+    <button type="button" id="defectPrepare">Süperhücreyi P1 olarak hazırla</button>
+    <p class="hint">Örn. 2 × 2 × 2 tekrar, 8 kat atomlu gerçek bir hücre olur. Simetri otomatik çoğaltılmaz; Geri Al kullanılabilir.</p>
+   </div>
+   <div class="defect-workflow">
+    <strong class="measure-subheading">2 · Kusur türünü seç</strong>
+    <label class="field"><span>Kusur türü</span><select id="defectKind"><option value="vacancy">Vakans · bir atomu kaldır</option><option value="substitution">İkame · atom türünü değiştir</option><option value="interstitial">Arayer · atom ekle</option></select></label>
+    <label class="field" id="defectTargetField"><span>Değişecek atom (P1 konumu)</span><select id="defectTarget"></select></label>
+    <label class="field" id="defectElementField" hidden><span>Yeni element simgesi</span><input id="defectElement" type="text" maxlength="2" value="B" placeholder="Örn. B, P, Fe"></label>
+    <div id="defectCoordinateFields" hidden>
+     <p class="hint">Arayer atomunun 0–1 arası kesirli koordinatları:</p>
+     <div class="triple">
+      <label class="field compact"><span>x</span><input id="defectX" type="number" min="0" max=".999999" step=".01" value=".25"></label>
+      <label class="field compact"><span>y</span><input id="defectY" type="number" min="0" max=".999999" step=".01" value=".25"></label>
+      <label class="field compact"><span>z</span><input id="defectZ" type="number" min="0" max=".999999" step=".01" value=".25"></label>
+     </div>
+    </div>
+    <button type="button" id="defectApply" class="primary">Kusuru oluştur</button>
+    <div id="defectResult" class="note" aria-live="polite">Kusur uygulandıktan sonra sonuç burada gösterilir.</div>
+   </div>
+   <p class="hint">Geometrik noktasal kusur modelidir. Yük durumu, kusur oluşum enerjisi, atom relaksasyonu ve DFT hesabı yapılmaz.</p>
+  </div>
+
   <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>
    <div id="layerManager" class="layer-manager" aria-label="Kristal görünüm katmanları"></div>
@@ -589,6 +618,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button id="applyPlane" class="primary" style="width:100%;margin-top:9px">Düzlem / kesiti uygula</button>
    <label class="field" style="margin-top:12px"><span>Slab için vakum boşluğu (Å)</span><input id="vacuumThickness" type="number" step="1" min="2" max="80" value="12"></label>
    <button id="createSlab" style="width:100%;margin-top:9px">Vakumlu yüzey hücresi oluştur</button>
+   <div class="vacuum-padding-panel">
+    <strong class="measure-subheading">Kristalin altına / üstüne vakum ekle</strong>
+    <p class="hint">Var olan kristali kesmeden ab yüzeyine dik doğrultuda hücreyi genişletir. Alt ve üst boşluk ayrı ayarlanır; mevcut görüntüleme tekrarları gerçek süperhücreye dönüştürülür.</p>
+    <div class="vacuum-padding-fields">
+     <label class="field"><span>Alt vakum (Å)</span><input id="vacuumBottom" type="number" step="0.5" min="0" max="80" value="6"></label>
+     <label class="field"><span>Üst vakum (Å)</span><input id="vacuumTop" type="number" step="0.5" min="0" max="80" value="6"></label>
+    </div>
+    <button id="addBoundaryVacuum" type="button" class="primary">Üst / alt vakumu ekle</button>
+    <div id="boundaryVacuumResult" class="hint" role="status">Henüz vakum eklenmedi. İsterseniz yalnız bir tarafı sıfırdan büyük seçebilirsiniz.</div>
+    <p class="hint">Not: Bu geometrik bir düzenlemedir, atomik relaksasyon yapılmaz. Yeni hücre P1 olur; işlem geri alınabilir.</p>
+   </div>
    <div class="miller-layer-editor">
     <strong class="measure-subheading">Çoklu Miller düzlemleri</strong>
     <p class="hint">Yukarıdaki indisleri bağımsız bir görünüm katmanı olarak ekle. Her katmanın rengi ve görünürlüğü ayrı yönetilir.</p>
@@ -631,6 +671,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button type="button" class="right-tool" data-right-tool="bonds" aria-label="Atom türlerine göre bağlar" title="Atom türlerine göre bağlar" aria-controls="rightDrawerPane-bonds" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="7" r="3"/><path d="m8 15 8-6M8 18l9-8"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="lattice" aria-label="Örgü dönüşümü" title="Örgü dönüşümü" aria-controls="rightDrawerPane-lattice" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zm5 0v16m6-16v16M4 9h16M4 15h16m-5-8 2 2-2 2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="miller" aria-label="Miller düzlemleri ve morfoloji" title="Miller düzlemleri · kesit · slab · morfoloji" aria-controls="rightDrawerPane-miller" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 7-10h11l-7 10zM5 20h14m-8-9 6-3"/><path d="M10 6 5 16" stroke-dasharray="2 2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="defects" aria-label="Kristal kusurları" title="Vakans · ikame · arayer" aria-controls="rightDrawerPane-defects" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM12 4v16M4 12h16" stroke-dasharray="3 2"/><circle cx="8" cy="8" r="2"/><path d="m16 15 4 4m0-4 4-4"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="symmetry" aria-label="Kristalografik simetri" title="Kristalografik simetri" aria-controls="rightDrawerPane-symmetry" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 1 6M20 3v5h-5M12 5v14M5 12h14"/></svg></button>
   </nav>
  </aside>
