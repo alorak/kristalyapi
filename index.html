@@ -1123,6 +1123,44 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel lesson-pn-lab" aria-label="PN eklemi ve tükenim bölgesi laboratuvarı">
+   <div class="lesson-panel-head"><h3>PN eklemi · difüzyondan yerleşik alana</h3><span class="lesson-pill">P2 · tükenim yaklaşımı</span></div>
+   <p class="lesson-guide-intro">p-tipi ve n-tipi bölgeler temas ettiğinde elektronlar ve holler yoğunluk farkıyla <strong>karşı tarafa yayılır</strong>. Hareketli taşıyıcıların ayrıldığı bölgede sabit iyonlaşmış katkılar kalır; bunların elektrik alanı difüzyona karşı koyar. Önce süreci üç adımda incele, sonra katkılama ve öngerilimi değiştir.</p>
+   <div class="lesson-guide-steps lesson-pn-steps" role="group" aria-label="PN ekleminin oluşma aşaması">
+    <button type="button" class="lesson-action" id="scPnSeparate" aria-pressed="false">1 · Ayrı bölgeler</button>
+    <button type="button" class="lesson-action" id="scPnDiffuse" aria-pressed="false">2 · İlk difüzyon</button>
+    <button type="button" class="lesson-action" id="scPnSteady" aria-pressed="true">3 · Tükenim profili</button>
+   </div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <label class="lesson-field"><span>p-tipi akseptör yoğunluğu N<sub>A</sub> <output id="scPnAcceptorsOutput">10¹⁶ cm⁻³</output></span><input id="scPnAcceptors" type="range" min="15" max="18" step="0.5" value="16"></label>
+     <label class="lesson-field"><span>n-tipi donör yoğunluğu N<sub>D</sub> <output id="scPnDonorsOutput">10¹⁶ cm⁻³</output></span><input id="scPnDonors" type="range" min="15" max="18" step="0.5" value="16"></label>
+     <label class="lesson-field"><span>Dış gerilim V<sub>a</sub> (ileri + / ters −) <output id="scPnBiasOutput">0,00 V</output></span><input id="scPnBias" type="range" min="-0.5" max="0.4" step="0.05" value="0"></label>
+     <div id="scPnSummary" class="lesson-chain-readout lesson-pn-readout" aria-live="polite"></div>
+     <div id="scPnExplanation" class="lesson-doping-explanation" aria-live="polite"></div>
+     <div class="lesson-guide-body lesson-doping-question">
+      <label class="lesson-guide-question" for="scPnPrediction">Tahmin et: tükenim bölgesindeki yerleşik elektrik alanın yönü nedir?
+       <select id="scPnPrediction">
+        <option value="">Yanıtını seç</option>
+        <option value="n-to-p">n bölgesinden p bölgesine ←</option>
+        <option value="p-to-n">p bölgesinden n bölgesine →</option>
+        <option value="none">Denge durumunda elektrik alan yoktur</option>
+       </select>
+      </label>
+      <div class="lesson-guide-actions"><button type="button" class="lesson-action" id="scPnCheck">Yanıtı kontrol et</button></div>
+      <p id="scPnFeedback" class="lesson-guide-feedback" aria-live="polite"></p>
+     </div>
+    </div>
+    <div class="lesson-chain-figure lesson-pn-graphics">
+     <svg id="scPnChargeChart" viewBox="0 0 900 265" role="img" aria-label="PN eklemindeki hareketli taşıyıcılar, sabit iyonlar ve elektrik alan yönü"></svg>
+     <div class="lesson-pn-legend"><span><i class="lesson-pn-negative"></i>Akseptör iyonu A⁻</span><span><i class="lesson-pn-positive"></i>Donör iyonu D⁺</span><span><i class="lesson-pn-electron"></i>Elektron</span><span><i class="lesson-pn-hole"></i>Hol</span></div>
+     <svg id="scPnFieldChart" viewBox="0 0 900 370" role="img" aria-label="Konuma göre negatif yönlü elektrik alan ve artan elektrostatik potansiyel"></svg>
+     <p class="lesson-crystal-help"><strong>Üst şema:</strong> p tarafında negatif A⁻, n tarafında pozitif D⁺ sabit iyonları kalır. <strong>Alt grafikler:</strong> elektrik alan E(x) sola yönelir (negatif); elektrostatik potansiyel φ(x) n tarafına doğru yükselir. Dış bölgelerde tükenim yaklaşımında alan sıfırdır.</p>
+     <div class="lesson-explain"><strong>Fiziksel sınır:</strong> Keskin eklemli, tek boyutlu, silisyum benzeri ve 300 K'de <em>tükenim yaklaşımı</em> kullanılır. İyonlaşmış dopantlar sabit, yarıiletken dielektrik sabiti ε<sub>r</sub> = 11,7; hareketli taşıyıcılar tükenim bölgesinde ihmal edilir. İlk iki adım süreç şemasıdır, zamanla çözülen difüzyon simülasyonu değildir. Dış gerilimde statik bariyer V<sub>bi</sub> − V<sub>a</sub> kullanılır; enjeksiyon akımı, akım–gerilim eğrisi ve yarı-Fermi seviyeleri çözülmez.</div>
+     <p id="scPnValidity" class="lesson-crystal-help" aria-live="polite"></p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>
