@@ -348,18 +348,18 @@ The full-width **Library** page has four tabs:
 1. **Search COD:** search criteria on the left and results on the right. Filter by COD ID, name/formula, space group, required/excluded elements, publication, volume, and number of elements. Bookmark, open as CIF, or import results. Clicking a **COD ID** opens a details dialog.
 2. **Examples:** a list of seven built-in structures—Si, NaCl, CsCl, diamond, FCC Cu, BaTiO₃, and graphite—with details, favorites, and import controls. **Create new P1** is also available.
 3. **Bookmarks:** locally saved COD records; search, import, and export bookmark JSON.
-4. **Cloudflare Worker · COD API:** configure, test, or clear an optional Worker endpoint without cluttering the search page.
+4. **Cloudflare Worker · COD API:** inspect the default Worker endpoint, test connectivity, or save a browser-specific override without cluttering the search page.
 
 ### COD connection methods
 
 | Mode | Behavior |
 | --- | --- |
-| **Automatic** | Tries a configured Worker; uses OPTIMADE for supported standard filters, otherwise the classic COD JSON search. |
-| **Cloudflare Worker API only** | Uses the user's deployed Worker gateway. |
+| **Automatic** | Tries the saved custom Worker, or the default Worker when none is configured; falls back to direct COD requests if the Worker fails. Uses OPTIMADE for supported standard filters, otherwise classic COD JSON. |
+| **Cloudflare Worker API only** | Uses the configured custom Worker or the default Worker, without a direct-COD fallback. |
 | **Direct OPTIMADE API only** | Supports only OPTIMADE-compatible filters. |
 | **Direct classic COD API / CIF only** | Uses the classic COD `result.php?format=json` API. |
 
-Official endpoints: [classic COD JSON](https://www.crystallography.net/cod/result.php?format=json) and [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Direct browser requests depend on the upstream server allowing **CORS**. If online import fails, download the CIF and use **Open from file**, which is independent of COD API CORS. The optional Worker has a [setup, security, and deployment guide](worker/README.md). **Deploying to GitHub Pages does not automatically deploy the Worker.**
+Official endpoints: [classic COD JSON](https://www.crystallography.net/cod/result.php?format=json) and [COD OPTIMADE](https://www.crystallography.net/cod/optimade/v1/structures). Direct browser requests depend on the upstream server allowing **CORS**. If online import fails, download the CIF and use **Open from file**, which is independent of COD API CORS. The default Worker is `https://kristalyapi-cod-api.aoakkirman.workers.dev`. Any valid custom Worker URL stored in the browser takes priority; **Restore default** removes only that override. The Worker has a [setup, security, and deployment guide](worker/README.md). **Deploying to GitHub Pages does not automatically deploy the Worker.**
 
 ### COD metadata: classic API, OPTIMADE, and Worker
 
