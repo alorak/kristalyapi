@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -135,4 +135,29 @@ test('Fermi Dirac at EF is 1/2, satisfies particle-hole symmetry and temperature
  assert.ok(Math.abs(fermiDirac(KB_EV_K*300,0,300)-1/(1+Math.E))<1e-12);
  assert.equal(fermiDirac(9,0,300),0);
  assert.throws(()=>fermiDirac(1,0,0));
+});
+
+test('ideal band-edge electron and hole probabilities obey thermal and Fermi limits',()=>{
+ const cold=edgeStateOccupancies(1.1,0,100);
+ const room=edgeStateOccupancies(1.1,0,300);
+ const hot=edgeStateOccupancies(1.1,0,600);
+ assert.ok(cold.electronProbability<room.electronProbability);
+ assert.ok(room.electronProbability<hot.electronProbability);
+ assert.ok(Math.abs(room.electronProbability-room.holeProbability)<1e-18,
+  'mid-gap Fermi level is particle/hole symmetric in this ideal edge model');
+ assert.ok(room.electronLog10<0&&hot.electronLog10>room.electronLog10);
+ const offset=edgeStateOccupancies(1.1,0.2,300);
+ assert.ok(offset.electronProbability>room.electronProbability);
+ assert.ok(offset.holeProbability<room.holeProbability);
+ assert.ok(offset.electronProbability>offset.holeProbability,
+  'moving EF away from mid-gap removes edge-state electron/hole equality');
+ const touching=edgeStateOccupancies(0,0,300);
+ assert.equal(touching.electronProbability,0.5);
+ assert.equal(touching.holeProbability,0.5);
+ const tiny=edgeStateOccupancies(3,0,100);
+ assert.ok(tiny.electronProbability>0&&Number.isFinite(tiny.electronLog10),
+  'small probability remains measurable on logarithmic scale');
+ assert.throws(()=>edgeStateOccupancies(-1,0,300));
+ assert.throws(()=>edgeStateOccupancies(1,0,0));
+ assert.throws(()=>edgeStateOccupancies(1,Number.NaN,300));
 });
