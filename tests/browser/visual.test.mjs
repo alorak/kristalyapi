@@ -619,6 +619,29 @@ try{
  await page.locator('#fileInput').setInputFiles(path.join(base,'tests/validation/fixtures/real/COD_4335507.cif'));
  await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('4335507'),null,{timeout:20000});
  await save(page,'03-cod-4335507',metrics);
+ // P2: VESTA-like occupancy display keeps crystallographic source and unit-cell
+ // site count unchanged while selectively changing rendered alternative images.
+ await page.locator('#fileInput').setInputFiles(path.join(base,'tests/fixtures/COD_1561664_Cs_H2O_MoS2.cif'));
+ await page.waitForFunction(()=>document.getElementById('infoName')?.textContent?.includes('1561664'),null,{timeout:20000});
+ assert.equal(await page.locator('#infoSites').textContent(),'10');
+ assert.equal(await page.locator('#infoWeighted').textContent(),'6.24');
+ assert.equal(await page.locator('#siteRows .site-occupancy.partial').count(),4);
+ assert.match(await page.locator('#siteOccupancySummary').textContent(),/H, O/);
+ const allBefore=await page.evaluate(()=>window.__visualTest.instancing());
+ assert.equal(allBefore.instances,10,'all crystal sites are rendered by default');
+ await page.locator('#disorderView').selectOption('dominant');
+ assert.equal((await page.evaluate(()=>window.__visualTest.instancing())).instances,8,
+  'representative choice displays the higher-occupancy Cs alternative group');
+ assert.equal(await page.locator('#infoSites').textContent(),'10','structure count is unchanged by display mode');
+ assert.equal(await page.locator('#infoWeighted').textContent(),'6.24','full occupancy sum is unchanged by display mode');
+ await save(page,'03b-cod-1561664-representative',metrics);
+ await page.locator('#disorderView').selectOption('ordered');
+ assert.equal((await page.evaluate(()=>window.__visualTest.instancing())).instances,6,
+  'ordered-only view shows two Mo and four S sites');
+ await page.locator('#disorderView').selectOption('all');
+ assert.equal((await page.evaluate(()=>window.__visualTest.instancing())).instances,10);
+ await save(page,'03c-cod-1561664-all-sites',metrics);
+
  await page.locator('#fileInput').setInputFiles(path.join(base,'tests/browser/adp_visual.cif'));
  await page.waitForFunction(()=>document.querySelector('#infoName')?.textContent?.includes('adp visual'),null,{timeout:20000});
  await page.locator('[data-quick-flag="adpVisible"]').click();
