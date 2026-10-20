@@ -66,6 +66,7 @@ const visualV2=context.visualV2;
 vm.runInContext('this.cameraScaleApi={projectionVisibleHeight,perspectiveFovForHeight};',context);
 vm.runInContext('this.perfApi={atomLodTier,frameTimingStats};',context);
 const perfApi=context.perfApi;
+vm.runInContext('this.defectApi={defectSupercellModel,pointDefectModel,boundaryVacuumModel};',context);
 vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
@@ -731,6 +732,70 @@ test('Wyckoff labels distinguish 4a, 4b and general sites in Fm-3m',()=>{
 test('diamond structure Wyckoff 8a (Fd-3m setting 1)',()=>{
   assert.equal(api.identifyWyckoff({x:0,y:0,z:0},'227-1').matches[0],'8a');
 });
+
+test('Point defects edit one explicit P1 atom, not every visible supercell image',()=>{
+ const bulk=api.examples('fcc'),rep=[2,2,2],built=context.defectApi.defectSupercellModel(bulk.cell,bulk.sites,rep);
+ assert.equal(built.sites.length,bulk.sites.length*8);
+ assert.equal(built.cell.a,bulk.cell.a*2);
+ assert.equal(built.cell.c,bulk.cell.c*2);
+ assert.equal(bulk.sites.length*8,built.sites.length,'original sites remain unmodified');
+ const vacancy=context.defectApi.pointDefectModel(built.cell,built.sites,{kind:'vacancy',index:0});
+ assert.equal(vacancy.sites.length,built.sites.length-1);
+ assert.equal(built.sites.length,bulk.sites.length*8);
+ assert.ok(vacancy.sites.every(x=>bulk.sites.some(site=>site.symbol===x.symbol)));
+});
+test('Point defects support element replacement, interstitials and safeguards',()=>{
+ const cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
+ const sites=[{symbol:'Si',x:0,y:0,z:0},{symbol:'Si',x:.5,y:.5,z:.5}];
+ const swap=context.defectApi.pointDefectModel(cell,sites,{kind:'substitution',index:0,symbol:'B'});
+ assert.equal(swap.sites[0].symbol,'B');assert.equal(sites[0].symbol,'Si');
+ const added=context.defectApi.pointDefectModel(cell,sites,{kind:'interstitial',symbol:'H',x:.25,y:.25,z:.25});
+ assert.equal(added.sites.length,3);assert.equal(added.sites[2].symbol,'H');
+ assert.throws(()=>context.defectApi.pointDefectModel(cell,sites,{kind:'interstitial',symbol:'H',x:0,y:0,z:0}),/çakışıyor/);
+ assert.throws(()=>context.defectApi.pointDefectModel(cell,sites,{kind:'substitution',index:0,symbol:'Unobtainium'}),/element/);
+ assert.throws(()=>context.defectApi.pointDefectModel(cell,[sites[0]],{kind:'vacancy',index:0}),/Son atom/);
+ assert.throws(()=>context.defectApi.defectSupercellModel(cell,Array.from({length:6},(_,i)=>({...sites[0],x:i/6})),[6,6,6]),/1000 atom/);
+});
+test('Point-defect controls and right tool are present',()=>{
+ for(const id of ['defectPrepare','defectKind','defectTarget','defectElement','defectX','defectY','defectZ','defectApply','defectResult'])
+  assert.match(htmlShell,new RegExp('id="'+id+'"'));
+ assert.match(htmlShell,/data-right-tool="defects"/);
+ assert.match(moduleScript,/refreshDefectControls\(\)/);
+});
+
+
+test('Vacuum padding preserves atom coordinates in Cartesian space while creating asymmetric gaps',()=>{
+ const sites=[{symbol:'Si',x:.2,y:.3,z:.2},{symbol:'Si',x:.65,y:.7,z:.8}];
+ const result=context.defectApi.boundaryVacuumModel(cubic,sites,8,4);
+ approx(result.cell.a,5);approx(result.cell.b,5);approx(result.cell.c,17);
+ approx(result.sites[0].x,.2);approx(result.sites[0].y,.3);approx(result.sites[0].z,5/17);
+ approx(result.sites[1].z,8/17);
+ assert.equal(sites[0].z,.2,'source structure must remain unmodified');
+ assert.equal(result.sites.length,sites.length);
+ const onlyTop=context.defectApi.boundaryVacuumModel(cubic,sites,12,0);
+ approx(onlyTop.sites[0].z,1/17);
+ assert.throws(()=>context.defectApi.boundaryVacuumModel(cubic,sites,0,0),/en az biri/);
+ assert.throws(()=>context.defectApi.boundaryVacuumModel(cubic,sites,-1,2),/0–80/);
+ assert.throws(()=>context.defectApi.boundaryVacuumModel(cubic,sites,81,0),/0–80/);
+});
+test('Vacuum padding keeps triclinic cell atom positions and adds the lower normal offset',()=>{
+ const cell={a:5,b:6,c:7,alpha:78,beta:83,gamma:101};
+ const sites=[{symbol:'Si',x:.4,y:.3,z:.2}];
+ const out=context.defectApi.boundaryVacuumModel(cell,sites,5,3);
+ const b0=api.basis(cell),b1=api.basis(out.cell);
+ const cart=(basis,point)=>basis[0].clone().multiplyScalar(point.x)
+  .addScaledVector(basis[1],point.y).addScaledVector(basis[2],point.z);
+ const delta=cart(b1,out.sites[0]).sub(cart(b0,sites[0]));
+ const normal=b0[0].clone().crossVectors(b0[0],b0[1]).normalize();
+ approx(delta.x,normal.x*3,1e-6);approx(delta.y,normal.y*3,1e-6);approx(delta.z,normal.z*3,1e-6);
+ assert.ok(out.cell.c>cell.c);
+});
+test('Miller tool exposes independent upper and lower vacuum fields',()=>{
+ for(const id of ['vacuumTop','vacuumBottom','addBoundaryVacuum','boundaryVacuumResult'])
+  assert.match(htmlShell,new RegExp('id="'+id+'"'));
+ assert.match(moduleScript,/\$\('addBoundaryVacuum'\)\.onclick=applyBoundaryVacuum/);
+});
+
 test('Miller slab surface vectors form primitive orientation',()=>{
   const cell=api.examples('fcc').cell,B=api.basis(cell);
   const surface=api.surfaceVectors(1,1,1,B);
@@ -1206,9 +1271,9 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,13);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,14);
  assert.match(rail,/data-right-tool="measurement"[\s\S]*?data-right-tool="history"/);
  assert.match(html,/\.right-drawer-pane>\.section\[data-right-section\]>h2:first-child\{display:none\}/);
  assert.ok(!html.includes('Bilimsel kapsam</h2>'),'redundant scientific scope block should be removed');
