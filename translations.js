@@ -7,6 +7,18 @@
 (() => {
  'use strict';
  const entries=[
+  // P2: crystallographic occupancy/disorder display choices.
+  ["Atom / etiket","Atom / label"],
+  ["Doluluk","Occupancy"],
+  ["Grup","Group"],
+  ["Hücrede konum","Sites in cell"],
+  ["Doluluk ağırlıklı atom","Occupancy-weighted atoms"],
+  ["Alternatif konumların görünümü","Alternative-site display"],
+  ["Düzensiz konumları görüntüleme yöntemi","Disorder-site display mode"],
+  ["Tüm konumlar · saydam","All sites · translucent"],
+  ["Baskın alternatif grup","Highest-occupancy alternative group"],
+  ["Yalnız tam dolu konumlar","Fully occupied sites only"],
+  ["Görünüm filtresi hesaplama verisini veya CIF dosyasını değiştirmez.","Display filters never modify analysis data or the CIF file."],
   // P0: English strings added by the COD Worker and guided P0–P4 learning labs.
   ["P1 modeli","P1 model"],
   ["Otomatik (önce varsayılan veya özel Worker)","Automatic (default or custom Worker first)"],

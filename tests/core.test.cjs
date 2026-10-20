@@ -61,6 +61,7 @@ vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});
 vm.runInContext('Object.assign(this.api,{disorderTag,sitesAreAlternatives,partialOccupancyOpacity,coordinationGeometry});',context);
 vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives,vesta3ManualBvsProjection});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
+vm.runInContext('Object.assign(this.api,{disorderDisplayIndices,disorderOccupancySummary});',context);
 const p1=context.p1;
 vm.runInContext('this.visualV2={validatedBounds,visibleTranslations,validatedVisualSite,MAX_ATOMS,MAX_BONDS};',context);
 const visualV2=context.visualV2;
@@ -3947,4 +3948,32 @@ test('Alternative-site rule is conservative for ordered and fully occupied atoms
  const same=at('Cs',.05);assert.equal(api.sitesAreAlternatives(same,same,0),false);
  assert.equal(api.partialOccupancyOpacity(1),1);assert.equal(api.partialOccupancyOpacity(undefined),1);
  assert.equal(api.partialOccupancyOpacity(.5),.6);assert.ok(api.partialOccupancyOpacity(.05)>=.3);
+});
+
+
+test('P2 COD 1561664 display filtering preserves occupancy and unresolved formula elements',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'fixtures','COD_1561664_Cs_H2O_MoS2.cif'),'utf8');
+ const crystal=api.cifData(src),sites=crystal.sites;
+ const stats=api.disorderOccupancySummary(sites,crystal.cifMeta._chemical_formula_sum);
+ assert.equal(stats.positions,10);
+ assert.equal(stats.partial,4);
+ assert.equal(stats.elements,3);
+ approx(stats.weighted,6.24,1e-9);
+ assert.deepEqual(Array.from(stats.missing).sort(),['H','O']);
+ const cs=stats.partialElements.find(item=>item.symbol==='Cs');
+ assert.equal(cs.positions,4);approx(cs.weighted,.24,1e-9);
+ const all=api.disorderDisplayIndices(sites,'all');
+ const dominant=api.disorderDisplayIndices(sites,'dominant');
+ const ordered=api.disorderDisplayIndices(sites,'ordered');
+ assert.equal(all.size,10);
+ assert.equal(dominant.size,8,'one Cs split position is retained per symmetry equivalent');
+ assert.equal(ordered.size,6,'only the two Mo and four S ordered sites remain');
+ assert.deepEqual(Array.from(dominant).map(i=>sites[i].symbol==='Cs'?sites[i].label:'').filter(Boolean)
+  .map(label=>label.split('_')[0]).sort(),['Cs2','Cs2']);
+ assert.equal(crystal.sites.length,10,'display preference cannot modify crystallographic source sites');
+ assert.throws(()=>api.disorderDisplayIndices(sites,'unknown'),/düzensizlik/);
+ const independent=[{symbol:'Cs',occupancy:.2,disorderAssembly:'A',disorderGroup:'1'},
+  {symbol:'Cs',occupancy:.8,disorderAssembly:'B',disorderGroup:'1'}];
+ assert.equal(api.disorderDisplayIndices(independent,'dominant').size,2,
+  'different assemblies cannot hide one another');
 });

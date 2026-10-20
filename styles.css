@@ -1111,3 +1111,16 @@ body.lesson-open #app{display:none!important}
 .vacuum-padding-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .vacuum-padding-panel #addBoundaryVacuum{width:100%}
 @media(max-width:380px){.vacuum-padding-fields{grid-template-columns:1fr}}
+
+/* CIF occupancy and mutually exclusive disorder-site presentation. */
+.site-atom-label{display:block;margin-top:3px;max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6783a0;font-size:10px;line-height:1.25}
+.site-table .site-occupancy{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:4px 5px;border:1px solid #d6e3ed;border-radius:6px;background:#f2f6fa;color:#415b74;font-size:10px;font-weight:650;font-variant-numeric:tabular-nums}
+.site-table .site-occupancy.partial{border-color:#badcf0;background:#edf7fc;color:#17658e}
+.site-disorder-cell{white-space:nowrap;color:#59748b;font-size:10px;font-weight:600}
+.disorder-view-control{margin-top:10px;padding:10px;border:1px solid #dbe9f2;border-radius:9px;background:#f7fbfe}
+.disorder-view-control[hidden],.occupancy-summary[hidden],.metric[hidden]{display:none!important}
+.disorder-view-control .field{margin:0}
+.disorder-view-control small{display:block;margin-top:6px;color:#6b859e;font-size:10px;line-height:1.5}
+.occupancy-summary{margin-top:9px;padding:11px;border:1px solid #cfe5f2;border-left:3px solid #3c99c5;border-radius:8px;background:#f0f8fc;color:#3c5a72;font-size:11px;line-height:1.55}
+.occupancy-summary strong{display:block;color:#215d81;font-size:12px;margin-bottom:4px}
+.occupancy-summary p{margin:4px 0 0;overflow-wrap:anywhere}
