@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,realDiodeState,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -309,4 +309,76 @@ test('P3 minority injection and extraction obey the diffusion-length exponential
  assert.equal(noBias.excessCm3,0);
  assert.throws(()=>idealDiodeMinorityProfile(forward,'bad',0));
  assert.throws(()=>idealDiodeMinorityProfile(forward,'p',-1));
+});
+
+
+test('P4 with all optional mechanisms disabled recovers P3 at every bias',()=>{
+ for(const voltage of [-.5,-.25,0,.2,.45,.55]){
+  const actual=realDiodeState({acceptorsCm3:1e16,donorsCm3:1e17,
+   appliedBiasV:voltage,areaMm2:1.6,
+   includeRecombination:false,includeSeries:false,includeShunt:false});
+  const ideal=idealDiodeState({acceptorsCm3:1e16,donorsCm3:1e17,
+   appliedBiasV:voltage,areaMm2:1.6});
+  assert.equal(actual.currentA,ideal.currentA);
+  assert.equal(actual.idealCurrentA,ideal.currentA);
+  assert.equal(actual.recombinationCurrentA,0);
+  assert.equal(actual.shuntCurrentA,0);
+  assert.equal(actual.seriesVoltageV,0);
+  assert.equal(actual.junctionVoltageV,voltage);
+ }
+});
+
+test('P4 n≈2 recombination branch changes forward I-V while preserving equilibrium',()=>{
+ const options={includeSeries:false,includeShunt:false,recombinationRatio:1e4};
+ const zero=realDiodeState({...options,appliedBiasV:0});
+ const low=realDiodeState({...options,appliedBiasV:.2});
+ const high=realDiodeState({...options,appliedBiasV:.5});
+ assert.equal(zero.currentA,0,'no dark bias means zero net current');
+ assert.ok(low.recombinationCurrentA>low.diffusionCurrentA);
+ assert.ok(low.effectiveIdeality>1.8&&low.effectiveIdeality<2);
+ assert.ok(high.diffusionCurrentA>high.recombinationCurrentA);
+ assert.ok(high.effectiveIdeality>1&&high.effectiveIdeality<1.5);
+ assert.ok(low.currentA>low.idealCurrentA&&high.currentA>high.idealCurrentA);
+ const changed=realDiodeState({...options,appliedBiasV:.2,recombinationRatio:1e5});
+ assert.ok(changed.recombinationCurrentA>low.recombinationCurrentA);
+});
+
+test('P4 series Ohmic loss solves voltage self-consistently and limits high forward current',()=>{
+ const base={appliedBiasV:.55,includeShunt:false,recombinationRatio:1e4};
+ const idealTerminal=realDiodeState({...base,includeSeries:false});
+ const resistive=realDiodeState({...base,includeSeries:true,seriesOhms:250});
+ assert.ok(resistive.currentA<idealTerminal.currentA);
+ assert.ok(resistive.junctionVoltageV<base.appliedBiasV);
+ assert.ok(resistive.seriesVoltageV>0);
+ assert.ok(Math.abs(resistive.appliedBiasV-resistive.junctionVoltageV-
+  resistive.seriesVoltageV)<1e-12,'Kirchhoff voltage sum');
+ const reverse=realDiodeState({appliedBiasV:-.3,seriesOhms:250});
+ assert.ok(reverse.currentA<0&&reverse.seriesVoltageV<0);
+ assert.ok(Math.abs(reverse.appliedBiasV-reverse.junctionVoltageV-
+  reverse.seriesVoltageV)<1e-12);
+});
+
+test('P4 shunt leakage sets reverse current beyond ideal Shockley Is',()=>{
+ const baseline=realDiodeState({appliedBiasV:-.3,
+  includeRecombination:false,includeSeries:false,includeShunt:false});
+ const leaky=realDiodeState({appliedBiasV:-.3,
+  includeRecombination:false,includeSeries:false,includeShunt:true,shuntOhms:1e5});
+ assert.ok(leaky.currentA<baseline.currentA);
+ assert.ok(Math.abs(leaky.shuntCurrentA-(-.3/1e5))<1e-15);
+ assert.ok(leaky.currentA<0);
+ const forward=realDiodeState({appliedBiasV:.45,areaMm2:2,
+  includeRecombination:false,includeSeries:false,includeShunt:false});
+ const one=realDiodeState({appliedBiasV:.45,areaMm2:1,
+  includeRecombination:false,includeSeries:false,includeShunt:false});
+ assert.ok(Math.abs(forward.currentA/one.currentA-2)<1e-12);
+});
+
+test('P4 refuses unphysical inputs without falling back to hidden defaults',()=>{
+ assert.throws(()=>realDiodeState({seriesOhms:-1}));
+ assert.throws(()=>realDiodeState({shuntOhms:0}));
+ assert.throws(()=>realDiodeState({recombinationRatio:-1}));
+ assert.throws(()=>realDiodeState({appliedBiasV:0.7}));
+ assert.throws(()=>realDiodeState({areaMm2:0}));
+ assert.throws(()=>realDiodeState({includeSeries:'yes'}));
+ assert.throws(()=>realDiodeState({recombinationRatio:Infinity}));
 });
