@@ -1088,6 +1088,41 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel lesson-doping-lab" aria-label="Saf ve katkılanmış yarıiletkenleri karşılaştır">
+   <div class="lesson-panel-head"><h3>Katkılama laboratuvarı · saf, n-tipi ve p-tipi</h3><span class="lesson-pill">P1 · taşıyıcı dengesi</span></div>
+   <p class="lesson-guide-intro">Kristale az miktarda <strong>donör</strong> (ör. fosfor) eklendiğinde elektronlar, <strong>akseptör</strong> (ör. bor) eklendiğinde holler çoğunluk taşıyıcı olur. Katkılamanın <em>E<sub>F</sub></em>'yi ve iki taşıyıcı yoğunluğunu birlikte nasıl değiştirdiğini keşfet.</p>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <div class="lesson-dual-presets lesson-doping-presets" role="group" aria-label="Yarıiletken türünü seç">
+      <button type="button" class="lesson-action" id="scDopingIntrinsic" aria-pressed="true">Saf (katkısız)</button>
+      <button type="button" class="lesson-action" id="scDopingN" aria-pressed="false">n-tipi · donör</button>
+      <button type="button" class="lesson-action" id="scDopingP" aria-pressed="false">p-tipi · akseptör</button>
+     </div>
+     <label class="lesson-field"><span>Katkı atomu yoğunluğu <output id="scDopingConcentrationOutput">10¹⁵ cm⁻³</output></span><input id="scDopingExponent" type="range" min="12" max="18" step="0.5" value="15"></label>
+     <label class="lesson-field"><span>Sıcaklık <output id="scDopingTempOutput">300 K</output></span><input id="scDopingTemp" type="range" min="250" max="450" step="10" value="300"></label>
+     <div id="scDopingSummary" class="lesson-chain-readout" aria-live="polite"></div>
+     <div id="scDopingExplanation" class="lesson-doping-explanation" aria-live="polite"></div>
+     <div class="lesson-guide-body lesson-doping-question">
+      <label class="lesson-guide-question" for="scDopingPrediction">Tahmin et: şu durumda çoğunluk taşıyıcı hangisidir?
+       <select id="scDopingPrediction">
+        <option value="">Yanıtını seç</option>
+        <option value="intrinsic">Elektron ve hol eşit</option>
+        <option value="electrons">Elektron</option>
+        <option value="holes">Hol</option>
+       </select>
+      </label>
+      <div class="lesson-guide-actions"><button type="button" class="lesson-action" id="scDopingCheck">Yanıtı kontrol et</button></div>
+      <p id="scDopingFeedback" class="lesson-guide-feedback" aria-live="polite"></p>
+     </div>
+    </div>
+    <div class="lesson-chain-figure">
+     <svg id="scDopingChart" viewBox="0 0 900 380" role="img" aria-label="Bant kenarları, Fermi seviyesi ve elektron-hol yoğunlukları logaritmik grafiği"></svg>
+     <p class="lesson-crystal-help"><strong>Solda:</strong> E<sub>v</sub>, E<sub>c</sub>, katkılı E<sub>F</sub> ve saf malzemenin E<sub>i</sub> seviyesi. <strong>Sağda:</strong> n ve p taşıyıcı yoğunlukları; yatay eksen log₁₀(cm⁻³). Saf durumda n = p = n<sub>i</sub>.</p>
+     <div class="lesson-explain"><strong>Model sınırı:</strong> Silisyum benzeri <em>öğretici, 3B hacim</em> modeli; E<sub>g</sub> = 1,12 eV sabit, 300 K'deki etkin durum yoğunlukları esas alınır. Tam iyonlaşma, denge ve seyrek (Boltzmann) taşıyıcı yaklaşımı varsayılır. Düşük sıcaklıkta katkı donması, çok yüksek yoğunlukta dejenereleşme, hareketlilik ve gerçek kristale özgü bantlar hesaplanmaz. Yukarıdaki bağımsız E<sub>g</sub> sürgüsüyle bağlantılı değildir.</div>
+     <p id="scDopingValidity" class="lesson-crystal-help" aria-live="polite"></p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>

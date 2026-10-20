@@ -118,3 +118,37 @@ export function edgeStateOccupancies(gapEV,fermiEV,temperatureK){
   holeLog10:log10Probability(holeX)
  };
 }
+
+/* P1 teaching model: ideal, non-degenerate Si-like bulk semiconductor.
+ * Reference constants are illustrative near 300 K, not extracted from CIF/DFT.
+ * Fully ionized donors/acceptors, thermal equilibrium, parabolic 3D bands,
+ * Maxwell-Boltzmann carriers and constant Eg; no freeze-out or bandgap narrowing.
+ * Stable neutrality solution avoids subtracting nearly equal large numbers. */
+export function idealDopedCarriers({donorsCm3=0,acceptorsCm3=0,temperatureK=300}={}){
+ if(![donorsCm3,acceptorsCm3,temperatureK].every(Number.isFinite)||
+   donorsCm3<0||acceptorsCm3<0||temperatureK<250||temperatureK>450)
+  throw Error('Katkılama modeli: Nd, Na ≥ 0 ve 250 ≤ T ≤ 450 K gerekli.');
+ const egEV=1.12,evEV=-egEV/2,ecEV=egEV/2;
+ const kT=KB_EV_K*temperatureK;
+ const scale=Math.pow(temperatureK/300,1.5);
+ const ncCm3=2.8e19*scale,nvCm3=1.8e19*scale;
+ const intrinsicCm3=Math.sqrt(ncCm3*nvCm3)*Math.exp(-egEV/(2*kT));
+ const delta=donorsCm3-acceptorsCm3;
+ let electronsCm3,holesCm3;
+ if(delta>=0){
+  electronsCm3=(delta+Math.hypot(delta,2*intrinsicCm3))/2;
+  holesCm3=intrinsicCm3*(intrinsicCm3/electronsCm3);
+ }else{
+  holesCm3=(-delta+Math.hypot(delta,2*intrinsicCm3))/2;
+  electronsCm3=intrinsicCm3*(intrinsicCm3/holesCm3);
+ }
+ const fermiEV=ecEV+kT*Math.log(electronsCm3/ncCm3);
+ const intrinsicFermiEV=ecEV+kT*Math.log(intrinsicCm3/ncCm3);
+ const fermiShiftEV=fermiEV-intrinsicFermiEV;
+ const nondegenerate=fermiEV>evEV+3*kT&&fermiEV<ecEV-3*kT;
+ return {temperatureK,donorsCm3,acceptorsCm3,egEV,evEV,ecEV,
+  ncCm3,nvCm3,intrinsicCm3,electronsCm3,holesCm3,
+  fermiEV,intrinsicFermiEV,fermiShiftEV,
+  majority:Math.abs(delta)<intrinsicCm3*1e-12?'intrinsic':delta>0?'electrons':'holes',
+  nondegenerate};
+}

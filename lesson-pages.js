@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -616,6 +616,127 @@ export function initSemiconductorLesson(host){
  }
  $('scExcite').addEventListener('click',()=>{carrierPairs=Math.min(6,carrierPairs+1);renderCarrier();});
  $('scRecombine').addEventListener('click',()=>{carrierPairs=Math.max(0,carrierPairs-1);renderCarrier();});
+
+ // A separate bulk carrier-density model: it intentionally does not inherit the
+ // one-state Fermi slider, tight-binding band gap or currently opened CIF.
+ let dopingKind='intrinsic';
+ const dopingButtons={intrinsic:'scDopingIntrinsic',n:'scDopingN',p:'scDopingP'};
+ const superscript=value=>String(value).replace(/[-0-9]/g,d=>({
+  '-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'
+ })[d]);
+ const formatDensity=value=>{
+  if(value===0)return '0 cm⁻³';
+  const exponent=Math.floor(Math.log10(value));
+  return number(value/10**exponent,2)+' × 10'+superscript(exponent)+' cm⁻³';
+ };
+ const dopingAnswer=()=>dopingKind==='n'?'electrons':dopingKind==='p'?'holes':'intrinsic';
+ function renderDoping(){
+  if(!visible)return;
+  const temperatureK=Number($('scDopingTemp').value);
+  const magnitude=10**Number($('scDopingExponent').value);
+  const result=idealDopedCarriers({
+   donorsCm3:dopingKind==='n'?magnitude:0,
+   acceptorsCm3:dopingKind==='p'?magnitude:0,
+   temperatureK
+  });
+  $('scDopingTempOutput').textContent=temperatureK+' K';
+  $('scDopingConcentrationOutput').textContent=dopingKind==='intrinsic'?
+   '0 cm⁻³ (saf)':formatDensity(magnitude);
+  $('scDopingExponent').disabled=dopingKind==='intrinsic';
+  Object.entries(dopingButtons).forEach(([kind,id])=>
+   $(id).setAttribute('aria-pressed',String(dopingKind===kind)));
+  $('scDopingSummary').replaceChildren(
+   metric('Elektron · n',formatDensity(result.electronsCm3)),
+   metric('Hol · p',formatDensity(result.holesCm3)),
+   metric('Saf denge · nᵢ',formatDensity(result.intrinsicCm3)),
+   metric('Fermi kayması · EF − Ei',
+    (result.fermiShiftEV>=0?'+':'')+number(result.fermiShiftEV,3)+' eV'));
+  $('scDopingExplanation').textContent=dopingKind==='intrinsic'?
+   'Saf denge: termal üretilen her elektronun bir hol eşi vardır; n = p = nᵢ. Fermi seviyesi Ei yakınındadır.':
+   dopingKind==='n'?
+    'Donörler fazladan elektron sağlar: n artar, p azalır ve EF iletim bandına yaklaşır. Holler yok olmaz; azınlık taşıyıcı olarak kalır.':
+    'Akseptörler elektron kabul ettiğinde değerlik bandında hareketli holler çoğalır: p artar, n azalır ve EF değerlik bandına yaklaşır.';
+  $('scDopingValidity').textContent=result.nondegenerate?
+   'Model bu ayarda bant kenarlarından en az 3 kBT uzakta: Boltzmann yaklaşımı için öğretici kullanım aralığında.':
+   'Dikkat: EF bant kenarına 3 kBT’den fazla yaklaştı. Dejenere durumlarda Fermi–Dirac integralleri gerekir; verilen değerler yalnızca yaklaşık eğilimdir.';
+  const svg=$('scDopingChart');
+  clearChart(svg,'Donör ve akseptörlerin taşıyıcı dengesi ve Fermi seviyesine etkisi');
+  const txt=(x,y,value,color='#4a6780',size=14,anchor='start')=>
+   svgNode(svg,'text',{x,y,fill:color,'font-size':size,
+    'font-weight':600,'text-anchor':anchor},value);
+  const line=(x1,y1,x2,y2,color,width=2,extra={})=>
+   svgNode(svg,'line',{x1,y1,x2,y2,stroke:color,'stroke-width':width,...extra});
+  txt(20,30,'Enerji diyagramı','#244b6e',16);
+  txt(500,30,'Taşıyıcı yoğunluğu (log ölçek)','#244b6e',16);
+  line(470,50,470,325,'#dce7f1',1);
+  const top=68,base=308,span=1.25;
+  const Y=energy=>top+(result.ecEV+.065-energy)/span*(base-top);
+  const ecY=Y(result.ecEV),evY=Y(result.evEV);
+  svgNode(svg,'rect',{x:92,y:53,width:320,height:ecY-53,fill:'#dbeafe'});
+  svgNode(svg,'rect',{x:92,y:evY,width:320,height:314-evY,fill:'#fff0df'});
+  line(92,ecY,412,ecY,'#227ac2',4,{'data-doping-band':'conduction'});
+  line(92,evY,412,evY,'#d98236',4,{'data-doping-band':'valence'});
+  txt(25,ecY+5,'Ec','#226b9e',14);
+  txt(25,evY+5,'Ev','#b96726',14);
+  txt(254,ecY-10,'İletim bandı','#226b9e',12,'middle');
+  txt(254,evY+22,'Değerlik bandı','#b96726',12,'middle');
+  const efY=Y(result.fermiEV),eiY=Y(result.intrinsicFermiEV);
+  if(dopingKind!=='intrinsic'){
+   line(102,eiY,223,eiY,'#64748b',2,
+    {'stroke-dasharray':'4 6','data-doping-intrinsic':'true'});
+   txt(96,eiY-6,'Ei','#64748b',12);
+  }
+  line(205,efY,414,efY,'#b02956',3,
+   {'stroke-dasharray':'9 5','data-doping-fermi':'true'});
+  txt(414,efY+5,dopingKind==='intrinsic'?'EF = Ei':'EF','#a61d4d',14,'end');
+  line(74,56,74,320,'#9badbf',1.5);
+  svgNode(svg,'polygon',{points:'74,51 68,62 80,62',fill:'#9badbf'});
+  txt(34,344,'Enerji E ↑','#58738c',12);
+  const lx=566,rx=847,lo=6,hi=20,X=log=>lx+(log-lo)/(hi-lo)*(rx-lx);
+  for(const exp of [6,8,10,12,14,16,18,20]){
+   const x=X(exp);
+   line(x,67,x,309,'#e7edf4',1);
+   txt(x,334,String(exp),'#607890',11,'middle');
+  }
+  txt(720,359,'log₁₀(cm⁻³)','#58738c',13,'middle');
+  for(const [kind,value,y,color,description] of [
+   ['electrons',result.electronsCm3,129,'#227ac2','n · elektron'],
+   ['holes',result.holesCm3,230,'#d98236','p · hol']]){
+   const xEnd=Math.max(lx,Math.min(rx,X(Math.log10(value))));
+   txt(505,y-28,description,color,14);
+   svgNode(svg,'rect',{x:lx,y,width:xEnd-lx,height:33,rx:6,fill:color,
+    opacity:.9,'data-doping-carrier':kind,'data-log10':Math.log10(value).toFixed(5)});
+   svgNode(svg,'circle',{cx:xEnd,cy:y+16.5,r:4,fill:'#fff',stroke:color,'stroke-width':2});
+   txt(lx,y+54,formatDensity(value),color,13);
+  }
+  const niX=X(Math.log10(result.intrinsicCm3));
+  line(niX,70,niX,306,'#6b7280',1.6,
+   {'stroke-dasharray':'3 5','data-doping-ni':'true'});
+  txt(niX,63,'nᵢ','#6b7280',12,'middle');
+ }
+ for(const [kind,id] of Object.entries(dopingButtons)){
+  $(id).addEventListener('click',()=>{
+   dopingKind=kind;
+   $('scDopingPrediction').value='';
+   $('scDopingFeedback').textContent='';
+   $('scDopingFeedback').removeAttribute('data-result');
+   renderDoping();
+  });
+ }
+ for(const id of ['scDopingExponent','scDopingTemp'])
+  $(id).addEventListener('input',renderDoping);
+ $('scDopingCheck').addEventListener('click',()=>{
+  const selection=$('scDopingPrediction').value,answer=dopingAnswer();
+  if(!selection){$('scDopingFeedback').textContent='Önce tahminini seç.';return;}
+  const correct=selection===answer;
+  const detail=dopingKind==='intrinsic'?
+   'Saf dengede termal oluşan elektron ve hol yoğunluğu eşittir: n = p = nᵢ.':
+   dopingKind==='n'?
+    'Donörler elektronları çoğunluk taşıyıcı yapar; n − p = ND ve n·p = nᵢ².':
+    'Akseptörler holleri çoğunluk taşıyıcı yapar; p − n = NA ve n·p = nᵢ².';
+  $('scDopingFeedback').textContent=(correct?'Doğru! ':'Henüz değil. ')+detail;
+  $('scDopingFeedback').setAttribute('data-result',correct?'correct':'retry');
+ });
  const guideStages=[
   {title:'1 · Tek atom: ayrık seviye',
    explanation:'Bir atomun tek orbitali bu modelde tek enerji seviyesi verir. Önce tahminini seç, sonra grafiği güncelle.',
@@ -694,6 +815,7 @@ export function initSemiconductorLesson(host){
   setSource('scSourceName','scSourceDetail',structure);
   renderChain();
   renderDual();
+  renderDoping();
   for(const [input,output,digits,unit] of params)$(output).textContent=number($(input).value,digits)+unit;
   const period=Number($('scPeriod').value),potential=Number($('scPotential').value);
   const mass=Number($('scMass').value);

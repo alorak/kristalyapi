@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -160,4 +160,41 @@ test('ideal band-edge electron and hole probabilities obey thermal and Fermi lim
  assert.throws(()=>edgeStateOccupancies(-1,0,300));
  assert.throws(()=>edgeStateOccupancies(1,0,0));
  assert.throws(()=>edgeStateOccupancies(1,Number.NaN,300));
+});
+
+test('P1 ideal doping preserves charge neutrality and mass-action equilibrium',()=>{
+ const pure=idealDopedCarriers();
+ assert.equal(pure.electronsCm3,pure.holesCm3);
+ assert.equal(pure.electronsCm3,pure.intrinsicCm3);
+ assert.equal(pure.fermiShiftEV,0);
+ assert.equal(pure.majority,'intrinsic');
+ const n=idealDopedCarriers({donorsCm3:1e16});
+ const p=idealDopedCarriers({acceptorsCm3:1e16});
+ for(const [state,imbalance] of [[n,1e16],[p,-1e16]]){
+  assert.ok(Math.abs((state.electronsCm3-state.holesCm3-imbalance)/1e16)<1e-12,
+   'free carrier difference must balance ionized dopants');
+  assert.ok(Math.abs((state.electronsCm3*state.holesCm3)/
+   (state.intrinsicCm3**2)-1)<1e-12,'np must equal ni squared');
+  assert.equal(state.nondegenerate,true);
+ }
+ assert.equal(n.majority,'electrons');
+ assert.equal(p.majority,'holes');
+ assert.ok(n.fermiShiftEV>0&&p.fermiShiftEV<0);
+ assert.ok(n.holesCm3>0&&p.electronsCm3>0,'minority carriers never disappear');
+});
+
+test('P1 compensated doping, temperature and input limits',()=>{
+ const compensated=idealDopedCarriers({donorsCm3:5e15,acceptorsCm3:5e15});
+ assert.ok(Math.abs(compensated.fermiShiftEV)<1e-12);
+ assert.ok(Math.abs(compensated.electronsCm3-compensated.holesCm3)<1e-4);
+ const cold=idealDopedCarriers({temperatureK:250});
+ const hot=idealDopedCarriers({temperatureK:450});
+ assert.ok(hot.intrinsicCm3>cold.intrinsicCm3);
+ assert.ok(hot.ncCm3>cold.ncCm3&&hot.nvCm3>cold.nvCm3);
+ const dense=idealDopedCarriers({donorsCm3:1e18,temperatureK:450});
+ assert.ok(Number.isFinite(dense.fermiEV));
+ assert.throws(()=>idealDopedCarriers({donorsCm3:-1}));
+ assert.throws(()=>idealDopedCarriers({acceptorsCm3:NaN}));
+ assert.throws(()=>idealDopedCarriers({temperatureK:0}));
+ assert.throws(()=>idealDopedCarriers({temperatureK:500}));
 });

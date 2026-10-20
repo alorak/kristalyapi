@@ -179,6 +179,40 @@ try{
  assert.notEqual(edgeValues[0],edgeValues[1],
   'non-midgap Fermi occupation does not force electron and hole probabilities equal');
 
+
+ // P1 doping: intrinsic electron/hole equality, donor and acceptor
+ // majority switches, mass-action/neutrality state and Fermi movement.
+ const carrierBars=page.locator('#scDopingChart [data-doping-carrier]');
+ assert.equal(await carrierBars.count(),2);
+ const initialBars=await carrierBars.evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.log10)));
+ assert.ok(Math.abs(initialBars[0]-initialBars[1])<1e-10);
+ const fermiY=()=>page.locator('#scDopingChart [data-doping-fermi]').getAttribute('y1');
+ const intrinsicFermi=Number(await fermiY());
+ await page.locator('#scDopingN').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scDopingN').getAttribute('aria-pressed'),'true');
+ let nBars=await carrierBars.evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.log10)));
+ assert.ok(nBars[0]>nBars[1],'donor must create majority electrons');
+ assert.ok(Number(await fermiY())<intrinsicFermi,'donor EF must move toward Ec (higher in SVG)');
+ assert.match(await page.locator('#scDopingExplanation').textContent(),/Donörler/);
+ await page.locator('#scDopingPrediction').selectOption('electrons');
+ await page.locator('#scDopingCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDopingFeedback').textContent(),/Doğru!/);
+ await page.locator('#scDopingP').evaluate(button=>button.click());
+ const pBars=await carrierBars.evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.log10)));
+ assert.ok(pBars[1]>pBars[0],'acceptor must create majority holes');
+ assert.ok(Number(await fermiY())>intrinsicFermi,'acceptor EF must move toward Ev (lower in SVG)');
+ const beforeDoping=await page.locator('#scDopingSummary').textContent();
+ await page.locator('#scDopingExponent').evaluate(el=>{
+  el.value='17';el.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ assert.notEqual(await page.locator('#scDopingSummary').textContent(),beforeDoping);
+ await page.locator('#scDopingIntrinsic').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scDopingExponent').isDisabled(),true);
+ const thermalNi=await page.locator('#scDopingSummary .lesson-metric').nth(2).textContent();
+ await page.locator('#scDopingTemp').evaluate(el=>{
+  el.value='420';el.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ assert.notEqual(await page.locator('#scDopingSummary .lesson-metric').nth(2).textContent(),thermalNi);
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
  console.log('Focused XRD Bragg/WebGL, atom-to-band and two-orbital gap labs passed.');
 }finally{
