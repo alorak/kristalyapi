@@ -213,6 +213,48 @@ try{
   el.value='420';el.dispatchEvent(new Event('input',{bubbles:true}));
  });
  assert.notEqual(await page.locator('#scDopingSummary .lesson-metric').nth(2).textContent(),thermalNi);
+
+ // P2 PN depletion: field direction, bias width, asymmetric doping and
+ // explicit qualitative (not numeric) pre-contact/diffusion stages.
+ assert.equal(await page.locator('#scPnFieldChart [data-pn-field-curve]').count(),1);
+ assert.equal(await page.locator('#scPnFieldChart [data-pn-potential-curve]').count(),1);
+ assert.ok(await page.locator('#scPnChargeChart [data-pn-ion="acceptor"]').count()>0);
+ assert.ok(await page.locator('#scPnChargeChart [data-pn-ion="donor"]').count()>0);
+ const pnWidth=async()=>Number((await page.locator('#scPnSummary .lesson-metric')
+  .nth(2).locator('strong').textContent()).replace(',','.').split(' ')[0]);
+ const pnInitial=await pnWidth();
+ await page.locator('#scPnBias').evaluate(input=>{
+  input.value='0.3';input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ assert.ok(await pnWidth()<pnInitial,'forward bias must narrow the depletion region');
+ await page.locator('#scPnBias').evaluate(input=>{
+  input.value='-0.4';input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ assert.ok(await pnWidth()>pnInitial,'reverse bias must widen the depletion region');
+ await page.locator('#scPnAcceptors').evaluate(input=>{
+  input.value='15';input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ await page.locator('#scPnDonors').evaluate(input=>{
+  input.value='18';input.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ const pSide=Number(await page.locator('#scPnChargeChart [data-pn-depletion="p"]').getAttribute('width'));
+ const nSide=Number(await page.locator('#scPnChargeChart [data-pn-depletion="n"]').getAttribute('width'));
+ assert.ok(pSide>nSide,'lower p-side doping must widen p-side depletion');
+ await page.locator('#scPnSeparate').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scPnFieldChart [data-pn-field-curve]').count(),0,
+  'two uncontacted pieces do not have a joint depletion profile');
+ await page.locator('#scPnDiffuse').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scPnChargeChart [data-pn-diffusion]').count(),2);
+ assert.equal(await page.locator('#scPnFieldChart [data-pn-field-curve]').count(),0,
+  'transient diffusion does not pretend to have a solved electrostatic profile');
+ await page.locator('#scPnSteady').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scPnFieldChart [data-pn-field-curve]').count(),1);
+ await page.locator('#scPnPrediction').selectOption('p-to-n');
+ await page.locator('#scPnCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scPnFeedback').textContent(),/Bir daha düşün/);
+ await page.locator('#scPnPrediction').selectOption('n-to-p');
+ await page.locator('#scPnCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scPnFeedback').textContent(),/Doğru!/);
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
  console.log('Focused XRD Bragg/WebGL, atom-to-band and two-orbital gap labs passed.');
 }finally{
