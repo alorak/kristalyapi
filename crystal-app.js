@@ -2458,6 +2458,9 @@ function coordinationNeighbors(sites,centerIndex,B,rules,cut,auto,maxNeighbors=2
    if(j===centerIndex&&x===0&&y===0&&z===0)continue;
    const delta=[offset[0]+x,offset[1]+y,offset[2]+z],d=toCart(delta,B).length();
    if(d<1e-5||d<range[0]-1e-6||d>range[1]+1e-6)continue;
+   // An alternative disorder site is never a simultaneous ligand of its center.
+   // Keep coordination and polyhedron geometry consistent with bond topology.
+   if(sitesAreAlternatives(center,site,d))continue;
    found.push({index:j,element:site.symbol,distance:d,delta,shift:[x,y,z],occupancy:occ});
   }
  }
