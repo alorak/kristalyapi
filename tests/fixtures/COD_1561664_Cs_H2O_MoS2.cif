@@ -1,0 +1,48 @@
+#------------------------------------------------------------------------------
+# Trimmed from COD entry 1561664 (CC0, Crystallography Open Database):
+# https://www.crystallography.net/cod/1561664.cif
+# Mao, Y. et al. "Synthesis, crystal structures and physical properties of
+# A(H2O)MoS2 (A = K, Rb, Cs)", J. Solid State Chem. 279 (2019) 120937,
+# doi:10.1016/j.jssc.2019.120937
+# Only the cell, symmetry and atom-site records needed by the disorder tests
+# are kept. Cs1/Cs2 are alternative positions (assembly A, groups 1 and 2);
+# the water O/H atoms were not located and are absent from the atom list.
+#------------------------------------------------------------------------------
+data_1561664
+_chemical_formula_sum            'Cs0.12 H1.02 Mo O0.51 S2'
+_space_group_IT_number           11
+_space_group_name_H-M_alt        'P 1 21/m 1'
+_cell_length_a                   5.7338(17)
+_cell_length_b                   3.2511(10)
+_cell_length_c                   9.519(7)
+_cell_angle_alpha                90
+_cell_angle_beta                 99.497(19)
+_cell_angle_gamma                90
+_cell_formula_units_Z            2
+loop_
+_space_group_symop_operation_xyz
+'x, y, z'
+'-x, y+1/2, -z'
+'-x, -y, -z'
+'x, -y-1/2, z'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+_atom_site_adp_type
+_atom_site_occupancy
+_atom_site_site_symmetry_order
+_atom_site_calc_flag
+_atom_site_refinement_flags_posn
+_atom_site_refinement_flags_adp
+_atom_site_refinement_flags_occupancy
+_atom_site_disorder_assembly
+_atom_site_disorder_group
+Mo Mo 0.30077(13) 0.7500 0.99387(8) 0.0275(4) Uani 1 2 d S T P . .
+Cs1 Cs 0.270(8) 0.7500 1.4617(19) 0.079(8) Uani 0.050(3) 2 d S T P A 1
+Cs2 Cs 0.128(3) 0.7500 1.4763(14) 0.054(4) Uani 0.070(3) 2 d S T P A 2
+S1 S 0.1218(4) 0.2500 1.1399(3) 0.0280(6) Uani 1 2 d S T P A .
+S2 S 0.6374(4) 0.7500 1.1817(3) 0.0288(6) Uani 1 2 d S T P A .
