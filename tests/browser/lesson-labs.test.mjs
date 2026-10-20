@@ -48,6 +48,21 @@ try{
  assert.notEqual(await page.locator('#pwWaveSvg path').last().getAttribute('d'),waveBefore);
  await page.locator('#pwWavePlay').click();
  assert.equal(await page.locator('#pwWavePlay').getAttribute('aria-pressed'),'false');
+ await page.locator('#pwF200').click();
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≈ 0/,
+  'for diamond Si, the forbidden 200 reflection cancels atom by atom');
+ assert.ok(await page.locator('#pwPhasorSvg [data-phasor-arrow]').count()>=4);
+ await page.locator('#pwF220').click();
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≠ 0/,
+  'for diamond Si, 220 has a nonzero structure factor');
+ await page.locator('#pwPeaks button').nth(1).evaluate(button=>button.click());
+ // The live WebGL viewer can keep the page scrolling; dispatch the native
+ // click directly after the two pointer-driven reflection preset checks.
+ await page.locator('#pwUsePeak').evaluate(button=>button.click());
+ const selectedPeak=await page.locator('#pwPeaks button.chosen').textContent();
+ const selectedHkl=await page.locator('#pwPhasorSummary .lesson-metric').first().textContent();
+ const peakHkl=selectedPeak.match(/\([^)]+\)/)?.[0];
+ assert.ok(peakHkl&&selectedHkl.includes(peakHkl),'selected powder peak and phasor (hkl) must match');
  await page.locator('#semiconductorNav').click();
  await page.waitForFunction(()=>document.querySelectorAll('#scChainChart [data-energy-level]').length===8);
  assert.equal(await page.locator('#scChainChart [data-chain-atom]').count(),8,
@@ -91,6 +106,22 @@ try{
  assert.match(await page.locator('#scDualSummary').textContent(),/1[.,]200 eV/,
   'on-site orbital energy difference opens the expected gap');
  assert.equal(await page.locator('#scDualChart [data-gap-region]').count(),1);
+ await page.locator('#scDualK').evaluate(el=>{el.value='1';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.match(await page.locator('#scDualWeights').textContent(),/A 100[.,]0%/,
+  'at the BZ edge, pure ionic detuning picks a definite orbital');
+ assert.match(await page.locator('#scDualWeights').textContent(),/B 100[.,]0%/);
+ assert.equal(await page.locator('#scDualChart [data-selected-band]').count(),2);
+ await page.locator('#scDualChart').evaluate(svg=>{
+  const p=svg.createSVGPoint();p.x=780;p.y=230;
+  const screen=p.matrixTransform(svg.getScreenCTM());
+  svg.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:screen.x,clientY:screen.y}));
+ });
+ assert.ok(Number(await page.locator('#scDualK').inputValue())>.8,
+  'clicking the plot selects the corresponding Bloch wave vector');
+ await page.locator('#scDualK').evaluate(el=>{el.value='1';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ await page.locator('#scDualMetal').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDualWeights').textContent(),/Bant temasında orbital karakteri tekil değildir|Orbital character is not unique at band touching/,
+  'orbital labels are undefined at true band touching');
  await page.locator('#scDualDelta').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.equal(await page.locator('#scDualMetal').getAttribute('aria-pressed'),'false',
   'manual slider changes must clear the selected preset');

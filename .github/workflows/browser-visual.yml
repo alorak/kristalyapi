@@ -1,7 +1,9 @@
 name: Real browser WebGL visual smoke
 
 on:
-  push:
+  # Validate the exact trusted merge commit after a PR is merged into main.
+  pull_request_target:
+    types: [closed]
     branches: [main]
     paths:
       - 'index.html'
@@ -21,37 +23,19 @@ on:
       - 'tests/browser/**'
       - 'tests/offline.test.mjs'
       - '.github/workflows/browser-visual.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - 'reciprocal-core.js'
-      - 'reciprocal-page.js'
-      - 'lesson-core.js'
-      - 'lesson-pages.js'
-      - 'powder-planes-view.js'
-      - 'crystal-app.js'
-      - 'volume-iso-worker.js'
-      - 'styles.css'
-      - 'sw.js'
-      - 'manifest.webmanifest'
-      - 'translations.js'
-      - 'vendor/three/**'
-      - '.github/workflows/pages.yml'
-      - 'tests/browser/**'
-      - 'tests/offline.test.mjs'
-      - '.github/workflows/browser-visual.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   browser-visual:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

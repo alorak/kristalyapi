@@ -31,9 +31,13 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
 - [ ] Gerçek toz örneğine özgü çok-kristalit yönelim ortalaması ve 2θ
   Debye–Scherrer konisini de ayrı bir görselleştirmeye bağla; mevcut iki
   dalgalı girişim animasyonunun hesaplanan XRD şiddeti olmadığını koru.
-- [ ] Kullanıcı atomu, doluluğu ve hücreyi değiştirdiğinde `F(hkl)` kompleks
-  fazörleri ile eşzamanlı pik/eksilme gösterimi. BCC (100), FCC (100),
-  diamond Si (200) sönme regresyonları.
+- [x] Seçilen veya elle girilen `(hkl)` için mevcut IT92/ADP/doluluk motorundan
+  atom fazörlerini uç uca toplama, `F`, `|F|²`, sayısal sönme; powder pikine
+  girmeyen (200) gibi indisler için elle seçim ve 30 üzeri atomda gruplanmış
+  tam vektör toplamı. Seçilen pike dönüş ve Si (200)/(220) tarayıcı kabulü.
+- [ ] Yapı atomları/doluluk/hücre değişirken yapı faktörünün ve toz pikinin
+  **aynı eksende** canlı değişimini canlandır; BCC (100), FCC (100) ve diamond
+  Si (200) sönmeleri için bağımsız çoklu-yapı regresyonu.
 - [ ] Kα1/Kα2 profili, referans dalga boyu seçimi (Cu/Co/Mo; kalibre edilmiş
   spektral yayılım yoksa uyarı) ve çubuk/profil/halka görünümü.
 - [ ] Ölçüm CSV ile aynı eksende grafik, kontrollü arka plan/ölçek/ofset;
@@ -82,9 +86,12 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
   için üç örnek, sürgüler, boş enerji bölgesi, bağımsız birim ve tarayıcı
   testleri. Gerçek Si/GaAs bandı veya Fermi panelindeki serbest `Eg` ile
   özdeşleştirilmez.
-- [ ] İki orbitalli model için doluluk/filling (spin, yarı dolu alt bant),
-  gerçek uzay Bloch genlikleri ve k-bağımlı orbital karakteri çiz; atomik
-  sınırdan valans/iletim doluluğuna kontrollü geçişi aç.
+- [x] İki orbitalli modelde seçilebilir `k` ve bant eğrisinde tıklama; seçili
+  valans/iletim özdurumlarının normalize `|u_A(k)|²`, `|u_B(k)|²` ağırlıkları,
+  limitte 0/0 özvektör belirsizliği ve doluluktan ayrı açıklama.
+- [ ] Elektron doluluğu/filling (spin, hücre başına iki elektron, eksik dolu
+  bant), gerçek uzay Bloch genlikleri ve atomik sınırdan valans/iletim
+  doluluğuna kontrollü geçiş. Orbital ağırlığını Fermi doluluğuyla karıştırma.
 - [ ] Bloch teoremi, periyodik potansiyel, birinci Brillouin bölgesi; mevcut
   karşı örgü/BZ sahnesine ders bağlantısı.
 - [ ] Yaklaşık serbest elektron (1B Kronig–Penney / iki dalga) ve tight-binding

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,fermiDirac,KB_EV_K} from '../lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,KB_EV_K} from '../lesson-core.js';
 
 test('Si (111) first-order Bragg peak is near 28.44 degrees for Cu K alpha',()=>{
  const d=5.431/Math.sqrt(3);
@@ -106,6 +106,25 @@ test('two-orbital valence/conduction branches stay ordered and gap is global min
  assert.throws(()=>twoOrbitalBands(0,-1,1,0));
  assert.throws(()=>twoOrbitalBandGap(1,-1,0));
  assert.throws(()=>twoOrbitalBands(0,1,1,Number.NaN));
+});
+
+test('two-orbital wavefunction weights normalize and exchange between bands',()=>{
+ const atomic=twoOrbitalWeights(0,0,0,2);
+ assert.deepEqual(atomic,{degenerate:false,valence:{A:0,B:1},conduction:{A:1,B:0}});
+ const balanced=twoOrbitalWeights(.5,1.2,.8,0);
+ assert.equal(balanced.valence.A,.5);
+ assert.equal(balanced.conduction.B,.5);
+ for(const k of [-1,-.7,0,.3,1]){
+  const weights=twoOrbitalWeights(k,1.2,.8,1.1);
+  assert.equal(weights.degenerate,false);
+  for(const band of ['valence','conduction']){
+   assert.ok(weights[band].A>=0&&weights[band].B>=0);
+   assert.ok(Math.abs(weights[band].A+weights[band].B-1)<1e-12);
+  }
+  assert.ok(Math.abs(weights.valence.A+weights.conduction.A-1)<1e-12);
+ }
+ assert.deepEqual(twoOrbitalWeights(1,1,1,0),{degenerate:true,valence:null,conduction:null});
+ assert.throws(()=>twoOrbitalWeights(2,1,1,0));
 });
 
 test('Fermi Dirac at EF is 1/2, satisfies particle-hole symmetry and temperature limits',()=>{
