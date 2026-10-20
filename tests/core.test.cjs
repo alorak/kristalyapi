@@ -58,7 +58,7 @@ vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorE
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
-vm.runInContext('Object.assign(this.api,{disorderTag,sitesAreAlternatives,partialOccupancyOpacity});',context);
+vm.runInContext('Object.assign(this.api,{disorderTag,sitesAreAlternatives,partialOccupancyOpacity,coordinationGeometry});',context);
 vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives,vesta3ManualBvsProjection});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
 const p1=context.p1;
@@ -3906,6 +3906,25 @@ test('CIF disorder groups: alternative Cs sites in COD 1561664 are never bonded'
  // …and the project / last-crystal JSON path.
  const project=api.loadProject(JSON.stringify({cell:crystal.cell,sites:crystal.sites,sgNumber:1,sgSetting:'1'}));
  assert.equal(project.sites.find(s=>s.label.startsWith('Cs1')).disorderGroup,'1');
+});
+
+test('Coordination excludes mutually exclusive center and ligand sites',()=>{
+ const cell={a:10,b:10,c:10,alpha:90,beta:90,gamma:90},B=api.basis(cell);
+ const rules=api.parseBondRules('Mo-S:1.0-2.5');
+ const sites=[
+  {symbol:'Mo',x:0,y:0,z:0,occupancy:.6,disorderAssembly:'A',disorderGroup:'1'},
+  {symbol:'S',x:.2,y:0,z:0,occupancy:.4,disorderAssembly:'A',disorderGroup:'2'},
+  {symbol:'S',x:0,y:.2,z:0,occupancy:1},
+  {symbol:'S',x:0,y:0,z:.2,occupancy:.6,disorderAssembly:'B',disorderGroup:'2'}
+ ];
+ const neighbors=api.coordinationNeighbors(sites,0,B,rules,2.5,false,24,false);
+ assert.deepEqual(Array.from(neighbors,n=>n.index).sort((a,b)=>a-b),[2,3],
+  'different groups of one disorder assembly cannot coordinate the same atom');
+ const geometry=api.coordinationGeometry(neighbors,B);
+ assert.equal(geometry.geometricCN,2);
+ assert.ok(Math.abs(geometry.weightedCN-1.6)<1e-9);
+ const network=api.bondNetwork(sites,cell,{periodic:false,rules,cut:2.5,auto:false});
+ assert.deepEqual(Array.from(network.edges).filter(edge=>edge.i===0||edge.j===0).map(e=>e.j),[2,3]);
 });
 
 test('Alternative-site rule is conservative for ordered and fully occupied atoms',()=>{
