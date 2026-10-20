@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,realDiodeState,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -1111,6 +1111,212 @@ export function initSemiconductorLesson(host){
    ' İlgili grafik ve P2 tükenim bölümündeki bariyer açıklamasına bakabilirsin.';
   $('scDiodeFeedback').setAttribute('data-result',correct?'correct':'retry');
  });
+
+ // P4: two forward current mechanisms, ohmic leakage and terminal series drop.
+ // Reuse P3's diffusion Is so removing all nonidealities recovers P3 exactly.
+ const realEnabled={recombination:true,series:true,shunt:true};
+ const realSwitchIds={recombination:'scRealRecombination',
+  series:'scRealSeries',shunt:'scRealShunt'};
+ function resetRealFeedback(){
+  $('scRealPrediction').value='';
+  $('scRealFeedback').textContent='';
+  $('scRealFeedback').removeAttribute('data-result');
+ }
+ function realDiodeOptions(bias=null){
+  return {acceptorsCm3:10**Number($('scRealAcceptors').value),
+   donorsCm3:10**Number($('scRealDonors').value),
+   areaMm2:Number($('scRealArea').value),
+   appliedBiasV:bias===null?Number($('scRealVoltage').value):bias,
+   recombinationRatio:10**Number($('scRealRecombinationRatio').value),
+   seriesOhms:Number($('scRealSeriesOhms').value),
+   shuntOhms:10**Number($('scRealShuntOhmsLog').value),
+   includeRecombination:realEnabled.recombination,
+   includeSeries:realEnabled.series,includeShunt:realEnabled.shunt};
+ }
+ const realText=(svg,x,y,value,color='#526c84',size=12,anchor='start')=>
+  svgNode(svg,'text',{x,y,fill:color,'font-size':size,
+   'font-weight':650,'text-anchor':anchor},value);
+ const realLine=(svg,x1,y1,x2,y2,color='#dbe5ef',weight=1,attrs={})=>
+  svgNode(svg,'line',{x1,y1,x2,y2,stroke:color,'stroke-width':weight,...attrs});
+ function renderRealDiode(){
+  if(!visible)return;
+  const options=realDiodeOptions(),s=realDiodeState(options);
+  $('scRealVoltageOutput').textContent=(options.appliedBiasV>0?'+':'')+
+   number(options.appliedBiasV,3)+' V';
+  $('scRealRecombinationOutput').textContent='10^'+number(Math.log10(options.recombinationRatio),1);
+  $('scRealSeriesOutput').textContent=number(options.seriesOhms,0)+' Ω';
+  $('scRealShuntOutput').textContent='10^'+number(Math.log10(options.shuntOhms),1)+' Ω';
+  $('scRealAcceptorsOutput').textContent=formatDensity(options.acceptorsCm3);
+  $('scRealDonorsOutput').textContent=formatDensity(options.donorsCm3);
+  $('scRealAreaOutput').textContent=number(options.areaMm2,1)+' mm²';
+  for(const [key,id] of Object.entries(realSwitchIds))
+   $(id).setAttribute('aria-pressed',String(realEnabled[key]));
+  $('scRealIdeal').setAttribute('aria-pressed',String(!Object.values(realEnabled).some(Boolean)));
+  $('scRealAll').setAttribute('aria-pressed',String(Object.values(realEnabled).every(Boolean)));
+  $('scRealSummary').replaceChildren(
+   metric('P4 toplam akım',currentText(s.currentA)),
+   metric('P3 ideal akım',currentText(s.idealCurrentA)),
+   metric('Difüzyon · n ≈ 1',currentText(s.diffusionCurrentA)),
+   metric('Yeniden birleşme · n ≈ 2',currentText(s.recombinationCurrentA)),
+   metric('Paralel kaçak',currentText(s.shuntCurrentA)),
+   metric('Eklem gerilimi Vj',number(s.junctionVoltageV,4)+' V'),
+   metric('Seri düşüm I·Rs',number(s.seriesVoltageV,4)+' V'),
+   metric('Etkili n · yalnız iki üstel kol',
+    s.junctionVoltageV>.12&&options.includeRecombination?
+     number(s.effectiveIdeality,2):'Bu gerilimde yorumlanmaz'));
+  const activeEffects=Object.entries(realEnabled).filter(([,yes])=>yes).map(([key])=>({
+   recombination:'tükenimde yeniden birleşme',series:'seri gerilim düşümü',
+   shunt:'paralel kaçak'}[key]));
+  const condition=options.appliedBiasV<0?
+   'Ters kutuplamada Rsh yolundan akan negatif akım, P3’ün −Is sınırını aşabilir; kırılma burada yoktur.':
+   options.appliedBiasV===0?
+   'Sıfır kutuplamada her iki üstel akım ve kaçak kolu sıfırdır: denge akımı sıfır kalır.':
+   'İleri kutuplamada n≈2 terimi özellikle düşük-orta akımda belirgin olabilir; daha büyük akımda I·Rs gerilim düşümü artar.';
+  $('scRealExplanation').textContent=(activeEffects.length?
+   'Açık mekanizmalar: '+activeEffects.join(', ')+'. ':
+   'Tüm ek etkiler kapalı: P3’ün Shockley diyotu aynen elde edilir. ')+condition;
+  const warnings=[];
+  if(!s.lowInjection)warnings.push('Düşük enjeksiyon varsayımı zayıfladı (azınlık/çoğunluk > %10).');
+  if(!s.depletionValid)warnings.push('Eklem bariyeri 3VT düzeyinin altına düştü.');
+  if(options.appliedBiasV<0)warnings.push('Ters kırılma (Zener/avalanş) ve yüzey akımları bu modelde bulunmaz.');
+  $('scRealValidity').textContent=warnings.length?
+   'Dikkat: '+warnings.join(' '):
+   'Geçerli öğretici örnek: sabit 300 K, P3’le ortak difüzyon Is ve seçilebilir ikinci üstel kol. Parametreler ölçümle kalibre edilmedi.';
+
+  // Two signed-current panels: forward log10|I|, reverse linear with
+  // dynamically labelled unit. Never plot reverse signed current on a log axis.
+  const iv=$('scRealIvChart');
+  clearChart(iv,'P3 ideal / P4 gerçek diyot karşılaştırmalı I–V eğrileri');
+  const fw={x0:76,x1:424},rv={x0:536,x1:865};
+  const top=61,bottom=301,span=bottom-top;
+  const fwSamples=Array.from({length:61},(_,i)=>{
+   const voltage=.55*i/60;return {voltage,...realDiodeState(realDiodeOptions(voltage))};
+  });
+  const rvSamples=Array.from({length:51},(_,i)=>{
+   const voltage=-.5+i*.5/50;return {voltage,...realDiodeState(realDiodeOptions(voltage))};
+  });
+  const maxForward=Math.max(1e-11,...fwSamples.map(p=>Math.max(p.currentA,p.idealCurrentA)));
+  const logMin=-14,logMax=Math.max(-10,Math.ceil(Math.log10(maxForward)));
+  const xf=v=>fw.x0+v/.55*(fw.x1-fw.x0);
+  const yf=a=>bottom-(Math.log10(Math.max(Math.abs(a),10**logMin))-logMin)/
+   (logMax-logMin)*span;
+  const peakReverse=Math.max(1e-12,...rvSamples.map(p=>Math.abs(p.currentA)),
+   ...rvSamples.map(p=>Math.abs(p.idealCurrentA)));
+  const revMultiplier=peakReverse>=1e-6?1e6:peakReverse>=1e-9?1e9:1e12;
+  const revUnit=revMultiplier===1e6?'µA':revMultiplier===1e9?'nA':'pA';
+  const maxReverse=peakReverse*revMultiplier*1.08;
+  const xr=v=>rv.x0+(v+.5)/.5*(rv.x1-rv.x0);
+  const yr=a=>top+Math.abs(a)*revMultiplier/maxReverse*span;
+  for(const panel of [fw,rv]){
+   realLine(iv,panel.x0,top,panel.x0,bottom,'#90a3b6',1.4);
+   realLine(iv,panel.x0,bottom,panel.x1,bottom,'#90a3b6',1.4);
+  }
+  realText(iv,20,27,'İleri · log₁₀ |I/A|','#335b80',15);
+  realText(iv,494,27,'Ters · I ('+revUnit+')','#7e578d',15);
+  realText(iv,248,361,'Va (V)','#566c82',12,'middle');
+  realText(iv,705,361,'Va (V)','#566c82',12,'middle');
+  for(let i=0;i<=4;i++){
+   const y=top+i*span/4;
+   const decade=logMax-(logMax-logMin)*i/4;
+   realLine(iv,fw.x0,y,fw.x1,y);
+   realText(iv,fw.x0-8,y+4,'10^'+number(decade,1),'#60788d',11,'end');
+   realLine(iv,rv.x0,y,rv.x1,y);
+   realText(iv,rv.x0-9,y+4,number(-maxReverse*i/4,maxReverse<.01?3:2),'#60788d',11,'end');
+  }
+  for(let i=0;i<=5;i++){
+   const v=.11*i;
+   realText(iv,xf(v),324,number(v,2),'#60788d',11,'middle');
+   const reverseV=-.5+.1*i;
+   realText(iv,xr(reverseV),324,number(reverseV,1),'#60788d',11,'middle');
+  }
+  for(const [field,color,name] of [
+   ['idealCurrentA','#227ac2','ideal'],['currentA','#8753ad','actual']]){
+   svgNode(iv,'path',{d:linePath(fwSamples,p=>[xf(p.voltage),yf(p[field])]),
+    fill:'none',stroke:color,'stroke-width':3,
+    'data-real-iv-forward':name});
+   svgNode(iv,'path',{d:linePath(rvSamples,p=>[xr(p.voltage),yr(p[field])]),
+    fill:'none',stroke:color,'stroke-width':3,
+    'data-real-iv-reverse':name});
+   if(options.appliedBiasV>0){
+    svgNode(iv,'circle',{cx:xf(options.appliedBiasV),cy:yf(s[field]),r:5.3,
+     fill:color,stroke:'#fff','stroke-width':2,'data-real-point':name});
+   }else if(options.appliedBiasV<0){
+    svgNode(iv,'circle',{cx:xr(options.appliedBiasV),cy:yr(s[field]),r:5.3,
+     fill:color,stroke:'#fff','stroke-width':2,'data-real-point':name});
+   }
+  }
+  const selectPanel=options.appliedBiasV>=0?fw:rv;
+  const markerX=options.appliedBiasV>=0?xf(options.appliedBiasV):xr(options.appliedBiasV);
+  realLine(iv,markerX,top,markerX,bottom,'#b7a0c9',1.3,{'stroke-dasharray':'4 5'});
+  realText(iv,selectPanel.x0+9,48,'Seçili Va: '+
+   number(options.appliedBiasV,3)+' V','#80569d',12);
+
+  // Log-scaled magnitude bars visualise individual signed contributions
+  // without suggesting that they add as graphic lengths.
+  const branchChart=$('scRealBranchesChart');
+  clearChart(branchChart,'Seçili gerilimde fiziksel akım yolları ve seri gerilim düşümü');
+  const contributions=[
+   {name:'Difüzyon n≈1',value:s.diffusionCurrentA,color:'#227ac2',id:'diffusion'},
+   {name:'Yeniden birleşme n≈2',value:s.recombinationCurrentA,color:'#8753ad',id:'recombination'},
+   {name:'Paralel kaçak Rsh',value:s.shuntCurrentA,color:'#d18a39',id:'shunt'}
+  ];
+  const logFloor=-16,logCeiling=Math.max(-8,
+   Math.ceil(Math.log10(Math.max(1e-16,...contributions.map(p=>Math.abs(p.value))))));
+  realText(branchChart,22,25,'Seçili Va için akım katkıları', '#385b79',16);
+  realText(branchChart,878,25,'(çubuk: log ölçek)', '#7a8496',12,'end');
+  for(const [i,c] of contributions.entries()){
+   const y=65+51*i;
+   realText(branchChart,25,y,c.name,'#445f78',13);
+   svgNode(branchChart,'rect',{x:248,y:y-19,width:405,height:21,rx:7,fill:'#edf2f8'});
+   const magnitude=Math.abs(c.value),length=magnitude===0?0:
+    Math.max(2,405*(Math.log10(Math.max(10**logFloor,magnitude))-logFloor)/
+     (logCeiling-logFloor));
+   svgNode(branchChart,'rect',{x:248,y:y-19,width:length,height:21,
+    rx:6,fill:c.color,'data-real-branch':c.id});
+   realText(branchChart,669,y-3,currentText(c.value),'#405a74',12);
+  }
+  realLine(branchChart,25,206,875,206,'#e2e8f0',1.5);
+  realText(branchChart,25,235,'Va = Vj + I·Rs', '#385b79',13);
+  realText(branchChart,252,235,number(s.appliedBiasV,4)+' V = '+
+   number(s.junctionVoltageV,4)+' V + '+
+   number(s.seriesVoltageV,4)+' V','#724c91',13);
+ }
+ for(const [key,id] of Object.entries(realSwitchIds))
+  $(id).addEventListener('click',()=>{
+   realEnabled[key]=!realEnabled[key];
+   resetRealFeedback();renderRealDiode();
+  });
+ $('scRealIdeal').addEventListener('click',()=>{
+  Object.keys(realEnabled).forEach(key=>realEnabled[key]=false);
+  resetRealFeedback();renderRealDiode();
+ });
+ $('scRealAll').addEventListener('click',()=>{
+  Object.keys(realEnabled).forEach(key=>realEnabled[key]=true);
+  resetRealFeedback();renderRealDiode();
+ });
+ for(const id of ['scRealVoltage','scRealRecombinationRatio','scRealSeriesOhms',
+  'scRealShuntOhmsLog','scRealAcceptors','scRealDonors','scRealArea']){
+  $(id).addEventListener('input',()=>{resetRealFeedback();renderRealDiode();});
+ }
+ $('scRealUseDiode').addEventListener('click',()=>{
+  for(const [target,source] of [['scRealVoltage','scDiodeVoltage'],
+   ['scRealAcceptors','scDiodeAcceptors'],['scRealDonors','scDiodeDonors'],
+   ['scRealArea','scDiodeArea']])$(target).value=$(source).value;
+  resetRealFeedback();renderRealDiode();
+ });
+ $('scRealCheck').addEventListener('click',()=>{
+  const selected=$('scRealPrediction').value;
+  if(!selected){$('scRealFeedback').textContent='Önce bir yanıt seç.';return;}
+  const correct=selected==='series';
+  $('scRealFeedback').textContent=(correct?'Doğru! ':'Birlikte düzeltelim: ')+
+   'Seri dirençten geçen toplam akım, IRs kadar gerilim düşürür; bu yüzden '+
+   'yüksek akımda ekleme ulaşan gerilim Va’dan küçük kalır. Yeniden birleşme '+
+   'ikinci (n≈2) üstel akım kanalıdır; paralel kaçak ise ekleme paralel ek bir '+
+   'iletim yoludur. Önce yalnız Rs açıkken ve sonra diğer etkileri açarak '+
+   'P3’ün ideal eğrisiyle farkı gözlemle.';
+  $('scRealFeedback').setAttribute('data-result',correct?'correct':'retry');
+ });
+
  const guideStages=[
   {title:'1 · Tek atom: ayrık seviye',
    explanation:'Bir atomun tek orbitali bu modelde tek enerji seviyesi verir. Önce tahminini seç, sonra grafiği güncelle.',
@@ -1192,6 +1398,7 @@ export function initSemiconductorLesson(host){
   renderDoping();
   renderPn();
   renderDiode();
+  renderRealDiode();
   for(const [input,output,digits,unit] of params)$(output).textContent=number($(input).value,digits)+unit;
   const period=Number($('scPeriod').value),potential=Number($('scPotential').value);
   const mass=Number($('scMass').value);

@@ -1067,3 +1067,33 @@ body.lesson-open #app{display:none!important}
 .performance-panel p{margin:0;color:#60768d}
 #performanceDownload{justify-self:start;padding:8px 10px;font-size:12px}
 @media(max-height:480px){#viewport .performance-panel{top:53px;max-height:calc(100% - 60px)}}
+
+
+/* P4: physically grounded but deliberately illustrative two-diode experiment. */
+.lesson-real-lab{margin:16px 0;border-color:#d6dceb}
+.lesson-real-lab>.lesson-guide-intro{margin:0 0 14px}
+.lesson-real-presets{margin:0 0 16px}
+.lesson-real-presets .lesson-action{font-size:11px;font-weight:700}
+.lesson-real-lab .lesson-chain-controls .lesson-field{margin-bottom:12px}
+.lesson-real-switches{display:grid;gap:8px;margin:10px 0 16px}
+.lesson-real-switch{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:5px 10px;width:100%;border:1px solid #cddcea;background:#f8fafc;color:#385a77;border-radius:10px;padding:11px 13px;cursor:pointer;font:inherit;text-align:left;transition:background .16s,border-color .16s}
+.lesson-real-switch strong{font-size:12px}
+.lesson-real-switch span{font-size:10px;color:#607a91}
+.lesson-real-switch[aria-pressed="true"]{background:#ecf6ff;border-color:#66a5dd;box-shadow:inset 3px 0 #2978bd}
+.lesson-real-switch:focus-visible{outline:3px solid #4b90d8;outline-offset:2px}
+.lesson-real-readout{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:6px}
+.lesson-real-readout .lesson-metric strong{font-size:12px}
+.lesson-real-graphics{display:grid;gap:8px;align-content:start}
+.lesson-real-graphics svg{max-height:none;background:#fbfdff}
+.lesson-real-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;font-weight:650;color:#425c76}
+.lesson-real-legend span{display:flex;align-items:center;gap:7px}
+.lesson-real-line{display:inline-block;width:26px;height:0;border-top:4px solid}
+.lesson-real-line-ideal{border-color:#227ac2}
+.lesson-real-line-actual{border-color:#8753ad}
+.lesson-real-lab #scRealValidity{margin-top:2px;font-size:11px;line-height:1.6;color:#80521f}
+@media(max-width:600px){
+ .lesson-real-presets .lesson-action{font-size:10px;padding:8px 4px}
+ .lesson-real-graphics{overflow-x:auto}
+ .lesson-real-graphics svg{min-width:610px}
+ .lesson-real-readout{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

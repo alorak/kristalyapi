@@ -1201,6 +1201,55 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+
+  <section class="lesson-panel lesson-chain-lab lesson-real-lab" aria-label="P4 gerçek diyot davranışı laboratuvarı">
+   <div class="lesson-panel-head"><h3>Gerçek diyot davranışı · idealden sapmalar</h3><span class="lesson-pill">P4 · iki diyot + dirençler</span></div>
+   <p class="lesson-guide-intro">P3'teki ideal PN diyot yalnız difüzyon akımını açıklar. Burada <strong>tükenim bölgesinde yeniden birleşme (n ≈ 2)</strong>, <strong>seri direnç</strong> ve <strong>paralel kaçak yolu</strong> ekleyip her etkiyi tek başına deneyebilirsin. Mavi eğri P3'ün ideal diyotu; mor eğri aynı diyotun seçili kayıplarla davranışıdır.</p>
+   <div class="lesson-dual-presets lesson-real-presets" role="group" aria-label="Model karşılaştırma önayarları">
+    <button type="button" id="scRealIdeal" class="lesson-action">Yalnız ideal diyot</button>
+    <button type="button" id="scRealAll" class="lesson-action">Üç etkiyi birlikte göster</button>
+    <button type="button" id="scRealUseDiode" class="lesson-action">P3'teki parametreleri kullan</button>
+   </div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <label class="lesson-field"><span>Uygulanan gerilim V<sub>a</sub> <output id="scRealVoltageOutput">+0,450 V</output></span><input id="scRealVoltage" type="range" min="-0.5" max="0.55" step="0.025" value="0.45"></label>
+     <div class="lesson-real-switches" role="group" aria-label="Gerçek diyot etkileri">
+      <button type="button" id="scRealRecombination" class="lesson-real-switch" aria-pressed="true"><strong>Yeniden birleşme</strong><span>n ≈ 2 · düşük ileri akım</span></button>
+      <button type="button" id="scRealSeries" class="lesson-real-switch" aria-pressed="true"><strong>Seri direnç</strong><span>R<sub>s</sub> · yüksek akımda gerilim düşümü</span></button>
+      <button type="button" id="scRealShunt" class="lesson-real-switch" aria-pressed="true"><strong>Paralel kaçak</strong><span>R<sub>sh</sub> · özellikle ters yönde</span></button>
+     </div>
+     <label class="lesson-field"><span>Yeniden birleşme ölçeği I<sub>02</sub>/I<sub>01</sub> <output id="scRealRecombinationOutput">10⁴</output></span><input id="scRealRecombinationRatio" type="range" min="0" max="6" step="0.5" value="4"></label>
+     <label class="lesson-field"><span>Seri direnç R<sub>s</sub> <output id="scRealSeriesOutput">25 Ω</output></span><input id="scRealSeriesOhms" type="range" min="0" max="250" step="5" value="25"></label>
+     <label class="lesson-field"><span>Paralel direnç R<sub>sh</sub> <output id="scRealShuntOutput">10⁸ Ω</output></span><input id="scRealShuntOhmsLog" type="range" min="4" max="9" step="0.5" value="8"></label>
+     <label class="lesson-field"><span>p katkısı N<sub>A</sub> <output id="scRealAcceptorsOutput">10¹⁶ cm⁻³</output></span><input id="scRealAcceptors" type="range" min="15" max="18" step="0.5" value="16"></label>
+     <label class="lesson-field"><span>n katkısı N<sub>D</sub> <output id="scRealDonorsOutput">10¹⁶ cm⁻³</output></span><input id="scRealDonors" type="range" min="15" max="18" step="0.5" value="16"></label>
+     <label class="lesson-field"><span>Diyot alanı <output id="scRealAreaOutput">1,0 mm²</output></span><input id="scRealArea" type="range" min="0.2" max="5" step="0.2" value="1"></label>
+     <div id="scRealSummary" class="lesson-chain-readout lesson-real-readout" aria-live="polite"></div>
+     <div id="scRealExplanation" class="lesson-doping-explanation" aria-live="polite"></div>
+     <div class="lesson-guide-body lesson-doping-question">
+      <label class="lesson-guide-question" for="scRealPrediction">Tahmin et: yüksek ileri akımda terminal geriliminin bir kısmını hangi etki tüketir?
+       <select id="scRealPrediction">
+        <option value="">Yanıtını seç</option>
+        <option value="series">Seri direnç Rₛ</option>
+        <option value="recombination">Yeniden birleşme akımı</option>
+        <option value="shunt">Paralel kaçak direnci Rsh</option>
+       </select>
+      </label>
+      <div class="lesson-guide-actions"><button type="button" class="lesson-action" id="scRealCheck">Yanıtı kontrol et</button></div>
+      <p id="scRealFeedback" class="lesson-guide-feedback" aria-live="polite"></p>
+     </div>
+    </div>
+    <div class="lesson-chain-figure lesson-real-graphics">
+     <div class="lesson-real-legend" aria-hidden="true"><span><i class="lesson-real-line lesson-real-line-ideal"></i> P3 · ideal</span><span><i class="lesson-real-line lesson-real-line-actual"></i> P4 · seçili etkiler</span></div>
+     <svg id="scRealIvChart" viewBox="0 0 900 375" role="img" aria-label="İdeal ve iki diyotlu gerçek modelin ileri ve ters akım-gerilim karakteristiklerinin karşılaştırılması"></svg>
+     <p class="lesson-crystal-help"><strong>Sol:</strong> ileri akımın logaritmik büyüklüğü (A); n ≈ 2 yeniden birleşme ve n ≈ 1 difüzyon akımı arasındaki geçiş görünür. <strong>Sağ:</strong> ters akımın işaretli nA değeri (dinamik ölçek); P3 ile P4 ekseni aynı tutulur. Seçili V<sub>a</sub> dikey işaretle vurgulanır.</p>
+     <svg id="scRealBranchesChart" viewBox="0 0 900 260" role="img" aria-label="Seçili gerilimde difüzyon, yeniden birleşme ve kaçak akımı katkıları ile seri gerilim düşümü"></svg>
+     <p class="lesson-crystal-help">Katkılar aynı eklem geriliminde hesaplanır: <strong>I = I<sub>dif</sub> + I<sub>yen</sub> + I<sub>kaçak</sub></strong> ve <strong>V<sub>a</sub> = V<sub>eklem</sub> + I R<sub>s</sub></strong>. Akım katkısı çubukları, çok farklı büyüklükleri karşılaştırmak için logaritmik uzunluk ölçeğinde çizilir; kesin değerler soldadır.</p>
+     <div class="lesson-explain"><strong>Model sınırı:</strong> 300 K sabit sıcaklık; P3'ün aynı I<sub>01</sub> difüzyon modeli, öğretici bir I<sub>02</sub>·(e<sup>V<sub>j</sub>/(2V<sub>T</sub>)</sup>−1) birleşme terimi ve R<sub>s</sub>/R<sub>sh</sub> eşdeğer devresi kullanılır. I<sub>02</sub>/I<sub>01</sub> örnek parametredir, ölçümden kestirilmiş değildir. <strong>Kırılma, sıcaklık değişimi, yüksek enjeksiyon ve yüzey etkileri hesaplanmaz.</strong> Bu nedenle eğriler ölçülmüş bir ticari diyot verisi olarak yorumlanmamalıdır.</div>
+     <p id="scRealValidity" class="lesson-crystal-help" aria-live="polite"></p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>
