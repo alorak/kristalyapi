@@ -965,6 +965,20 @@ body.lesson-open #app{display:none!important}
 .main-nav{max-width:min(54vw,710px);overflow-x:auto;scrollbar-width:none}
 .main-nav::-webkit-scrollbar{display:none}
 .main-nav a{white-space:nowrap}
+.lesson-doping-lab{margin:16px 0;border-color:#c9dff0}
+.lesson-doping-lab>.lesson-guide-intro{margin:0 0 14px}
+.lesson-doping-presets{margin-top:2px}
+.lesson-doping-presets .lesson-action{font-size:11px;min-height:47px}
+.lesson-doping-lab .lesson-chain-controls .lesson-field{margin-bottom:12px}
+.lesson-doping-explanation{padding:11px 12px;border:1px solid #bcd7ed;border-left:4px solid #1c83bb;
+ background:#f2f9ff;color:#345774;line-height:1.6;border-radius:8px;font-size:12px;margin:12px 0}
+.lesson-doping-question{margin-top:12px}
+.lesson-doping-lab .lesson-chain-readout{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:15px}
+.lesson-doping-lab .lesson-metric strong{font-size:12px}
+.lesson-doping-lab .lesson-chain-figure svg{max-height:420px}
+.lesson-doping-lab #scDopingValidity{margin-top:12px;color:#80511e}
+.lesson-doping-lab input:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:600px){.lesson-doping-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.lesson-doping-presets .lesson-action{font-size:10px;padding:8px 3px}.lesson-doping-lab .lesson-chain-readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .lesson-guide{margin-bottom:16px;border-color:#bcd8f2;background:linear-gradient(135deg,#ffffff,#f8fbff)}
 .lesson-guide-intro{font-size:13px;color:#4a657e;line-height:1.65;margin:-7px 0 15px}
 .lesson-guide-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:13px}
