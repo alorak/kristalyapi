@@ -1008,6 +1008,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <a class="lib-cod-link" href="#kristal">← Kristale dön</a>
   </div>
   <div class="lesson-source" aria-live="polite"><span>Etkin kristal</span><strong id="scSourceName">—</strong><span id="scSourceDetail">—</span></div>
+  <section class="lesson-panel lesson-guide" aria-label="Yönlendirmeli yarıiletken öğrenme rotası">
+   <div class="lesson-panel-head"><h3>Keşfederek öğren · atomdan yasak bant aralığına</h3><span class="lesson-pill">3 kısa adım</span></div>
+   <p class="lesson-guide-intro">Önce tahmin et, modeli uygula, aşağıdaki grafikte gözlemle ve yanıtını kontrol et. Dilersen sürgüleri serbestçe de kullanabilirsin.</p>
+   <div class="lesson-guide-steps" role="group" aria-label="Öğrenme adımlarını seç">
+    <button type="button" class="lesson-action" id="scGuideOne" aria-pressed="false">1 · Tek atom</button>
+    <button type="button" class="lesson-action" id="scGuideMany" aria-pressed="false">2 · Çok atom</button>
+    <button type="button" class="lesson-action" id="scGuideGap" aria-pressed="false">3 · İki bant</button>
+   </div>
+   <div class="lesson-guide-body">
+    <strong id="scGuideTitle">Başlamak için 1. adımı seç</strong>
+    <p id="scGuideExplanation">Tek atomun ayrık enerji seviyesinden başlayıp N atomlu zincire ve iki-orbitalli birim hücreye geçeceğiz.</p>
+    <label class="lesson-guide-question" for="scGuidePrediction"><span id="scGuidePrompt">Tahmin sorusu burada görünecek.</span>
+     <select id="scGuidePrediction" disabled><option value="">Önce bir adım seç</option></select>
+    </label>
+    <div class="lesson-guide-actions">
+     <button type="button" class="lesson-action" id="scGuideCheck" disabled>Yanıtımı kontrol et</button>
+     <button type="button" class="lesson-action" id="scGuideNext">İlk adıma başla →</button>
+    </div>
+    <p id="scGuideFeedback" class="lesson-guide-feedback" role="status" aria-live="polite"></p>
+   </div>
+  </section>
   <section class="lesson-panel lesson-chain-lab" aria-label="Atomdan enerji bandına geçiş laboratuvarı">
    <div class="lesson-panel-head"><h3>Atomdan enerji bandına · N atomluk zincir</h3><span class="lesson-pill">1B · tek orbital · tight-binding</span></div>
    <div class="lesson-chain-lab-grid">
@@ -1049,6 +1070,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel lesson-carrier-lab" aria-label="Elektron ve hol çiftini gözlemleme">
+   <div class="lesson-panel-head"><h3>Elektron ve hol: dolu ve boş durumlar</h3><span class="lesson-pill">Aynı k'da ideal geçiş · şema</span></div>
+   <div class="lesson-chain-lab-grid">
+    <div class="lesson-chain-controls">
+     <p class="lesson-crystal-help">Başlangıçta alt banttaki seçilmiş durumlar dolu, üst banttakiler boştur. Bir elektron üst banda geçtiğinde alt bantta bir <strong>hol (boş durum)</strong> kalır. Hol pozitif yüklü ayrı bir parçacık değil, eksik elektronun etkin hareketidir.</p>
+     <div class="lesson-carrier-actions">
+      <button type="button" class="lesson-action" id="scExcite">Elektron–hol çifti oluştur ↑</button>
+      <button type="button" class="lesson-action" id="scRecombine" disabled>Bir çifti yeniden birleştir ↓</button>
+     </div>
+     <div id="scCarrierSummary" class="lesson-chain-readout" aria-live="polite"></div>
+     <div class="lesson-explain"><strong>Model sınırı</strong> Alt ve üstte altışar örnek durum gösterilir; her sütun aynı k ve bir spin durumunu temsil eder. Geçişler elle oluşturulur; foton soğurma olasılığı, gerçek bant doluluğu ve termal taşıyıcı yoğunluğu hesaplanmaz. Alt ve üst bant aralığı şematik olup enerji ölçeğine göre çizilmez.</div>
+    </div>
+    <div class="lesson-chain-figure">
+     <svg id="scCarrierChart" viewBox="0 0 900 310" role="img" aria-label="Alt bantta hol, üst bantta elektron oluşumu ve yeniden birleşme şeması"></svg>
+     <p class="lesson-crystal-help">Mavi dolu daire: elektron; turuncu boş daire: hol; gri halka: üst banttaki boş durum. Her yükselen elektron bir hol oluşturur, yeniden birleşme ikisini de kaldırır.</p>
+    </div>
+   </div>
+  </section>
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls">
     <div class="lesson-panel-head"><h3>1B periyodik potansiyel</h3><span class="lesson-pill">İki düzlem dalgası</span></div>
@@ -1076,6 +1115,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="lesson-panel-head"><h3>Enerjiye göre doluluk olasılığı</h3><span class="lesson-pill">f(E)</span></div>
     <svg id="scFermiChart" class="lesson-chart" viewBox="0 0 900 325" role="img" aria-label="Sıcaklık ve Fermi seviyesine bağlı Fermi Dirac dağılımı"></svg>
     <div id="scFermiSummary" class="lesson-metrics" aria-live="polite"></div>
+    <div class="lesson-thermal-bridge">
+     <h4>Sıcaklık arttıkça elektron ve hol olasılığı</h4>
+     <p class="lesson-crystal-help">Aynı ideal bant kenarlarında üstteki bir durumun elektronla dolu olma olasılığı <strong>f(Ec)</strong>, alttaki bir durumun boş (hol) olma olasılığı <strong>1 − f(Ev)</strong> olarak hesaplanır. Dikey eksen logaritmiktir.</p>
+     <svg id="scThermalChart" class="lesson-chart" viewBox="0 0 900 325" role="img" aria-label="Sıcaklığa karşı logaritmik iletim bandı elektron ve değerlik bandı hol olasılıkları"></svg>
+     <div id="scEdgeSummary" class="lesson-metrics" aria-live="polite"></div>
+     <p class="lesson-crystal-help">Bu değerler yalnızca <strong>birer bant kenarı durumunun olasılığıdır</strong>; toplam taşıyıcı sayısı veya cm⁻³ cinsinden yoğunluk değildir. Gerçek n ve p için durum yoğunluğu integrali, etkin kütle ve yük nötrlüğü gerekir. EF ≠ 0 olduğunda iki olasılığın eşit olması beklenmez.</p>
+    </div>
+
    </section>
   </div>
  </div>

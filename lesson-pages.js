@@ -1,5 +1,5 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
- tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,KB_EV_K} from './lesson-core.js';
+ tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
 
 const $=id=>document.getElementById(id);
@@ -459,6 +459,46 @@ export function initPowderLesson(host){
  return {get visible(){return visible;},setVisible(value){visible=!!value;if(visible){render();planeViewer?.resize();}else{setWavePlaying(false);planeViewer?.suspend?.();}},refresh:render};
 }
 
+/* Six sample k/spin states: one promoted electron leaves exactly one hole
+ * at the SAME k. This is not a density-of-states calculation or to scale. */
+function electronHoleDiagram(svg,pairs,gapEV){
+ clearChart(svg,'Elektron–hol çiftlerinin aynı k durumlarında şematik gösterimi');
+ const label=(x,y,value,color='#415b75',size=13,anchor='start')=>svgNode(svg,'text',
+  {x,y,fill:color,'font-size':size,'font-weight':600,'text-anchor':anchor},value);
+ const open=gapEV>1e-9,upperY=open?86:144,lowerY=open?213:166;
+ label(24,28,'Her sütun: aynı k ve aynı spin · geçişler dikey', '#294965',16);
+ svgNode(svg,'rect',{x:218,y:50,width:575,height:208,rx:12,
+  fill:'#f7fbff',stroke:'#dbe7f3'});
+ if(open)svgNode(svg,'rect',{x:220,y:upperY+17,width:571,height:lowerY-upperY-34,
+  fill:'#e4f4e9','fill-opacity':'.75','data-carrier-gap':'true'});
+ for(const [y,color] of [[upperY,'#e5a050'],[lowerY,'#337db7']])
+  svgNode(svg,'line',{x1:250,x2:772,y1:y,y2:y,stroke:color,'stroke-width':3});
+ label(14,upperY+4,'İletim bandı','#a66a27',14);
+ label(14,lowerY+4,'Değerlik bandı','#22649a',14);
+ label(505,open?153:118,open?'E₍g₎ = '+number(gapEV,2)+' eV':'E₍g₎ = 0 · bant teması',
+  '#277b5d',14,'middle');
+ for(let i=0;i<6;i++){
+  const x=279+i*91,excited=i<pairs;
+  label(x,282,'k'+(i+1),'#71859b',12,'middle');
+  if(excited){
+   svgNode(svg,'line',{x1:x,y1:lowerY-17,x2:x,y2:upperY+16,
+    stroke:'#7e76ba','stroke-width':2,'stroke-dasharray':'4 4','data-carrier-pair':String(i)});
+   svgNode(svg,'circle',{cx:x,cy:upperY,r:12,fill:'#227ac2',stroke:'#fff',
+    'stroke-width':2,'data-carrier-electron':String(i)});
+   label(x,upperY+4,'e⁻','#fff',10,'middle');
+   svgNode(svg,'circle',{cx:x,cy:lowerY,r:12,fill:'#fff',stroke:'#dc813d',
+    'stroke-width':3,'data-carrier-hole':String(i)});
+   label(x,lowerY+4,'h⁺','#ad5c23',10,'middle');
+  }else{
+   svgNode(svg,'circle',{cx:x,cy:upperY,r:11,fill:'#fff',stroke:'#a9bacb',
+    'stroke-width':2,'data-carrier-empty':String(i)});
+   svgNode(svg,'circle',{cx:x,cy:lowerY,r:11,fill:'#227ac2',stroke:'#fff',
+    'stroke-width':2,'data-carrier-valence':String(i)});
+  }
+ }
+ label(236,300,'Dolu ●   Boş ○   Hol ◉ · seçili örnek durumlar','#59738c',11);
+}
+
 export function initSemiconductorLesson(host){
  let visible=false;
  const chart=$('scBandChart'),fermiChart=$('scFermiChart');
@@ -467,6 +507,7 @@ export function initSemiconductorLesson(host){
  const dualPresets={metal:[1,1,0],dimer:[1.2,.8,0],ionic:[1,1,1.2]};
  const dualButtons={metal:'scDualMetal',dimer:'scDualDimer',ionic:'scDualIonic'};
  let dualPreset='dimer';
+ let carrierPairs=0,guideStep=-1;
  let chainTimer=0,chainRunning=false;
  function stopChain(){
   clearInterval(chainTimer);chainTimer=0;chainRunning=false;
@@ -541,6 +582,7 @@ export function initSemiconductorLesson(host){
     item.append(label,bar,detail);target.appendChild(item);
    }
   }
+  renderCarrier();
  }
  for(const id of ['scDualIntra','scDualInter','scDualDelta'])
   $(id).addEventListener('input',()=>{dualPreset=null;renderDual();});
@@ -558,6 +600,88 @@ export function initSemiconductorLesson(host){
   dualPreset=key;
   ['scDualIntra','scDualInter','scDualDelta'].forEach((input,i)=>$(input).value=String(dualPresets[key][i]));
   renderDual();
+ });
+ function renderCarrier(){
+  if(!visible)return;
+  const gap=twoOrbitalBandGap(Number($('scDualIntra').value),
+   Number($('scDualInter').value),Number($('scDualDelta').value));
+  electronHoleDiagram($('scCarrierChart'),carrierPairs,gap);
+  $('scCarrierSummary').replaceChildren(
+   metric('Üst banttaki elektron',String(carrierPairs)),
+   metric('Alt banttaki hol',String(carrierPairs)),
+   metric('Net uyarma yükü','0 · çiftler dengeli'),
+   metric('Model E₍g₎',number(gap,3)+' eV'));
+  $('scExcite').disabled=carrierPairs>=6;
+  $('scRecombine').disabled=carrierPairs<=0;
+ }
+ $('scExcite').addEventListener('click',()=>{carrierPairs=Math.min(6,carrierPairs+1);renderCarrier();});
+ $('scRecombine').addEventListener('click',()=>{carrierPairs=Math.max(0,carrierPairs-1);renderCarrier();});
+ const guideStages=[
+  {title:'1 · Tek atom: ayrık seviye',
+   explanation:'Bir atomun tek orbitali bu modelde tek enerji seviyesi verir. Önce tahminini seç, sonra grafiği güncelle.',
+   prompt:'Tek atom ve tek orbital varsa kaç enerji seviyesi vardır?',
+   choices:[['one','1 seviye'],['two','2 seviye'],['continuum','Sürekli bir bant']],
+   correct:'one',feedback:'Bir orbital → bir enerji özdeğeri. Spin sayılmıyor.'},
+  {title:'2 · Çok atom: seviyeler sıklaşır',
+   explanation:'N = 16 atom ve sonlu komşu bağlaşımı seçilecek. Sağdaki sürekli eğri sonsuz periyodik sınırdır; soldaki 16 çizgi sonlu zincirdir.',
+   prompt:'Tek-orbital 16 atomlu açık zincirde kaç ayrık enerji seviyesi oluşur?',
+   choices:[['one','1 seviye'],['sixteen','16 seviye'],['thirtytwo','32 seviye']],
+   correct:'sixteen',feedback:'N orbital, N enerji seviyesi üretir. N arttıkça çizgiler sıklaşarak bant görünümü kazanır.'},
+  {title:'3 · İki orbital: yasak aralık',
+   explanation:'Bu adımda farklı bir modele, iki-orbitalli A/B birim hücresine geçiyoruz. t₁ = 1,2 eV ve t₂ = 0,8 eV seçilecek.',
+   prompt:'Hücre içi ve hücreler arası bağlaşım farklıysa bant kenarında ne olur?',
+   choices:[['gap','Bir yasak enerji aralığı açılır'],['no_gap','İki bant mutlaka temas eder'],['one_band','Bant sayısı bire düşer']],
+   correct:'gap',feedback:'İki orbital iki bant verir; t₁ ≠ t₂ olduğunda bu ideal modelde Eg = 2|t₁−t₂| = 0,8 eV olur.'}
+ ];
+ const guideButtons=['scGuideOne','scGuideMany','scGuideGap'];
+ function chooseGuideStep(step){
+  guideStep=Math.max(0,Math.min(2,step));
+  const stage=guideStages[guideStep],selector=$('scGuidePrediction');
+  guideButtons.forEach((id,i)=>$(id).setAttribute('aria-pressed',String(i===guideStep)));
+  $('scGuideTitle').textContent=stage.title;
+  $('scGuideExplanation').textContent=stage.explanation;
+  $('scGuidePrompt').textContent=stage.prompt;
+  selector.replaceChildren();
+  const placeholder=document.createElement('option');
+  placeholder.value='';placeholder.textContent='Önce tahminini seç';selector.appendChild(placeholder);
+  for(const [value,label] of stage.choices){
+   const option=document.createElement('option');option.value=value;option.textContent=label;
+   selector.appendChild(option);
+  }
+  selector.disabled=false;
+  $('scGuideCheck').disabled=false;
+  $('scGuideFeedback').textContent='';
+  $('scGuideFeedback').removeAttribute('data-result');
+  $('scGuideNext').textContent=guideStep===2?'Başa dön ↺':'Sonraki adım →';
+ }
+ function applyGuideStage(){
+  if(guideStep===2){
+   dualPreset='dimer';
+   ['scDualIntra','scDualInter','scDualDelta'].forEach((id,i)=>
+    $(id).value=String(dualPresets.dimer[i]));
+   $('scDualK').value='1';
+   renderDual();
+  }else{
+   stopChain();
+   $('scChainAtoms').value=guideStep===0?'1':'16';
+   $('scChainHopping').value='0.8';
+   renderChain();
+  }
+ }
+ guideButtons.forEach((id,i)=>$(id).addEventListener('click',()=>chooseGuideStep(i)));
+ $('scGuideNext').addEventListener('click',()=>chooseGuideStep(guideStep>=2?0:guideStep+1));
+ $('scGuidePrediction').addEventListener('change',()=>{
+  $('scGuideFeedback').textContent='';$('scGuideFeedback').removeAttribute('data-result');
+ });
+ $('scGuideCheck').addEventListener('click',()=>{
+  if(guideStep<0)return;
+  const selected=$('scGuidePrediction').value;
+  if(!selected){$('scGuideFeedback').textContent='Önce bir yanıt seç.';return;}
+  applyGuideStage();
+  const correct=selected===guideStages[guideStep].correct;
+  $('scGuideFeedback').setAttribute('data-result',correct?'correct':'retry');
+  $('scGuideFeedback').textContent=(correct?'Doğru! ':'Birlikte düşünelim: ')+
+   guideStages[guideStep].feedback+' İlgili grafiği aşağıda inceleyebilirsin.';
  });
  const params=[
   ['scPeriod','scPeriodOutput',2,' Å'],['scPotential','scPotentialOutput',2,' eV'],
@@ -604,6 +728,36 @@ export function initSemiconductorLesson(host){
   $('scFermiSummary').replaceChildren(metric('f(E = EF)','0,500'),
    metric('f(Ec)',number(fermiDirac(gap/2,ef,temperature),4)),
    metric('kBT',number(KB_EV_K*temperature,4)+' eV'));
+  const edge=edgeStateOccupancies(gap,ef,temperature);
+  const probabilityText=value=>value<.0001?value.toExponential(2):number(value,6);
+  $('scEdgeSummary').replaceChildren(
+   metric('Ec: elektron olasılığı',probabilityText(edge.electronProbability)),
+   metric('Ev: hol olasılığı',probabilityText(edge.holeProbability)),
+   metric('Fermi konumu',Math.abs(ef)<1e-12?'Bant ortası · simetrik':'Kaydırılmış · bağımsız'));
+  const points=Array.from({length:101},(_,i)=>{
+   const T=100+i*5;
+   return {T,...edgeStateOccupancies(gap,ef,T)};
+  });
+  const minLog=Math.floor(Math.min(-1,...points.map(p=>p.electronLog10),
+   ...points.map(p=>p.holeLog10))/10)*10;
+  const thermalChart=$('scThermalChart');
+  clearChart(thermalChart,'Bant kenarlarında sıcaklığa göre tek-durum olasılıkları');
+  const tAxes=plotFrame(thermalChart,{xMin:100,xMax:600,yMin:minLog,yMax:0,
+   xTitle:'Sıcaklık T (K)',yTitle:'log₁₀(olasılık)'});
+  for(const [field,color,name] of [
+   ['electronLog10','#227ac2','Elektron: f(Ec)'],
+   ['holeLog10','#d98236','Hol: 1−f(Ev)']]){
+   svgNode(thermalChart,'path',{d:linePath(points,p=>[tAxes.X(p.T),tAxes.Y(p[field])]),
+    fill:'none',stroke:color,'stroke-width':3,'data-thermal-curve':field});
+   svgNode(thermalChart,'circle',{cx:tAxes.X(temperature),cy:tAxes.Y(edge[field]),
+    r:6,fill:color,stroke:'#fff','stroke-width':2,'data-thermal-selected':field});
+  }
+  svgNode(thermalChart,'line',{x1:tAxes.X(temperature),x2:tAxes.X(temperature),
+   y1:20,y2:272,stroke:'#64748b','stroke-width':1.5,'stroke-dasharray':'5 5'});
+  svgNode(thermalChart,'text',{x:675,y:16,fill:'#227ac2','font-size':12,'font-weight':700},
+   '● f(Ec) elektron');
+  svgNode(thermalChart,'text',{x:675,y:32,fill:'#d98236','font-size':12,'font-weight':700},
+   '● 1−f(Ev) hol');
  }
  params.forEach(([id])=>$(id).addEventListener('input',render));
  $('scUseCell').addEventListener('click',()=>{

@@ -135,6 +135,50 @@ try{
  assert.match(renderedSvg,/data-dual-band="valence"/);
  assert.match(renderedSvg,/data-dual-band="conduction"/);
  await fs.writeFile(path.join(artifacts,'lesson-06-valence-conduction-gap.svg'),renderedSvg);
+
+ // Guided P0 pathway: predict first, then apply a known physical model.
+ await page.locator('#scGuideOne').evaluate(button=>button.click());
+ await page.locator('#scGuidePrediction').evaluate(select=>{
+  select.value='one';select.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await page.locator('#scGuideCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scGuideFeedback').textContent(),/Doğru!/);
+ assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),1);
+ await page.locator('#scGuideNext').evaluate(button=>button.click());
+ await page.locator('#scGuidePrediction').evaluate(select=>{
+  select.value='sixteen';select.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await page.locator('#scGuideCheck').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scChainChart [data-energy-level]').count(),16);
+ await page.locator('#scGuideNext').evaluate(button=>button.click());
+ await page.locator('#scGuidePrediction').evaluate(select=>{
+  select.value='gap';select.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await page.locator('#scGuideCheck').evaluate(button=>button.click());
+ assert.match(await page.locator('#scDualSummary').textContent(),/0[.,]800 eV/);
+ // Manual interband excitation conserves one electron/hole pair at matching k.
+ assert.equal(await page.locator('#scCarrierChart [data-carrier-hole]').count(),0);
+ await page.locator('#scExcite').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scCarrierChart [data-carrier-electron]').count(),1);
+ assert.equal(await page.locator('#scCarrierChart [data-carrier-hole]').count(),1);
+ assert.match(await page.locator('#scCarrierSummary').textContent(),/0 · çiftler dengeli/);
+ await page.locator('#scRecombine').evaluate(button=>button.click());
+ assert.equal(await page.locator('#scCarrierChart [data-carrier-hole]').count(),0);
+ // Fermi probabilities at the conduction/valence edges rise with T.
+ assert.equal(await page.locator('#scThermalChart [data-thermal-curve]').count(),2);
+ const roomEdge=await page.locator('#scEdgeSummary .lesson-metric').first().textContent();
+ await page.locator('#scTemperature').evaluate(el=>{
+  el.value='600';el.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ const hotEdge=await page.locator('#scEdgeSummary .lesson-metric').first().textContent();
+ assert.notEqual(hotEdge,roomEdge,'thermal edge-state occupation must respond to temperature');
+ await page.locator('#scFermi').evaluate(el=>{
+  el.value='0.3';el.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ const edgeValues=await page.locator('#scEdgeSummary .lesson-metric strong').allTextContents();
+ assert.notEqual(edgeValues[0],edgeValues[1],
+  'non-midgap Fermi occupation does not force electron and hole probabilities equal');
+
  assert.deepEqual(errors,[],'lesson must not throw browser errors');
  console.log('Focused XRD Bragg/WebGL, atom-to-band and two-orbital gap labs passed.');
 }finally{

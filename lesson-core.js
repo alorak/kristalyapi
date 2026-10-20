@@ -95,3 +95,26 @@ export function fermiDirac(energyEV,fermiEV,temperatureK){
  if(x< -40)return 1;
  return 1/(1+Math.exp(x));
 }
+
+/* Occupation of ONE ideal state at each band edge, not a carrier density.
+   The electron at Ec and the vacancy at Ev are evaluated independently.
+   Their probabilities only match for the symmetric mid-gap Fermi reference. */
+export function edgeStateOccupancies(gapEV,fermiEV,temperatureK){
+ if(![gapEV,fermiEV,temperatureK].every(Number.isFinite)||
+    gapEV<0||temperatureK<=0)
+  throw Error('Bant kenarı doluluğu için Eg ≥ 0 ve T > 0 gerekli.');
+ const ec=gapEV/2,ev=-gapEV/2,kT=KB_EV_K*temperatureK;
+ const electronX=(ec-fermiEV)/kT,holeX=(fermiEV-ev)/kT;
+ const probability=x=>{
+  if(x>=0){const e=Math.exp(-x);return e/(1+e);}
+  const e=Math.exp(x);return 1/(1+e);
+ };
+ const log10Probability=x=>-(Math.max(x,0)+Math.log1p(Math.exp(-Math.abs(x))))/Math.LN10;
+ return {
+  conductionEdgeEV:ec,valenceEdgeEV:ev,
+  electronProbability:probability(electronX),
+  holeProbability:probability(holeX),
+  electronLog10:log10Probability(electronX),
+  holeLog10:log10Probability(holeX)
+ };
+}
