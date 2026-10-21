@@ -467,6 +467,13 @@ export function initPowderLesson(host){
    }
    summary.replaceChildren(metric('En güçlü pik',groups.length?`${number(groups.reduce((p,c)=>p.relative>c.relative?p:c).angle)}°`:'—'),
     metric('Kullanılan λ',number(lambda,4)+' Å'),metric('Model genişliği',number(width)+'°'));
+   const strongest=groups.length?groups.reduce((best,g)=>g.intensity>best.intensity?g:best):null;
+   $('pwStrongestExplanation').textContent=strongest?
+    'En güçlü model piki: ('+strongest.hkl.join(' ')+') · 2θ = '+number(strongest.angle,2)+'° · d = '+
+    number(strongest.d,4)+' Å. Açı Bragg koşulu (2d sinθ = λ) ile bulunur. Şiddet, atomların IT92 yapı faktöründen |Fc|², eşdeğer yansıma katkıları ve '+
+    ($('pwLp').checked?'Lorentz–polarizasyon düzeltmesi':'seçili düzeltmesiz model')+
+    ' üzerinden hesaplanır. En yüksek hesaplanan gruba %100 atanır; deneysel pik veritabanından alınmaz.':
+    'Seçilen dalga boyunda ve 2θ aralığında izinli model yansıması bulunmadı.';
    list.replaceChildren();
    if(!groups.length)list.textContent='Bu dalga boyu ve açı aralığında yansıma bulunamadı.';
    groups.slice(0,28).forEach((group,index)=>{
