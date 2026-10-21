@@ -37,8 +37,26 @@ bağlantı testi ile ayrıca doğrulanmalıdır.
 
 COD upstream alan adı sabittir: https://www.crystallography.net.
 Yalnızca GET ve OPTIONS; doğrulanmış COD ID'leri; izinli sorgu parametreleri;
-12 saniyelik upstream zaman aşımı; CIF 4 MB, JSON 6,5 MB; yönlendirme takip edilmez;
-izin verilmeyen Origin için 403.
+CIF 4 MB, JSON 6,5 MB; yönlendirme takip edilmez; izin verilmeyen Origin için 403.
+
+### Geçici COD hataları ve önbellek
+
+COD de Cloudflare arkasındadır ve soğuk bir isteğe zaman zaman 521/525 ya da
+zaman aşımıyla yanıt verir; aynı isteğin hemen tekrarı genellikle başarılıdır
+(ör. COD 1502689). Worker bu yüzden:
+
+- 408, 425, 429, 5xx ve 520–526/530 yanıtlarını ve bağlantı hatalarını en fazla
+  3 deneme ile (400 ms, 1,2 s bekleme) yeniden dener; tüm denemeler tek bir
+  20 saniyelik süre bütçesini paylaşır. Uygulama Worker yanıtını 25 s bekler.
+- 403 (hız sınırı), 404, yönlendirmeler ve boyut sınırı aşımı yeniden denenmez.
+- Başarılı gövdeleri Cloudflare kenar önbelleğinde (`caches.default`) sabit COD
+  URL'si anahtarıyla saklar: CIF 1 gün, JSON 5 dakika. Önbellekte CORS başlığı
+  tutulmaz; yanıt başlığı `X-Kristalyapi-Cache: HIT|MISS` gösterir. Hata
+  yanıtları önbelleğe alınmaz.
+- COD'a `User-Agent: kristalyapi-cod-worker/…` ile kendini tanıtır.
+
+Bu davranış değiştiğinde Worker'ı yeniden `npx wrangler deploy` ile yayınla;
+GitHub Pages dağıtımı Worker'ı güncellemez.
 
 ## Güvenlik ve işletim
 

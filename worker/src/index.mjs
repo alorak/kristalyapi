@@ -7,6 +7,18 @@ const SEARCH_KEYS = new Set([
 ]);
 const CIF_LIMIT = 4_000_000;
 const JSON_LIMIT = 6_500_000;
+// COD sits behind Cloudflare and intermittently answers a cold request with
+// 52x (origin unreachable / TLS handshake) or times out, while an immediate
+// retry of the same URL succeeds. Retry only those transient failures, within
+// one wall-clock budget so the browser (which waits ~25 s) still gets an answer.
+const UPSTREAM_BUDGET_MS = 20_000;
+const UPSTREAM_ATTEMPTS = 3;
+const RETRY_DELAYS_MS = [400, 1200];
+const RETRYABLE_STATUS = new Set([408,425,429,500,502,503,504,520,521,522,523,524,525,526,530]);
+const USER_AGENT = 'kristalyapi-cod-worker/1.1 (+https://github.com/alorak/kristalyapi)';
+// Successful bodies are kept in the Cloudflare edge cache so a COD entry that
+// imported once does not depend on COD being reachable the next time.
+const CACHE_TTL = {cif:86_400, json:300};
 
 function cors(origin, env) {
   const origins = String(env?.CORS_ORIGINS || 'https://alorak.github.io')
@@ -83,7 +95,52 @@ async function boundedBody(response, max) {
   return result;
 }
 
-export async function handleRequest(request, env={}, upstreamFetch=fetch) {
+class UpstreamStatus extends Error {
+  constructor(status) { super('COD upstream returned '+status); this.status=status; }
+}
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Fetch one validated COD URL, retrying transient upstream failures.
+// Non-transient answers (404, redirects, 403 rate limiting, oversize bodies)
+// are returned at once: retrying them would not help and could worsen limits.
+export async function fetchUpstream(spec, upstreamFetch=fetch, {
+  attempts=UPSTREAM_ATTEMPTS, budgetMs=UPSTREAM_BUDGET_MS, delays=RETRY_DELAYS_MS, sleep=wait, now=Date.now
+}={}) {
+  const deadline=now()+budgetMs;
+  let lastError=null;
+  for (let attempt=0; attempt<attempts; attempt++) {
+    if (attempt>0) {
+      const delay=delays[Math.min(attempt-1,delays.length-1)]||0;
+      if (now()+delay>=deadline) break;
+      await sleep(delay);
+    }
+    const remaining=deadline-now();
+    if (remaining<=0) break;
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),remaining);
+    try {
+      const response=await upstreamFetch(spec.url,{method:'GET',redirect:'manual',signal:controller.signal,
+        headers:{Accept:spec.type==='json'?'application/json':'text/plain','User-Agent':USER_AGENT}});
+      if (response.ok && response.status<300) return await boundedBody(response,spec.limit);
+      response.body?.cancel?.().catch(()=>{});
+      lastError=new UpstreamStatus(response.status);
+      if (!RETRYABLE_STATUS.has(response.status)) throw lastError;
+    } catch (error) {
+      if (error instanceof UpstreamStatus && !RETRYABLE_STATUS.has(error.status)) throw error;
+      if (error.message==='Upstream response too large') throw error;
+      lastError=error;
+    } finally {clearTimeout(timer);}
+  }
+  throw lastError||new Error('COD upstream timeout');
+}
+
+function cacheKey(url) { return new Request(url,{method:'GET'}); }
+function edgeCache(options) {
+  if ('cache' in options) return options.cache;
+  try { return globalThis.caches?.default||null; } catch { return null; }
+}
+
+export async function handleRequest(request, env={}, upstreamFetch=fetch, options={}) {
   const origin=request.headers.get('Origin');
   const allowed=cors(origin,env);
   if (!allowed) return fail(403,'Origin not allowed');
@@ -100,22 +157,33 @@ export async function handleRequest(request, env={}, upstreamFetch=fetch) {
   let spec;
   try { spec=upstreamUrl(target.pathname,target.search.slice(1)); }
   catch (error) {return fail(400,error.message,allowed);}
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),12000);
-  try {
-    const response=await upstreamFetch(spec.url,{method:'GET',redirect:'manual',signal:controller.signal,
-      headers:{Accept:spec.type==='json'?'application/json':'text/plain'}});
-    if (!response.ok || response.status>=300)
-      return fail(502,'COD upstream returned '+response.status,allowed);
-    const body=await boundedBody(response,spec.limit);
-    return new Response(body,{status:200,headers:{
-      ...allowed,
-      'Content-Type':spec.type==='json'?'application/json; charset=utf-8':'chemical/x-cif; charset=utf-8',
-      'Cache-Control':spec.type==='cif'?'public, max-age=86400':'public, max-age=300'
-    }});
-  } catch (error) {
-    return fail(error.message==='Upstream response too large'?413:502,
-      error.message==='Upstream response too large'?error.message:'COD upstream timeout or connection failure',allowed);
-  } finally {clearTimeout(timer);}
+  const contentType=spec.type==='json'?'application/json; charset=utf-8':'chemical/x-cif; charset=utf-8';
+  const ttl=spec.type==='cif'?CACHE_TTL.cif:CACHE_TTL.json;
+  const relay=(body,cacheState)=>new Response(body,{status:200,headers:{
+    ...allowed,'Content-Type':contentType,'Cache-Control':'public, max-age='+ttl,'X-Kristalyapi-Cache':cacheState
+  }});
+  // The cache is keyed by the fixed upstream URL and stores no CORS headers,
+  // so one Origin's response is never replayed with another Origin's grant.
+  const cache=edgeCache(options);
+  if (cache) {
+    try {
+      const hit=await cache.match(cacheKey(spec.url));
+      if (hit) return relay(await hit.arrayBuffer(),'HIT');
+    } catch {}
+  }
+  let body;
+  try { body=await fetchUpstream(spec,upstreamFetch,options.upstream); }
+  catch (error) {
+    if (error.message==='Upstream response too large') return fail(413,error.message,allowed);
+    if (error instanceof UpstreamStatus) return fail(502,error.message,allowed);
+    return fail(502,'COD upstream timeout or connection failure',allowed);
+  }
+  if (cache) {
+    const stored=Promise.resolve().then(()=>cache.put(cacheKey(spec.url),new Response(body,{status:200,headers:{
+      'Content-Type':contentType,'Cache-Control':'public, max-age='+ttl
+    }}))).catch(()=>{});
+    if (options.ctx?.waitUntil) options.ctx.waitUntil(stored); else await stored;
+  }
+  return relay(body,'MISS');
 }
-export default {fetch(request,env){return handleRequest(request,env);}};
+export default {fetch(request,env,ctx){return handleRequest(request,env,fetch,{ctx});}};
