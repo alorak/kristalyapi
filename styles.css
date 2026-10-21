@@ -1135,3 +1135,34 @@ body.lesson-open #app{display:none!important}
 .qe-workflow button.primary{width:100%}
 .qe-workflow button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:430px){.qe-form-grid{grid-template-columns:1fr}}
+
+
+/* XRD guided structure-factor lab: two-tier explanation and comparison on white. */
+.xrd-factor-guide,.xrd-factor-compare{overflow:hidden}
+.xrd-factor-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.xrd-factor-step{min-width:0;border:1px solid #dae6f2;border-radius:14px;background:linear-gradient(155deg,#fff 0%,#f6faff 100%);padding:15px 17px;box-shadow:0 2px 8px #20384f08}
+.xrd-factor-step-number{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 7px;border:1px solid #c4dff1;border-radius:10px;background:#eaf4ff;color:#2173a8;font-size:12px;font-weight:800}
+.xrd-factor-step h4{margin:10px 0 6px;font-size:15px;line-height:1.3;color:#243e58}
+.xrd-factor-step p{margin:0 0 10px;font-size:13px;line-height:1.65;color:#516881}
+.xrd-factor-equation{background:#edf5ff;border:1px solid #d8e7f6;border-radius:9px;padding:9px 11px;overflow-wrap:anywhere;color:#194e7b;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55}
+.xrd-material-control{margin:11px 0}
+.xrd-material-control select{max-width:100%;border-radius:9px;border:1px solid #bdcfe0;background:#fff;color:#264866;padding:9px 11px}
+.xrd-lab-specimen{display:flex;flex-direction:column;gap:5px;margin:10px 0 14px;padding:11px 12px;border:1px solid #d9e7f2;border-radius:10px;background:#f5f9fe}
+.xrd-lab-specimen strong{color:#204a72;font-size:13px}
+.xrd-lab-specimen span{color:#667f95;font-size:11px;line-height:1.5}
+.xrd-factor-adjusters{display:grid;gap:13px;margin:13px 0;padding:12px;border:1px solid #dbe6f1;border-radius:11px;background:#fff}
+.xrd-factor-adjusters .lesson-field{min-width:0}
+.xrd-factor-adjusters input[type=range]{width:100%;accent-color:#2384bd}
+.xrd-factor-adjusters .lesson-action{justify-self:start}
+.xrd-factor-table-wrap{width:100%;overflow-x:auto;border:1px solid #d9e6f1;border-radius:12px;background:#fff}
+.xrd-factor-table{border-collapse:collapse;width:100%;min-width:620px;color:#344d64;font-size:13px}
+.xrd-factor-table th,.xrd-factor-table td{padding:12px 14px;text-align:left;border-bottom:1px solid #e5edf5;font-variant-numeric:tabular-nums;white-space:nowrap}
+.xrd-factor-table thead th{background:#f2f7fc;color:#526f87;font-weight:700;font-size:11px;letter-spacing:.2px}
+.xrd-factor-table tbody tr:last-child th,.xrd-factor-table tbody tr:last-child td{border-bottom:none}
+.xrd-factor-table tbody tr:hover{background:#f7fbff}
+.xrd-factor-table tbody tr.xrd-factor-selected{background:#edf6ff}
+.xrd-factor-allowed{font-weight:650;color:#1b825f}
+.xrd-factor-extinct{font-weight:650;color:#a15b31}
+.xrd-factor-insight,.xrd-strongest-note{margin-top:11px;padding:12px 15px;border:1px solid #cee0f0;border-radius:11px;background:#f0f7fe;color:#365e7c;line-height:1.65;font-size:12px}
+.xrd-strongest-note{margin-top:12px;background:#fff9ed;border-color:#f0e0ba;color:#715423}
+@media(max-width:850px){.xrd-factor-steps{grid-template-columns:minmax(0,1fr)}.xrd-factor-step{padding:13px 15px}.xrd-factor-table th,.xrd-factor-table td{padding:10px 11px}}
