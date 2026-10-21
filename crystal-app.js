@@ -8489,9 +8489,12 @@ function codRequestUrls(url,mode='auto'){
  return mode==='auto'&&codWorkerBase?[codWorkerUrlFor(target.href),target.href]:[target.href];
 }
 
-async function codReadResponse(url,signal,limit=6500000){
+// The Worker retries transient COD failures within a 20 s budget; wait a bit
+// longer than that so its retried answer is not discarded by the browser.
+const COD_WORKER_TIMEOUT_MS=25000,COD_DIRECT_TIMEOUT_MS=18000;
+async function codReadResponse(url,signal,limit=6500000,timeoutMs=COD_DIRECT_TIMEOUT_MS){
  const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),18000);
+ const timer=setTimeout(()=>controller.abort(),timeoutMs);
  const cancel=()=>controller.abort();
  if(signal){if(signal.aborted)controller.abort();else signal.addEventListener('abort',cancel,{once:true});}
  try{
@@ -8509,7 +8512,7 @@ async function fetchCodText(url,{mode='auto',signal,limit}={}){
  const targets=codRequestUrls(url,mode),failures=[];
  for(const target of targets){
   if(signal?.aborted)throw Error('İstek iptal edildi.');
-  try{return await codReadResponse(target,signal,limit);}
+  try{return await codReadResponse(target,signal,limit,target===url?COD_DIRECT_TIMEOUT_MS:COD_WORKER_TIMEOUT_MS);}
   catch(e){if(signal?.aborted)throw Error('İstek iptal edildi.');failures.push((target===url?'COD':'Worker')+': '+(e.message||'Ağ hatası'));}
  }
  throw Error('COD verisi alınamadı ('+failures.join(' / ')+'). Worker bağlantısını test et veya dosyadan içe aktar.');
@@ -8780,7 +8783,7 @@ function codActions(record){
   catch(e){codSearchMessage('Otomatik içe aktarma başarısız: '+e.message+'. Aşağıdaki dosya seçme bölümünü kullan.',true);showCodManualImport(record,e.message);imp.textContent='Yeniden dene';}
   finally{imp.disabled=false;}
  });
- const local=codButton('Dosyadan','lib-import',()=>showCodManualImport(record,'İçe aktarmak için yerel dosya seçildi.'));
+ const local=codButton('Dosyadan','lib-import',()=>showCodManualImport(record,''));
  actions.append(fav,imp,local);return actions;
 }
 function codTable(entries){
@@ -8972,8 +8975,12 @@ function codOptimadeToCif(payload,id){
  const a=entry.attributes||{},vectors=a.lattice_vectors,coords=a.cartesian_site_positions,names=a.species_at_sites;
  if(!Array.isArray(vectors)||vectors.length!==3||vectors.some(v=>!Array.isArray(v)||v.length!==3||v.some(x=>!Number.isFinite(x))))
   throw Error('OPTIMADE yanıtında tam örgü vektörleri bulunmuyor.');
- if(!Array.isArray(coords)||!Array.isArray(names)||coords.length!==names.length||!coords.length||coords.length>1000)
-  throw Error('OPTIMADE yanıtında atom koordinatları eksik veya sınırın üzerinde.');
+ // COD's OPTIMADE omits site data for some entries (e.g. 1502689, Al) even
+ // though the CIF has coordinates; only the CIF route can import those.
+ if(!Array.isArray(coords)||!Array.isArray(names)||!coords.length)
+  throw Error('COD OPTIMADE kaydı bu yapı için atom koordinatı içermiyor; CIF dosyası gerekli.');
+ if(coords.length!==names.length||coords.length>1000)
+  throw Error('OPTIMADE yanıtında atom koordinatları tutarsız veya sınırın üzerinde.');
  const B=vectors.map(v=>new THREE.Vector3(...v)),cell=validateCell(metric(B));
  const species=new Map((a.species||[]).map(x=>[x.name,x]));
  let count=0;
@@ -9055,8 +9062,8 @@ let codPendingLocalRecord=null;
 function showCodManualImport(record,error){
  codPendingLocalRecord=record;
  $('codImportHelpTitle').textContent='COD '+record.codId+' · dosyadan içe aktar';
- $('codImportHelpText').textContent='Tarayıcı, COD sunucusunun çapraz kaynak yanıtını okuyamadı: '+error+
-   ' CIF bağlantısını açıp dosyayı indir; ardından aşağıdan seç. Bu yöntem CORS gerektirmez.';
+ $('codImportHelpText').textContent=(error?'COD kaydı otomatik olarak alınamadı: '+error+' ':'')+
+   'CIF bağlantısını açıp dosyayı indir; ardından aşağıdan seç. Bu yöntem CORS gerektirmez.';
  const link=$('codImportDownload');link.href=codCifUrl(record.codId);link.removeAttribute('download');
  $('codImportLocalFile').value='';
  $('codImportHelp').hidden=false;

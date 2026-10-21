@@ -1126,6 +1126,15 @@ test('COD OPTIMADE search preserves standardized element and count constraints',
  assert.throws(()=>api.codSearchUrls(p,'optimade'));
  assert.match(api.codSearchUrl(p),/result\.php\?/);
 });
+test('COD 1502689 (Al, GSAS powder CIF with signed symmetry ids) imports as FCC aluminium',()=>{
+ const crystal=api.cifData(fs.readFileSync(path.join(__dirname,'fixtures','COD_1502689_Al.cif'),'utf8'));
+ assert.equal(crystal.cell.a,4.0339);
+ assert.equal(crystal.sgNumber,225);
+ assert.equal(crystal.sites.length,4);
+ assert.ok(crystal.sites.every(s=>s.symbol==='Al'&&s.occupancy===1));
+ const key=s=>[s.x,s.y,s.z].map(v=>Math.round(v*2)/2).join(',');
+ assert.deepEqual([...crystal.sites.map(key)].sort(),['0,0,0','0,0.5,0.5','0.5,0,0.5','0.5,0.5,0']);
+});
 test('COD OPTIMADE JSON structures can be reconstructed into native P1 CIF',()=>{
  const payload={data:{id:'4335507',attributes:{
   lattice_vectors:[[5,0,0],[0,5,0],[0,0,5]],
@@ -1146,6 +1155,9 @@ test('COD OPTIMADE JSON structures can be reconstructed into native P1 CIF',()=>
  assert.deepEqual([...new Set(crystal.sites.map(x=>x.symbol))].sort(),['Cl','Na']);
  assert.throws(()=>api.codOptimadeToCif(payload,'1000001'));
  assert.throws(()=>api.codOptimadeToCif({data:{id:'4335507',attributes:{}}},'4335507'));
+ // COD OPTIMADE returns only lattice vectors for some entries (live: 1502689, Al).
+ assert.throws(()=>api.codOptimadeToCif({data:{id:'1502689',attributes:{
+  lattice_vectors:[[4.0339,0,0],[0,4.0339,0],[0,0,4.0339]]}}},'1502689'),/atom koordinatı içermiyor; CIF dosyası gerekli/);
  const record=api.normalizeCodRecord({id:'4335507',attributes:{chemical_formula_reduced:'ClNa'}});
  assert.equal(record.formula,'ClNa');
 });
