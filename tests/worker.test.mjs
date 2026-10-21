@@ -158,6 +158,8 @@ test('successful upstream bodies are served from the edge cache without stored C
  assert.equal(second.headers.get('X-Kristalyapi-Cache'),'HIT');
  assert.equal(second.headers.get('Access-Control-Allow-Origin'),ORIGIN);
  assert.match(second.headers.get('content-type'),/chemical\/x-cif/);
+ assert.equal(second.headers.get('Cache-Control'),'public, max-age=2592000','CIF bodies are cached for 30 days');
+ assert.equal(stored.headers.get('Cache-Control'),'public, max-age=2592000');
  assert.equal(await second.text(),'data_1502689\n');
  let failed=0;
  await handleRequest(req('/api/cif/1502690'),ENV,async()=>{failed++;return new Response('',{status:404});},{cache,...fastRetry});

@@ -18,7 +18,7 @@ const RETRYABLE_STATUS = new Set([408,425,429,500,502,503,504,520,521,522,523,52
 const USER_AGENT = 'kristalyapi-cod-worker/1.1 (+https://github.com/alorak/kristalyapi)';
 // Successful bodies are kept in the Cloudflare edge cache so a COD entry that
 // imported once does not depend on COD being reachable the next time.
-const CACHE_TTL = {cif:86_400, json:300};
+const CACHE_TTL = {cif:30*86_400, json:300}; // CIF: 30 days; COD revisions are rare
 
 function cors(origin, env) {
   const origins = String(env?.CORS_ORIGINS || 'https://alorak.github.io')

@@ -50,7 +50,7 @@ zaman aşımıyla yanıt verir; aynı isteğin hemen tekrarı genellikle başar�
   20 saniyelik süre bütçesini paylaşır. Uygulama Worker yanıtını 25 s bekler.
 - 403 (hız sınırı), 404, yönlendirmeler ve boyut sınırı aşımı yeniden denenmez.
 - Başarılı gövdeleri Cloudflare kenar önbelleğinde (`caches.default`) sabit COD
-  URL'si anahtarıyla saklar: CIF 1 gün, JSON 5 dakika. Önbellekte CORS başlığı
+  URL'si anahtarıyla saklar: CIF 30 gün, JSON 5 dakika. Önbellekte CORS başlığı
   tutulmaz; yanıt başlığı `X-Kristalyapi-Cache: HIT|MISS` gösterir. Hata
   yanıtları önbelleğe alınmaz.
 - COD'a `User-Agent: kristalyapi-cod-worker/…` ile kendini tanıtır.
