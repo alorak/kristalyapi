@@ -1066,11 +1066,44 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </div>
   </section>
+  <section class="lesson-panel xrd-factor-guide" aria-label="Yapı faktörü öğrenme yolu">
+   <div class="lesson-panel-head"><h3>Kırınım pikini nasıl yorumlarız?</h3><span class="lesson-pill">4 adım · yapıdan ölçüme</span></div>
+   <div class="xrd-factor-steps">
+    <article class="xrd-factor-step"><span class="xrd-factor-step-number">01</span><h4>Atomik saçılma · fⱼ</h4>
+     <p>X-ışını, atomların elektron yoğunluğu tarafından saçılır. Her elementin fⱼ(s) değeri farklıdır; ayrıca saçılma açısıyla değişir.</p>
+     <div class="xrd-factor-equation">s = sin θ / λ = 1 / (2d)</div></article>
+    <article class="xrd-factor-step"><span class="xrd-factor-step-number">02</span><h4>Yapı faktörü · F<sub>c</sub></h4>
+     <p>Hücre içindeki atomların katkıları, konumlarına bağlı fazlarıyla toplanır. Bazı yönlerde dalgalar birbirini söndürür.</p>
+     <div class="xrd-factor-equation">F<sub>c</sub>(hkl) = Σⱼ oⱼ fⱼ exp[2πi(hxⱼ+kyⱼ+lzⱼ)] · DWⱼ</div></article>
+    <article class="xrd-factor-step"><span class="xrd-factor-step-number">03</span><h4>Pik konumu ve şiddeti</h4>
+     <p>2θ ve dalga boyundan d bulunur; hücre geometrisi olası (hkl) indislerini sınırlar. Yapı faktörü, hangi yansımaların güçlü veya sönük olacağını açıklar.</p>
+     <div class="xrd-factor-equation">2d<sub>hkl</sub> sin θ = λ &nbsp; · &nbsp; I<sub>model</sub> ∝ |F<sub>c</sub>|²</div></article>
+    <article class="xrd-factor-step"><span class="xrd-factor-step-number">04</span><h4>Gözlenen F<sub>o</sub> ve model F<sub>c</sub></h4>
+     <p>F<sub>o</sub>, uygun deneysel düzeltmeler sonrası ölçülen şiddetlerden türetilir; F<sub>c</sub> atomik modelden hesaplanır. F<sub>o</sub>−F<sub>c</sub> farkları yapı arıtımında ve elektron yoğunluğu haritalarında kullanılır.</p>
+     <div class="xrd-factor-equation">|F<sub>o</sub>| ∝ √I<sub>düzeltilmiş</sub> &nbsp; · &nbsp; F<sub>c</sub> = hesaplanan</div></article>
+   </div>
+   <p class="lesson-crystal-help">Önemli: F<sub>c</sub> tek başına (hkl) indislerini belirlemez; pik konumu, hücre geometrisi ve izinli yansımalar birlikte değerlendirilir. F<sub>o</sub> genliğine karşılık deneyden faz doğrudan ölçülmez. Buradaki formül kinematik, elastik saçılma yaklaşımıdır; DWⱼ termal yer değiştirme çarpanını temsil eder.</p>
+  </section>
   <section class="lesson-panel lesson-phasor-lab" aria-label="Yapı faktörü ve sönme fazör laboratuvarı">
    <div class="lesson-panel-head"><h3>Yapı faktörü: atom fazörleri ve sönme</h3><span class="lesson-pill">Seçili (hkl) · gerçek kristal</span></div>
    <div class="lesson-chain-lab-grid">
     <div class="lesson-chain-controls">
      <p class="lesson-crystal-help">Aynı (hkl) yansımasına katkı veren atomların karmaşık genliklerini uç uca toplayın. Oklar birbirini götürürse pik çok zayıf olabilir veya görünmez.</p>
+     <label class="lesson-field xrd-material-control"><span>Öğrenme için kristal yapıyı seç</span>
+      <select id="pwMaterial" aria-label="Yapı faktörü örnek malzeme">
+       <option value="active">Açık kristal yapısı</option><option value="si">Si · elmas kübik</option>
+       <option value="fe">Fe · hacim merkezli (BCC)</option><option value="nacl">NaCl · kaya tuzu</option>
+      </select>
+     </label>
+     <div class="xrd-lab-specimen"><strong id="pwMaterialTitle">—</strong><span id="pwStructureNote">Seçilen örnek hesaplanıyor.</span></div>
+     <div class="xrd-factor-adjusters">
+      <label class="lesson-field"><span>Seçili alt grubun doluluğu <output id="pwOccupancyValue">100%</output></span>
+       <input id="pwOccupancy" type="range" min="0" max="100" step="5" value="100"></label>
+      <label class="lesson-field"><span>Alt grubu x yönünde kaydır <output id="pwShiftValue">0,00</output></span>
+       <input id="pwShift" type="range" min="-0.25" max="0.25" step="0.01" value="0"></label>
+      <button id="pwResetFactor" type="button" class="lesson-action">Deneyi sıfırla</button>
+     </div>
+     <p class="lesson-crystal-help">Bu kontroller yalnız yapı faktörü deneyi içindir; açık kristali, toz desenini ve 3B Miller görünümünü değiştirmez. Doluluk azaltma ve tek bir alt grubu kaydırma, gerçek numune ölçümü değil simetriyi bozabilen düşünce deneyidir.</p>
      <div class="lesson-hkl-inputs" role="group" aria-label="Yapı faktörü için Miller indisleri">
       <label>h <input id="pwFh" type="number" min="-12" max="12" step="1" value="2"></label>
       <label>k <input id="pwFk" type="number" min="-12" max="12" step="1" value="0"></label>
@@ -1090,6 +1123,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <p class="lesson-crystal-help">Mavi/turuncu oklar atom katkılarını; yeşil ok toplam F(hkl) vektörünü gösterir. Çok atomlu yapılarda ilk 30 katkı ayrı, kalanların tam toplamı tek okla gösterilir. (000) bir kırınım piki değildir.</p>
     </div>
    </div>
+  </section>
+  <section class="lesson-panel xrd-factor-compare" aria-label="Yapı faktörlerini malzemeler arasında karşılaştır">
+   <div class="lesson-panel-head"><h3>Aynı (hkl), farklı kristaller</h3><span class="lesson-pill">Si · BCC Fe · NaCl</span></div>
+   <p class="lesson-crystal-help">Aşağıdaki üç tam dolu referans yapı aynı (hkl) ile hesaplanır. |F<sub>c</sub>|² / |F<sub>c</sub>(220)|² oranı her malzemenin kendi (220) yansımasına göredir; malzemeler arası doğrudan deneysel pik şiddeti karşılaştırması değildir. Lorentz–polarizasyon, çokluk ve cihaz etkileri dahil değildir.</p>
+   <div class="xrd-factor-table-wrap"><table class="xrd-factor-table">
+    <thead><tr><th>Malzeme</th><th>(hkl)</th><th>|F<sub>c</sub>|</th><th>|F<sub>c</sub>|²</th><th>(220)'ye göre</th><th>Yorum</th></tr></thead>
+    <tbody id="pwFactorCompareRows"><tr><td colspan="6">Malzeme karşılaştırması hazırlanıyor.</td></tr></tbody>
+   </table></div>
+   <p id="pwFactorInsight" class="xrd-factor-insight" aria-live="polite">Miller indislerini seçerek örnekleri inceleyin.</p>
   </section>
  </div>
 </main>
