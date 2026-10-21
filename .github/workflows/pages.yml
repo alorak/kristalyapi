@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -123,6 +123,7 @@ jobs:
           cp reciprocal-core.js public/reciprocal-core.js
           cp reciprocal-page.js public/reciprocal-page.js
           cp lesson-core.js public/lesson-core.js
+          cp xrd-factor-core.js public/xrd-factor-core.js
           cp lesson-pages.js public/lesson-pages.js
           cp powder-planes-view.js public/powder-planes-view.js
           cp favicon.svg public/favicon.svg
@@ -138,6 +139,7 @@ jobs:
           test -s public/sw.js
           test -s public/manifest.webmanifest
           test -s public/lesson-core.js
+          test -s public/xrd-factor-core.js
           test -s public/lesson-pages.js
           test -s public/powder-planes-view.js
       - name: Upload Pages artifact
