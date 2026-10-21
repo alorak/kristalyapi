@@ -1,6 +1,7 @@
 import {braggTwoTheta,braggInterference,twoWaveBands,tightBindingChainLevels,
  tightBindingBandEnergy,twoOrbitalBands,twoOrbitalBandGap,twoOrbitalWeights,fermiDirac,edgeStateOccupancies,idealDopedCarriers,idealPnJunction,pnJunctionProfile,idealDiodeState,idealDiodeMinorityProfile,realDiodeState,KB_EV_K} from './lesson-core.js';
 import {createPowderPlanesView} from './powder-planes-view.js';
+import {xrdFactorStructure,xrdFactorResult,xrdFactorCompare} from './xrd-factor-core.js';
 
 const $=id=>document.getElementById(id);
 const NS='http://www.w3.org/2000/svg';
@@ -286,23 +287,82 @@ function structurePhasorDiagram(svg,host,structure,hkl){
 }
 
 export function initPowderLesson(host){
+ const tl=(turkish,english)=>window.CrystalI18n?.language==='en'?english:turkish;
  let visible=false,selectedIndex=0,lastPattern=null,planeViewer=null,planeMetrics=null;
  let selectedWave=null,thetaOverride=null,waveDrawing=null,waveFrame=0,wavePlaying=false,lastWavePaint=0;
  const chart=$('pwChart'),list=$('pwPeaks'),summary=$('pwSummary'),bragg=$('pwBragg');
- function updatePhasors(structure=host.structure()){
+ function updatePhasors(){
   const values=['pwFh','pwFk','pwFl'].map(id=>$(id).value.trim());
   const hkl=values.map(Number),output=$('pwPhasorSummary');
   const valid=values.every(value=>value!=='')&&hkl.every(value=>Number.isInteger(value)&&Math.abs(value)<=12)&&hkl.some(Boolean);
-  if(!valid){clearChart($('pwPhasorSvg'),'Geçerli ve sıfırdan farklı (hkl) gerekli.');
-   output.replaceChildren(metric('Yansıma','Geçerli (hkl) seçin'));return;}
+  if(!valid){
+   clearChart($('pwPhasorSvg'),'Geçerli ve sıfırdan farklı (hkl) gerekli.');
+   output.replaceChildren(metric('Yansıma','Geçerli (hkl) seçin'));
+   $('pwFactorCompareRows').replaceChildren();
+   $('pwFactorInsight').textContent=tl('(000) kırınım yansıması değildir; geçerli h, k, l girin.','(000) is not a diffraction reflection; enter valid h, k and l.');
+   return;
+  }
   try{
-   const result=structurePhasorDiagram($('pwPhasorSvg'),host,structure,hkl);
-   const magnitude=Math.hypot(result.real,result.imag);
+   const material=$('pwMaterial').value;
+   const baseline=xrdFactorStructure(material,host.structure());
+   const occupancy=Number($('pwOccupancy').value)/100,shift=Number($('pwShift').value);
+   const result=xrdFactorResult(host.structureFactor,baseline,hkl,
+    {occupancy,shift,lambda:Number($('pwLambda').value)});
+   $('pwOccupancyValue').textContent=number(100*occupancy,0)+'%';
+   $('pwShiftValue').textContent=number(shift,2);
+   $('pwMaterialTitle').textContent=baseline.name;
+   const targetEn={active:'First atomic site',si:'Second Si sublattice (4 sites)',fe:'Body-centered Fe',nacl:'Na sublattice (4 sites)'}[material];
+   $('pwStructureNote').textContent=(window.CrystalI18n?.language==='en'?targetEn:baseline.lessonTarget)+
+    ' · '+baseline.sites.length+tl(' konum',' sites')+' · '+baseline.symmetry+
+    (material==='active'?tl(' · açık kristalin ilk konumu kontrol edilir.',' · the first site of the current crystal is controlled.'):
+     tl(' · örnek konvansiyonel hücre.',' · conventional teaching unit cell.'));
+   structurePhasorDiagram($('pwPhasorSvg'),host,result.structure,hkl);
+   const normalized=result.relative220;
+   const outcome=result.extinct?tl('F ≈ 0 · sönme','F ≈ 0 · cancellation'):tl('F ≠ 0 · yansıma mümkün','F ≠ 0 · reflection possible');
    output.replaceChildren(metric('Yansıma',`(${hkl.join(' ')})`),
-    metric('|F(hkl)|',number(magnitude,3)),metric('|F|²',number(result.intensity,3)),
-    metric('Sayısal sonuç',result.intensity<1e-8?'F ≈ 0 · sönme':'F ≠ 0 · katkı var'));
-  }catch(error){clearChart($('pwPhasorSvg'),'Yapı faktörü hesaplanamadı');
-   output.replaceChildren(metric('Hesaplama hatası',error.message||String(error)));}
+    metric('|Fc(hkl)|',number(result.amplitude,3)),
+    metric('|Fc|²',number(result.intensity,3)),
+    metric(tl('(220) referansı','(220) reference'),normalized===null?'—':number(normalized,1)+'%'),
+    metric(tl('Hesaplanan 2θ','Calculated 2θ'),result.twoTheta===null?tl('Bragg erişilemez','Bragg inaccessible'):number(result.twoTheta,2)+'°'),
+    metric(tl('Yorum','Interpretation'),outcome));
+   const referenceRows=xrdFactorCompare(host.structureFactor,hkl);
+   const tbody=$('pwFactorCompareRows');tbody.replaceChildren();
+   for(const sample of referenceRows){
+    const row=document.createElement('tr');
+    row.className=sample.id===material?'xrd-factor-selected':'';
+    const values=[sample.name,`(${hkl.join(' ')})`,
+     number(sample.amplitude,2),number(sample.intensity,2),
+     sample.relative220===null?'—':number(sample.relative220,1)+'%',
+     sample.extinct?tl('Sönüm / yokluk','Extinct / absent'):tl('İzinli (bu modelde)','Allowed in this model')];
+    for(const [index,value] of values.entries()){
+     const cell=document.createElement(index===0?'th':'td');
+     if(index===0)cell.scope='row';
+     cell.textContent=value;
+     if(index===5)cell.className=sample.extinct?'xrd-factor-extinct':'xrd-factor-allowed';
+     row.appendChild(cell);
+    }
+    tbody.appendChild(row);
+   }
+   const [h,k,l]=hkl;
+   const isMixedParity=!(Math.abs(h)%2===Math.abs(k)%2&&Math.abs(k)%2===Math.abs(l)%2);
+   let insight='';
+   if(material==='fe'&&occupancy===1&&shift===0&&((h+k+l)%2!==0))
+    insight=tl('BCC Fe: köşedeki ve gövde merkezindeki Fe saçılması zıt fazlıdır. h+k+l tek olduğundan merkezleme sönümü oluşur.','BCC Fe: corner and body-centre Fe contributions have opposite phases when h+k+l is odd, causing a centering extinction.');
+   else if(material==='si'&&occupancy===1&&shift===0&&result.extinct)
+    insight=tl('Si: FCC merkezleme ve elmas yapının (¼, ¼, ¼) ikinci atom bazı birlikte seçilim kuralları oluşturur. Bu (hkl) katkıları söndürür.','Si: FCC centering and the extra diamond basis at (¼, ¼, ¼) impose selection rules. Contributions cancel for this (hkl).');
+   else if(material==='nacl'&&occupancy===1&&shift===0&&isMixedParity)
+    insight=tl('NaCl: FCC merkezleme nedeniyle karışık tek/çift Miller indisleri sistematik yokluk verir.','NaCl: mixed odd/even Miller indices are systematically absent because of FCC centering.');
+   else if(occupancy!==1||shift!==0)
+    insight=tl('Düşünce deneyi: seçili alt grubun doluluğu/konumu değiştiği için girişim de değişir. Bu, gerçek kristalin simetrisi veya deneysel kırınımı olarak yorumlanmamalı.','Thought experiment: changing sublattice occupancy/positions changes interference and may break symmetry. It is not a measured diffraction pattern.');
+   else
+    insight=tl('Bu (hkl) için fazörlerin toplamı ','For these (hkl) indices the vector sum ')+(result.extinct?tl('sıfıra yakındır; nedenini atom fazlarından kontrol edin.','is nearly zero; inspect the atomic phases.'):tl('sıfır değildir; açısal erişim ve diğer pik etkileri ayrıca incelenmelidir.','is nonzero; angular reach and other intensity factors still matter.'));
+   $('pwFactorInsight').textContent=insight+tl(' Karşılaştırma tablosundaki üç satır, ayarlarla değiştirilmeyen tam dolu referans modellerdir.',' The three comparison rows are unchanged, fully occupied reference models.');
+  }catch(error){
+   clearChart($('pwPhasorSvg'),'Yapı faktörü hesaplanamadı');
+   output.replaceChildren(metric('Hesaplama hatası',error.message||String(error)));
+   $('pwFactorCompareRows').replaceChildren();
+   $('pwFactorInsight').textContent=tl('Hesaplama tamamlanamadı: ','Calculation could not complete: ')+(error.message||String(error));
+  }
  }
  function useHkl(hkl){if(!hkl)return;['pwFh','pwFk','pwFl'].forEach((id,i)=>$(id).value=String(hkl[i]));updatePhasors();}
  function setWavePlaying(playing){
@@ -409,6 +469,13 @@ export function initPowderLesson(host){
    }
    summary.replaceChildren(metric('En güçlü pik',groups.length?`${number(groups.reduce((p,c)=>p.relative>c.relative?p:c).angle)}°`:'—'),
     metric('Kullanılan λ',number(lambda,4)+' Å'),metric('Model genişliği',number(width)+'°'));
+   const strongest=groups.length?groups.reduce((best,g)=>g.intensity>best.intensity?g:best):null;
+   $('pwStrongestExplanation').textContent=strongest?
+    tl('En güçlü model piki: (','Strongest model peak: (')+strongest.hkl.join(' ')+') · 2θ = '+number(strongest.angle,2)+'° · d = '+
+    number(strongest.d,4)+tl(' Å. Açı Bragg koşulu (2d sinθ = λ) ile bulunur. Şiddet, atomların IT92 yapı faktöründen |Fc|², eşdeğer yansıma katkıları ve ',' Å. Angle follows Bragg’s law (2d sinθ = λ). Intensity uses IT92 |Fc|², summed reflections and ')+
+    ($('pwLp').checked?tl('Lorentz–polarizasyon düzeltmesi','Lorentz–polarization correction'):tl('seçili düzeltmesiz model','the model without this correction'))+
+    tl(' üzerinden hesaplanır. En yüksek hesaplanan gruba %100 atanır; deneysel pik veritabanından alınmaz.',' to calculate the strongest peak. The largest calculated group is normalized to 100%; it is not taken from a measured-pattern database.'):
+    tl('Seçilen dalga boyunda ve 2θ aralığında izinli model yansıması bulunmadı.','No allowed model reflections within the selected wavelength and 2θ range.');
    list.replaceChildren();
    if(!groups.length)list.textContent='Bu dalga boyu ve açı aralığında yansıma bulunamadı.';
    groups.slice(0,28).forEach((group,index)=>{
@@ -438,7 +505,7 @@ export function initPowderLesson(host){
     disableBraggLab();
     bragg.textContent='Düzlem seçmek için açı sınırını veya dalga boyunu değiştirin.';
    }
-   updatePhasors(structure);
+   updatePhasors();
   }catch(error){
    lastPattern=null;
    clearChart(chart,'Hesaplama hatası');summary.replaceChildren();list.replaceChildren();bragg.replaceChildren();
@@ -452,6 +519,12 @@ export function initPowderLesson(host){
  $('pwMatchBragg').addEventListener('click',()=>{thetaOverride=null;redrawBraggLab();});
  $('pwWavePlay').addEventListener('click',()=>setWavePlaying(!wavePlaying));
  for(const id of ['pwFh','pwFk','pwFl'])$(id).addEventListener('input',()=>{if(visible)updatePhasors();});
+ for(const id of ['pwMaterial','pwOccupancy','pwShift'])
+  $(id).addEventListener('input',()=>{if(visible)updatePhasors();});
+ $('pwResetFactor').addEventListener('click',()=>{
+  $('pwOccupancy').value='100';$('pwShift').value='0';
+  if(visible)updatePhasors();
+ });
  $('pwUsePeak').addEventListener('click',()=>useHkl(lastPattern?.groups?.[selectedIndex]?.hkl));
  for(const [id,hkl] of [['pwF100',[1,0,0]],['pwF200',[2,0,0]],['pwF220',[2,2,0]]])
   $(id).addEventListener('click',()=>useHkl(hkl));

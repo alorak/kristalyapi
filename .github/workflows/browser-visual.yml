@@ -10,6 +10,7 @@ on:
       - 'reciprocal-core.js'
       - 'reciprocal-page.js'
       - 'lesson-core.js'
+      - 'xrd-factor-core.js'
       - 'lesson-pages.js'
       - 'powder-planes-view.js'
       - 'crystal-app.js'
@@ -22,6 +23,7 @@ on:
       - '.github/workflows/pages.yml'
       - 'tests/browser/**'
       - 'tests/offline.test.mjs'
+      - 'tests/xrd-factor.test.mjs'
       - '.github/workflows/browser-visual.yml'
 
 permissions:

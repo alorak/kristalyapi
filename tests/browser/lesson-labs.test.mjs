@@ -48,7 +48,31 @@ try{
  assert.notEqual(await page.locator('#pwWaveSvg path').last().getAttribute('d'),waveBefore);
  await page.locator('#pwWavePlay').click();
  assert.equal(await page.locator('#pwWavePlay').getAttribute('aria-pressed'),'false');
+ // Guided structure-factor lesson: independent material examples, forbidden
+ // reflections and density/position perturbations must reach the real browser.
+ assert.equal(await page.locator('.xrd-factor-step').count(),4);
+ assert.match(await page.locator('#pwStrongestExplanation').textContent(),/2θ = /);
+ assert.match(await page.locator('#pwStrongestExplanation').textContent(),/IT92/);
+ assert.equal(await page.locator('#pwFactorCompareRows tr').count(),3);
+ await page.locator('#pwMaterial').selectOption('fe');
+ await page.locator('#pwF100').click();
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≈ 0/);
+ assert.equal(await page.locator('#pwFactorCompareRows tr').count(),3);
+ await page.locator('#pwOccupancy').evaluate(el=>{el.value='50';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≠ 0/);
+ await page.locator('#pwResetFactor').click();
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≈ 0/);
+ await page.locator('#pwShift').evaluate(el=>{el.value='0.1';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≠ 0/);
+ await page.locator('#pwResetFactor').click();
+ await page.locator('#pwMaterial').selectOption('nacl');
+ await page.locator('#pwFh').fill('1');
+ await page.locator('#pwFk').fill('1');
+ await page.locator('#pwFl').fill('1');
+ assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≠ 0/);
+ await page.locator('#pwMaterial').selectOption('active');
  await page.locator('#pwF200').click();
+
  assert.match(await page.locator('#pwPhasorSummary').textContent(),/F ≈ 0/,
   'for diamond Si, the forbidden 200 reflection cancels atom by atom');
  assert.ok(await page.locator('#pwPhasorSvg [data-phasor-arrow]').count()>=4);
