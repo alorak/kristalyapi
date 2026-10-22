@@ -750,6 +750,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label class="lib-field lib-wide"><span>Metin / malzeme adı</span><input id="codText" placeholder="Örn. perovskite, manganite, germanide"></label>
      <label class="lib-field"><span>COD numarası</span><input id="codId" inputmode="numeric" placeholder="4335507" maxlength="9"></label>
      <label class="lib-field"><span>Uzay grubu</span><input id="codSpacegroup" placeholder="C 1 2/m 1"></label>
+     <label class="lib-field"><span>Uzay grubu no. (1–230)</span><input id="codSpacegroupNumber" type="number" min="1" max="230" step="1" placeholder="225 · Fm-3m"></label>
      <label class="lib-field lib-wide"><span>Kimyasal formül (Hill notasyonu)</span><input id="codFormula" placeholder="Ge4 In0.94 La4 Mn2"></label>
     </div>
     <div class="lib-divider"></div>
@@ -771,6 +772,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <input class="lib-exclude" placeholder="3" aria-label="Hariç element 3" maxlength="2">
       <input class="lib-exclude" placeholder="4" aria-label="Hariç element 4" maxlength="2">
     </div>
+    <section class="cod-composition-filter" aria-label="Bileşimdeki farklı element sayısı">
+     <div class="lib-subtitle">Bileşimdeki farklı element sayısı <span>Element adedi değil, farklı tür sayısı</span></div>
+     <div class="cod-count-filter-grid">
+      <label class="lib-field"><span>Hızlı seçim</span>
+       <select id="codElementCountPreset" aria-label="Element sayısı hazır filtresi">
+        <option value="any">Herhangi bir sayı</option>
+        <option value="exact:1">Yalnız tek element (1)</option>
+        <option value="exact:2">İkili bileşik (2)</option>
+        <option value="exact:3">Üçlü bileşik (3)</option>
+        <option value="exact:4">Dörtlü bileşik (4)</option>
+        <option value="max:2">En fazla 2</option>
+        <option value="max:3">En fazla 3</option>
+        <option value="max:4">En fazla 4</option>
+        <option value="min:3">En az 3</option>
+        <option value="custom">Özel aralık</option>
+       </select>
+      </label>
+      <fieldset class="lib-range cod-count-range"><legend>Farklı element sayısı · min / maks</legend>
+       <input id="codDistinctMin" type="number" min="1" max="50" step="1" placeholder="Min" aria-label="En az farklı element sayısı">
+       <span>—</span>
+       <input id="codDistinctMax" type="number" min="1" max="50" step="1" placeholder="Maks" aria-label="En fazla farklı element sayısı">
+      </fieldset>
+     </div>
+     <p class="cod-filter-help">Örnek: Al + “yalnız tek element” saf Al kayıtlarını arar. Fe ve O + “ikili bileşik” seçimi üçüncü bir element içeren kayıtları dışlar. Zorunlu element alanları en fazla 8, hariç alanları en fazla 4 ad kabul eder.</p>
+     <div id="codFilterPreview" class="cod-filter-preview" aria-live="polite">Arama ölçütleri seçilmeyi bekliyor.</div>
+    </section>
     <details class="lib-advanced-filters">
      <summary>Diğer filtreler · yayın, aralıklar ve seçenekler</summary>
      <div class="lib-search-grid">
@@ -782,11 +809,39 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="lib-divider"></div>
     <div class="lib-ranges">
-      <fieldset class="lib-range"><legend>Farklı element sayısı</legend><input id="codDistinctMin" type="number" min="1" max="50" step="1" placeholder="Min"><span>—</span><input id="codDistinctMax" type="number" min="1" max="50" step="1" placeholder="Maks"></fieldset>
       <fieldset class="lib-range"><legend>Hücre hacmi (Å³)</legend><input id="codVolMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codVolMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
       <fieldset class="lib-range"><legend>Z (formül birimi)</legend><input id="codZMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codZMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
       <fieldset class="lib-range"><legend>Z′ (asimetrik birim)</legend><input id="codZpMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codZpMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
     </div>
+    <div class="lib-divider"></div>
+    <div class="lib-subtitle">Kafes parametreleri <span>İsteğe bağlı · hücre uzunlukları ve açılar</span></div>
+    <div class="lib-ranges cod-cell-ranges">
+      <fieldset class="lib-range"><legend>a (Å)</legend>
+       <input id="codAMin" type="number" step="any" placeholder="Min" aria-label="a minimum" >
+       <span>—</span><input id="codAMax" type="number" step="any" placeholder="Maks" aria-label="a maksimum">
+      </fieldset>
+      <fieldset class="lib-range"><legend>b (Å)</legend>
+       <input id="codBMin" type="number" step="any" placeholder="Min" aria-label="b minimum" >
+       <span>—</span><input id="codBMax" type="number" step="any" placeholder="Maks" aria-label="b maksimum">
+      </fieldset>
+      <fieldset class="lib-range"><legend>c (Å)</legend>
+       <input id="codCMin" type="number" step="any" placeholder="Min" aria-label="c minimum" >
+       <span>—</span><input id="codCMax" type="number" step="any" placeholder="Maks" aria-label="c maksimum">
+      </fieldset>
+      <fieldset class="lib-range"><legend>α (°)</legend>
+       <input id="codAlphaMin" type="number" step="any" placeholder="Min" aria-label="α minimum" >
+       <span>—</span><input id="codAlphaMax" type="number" step="any" placeholder="Maks" aria-label="α maksimum">
+      </fieldset>
+      <fieldset class="lib-range"><legend>β (°)</legend>
+       <input id="codBetaMin" type="number" step="any" placeholder="Min" aria-label="β minimum" >
+       <span>—</span><input id="codBetaMax" type="number" step="any" placeholder="Maks" aria-label="β maksimum">
+      </fieldset>
+      <fieldset class="lib-range"><legend>γ (°)</legend>
+       <input id="codGammaMin" type="number" step="any" placeholder="Min" aria-label="γ minimum" >
+       <span>—</span><input id="codGammaMax" type="number" step="any" placeholder="Maks" aria-label="γ maksimum">
+      </fieldset>
+    </div>
+    <p class="cod-filter-help">Uzay grubu numarası ve kafes aralıkları COD klasik sorgu API’sine gönderilir; OPTIMADE bağlantı modu bu ölçütleri desteklemeyebilir.</p>
     <div class="lib-flags">
       <label><input id="codFobs" type="checkbox"> Fobs verisi olanlar</label>
       <label><input id="codDuplicates" type="checkbox"> Tekrar kayıtları dahil et</label>
