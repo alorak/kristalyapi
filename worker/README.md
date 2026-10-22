@@ -35,25 +35,46 @@ bağlantı testi ile ayrıca doğrulanmalıdır.
 | GET /api/structures?filter=... | /cod/optimade/v1/structures?filter=... |
 | GET /api/search?id=4335507 | /cod/result.php?id=4335507&format=json |
 
-COD upstream alan adı sabittir: https://www.crystallography.net.
+Upstream yolları aşağıdaki sunucuların her birinde aynıdır; önce ana sunucu,
+sonra aynalar denenir.
+
+COD upstream alan adları sabittir: www.crystallography.net, qiserver.ugr.es, cod.ibt.lt.
 Yalnızca GET ve OPTIONS; doğrulanmış COD ID'leri; izinli sorgu parametreleri;
 CIF 4 MB, JSON 6,5 MB; yönlendirme takip edilmez; izin verilmeyen Origin için 403.
 
-### Geçici COD hataları ve önbellek
+### COD aynaları, geçici hatalar ve önbellek
 
-COD de Cloudflare arkasındadır ve soğuk bir isteğe zaman zaman 521/525 ya da
-zaman aşımıyla yanıt verir; aynı isteğin hemen tekrarı genellikle başarılıdır
-(ör. COD 1502689). Worker bu yüzden:
+Worker sabit bir sunucu listesini sırayla dener (keyfi URL kabul edilmez):
 
-- 408, 425, 429, 5xx ve 520–526/530 yanıtlarını ve bağlantı hatalarını en fazla
-  3 deneme ile (400 ms, 1,2 s bekleme) yeniden dener; tüm denemeler tek bir
-  20 saniyelik süre bütçesini paylaşır. Uygulama Worker yanıtını 25 s bekler.
-- 403 (hız sınırı), 404, yönlendirmeler ve boyut sınırı aşımı yeniden denenmez.
-- Başarılı gövdeleri Cloudflare kenar önbelleğinde (`caches.default`) sabit COD
-  URL'si anahtarıyla saklar: CIF 30 gün, JSON 5 dakika. Önbellekte CORS başlığı
-  tutulmaz; yanıt başlığı `X-Kristalyapi-Cache: HIT|MISS` gösterir. Hata
-  yanıtları önbelleğe alınmaz.
-- COD'a `User-Agent: kristalyapi-cod-worker/…` ile kendini tanıtır.
+1. `https://www.crystallography.net/cod` (ana COD sunucusu)
+2. `https://qiserver.ugr.es/cod` (Granada aynası)
+3. `https://cod.ibt.lt/cod` (Vilnius aynası)
+
+Aynalar API'nin tamamını her zaman sunmaz. 22.10.2026'da ana sunucu PHP
+açığı nedeniyle kapalıyken qiserver CIF ve aramayı sunuyor, OPTIMADE'de 500
+veriyordu; cod.ibt.lt CIF ve OPTIMADE'yi sunuyor, `result.php` için HTTP 200
+ile ham PHP kaynak kodu döndürüyordu. Bu yüzden:
+
+- Her turda sunucular sırayla birer kez denenir; en fazla 2 tur, turlar arası
+  0,8 s. Tüm denemeler 20 s'lik ortak bütçeyi paylaşır ve tek bir sunucu en
+  fazla 8 s bekletebilir. Uygulama Worker yanıtını 25 s bekler.
+- 408, 425, 429, 5xx, 520–526/530, zaman aşımı ve bağlantı hataları sonraki
+  turda yeniden denenir. 403, 404, yönlendirmeler ve beklenen biçimde olmayan
+  gövdeler o sunucu için kesindir, ama diğer sunucular yine denenir.
+- HTTP 200 yanıtı yalnızca gerçekten istenen biçimdeyse iletilir: CIF bir
+  `data_` bloğu içermeli, JSON ayrıştırılabilmeli; HTML ve `<?php` kaynakları
+  reddedilir. Boyut sınırı aşımı hemen 413 döner.
+- Tüm sunucular 404 derse 404 (`COD entry not found`), aksi hâlde her sunucunun
+  nedenini listeleyen 502 döner.
+- Başarılı gövdeler Cloudflare kenar önbelleğinde (`caches.default`), yanıtı
+  hangi sunucu verirse versin ana COD URL'si anahtarıyla saklanır: CIF 30 gün,
+  JSON 5 dakika. Önbellekte CORS başlığı tutulmaz. Yanıt başlıkları:
+  `X-Kristalyapi-Cache: HIT|MISS`, `X-Kristalyapi-Source: <sunucu>`.
+  Hata yanıtları önbelleğe alınmaz. Bu önbellek veri merkezi bazında ve
+  "en iyi çaba"dır; az istenen kayıtlar süresi dolmadan düşebilir.
+- COD'a `User-Agent: kristalyapi-cod-worker/1.2 …` ile kendini tanıtır.
+- `GET /health` sürüm (`version`) ve sunucu listesini (`upstreams`) döndürür;
+  yayındaki Worker'ın güncel olduğu buradan doğrulanabilir.
 
 Bu davranış değiştiğinde Worker'ı yeniden `npx wrangler deploy` ile yayınla;
 GitHub Pages dağıtımı Worker'ı güncellemez.
