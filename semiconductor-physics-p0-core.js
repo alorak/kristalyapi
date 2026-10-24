@@ -7,6 +7,7 @@ export const PROFILES = Object.freeze({
  GaAs: {name:'Galyum arsenit (GaAs)',alpha:5.405e-4,beta:204,eg0:1.519,nc300:4.7e17,nv300:7.0e18,affinity:4.07,mun:8500,mup:400}
 });
 export function materialForStructure(structure){
+ if(structure?.nonPeriodic)return null;
  const symbols=new Set((structure?.sites||[]).map(site=>site.symbol));
  if(!symbols.size)return null;
  if([...symbols].every(symbol=>symbol==='Si'||symbol==='B'||symbol==='P')&&symbols.has('Si'))return 'Si';
@@ -73,6 +74,7 @@ export function nearestNeighbors(structure,siteIndex,count=8){
  for(let j=0;j<sites.length;j++){
   const item=sites[j];
   for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+   if(structure.nonPeriodic&&(x||y||z))continue;
    if(j===siteIndex&&!x&&!y&&!z)continue;
    const vec=fractionalCartesian([Number(item.x)-Number(origin.x)+x,Number(item.y)-Number(origin.y)+y,Number(item.z)-Number(origin.z)+z],structure.cell);
    const distance=Math.hypot(...vec);
