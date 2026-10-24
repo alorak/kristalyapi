@@ -10,6 +10,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
+import {initSemiconductorP0} from './semiconductor-p0.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -4127,6 +4128,7 @@ function build(){
  if(reciprocalPage?.visible)reciprocalPage.refresh();
  if(powderLesson?.visible)powderLesson.refresh();
  if(semiconductorLesson?.visible)semiconductorLesson.refresh();
+ if(semiconductorP0?.visible)semiconductorP0.refresh();
  lastBuildMs=performance.now()-buildStarted;
  refreshPerformancePanel();
  report([state.warning,adpInvalid?'Geçersiz ADP tensörü: '+adpInvalid+' konum çizilmedi.':'',
@@ -5744,6 +5746,7 @@ function drawSelection(){
  const t=$('torsionResult');t.style.display=selected.length===4?'block':'none';
  if(selected.length===4){const coords=selected.map(k=>atomData[k].pos.toArray());try{t.querySelector('strong').textContent=dihedralDegrees(...coords).toFixed(2);}catch(e){t.querySelector('strong').textContent='Tanımsız';}}
  renderCoordinationSummary();
+ if(semiconductorP0?.visible)semiconductorP0.refresh();
 }
 function syncRepeatSteppers(){
  for(const name of ['ra','rb','rc']){
@@ -8854,7 +8857,7 @@ function pageFromHash(hash){
  return 'editor';
 }
 let reciprocalPage=null;
-let powderLesson=null,semiconductorLesson=null;
+let powderLesson=null,semiconductorLesson=null,semiconductorP0=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
  document.body.classList.toggle('library-open',library);
@@ -8879,16 +8882,22 @@ function syncLibraryNavigation(){
  reciprocalPage?.setVisible(reciprocal);
  powderLesson?.setVisible(page==='powder');
  semiconductorLesson?.setVisible(page==='semiconductor');
+ semiconductorP0?.setVisible(page==='semiconductor');
 }
 /* Read-only bridge for the reciprocal-space page: the active workspace's
    structure (symmetry-expanded P1 list) and the editor's validated physics. */
 function reciprocalHost(){
  return {
+  selectedAtom(){
+   const atom=atomData[selected.at(-1)];
+   if(!atom)return null;
+   return {symbol:cleanSymbol(atom.site.symbol),label:atom.site.label||'',x:Number(atom.site.x),y:Number(atom.site.y),z:Number(atom.site.z)};
+  },
   structure(){
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):
     state.sites.map((site,i)=>({...site,sourceSiteIndex:i}));
    const sg=state.symmetryEnabled?String(SPACE_NAMES[state.sgNumber]||state.sgSetting).split('=')[0].trim():'P1';
-   return {name:state.name,workspace:activeWorkspace()?.label||'',symmetry:sg,cell:{...validateCell(state.cell)},
+   return {name:state.name,workspace:activeWorkspace()?.label||'',symmetry:sg,nonPeriodic:!!state.nonPeriodic,cell:{...validateCell(state.cell)},
     sites:sites.map(site=>({...site,symbol:cleanSymbol(site.symbol),x:Number(site.x),y:Number(site.y),z:Number(site.z)}))};
   },
   structureFactor,scatteringFactor,powderPattern,powderProfile,elementColor,
@@ -9590,5 +9599,6 @@ try{
  const host=reciprocalHost();
  powderLesson=initPowderLesson(host);
  semiconductorLesson=initSemiconductorLesson(host);
+ semiconductorP0=initSemiconductorP0(host);
  syncLibraryNavigation();
 }catch(err){console.error('Eğitim sayfaları başlatılamadı:',err);}
