@@ -63,6 +63,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <title>Kristal Yapı — 3B Kristal Editörü</title>
 <script src="./translations.js" defer></script>
 <link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./semiconductor-p0.css">
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
 <body>
@@ -1145,6 +1146,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <a class="lib-cod-link" href="#kristal">← Kristale dön</a>
   </div>
   <div class="lesson-source" aria-live="polite"><span>Etkin kristal</span><strong id="scSourceName">—</strong><span id="scSourceDetail">—</span></div>
+  <div id="scLessonTabs" class="sc-tabs" role="tablist" aria-label="Yarıiletken fiziği alt sekmeleri">
+   <button id="scTabGeneral" type="button" role="tab" data-sc-tab="general" aria-controls="scGeneralPane" aria-selected="true" tabindex="0">Genel</button>
+   <button id="scTabAtom" type="button" role="tab" data-sc-tab="atom" aria-controls="scAtomPane" aria-selected="false" tabindex="-1">Atom</button>
+   <button id="scTabMaterial" type="button" role="tab" data-sc-tab="material" aria-controls="scMaterialPane" aria-selected="false" tabindex="-1">Malzeme</button>
+  </div>
+  <div id="scGeneralPane" class="sc-tab-panel" role="tabpanel" aria-labelledby="scTabGeneral">
   <section class="lesson-panel lesson-guide" aria-label="Yönlendirmeli yarıiletken öğrenme rotası">
    <div class="lesson-panel-head"><h3>Keşfederek öğren · atomdan yasak bant aralığına</h3><span class="lesson-pill">3 kısa adım</span></div>
    <p class="lesson-guide-intro">Önce tahmin et, modeli uygula, aşağıdaki grafikte gözlemle ve yanıtını kontrol et. Dilersen sürgüleri serbestçe de kullanabilirsin.</p>
@@ -1424,6 +1431,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    </section>
   </div>
+  </div><!-- /scGeneralPane: preserved legacy lessons -->
+  <div id="scAtomPane" class="sc-tab-panel" role="tabpanel" aria-labelledby="scTabAtom" hidden></div>
+  <div id="scMaterialPane" class="sc-tab-panel" role="tabpanel" aria-labelledby="scTabMaterial" hidden></div>
  </div>
 </main>
 
