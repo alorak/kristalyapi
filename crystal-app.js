@@ -10,7 +10,6 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
-import {initSemiconductorP0} from './semiconductor-p0.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -9599,6 +9598,19 @@ try{
  const host=reciprocalHost();
  powderLesson=initPowderLesson(host);
  semiconductorLesson=initSemiconductorLesson(host);
- semiconductorP0=initSemiconductorP0(host);
  syncLibraryNavigation();
+ // Optional laboratory modules must never prevent the crystal editor or
+ // existing General lessons from booting if a Pages artifact is incomplete.
+ import('./semiconductor-p0.js').then(({initSemiconductorP0})=>{
+  semiconductorP0=initSemiconductorP0(host);
+  syncLibraryNavigation();
+ }).catch(error=>{
+  console.error('Atom/Malzeme laboratuvarı yüklenemedi:',error);
+  for(const id of ['scTabAtom','scTabMaterial']){
+   const button=$(id);
+   if(button){button.disabled=true;button.title='Laboratuvar dosyaları dağıtımda bulunamadı';}
+  }
+  const note=$('scSourceDetail');
+  if(note)note.textContent+=' · Atom/Malzeme modülleri yüklenemedi; Genel sekmesi kullanılabilir.';
+ });
 }catch(err){console.error('Eğitim sayfaları başlatılamadı:',err);}
