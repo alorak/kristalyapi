@@ -8897,7 +8897,7 @@ function reciprocalHost(){
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):
     state.sites.map((site,i)=>({...site,sourceSiteIndex:i}));
    const sg=state.symmetryEnabled?String(SPACE_NAMES[state.sgNumber]||state.sgSetting).split('=')[0].trim():'P1';
-   return {name:state.name,workspace:activeWorkspace()?.label||'',symmetry:sg,cell:{...validateCell(state.cell)},
+   return {name:state.name,workspace:activeWorkspace()?.label||'',symmetry:sg,nonPeriodic:!!state.nonPeriodic,cell:{...validateCell(state.cell)},
     sites:sites.map(site=>({...site,symbol:cleanSymbol(site.symbol),x:Number(site.x),y:Number(site.y),z:Number(site.z)}))};
   },
   structureFactor,scatteringFactor,powderPattern,powderProfile,elementColor,
