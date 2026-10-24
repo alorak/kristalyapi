@@ -510,7 +510,7 @@
   ['Kristal çalışma alanları','Crystal workspaces'],['Çalışma alanlarını kapat','Close workspaces'],
   ['Her yapıyı bağımsız düzenleyin ve aralarında geçiş yapın.','Edit each structure independently and switch between them.'],
   ['+ Yeni yapı ekle','+ Add structure'],['Kristal yapı düzenleyicisi','Crystal structure editor'],
-  ['Genel','General'],['Atomlar','Atoms'],['Birim hücre','Unit cell'],
+  ['Genel','General'],['Atom','Atom'],['Malzeme','Material'],['Atomlar','Atoms'],['Birim hücre','Unit cell'],
   ['Hücreyi uygula','Apply cell'],['Hücre açıları','Cell angles'],
   ['Hücre hacmi','Cell volume'],['Uzay grubu (1–230)','Space group (1–230)'],
   ['Uzay grubu ayarı / setting','Space group setting'],['Uzay grubu','Space group'],
