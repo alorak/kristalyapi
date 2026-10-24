@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -116,6 +116,7 @@ jobs:
           mkdir -p public/vendor
           cp index.html public/index.html
           cp styles.css public/styles.css
+          cp semiconductor-p0.css public/semiconductor-p0.css
           cp sw.js public/sw.js
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
@@ -125,6 +126,8 @@ jobs:
           cp lesson-core.js public/lesson-core.js
           cp xrd-factor-core.js public/xrd-factor-core.js
           cp lesson-pages.js public/lesson-pages.js
+          cp semiconductor-p0.js public/semiconductor-p0.js
+          cp semiconductor-physics-p0-core.js public/semiconductor-physics-p0-core.js
           cp powder-planes-view.js public/powder-planes-view.js
           cp favicon.svg public/favicon.svg
           cp translations.js public/translations.js
@@ -141,6 +144,9 @@ jobs:
           test -s public/lesson-core.js
           test -s public/xrd-factor-core.js
           test -s public/lesson-pages.js
+          test -s public/semiconductor-p0.js
+          test -s public/semiconductor-physics-p0-core.js
+          test -s public/semiconductor-p0.css
           test -s public/powder-planes-view.js
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
