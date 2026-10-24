@@ -263,5 +263,5 @@ export function initSemiconductorP0(host){
  }
  refresh();
  switchTab('general');
- return {refresh,setVisible(value){visible=!!value;if(visible)refresh();},get activeTab(){return active;}};
+ return {refresh,setVisible(value){visible=!!value;if(visible)refresh();},get visible(){return visible;},get activeTab(){return active;}};
 }
