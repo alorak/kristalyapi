@@ -193,11 +193,11 @@ export function initSemiconductorP0(host){
  }
  function drawIntrinsicChart(T){
   const svg=$('scP0IntrinsicChart');svg.replaceChildren();
-  const xmin=100,xmax=600,ymin=-1,ymax=20;
+  const xmin=100,xmax=600,ymin=-25,ymax=20;
   const X=x=>45+(x-xmin)/(xmax-xmin)*550;
   const Y=y=>205-(y-ymin)/(ymax-ymin)*165;
   mark(svg,'rect',{x:20,y:10,width:603,height:224,rx:10,fill:'#f8fbff',stroke:'#e0e9f1'});
-  for(let v=0;v<=20;v+=5){mark(svg,'line',{x1:44,y1:Y(v),x2:602,y2:Y(v),stroke:'#e3eaf2'});mark(svg,'text',{x:39,y:Y(v)+4,'text-anchor':'end',fill:'#64748b','font-size':11},v);}
+  for(const v of [-20,-10,0,10,20]){mark(svg,'line',{x1:44,y1:Y(v),x2:602,y2:Y(v),stroke:'#e3eaf2'});mark(svg,'text',{x:39,y:Y(v)+4,'text-anchor':'end',fill:'#64748b','font-size':11},v);}
   for(const [name,color] of [['Ge','#d67c36'],['Si','#1876bd'],['GaAs','#7355ba']]){
    const points=[];for(let t=100;t<=600;t+=5){const value=bandParameters(name,t).ni;points.push((points.length?'L':'M')+X(t).toFixed(1)+','+Y(Math.max(ymin,Math.min(ymax,Math.log10(Math.max(value,1e-20))))).toFixed(1));}
    mark(svg,'path',{d:points.join(' '),fill:'none',stroke:color,'stroke-width':material===name?3.5:1.7,opacity:material===name?1:.7});
