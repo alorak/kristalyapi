@@ -61,6 +61,9 @@ const materialMarkup=[
  '<div id="scP0Summary" class="lesson-metrics" aria-live="polite"></div>',
  '<p id="scP0Limit" class="lesson-crystal-help" aria-live="polite"></p>',
  '</section>',
+ '<section class="lesson-panel sc-p0-lab"><div class="lesson-panel-head"><h3>İntrinsik taşıyıcılar · sıcaklık karşılaştırması</h3><span class="lesson-pill">P0 · nᵢ(T)</span></div>',
+ '<svg id="scP0IntrinsicChart" class="lesson-chart" viewBox="0 0 640 250" role="img" aria-label="Sıcaklığa bağlı Si Ge GaAs intrinsik taşıyıcı yoğunluğu karşılaştırması"></svg>',
+ '<p class="lesson-crystal-help">100–600 K aralığında Si, Ge ve GaAs için log₁₀(nᵢ/cm³). Seçili malzeme daha kalın çizgiyle gösterilir. Grafik ideal parabolik bant ve Varshni bant aralığı modeline dayanır; gerçek ölçüm eğrisi değildir.</p></section>',
  '<section class="lesson-panel sc-p0-lab"><div class="lesson-panel-head"><h3>Referans enerji bantları</h3><span class="lesson-pill">P0 · Eᶜ, Eᵛ, Eᶠ</span></div>',
  '<svg id="scP0Bands" class="lesson-chart" viewBox="0 0 640 245" role="img" aria-label="Referans iletim, valans, Fermi ve dopant seviyeleri"></svg>',
  '<p class="lesson-crystal-help">Eᵥ = 0 eV referans alınır. Elektron ilgisi χ, vakum seviyesinden Eᶜ bandına ölçülür; yüzeye bağlı yaklaşık literatür değeridir. Bu diagramda konumsal band bending ve elektronik yapı hesaplaması yapılmaz.</p></section>',
@@ -141,8 +144,12 @@ export function initSemiconductorP0(host){
   const closest=neighbors[0]?.distance||0;
   const shell=neighbors.filter(n=>n.distance<=closest*.001+closest+.005).slice(0,8);
   const a=shell.length>=2?angleDegrees(shell[0].vector,shell[1].vector):NaN;
+  const shells={Si:'2, 8, 4',Ge:'2, 8, 18, 4',Ga:'2, 8, 18, 3',As:'2, 8, 18, 5',P:'2, 8, 5',B:'2, 3'};
+  const valence={Si:4,Ge:4,Ga:3,As:5,P:5,B:3};
   cards($('scAtomMetrics'),[
    ['Atom',(site.label||site.symbol)+' · '+site.symbol],
+   ['Elektron kabukları',shells[site.symbol]||'Bu element için veri tanımlı değil'],
+   ['Değerlik elektronları',valence[site.symbol]??'—'],
    ['Kesirli koordinatlar',[site.x,site.y,site.z].map(v=>fmt(v,4)).join(', ')],
    ['En kısa mesafe',closest?fmt(closest,3)+' Å':'—'],
    ['İlk komşu kabuğu',String(shell.length)],
@@ -183,6 +190,23 @@ export function initSemiconductorP0(host){
   if(carriers.na>0)line(svg,184-109*.045/params.eg,'#ad7480',true,'Eₐ');
   mark(svg,'text',{x:360,y:23,fill:'#566982','font-size':13},'Vakum → Eᶜ: χ ≈ '+fmt(params.affinity,2)+' eV (yüzeye bağlı)');
   mark(svg,'text',{x:400,y:125,fill:'#64748b','font-size':14},'Eɡ = '+fmt(params.eg,3)+' eV');
+ }
+ function drawIntrinsicChart(T){
+  const svg=$('scP0IntrinsicChart');svg.replaceChildren();
+  const xmin=100,xmax=600,ymin=-1,ymax=20;
+  const X=x=>45+(x-xmin)/(xmax-xmin)*550;
+  const Y=y=>205-(y-ymin)/(ymax-ymin)*165;
+  mark(svg,'rect',{x:20,y:10,width:603,height:224,rx:10,fill:'#f8fbff',stroke:'#e0e9f1'});
+  for(let v=0;v<=20;v+=5){mark(svg,'line',{x1:44,y1:Y(v),x2:602,y2:Y(v),stroke:'#e3eaf2'});mark(svg,'text',{x:39,y:Y(v)+4,'text-anchor':'end',fill:'#64748b','font-size':11},v);}
+  for(const [name,color] of [['Ge','#d67c36'],['Si','#1876bd'],['GaAs','#7355ba']]){
+   const points=[];for(let t=100;t<=600;t+=5){const value=bandParameters(name,t).ni;points.push((points.length?'L':'M')+X(t).toFixed(1)+','+Y(Math.max(ymin,Math.min(ymax,Math.log10(Math.max(value,1e-20))))).toFixed(1));}
+   mark(svg,'path',{d:points.join(' '),fill:'none',stroke:color,'stroke-width':material===name?3.5:1.7,opacity:material===name?1:.7});
+  }
+  mark(svg,'line',{x1:X(T),x2:X(T),y1:35,y2:207,stroke:'#7589a1','stroke-dasharray':'6 4'});
+  mark(svg,'text',{x:30,y:23,fill:'#526b80','font-size':12},'log₁₀(nᵢ/cm³)');
+  mark(svg,'text',{x:274,y:240,fill:'#526b80','font-size':12},'Sıcaklık (K)');
+  for(const [i,name,color] of [[0,'Ge','#d67c36'],[1,'Si','#1876bd'],[2,'GaAs','#7355ba']])mark(svg,'text',{x:450+i*59,y:23,fill:color,'font-size':12,'font-weight':material===name?700:400},name);
+  mark(svg,'text',{x:X(T),y:222,'text-anchor':'middle',fill:'#53677f','font-size':11},T+' K');
  }
  function drawDos(params,carriers){
   const svg=$('scP0Dos');svg.replaceChildren();
@@ -225,7 +249,7 @@ export function initSemiconductorP0(host){
   $('scP0NaOut').textContent=$('scP0Na').value;
   $('scP0BOut').textContent=fmt($('scP0B').value,2)+' T';
   $('scP0IOut').textContent=fmt($('scP0I').value,1)+' mA';
-  for(const id of ['scP0Bands','scP0Dos'])$(id).replaceChildren();
+  for(const id of ['scP0Bands','scP0Dos','scP0IntrinsicChart'])$(id).replaceChildren();
   if(!supported){
    status.textContent='Bu kristal için doğrulanmış hacimsel malzeme profili yok. Desteklenenler: saf Si, saf Ge ve GaAs; Si içine B/P ikamesi tanınır. Bilinmeyen kristale Si parametresi uygulanmaz.';
    cards($('scP0Summary'),[]);cards($('scP0Hall'),[]);
@@ -251,7 +275,7 @@ export function initSemiconductorP0(host){
   ]);
   const highDoping=(c.ef>=c.eg-3*c.thermal||c.ef<=3*c.thermal)&&(nd+na)>0;
   $('scP0Limit').textContent='Model: homojen termal denge, parabolik 3B bant kenarı, Maxwell–Boltzmann taşıyıcı istatistiği ve Si:B/P için eksik iyonlaşma. '+(highDoping?'Uyarı: Fermi düzeyi bant kenarına yakın; dejenere olmayan yaklaşım güvenilir olmayabilir.':'')+' Gerçek kristaldeki bir ikame atomunun oranından ND/NA çıkarılmaz.';
-  drawBands(p,c);drawDos(p,c);
+  drawBands(p,c);drawDos(p,c);drawIntrinsicChart(T);
   const fd=fermiProbability(p.eg,c.ef,T),boltzmann=Math.exp(Math.max(-700,Math.min(70,(c.ef-p.eg)/c.thermal)));
   $('scP0Fermi').textContent='İletim bant kenarı doluluğu f(Eᶜ) = '+sci(fd)+'; Boltzmann yaklaşımı = '+sci(boltzmann)+'. Eᶜ−Eᶠ ≥ 3kBT ise Boltzmann bağıl hatası yaklaşık %5’in altındadır. Eᶠ tek bir elektronun enerjisi değildir.';
   const hall=lowFieldHall(c,p.mun,p.mup,Number($('scP0I').value)*1e-3,Number($('scP0B').value),.5e-3);
