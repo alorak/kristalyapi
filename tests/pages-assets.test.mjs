@@ -20,7 +20,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
   assert.ok(pages.includes('test -s public/'+file),file+' must be checked for a nonempty deploy artifact');
   assert.ok(sw.includes("'./"+file+"'"),file+' must be cached by the offline shell');
  }
- assert.match(editor,/import \{initSemiconductorP0\} from '\.\/semiconductor-p0\.js'/);
+ assert.match(editor,/import\('\.\/semiconductor-p0\.js'\)/,'P0 laboratory should load without blocking editor bootstrap');
  assert.match(semiconductor,/from '\.\/semiconductor-physics-p0-core\.js'/);
  assert.match(html,/href="\.\/semiconductor-p0\.css"/);
  assert.match(pages,/needs: validate/,'deployment must still depend on passing validation');
