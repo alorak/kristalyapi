@@ -2,10 +2,11 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-21-cod-retry';
+const CACHE_NAME=CACHE_PREFIX+'2026-10-24-semiconductor-p0-assets';
 const APP_FILES=[
- './','./index.html','./styles.css','./crystal-app.js','./volume-iso-worker.js','./translations.js',
- './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js','./xrd-factor-core.js','./powder-planes-view.js',
+ './','./index.html','./styles.css','./semiconductor-p0.css','./crystal-app.js','./volume-iso-worker.js','./translations.js',
+ './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js',
+ './semiconductor-p0.js','./semiconductor-physics-p0-core.js','./xrd-factor-core.js','./powder-planes-view.js',
  './favicon.svg','./manifest.webmanifest',
  './vendor/three/build/three.module.js','./vendor/three/build/three.core.js',
  './vendor/three/examples/jsm/controls/OrbitControls.js',
@@ -23,6 +24,9 @@ self.addEventListener('install',event=>{
   // addAll is atomic: an incomplete upload must not become the offline shell.
   const cache=await caches.open(CACHE_NAME);
   await cache.addAll(APP_URLS);
+  // The complete replacement shell is cached before taking control, so an
+  // existing tab can pick up the new JS/CSS graph after a single reload.
+  await self.skipWaiting?.();
  })());
 });
 
