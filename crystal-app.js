@@ -11,6 +11,7 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
+import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6806,6 +6807,24 @@ function qeExportPwInput(){
   $('qeExportStatus').textContent=result.atoms+' açık P1 atomu · '+result.species.length+' element · '+result.fixedCount+' sabit atom. UPF dosyalarını kendi bilgisayarınızda ./pseudo içine yerleştirin.';
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
 }
+async function qeLoadDefectComparison(){
+ const input=$('qeDefectCompareFile'),file=input.files?.[0],status=$('qeDefectCompareStatus');
+ const container=$('qeDefectCompareCharts');container.replaceChildren();
+ if(!file){status.textContent='Önce MoS₂ karşılaştırma JSON dosyası seçin.';return;}
+ if(file.size>24e6){status.textContent='Karşılaştırma dosyası 24 MB sınırını aşıyor.';return;}
+ const workspaceId=activeWorkspaceId;
+ try{
+  const source=await file.text();
+  if(input.files?.[0]!==file||activeWorkspaceId!==workspaceId)
+   throw Error('Dosya veya çalışma alanı değişti; tekrar seçin.');
+  const result=parseDefectComparisonResult(JSON.parse(source));
+  renderDefectComparison(container,result);
+  status.textContent=result.cases.length+' MoS₂ modeli okundu. '+
+   (result.aligned?'Dışarıdan verilen vakum referansı üzerinden hizalama: doğrulanmadı.':'Ortak enerji referansı yok: grafikler ayrı.');
+ }catch(error){
+  container.replaceChildren();status.textContent='MoS₂ karşılaştırma: '+error.message;
+ }
+}
 async function qeLoadElectronicResults(){
  const input=$('qeElectronicFile'),file=input.files?.[0],status=$('qeElectronicStatus');
  const container=$('qeElectronicCharts');container.replaceChildren();
@@ -9545,6 +9564,8 @@ function bind(){
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
  $('qeElectronicOpen').onclick=qeLoadElectronicResults;
+ $('qeDefectCompareOpen').onclick=qeLoadDefectComparison;
+ $('qeDefectCompareFile').onchange=()=>{$('qeDefectCompareCharts').replaceChildren();$('qeDefectCompareStatus').textContent='Kusur serisi dosyası seçildi; açın.';};
  $('qeElectronicFile').onchange=()=>{$('qeElectronicCharts').replaceChildren();$('qeElectronicStatus').textContent='Dosya seçildi; grafik için açın.';};
  $('qeApplyGeometry').onclick=qeApplyOutputGeometry;
  $('addMillerLayer').onclick=()=>{try{addMillerLayer();}catch(e){inform(e.message);}};
