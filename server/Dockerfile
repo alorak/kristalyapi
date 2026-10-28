@@ -4,8 +4,8 @@ ARG QE_DEB_VERSION=6.7-3+b1
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates python3 python3-fastapi python3-uvicorn \
-      "quantum-espresso=\${QE_DEB_VERSION}" \
-    && test "$(dpkg-query -W -f='\${Version}' quantum-espresso)" = "\${QE_DEB_VERSION}" \
+      "quantum-espresso=${QE_DEB_VERSION}" \
+    && test "$(dpkg-query -W -f='${Version}' quantum-espresso)" = "${QE_DEB_VERSION}" \
     && for tool in pw.x bands.x dos.x projwfc.x; do command -v "$tool"; done \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin qeapi \
