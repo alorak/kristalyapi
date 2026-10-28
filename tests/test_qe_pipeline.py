@@ -66,7 +66,7 @@ class PipelineTest(unittest.TestCase):
         self.assertIn("calculation = 'nscf'", dense)
         self.assertIn("12 12 1 0 0 0", dense)
         self.assertIn("filpdos='pdos'", post_input("projwfc"))
-        with self.assertRaisesRegex(ValueError, "ns(c|cf)f|mesh|k mesh|dense"):
+        with self.assertRaisesRegex(ValueError, "NSCF k mesh"):
             nscf_input(scf, 25, 1)
 
     def test_parse_band_dos_and_projected_dos_without_fabricated_fermi(self):
@@ -146,7 +146,7 @@ class PipelineTest(unittest.TestCase):
         data = json.loads(electronic.read_text())
         self.assertEqual(data["schema"], "kristalyapi.qe-electronic.v1")
         self.assertEqual(len(data["bands"]["energies_ev"]), 2)
-        self.assertIn("not", data["energy_zero"])
+        self.assertIn("Fermi", data["energy_zero"])
         self.assertEqual(data["dos"]["dos_states_per_ev"], [.1, .5, .2])
         self.assertFalse((self.root / "complete" / "structure.out").exists())
 
