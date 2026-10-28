@@ -12,6 +12,7 @@ import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
+import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
@@ -6809,29 +6810,41 @@ function qeExportPwInput(){
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
 }
 let qeActiveJob=null;
+let qeComparisonDispose=null;
+function qeClearRelaxationComparison(){
+ qeComparisonDispose?.();qeComparisonDispose=null;
+ const box=$('qeRelaxComparison');box.replaceChildren();box.hidden=true;
+}
 function qeJobPayload(){
- if($('qeCalcType').value!=='scf')
-  throw Error('D2 sunucu hesabı SCF içindir; önce hesap türünü SCF seçin.');
+ const relax=$('qeCalcType').value==='relax';
+ if(!relax&&$('qeCalcType').value!=='scf')throw Error('SCF veya sabit hücreli relaksasyon seçin.');
  if($('qeOccupation').value!=='fixed')
-  throw Error('D2 yalnız sabit doluluklu, spinsiz SCF destekler.');
+  throw Error('Sunucu işleri sabit doluluklu ve spinsiz olmalı.');
  const model=qeCalculationStructure(state);
  const cell=basis(validateCell(model.cell)).map(vector=>vector.toArray());
  const atoms=model.sites.map(site=>({
   element:site.symbol,
   fractional:[Number(site.x),Number(site.y),Number(site.z)]
  }));
- if(!atoms.length||atoms.length>64)throw Error('D2 API en fazla 64 atom destekler.');
+ if(!atoms.length||atoms.length>64)throw Error('QE API en fazla 64 atom destekler.');
  const kpoints=[$('qeKx'),$('qeKy'),$('qeKz')].map(el=>Number(el.value));
- return {
-  schema:'kristalyapi.qe-scf-job.v1',
+ const payload={
+  schema:relax?'kristalyapi.qe-relax-scf-job.v1':'kristalyapi.qe-scf-job.v1',
   profile_id:$('qeJobProfile').value.trim(),
   structure:{periodic:true,cell_angstrom:cell,atoms},
   parameters:{
-   calculation:'scf',functional:'PBE',spin:'unpolarized',
+   calculation:relax?'relax-scf':'scf',functional:'PBE',spin:'unpolarized',
    ecutwfc_ry:Number($('qeEcutwfc').value),ecutrho_ry:Number($('qeEcutrho').value),
    kpoints
   }
  };
+ if(relax){
+  if(Number($('qeFreezeBottom').value)!==0)throw Error('Sunucu relaksasyonunda tüm atomlar serbest olmalı.');
+  payload.relaxation={max_steps:Number($('qeJobMaxSteps').value),
+   force_threshold_ry_bohr:Number($('qeForceThreshold').value),
+   energy_threshold_ry:Number($('qeJobEnergyThreshold').value)};
+ }
+ return payload;
 }
 async function qeJobPreflight(){
  const btn=$('qeJobValidate'),status=$('qeJobStatus');
@@ -6842,7 +6855,7 @@ async function qeJobPreflight(){
   status.textContent='Sunucu ön kontrolü geçti: '+result.atoms+' atom, UPF profili '+
    result.profile_id+', yapı özeti '+result.structure_hash.slice(0,12)+
    '… Bu doğrulama hesaplamanın yakınsadığı anlamına gelmez.';
- }catch(error){status.textContent='SCF ön kontrol: '+error.message;}
+ }catch(error){status.textContent='QE ön kontrol: '+error.message;}
  finally{btn.disabled=false;}
 }
 async function qeJobStart(){
@@ -6853,15 +6866,17 @@ async function qeJobStart(){
   const validated=await validateQeScf(address,token,payload);
   if(activeWorkspaceId!==workspaceId||JSON.stringify(qeJobPayload())!==snapshot)
    throw Error('Hesaplama sırasında yapı veya ayarlar değişti; yeniden ön kontrol yapın.');
-  if(!window.confirm(validated.atoms+' atomlu PBE/SCF işi gerçek Docker/Quantum ESPRESSO üzerinde başlatılsın mı?'))return;
+  if(!window.confirm(validated.atoms+' atomlu PBE/'+payload.parameters.calculation+
+   ' işi gerçek Docker/Quantum ESPRESSO üzerinde başlatılsın mı?'))return;
   const created=await submitQeScf(address,token,payload);
   if(created.structure_hash!==validated.structure_hash)
    throw Error('Gönderilen ve doğrulanan yapı özetleri uyuşmuyor.');
   qeActiveJob={id:created.job_id,address,token,hash:created.structure_hash,
    workspaceId,snapshot};
-  status.textContent='SCF işi kuyruğa alındı: '+created.job_id+
+  qeClearRelaxationComparison();
+  status.textContent='QE işi kuyruğa alındı: '+created.job_id+
    '. İşlem durumu için Yenile düğmesini kullanın.';
- }catch(error){status.textContent='SCF gönderme: '+error.message;}
+ }catch(error){status.textContent='QE işi gönderme: '+error.message;}
  finally{btn.disabled=false;}
 }
 async function qeJobRefresh(){
@@ -6878,9 +6893,17 @@ async function qeJobRefresh(){
    message+=' Gerçek QE toplam enerjisi: '+result.energy_ev?.toFixed(6)+' eV; '+
     'SCF yakınsama: '+(result.scf_converged?'evet':'hayır')+
     '. Tek bir başarılı iş bilimsel yakınsama çalışması değildir.';
+   qeClearRelaxationComparison();
+   if(result.schema==='kristalyapi.qe-relax-scf-result.v1'){
+    const comparison=parseRelaxationResult(result,job.hash),box=$('qeRelaxComparison');
+    box.hidden=false;
+    qeComparisonDispose=renderRelaxationComparison(box,comparison,{THREE,OrbitControls});
+    message+=' Relaksasyon ve son SCF geçti; en büyük kuvvet bileşeni '+
+     comparison.maxForceComponent.toExponential(3)+' Ry/Bohr. Başlangıç/son yapı aşağıda karşılaştırılabilir.';
+   }
   }else if(record.error)message+=' Hata: '+record.error;
   status.textContent=message;
- }catch(error){status.textContent='İş durumu: '+error.message;}
+ }catch(error){qeClearRelaxationComparison();status.textContent='İş durumu: '+error.message;}
 }
 async function qeJobHistoryLoad(){
  const status=$('qeJobStatus'),dropdown=$('qeJobHistorySelect');
@@ -6929,7 +6952,7 @@ async function qeTestApiConnection(){
   const list=Object.entries(probe.binaries).map(([key,ok])=>key+': '+(ok?'var':'eksik')).join(' · ');
   status.textContent=(probe.ready?'QE sunucusu hazır.':'QE API erişilebilir; çözücü henüz hazır değil.')+
    ' QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
-   (probe.jobsEnabled?' · D2 SCF işi açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
+   (probe.jobsEnabled?' · QE işi alımı açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
  }catch(error){
   status.textContent='Bağlantı kurulamadı: '+error.message+
    ' Yerel ağ izni, HTTPS/HTTP tarayıcı kısıtları, CORS ve konteyner portunu kontrol edin.';

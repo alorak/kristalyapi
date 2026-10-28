@@ -30,6 +30,9 @@ def num(value, low, high, label):
 
 
 def canonical_request(data):
+    if isinstance(data,dict) and data.get("schema")=="kristalyapi.qe-relax-scf-job.v1":
+        from relax_core import canonical_relax_request
+        return canonical_relax_request(data)
     if not isinstance(data,dict) or set(data)!=ALLOWED_TOP:
         raise ValueError("Missing or unsupported top-level calculation fields")
     if data["schema"]!="kristalyapi.qe-scf-job.v1":

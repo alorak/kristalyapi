@@ -371,7 +371,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   <div class="section" data-right-section="qe">
    <h2>DFT / Quantum ESPRESSO <span class="stage">Dosya alışverişi</span></h2>
-   <p class="hint">Hesaplamayı tarayıcı çalıştırmaz. QE pw.x giriş dosyası üretin; sonucu kendi bilgisayarınızda hesaplayıp burada okuyun. Hiçbir yapı veya çıktı sunucuya gönderilmez.</p>
+   <p class="hint">Hesaplamayı tarayıcı çalıştırmaz. QE girdisini dışa aktarabilir veya yapılandırılmış Docker sunucusuna açık onayla hesap gönderebilirsiniz.</p>
    <p class="hint">Gerçek DFT hesabı için: <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-runner.md" target="_blank" rel="noopener noreferrer">QE yerel/VM çalıştırma kılavuzu</a>. Python aracı gerçek pw.x kurulumunu gerektirir.</p>
    <div class="qe-workflow">
     <strong class="measure-subheading">0 · Docker hesaplama sunucusu (D0–D1)</strong>
@@ -381,20 +381,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div id="qeApiStatus" class="note" role="status" aria-live="polite">Bağlantı henüz kontrol edilmedi.</div>
     <p class="hint"><a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-docker-api.md" target="_blank" rel="noopener noreferrer">Docker kurulumu, LAN erişimi ve CORS kılavuzu</a>. GitHub Pages üzerinden yerel ağ erişiminde tarayıcı izni veya HTTPS yapılandırması gerekebilir.</p>
     <div class="qe-workflow">
-     <strong class="measure-subheading">D2 · Gerçek SCF işi (tek kullanıcı / ilk sürüm)</strong>
-     <p class="hint">Yalnız PBE, spinsiz, sabit hücreli SCF hesapları kabul edilir. UPF profili sunucuda operatör tarafından tanımlanmış olmalı. Anahtar yalnız bu sayfanın belleğinde kullanılır; kayıt edilmez. LAN IP üzerinden anahtarlı iş göndermek için HTTPS gereklidir.</p>
+     <strong class="measure-subheading">D2–D3 · Gerçek SCF / relaksasyon işi</strong>
+     <p class="hint">PBE ve spinsiz SCF veya sabit hücreli relaksasyon → son SCF seçin. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.</p>
      <label class="field"><span>Sunucu UPF profil kimliği</span><input id="qeJobProfile" type="text" maxlength="40" value="si-pbe" spellcheck="false"></label>
      <label class="field"><span>API erişim anahtarı</span><input id="qeApiToken" type="password" autocomplete="off" placeholder="QE_API_TOKEN"></label>
      <div class="qe-form-grid">
+      <label class="field"><span>En fazla iyonik adım</span><input id="qeJobMaxSteps" type="number" min="1" max="60" value="30"></label>
+      <label class="field"><span>İyonik enerji eşiği (Ry)</span><input id="qeJobEnergyThreshold" type="number" min="0.00000001" max="0.001" step="0.000001" value="0.000001"></label>
+     </div>
+     <div class="qe-form-grid">
       <button type="button" id="qeJobValidate">Aktif yapıyı ön kontrol et</button>
-      <button type="button" id="qeJobSubmit" class="primary">Gerçek SCF işini gönder</button>
+      <button type="button" id="qeJobSubmit" class="primary">Gerçek hesabı gönder</button>
       <button type="button" id="qeJobRefresh">İş durumunu yenile</button>
       <button type="button" id="qeJobCancel">İşi iptal et</button>
       <button type="button" id="qeJobHistoryLoad">Sunucudaki iş geçmişini yükle</button>
      </div>
-     <label class="field"><span>Önceki SCF işi</span><select id="qeJobHistorySelect"><option value="">Bu oturumda iş geçmişi yüklenmedi</option></select></label>
+     <label class="field"><span>Önceki QE işi</span><select id="qeJobHistorySelect"><option value="">Bu oturumda iş geçmişi yüklenmedi</option></select></label>
      <button type="button" id="qeJobHistoryOpen">Seçili işi incele</button>
-     <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz SCF işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
+     <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz QE işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
+     <div id="qeRelaxComparison" class="qe-workflow" hidden></div>
      <p class="hint">Sonuç yalnız çalışan Quantum ESPRESSO çıktısından gelir. İş geçmişi sunucudaki SQLite veritabanında tutulur; bu ekranın anahtarı veya hesabı tarayıcı depolamasında tutulmaz. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-jobs.md" target="_blank" rel="noopener noreferrer">SCF işi ve worker kurulumu</a></p>
     </div>
    </div>
