@@ -180,4 +180,45 @@ export function renderQeElectronicResults(container,data){
   leg.textContent='Mavi: toplam DOS'+(data.pdos?' · Turuncu: atomik orbitallerin toplam PDOS katkısı':'')+'. Enerjiler Fermi seviyesine hizalanmamıştır.';
   container.append(leg);
  }
+ if(data.pdosDetailed){
+  const heading=document.createElement('strong');
+  heading.textContent='Atom / element / orbital katkılarını incele';
+  container.append(heading);
+  const select=document.createElement('select');
+  select.setAttribute('aria-label','PDOS atom ve orbital seçimi');
+  const choices=[];
+  for(const element of data.pdosDetailed.elements){
+   for(const [orbital,values] of Object.entries(element.orbitals))
+    choices.push({label:element.element+' · '+orbital+' orbitali (element toplamı)',
+     value:values,key:'element-'+element.element+'-'+orbital});
+  }
+  for(const atom of data.pdosDetailed.atoms){
+   for(const [orbital,values] of Object.entries(atom.orbitals))
+    choices.push({label:atom.atomIndex+'. atom · '+atom.element+' · '+orbital,
+     value:values,key:'atom-'+atom.atomIndex+'-'+orbital});
+  }
+  for(const choice of choices){
+   const option=document.createElement('option');
+   option.value=choice.key;option.textContent=choice.label;
+   select.append(option);
+  }
+  const defaultIndex=choices.findIndex(c=>c.key==='element-Mo-d');
+  if(defaultIndex>=0)select.selectedIndex=defaultIndex;
+  const plot=document.createElement('div');
+  const legend=document.createElement('small');
+  const update=()=>{
+   const c=choices.find(c=>c.key===select.value)||choices[0];
+   if(!c)return;
+   plot.replaceChildren(chart('Toplam projeksiyon ve '+c.label,
+    'Enerji (eV)','Durum/(eV hücre)',[
+     {x:data.pdosDetailed.energy,y:data.pdos},
+     {x:data.pdosDetailed.energy,y:c.value}
+    ]));
+   legend.textContent='Mavi: tüm atomların toplam PDOS katkısı · Turuncu: '+c.label+
+    '. Bu yansıtma kimyasal bağ veya optik geçiş kanıtı değildir.';
+  };
+  select.addEventListener('change',update);
+  container.append(select,plot,legend);
+  update();
+ }
 }
