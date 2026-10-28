@@ -34,9 +34,12 @@ services:
       QE_PROBE_TIMEOUT: "8"
       QE_JOBS_ENABLED: "${QE_JOBS_ENABLED:-0}"
       QE_API_TOKEN: "${QE_API_TOKEN:-}"
+      FORWARDED_ALLOW_IPS: "${QE_TRUSTED_PROXY_IPS:-127.0.0.1}"
   qe-worker:
     <<: *qe-common
     profiles: ["compute"]
+    depends_on:
+      - qe-api
     command: ["python3","worker.py"]
     environment:
       QE_JOB_TIMEOUT: "${QE_JOB_TIMEOUT:-3600}"
