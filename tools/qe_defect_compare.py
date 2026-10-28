@@ -113,7 +113,8 @@ def protocol(source):
     if not mesh:
         raise ValueError("Missing automatic k mesh in final SCF input")
     keys = ("ecutwfc", "ecutrho", "occupations", "smearing", "degauss", "input_dft",
-            "nspin", "noncolin", "lspinorb")
+            "nspin", "noncolin", "lspinorb", "tot_charge", "vdw_corr",
+            "assume_isolated")
     values = {key: field(key) for key in keys}
     # Do not assert PBE when the functional is not explicitly provided.
     values["k_mesh_and_shifts"] = [int(x) for x in mesh.groups()]
@@ -122,7 +123,42 @@ def protocol(source):
         raise ValueError("Spin/SOC calculation needs a different comparison workflow")
     if values["ecutwfc"] is None or values["ecutrho"] is None:
         raise ValueError("SCF cutoffs must be explicit")
+    if values["tot_charge"] is not None and float(values["tot_charge"].replace("d", "e")) != 0:
+        raise ValueError("Charged defects require separate electrostatic corrections")
     return values
+
+
+def checked_step_input(directory, pipeline, step):
+    file = directory / (step + ".in")
+    if file.is_symlink() or not file.is_file() or file.stat().st_size > 2_000_000:
+        raise ValueError("Required QE step input missing or unsafe: " + file.name)
+    expected_sha = pipeline["steps"][step].get("input_sha256")
+    if expected_sha != hashlib.sha256(file.read_bytes()).hexdigest():
+        raise ValueError(step + ".in checksum mismatch")
+    return file.read_text(encoding="utf-8")
+
+
+def pdos_protocol(directory, pipeline, scf_source):
+    """Require equivalent NSCF bands/k sampling and DOS broadening settings."""
+    base = protocol(scf_source)
+    nscf = checked_step_input(directory, pipeline, "nscf")
+    nscf_settings = protocol(nscf)
+    block = re.search(r"(?ims)^\s*&SYSTEM\b(.*?)^\s*/\s*$", nscf)
+    nbnd = re.search(r"(?i)\bnbnd\s*=\s*(\d+)", block.group(1)) if block else None
+    if not nbnd:
+        raise ValueError("NSCF nbnd must be explicit")
+    expected = {k: v for k, v in base.items() if k != "k_mesh_and_shifts"}
+    actual = {k: v for k, v in nscf_settings.items() if k != "k_mesh_and_shifts"}
+    if expected != actual:
+        raise ValueError("SCF/NSCF physics settings differ within a case")
+    post = {}
+    for step in ("dos", "projwfc"):
+        text = checked_step_input(directory, pipeline, step)
+        # The official generated inputs use deterministic names and order.
+        # Whitespace-only changes are ignored; substantive settings are not.
+        post[step] = " ".join(text.casefold().split())
+    return {"scf": base, "nscf_kmesh": nscf_settings["k_mesh_and_shifts"],
+            "nscf_nbnd": int(nbnd.group(1)), "postprocessors": post}
 
 
 def expected_stoichiometry(kind, counts):
@@ -252,7 +288,7 @@ def prepare_case(config, root, radius):
         "local_radius_angstrom": radius, "center_fractional": center,
         "near_atom_indices": near_indices, "far_atom_indices": far_indices,
         "near_distances_angstrom": {str(k): round(distances[k], 4) for k in near_indices},
-        "pdos": groups, "protocol": protocol(text),
+        "pdos": groups, "protocol": pdos_protocol(directory, pipeline, text),
         "upf": {k: v["sha256"] for k, v in data["pseudopotentials"].items()},
         "cell_angstrom": cell, "atoms": atoms,
         "reference_energy_ev": config.get("reference_energy_ev"),
