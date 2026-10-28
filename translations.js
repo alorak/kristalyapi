@@ -7,6 +7,7 @@
 (() => {
  'use strict';
  const entries=[
+  ["QE bant / DOS hesaplama kılavuzu","QE band / DOS calculation guide"],
   ["3 · Gerçek elektronik bant ve DOS verileri","3 · Calculated electronic bands and DOS"],
   ["Harici Quantum ESPRESSO hesaplamasından gelen electronic-results.json dosyasını yerel olarak açın. Bu görüntüleme DFT, optik geçiş veya foton emisyonu hesabı yapmaz.","Open the electronic-results.json file from an external Quantum ESPRESSO calculation locally. This viewer does not perform DFT, optical-transition or photon-emission calculations."],
   ["Elektronik sonuç (.json)","Electronic result (.json)"],
