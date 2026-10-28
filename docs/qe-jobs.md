@@ -108,6 +108,10 @@ localStorage or the crystal project file.
 HTTPS reverse proxy on the LAN. A proxy must forward the real scheme
 through a **trusted** proxy setting; otherwise the API refuses jobs.
 Your browser may still require Local Network Access permission.
+For a reverse proxy that terminates HTTPS, set `QE_TRUSTED_PROXY_IPS` to
+**only** the proxy IP as seen by Uvicorn. Do not set it to `*`; untrusted
+`X-Forwarded-Proto` headers must not bypass the HTTP token restriction.
+The proxy must forward HTTPS scheme and be separately secured.
 
 | Operation | API |
 | --- | --- |
