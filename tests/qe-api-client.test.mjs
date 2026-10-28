@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../qe-api-client.js',import.meta.url),'utf8');
-const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob}=await import(
+const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs}=await import(
  'data:text/javascript;base64,'+Buffer.from(source).toString('base64')
 );
 
@@ -117,4 +117,15 @@ test('D2 capabilities advertise jobs only when explicitly enabled',async()=>{
   :response(200,{...caps,api_version:'0.2.0',job_submission_enabled:true});
  const actual=await inspectQeApi('http://localhost:8000',{fetcher});
  assert.equal(actual.jobsEnabled,true);
+});
+
+test('D2 persisted job history is queried only with the explicit in-memory token',async()=>{
+ const fake=async(url,opts)=>{
+  assert.equal(opts.method,'GET');
+  assert.equal(opts.headers.Authorization,'Bearer '+secret);
+  assert.match(url,/\/api\/v1\/calculations$/);
+  return response(200,{jobs:[{job_id:'a'.repeat(32),status:'completed'}]});
+ };
+ const data=await listQeScfJobs('http://localhost:8000',secret,{fetcher:fake});
+ assert.equal(data.jobs.length,1);
 });
