@@ -41,6 +41,9 @@ services:
     depends_on:
       - qe-api
     command: ["python3","worker.py"]
+    # The worker has no HTTP server; do not inherit the API image's probe.
+    healthcheck:
+      disable: true
     environment:
       QE_JOB_TIMEOUT: "${QE_JOB_TIMEOUT:-3600}"
 
