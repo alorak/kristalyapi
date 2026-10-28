@@ -374,6 +374,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Hesaplamayı tarayıcı çalıştırmaz. QE pw.x giriş dosyası üretin; sonucu kendi bilgisayarınızda hesaplayıp burada okuyun. Hiçbir yapı veya çıktı sunucuya gönderilmez.</p>
    <p class="hint">Gerçek DFT hesabı için: <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-runner.md" target="_blank" rel="noopener noreferrer">QE yerel/VM çalıştırma kılavuzu</a>. Python aracı gerçek pw.x kurulumunu gerektirir.</p>
    <div class="qe-workflow">
+    <strong class="measure-subheading">0 · Docker hesaplama sunucusu (D0–D1)</strong>
+    <p class="hint">Yerel IP ve port üzerinden yalnız bağlantıyı, QE sürümünü ve kurulu araçları denetleyin. Bu aşamada sunucuya yapı gönderilmez ve DFT işi başlatılamaz.</p>
+    <label class="field"><span>QE API adresi (IP:port)</span><input type="url" id="qeApiAddress" value="http://127.0.0.1:8000" autocomplete="off" spellcheck="false" placeholder="http://192.168.1.50:8000"></label>
+    <button type="button" id="qeApiTest">Docker / QE bağlantısını kontrol et</button>
+    <div id="qeApiStatus" class="note" role="status" aria-live="polite">Bağlantı henüz kontrol edilmedi.</div>
+    <p class="hint"><a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-docker-api.md" target="_blank" rel="noopener noreferrer">Docker kurulumu, LAN erişimi ve CORS kılavuzu</a>. GitHub Pages üzerinden yerel ağ erişiminde tarayıcı izni veya HTTPS yapılandırması gerekebilir.</p>
+   </div>
+   <div class="qe-workflow">
     <strong class="measure-subheading">1 · Hesaplama girdisini oluştur</strong>
     <div class="qe-form-grid">
      <label class="field"><span>Hesap türü</span><select id="qeCalcType"><option value="relax">Relaksasyon · sabit hücre</option><option value="scf">DFT · tek nokta enerji (SCF)</option></select></label>
