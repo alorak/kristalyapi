@@ -17,6 +17,8 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 5. Use **Save** to export a project JSON, CIF, POSCAR, XYZ, PDB, **vector SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF, or **1×–4× high-resolution PNG**.
 
+**Electronic QE workflow (P2 starter):** [Local pipeline and plot usage](docs/qe-electronic.md). `tools/qe_pipeline.py` can run a shared-dataset `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x` workflow using actual locally installed QE executables, with an explicit user-provided k-path. Import `electronic-results.json` in the DFT panel to inspect raw band and total DOS/PDOS curves. No Fermi/vacuum alignment, orbital-resolved defect attribution or experimentally verified single-photon predictions are claimed.
+
 **Local QE execution (P1 starter):** [Run Quantum ESPRESSO locally or on a Linux VM](docs/qe-runner.md) using the exported `.in` file and actual UPF files. The Python standard-library runner stages and optionally executes the real `pw.x`, captures outputs and provenance, and marks incomplete/unconverged runs as non-success. It is not a hosted DFT service, a replacement for convergence studies, or evidence of MoS₂ single-photon emission.
 
 The **Crystal Defects** tool (right toolbar) materializes display-only repetitions as explicit P1 atoms, then creates one **vacancy**, **substitution**, or **interstitial** at a time. It supports Undo and CIF/POSCAR export. The model is geometric only: no charge states, atomic relaxation, or defect formation energies are calculated. Loaded volumetric maps/comparison phases are protected from being silently discarded.
