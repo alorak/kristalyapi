@@ -68,6 +68,23 @@ class MoS2PlanAndEvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"SHA-256"):
                 mos2.locked_plan(mo,s)
 
+    def test_official_s_metadata_whitespace_preserves_reviewed_bytes(self):
+        data=b'<UPF version="2.0.1"><PP_HEADER element=" S" functional="PBE"/></UPF>'
+        original_hash=mos2.sha(data)
+        mos2.validate_upf_metadata(data,"S")
+        self.assertEqual(mos2.sha(data),original_hash)
+
+    def test_metadata_still_rejects_wrong_element_or_functional(self):
+        for header in (b'element="Sc" functional="PBE"', b'element=" S" functional="PBEsol"'):
+            with self.assertRaisesRegex(ValueError,"elemental/XC"):
+                mos2.validate_upf_metadata(b'<UPF><PP_HEADER '+header+b'/></UPF>',"S")
+
+    def test_quoted_info_cannot_replace_real_header_metadata(self):
+        with self.assertRaisesRegex(ValueError,"header missing"):
+            mos2.validate_upf_metadata(b'<UPF><PP_INFO>element="S" functional="PBE"</PP_INFO></UPF>',"S")
+        with self.assertRaisesRegex(ValueError,"valid XML"):
+            mos2.validate_upf_metadata(b'<UPF><PP_HEADER element="S" functional=PBE /></UPF>',"S")
+
     def test_mock_complete_evidence_contract(self):
         got=self.check()
         self.assertAlmostEqual(got["energy_ry"],-12.34567890)
