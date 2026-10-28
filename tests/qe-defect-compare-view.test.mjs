@@ -68,6 +68,19 @@ test('reject nonfinite, unsorted and negative PDOS curves',()=>{
  const negative=make();negative.cases[0].pdos.near.Mo.orbitals_mean_per_atom.d[1]=-.2;
  assert.throws(()=>parseDefectComparisonResult(negative),/uyumsuz/);
 });
+test('duplicate or skipped atom indices cannot pass the local region bookkeeping',()=>{
+ const wrong=make();
+ wrong.cases[0].near_atom_indices=[1,1];
+ assert.throws(()=>parseDefectComparisonResult(wrong),/tekrarsız/);
+});
+test('O-p projection absent in pristine cannot be misrepresented as an overlay',()=>{
+ const input=make(true);
+ input.cases[3].pdos.near.O={atom_count:1,orbitals_mean_per_atom:{p:[.01,.02,.03]}};
+ const parsed=parseDefectComparisonResult(input);
+ assert.equal(parsed.aligned,true);
+ assert.equal(parsed.cases[0].groups.near.O,undefined);
+});
+
 test('renderer keeps independent energy axes when unaligned and overlays only on evidence',()=>{
  class Fake {
   constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.style={};this.textContent='';this.value='';this.handlers={};}
