@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Build Docker and submit five real Si SCF jobs through the authenticated API
+      - name: Build Docker and submit the real Si SCF sweep through the authenticated API
         run: python tools/qe_scf_acceptance.py --run --output validation-results/qe-si-scf
       - name: Independently recheck raw output, API results and finite sensitivity evidence
         run: python tools/qe_scf_acceptance.py --verify validation-results/qe-si-scf

@@ -165,7 +165,7 @@ def verify_evidence(output, plan):
 
 def markdown(report):
     lines = ["# D2.1 — Real Docker/API Si SCF acceptance", "", "Status: **" + report["status"] + "**", "",
-             "Five real PBE/unpolarized Si jobs; 2 atoms, fixed diamond lattice a=5.431 Å.", "",
+             f'{len(report["cases"])}/{report["planned_cases"]} completed real PBE/unpolarized Si jobs; 2 atoms, fixed diamond lattice a=5.431 Å.', "",
              "| Case | Energy (Ry) | Final SCF accuracy (Ry) | Iterations |", "| --- | ---: | ---: | ---: |"]
     for case in report["cases"]:
         proof = case["proof"]
@@ -174,7 +174,7 @@ def markdown(report):
     for check in report.get("comparisons", []):
         lines.append(f'- {check["axis"]}: {check["from"]} → {check["to"]}: {check["delta_mev_per_atom"]:.6f} meV/atom (limit {check["limit_mev_per_atom"]}; passed={check["passed"]}).')
     lines += ["", "Raw input/output, authenticated API traces without tokens, job IDs, hashes and provenance accompany this report.",
-              "This validates this Si protocol and the specified finite sensitivity checks. It does not establish MoS₂, relaxed geometry, other observables or general scientific accuracy."]
+              "Acceptance requires every job and finite sensitivity check to pass. Its scope is this Si protocol; MoS₂, relaxed geometry, other observables and general scientific accuracy require separate validation."]
     if report.get("error"):
         lines += ["", "Failure: " + report["error"]]
     return "\n".join(lines) + "\n"
@@ -186,7 +186,8 @@ def run_acceptance(output, upf_path):
     output.mkdir(parents=True)
     shutil.copyfile(PLAN, output / "plan.json")
     report = {"schema": "kristalyapi.qe-si-acceptance.v1", "status": "failed",
-              "started_at": datetime.now(timezone.utc).isoformat(), "cases": [], "comparisons": [],
+              "started_at": datetime.now(timezone.utc).isoformat(), "planned_cases": len(plan["cases"]),
+              "cases": [], "comparisons": [],
               "scope": "real Si SCF API acceptance and finite cutoff/k-mesh sensitivity; not general materials validation"}
     # Drop unrelated Compose/QE overrides so loopback and this isolated test are deterministic.
     environment = {key: value for key, value in os.environ.items()

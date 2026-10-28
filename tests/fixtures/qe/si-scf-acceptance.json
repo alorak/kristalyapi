@@ -10,26 +10,129 @@
   },
   "structure": {
     "periodic": true,
-    "cell_angstrom": [[0.0, 2.7155, 2.7155], [2.7155, 0.0, 2.7155], [2.7155, 2.7155, 0.0]],
+    "cell_angstrom": [
+      [
+        0.0,
+        2.7155,
+        2.7155
+      ],
+      [
+        2.7155,
+        0.0,
+        2.7155
+      ],
+      [
+        2.7155,
+        2.7155,
+        0.0
+      ]
+    ],
     "atoms": [
-      {"element": "Si", "fractional": [0.0, 0.0, 0.0]},
-      {"element": "Si", "fractional": [0.25, 0.25, 0.25]}
+      {
+        "element": "Si",
+        "fractional": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "element": "Si",
+        "fractional": [
+          0.25,
+          0.25,
+          0.25
+        ]
+      }
     ]
   },
   "cases": [
-    {"id": "ecut45-k8", "ecutwfc_ry": 45, "ecutrho_ry": 360, "kpoints": [8, 8, 8]},
-    {"id": "ecut60-k8", "ecutwfc_ry": 60, "ecutrho_ry": 480, "kpoints": [8, 8, 8]},
-    {"id": "ecut75-k8", "ecutwfc_ry": 75, "ecutrho_ry": 600, "kpoints": [8, 8, 8]},
-    {"id": "ecut75-k4", "ecutwfc_ry": 75, "ecutrho_ry": 600, "kpoints": [4, 4, 4]},
-    {"id": "ecut75-k6", "ecutwfc_ry": 75, "ecutrho_ry": 600, "kpoints": [6, 6, 6]}
+    {
+      "id": "ecut45-k8",
+      "ecutwfc_ry": 45,
+      "ecutrho_ry": 360,
+      "kpoints": [
+        8,
+        8,
+        8
+      ]
+    },
+    {
+      "id": "ecut60-k8",
+      "ecutwfc_ry": 60,
+      "ecutrho_ry": 480,
+      "kpoints": [
+        8,
+        8,
+        8
+      ]
+    },
+    {
+      "id": "ecut75-k8",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        8,
+        8,
+        8
+      ]
+    },
+    {
+      "id": "ecut75-k4",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "id": "ecut75-k6",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        6,
+        6,
+        6
+      ]
+    },
+    {
+      "id": "ecut75-k10",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "id": "ecut75-k12",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        12,
+        12,
+        12
+      ]
+    }
   ],
   "criteria": {
-    "max_scf_accuracy_ry": 1e-8,
-    "api_energy_tolerance_ry": 1e-8,
+    "max_scf_accuracy_ry": 1e-08,
+    "api_energy_tolerance_ry": 1e-08,
     "energy_sensitivity_mev_per_atom": 1.0,
     "comparisons": [
-      {"axis": "cutoff", "from": "ecut60-k8", "to": "ecut75-k8"},
-      {"axis": "kmesh", "from": "ecut75-k6", "to": "ecut75-k8"}
+      {
+        "axis": "cutoff",
+        "from": "ecut60-k8",
+        "to": "ecut75-k8"
+      },
+      {
+        "axis": "kmesh",
+        "from": "ecut75-k10",
+        "to": "ecut75-k12"
+      }
     ]
   }
 }
