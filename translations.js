@@ -7,6 +7,14 @@
 (() => {
  'use strict';
  const entries=[
+  ["Sunucudaki iş geçmişini yükle","Load server job history"],
+  ["Önceki SCF işi","Previous SCF job"],
+  ["Bu oturumda iş geçmişi yüklenmedi","Job history has not been loaded this session"],
+  ["Seçili işi incele","Inspect selected job"],
+  ["İş seçin","Select a job"],
+  ["Geçerli bir iş seçin.","Choose a valid job."],
+  ["Önceki iş: ","Previous job: "],
+  ["İş geçmişi: ","Job history: "],
   ["D2 · Gerçek SCF işi (tek kullanıcı / ilk sürüm)","D2 · Real SCF job (single user / first version)"],
   ["Yalnız PBE, spinsiz, sabit hücreli SCF hesapları kabul edilir. UPF profili sunucuda operatör tarafından tanımlanmış olmalı. Anahtar yalnız bu sayfanın belleğinde kullanılır; kayıt edilmez. LAN IP üzerinden anahtarlı iş göndermek için HTTPS gereklidir.","Only PBE, non-spin-polarized, fixed-cell SCF jobs are supported. The operator must configure the server-side UPF profile. The token is kept only in page memory; authenticated LAN requests require HTTPS."],
   ["Sunucu UPF profil kimliği","Server UPF profile ID"],
