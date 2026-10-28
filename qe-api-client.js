@@ -60,15 +60,60 @@ export async function inspectQeApi(address,{fetcher=fetch,timeoutMs=7000}={}){
   if(health.engine!=='quantum-espresso'||caps.engine?.id!=='quantum-espresso'||
    health.api_version!==caps.api_version||typeof caps.api_version!=='string')
    throw Error('Sunucu beklenen KristalYapı QE API sözleşmesine uymuyor.');
-  if(caps.job_submission_enabled!==false||health.read_only!==true)
-   throw Error('Bu D0–D1 ekranı yalnız salt-okunur QE discovery API destekler.');
+  const jobsEnabled=caps.job_submission_enabled===true&&health.read_only===false;
+  if(!jobsEnabled&&(caps.job_submission_enabled!==false||health.read_only!==true))
+   throw Error('QE API iş gönderme özelliği ile sağlık durumu tutarsız.');
   const ready=healthResponse.ok&&health.status==='ready'&&caps.engine.available===true;
   return {base,ready,version:String(caps.engine.version||'belirsiz').slice(0,60),
    apiVersion:caps.api_version,binaries:caps.binaries||{},status:health.status,
-   jobsEnabled:false};
+   jobsEnabled};
  }catch(error){
   if(controller.signal.aborted)
    throw Error('Bağlantı zaman aşımına uğradı. IP, port, CORS ve tarayıcı yerel ağ iznini kontrol edin.');
   throw error;
  }finally{clearTimeout(handle);}
+}
+
+
+function checkedJobCredentials(address,token){
+ const base=normalizeQeApiUrl(address),u=new URL(base);
+ if(u.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(u.hostname))
+  throw Error('API anahtarı HTTP üzerinden LAN IP adresine gönderilmez. HTTPS reverse proxy kurun.');
+ if(typeof token!=='string'||token.length<32||token.length>256||/\s/.test(token))
+  throw Error('Geçerli en az 32 karakterli API anahtarını girin.');
+ return {base,token};
+}
+async function qeRequest(address,token,path,{method='GET',body,fetcher=fetch}={}){
+ const {base}=checkedJobCredentials(address,token);
+ const options={method,mode:'cors',cache:'no-store',credentials:'omit',
+  headers:{Authorization:'Bearer '+token},redirect:'error'};
+ if(body!==undefined){
+  options.headers['Content-Type']='application/json';
+  options.body=JSON.stringify(body);
+  if(options.body.length>65536)throw Error('DFT hesaplama isteği 64 KiB sınırını aşıyor.');
+ }
+ const response=await fetcher(base+path,options);
+ const result=await response.json();
+ if(!response.ok){
+  throw Error('QE API ('+response.status+'): '+String(result.detail||'İstek başarısız').slice(0,180));
+ }
+ return result;
+}
+export async function validateQeScf(address,token,payload,opts){
+ return qeRequest(address,token,'/api/v1/calculations/validate',{method:'POST',body:payload,...opts});
+}
+export async function submitQeScf(address,token,payload,opts){
+ return qeRequest(address,token,'/api/v1/calculations',{method:'POST',body:payload,...opts});
+}
+export async function getQeScfJob(address,token,jobId,opts){
+ if(!/^[a-f0-9]{32}$/.test(jobId))throw Error('Geçersiz iş numarası.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId,opts);
+}
+export async function getQeScfResult(address,token,jobId,opts){
+ if(!/^[a-f0-9]{32}$/.test(jobId))throw Error('Geçersiz iş numarası.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/results',opts);
+}
+export async function cancelQeScfJob(address,token,jobId,opts){
+ if(!/^[a-f0-9]{32}$/.test(jobId))throw Error('Geçersiz iş numarası.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/cancel',{method:'POST',...opts});
 }
