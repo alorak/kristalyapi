@@ -115,7 +115,7 @@ def use_relaxed_positions(source, relax_output, nat):
     positions = "\n".join(
         " ".join([symbol] + [f"{x % 1:.12f}" for x in xyz])
         for symbol, xyz in rows)
-    return source[:original.start()] + "ATOMIC_POSITIONS crystal\n" + positions + "\nK_POINTS automatic" + source[original.end():]
+    return source[:original.start()] + "ATOMIC_POSITIONS crystal\n" + positions + "\nK_POINTS automatic\n" + source[original.end():].lstrip("\r\n")
 
 
 def insert_nbnd(source, nbnd):
@@ -284,6 +284,8 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
     result["requested"] = list(step for step in STEPS if step in needed)
     result["band_path"] = [name for name, _, _ in path] if path else None
     result["notes"].append("Raw QE eigenvalue energy zeros are NOT experimental emission energies.")
+    if not execute:
+        result["notes"].append("Prepare-only geometry is provisional: subsequent inputs cannot yet incorporate relaxed positions.")
     result["status"] = "prepared"
     manifest = workdir / "pipeline.json"
 
