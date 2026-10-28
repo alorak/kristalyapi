@@ -190,15 +190,22 @@ class DefectSeriesTests(unittest.TestCase):
         # Hash must agree with pipeline, so refresh that as well.
         modified = scf_source(atoms("V_S"), ecut=70)
         scf.write_text(modified)
+        nscf_file = folder / "nscf.in"
+        original_nscf = nscf_file.read_text()
+        changed_nscf = original_nscf.replace("ecutwfc=60", "ecutwfc=70")
+        nscf_file.write_text(changed_nscf)
         pipeline_file = folder / "pipeline.json"
         pipeline = json.loads(pipeline_file.read_text())
         pipeline["steps"]["scf"]["input_sha256"] = hashlib.sha256(modified.encode()).hexdigest()
+        pipeline["steps"]["nscf"]["input_sha256"] = hashlib.sha256(changed_nscf.encode()).hexdigest()
         pipeline_file.write_text(json.dumps(pipeline))
         self.save()
         with self.assertRaisesRegex(ValueError, "protocol differs"):
             generate(self.config_file)
         scf.write_text(original)
+        nscf_file.write_text(original_nscf)
         pipeline["steps"]["scf"]["input_sha256"] = hashlib.sha256(original.encode()).hexdigest()
+        pipeline["steps"]["nscf"]["input_sha256"] = hashlib.sha256(original_nscf.encode()).hexdigest()
         pipeline_file.write_text(json.dumps(pipeline))
         pp_file = folder / "electronic-results.json"
         electronic = json.loads(pp_file.read_text())
