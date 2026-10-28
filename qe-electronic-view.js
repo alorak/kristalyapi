@@ -182,7 +182,7 @@ export function renderQeElectronicResults(container,data){
  }
  if(data.pdosDetailed){
   const heading=document.createElement('strong');
-  const localized=text=>window.CrystalI18n?.t(text)||text;
+  const localized=text=>typeof window==='undefined'?text:(window.CrystalI18n?.t(text)||text);
   heading.textContent=localized('Atom / element / orbital katkılarını incele');
   container.append(heading);
   const select=document.createElement('select');
