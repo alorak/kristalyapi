@@ -319,19 +319,20 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] `tools/qe_mos2_acceptance.py --run/--verify`: gerçek QE/API işlerinin ham çıktısı, SCF yakınsama, Ry/eV, input/cell/atom/k-örgüsü, pseudo ve çıktı hash'leri ve ortak kabul eşiği kanıt denetimi.
 - [x] `tests/test_qe_mos2_acceptance.py` negatif/sentetik testleri, manuel iş akışı ve CI/usage rehberi; **gerçek veri oldukları iddia edilmez**.
 - [x] **Gerçek manuel koşu ve kanıt incelemesi:** resmi Mo/S UPF baytları ve metadata'sı doğrulandı; [Linux CI](https://github.com/alorak/kristalyapi/actions/runs/40770083516) üzerinde 7/7 gerçek SCF işi tamamlandı. Ham QE/API, 26 elektron, SHA-256 ve ≤1e-8 Ry SCF hata tahminleri yerelde tekrar doğrulandı. [Kalıcı kanıtlar](validation-results/qe-mos2-d22-20261029-amd64/README.md).
-- [ ] **D2.2 genel bilimsel kabul:** kesme enerjisi 80→100 Ry farkı **2.374556 >1 meV/atom**, kabul başarısız. K-örgüsü **0.000635 ≤1**, vakum **0.000363 ≤2 meV/atom** geçti. Daha yüksek ecut için yeni ön kayıtlı tarama ve gerekirse yeni protokolde k/vakum kontrolleri gerekir; eşikler değiştirilmedi.
+- [ ] **D2.2 genel bilimsel kabul:** kesme enerjisi 80→100 Ry farkı **2.374556 >1 meV/atom**, kabul başarısız. K-örgüsü **0.000635 ≤1**, vakum **0.000363 ≤2 meV/atom** geçti. D2.2b yeni ön kayıtlı taramasında 120→140 Ry **0.268123 ≤1** geçti; seçilecek yüksek cutoff protokolünde k/vakum kontrolleri bekliyor. İlk başarısız sonuç ve eşikler değiştirilmedi.
 - [ ] **D3 (sonraki PR):** gerçek MoS₂ kabulünden sonra `relax → scf` sunucu worker iş şeması, atomik kuvvet/geometri doğrulaması ve kaynak eşleşmeli 3B önizleme.
 - [ ] **D4:** gerçek `bands.x`, `dos.x`, `projwfc.x` zinciri; spin, referans enerji ve yakınsama kanıtı olmadan fiziksel sonuçları birleştirme.
 - [ ] **D5:** V_S / V₂S / O_S / O₂@V_S kusur karşılaştırması ve spin/SOC; bağımsız araştırma kabulü.
 
 **Bilimsel sınır:** D2.2'nin ideal monolayer SCF enerji duyarlılığı optik/tek-foton doğrulaması veya makalenin SIESTA sonuçlarının yeniden üretimi değildir. [Kabul protokolü](docs/qe-mos2-validation.md).
 
-### D2.2b — MoS₂ yüksek kesme enerjisi yakınsaması
+### D2.2b — MoS₂ yüksek kesme enerjisi yakınsaması (geçti)
 
 - [x] İlk D2.2'nin 80→100 Ry başarısızlığını koruyarak yeni 100/120/140 Ry, ecutrho=8×ecutwfc, k=8×8×1 ve c=24 Å sabit planını gerçek koşudan önce kaydet; aynı doğrulanmış Mo/S hash'lerini ve 120→140 Ry ≤1 meV/atom birincil ölçütünü sabitle.
 - [x] İlk gerçek koşuyu incele: 100 ve 120 Ry yakınsadı; 100 Ry önceki enerjiyi tam tekrarladı. 140 Ry 900 saniyede `timed_out`; birincil kapı belirlenemedi. [Korunan ham kanıtlar](validation-results/qe-mos2-d22b-first-timeout-20261029-amd64/INCELEME.md).
-- [x] Fiziksel plan/eşik değiştirilmeden yalnız kabul ortamına 6 GiB RAM, swap kapalı ve 3600 saniye/iş tanımlayan ayrı v2 ön kaydı; üretim Compose dosyası değişmez. 80 Python testinin tamamı geçti.
-- [ ] [İkinci gerçek Linux koşusu](https://github.com/alorak/kristalyapi/actions/runs/40783454635): üç yeni API işinin ham QE/API/hash doğrulaması ve 120→140 Ry kararını kaydet.
+- [x] Fiziksel plan/eşik değiştirilmeden yalnız kabul ortamına 6 GiB RAM, swap kapalı ve 3600 saniye/iş tanımlayan ayrı v2 ön kaydı; üretim Compose dosyası değişmez.
+- [x] [İkinci gerçek Linux koşusu](https://github.com/alorak/kristalyapi/actions/runs/40783454635): **3/3** SCF, ham QE/API/hash ve 26 elektron denetimi geçti. **120→140 Ry: 0.268123 ≤1 meV/atom**. 100 Ry önceki enerjiyi tam tekrarladı. [Kalıcı kanıt ve inceleme](validation-results/qe-mos2-d22b-20261029-amd64/INCELEME.md).
+- [x] Eksik işte kabul enerjisi üretmeyen `failure.json`, SCF iterasyonu/hatası ve kısmi çıktı hash tanısı; worker API hata açıklamasında süre sınırı. **84 Python QE testi** geçti.
 - [ ] Seçilecek yüksek kesme enerjisinde k-örgüsü/vakum karşılaştırmalarını yeniden doğrula; D2.2 genel kabulü ve D3 bu adımdan önce tamamlanmış sayılmaz.
 
 **Protokol ve kapsam:** [D2.2b kılavuzu](docs/qe-mos2-cutoff-validation.md). İlk D2.2'nin 100 Ry'deki k/vakum sonuçları yeni yüksek-cutoff protokolünün yerine geçmez; kuvvet/relaksasyon kabulü ayrıca gerekir.

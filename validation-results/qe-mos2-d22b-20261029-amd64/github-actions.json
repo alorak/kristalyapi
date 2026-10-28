@@ -1,0 +1,22 @@
+{
+  "run_id": 40783454635,
+  "run_url": "https://github.com/alorak/kristalyapi/actions/runs/40783454635",
+  "source_commit": "7a80999b4c23fa0258326b5d7334a84e4f9a18ca",
+  "job_id": 123150641784,
+  "artifact_id": 12859850147,
+  "artifact_name": "qe-mos2-scf-d22b-extended-3",
+  "artifact_sha256": "ace0b7410708a635d030131ae3705f252a3b0b9de5fb50475a36efa4a1f3e2a9",
+  "conclusion": "success",
+  "protocol": "d22b-extended",
+  "source_plan_sha256": "c14dee8539953af9bb4d3559e0810930f473ce799f07d20139b67050e118c247",
+  "locked_plan_sha256": "176d5665d47634b9752e82707b031a5e67f13051fa3ffc1fb3ea5d197da07261",
+  "independent_verified_cases": 3,
+  "primary_delta_mev_per_atom": 0.2681228591577553,
+  "primary_limit_mev_per_atom": 1.0,
+  "resources": {
+    "memory_bytes": 6442450944,
+    "memory_swap_bytes": 6442450944
+  },
+  "historical_first_run": "https://github.com/alorak/kristalyapi/actions/runs/40778844038",
+  "scope": "Cutoff sensitivity only at fixed k=8x8x1 and c=24 Angstrom; not D2.2 overall acceptance or relaxation."
+}
