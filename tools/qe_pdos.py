@@ -18,7 +18,7 @@ L_COUNT = {"s": 1, "p": 3, "d": 5, "f": 7}
 ORBITALS = ("s", "p", "d", "f")
 MAX_FILES = 1500
 MAX_ROWS = 15000
-MAX_SAMPLES = 200_000
+MAX_SAMPLES = 750_000
 MAX_FILE_BYTES = 8_000_000
 GRID_TOL_EV = 1e-4
 
