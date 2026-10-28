@@ -357,9 +357,12 @@ def generate(config_path: Path):
     else:
         for r in records:
             r["energy_ev_aligned"] = None
+    # Preserve pristine atom coordinates until every case has been mapped.
+    # The pristine record itself may occur first in the user-provided series.
+    reference_atoms = reference["atoms"]
     for r in records:
-        r["reference_mapping"] = map_reference_atoms(reference["atoms"], r["atoms"], cell)
-        # Hide bulky raw positions/cell only after matched geometry is recorded.
+        r["reference_mapping"] = map_reference_atoms(reference_atoms, r["atoms"], cell)
+    for r in records:
         del r["atoms"]
     return {
         "schema": SCHEMA, "reference": "ACS Nano 2022 10.1021/acsnano.2c09209",
