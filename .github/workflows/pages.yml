@@ -55,6 +55,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_mos2_acceptance.py' -v
       - name: Test fixed-cell relaxation worker and force gates
         run: python -m unittest discover -s tests -p 'test_qe_relax.py' -v
+      - name: Test MoS2 relaxation acceptance evidence rejection
+        run: python -m unittest discover -s tests -p 'test_qe_relax_acceptance.py' -v
       - name: Validate Docker Compose configuration without building the heavy QE image
         run: docker compose -f compose.qe.yml config --quiet
       - name: Install pinned Gemmi map reference

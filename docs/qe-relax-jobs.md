@@ -53,3 +53,42 @@ sıçrama gibi görünmesini engelleyen görüntü eşlemesi eklendi.
 
 Bu küçük Si denemesi MoS₂ D3 bilimsel kabulü değildir; D2.2c referansı
 ve o referanstan gerçek MoS₂ relaksasyon/kuvvet denetimi ayrıca gerekir.
+
+## MoS₂ D3 gerçek kabulünün ön kaydı
+
+[Sabit D3 planı](../tests/fixtures/qe/mos2-relax-acceptance.json) gerçek
+koşudan önce commit edilir. `tools/qe_relax_acceptance.py --run`, kaynak
+`78d116baec28419072a6d63c9d0842d28af79ac3` olan D2.2c'nin altı ham işini
+ve üç enerji kapısını yeniden doğrulamadan Docker hesabı başlatmaz.
+İlk yapı `ecut120-k16-c24` referansının aynısıdır; Mo/S UPF hash'leri sabittir.
+
+Önceden belirlenen hesap ve eşikler:
+
+- 120/960 Ry, 16×16×1, c=24 Å, sabit hücre BFGS; en fazla 30 iyonik adım.
+- İyonik enerji eşiği 1e-6 Ry, kuvvet bileşeni eşiği 1e-4 Ry/Bohr.
+- Yeni son koordinatlarla bağımsız 120/960 Ry SCF.
+- Aynı son geometride ayrı 140/1120 Ry SCF: 120→140 farkı ≤1 meV/atom.
+- Relaksasyon, son SCF ve 140 Ry SCF'nin en büyük kuvvet bileşenleri
+  ayrı ayrı ≤1e-4 Ry/Bohr; 120/140 kuvvet bileşeni farkı da ≤1e-4.
+- Relaksasyon / bağımsız son SCF enerji farkı ≤1e-6 Ry. Kaynak ideal
+  geometri enerjisine artış ≤1e-6 Ry; her atomun sarılmış konum farkı ≤0.5 Å.
+- Her üç solver aşamasında 26 elektron, SCF hata tahmini ≤1e-8 Ry,
+  ham `JOB DONE.`, API/raw Ry-eV, kimlik/hücre/koordinat ve UPF/dosya
+  SHA-256 denetimleri. Son iki basılı iyonik enerjinin farkı 1e-6 Ry
+  eşiğiyle, çıktı yuvarlaması için 2e-8 Ry payıyla ayrıca kontrol edilir.
+
+Kabul worker'ı 6 GiB RAM, swap kapalı, 2 CPU ve iş başına 10800 s
+wall-time kullanır; D3 CPU-s sınırı buna göre ayarlanır. Son 140 Ry
+tek SCF'de mevcut 4000 CPU-s sınırı da geçerlidir. Manuel workflow
+240 dakika üst sınıra sahiptir. Yanlış/eksik referansla deneme iş göndermeden
+durur; başarısız/eksik işler ve ham çıktılar korunur.
+
+```bash
+python3 tools/qe_relax_acceptance.py --run --output validation-results/qe-mos2-relax-local
+python3 tools/qe_relax_acceptance.py --verify validation-results/qe-mos2-relax-local
+```
+
+`--reference` verilmezse plandaki repoya göreli D2.2c kanıt klasörü kullanılır.
+D3 özeti, ön koşul summary/result/output hash'lerini kaydeder; yeniden
+doğrulamada aynı kanıt zorunludur. 103 Python QE testi geçti. Gerçek MoS₂
+D3 sonucu henüz bekleniyor.
