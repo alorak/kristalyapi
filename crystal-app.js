@@ -12,7 +12,7 @@ import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
-import { inspectQeApi } from './qe-api-client.js';
+import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6808,6 +6808,88 @@ function qeExportPwInput(){
   $('qeExportStatus').textContent=result.atoms+' açık P1 atomu · '+result.species.length+' element · '+result.fixedCount+' sabit atom. UPF dosyalarını kendi bilgisayarınızda ./pseudo içine yerleştirin.';
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
 }
+let qeActiveJob=null;
+function qeJobPayload(){
+ if($('qeCalcType').value!=='scf')
+  throw Error('D2 sunucu hesabı SCF içindir; önce hesap türünü SCF seçin.');
+ if($('qeOccupation').value!=='fixed')
+  throw Error('D2 yalnız sabit doluluklu, spinsiz SCF destekler.');
+ const model=qeCalculationStructure(state);
+ const cell=basis(validateCell(model.cell)).map(vector=>vector.toArray());
+ const atoms=model.sites.map(site=>({
+  element:site.symbol,
+  fractional:[Number(site.x),Number(site.y),Number(site.z)]
+ }));
+ if(!atoms.length||atoms.length>64)throw Error('D2 API en fazla 64 atom destekler.');
+ const kpoints=[$('qeKx'),$('qeKy'),$('qeKz')].map(el=>Number(el.value));
+ return {
+  schema:'kristalyapi.qe-scf-job.v1',
+  profile_id:$('qeJobProfile').value.trim(),
+  structure:{periodic:true,cell_angstrom:cell,atoms},
+  parameters:{
+   calculation:'scf',functional:'PBE',spin:'unpolarized',
+   ecutwfc_ry:Number($('qeEcutwfc').value),ecutrho_ry:Number($('qeEcutrho').value),
+   kpoints
+  }
+ };
+}
+async function qeJobPreflight(){
+ const btn=$('qeJobValidate'),status=$('qeJobStatus');
+ btn.disabled=true;
+ try{
+  const payload=qeJobPayload();
+  const result=await validateQeScf($('qeApiAddress').value,$('qeApiToken').value,payload);
+  status.textContent='Sunucu ön kontrolü geçti: '+result.atoms+' atom, UPF profili '+
+   result.profile_id+', yapı özeti '+result.structure_hash.slice(0,12)+
+   '… Bu doğrulama hesaplamanın yakınsadığı anlamına gelmez.';
+ }catch(error){status.textContent='SCF ön kontrol: '+error.message;}
+ finally{btn.disabled=false;}
+}
+async function qeJobStart(){
+ const btn=$('qeJobSubmit'),status=$('qeJobStatus');btn.disabled=true;
+ try{
+  const address=$('qeApiAddress').value,token=$('qeApiToken').value;
+  const payload=qeJobPayload(),snapshot=JSON.stringify(payload),workspaceId=activeWorkspaceId;
+  const validated=await validateQeScf(address,token,payload);
+  if(activeWorkspaceId!==workspaceId||JSON.stringify(qeJobPayload())!==snapshot)
+   throw Error('Hesaplama sırasında yapı veya ayarlar değişti; yeniden ön kontrol yapın.');
+  if(!window.confirm(validated.atoms+' atomlu PBE/SCF işi gerçek Docker/Quantum ESPRESSO üzerinde başlatılsın mı?'))return;
+  const created=await submitQeScf(address,token,payload);
+  if(created.structure_hash!==validated.structure_hash)
+   throw Error('Gönderilen ve doğrulanan yapı özetleri uyuşmuyor.');
+  qeActiveJob={id:created.job_id,address,token,hash:created.structure_hash,
+   workspaceId,snapshot};
+  status.textContent='SCF işi kuyruğa alındı: '+created.job_id+
+   '. İşlem durumu için Yenile düğmesini kullanın.';
+ }catch(error){status.textContent='SCF gönderme: '+error.message;}
+ finally{btn.disabled=false;}
+}
+async function qeJobRefresh(){
+ const status=$('qeJobStatus');if(!qeActiveJob){status.textContent='Bu sekmede takip edilen bir iş yok.';return;}
+ try{
+  const job=qeActiveJob,record=await getQeScfJob(job.address,job.token,job.id);
+  let message='İş '+job.id+' · '+record.status+' · yapı özeti '+record.structure_hash.slice(0,12)+'.';
+  const stale=activeWorkspaceId!==job.workspaceId||JSON.stringify(qeJobPayload())!==job.snapshot;
+  if(stale)message+=' Aktif yapı/ayarlar değişmiş; sonuç mevcut yapıya aktarılmayacak.';
+  if(record.status==='completed'){
+   const result=await getQeScfResult(job.address,job.token,job.id);
+   if(result.structure_hash!==job.hash)throw Error('DFT sonucu kaynak yapıyla uyuşmuyor.');
+   message+=' Gerçek QE toplam enerjisi: '+result.energy_ev?.toFixed(6)+' eV; '+
+    'SCF yakınsama: '+(result.scf_converged?'evet':'hayır')+
+    '. Tek bir başarılı iş bilimsel yakınsama çalışması değildir.';
+  }else if(record.error)message+=' Hata: '+record.error;
+  status.textContent=message;
+ }catch(error){status.textContent='İş durumu: '+error.message;}
+}
+async function qeJobCancel(){
+ if(!qeActiveJob){$('qeJobStatus').textContent='İptal edilecek aktif iş bulunamadı.';return;}
+ if(!window.confirm('Gerçek QE işini iptal etmek istiyor musunuz?'))return;
+ try{
+  const job=qeActiveJob;
+  const result=await cancelQeScfJob(job.address,job.token,job.id);
+  $('qeJobStatus').textContent='İptal isteği: '+result.status+'. Çalışan işlem worker tarafından sonlandırılacaktır.';
+ }catch(error){$('qeJobStatus').textContent='İptal isteği: '+error.message;}
+}
 async function qeTestApiConnection(){
  const button=$('qeApiTest'),input=$('qeApiAddress'),status=$('qeApiStatus'),attempt=input.value;
  button.disabled=true;
@@ -6820,7 +6902,7 @@ async function qeTestApiConnection(){
   const list=Object.entries(probe.binaries).map(([key,ok])=>key+': '+(ok?'var':'eksik')).join(' · ');
   status.textContent=(probe.ready?'QE sunucusu hazır.':'QE API erişilebilir; çözücü henüz hazır değil.')+
    ' QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
-   ' · D0–D1 yalnız sunucu keşfi; DFT işi gönderilemez.';
+   (probe.jobsEnabled?' · D2 SCF işi açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
  }catch(error){
   status.textContent='Bağlantı kurulamadı: '+error.message+
    ' Yerel ağ izni, HTTPS/HTTP tarayıcı kısıtları, CORS ve konteyner portunu kontrol edin.';
@@ -9584,6 +9666,10 @@ function bind(){
  $('qeParseOutput').onclick=qePreviewOutputFile;
  $('qeElectronicOpen').onclick=qeLoadElectronicResults;
  $('qeApiTest').onclick=qeTestApiConnection;
+ $('qeJobValidate').onclick=qeJobPreflight;
+ $('qeJobSubmit').onclick=qeJobStart;
+ $('qeJobRefresh').onclick=qeJobRefresh;
+ $('qeJobCancel').onclick=qeJobCancel;
  $('qeApiAddress').onchange=()=>{$('qeApiStatus').textContent='Adres değişti; bağlantıyı yeniden kontrol edin.';};
  $('qeDefectCompareOpen').onclick=qeLoadDefectComparison;
  $('qeDefectCompareFile').onchange=()=>{$('qeDefectCompareCharts').replaceChildren();$('qeDefectCompareStatus').textContent='Kusur serisi dosyası seçildi; açın.';};
