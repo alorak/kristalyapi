@@ -51,6 +51,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_jobs.py' -v
       - name: Test real SCF evidence rejection rules without running DFT
         run: python -m unittest discover -s tests -p 'test_qe_scf_acceptance.py' -v
+      - name: Test D2.2 MoS2 acceptance evidence gates (synthetic negatives only)
+        run: python -m unittest discover -s tests -p 'test_qe_mos2_acceptance.py' -v
       - name: Validate Docker Compose configuration without building the heavy QE image
         run: docker compose -f compose.qe.yml config --quiet
       - name: Install pinned Gemmi map reference
