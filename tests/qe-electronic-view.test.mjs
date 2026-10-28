@@ -48,3 +48,48 @@ test('plot inputs have deterministic computational bound',()=>{
  bad.bands.energies_ev=Array.from({length:100},()=>Array.from({length:2000},()=>1));
  assert.throws(()=>parseQeElectronicResult(bad),/120.000/);
 });
+
+function atomPdos(){
+ const v=valid();
+ v.pdos_total.sum_projected_states_per_ev=[.06,.2,.27];
+ v.pdos_atoms={
+  spin_mode:'collinear-unpolarized',
+  energy_ev:[-1,0,1],
+  atoms:[
+   {atom_index:1,element:'Mo',total_dos_states_per_ev:[.02,.1,.12],
+    orbitals:{d:[.02,.1,.12]}},
+   {atom_index:2,element:'S',total_dos_states_per_ev:[.04,.1,.15],
+    orbitals:{s:[.01,.02,.03],p:[.03,.08,.12]}}
+  ],
+  elements:[
+   {element:'Mo',total_dos_states_per_ev:[.02,.1,.12],orbitals:{d:[.02,.1,.12]}},
+   {element:'S',total_dos_states_per_ev:[.04,.1,.15],
+    orbitals:{s:[.01,.02,.03],p:[.03,.08,.12]}}
+  ]
+ };
+ return v;
+}
+test('atom-resolved Mo-d and S-p PDOS is accepted against total projection',()=>{
+ const result=parseQeElectronicResult(atomPdos());
+ assert.equal(result.pdosDetailed.atoms.length,2);
+ assert.deepEqual(result.pdosDetailed.elements[0].orbitals.d,[.02,.1,.12]);
+ assert.deepEqual(result.pdosDetailed.elements[1].orbitals.p,[.03,.08,.12]);
+});
+test('atomic contributions must reconcile with overall projected DOS',()=>{
+ const input=atomPdos();
+ input.pdos_atoms.atoms[0].total_dos_states_per_ev[1]=.5;
+ input.pdos_atoms.atoms[0].orbitals.d[1]=.5;
+ assert.throws(()=>parseQeElectronicResult(input),/uyuşmuyor/);
+});
+test('reject spin-resolved output, extra orbital names and mismatched grids',()=>{
+ const spin=atomPdos();spin.pdos_atoms.spin_mode='spin-polarized';
+ assert.throws(()=>parseQeElectronicResult(spin),/spin-polarize/);
+ const unsupported=atomPdos();unsupported.pdos_atoms.atoms[0].orbitals.j=[.02,.1,.12];
+ assert.throws(()=>parseQeElectronicResult(unsupported),/Desteklenmeyen/);
+ const grid=atomPdos();grid.pdos_atoms.energy_ev=[-1,0.2,1];
+ assert.throws(()=>parseQeElectronicResult(grid),/enerji ekseni/);
+});
+test('old QE output without per-atom PDOS remains backward compatible',()=>{
+ const result=parseQeElectronicResult(valid());
+ assert.equal(result.pdosDetailed,null);
+});
