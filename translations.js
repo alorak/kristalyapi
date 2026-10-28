@@ -7,6 +7,15 @@
 (() => {
  'use strict';
  const entries=[
+  ["3 · MoS₂ kusur araştırması · ACS Nano 2022","3 · MoS₂ defect study · ACS Nano 2022"],
+  ["Tek katman, stokiyometri ve yaklaşık 2B vakum ön denetimi. Önce açık P1 atomlarını hazırlayın; V_S, V_2S ve oksijenli yapılar yalnız atom sayısından aday olarak sınıflandırılır.","Monolayer, stoichiometry and approximate 2D vacuum preflight. First prepare explicit P1 atoms; V_S, V_2S and oxygen-related structures are only classified as candidates from atom counts."],
+  ["MoS₂ ön denetimi","MoS₂ preflight"],
+  ["Güncel yapı için “MoS₂ ön denetimi” çalıştırın.","Run MoS₂ preflight for the current structure."],
+  ["Araştırma manifesti (.json) indir","Download study manifest (.json)"],
+  ["Kaynak: Wang ve ark., ACS Nano (2022),","Source: Wang et al., ACS Nano (2022),"],
+  ["DOI: 10.1021/acsnano.2c09209","DOI: 10.1021/acsnano.2c09209 (paper)"],
+  ["· Şekil 4. Bu bir geometri kontrolüdür: DFT yapılmaz, UV ışınlaması/PL/g² ölçülmez. Hücreye eklenen vakum deneysel vakum değildir. JSON proje dosyası yerine geçmez.","· Figure 4. Geometry preflight only: no DFT, UV irradiation, PL or g² measurements. Vacuum spacing in a simulation cell is not experimental vacuum. This JSON is not a project file."],
+  ["QE'yi yerel bilgisayar/VM üzerinde çalıştırma kılavuzu","Local/VM Quantum ESPRESSO runner guide"],
   ["Pik konumu ve en yüksek şiddetin hesabı burada gösterilir.","Peak position and strongest-intensity calculation appear here."],
   ["Kırınım pikini nasıl yorumlarız?","How do we interpret a diffraction peak?"],
   ["4 adım · yapıdan ölçüme","4 steps · from structure to measurement"],
