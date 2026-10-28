@@ -302,7 +302,7 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 
 **Kabul notu:** D2 iş kodu, D-P1 bilimsel kabulünün tamamlandığı anlamına gelmez; gerçek UPF ve QE çalıştırması ayrı doğrulanacaktır.
 
-### D-P1 — İlk çalışan web dilimi: tek SCF işi (sıradaki geliştirme)
+### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 
 - [ ] **Sürümlü motor-bağımsız JSON girdi şeması (v1):** hücre
   vektörleri (Å), atom sırası/türü, koordinat sistemi, periyodiklik,
