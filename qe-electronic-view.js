@@ -182,14 +182,17 @@ export function renderQeElectronicResults(container,data){
  }
  if(data.pdosDetailed){
   const heading=document.createElement('strong');
-  heading.textContent='Atom / element / orbital katkılarını incele';
+  const localized=text=>window.CrystalI18n?.t(text)||text;
+  heading.textContent=localized('Atom / element / orbital katkılarını incele');
   container.append(heading);
   const select=document.createElement('select');
-  select.setAttribute('aria-label','PDOS atom ve orbital seçimi');
+  select.setAttribute('aria-label',localized('PDOS atom ve orbital seçimi'));
+  select.style.maxWidth='100%';
+  select.style.width='100%';
   const choices=[];
   for(const element of data.pdosDetailed.elements){
    for(const [orbital,values] of Object.entries(element.orbitals))
-    choices.push({label:element.element+' · '+orbital+' orbitali (element toplamı)',
+    choices.push({label:element.element+' · '+orbital+' '+localized('orbitali (element toplamı)'),
      value:values,key:'element-'+element.element+'-'+orbital});
   }
   for(const atom of data.pdosDetailed.atoms){
@@ -209,13 +212,14 @@ export function renderQeElectronicResults(container,data){
   const update=()=>{
    const c=choices.find(c=>c.key===select.value)||choices[0];
    if(!c)return;
-   plot.replaceChildren(chart('Toplam projeksiyon ve '+c.label,
+   plot.replaceChildren(chart(localized('Toplam projeksiyon ve')+' '+c.label,
     'Enerji (eV)','Durum/(eV hücre)',[
      {x:data.pdosDetailed.energy,y:data.pdos},
      {x:data.pdosDetailed.energy,y:c.value}
     ]));
-   legend.textContent='Mavi: tüm atomların toplam PDOS katkısı · Turuncu: '+c.label+
-    '. Bu yansıtma kimyasal bağ veya optik geçiş kanıtı değildir.';
+   legend.textContent=localized('Mavi: tüm atomların toplam PDOS katkısı')+' · '+
+    localized('Turuncu:')+' '+c.label+'. '+
+    localized('Bu yansıtma kimyasal bağ veya optik geçiş kanıtı değildir.');
   };
   select.addEventListener('change',update);
   container.append(select,plot,legend);
