@@ -1,0 +1,14 @@
+{
+  "case_id": "ecut140-k8-c24",
+  "job_id": "2ae61a77b8144119aaf24d67227ad3cb",
+  "terminal_status": "timed_out",
+  "api_error": null,
+  "acceptance_eligible": false,
+  "input_sha256": "5905a955433fa271d9adc46f5ad92dd2198b94cbb1e37949ccd639cd2f7f4f13",
+  "partial_output_sha256": "106965e6fcd51ffaf4b48caf61e8abfa65144524aefb558e118078e78998c14c",
+  "raw_job_done": false,
+  "last_started_scf_iteration": 7,
+  "last_estimated_scf_accuracy_ry": 0.0004516,
+  "notice": "Partial diagnostics only; no accepted SCF energy or cutoff comparison.",
+  "analysis_note": "Derived after the original run by the new diagnostic helper; not an original artifact file."
+}

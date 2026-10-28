@@ -206,6 +206,35 @@ class MoS2PlanAndEvidenceTests(unittest.TestCase):
         differences=mos2.comparisons(items,self.plan)
         self.assertFalse(differences[0]["passed"])
 
+    def test_timeout_diagnostics_retain_partial_evidence_without_acceptance_energy(self):
+        self.trace["terminal"]["status"]="timed_out"
+        partial=b'iteration # 6\nestimated scf accuracy < 4.5E-4 Ry\niteration # 7\n'
+        failure=mos2.incomplete_case_diagnostics(self.case,self.trace,self.raw_input,partial)
+        self.assertEqual(failure["terminal_status"],"timed_out")
+        self.assertEqual(failure["last_started_scf_iteration"],7)
+        self.assertEqual(failure["last_estimated_scf_accuracy_ry"],4.5e-4)
+        self.assertEqual(failure["partial_output_sha256"],mos2.sha(partial))
+        self.assertFalse(failure["acceptance_eligible"])
+        self.assertFalse(failure["raw_job_done"])
+        self.assertNotIn("energy_ry",failure)
+
+    def test_failed_api_job_cannot_be_promoted_by_success_markers_in_raw_output(self):
+        self.trace["terminal"]["status"]="failed"
+        failure=mos2.incomplete_case_diagnostics(
+            self.case,self.trace,self.raw_input,self.raw_output)
+        self.assertTrue(failure["raw_job_done"])
+        self.assertFalse(failure["acceptance_eligible"])
+        with self.assertRaisesRegex(ValueError,"API job not completed"):
+            self.check()
+
+    def test_diagnostics_survive_empty_or_truncated_solver_output(self):
+        self.trace["terminal"]["status"]="timed_out"
+        for output in (b'',b'iteration # \xff\n'):
+            failure=mos2.incomplete_case_diagnostics(self.case,self.trace,self.raw_input,output)
+            self.assertIsNone(failure["last_started_scf_iteration"])
+            self.assertIsNone(failure["last_estimated_scf_accuracy_ry"])
+            self.assertEqual(failure["partial_output_sha256"],mos2.sha(output))
+
     def test_offline_verify_rejects_missing_or_modified_plan(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)

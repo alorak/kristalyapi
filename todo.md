@@ -326,6 +326,16 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 
 **Bilimsel sınır:** D2.2'nin ideal monolayer SCF enerji duyarlılığı optik/tek-foton doğrulaması veya makalenin SIESTA sonuçlarının yeniden üretimi değildir. [Kabul protokolü](docs/qe-mos2-validation.md).
 
+### D2.2b — MoS₂ yüksek kesme enerjisi yakınsaması
+
+- [x] İlk D2.2'nin 80→100 Ry başarısızlığını koruyarak yeni 100/120/140 Ry, ecutrho=8×ecutwfc, k=8×8×1 ve c=24 Å sabit planını gerçek koşudan önce kaydet; aynı doğrulanmış Mo/S hash'lerini ve 120→140 Ry ≤1 meV/atom birincil ölçütünü sabitle.
+- [x] İlk gerçek koşuyu incele: 100 ve 120 Ry yakınsadı; 100 Ry önceki enerjiyi tam tekrarladı. 140 Ry 900 saniyede `timed_out`; birincil kapı belirlenemedi. [Korunan ham kanıtlar](validation-results/qe-mos2-d22b-first-timeout-20261029-amd64/INCELEME.md).
+- [x] Fiziksel plan/eşik değiştirilmeden yalnız kabul ortamına 6 GiB RAM, swap kapalı ve 3600 saniye/iş tanımlayan ayrı v2 ön kaydı; üretim Compose dosyası değişmez. 80 Python testinin tamamı geçti.
+- [ ] [İkinci gerçek Linux koşusu](https://github.com/alorak/kristalyapi/actions/runs/40783454635): üç yeni API işinin ham QE/API/hash doğrulaması ve 120→140 Ry kararını kaydet.
+- [ ] Seçilecek yüksek kesme enerjisinde k-örgüsü/vakum karşılaştırmalarını yeniden doğrula; D2.2 genel kabulü ve D3 bu adımdan önce tamamlanmış sayılmaz.
+
+**Protokol ve kapsam:** [D2.2b kılavuzu](docs/qe-mos2-cutoff-validation.md). İlk D2.2'nin 100 Ry'deki k/vakum sonuçları yeni yüksek-cutoff protokolünün yerine geçmez; kuvvet/relaksasyon kabulü ayrıca gerekir.
+
 ### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 
 - [ ] **Sürümlü motor-bağımsız JSON girdi şeması (v1):** hücre

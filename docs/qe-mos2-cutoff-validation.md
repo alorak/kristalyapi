@@ -93,3 +93,18 @@ hem koşuda hem offline denetimde kontrol edilir.
 `--protocol d22b-extended` ile çalıştırılır; üç nokta da yeni API işleridir.
 Bu plan tekrar başlamadan commit edilir. Eski `d22b` seçeneği v1 planını
 kullanmaya devam eder. İkinci koşunun sonucu henüz bekleniyor.
+
+## Başarısız işlerin kod düzeyinde tanısı
+
+Güncel kabul aracı, tamamlanmamış bir API işi için `failure.json` yazar:
+terminal durum/job kimliği, son başlayan SCF iterasyonu, son hata tahmini,
+girdi/kısmi çıktı SHA-256 ve ham `JOB DONE.` varlığı. Bu kayıt daima
+`acceptance_eligible=false` taşır ve kabul enerjisi içermez. Özet rapor
+`failed_case` alanıyla bu dosyaya bağlanır; hata mesajı `timed_out` gibi
+somut API durumunu gösterir. Eksik veya bozuk metin çıktısı tanıyı bozmaz.
+
+İlk koşu bu koddan önce çalıştığı için ham artifact değiştirilmez;
+[yeni yardımcıyla sonradan türetilen tanı](../validation-results/qe-mos2-d22b-first-timeout-20261029-amd64/failure-analysis.json)
+ayrı kaydedilmiştir. Çalışmakta olan ikinci fiziksel koşu `7a80999`
+kaynağına sabittir; bu tanı eklemesi solver girdisini, başarılı iş denetimini
+veya kabul eşiğini değiştirmez. Güncel 83 Python QE testi geçti.

@@ -176,6 +176,23 @@ def check_case(plan, case, request, result, raw_input, raw_output, trace):
             "output_sha256": sha(raw_output), "structure_hash": expected_structure}
 
 
+def incomplete_case_diagnostics(case, trace, raw_input, raw_output):
+    """Retain partial solver diagnostics without producing an acceptance energy."""
+    terminal = trace["terminal"]
+    require(terminal["status"] != "completed", "Expected an incomplete API job")
+    text = raw_output.decode("utf-8", errors="replace")
+    accuracy = re.findall(r"estimated scf accuracy\s*<\s*("+NUMBER+r")\s*Ry", text)
+    iterations = re.findall(r"(?m)^\s*iteration #\s*(\d+)", text)
+    return {"case_id": case["id"], "job_id": terminal["job_id"],
+            "terminal_status": terminal["status"], "api_error": terminal.get("error"),
+            "acceptance_eligible": False,
+            "input_sha256": sha(raw_input), "partial_output_sha256": sha(raw_output),
+            "raw_job_done": "JOB DONE." in text,
+            "last_started_scf_iteration": int(iterations[-1]) if iterations else None,
+            "last_estimated_scf_accuracy_ry": numeric(accuracy[-1]) if accuracy else None,
+            "notice": "Partial diagnostics only; no accepted SCF energy or cutoff comparison."}
+
+
 def comparisons(cases, plan):
     energies = {c["id"]: c["proof"]["energy_ry"] for c in cases}
     result = []
@@ -365,7 +382,14 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None, protocol="d
                 for name in ("structure.in","structure.out","structure.stderr"):
                     command(["docker","cp",api_container+":/var/lib/qe/runs/"+jid+"/"+name,
                              str(path/name)],output,env)
-                require(final["status"]=="completed",case["id"]+" SCF not completed")
+                if final["status"] != "completed":
+                    failure = incomplete_case_diagnostics(
+                        case, trace, (path/"structure.in").read_bytes(),
+                        (path/"structure.out").read_bytes())
+                    write_json(path/"failure.json", failure)
+                    report["failed_case"] = failure
+                    raise ValueError(case["id"]+" SCF not completed: "+final["status"]+
+                                     "; inspect cases/"+case["id"]+"/failure.json")
                 trace["staged_upf_sha256"] = {}
                 for element in ("Mo","S"):
                     value = command(["docker","exec",api_container,"python3","-c",
