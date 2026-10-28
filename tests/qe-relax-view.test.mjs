@@ -22,6 +22,7 @@ test('D3 comparison preserves source data and wraps a boundary crossing',()=>{
  assert.equal(result.maxForceComponent,1e-5);
  assert.equal(result.before.atoms[0].fractional[0],.99);
  assert.equal(result.after.atoms[0].fractional[0],.01);
+ assert.ok(Math.abs(result.rows[0].alignedAfterFractional[0]-1.01)<1e-12);
 });
 test('D3 rejects stale source, changed cell/order and nonfinite positions',()=>{
  assert.throws(()=>parseRelaxationResult(fixture(),'c'.repeat(64)),/kaynak/);

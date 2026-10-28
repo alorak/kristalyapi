@@ -1,0 +1,25 @@
+qe-worker-1  | /app/relax_core.py:76: SyntaxWarning: invalid escape sequence '\s'
+qe-worker-1  |   +"\s+".join(["("+NUMBER+")"]*3)+r"\s*$", re.I)
+qe-api-1     | INFO:     Started server process [1]
+qe-api-1     | INFO:     Waiting for application startup.
+qe-api-1     | INFO:     Application startup complete.
+qe-api-1     | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1     | INFO:     192.168.128.1:61570 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1     | /app/relax_core.py:76: SyntaxWarning: invalid escape sequence '\s'
+qe-api-1     |   +"\s+".join(["("+NUMBER+")"]*3)+r"\s*$", re.I)
+qe-api-1     | INFO:     192.168.128.1:61584 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:61588 - "POST /api/v1/calculations HTTP/1.1" 202 Accepted
+qe-api-1     | INFO:     192.168.128.1:61598 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59842 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59846 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59852 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59858 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59874 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59886 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59894 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59898 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     127.0.0.1:40062 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59900 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59912 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59922 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:59936 - "GET /api/v1/calculations/49159fbb66e942339c915ed3e63de8f1/results HTTP/1.1" 200 OK

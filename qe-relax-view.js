@@ -41,7 +41,7 @@ export function parseRelaxationResult(data,expectedSourceHash){
   const b=after.atoms[i],wrapped=b.fractional.map((x,j)=>{const d=x-a.fractional[j];return d-Math.round(d);});
   const delta=cart(wrapped,before.cell_angstrom);
   return {index:i+1,element:a.element,before:a.fractional,after:b.fractional,
-   deltaAngstrom:Math.hypot(...delta)};
+   alignedAfterFractional:a.fractional.map((x,j)=>x+wrapped[j]),deltaAngstrom:Math.hypot(...delta)};
  });
  return {before,after,rows,sourceHash:data.structure_hash,finalHash:data.final_structure_hash,
   energyEv:data.energy_ev,maxForceComponent:s.max_force_component_ry_bohr,threshold};
@@ -52,12 +52,14 @@ function node(tag,text){const el=document.createElement(tag);if(text!==undefined
 export function renderRelaxationComparison(container,result,{THREE,OrbitControls}){
  container.replaceChildren();
  const heading=node('strong','Başlangıç / son yapı · 3B karşılaştırma');container.append(heading);
- container.append(node('p','Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Konumlar Å birimindedir; aktif yapı değiştirilmez.'));
+ container.append(node('p','Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Son atomlar başlangıçla periyodik olarak eşlenir. Konumlar Å birimindedir; aktif yapı değiştirilmez.'));
  const grid=node('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px';
  container.append(grid);
- const points=[result.before,result.after].flatMap(s=>s.atoms.map(a=>new THREE.Vector3(...cart(a.fractional,s.cell_angstrom))));
+ const positions=[result.before.atoms.map(a=>a.fractional),result.rows.map(r=>r.alignedAfterFractional)];
+ const points=positions.flatMap(rows=>rows.map(f=>new THREE.Vector3(...cart(f,result.before.cell_angstrom))));
  const box=new THREE.Box3().setFromPoints(points),center=box.getCenter(new THREE.Vector3());
- const distance=Math.max(box.getSize(new THREE.Vector3()).length()*1.6,4);
+ const radius=(box.getSize(new THREE.Vector3()).length()+1.1)/2;
+ const distance=Math.max(radius/Math.sin(35*Math.PI/360)*1.1,4);
  const colors={H:0xe7edf5,C:0x8993a4,N:0x5289ff,O:0xef6358,Si:0xe4af80,S:0xf3d353,Mo:0x9c87e9};
  const views=[];
  for(const [index,s] of [result.before,result.after].entries()){
@@ -65,10 +67,10 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
   const scene=new THREE.Scene();scene.background=new THREE.Color(0x101827);
   scene.add(new THREE.AmbientLight(0xffffff,2));
   const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(2,-3,5);scene.add(light);
-  for(const atom of s.atoms){
+  for(const [atomIndex,atom] of s.atoms.entries()){
    const mesh=new THREE.Mesh(new THREE.SphereGeometry(atom.element==='Mo' ? .3 : .23,24,16),
     new THREE.MeshStandardMaterial({color:colors[atom.element],roughness:.5}));
-   mesh.position.set(...cart(atom.fractional,s.cell_angstrom)).sub(center);scene.add(mesh);
+   mesh.position.set(...cart(positions[index][atomIndex],s.cell_angstrom)).sub(center);scene.add(mesh);
   }
   const axes=new THREE.AxesHelper(1);axes.position.copy(box.min.clone().sub(center).addScalar(-.5));scene.add(axes);
   const camera=new THREE.PerspectiveCamera(35,1,.01,1000);camera.up.set(0,0,1);
@@ -78,7 +80,7 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
   renderer.domElement.setAttribute('aria-label',index?'Son atom konumları, 3B':'Başlangıç atom konumları, 3B');
   panel.append(renderer.domElement);grid.append(panel);
   const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=false;controls.update();
-  views.push({panel,scene,camera,renderer,controls});
+  views.push({panel,scene,camera,renderer,controls,fitDistance:distance});
  }
  let syncing=false,disposed=false;
  const draw=()=>{if(!disposed)for(const v of views)v.renderer.render(v.scene,v.camera);};
@@ -91,6 +93,8 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
   draw();syncing=false;
  });
  const resize=()=>{if(disposed)return;for(const v of views){const w=Math.max(v.panel.clientWidth,180);
+  const fit=distance/Math.min(1,w/220);
+  v.camera.position.sub(v.controls.target).multiplyScalar(fit/v.fitDistance).add(v.controls.target);v.fitDistance=fit;
   v.camera.aspect=w/220;v.camera.updateProjectionMatrix();v.renderer.setSize(w,220,false);}draw();};
  const observer=new ResizeObserver(resize);observer.observe(grid);resize();
  const summary=node('p','Son en büyük kuvvet bileşeni: '+result.maxForceComponent.toExponential(3)+
@@ -99,8 +103,8 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
  const head=node('tr');for(const label of ['Atom','Başlangıç (kesirli)','Son (kesirli)','Sarılmış fark (Å)'])head.append(node('th',label));
  table.append(head);
  for(const row of result.rows){const tr=node('tr');
-  for(const text of [row.index+' · '+row.element,row.before.map(x=>x.toFixed(5)).join(', '),
-   row.after.map(x=>x.toFixed(5)).join(', '),row.deltaAngstrom.toFixed(6)])tr.append(node('td',text));
+  for(const text of [row.index+' · '+row.element,row.before.map(x=>x.toFixed(6)).join(', '),
+   row.after.map(x=>x.toFixed(6)).join(', '),row.deltaAngstrom.toFixed(6)])tr.append(node('td',text));
   table.append(tr);
  }
  const scroll=node('div');scroll.style.overflowX='auto';scroll.append(table);container.append(scroll);

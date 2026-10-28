@@ -1,0 +1,45 @@
+{
+  "scope": "Real Si Docker/API D3 process smoke at 45/360 Ry and k=2, not MoS2 acceptance or a Si accuracy study.",
+  "source_commit": "429bee2502795619600799ee03945d9a39a06692",
+  "status": "passed",
+  "terminal": {
+    "job_id": "49159fbb66e942339c915ed3e63de8f1",
+    "status": "completed",
+    "created": "2026-10-28T23:38:14.144292+00:00",
+    "updated": "2026-10-28T23:38:19.534759+00:00",
+    "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null
+  },
+  "energy_ry": -22.65199796,
+  "max_force_component_ry_bohr": 3.855e-05,
+  "api": {
+    "validation": {
+      "valid": true,
+      "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "relax-scf",
+      "notice": "Validation is not a DFT convergence study"
+    },
+    "submitted": {
+      "job_id": "49159fbb66e942339c915ed3e63de8f1",
+      "status": "queued",
+      "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952"
+    },
+    "terminal": {
+      "job_id": "49159fbb66e942339c915ed3e63de8f1",
+      "status": "completed",
+      "created": "2026-10-28T23:38:14.144292+00:00",
+      "updated": "2026-10-28T23:38:19.534759+00:00",
+      "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  }
+}

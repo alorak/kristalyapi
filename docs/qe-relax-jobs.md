@@ -39,5 +39,17 @@ karşılaştırma reddedilir. Eski iş kaydı kendi kaynak/son yapısını göst
 
 Docker kurulumu [iş kılavuzundaki](qe-jobs.md) gibidir. MoS₂ yüksek cutoff
 kabul profili 6 GiB RAM ve kapalı swap gerektirir; varsayılan üretim Compose
-bellek sınırı operatör ayarıdır. Gerçek kabul ve görsel denetim sonuçları
-buraya eklenecek.
+bellek sınırı operatör ayarıdır. Gerçek MoS₂ kabulü ayrıca kaydedilecek.
+
+## Gerçek Si işleyiş ve tarayıcı denetimi
+
+[Gerçek Si raw/API kanıtları](../validation-results/qe-d3-si-smoke-20261029-arm64/INCELEME.md):
+yeni `relax → scf` işi geçti. Relaksasyon kuvvet bileşeni 3.567e-5,
+son SCF bileşeni 3.855e-5 Ry/Bohr; sınır 1e-4. Son enerji -22.65199796 Ry.
+İlk verbose-kuvvet parser reddi korunarak gerçek çıktıyla regresyonu giderildi.
+98 Python QE testi ve 437 JavaScript testi geçti. 3B görünüm gerçek Si
+sonucuyla tarayıcıda incelendi; periyodik sınırı geçen atomların büyük
+sıçrama gibi görünmesini engelleyen görüntü eşlemesi eklendi.
+
+Bu küçük Si denemesi MoS₂ D3 bilimsel kabulü değildir; D2.2c referansı
+ve o referanstan gerçek MoS₂ relaksasyon/kuvvet denetimi ayrıca gerekir.
