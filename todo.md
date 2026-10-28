@@ -288,7 +288,21 @@ tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 **Kabul:** Mevcut çevrimdışı/PWA uygulaması ve elle dosya indirip içe
 aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 
-### D-P1 — İlk çalışan web dilimi: tek SCF işi (sıradaki geliştirme)
+### D2 — İlk güvenli SCF iş hattı ve kalıcı görev kuyruğu (teknik başlangıç)
+
+- [x] Sürümlü, yalnız desteklenen PBE/spinsiz/SCF parametrelerini kabul eden yapı JSON şeması, 64 atom sınırı, sonlu koordinat ve hücre/atom doğrulamaları; kullanıcı kontrollü QE input, shell veya dosya yolu kabul etmeme.
+- [x] Opt-in kimlikli `POST /api/v1/calculations/validate`, `POST /api/v1/calculations` (202), `GET /api/v1/calculations/{id}`, sonuç, log kuyruğu, liste ve iptal; varsayılan GET-only keşif modu korunur.
+- [x] SQLite kalıcı tek-worker kuyruğu, iş durumları ve restart sonrası yarıda kalan işi başarısız olarak işaretleme; kaynak kimlik hash'i ve gerçek çıktı/UPF SHA-256.
+- [x] Operatörün önceden temin ettiği gerçek UPF ve açıklanan lisans/kaynakla sunucu profili, SHA-256 kontrolü; pseudopotansiyel seçimi istemciye bırakılmaz.
+- [x] Docker üzerinde ayrı worker, kabuksuz `pw.x`, process-group iptal ve timeout; 10 bekleyen iş limiti, konteyner CPU/RAM/process sınırları.
+- [x] DFT panelinde açık onayla SCF işi gönderme, durum/result ve iptal; erişim token'ı saklanmaz ve HTTP üzerinden özel LAN IP'ye gönderilmez.
+- [x] Node API istemci testleri, Python API/worker/sentetik solver/UPF testleri, Compose ve PWA dağıtım entegrasyonu.
+- [ ] **Gerçek hesaplama kabulü:** Docker imajı build, gerçek Si SCF ve MoS₂ SCF/relax, pseudopotensiyel/ecut/k-örgüsü yakınsaması, fiziksel bağımsız doğrulama. Bu PR mock testlerle sınırlıdır.
+- [ ] **D3+ sonraki işler:** relaksasyon/bands/DOS/PDOS job pipeline, otomatik geometri önizleme, çok kullanıcılı kimlik/quotas, GPU/HPC/AiiDA, bilimsel yakınsama taramaları ve yalnız sonra vekil modeller. Mevcut D-P1–D-P7 ayrıntılı adımlar korunur.
+
+**Kabul notu:** D2 iş kodu, D-P1 bilimsel kabulünün tamamlandığı anlamına gelmez; gerçek UPF ve QE çalıştırması ayrı doğrulanacaktır.
+
+### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 
 - [ ] **Sürümlü motor-bağımsız JSON girdi şeması (v1):** hücre
   vektörleri (Å), atom sırası/türü, koordinat sistemi, periyodiklik,

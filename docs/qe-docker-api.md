@@ -2,7 +2,9 @@
 
 **Durum:** D0 = QE kurulu Docker imajı + ikili başlangıç smoke;
 D1 = FastAPI **salt-okunur** sunucu keşfi ve KristalYapı'da IP:port
-bağlantı kontrolü. **DFT işi gönderme / çalıştırma REST API'si henüz yoktur.**
+bağlantı kontrolü. **Varsayılanda yalnız keşif açıktır.** D2'nin isteğe bağlı,
+kimlik doğrulamalı SCF API/worker kurulumunu görmek için
+[SCF iş API'si ve UPF kılavuzu](qe-jobs.md) belgesini kullanın.
 Mevcut QE dosya alışverişi, Python `qe_run.py` ve `qe_pipeline.py`
 iş akışları korunur.
 
@@ -123,9 +125,7 @@ Kaynak: [Chrome Local Network Access](https://developer.chrome.com/docs/modern-w
 
 ## 4. Güvenlik ve sınırlar
 
-- **Sadece `GET /api/health` ve `GET /api/capabilities`**
-  vardır; `POST /api/jobs`, job logu, iş kuyruğu ve dosya
-  yükleme bulunmaz.
+- **Varsayılan D0–D1 modunda** sadece `GET /api/health` ve `GET /api/capabilities` açıktır. D2 için `QE_JOBS_ENABLED=1` ve API anahtarı verilirse ayrıca yalnızca izinli SCF iş uç noktaları etkinleşir; ayrıntılar [qe-jobs.md](qe-jobs.md) içindedir.
 - API çalıştırılabilir komut, yapı, UPF adı veya herhangi bir dosya
   yolu **almıyor**. QE binary probe yalnız başlangıçta bir kez
   yapılır, her HTTP isteğinde `pw.x` çalışmaz.
@@ -154,11 +154,11 @@ başlatıldığı veya bilimsel SCF hesabı yapıldığı iddiası için
 ayrı makine/CI kanıtı gerekir. İlk fiziksel kabul kapısı:
 kontrollü UPF ile Si SCF ve MoS₂ SCF/relax referans koşumlarıdır.
 
-## 6. Sonraki paket (D2 / D-P1)
+## 6. D2 iş hattı ve sonraki aşamalar
 
-Sürümlü yapı/job giriş şeması, sunucu tarafı doğrulama,
-kimlik doğrulama, gerçek UPF profili, izole iş kuyruğu,
-`POST /api/jobs` (202 + job_id), poll, iptal, loglar,
-başarısızlık kontrolleri ve doğru sonuç kökeni. Kullanıcı
-işi açıkça onaylamadan yeni bir fiziksel hesaplama
-başlatılmayacak.
+D2 ilk sürümde sürümlü JSON yapı şeması, tek kullanıcıya ait API anahtarı,
+operatör tanımlı UPF SHA-256 profili, SQLite kuyruğu ve ayrı worker ile
+**SCF işi gönderme**, durum, sonuç, log ve iptal sağlar.
+[Kurulum ve güvenlik kılavuzu](qe-jobs.md) zorunlu ön okumadır.
+Gerçek Si/MoS₂ bilimsel doğrulaması, relaksasyon/bant/PDOS işleri,
+çok kullanıcılı yetkilendirme, HPC/AiiDA ve ML sonraki fazlardır.

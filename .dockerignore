@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+qe-local
+tests
+docs
+README*
+*.sqlite3*
+__pycache__
+node_modules
+vendor
+*.pdf
+*.png
+*.jpg
+*.wasm

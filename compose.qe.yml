@@ -1,28 +1,48 @@
-# D0-D1: read-only Quantum ESPRESSO discovery API, not a compute server.
-# Default: loopback only. LAN binding requires deliberate QE_API_BIND_IP and
-# QE_ALLOWED_HOSTS settings. Never expose this HTTP port to the internet.
+# D0-D2: statically served UI + one authenticated API + optional one worker.
+# By default no job endpoints or worker. LAN HTTP is discovery-only.
+x-qe-common: &qe-common
+  image: kristalyapi-qe-api:d2-scf
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  pids_limit: 128
+  mem_limit: 2g
+  cpus: 2.0
+  restart: unless-stopped
+  volumes:
+    - qe-state:/var/lib/qe
+    - ${QE_PROFILE_DIR:-./qe-local/profiles}:/profiles:ro
+    - ${QE_PSEUDO_DIR:-./qe-local/pseudos}:/pseudos:ro
+
 services:
   qe-api:
+    <<: *qe-common
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
       args:
         QE_DEB_VERSION: "${QE_DEB_VERSION:-6.7-3+b1}"
-    image: kristalyapi-qe-api:d0-d1
     ports:
       - "${QE_API_BIND_IP:-127.0.0.1}:${QE_API_PORT:-8000}:8000"
     environment:
       QE_ALLOWED_ORIGINS: "${QE_ALLOWED_ORIGINS:-https://alorak.github.io}"
       QE_ALLOWED_HOSTS: "${QE_ALLOWED_HOSTS:-localhost,127.0.0.1}"
       QE_PROBE_TIMEOUT: "8"
-    read_only: true
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    pids_limit: 128
-    mem_limit: 2g
-    cpus: 2.0
-    restart: unless-stopped
+      QE_JOBS_ENABLED: "${QE_JOBS_ENABLED:-0}"
+      QE_API_TOKEN: "${QE_API_TOKEN:-}"
+      FORWARDED_ALLOW_IPS: "${QE_TRUSTED_PROXY_IPS:-127.0.0.1}"
+  qe-worker:
+    <<: *qe-common
+    profiles: ["compute"]
+    depends_on:
+      - qe-api
+    command: ["python3","worker.py"]
+    environment:
+      QE_JOB_TIMEOUT: "${QE_JOB_TIMEOUT:-3600}"
+
+volumes:
+  qe-state:
