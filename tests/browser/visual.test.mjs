@@ -633,6 +633,9 @@ try{
  assert.match(await page.locator('#siteOccupancySummary').textContent(),/H, O/);
  const allBefore=await page.evaluate(()=>window.__visualTest.instancing());
  assert.equal(allBefore.instances,10,'all crystal sites are rendered by default');
+ // The disorder control is inside the Info drawer; the drawer must be open before changing it.
+ await page.locator('[data-right-tool="info"]').click();
+ await page.locator('#disorderView').waitFor({state:'visible'});
  await page.locator('#disorderView').selectOption('dominant');
  assert.equal((await page.evaluate(()=>window.__visualTest.instancing())).instances,8,
   'representative choice displays the higher-occupancy Cs alternative group');
