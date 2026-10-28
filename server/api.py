@@ -53,7 +53,8 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
                 docs_url=None,redoc_url=None,openapi_url=None)
     app.add_middleware(TrustedHostMiddleware,allowed_hosts=hosts)
     app.add_middleware(CORSMiddleware,allow_origins=origins,
-                       allow_methods=["GET","POST"],allow_headers=["Authorization","Content-Type"],
+                       allow_methods=["GET","POST"] if enabled else ["GET"],
+                       allow_headers=["Authorization","Content-Type"] if enabled else [],
                        allow_credentials=False)
 
     @app.middleware("http")
