@@ -192,13 +192,15 @@ gerçek cihaz kontrolleri ayrıca raporlanır.
 - [ ] SIESTA makale ayarlarını **referans protokol** olarak kaydet: SIESTA 4.1 b4, PBE, DZP, 4×4×1 gamma merkezli k-ağı, 200 Ry mesh cutoff, 150 Ry filter cutoff, Grimme vdW, CG relaksasyon; QE parametreleriyle bire bir eşit olmadığını belirt.
 - [ ] QE'de bağımsız pseudopotential/PAW, ecutwfc/ecutrho, k-ağı, vakum kalınlığı, süperhücre boyutu ve kuvvet yakınsama testleri; fiziksel parametreler ve yazılım sürümü kaydedilmeli.
 - [ ] 2B elektrostatik sınır koşulları ve yüklü kusurlara özel sonlu-hücre düzeltmelerini sonraki iş akışına dahil et; ilk P0 yalnız nötr modelleri tanımlar.
-- [ ] Her geometri için `relax` → `scf` → `nscf`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.
+- [x] **Teknik ilk sürüm:** yerel Python QE pipeline: shared `prefix/outdir`, durdurmalı `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x`, kullanıcı doğrulamalı `crystal_b` k-yolu, enerji/DOS JSON ve ham çıktı saklama. Mock-çıktı testleri var; **gerçek MoS₂ hesabı / bilimsel tekrarlanabilirlik henüz doğrulanmadı**.
+- [ ] Her geometri için `relax` → `scf` → `nscf`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.- [ ] Her geometri için `relax` → `scf` → `nscf`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.
 - [ ] DFT sonuçlarına: solver/sürüm, işlevsel, pseudopotential SHA256, k-ızgara, toplam enerji, kuvvet, çalıştırma tarihi, yakınsama ve model kimliği ekle.
 - [ ] Farklı atom sayısı ve kimyasal potansiyeller için doğru kusur oluşum enerjileri; yalnız toplam enerjileri doğrudan karşılaştırma.
 
 ### M-P2 — Makale Şekil 4(c,g): bantlar ve PDOS
 
-- [ ] Quantum ESPRESSO `bands.x`, `dos.x`, `projwfc.x` çıktılarının kaynak/birim doğrulamalı içe aktarımı.
+- [x] **İlk görselleştirme:** yerel `electronic-results.json` üzerinden ham QE bant ve toplam DOS/PDOS SVG grafiklerini göster; biçim/sayı kontrolü ve boyut sınırlaması; yanlış Fermi/vakum hizalaması iddiası olmadan.
+- [ ] Quantum ESPRESSO `bands.x`, `dos.x`, `projwfc.x` çıktılarının kaynak/birim doğrulamalı içe aktarımı.- [ ] Quantum ESPRESSO `bands.x`, `dos.x`, `projwfc.x` çıktılarının kaynak/birim doğrulamalı içe aktarımı.
 - [ ] Band / DOS / PDOS grafiklerinin ortak enerji referansı, spin kanalı, orbital ve atom projeksiyonları; yoğunluk–bant enerjisi ayrımını koru.
 - [ ] Kusursuz–`V_{2S}`–`O_2@V_S` karşılaştırması, kusur kaynaklı lokalize durumlar; elektron yoğunluğunu CUBE/XSF ile birlikte göster.
 - [ ] Şekil 4'ün k yolu ve süperhücre bant katlanması sorununu açıkça ele al; gerektiğinde band unfolding.

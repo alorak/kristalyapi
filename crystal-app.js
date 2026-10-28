@@ -10,6 +10,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
+import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6805,6 +6806,24 @@ function qeExportPwInput(){
   $('qeExportStatus').textContent=result.atoms+' açık P1 atomu · '+result.species.length+' element · '+result.fixedCount+' sabit atom. UPF dosyalarını kendi bilgisayarınızda ./pseudo içine yerleştirin.';
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
 }
+async function qeLoadElectronicResults(){
+ const input=$('qeElectronicFile'),file=input.files?.[0],status=$('qeElectronicStatus');
+ const container=$('qeElectronicCharts');container.replaceChildren();
+ if(!file){status.textContent='Önce electronic-results.json dosyası seçin.';return;}
+ if(file.size>8e6){status.textContent='Elektronik sonuç dosyası 8 MB sınırını aşıyor.';return;}
+ const workspaceId=activeWorkspaceId;
+ try{
+  const raw=await file.text();
+  if(input.files?.[0]!==file||activeWorkspaceId!==workspaceId)
+   throw Error('Dosya veya çalışma alanı değişti; dosyayı yeniden açın.');
+  const parsed=parseQeElectronicResult(JSON.parse(raw));
+  renderQeElectronicResults(container,parsed);
+  status.textContent='Elektronik sonuç yerel dosyadan yüklendi. Bant sayısı: '+
+   (parsed.bands?.curves.length||0)+'; DOS noktası: '+(parsed.dos?.energy.length||0)+'.';
+ }catch(error){
+  container.replaceChildren();status.textContent='Elektronik veri: '+error.message;
+ }
+}
 async function qePreviewOutputFile(){
  const file=$('qeOutputFile').files?.[0];
  qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;
@@ -9525,6 +9544,8 @@ function bind(){
  $('qeExportPw').onclick=qeExportPwInput;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
+ $('qeElectronicOpen').onclick=qeLoadElectronicResults;
+ $('qeElectronicFile').onchange=()=>{$('qeElectronicCharts').replaceChildren();$('qeElectronicStatus').textContent='Dosya seçildi; grafik için açın.';};
  $('qeApplyGeometry').onclick=qeApplyOutputGeometry;
  $('addMillerLayer').onclick=()=>{try{addMillerLayer();}catch(e){inform(e.message);}};
  $('morphVisible').onchange=e=>{state.morphVisible=e.target.checked;build();};

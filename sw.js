@@ -2,9 +2,9 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-28-qe-runner-i18n-fix';
+const CACHE_NAME=CACHE_PREFIX+'2026-10-28-qe-electronic-p2';
 const APP_FILES=[
- './','./index.html','./styles.css','./semiconductor-p0.css','./crystal-app.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
+ './','./index.html','./styles.css','./semiconductor-p0.css','./crystal-app.js','./qe-electronic-view.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js',
  './semiconductor-p0.js','./semiconductor-physics-p0-core.js','./xrd-factor-core.js','./powder-planes-view.js',
  './favicon.svg','./manifest.webmanifest',
