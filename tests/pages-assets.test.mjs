@@ -11,7 +11,7 @@ const sw=read('sw.js');
 const html=read('index.html');
 const editor=read('crystal-app.js');
 const semiconductor=read('semiconductor-p0.js');
-const modules=['semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-defect-compare-view.js'];
+const modules=['semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-defect-compare-view.js','qe-api-client.js'];
 
 test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
  for(const file of modules){
@@ -27,7 +27,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-28-mos2-series-comparison-p2'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-28-qe-docker-d0-d1'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
