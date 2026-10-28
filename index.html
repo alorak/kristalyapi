@@ -380,6 +380,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button type="button" id="qeApiTest">Docker / QE bağlantısını kontrol et</button>
     <div id="qeApiStatus" class="note" role="status" aria-live="polite">Bağlantı henüz kontrol edilmedi.</div>
     <p class="hint"><a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-docker-api.md" target="_blank" rel="noopener noreferrer">Docker kurulumu, LAN erişimi ve CORS kılavuzu</a>. GitHub Pages üzerinden yerel ağ erişiminde tarayıcı izni veya HTTPS yapılandırması gerekebilir.</p>
+    <div class="qe-workflow">
+     <strong class="measure-subheading">D2 · Gerçek SCF işi (tek kullanıcı / ilk sürüm)</strong>
+     <p class="hint">Yalnız PBE, spinsiz, sabit hücreli SCF hesapları kabul edilir. UPF profili sunucuda operatör tarafından tanımlanmış olmalı. Anahtar yalnız bu sayfanın belleğinde kullanılır; kayıt edilmez. LAN IP üzerinden anahtarlı iş göndermek için HTTPS gereklidir.</p>
+     <label class="field"><span>Sunucu UPF profil kimliği</span><input id="qeJobProfile" type="text" maxlength="40" value="si-pbe" spellcheck="false"></label>
+     <label class="field"><span>API erişim anahtarı</span><input id="qeApiToken" type="password" autocomplete="off" placeholder="QE_API_TOKEN"></label>
+     <div class="qe-form-grid">
+      <button type="button" id="qeJobValidate">Aktif yapıyı ön kontrol et</button>
+      <button type="button" id="qeJobSubmit" class="primary">Gerçek SCF işini gönder</button>
+      <button type="button" id="qeJobRefresh">İş durumunu yenile</button>
+      <button type="button" id="qeJobCancel">İşi iptal et</button>
+     </div>
+     <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz SCF işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
+     <p class="hint">Sonuç yalnız çalışan Quantum ESPRESSO çıktısından gelir. İş geçmişi sunucudaki SQLite veritabanında tutulur; bu ekranın anahtarı veya hesabı tarayıcı depolamasında tutulmaz. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-jobs.md" target="_blank" rel="noopener noreferrer">SCF işi ve worker kurulumu</a></p>
+    </div>
    </div>
    <div class="qe-workflow">
     <strong class="measure-subheading">1 · Hesaplama girdisini oluştur</strong>
