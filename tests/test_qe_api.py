@@ -29,7 +29,7 @@ class QeDiscoveryTests(unittest.TestCase):
             probe=READY, allowed_origins=["https://alorak.github.io"],
             allowed_hosts=["localhost", "127.0.0.1", "192.168.1.50"]
         )
-        self.client = TestClient(self.app)
+        self.client = TestClient(self.app, base_url="http://localhost")
 
     def test_health_and_capabilities_read_only_contract(self):
         response = self.client.get("/api/health")
@@ -48,7 +48,7 @@ class QeDiscoveryTests(unittest.TestCase):
     def test_degraded_binary_not_reported_as_ready(self):
         app = create_app(probe=DOWN, allowed_origins=["https://alorak.github.io"],
                          allowed_hosts=["localhost"])
-        client = TestClient(app)
+        client = TestClient(app, base_url="http://localhost")
         self.assertEqual(client.get("/api/health").status_code, 503)
         self.assertEqual(client.get("/api/capabilities").json()["engine"]["available"], False)
 
