@@ -15,8 +15,8 @@ x-qe-common: &qe-common
   restart: unless-stopped
   volumes:
     - qe-state:/var/lib/qe
-    - \${QE_PROFILE_DIR:-./qe-local/profiles}:/profiles:ro
-    - \${QE_PSEUDO_DIR:-./qe-local/pseudos}:/pseudos:ro
+    - ${QE_PROFILE_DIR:-./qe-local/profiles}:/profiles:ro
+    - ${QE_PSEUDO_DIR:-./qe-local/pseudos}:/pseudos:ro
 
 services:
   qe-api:
@@ -25,21 +25,21 @@ services:
       context: .
       dockerfile: server/Dockerfile
       args:
-        QE_DEB_VERSION: "\${QE_DEB_VERSION:-6.7-3+b1}"
+        QE_DEB_VERSION: "${QE_DEB_VERSION:-6.7-3+b1}"
     ports:
-      - "\${QE_API_BIND_IP:-127.0.0.1}:\${QE_API_PORT:-8000}:8000"
+      - "${QE_API_BIND_IP:-127.0.0.1}:${QE_API_PORT:-8000}:8000"
     environment:
-      QE_ALLOWED_ORIGINS: "\${QE_ALLOWED_ORIGINS:-https://alorak.github.io}"
-      QE_ALLOWED_HOSTS: "\${QE_ALLOWED_HOSTS:-localhost,127.0.0.1}"
+      QE_ALLOWED_ORIGINS: "${QE_ALLOWED_ORIGINS:-https://alorak.github.io}"
+      QE_ALLOWED_HOSTS: "${QE_ALLOWED_HOSTS:-localhost,127.0.0.1}"
       QE_PROBE_TIMEOUT: "8"
-      QE_JOBS_ENABLED: "\${QE_JOBS_ENABLED:-0}"
-      QE_API_TOKEN: "\${QE_API_TOKEN:-}"
+      QE_JOBS_ENABLED: "${QE_JOBS_ENABLED:-0}"
+      QE_API_TOKEN: "${QE_API_TOKEN:-}"
   qe-worker:
     <<: *qe-common
     profiles: ["compute"]
     command: ["python3","worker.py"]
     environment:
-      QE_JOB_TIMEOUT: "\${QE_JOB_TIMEOUT:-3600}"
+      QE_JOB_TIMEOUT: "${QE_JOB_TIMEOUT:-3600}"
 
 volumes:
   qe-state:
