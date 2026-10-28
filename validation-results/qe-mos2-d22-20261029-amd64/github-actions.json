@@ -1,0 +1,8 @@
+{
+  "run_id": 40770083516,
+  "url": "https://github.com/alorak/kristalyapi/actions/runs/40770083516",
+  "artifact_id": 12855480539,
+  "conclusion": "failure",
+  "head_sha": "588881e8cf37463fd78ec10317a9f2aa9554b146",
+  "meaning": "All seven real SCF jobs completed; strict scientific acceptance failed on cutoff sensitivity."
+}

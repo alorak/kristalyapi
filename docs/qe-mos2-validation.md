@@ -1,9 +1,10 @@
 # D2.2 — 1H-MoS₂ gerçek SCF kabul protokolü
 
-**Durum:** Kabul aracı, yedi vakalık sabit plan, negatif testler ve manuel
-Docker CI iş akışı hazır. **Gerçek MoS₂ koşumu henüz yapılmadı; sonuç uydurulmaz.**
-Bu paket yalnız kusursuz monolayer MoS₂'yi kapsar; Si D2.1 sonucu MoS₂
-sonucu sayılamaz.
+**Durum:** Gerçek Linux/Docker/API koşusunda yedi SCF işinin tamamı
+yakınsadı; ham dosya/API/UPF kanıtları doğrulandı. **D2.2 genel kabulü
+başarısız:** 80→100 Ry kesme enerjisi duyarlılığı 2.374556 meV/atom ile
+1 meV/atom eşiğini aşıyor. K-örgüsü ve vakum kapıları geçti. Tam kanıtlar
+ve ayrıntılı sonuçlar aşağıdadır; eşikler gevşetilmedi.
 
 ## Yapı ve fiziksel kapsam
 
@@ -22,11 +23,25 @@ ve [S.pbe-n-rrkjus_psl.1.0.0.UPF](https://pseudopotentials.quantum-espresso.org/
 PSlibrary 1.0.0 / PBE scalar-relativistic USPP; lisans
 [PSlibrary](https://github.com/dalcorso/pslibrary#license).
 
-**Önemli:** Bu geliştirme ortamında resmi UPF baytları indirilemediğinden
-Mo/S SHA-256'ları **uydurulmadı**. Operatörün doğruladığı iki SHA-256
-girilmeden araç hesap başlatmaz. Gerçek dosya SHA-256 ve element/PBE
-metadata doğrulandıktan sonra dosyalar hesaplamaya alınır. Kaynak ve
-lisans bilgileri de kanıt manifestine kaydedilir.
+29 Ekim 2026 tarihinde resmi HTTPS kaynaklarından indirilen dosyaların
+SHA-256 değerleri hem `shasum` hem Python `hashlib` ile hesaplanıp
+karşılaştırıldı; XML `PP_HEADER` element/PBE/USPP/scalar metadata'sı
+ayrıca incelendi. [İnceleme kaydı](../validation-results/qe-mos2-d22-upf-review-20261029.json):
+
+| Element | Gözden geçirilmiş SHA-256 |
+| --- | --- |
+| Mo | `0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd` |
+| S | `90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4` |
+
+Bu değerler resmi indirmelerin bayt özetleridir; yayıncı tarafından
+imzalanmış checksum veya bağımsız fiziksel uygunluk sertifikası değildir.
+İki SHA-256 açıkça girilmeden araç hesap başlatmaz; yeni indirilen ve
+worker'a kopyalanan dosyaların aynı baytlara sahip olduğu ayrıca kontrol edilir.
+
+İlk gerçek denemede resmi S dosyasındaki `element=" S"` değeri metadata
+kontrolünce reddedildi. Okuyucu artık XML attribute değerindeki çevre
+boşluğunu normalize eder; UPF baytları ve SHA-256 değiştirilmez. Yanlış
+element/fonksiyonel ve bozuk/eksik header reddedilmeye devam eder.
 
 ## Önceden belirlenen yedi koşum
 
@@ -44,7 +59,7 @@ lisans bilgileri de kanıt manifestine kaydedilir.
 80→100 Ry (k=8, c=24) için en fazla 1 meV/atom;
 12→16 düzlem içi k-örgüsü (ecut=100, c=24) için 1 meV/atom;
 c=24→30 Å (ecut=100, k=16) için 2 meV/atom.
-Bunlar başlangıç hedefleridir; gerçek sonuçlar henüz bilinmiyor.
+Bunlar koşudan önce tanımlanmış ölçütlerdir; ölçülen sonuçlar aşağıdadır.
 Başarısız olursa kriter değiştirip aynı koşumu başarılı ilan etmeyin:
 yeni, önceden kayıtlı daha sık tarama hazırlayın. Enerji hassasiyeti,
 kuvvet, band gap, vakum potansiyel platosu veya kusur düzeyi
@@ -64,8 +79,8 @@ curl -fL https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_
 sha256sum qe-local/pseudos/Mo.UPF qe-local/pseudos/S.UPF
 
 python3 tools/qe_mos2_acceptance.py --run \
-  --mo-sha256 YOUR_VERIFIED_64_HEX_MO_HASH \
-  --s-sha256 YOUR_VERIFIED_64_HEX_S_HASH \
+  --mo-sha256 0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd \
+  --s-sha256 90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4 \
   --mo-upf qe-local/pseudos/Mo.UPF \
   --s-upf qe-local/pseudos/S.UPF \
   --output validation-results/qe-mos2-local
@@ -100,7 +115,58 @@ ideal yapı için sınırlı SCF enerji hassasiyeti kanıtı oluşturur.
 Makalede kullanılan SIESTA/DZP protokolünün QE eşdeğeri değildir.
 Optik emisyon veya tek-foton üretimi sonucu çıkarılmaz.
 
-## Sonraki işler
+## 29 Ekim 2026 gerçek koşu ve bağımsız inceleme
+
+[Manuel CI koşusu](https://github.com/alorak/kristalyapi/actions/runs/40770083516),
+kaynak commit `588881e8cf37463fd78ec10317a9f2aa9554b146`, Linux x86_64,
+Docker 28.0.4, gerçek QE `6.7MaX`. Tarama ve temizlik yaklaşık 42 dakika
+52 saniye sürdü. API anahtarları kanıta eklenmedi; test kaynakları kaldırıldı.
+
+[Kalıcı kanıt paketi](../validation-results/qe-mos2-d22-20261029-amd64/README.md)
+ve [ham dosyalardan yerel inceleme](../validation-results/qe-mos2-d22-20261029-amd64/inspection.json)
+depoda saklanır; CI artifact süresi dolduğunda da kullanılabilir.
+Kaynak kod hash'leri yerel inceleme koduyla eşleşti. Her işte:
+
+- API ön kontrolü, 202 gönderim, aynı job ID/yapı hash'i ve `completed` sonucu;
+- `JOB DONE.`, ham SCF yakınsama bildirimi ve son hata tahmini ≤1e-8 Ry;
+- kaynak girdi/ham çıktı/staged Mo/S UPF hash'leri ve API/raw Ry/eV enerjileri;
+- iki S ve bir Mo için beklenen **26 elektronlu nötr hücre** doğrulandı.
+
+| Vaka | Gerçek enerji, Ry | Son SCF hata tahmini, Ry | İterasyon |
+| --- | ---: | ---: | ---: |
+| ecut60-k8-c24 | -181.57954599 | 5.0e-9 | 27 |
+| ecut80-k8-c24 | -181.58082320 | 6.1e-9 | 19 |
+| ecut100-k8-c24 | -181.58134678 | 1.3e-9 | 18 |
+| ecut100-k12-c24 | -181.58136250 | 3.6e-9 | 16 |
+| ecut100-k16-c24 | -181.58136264 | 4.1e-9 | 18 |
+| ecut100-k16-c18 | -181.58136261 | 4.8e-9 | 14 |
+| ecut100-k16-c30 | -181.58136256 | 3.4e-9 | 16 |
+
+| Duyarlılık ölçütü | Gerçek fark, meV/atom | Sınır | Sonuç |
+| --- | ---: | ---: | --- |
+| 80/640→100/800 Ry, k=8, c=24 | **2.374556** | 1 | **Başarısız** |
+| k=12→16, ecut=100/800, c=24 | 0.000635 | 1 | Geçti |
+| c=24→30 Å, ecut=100/800, k=16 | 0.000363 | 2 | Geçti |
+
+`--verify` indirilen pakette yerelde tekrar çalıştırıldı ve aynı duyarlılık
+ihlali nedeniyle sıfırdan farklı çıktı verdi. Bu beklenen bir reddir;
+hesapların tamamlanması genel bilimsel kabul anlamına getirilmedi.
+Geometri relakse edilmedi; yaklaşık 0.006 Ry/Bohr toplam kuvvetler
+geometri/kuvvet yakınsamasına ilişkin bir kabul değildir.
+
+[İlk metadata reddi](../validation-results/qe-mos2-d22-initial-metadata-20261029.json)
+de ayrı saklanır: hesap başlamadan oluşan S attribute okuma hatası ile
+sonraki gerçek sayısal kesme enerjisi başarısızlığı birbirinden ayrıdır.
+
+## Gerekli takip ve sonraki işler
+
+Genel D2.2 kabulü açık kalır. Sonraki deney için daha yüksek kesme
+enerjilerinin (ör. 100/800, 120/960, 140/1120 Ry) sabit k=8, c=24'teki
+taraması koşudan önce ayrı bir planla kaydedilmeli; 1 meV/atom sınırı
+korunmalıdır. Bunlar henüz denenmiş veya kabul edilmiş ayarlar değildir.
+Yeni kesme enerjisi seçilirse k/vakum kontrolleri de o yeni protokol için
+yeniden değerlendirilmelidir; mevcut 100 Ry sonuçları daha yüksek kesme
+enerjisindeki doğrulamanın yerine geçmez.
 
 D2.2'nin gerçek MoS₂ koşusu ve kanıtı geçtikten sonra:
 D3 sabit hücreli relaksasyon ve yeni atom koordinatlarının

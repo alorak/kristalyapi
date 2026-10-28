@@ -1,0 +1,35 @@
+&CONTROL
+ calculation='scf',
+ prefix='kristalyapi',
+ pseudo_dir='./pseudo',
+ outdir='./tmp',
+ tprnfor=.true.,
+ verbosity='high',
+/
+&SYSTEM
+ ibrav=0,
+ nat=3,
+ ntyp=2,
+ ecutwfc=60.00000000,
+ ecutrho=480.00000000,
+ input_dft='PBE',
+ occupations='fixed',
+/
+&ELECTRONS
+ conv_thr=1.0d-8,
+ mixing_beta=0.3,
+ electron_maxstep=150,
+/
+ATOMIC_SPECIES
+Mo 95.95000 Mo.UPF
+S 32.06000 S.UPF
+CELL_PARAMETERS angstrom
+3.1800000000 0.0000000000 0.0000000000
+-1.5900000000 2.7539607840 0.0000000000
+0.0000000000 0.0000000000 24.0000000000
+ATOMIC_POSITIONS crystal
+Mo 0.0000000000 0.0000000000 0.5000000000
+S 0.3333333333 0.6666666667 0.5650000000
+S 0.3333333333 0.6666666667 0.4350000000
+K_POINTS automatic
+8 8 1 0 0 0

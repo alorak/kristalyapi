@@ -1,0 +1,213 @@
+{
+  "schema": "kristalyapi.qe-mos2-acceptance.v1",
+  "status": "failed",
+  "started_at": "2026-10-28T21:13:15.620742+00:00",
+  "cases": [
+    {
+      "id": "ecut60-k8-c24",
+      "ecutwfc_ry": 60,
+      "ecutrho_ry": 480,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.57954599,
+        "energy_ev": -2470.5155801525157,
+        "last_scf_accuracy_ry": 5e-09,
+        "scf_iterations": 27,
+        "qe_version": "6.7MaX",
+        "input_sha256": "474c3f886d901e477a55558cf3d4cfb82b0e82fe0abcd1da512c28c76182dca4",
+        "output_sha256": "539596cf98f6f5ba2ff6f87abc9ef4c70086c8470014b734e64e9c80dcfd6067",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "b90d9b05088e4011ae2a122a09659f94"
+    },
+    {
+      "id": "ecut80-k8-c24",
+      "ecutwfc_ry": 80,
+      "ecutrho_ry": 640,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.5808232,
+        "energy_ev": -2470.5329574798293,
+        "last_scf_accuracy_ry": 6.1e-09,
+        "scf_iterations": 19,
+        "qe_version": "6.7MaX",
+        "input_sha256": "5cae4e9ceab79d8acfa608da4cda80a0d408d2d3e0747d950a0bad44b3e2c28c",
+        "output_sha256": "64dd69c1ccd24c67baeac0cb4155575dcbf0aae523b48a5d50cbe2f215c73c19",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "c191220ee98342d1a979a31d6b1c5115"
+    },
+    {
+      "id": "ecut100-k8-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58134678,
+        "energy_ev": -2470.5400811486343,
+        "last_scf_accuracy_ry": 1.3e-09,
+        "scf_iterations": 18,
+        "qe_version": "6.7MaX",
+        "input_sha256": "32881fd4a4028cf44f04b32ffa69d938665f3982859b79401c66d8f974baf85e",
+        "output_sha256": "f4fe7dd8419bc4472862a1f28b7989d0a9f8072d7aefb5cbcc5d16b4632312d8",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "a65219bed5a24e87a4886b24d4af53e3"
+    },
+    {
+      "id": "ecut100-k12-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        12,
+        12,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.5813625,
+        "energy_ev": -2470.5402950301304,
+        "last_scf_accuracy_ry": 3.6e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "1e33a4e596d1bf4cb38870dbaaf977f432f18d5a61f043cec182a7cf57f6e479",
+        "output_sha256": "c332331b85a3d4bd8b1524fdeb260b0a6b7d9a6a2eef32d0bb7e6015e4960382",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "23a8facabaf2439b8e59d4d8d4f3a493"
+    },
+    {
+      "id": "ecut100-k16-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58136264,
+        "energy_ev": -2470.5402969349275,
+        "last_scf_accuracy_ry": 4.1e-09,
+        "scf_iterations": 18,
+        "qe_version": "6.7MaX",
+        "input_sha256": "8c334cd35b95bc48b119ba9c902cc88361d196c041ab29cda166c4519c154955",
+        "output_sha256": "ec12b0ab601c02688b4bc596cbc460d34ee53bfb3f8003dbfffc5fd18eae1010",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "aaa799e6383248f59c0f92d51f23c0e1"
+    },
+    {
+      "id": "ecut100-k16-c18",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 18,
+      "proof": {
+        "energy_ry": -181.58136261,
+        "energy_ev": -2470.5402965267567,
+        "last_scf_accuracy_ry": 4.8e-09,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "7da7df8dff5015aa92d57991c62e682369cab2c7fa762f9f315fd9e06e0fb90b",
+        "output_sha256": "098e08c5aa0f70eb75c17c893c723e74c8005ff25b25c6e80ac7afd1d985fa07",
+        "structure_hash": "81ad6854dc2ac4a3f332d355e447c95803989cda7fd71c8d91f8bdc3df3b62b1"
+      },
+      "job_id": "4fdbff93b22a4f91b48c242dd8ba0ef8"
+    },
+    {
+      "id": "ecut100-k16-c30",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 30,
+      "proof": {
+        "energy_ry": -181.58136256,
+        "energy_ev": -2470.540295846472,
+        "last_scf_accuracy_ry": 3.4e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "2d21c4ff6fd9100c959b27eba9b01343d73c3e0d7cf092450acf3681c5d7f039",
+        "output_sha256": "e772e6db110a9943087df0e761b7c6442bce28942ceb0b1575a4cacc7c8d2800",
+        "structure_hash": "ed1d9a7c49800fcb80797d0107683f800fadfd2a8c7dd5312fe86e85aaf8582b"
+      },
+      "job_id": "29e898f4180e4f6d8a73b7643af26f06"
+    }
+  ],
+  "comparisons": [
+    {
+      "axis": "cutoff",
+      "from": "ecut80-k8-c24",
+      "to": "ecut100-k8-c24",
+      "delta_mev_per_atom": 2.374556268410845,
+      "limit_mev_per_atom": 1,
+      "passed": false
+    },
+    {
+      "axis": "kmesh",
+      "from": "ecut100-k12-c24",
+      "to": "ecut100-k16-c24",
+      "delta_mev_per_atom": 0.0006349323338247484,
+      "limit_mev_per_atom": 1,
+      "passed": true
+    },
+    {
+      "axis": "vacuum",
+      "from": "ecut100-k16-c24",
+      "to": "ecut100-k16-c30",
+      "delta_mev_per_atom": 0.00036281851329957585,
+      "limit_mev_per_atom": 2,
+      "passed": true
+    }
+  ],
+  "planned_cases": 7,
+  "scope": "pristine idealized 1H-MoS2 neutral PBE unpolarized SCF sensitivity only",
+  "provenance": {
+    "git_commit": "588881e8cf37463fd78ec10317a9f2aa9554b146",
+    "host_machine": "x86_64",
+    "host_platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "docker_arch": "x86_64",
+    "docker_version": "28.0.4",
+    "plan_sha256": "f816392936839730b13517291a4e2e55b1b3dfc422e4de6a4a4e21b4de07563e",
+    "source_sha256": {
+      "tools/qe_mos2_acceptance.py": "4cc10330bbeecaf7ea09d9f1a0d63640cf6be5040b8e51d6ba114c2696b0adf5",
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "6c175a2aae7f2d9dc6a5794373c1907630b1adbed2413f87e345adbf4b1ef679",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "server/api.py": "d9f26ba9f292899642878b27796034ba4c082a66e6e811fcd787f6e09a5be815",
+      "server/job_core.py": "5b19e1c33214df246da92d3a6635a4440221bd63d98b19a5d925d7367a0ab2c7",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/worker.py": "e60ee6ec32e1c6c8d4ebbeddc90d8b2fd89cddc1053f32acb46e8854fbfcaefb"
+    },
+    "image_id": "sha256:ed403afb2002f36d9053f381080e444b37fb4c983f2f9eb562dcaeefb01f3b6d"
+  },
+  "error": "MoS2 convergence sensitivity threshold exceeded",
+  "resources_removed": true,
+  "finished_at": "2026-10-28T21:56:07.787283+00:00"
+}
