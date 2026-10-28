@@ -79,8 +79,8 @@ ve üç enerji kapısını yeniden doğrulamadan Docker hesabı başlatmaz.
 
 Kabul worker'ı 6 GiB RAM, swap kapalı, 2 CPU ve iş başına 10800 s
 wall-time kullanır; D3 CPU-s sınırı buna göre ayarlanır. Son 140 Ry
-tek SCF'de mevcut 4000 CPU-s sınırı da geçerlidir. Manuel workflow
-240 dakika üst sınıra sahiptir. Yanlış/eksik referansla deneme iş göndermeden
+tek SCF'de mevcut 4000 CPU-s sınırı da geçerlidir. Mevcut manuel `qe-mos2-acceptance.yml` iş akışı `protocol=d3`
+seçeneğiyle 240 dakika üst sınıra sahiptir. Yanlış/eksik referansla deneme iş göndermeden
 durur; başarısız/eksik işler ve ham çıktılar korunur.
 
 ```bash
