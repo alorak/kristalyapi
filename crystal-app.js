@@ -12,7 +12,7 @@ import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
-import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob } from './qe-api-client.js';
+import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6869,7 +6869,8 @@ async function qeJobRefresh(){
  try{
   const job=qeActiveJob,record=await getQeScfJob(job.address,job.token,job.id);
   let message='İş '+job.id+' · '+record.status+' · yapı özeti '+record.structure_hash.slice(0,12)+'.';
-  const stale=activeWorkspaceId!==job.workspaceId||JSON.stringify(qeJobPayload())!==job.snapshot;
+  let stale=true;
+  if(job.snapshot!==null){try{stale=activeWorkspaceId!==job.workspaceId||JSON.stringify(qeJobPayload())!==job.snapshot;}catch{stale=true;}}
   if(stale)message+=' Aktif yapı/ayarlar değişmiş; sonuç mevcut yapıya aktarılmayacak.';
   if(record.status==='completed'){
    const result=await getQeScfResult(job.address,job.token,job.id);
@@ -6880,6 +6881,32 @@ async function qeJobRefresh(){
   }else if(record.error)message+=' Hata: '+record.error;
   status.textContent=message;
  }catch(error){status.textContent='İş durumu: '+error.message;}
+}
+async function qeJobHistoryLoad(){
+ const status=$('qeJobStatus'),dropdown=$('qeJobHistorySelect');
+ try{
+  const data=await listQeScfJobs($('qeApiAddress').value,$('qeApiToken').value);
+  if(!Array.isArray(data.jobs))throw Error('Sunucu iş geçmişini döndürmedi.');
+  dropdown.replaceChildren();
+  const empty=document.createElement('option');empty.value='';empty.textContent='İş seçin';dropdown.append(empty);
+  for(const item of data.jobs.slice(0,20)){
+   if(!/^[a-f0-9]{32}$/.test(item.job_id))continue;
+   const option=document.createElement('option');option.value=item.job_id;
+   option.textContent=item.job_id.slice(0,12)+' · '+item.status+' · '+item.created;
+   dropdown.append(option);
+  }
+  status.textContent=data.jobs.length+' kayıt yüklendi; bir iş seçip İncele düğmesine basın.';
+ }catch(error){status.textContent='İş geçmişi: '+error.message;}
+}
+async function qeJobHistoryOpen(){
+ const id=$('qeJobHistorySelect').value,status=$('qeJobStatus');
+ if(!/^[a-f0-9]{32}$/.test(id)){status.textContent='Geçerli bir iş seçin.';return;}
+ try{
+  const address=$('qeApiAddress').value,token=$('qeApiToken').value;
+  const record=await getQeScfJob(address,token,id);
+  qeActiveJob={id,address,token,hash:record.structure_hash,workspaceId:null,snapshot:null};
+  await qeJobRefresh();
+ }catch(error){status.textContent='Önceki iş: '+error.message;}
 }
 async function qeJobCancel(){
  if(!qeActiveJob){$('qeJobStatus').textContent='İptal edilecek aktif iş bulunamadı.';return;}
@@ -9670,6 +9697,8 @@ function bind(){
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobRefresh').onclick=qeJobRefresh;
  $('qeJobCancel').onclick=qeJobCancel;
+ $('qeJobHistoryLoad').onclick=qeJobHistoryLoad;
+ $('qeJobHistoryOpen').onclick=qeJobHistoryOpen;
  $('qeApiAddress').onchange=()=>{$('qeApiStatus').textContent='Adres değişti; bağlantıyı yeniden kontrol edin.';};
  $('qeDefectCompareOpen').onclick=qeLoadDefectComparison;
  $('qeDefectCompareFile').onchange=()=>{$('qeDefectCompareCharts').replaceChildren();$('qeDefectCompareStatus').textContent='Kusur serisi dosyası seçildi; açın.';};
