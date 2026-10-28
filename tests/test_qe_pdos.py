@@ -90,6 +90,16 @@ class AtomOrbitalPdosTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "LDOS"):
             parse_atom_orbital_pdos(self.root, self.energy, self.total, self.symbols)
 
+    def test_negative_or_nonnumeric_density_is_not_accepted(self):
+        self.write("1(Mo)", [0.08, 0.30, 0.12])
+        path = self.root / "pdos.pdos_atm#1(Mo)_wfc#1(p)"
+        path.write_text("-1 .08 .08 0 0\n0 -.30 -.30 0 0\n1 .12 .12 0 0\n")
+        with self.assertRaisesRegex(ValueError, "negative projected density"):
+            parse_atom_orbital_pdos(self.root, self.energy, self.total, self.symbols)
+        path.write_text("-1 .08 .08 0 0\n0 junk .30 0 0\n1 .12 .12 0 0\n")
+        with self.assertRaisesRegex(ValueError, "nonnumeric"):
+            parse_atom_orbital_pdos(self.root, self.energy, self.total, self.symbols)
+
     def test_multiple_wavefunctions_on_same_atom_accumulate_and_no_double_count(self):
         self.write("1(Mo)", [0.04, 0.15, 0.06])
         extra = self.root / "pdos.pdos_atm#1(Mo)_wfc#2(s)"
