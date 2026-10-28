@@ -105,6 +105,42 @@ class MoS2PlanAndEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"reviewed protocol"):
             mos2.locked_plan(mo,"a"*64,"d22b-extended")
 
+    def test_kvac_followup_closes_three_gates_at_the_same_selected_reference(self):
+        p=mos2.load_plan("d22c")
+        self.assertEqual(p["geometry"],self.plan["geometry"])
+        self.assertEqual(p["selected_reference_case"],"ecut120-k16-c24")
+        self.assertEqual(len(p["cases"]),6)
+        self.assertEqual({x["id"] for x in p["cases"]},
+                         {"ecut120-k8-c24","ecut120-k12-c24","ecut120-k16-c24",
+                          "ecut120-k16-c18","ecut120-k16-c30","ecut140-k16-c24"})
+        self.assertEqual(p["criteria"]["energy_sensitivity_mev_per_atom"],
+                         {"cutoff":1.0,"kpoints":1.0,"vacuum":2.0})
+        self.assertTrue(all(c["kpoints"][2]==1 and c["ecutrho_ry"]==8*c["ecutwfc_ry"]
+                            for c in p["cases"]))
+        self.assertEqual(p["limits"]["docker_worker_memory_bytes"],6*1024**3)
+
+    def test_kvac_followup_rejects_failure_on_each_physical_axis(self):
+        p=mos2.load_plan("d22c")
+        for axis,changed in [("cutoff","ecut140-k16-c24"),
+                             ("kpoints","ecut120-k12-c24"),
+                             ("vacuum","ecut120-k16-c30")]:
+            cases=[{**c,"proof":{"energy_ry":-12.0-(.001 if c["id"]==changed else 0)}}
+                   for c in p["cases"]]
+            failed=[d["axis"] for d in mos2.comparisons(cases,p) if not d["passed"]]
+            self.assertEqual(failed,[axis])
+
+    def test_kvac_followup_keeps_reviewed_hashes_and_new_baseline_identity(self):
+        p=mos2.load_plan("d22c")
+        mo=p["pseudopotentials"]["Mo"]["reviewed_sha256"]
+        s=p["pseudopotentials"]["S"]["reviewed_sha256"]
+        p=mos2.locked_plan(mo,s,"d22c")
+        self.assertEqual(p["baseline"]["energy_ry"],-181.58162387)
+        self.assertEqual(mos2.make_request(p,p["cases"][0]),
+                         mos2.make_request(mos2.load_plan("d22b-extended"),
+                                           mos2.load_plan("d22b-extended")["cases"][1]))
+        with self.assertRaisesRegex(ValueError,"reviewed protocol"):
+            mos2.locked_plan("a"*64,s,"d22c")
+
     def test_cutoff_followup_does_not_promote_failed_high_cutoff_pair(self):
         p=mos2.load_plan("d22b")
         cases=[{**c,"proof":{"energy_ry":-12.0}} for c in p["cases"]]
