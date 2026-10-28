@@ -17,6 +17,8 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 5. Use **Save** to export a project JSON, CIF, POSCAR, XYZ, PDB, **vector SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF, or **1×–4× high-resolution PNG**.
 
+**MoS₂ defect-series comparison (P2 extension):** `tools/qe_defect_compare.py` prepares a local-only comparison of pristine, V_S, V_2S, O_S and O₂@V_S *candidate* structures from independently completed QE PDOS jobs, checking the supercell, pseudopotentials, calculation protocol, and periodic distance-based atom groups. Raw QE energy zeros are **never overlaid** without explicitly supplied (unverified) vacuum-potential lineups. [Methods and limitations](docs/qe-defect-comparison.md).
+
 **Atom/orbital PDOS (P2 extension):** The strict `projwfc.x` parser validates per-atom, per-orbital s/p/d/f curves against final SCF atom order, component columns, energy grids, and the projected DOS sum. The browser offers Mo-d, S-p, O-p and single-atom orbital views. Only collinear non-spin-polarized data are supported; projections alone do not establish localized optical emission.
 
 **Electronic QE workflow (P2 starter):** [Local pipeline and plot usage](docs/qe-electronic.md). `tools/qe_pipeline.py` can run a shared-dataset `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x` workflow using actual locally installed QE executables, with an explicit user-provided k-path. Import `electronic-results.json` in the DFT panel to inspect raw band and total DOS/PDOS curves. No Fermi/vacuum alignment, orbital-resolved defect attribution or experimentally verified single-photon predictions are claimed.
