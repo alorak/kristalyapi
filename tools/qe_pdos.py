@@ -7,7 +7,6 @@ This module intentionally rejects spin-polarized, SOC, k-resolved and malformed 
 """
 from __future__ import annotations
 
-from collections import defaultdict
 import math
 from pathlib import Path
 import re
@@ -19,7 +18,7 @@ L_COUNT = {"s": 1, "p": 3, "d": 5, "f": 7}
 ORBITALS = ("s", "p", "d", "f")
 MAX_FILES = 1500
 MAX_ROWS = 15000
-MAX_SAMPLES = 450_000
+MAX_SAMPLES = 200_000
 MAX_FILE_BYTES = 8_000_000
 GRID_TOL_EV = 1e-4
 
@@ -42,7 +41,7 @@ def _numeric_rows(path: Path, expected: int):
             raise ValueError(path.name + ": nonnumeric projected DOS") from exc
         if not all(math.isfinite(v) for v in row):
             raise ValueError(path.name + ": nonfinite projected DOS")
-        if any(v < -1e-5 for v in row[1:]):
+        if any(v < 0 for v in row[1:]):
             raise ValueError(path.name + ": negative projected density")
         result.append(row)
         if len(result) > MAX_ROWS:
@@ -121,8 +120,6 @@ def parse_atom_orbital_pdos(
             raise ValueError(file.name + ": DOS energy-grid length mismatch")
         a = atom_data.setdefault(idx, blank())
         e = element_data.setdefault(element, blank())
-        if idx not in atom_data:
-            raise AssertionError("unreachable")
 
         # QE LDOS(E) is the sum of PDOS_m(E), not any one m channel.
         # Each atom/wfc contributes one LDOS curve. This prevents double-counting.
