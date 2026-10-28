@@ -51,11 +51,11 @@ test('degraded solver is not represented as available',async()=>{
  const actual=await inspectQeApi('http://127.0.0.1:8000',{fetcher});
  assert.equal(actual.ready,false);
 });
-test('reject spoofed capabilities or server with job submission',async()=>{
+test('reject inconsistent read-only health and job submission capabilities',async()=>{
  const fetcher=async(url)=>url.endsWith('/api/health')
   ?response(200,{status:'ready',api_version:'0.1.0',engine:'quantum-espresso',read_only:true})
   :response(200,{...caps,job_submission_enabled:true});
- await assert.rejects(inspectQeApi('http://127.0.0.1:8000',{fetcher}),/salt-okunur/);
+ await assert.rejects(inspectQeApi('http://127.0.0.1:8000',{fetcher}),/iş gönderme özelliği ile sağlık durumu tutarsız/);
 });
 test('reject mixed API versions and non-JSON responses',async()=>{
  const fetcher=async(url)=>url.endsWith('/api/health')

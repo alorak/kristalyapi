@@ -90,6 +90,12 @@ individual job timeouts and one queued worker. The API does not perform
 computations in HTTP request handlers. **Removing the volume destroys
 the job history and scientific outputs**; use a documented backup policy.
 
+The HTTP healthcheck applies to `qe-api` only. The worker has no HTTP
+server, so Compose disables the image's inherited HTTP healthcheck for
+`qe-worker`. Docker still monitors the worker process and restarts it
+according to `restart: unless-stopped`; a separate worker heartbeat is
+not implemented.
+
 The D0/D1 default remains safe: without `QE_JOBS_ENABLED=1`, the
 service exposes only its discovery endpoints.
 
