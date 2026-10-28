@@ -260,7 +260,8 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
                 "plan_sha256": sha((output/"plan.json").read_bytes()),
                 "source_sha256": {str(p.relative_to(ROOT)): sha(p.read_bytes()) for p in [
                     Path(__file__).resolve(), ROOT/"compose.qe.yml", ROOT/"server/Dockerfile",
-                    ROOT/"tools/qe_run.py", *sorted((ROOT/"server").glob("*.py"))]}
+                    ROOT/"tools/qe_run.py", ROOT/"tools/qe_scf_acceptance.py",
+                    *sorted((ROOT/"server").glob("*.py"))]}
             }
             command(compose+["config","--quiet"],output,env)
             print("D2.2: building QE Docker image",flush=True)
