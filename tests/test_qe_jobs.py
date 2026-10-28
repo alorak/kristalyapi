@@ -132,7 +132,7 @@ class D2Tests(unittest.TestCase):
         for edit in [
             lambda p:p["parameters"].update({"calculation":"relax"}),
             lambda p:p["parameters"].update({"spin":"polarized"}),
-            lambda p:p["parameters"].update({"ecutwfc_ry":float("nan")}),
+            lambda p:p["parameters"].update({"ecutwfc_ry":"NaN"}),
             lambda p:p["structure"]["atoms"].append({"element":";rm -rf /","fractional":[0,0,0]}),
             lambda p:p.update({"profile_id":"../fake"}),
             lambda p:p["structure"].update({"cell_angstrom":[[1,0,0],[2,0,0],[0,0,5]]}),
