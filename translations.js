@@ -7,6 +7,9 @@
 (() => {
  'use strict';
  const entries=[
+  ["Gerçek DFT hesabı için:","For an actual DFT calculation:"],
+  ["QE yerel/VM çalıştırma kılavuzu","QE local/VM runner guide"],
+  [". Python aracı gerçek pw.x kurulumunu gerektirir.",". The Python runner requires an actual pw.x installation."],
   ["3 · MoS₂ kusur araştırması · ACS Nano 2022","3 · MoS₂ defect study · ACS Nano 2022"],
   ["Tek katman, stokiyometri ve yaklaşık 2B vakum ön denetimi. Önce açık P1 atomlarını hazırlayın; V_S, V_2S ve oksijenli yapılar yalnız atom sayısından aday olarak sınıflandırılır.","Monolayer, stoichiometry and approximate 2D vacuum preflight. First prepare explicit P1 atoms; V_S, V_2S and oxygen-related structures are only classified as candidates from atom counts."],
   ["MoS₂ ön denetimi","MoS₂ preflight"],
