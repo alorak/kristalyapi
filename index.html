@@ -390,7 +390,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <button type="button" id="qeJobSubmit" class="primary">Gerçek SCF işini gönder</button>
       <button type="button" id="qeJobRefresh">İş durumunu yenile</button>
       <button type="button" id="qeJobCancel">İşi iptal et</button>
+      <button type="button" id="qeJobHistoryLoad">Sunucudaki iş geçmişini yükle</button>
      </div>
+     <label class="field"><span>Önceki SCF işi</span><select id="qeJobHistorySelect"><option value="">Bu oturumda iş geçmişi yüklenmedi</option></select></label>
+     <button type="button" id="qeJobHistoryOpen">Seçili işi incele</button>
      <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz SCF işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
      <p class="hint">Sonuç yalnız çalışan Quantum ESPRESSO çıktısından gelir. İş geçmişi sunucudaki SQLite veritabanında tutulur; bu ekranın anahtarı veya hesabı tarayıcı depolamasında tutulmaz. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-jobs.md" target="_blank" rel="noopener noreferrer">SCF işi ve worker kurulumu</a></p>
     </div>
