@@ -117,6 +117,16 @@ class PipelineTest(unittest.TestCase):
                 (cwd / "dos.dat").write_text("# E DOS Integrated\n-1 0.1 0.1\n0 0.5 0.5\n1 0.2 0.8\n")
             elif step == "projwfc":
                 (cwd / "pdos.pdos_tot").write_text("# E DOS PDOS\n-1 0.1 0.08\n0 0.5 0.3\n1 0.2 0.12\n")
+                for idx, element, densities in [
+                    (1, "Mo", (0.04, 0.15, 0.06)),
+                    (2, "S", (0.02, 0.08, 0.03)),
+                    (3, "S", (0.02, 0.07, 0.03)),
+                ]:
+                    lines = ["# E LDOS p1 p2 p3"]
+                    for energy, ldos in zip((-1, 0, 1), densities):
+                        lines.append(f"{energy} {ldos} {ldos} 0 0")
+                    (cwd / f"pdos.pdos_atm#{idx}({element})_wfc#1(p)").write_text(
+                        "\n".join(lines) + "\n")
             stdout.write(content.encode())
             return types.SimpleNamespace(returncode=0)
         return fake
@@ -148,6 +158,8 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(len(data["bands"]["energies_ev"]), 2)
         self.assertIn("Fermi", data["energy_zero"])
         self.assertEqual(data["dos"]["dos_states_per_ev"], [.1, .5, .2])
+        self.assertEqual(len(data["pdos_atoms"]["atoms"]), 3)
+        self.assertEqual(len(data["pdos_atoms"]["elements"]), 2)
         self.assertFalse((self.root / "complete" / "structure.out").exists())
 
     def test_reject_missing_band_configuration_and_spin_input(self):

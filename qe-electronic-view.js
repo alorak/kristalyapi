@@ -18,7 +18,7 @@ export function parseQeElectronicResult(data){
   energyZero:String(data.energy_zero||'Bilinmiyor').slice(0,150),
   bandLabels:Array.isArray(data.band_path_labels)?data.band_path_labels.map(s=>String(s).slice(0,24)).slice(0,32):[],
   inputHash:typeof data.input_sha256==='string'&&/^[a-f0-9]{64}$/i.test(data.input_sha256)?data.input_sha256:null,
-  bands:null,dos:null,pdos:null};
+  bands:null,dos:null,pdos:null,pdosDetailed:null};
  if(data.bands){
   const d=checkedArray(data.bands.distance,'Bant k uzaklığı',20000);
   if(d.some((v,i)=>i>0&&v<d[i-1]))throw Error('k uzaklığı sıralı olmalı.');
@@ -47,6 +47,62 @@ export function parseQeElectronicResult(data){
   }
  }else if(data.pdos_total){
   throw Error('PDOS toplamı için DOS enerji ekseni gerekli.');
+ }
+ if(data.pdos_atoms){
+  if(!output.dos||!output.pdos)throw Error('Atomik PDOS için toplam DOS ve PDOS gerekli.');
+  const raw=data.pdos_atoms, energy=checkedArray(raw.energy_ev,'Atomik PDOS enerjileri',20000);
+  if(energy.length!==output.dos.energy.length||
+    energy.some((v,i)=>Math.abs(v-output.dos.energy[i])>1e-4))
+    throw Error('Atomik PDOS enerji ekseni toplam DOS ile uyuşmuyor.');
+  if(raw.spin_mode!=='collinear-unpolarized')
+    throw Error('Yalnız spin-polarize olmayan kollineer PDOS destekleniyor.');
+  const validateGroups=(items,kind)=>{
+   if(!Array.isArray(items)||!items.length||items.length>(kind==='atoms'?1000:118))
+    throw Error('Atomik PDOS grup sayısı sınırı aşıldı.');
+   const seen=new Set();
+   return items.map(item=>{
+    if(!item||typeof item.element!=='string'||!/^[A-Z][a-z]?$/.test(item.element))
+     throw Error('Atomik PDOS element bilgisi geçersiz.');
+    const key=kind==='atoms'?item.atom_index:item.element;
+    if(kind==='atoms'&&(!Number.isInteger(key)||key<1||key>1000))
+     throw Error('Atom indeksleri geçersiz.');
+    if(seen.has(key))throw Error('Tekrarlanan atom/element PDOS grubu.');
+    seen.add(key);
+    const total=checkedArray(item.total_dos_states_per_ev,'Atomik PDOS toplamı',20000);
+    if(total.length!==energy.length||total.some(v=>v<0))
+     throw Error('Atomik PDOS toplam yoğunluğu geçersiz.');
+    if(!item.orbitals||typeof item.orbitals!=='object'||Array.isArray(item.orbitals))
+     throw Error('Orbital PDOS sözlüğü geçersiz.');
+    const orbitals={};
+    for(const [name,rawCurve] of Object.entries(item.orbitals)){
+     if(!['s','p','d','f'].includes(name))throw Error('Desteklenmeyen PDOS orbital türü.');
+     const values=checkedArray(rawCurve,'Orbital PDOS '+name,20000);
+     if(values.length!==energy.length||values.some(v=>v<0))
+      throw Error('Orbital PDOS yoğunluğu geçersiz.');
+     orbitals[name]=values;
+    }
+    if(!Object.keys(orbitals).length)
+     throw Error('Atomik PDOS grubunda orbital bulunamadı.');
+    for(let i=0;i<energy.length;i++){
+     const sum=Object.values(orbitals).reduce((acc,a)=>acc+a[i],0);
+     if(Math.abs(sum-total[i])>1e-3+1e-2*Math.max(sum,total[i]))
+      throw Error('Atomik toplam ve orbital PDOS uyumsuz.');
+    }
+    return {element:item.element,...(kind==='atoms'?{atomIndex:key}:{}),total,orbitals};
+   });
+  };
+  const atoms=validateGroups(raw.atoms,'atoms');
+  const elements=validateGroups(raw.elements,'elements');
+  if(energy.length*atoms.length>400000)
+   throw Error('Atomik PDOS görüntüleme boyut sınırını aşıyor.');
+  const atomSum=energy.map((_,i)=>atoms.reduce((sum,a)=>sum+a.total[i],0));
+  const elementSum=energy.map((_,i)=>elements.reduce((sum,a)=>sum+a.total[i],0));
+  for(let i=0;i<energy.length;i++){
+   const reference=output.pdos[i],limit=.01+.02*Math.max(1,reference);
+   if(Math.abs(atomSum[i]-reference)>limit||Math.abs(elementSum[i]-reference)>limit)
+    throw Error('Atomik/orbital PDOS toplam projeksiyonla uyuşmuyor.');
+  }
+  output.pdosDetailed={energy,atoms,elements};
  }
  return output;
 }
@@ -123,5 +179,50 @@ export function renderQeElectronicResults(container,data){
   const leg=document.createElement('small');
   leg.textContent='Mavi: toplam DOS'+(data.pdos?' · Turuncu: atomik orbitallerin toplam PDOS katkısı':'')+'. Enerjiler Fermi seviyesine hizalanmamıştır.';
   container.append(leg);
+ }
+ if(data.pdosDetailed){
+  const heading=document.createElement('strong');
+  const localized=text=>typeof window==='undefined'?text:(window.CrystalI18n?.t(text)||text);
+  heading.textContent=localized('Atom / element / orbital katkılarını incele');
+  container.append(heading);
+  const select=document.createElement('select');
+  select.setAttribute('aria-label',localized('PDOS atom ve orbital seçimi'));
+  select.style.maxWidth='100%';
+  select.style.width='100%';
+  const choices=[];
+  for(const element of data.pdosDetailed.elements){
+   for(const [orbital,values] of Object.entries(element.orbitals))
+    choices.push({label:element.element+' · '+orbital+' '+localized('orbitali (element toplamı)'),
+     value:values,key:'element-'+element.element+'-'+orbital});
+  }
+  for(const atom of data.pdosDetailed.atoms){
+   for(const [orbital,values] of Object.entries(atom.orbitals))
+    choices.push({label:atom.atomIndex+'. atom · '+atom.element+' · '+orbital,
+     value:values,key:'atom-'+atom.atomIndex+'-'+orbital});
+  }
+  for(const choice of choices){
+   const option=document.createElement('option');
+   option.value=choice.key;option.textContent=choice.label;
+   select.append(option);
+  }
+  const defaultIndex=choices.findIndex(c=>c.key==='element-Mo-d');
+  if(defaultIndex>=0)select.selectedIndex=defaultIndex;
+  const plot=document.createElement('div');
+  const legend=document.createElement('small');
+  const update=()=>{
+   const c=choices.find(c=>c.key===select.value)||choices[0];
+   if(!c)return;
+   plot.replaceChildren(chart(localized('Toplam projeksiyon ve')+' '+c.label,
+    'Enerji (eV)','Durum/(eV hücre)',[
+     {x:data.pdosDetailed.energy,y:data.pdos},
+     {x:data.pdosDetailed.energy,y:c.value}
+    ]));
+   legend.textContent=localized('Mavi: tüm atomların toplam PDOS katkısı')+' · '+
+    localized('Turuncu:')+' '+c.label+'. '+
+    localized('Bu yansıtma kimyasal bağ veya optik geçiş kanıtı değildir.');
+  };
+  select.addEventListener('change',update);
+  container.append(select,plot,legend);
+  update();
  }
 }

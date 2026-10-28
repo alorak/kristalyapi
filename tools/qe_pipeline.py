@@ -20,6 +20,7 @@ import time
 from datetime import datetime, timezone
 
 from qe_run import parse_pw_input, stage, sha256_file, summarize_output
+from qe_pdos import parse_atom_orbital_pdos, parse_atom_symbols
 
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?"
 STEPS = ("relax", "scf", "bands", "bands_pp", "nscf", "dos", "projwfc")
@@ -234,6 +235,8 @@ def parse_bands_gnu(path):
 
 def parse_dos(path):
     rows = read_numeric_columns(path, 3)
+    if any(len(row) != 3 for row in rows):
+        raise ValueError("Spin-polarized/noncollinear DOS columns unsupported")
     energy = [r[0] for r in rows]
     if any(a >= b for a, b in zip(energy, energy[1:])):
         raise ValueError("DOS energy grid must strictly increase")
@@ -244,6 +247,8 @@ def parse_dos(path):
 
 def parse_pdos_total(path, dos):
     rows = read_numeric_columns(path, 3)
+    if any(len(row) != 3 for row in rows):
+        raise ValueError("Spin-polarized/noncollinear PDOS columns unsupported")
     energies = dos["energy_ev"]
     if len(rows) != len(energies) or any(abs(r[0] - e) > 1e-4 for r, e in zip(rows, energies)):
         raise ValueError("DOS and projected DOS energy axes mismatch")
@@ -367,8 +372,12 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                 dos = parse_dos(workdir / "dos.dat")
                 pdos_path = workdir / "pdos.pdos_tot"
                 total = parse_pdos_total(pdos_path, dos)
+                orbital = parse_atom_orbital_pdos(
+                    workdir, dos["energy_ev"], total["sum_projected_states_per_ev"],
+                    parse_atom_symbols(scf_source))
                 result["dos"] = dos
                 result["pdos_total"] = total
+                result["pdos_atoms"] = orbital
                 persist()
         result["status"] = "completed" if execute else "prepared"
     except (RuntimeError, ValueError, OSError) as exc:
@@ -385,9 +394,11 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
             "band_path_labels": result["band_path"],
             "bands": result.get("bands"), "dos": result.get("dos"),
             "pdos_total": result.get("pdos_total"),
+            "pdos_atoms": result.get("pdos_atoms"),
             "limitations": [
                 "Not an optical transition or single-photon emission measurement.",
                 "Spin-polarized/SOC and band-unfolding interpretations are not supported.",
+                "Atomic and orbital PDOS projections depend on pseudopotentials and do not establish optical transitions.",
                 "DFT numerical convergence must be established independently."
             ]
         }

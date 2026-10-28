@@ -20,16 +20,33 @@ doğrulanmalıdır.
 | `bands_pp` | `bands.x` | `bands.dat.gnu` veri dosyası |
 | `nscf` (opsiyonel) | `pw.x` | Yoğun, düzenli k-örgüsündeki özdeğerler/dalga fonksiyonları |
 | `dos` | `dos.x` | Toplam durum yoğunluğu `dos.dat` |
-| `projwfc` | `projwfc.x` | `pdos.pdos_tot`; toplam projeksiyon |
+| `projwfc` | `projwfc.x` | Toplam PDOS ve atom/orbital projeksiyon dosyaları |
 
 Bütün aşamalar **aynı çalışma dizini**, `prefix='kristalyapi'`
 ve `outdir='./tmp'` değerlerini kullanır. Bir aşama başarısız olursa
 diğerleri durdurulur. `pipeline.json` her aşamanın durumunu ve
 girdi/çıktı özetlerini içerir.
 
-**Sınırlama:** İlk P2, atom/orbital başına PDOS ayrıştırması ve spin/SOC
-analizi sağlamaz. `pdos.pdos_tot` yalnız toplam PDOS katkısını verir;
-yerelleşmiş kusur durumunun Mo/S/O kaynaklı olduğunu tek başına kanıtlamaz.
+**P2 atom/orbital analizi (yeni):** `projwfc.x` artık yalnız `pdos.pdos_tot`
+değil, `pdos.pdos_atm#N(X)_wfc#M(l)` dosyaları da üretir.
+`tools/qe_pdos.py` her dosyanın atom indeksini, Mo/S/O türünü ve
+s/p/d/f orbital türünü son SCF atom sırasıyla karşılaştırır. `LDOS(E)`
+sütununun orbital bileşenlerine eşitliğini, her atom/elementin toplamını
+ve `pdos.pdos_tot` ile tutarlılığı kontrol eder. Eksik, bozuk, spin
+veya SOC dosyası **sessizce kabul edilmez**.
+
+Başarılı hesap sonrası `electronic-results.json` içinde ayrıca
+`pdos_atoms` bulunur; KristalYapı DFT panelinde **Atom / element /
+orbital katkılarını incele** seçicisiyle Mo-d, S-p, O-p veya belirli
+atomun ilgili orbital katkısı toplam projeksiyon ile çizilir.
+Sadece kollineer **spin-polarize olmayan** QE çıktıları desteklenir.
+
+**Bilimsel sınır:** PDOS, atomik baz fonksiyonlarına yapılan
+projeksiyondur; gerçek uzaydaki yük yoğunluğu, kimyasal bağ veya lokalize
+bir kuantum yayıcı olduğunu tek başına kanıtlamaz. Özellikle bir S
+boşluğu manyetik/açık kabuklu durum oluşturabiliyorsa spin-polarize
+hesaplama gerekip gerekmediği araştırılmalıdır; bu sürüm o sonucu
+otomatik hesaplamaz veya yanlış biçimde birleştirmez.
 
 ## Çalıştırma
 
@@ -85,11 +102,11 @@ belirteçleri olmadan `completed` sayılmaz.
   orijinal girdi SHA-256 ve yürütme parametreleri.
 - `relax.out`, `scf.out`, `bands.out`, `nscf.out` ve diğer
   stdout/stderr dosyaları: çözücünün gerçek kayıtları.
-- `bands.dat.gnu`, `dos.dat`, `pdos.pdos_tot`: gerçek QE
+- `bands.dat.gnu`, `dos.dat`, `pdos.pdos_tot` ve `pdos.pdos_atm#*`: gerçek QE
   son işlem dosyaları, yalnız ilgili aşamalar başarılıysa.
 - `electronic-results.json`: yalnız bütün istenen aşamalar
   tamamlanırsa oluşturulur; bant, toplam DOS ve toplam PDOS verileri
-  ortak şemada saklanır.
+  ortak şemada saklanır; doğrulanan atom/element-orbital PDOS için `pdos_atoms` alanı bulunur.
 
 KristalYapı → DFT paneli → **Gerçek elektronik bant ve DOS verileri**
 alanından `electronic-results.json` seçip SVG grafiklerini açın.
@@ -99,7 +116,7 @@ Dosya yerel olarak okunur; sunucuya gönderilmez.
 eV değerleriyle çizilir. Fermi, vakum seviyesi veya deneysel
 fotolüminesans değerlerine otomatik hizalama yoktur. Modelde optik
 geçiş, eksiton, fonon, PL ömrü veya foton antibunching hesaplanmaz.
-PDOS toplamları atom bazında ayrıştırılmaz. Band unfolding,
+Atom/orbital PDOS mevcuttur ancak atomların gerçek uzaydaki yük yoğunluğunu ve optik geçişleri tek başına belirlemez. Band unfolding,
 2B elektrostatik düzeltmeler ve kimyasal potansiyelli kusur oluşum
 enerjileri bu pakette bulunmaz.
 
@@ -111,6 +128,7 @@ hesabı yaptığınız makineden aldığınızdan emin olun.
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_qe_pipeline.py' -v
+python3 -m unittest discover -s tests -p 'test_qe_pdos.py' -v
 node --test tests/qe-electronic-view.test.mjs
 ```
 

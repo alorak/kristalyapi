@@ -6810,7 +6810,7 @@ async function qeLoadElectronicResults(){
  const input=$('qeElectronicFile'),file=input.files?.[0],status=$('qeElectronicStatus');
  const container=$('qeElectronicCharts');container.replaceChildren();
  if(!file){status.textContent='Önce electronic-results.json dosyası seçin.';return;}
- if(file.size>8e6){status.textContent='Elektronik sonuç dosyası 8 MB sınırını aşıyor.';return;}
+ if(file.size>24e6){status.textContent='Elektronik sonuç dosyası 24 MB sınırını aşıyor.';return;}
  const workspaceId=activeWorkspaceId;
  try{
   const raw=await file.text();
