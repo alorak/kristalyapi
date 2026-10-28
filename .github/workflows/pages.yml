@@ -37,6 +37,8 @@ jobs:
           python-version: '3.11'
       - name: Test local QE runner without actual DFT
         run: python -m unittest discover -s tests -p 'test_qe_runner.py' -v
+      - name: Test QE atom and orbital PDOS parser (mocked data)
+        run: python -m unittest discover -s tests -p 'test_qe_pdos.py' -v
       - name: Test QE electronic pipeline (mocked solver; no scientific results)
         run: python -m unittest discover -s tests -p 'test_qe_pipeline.py' -v
       - name: Install pinned Gemmi map reference
