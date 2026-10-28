@@ -117,3 +117,7 @@ export async function cancelQeScfJob(address,token,jobId,opts){
  if(!/^[a-f0-9]{32}$/.test(jobId))throw Error('Geçersiz iş numarası.');
  return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/cancel',{method:'POST',...opts});
 }
+
+export async function listQeScfJobs(address,token,opts){
+ return qeRequest(address,token,'/api/v1/calculations',opts);
+}
