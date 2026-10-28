@@ -2,8 +2,10 @@
 
 This stage extends [D0–D1 discovery](qe-docker-api.md) to a **real, opt-in
 Quantum ESPRESSO `pw.x` single-point SCF worker**. It is not an exposed
-multi-user research cluster, and no scientifically converged Si/MoS₂
-reference calculation has been demonstrated by the mock tests.
+multi-user research cluster. Mock tests cover queue/auth/parser behavior;
+[D2.1](qe-scf-validation.md) separately records real Docker/API Si SCF
+execution and finite cutoff/k-mesh energy checks. MoS₂ and independent
+physical reference validation require separate acceptance.
 
 ## 1. Trust model and prerequisites
 
@@ -172,10 +174,11 @@ The unit tests use **fake UPF metadata and an intentionally synthetic
 `pw.x` executable**. They test queue/auth/parser behavior, not the
 scientific validity of energy values.
 
-For scientific acceptance, separately use real UPF files and run Si
-SCF on the installed Docker image, then an independently checked
-MoS₂ SCF and (later) relaxation with sensitivity studies. Preserve the
-UPF source/licenses, hashes, QE version, full settings and logs.
+For reproducible real Si SCF acceptance, run the
+[D2.1 Docker/API gate](qe-scf-validation.md). Its evidence bundle preserves
+UPF provenance, hashes, QE version, settings, raw output and finite energy
+sensitivity checks. An independently checked MoS₂ SCF and later relaxation
+still need separate reference and sensitivity studies.
 
 **After D2:** scientific PBE reference validation, relaxation and
 bands/DOS/PDOS job workflow, rigorous convergence reporting, local

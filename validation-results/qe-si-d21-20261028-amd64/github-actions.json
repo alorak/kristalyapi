@@ -1,0 +1,9 @@
+{
+  "provider": "GitHub Actions",
+  "run_id": 40766130544,
+  "run_url": "https://github.com/alorak/kristalyapi/actions/runs/40766130544",
+  "artifact_id": 12850926290,
+  "artifact_name": "qe-si-scf-d21-1",
+  "conclusion": "success",
+  "head_sha": "95197dd342beaf40c9ce2ff0f7106b8459896e63"
+}

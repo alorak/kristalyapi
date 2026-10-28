@@ -49,6 +49,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_api.py' -v
       - name: Test authenticated QE SCF queue/worker (synthetic fake solver only)
         run: python -m unittest discover -s tests -p 'test_qe_jobs.py' -v
+      - name: Test real SCF evidence rejection rules without running DFT
+        run: python -m unittest discover -s tests -p 'test_qe_scf_acceptance.py' -v
       - name: Validate Docker Compose configuration without building the heavy QE image
         run: docker compose -f compose.qe.yml config --quiet
       - name: Install pinned Gemmi map reference

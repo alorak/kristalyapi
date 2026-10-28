@@ -1,0 +1,193 @@
+{
+  "schema": "kristalyapi.qe-si-acceptance.v1",
+  "status": "passed",
+  "started_at": "2026-10-28T20:45:47.211984+00:00",
+  "planned_cases": 7,
+  "cases": [
+    {
+      "id": "ecut45-k8",
+      "ecutwfc_ry": 45,
+      "ecutrho_ry": 360,
+      "kpoints": [
+        8,
+        8,
+        8
+      ],
+      "job_id": "ad998a9474624d879c64d9d051deb551",
+      "proof": {
+        "energy_ry": -22.83950736,
+        "energy_ev": -310.74732822052283,
+        "last_scf_accuracy_ry": 8e-09,
+        "scf_iterations": 8,
+        "engine_version": "6.7MaX",
+        "input_sha256": "61b46f5db3492280fd12e21e68817256e52394e0548021995b8fa9634046d69f",
+        "output_sha256": "640e0f4818c5ef1db68abdeffd39e49588831b75f43ecf1203ca56888753b878"
+      }
+    },
+    {
+      "id": "ecut60-k8",
+      "ecutwfc_ry": 60,
+      "ecutrho_ry": 480,
+      "kpoints": [
+        8,
+        8,
+        8
+      ],
+      "job_id": "6248b66106b448159603230d7242d04e",
+      "proof": {
+        "energy_ry": -22.83956744,
+        "energy_ev": -310.7481456505657,
+        "last_scf_accuracy_ry": 3.9e-09,
+        "scf_iterations": 9,
+        "engine_version": "6.7MaX",
+        "input_sha256": "3df8e0999ade2973998c7548c92d92afd6156ce653e3671cab2212be1c2ffb1c",
+        "output_sha256": "7eb2c2f0a1b985496fd0780521667435c32e5886d7f8d78b5d2d227d77609f65"
+      }
+    },
+    {
+      "id": "ecut75-k8",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        8,
+        8,
+        8
+      ],
+      "job_id": "aded54c1b85a411b8737678646c7c591",
+      "proof": {
+        "energy_ry": -22.83958475,
+        "energy_ev": -310.74838116511364,
+        "last_scf_accuracy_ry": 2.2e-09,
+        "scf_iterations": 9,
+        "engine_version": "6.7MaX",
+        "input_sha256": "ce67559b4311d541a55e4bb97338aed2ce6c98779b9fd80e91c09e92433b002a",
+        "output_sha256": "9e6322b376e34d232fa64cc230059a005648fe75fd208bfef836fc4cca8c856e"
+      }
+    },
+    {
+      "id": "ecut75-k4",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        4,
+        4,
+        4
+      ],
+      "job_id": "3cfdc6df454241a792a0be2cd608ec40",
+      "proof": {
+        "energy_ry": -22.82604899,
+        "energy_ev": -310.56421776836714,
+        "last_scf_accuracy_ry": 3.8e-09,
+        "scf_iterations": 8,
+        "engine_version": "6.7MaX",
+        "input_sha256": "515fba88d06c103c5ec125e9a8018cbb3051dbe751c371398a90d68cf44617f2",
+        "output_sha256": "934800b7b88da8e0b75211adc7357af49df366935a39376b2b8c8867bffb39cd"
+      }
+    },
+    {
+      "id": "ecut75-k6",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        6,
+        6,
+        6
+      ],
+      "job_id": "819c787b92874be6b71a6402aff6ee75",
+      "proof": {
+        "energy_ry": -22.83810997,
+        "energy_ev": -310.7283157610097,
+        "last_scf_accuracy_ry": 8.9e-09,
+        "scf_iterations": 8,
+        "engine_version": "6.7MaX",
+        "input_sha256": "2cce2edce7c466fa4067d96dd647cc4b020c7412dbff520acdaa70a18af5aa35",
+        "output_sha256": "af928e49d64d5525fbb5848eaa5a9777daf2de6ec0192e1b9742e2639778d539"
+      }
+    },
+    {
+      "id": "ecut75-k10",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        10,
+        10,
+        10
+      ],
+      "job_id": "ede6d1e1198d457e9572b40fff6226db",
+      "proof": {
+        "energy_ry": -22.83981736,
+        "energy_ev": -310.751545985391,
+        "last_scf_accuracy_ry": 6.7e-09,
+        "scf_iterations": 9,
+        "engine_version": "6.7MaX",
+        "input_sha256": "19eaa15ff934b4b5975e6e72883b24fd6252b9021f97482c272bc82a56fbe524",
+        "output_sha256": "2c16de088898b65864077b2c8123d651f34bb62cc154dd87df654e6fc9d4758d"
+      }
+    },
+    {
+      "id": "ecut75-k12",
+      "ecutwfc_ry": 75,
+      "ecutrho_ry": 600,
+      "kpoints": [
+        12,
+        12,
+        12
+      ],
+      "job_id": "245d0b82410d4936b87606bbf2d48846",
+      "proof": {
+        "energy_ry": -22.83986004,
+        "energy_ev": -310.75212667637345,
+        "last_scf_accuracy_ry": 4e-10,
+        "scf_iterations": 10,
+        "engine_version": "6.7MaX",
+        "input_sha256": "1501dfff6f327da5eca43cbce5655d2473d9e3a0f84c6e89357061501886e50c",
+        "output_sha256": "68a5879ca8f56db3ab955bfa43dfd1c22c6c6c4d826e7622d7ab49ebc76451ad"
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "axis": "cutoff",
+      "from": "ecut60-k8",
+      "to": "ecut75-k8",
+      "delta_mev_per_atom": 0.1177572739828615,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "kmesh",
+      "from": "ecut75-k10",
+      "to": "ecut75-k12",
+      "delta_mev_per_atom": 0.290345491244431,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    }
+  ],
+  "scope": "real Si SCF API acceptance and finite cutoff/k-mesh sensitivity; not general materials validation",
+  "provenance": {
+    "git_commit": "95197dd342beaf40c9ce2ff0f7106b8459896e63",
+    "git_status": [
+      "?? validation-results/qe-si-scf/"
+    ],
+    "host_platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "host_machine": "x86_64",
+    "docker_architecture": "x86_64",
+    "docker_version": "28.0.4",
+    "plan_sha256": "d493c3e945cfadb6ae7dd77acdc1320af4fdadbcf12f334ee419eeceb58d0fb8",
+    "source_sha256": {
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "6c175a2aae7f2d9dc6a5794373c1907630b1adbed2413f87e345adbf4b1ef679",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "server/api.py": "d9f26ba9f292899642878b27796034ba4c082a66e6e811fcd787f6e09a5be815",
+      "server/job_core.py": "5b19e1c33214df246da92d3a6635a4440221bd63d98b19a5d925d7367a0ab2c7",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/worker.py": "e60ee6ec32e1c6c8d4ebbeddc90d8b2fd89cddc1053f32acb46e8854fbfcaefb"
+    },
+    "image_id": "sha256:1f5264a22113172fbe7a27d4d9c330cec5db1a3813bd4d29fcaf3c21cb2bb615",
+    "qe_debian_version": "6.7-3+b1"
+  },
+  "test_resources_removed": true,
+  "finished_at": "2026-10-28T20:48:25.901320+00:00"
+}
