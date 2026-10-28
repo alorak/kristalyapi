@@ -36,9 +36,9 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     hosts=allowed_hosts if allowed_hosts is not None else comma_values(
         os.getenv("QE_ALLOWED_HOSTS","localhost,127.0.0.1"))
     if not origins or any(not v.startswith(("https://","http://")) or "*" in v for v in origins):
-        raise ValueError("QE_ALLOWED_ORIGINS must be explicit HTTP(S) origins")
+        raise ValueError("QE_ALLOWED_ORIGINS must be explicit HTTP(S) origins; wildcards forbidden")
     if not hosts or any(not v or "*" in v or "/" in v for v in hosts):
-        raise ValueError("QE_ALLOWED_HOSTS must be explicit hosts/IPs")
+        raise ValueError("QE_ALLOWED_HOSTS must be explicit hosts/IPs; wildcards forbidden")
 
     enabled=jobs_enabled if jobs_enabled is not None else os.getenv("QE_JOBS_ENABLED","0")=="1"
     token=api_token if api_token is not None else os.getenv("QE_API_TOKEN","")
