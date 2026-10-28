@@ -1,0 +1,42 @@
+name: QE Docker D0 binary smoke (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qe-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build pinned Debian QE image
+        run: docker compose -f compose.qe.yml build
+      - name: Verify real pw.x startup banner (not a DFT calculation)
+        run: docker compose -f compose.qe.yml run --rm --no-deps qe-api python3 qe_probe.py --require
+      - name: Start read-only discovery service
+        run: docker compose -f compose.qe.yml up -d --no-build
+      - name: Probe health/capabilities over localhost
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl --fail --silent http://127.0.0.1:8000/api/health > /tmp/qe-health.json; then break; fi
+            sleep 3
+          done
+          python3 - <<'PY'
+          import json, urllib.request
+          health = json.load(open('/tmp/qe-health.json'))
+          assert health['status'] == 'ready'
+          with urllib.request.urlopen('http://127.0.0.1:8000/api/capabilities') as response:
+              caps = json.load(response)
+          assert caps['engine']['available']
+          assert caps['binaries']['pw.x']
+          assert not caps['job_submission_enabled']
+          assert not caps['scientific_calculation_performed']
+          print('Installed QE version:', caps['engine']['version'])
+          PY
+      - name: Tear down containers
+        if: always()
+        run: docker compose -f compose.qe.yml down --remove-orphans

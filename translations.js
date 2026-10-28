@@ -7,6 +7,20 @@
 (() => {
  'use strict';
  const entries=[
+  ["0 · Docker hesaplama sunucusu (D0–D1)","0 · Docker compute server (D0–D1)"],
+  ["Yerel IP ve port üzerinden yalnız bağlantıyı, QE sürümünü ve kurulu araçları denetleyin. Bu aşamada sunucuya yapı gönderilmez ve DFT işi başlatılamaz.","Only test connection, QE version and installed tools at a local IP and port. No crystal structure is uploaded and no DFT job can be launched at this stage."],
+  ["QE API adresi (IP:port)","QE API address (IP:port)"],
+  ["Docker / QE bağlantısını kontrol et","Test Docker / QE connection"],
+  ["Bağlantı henüz kontrol edilmedi.","Connection has not been tested."],
+  ["Docker kurulumu, LAN erişimi ve CORS kılavuzu","Docker setup, LAN access and CORS guide"],
+  ["GitHub Pages üzerinden yerel ağ erişiminde tarayıcı izni veya HTTPS yapılandırması gerekebilir.","Browser permission or HTTPS configuration may be necessary when accessing a local network from GitHub Pages."],
+  ["Yerel QE API bağlantısı kontrol ediliyor...","Checking local QE API connection..."],
+  ["Adres değişti; yeniden bağlantı testi yapın.","Address changed; rerun the connection test."],
+  ["QE sunucusu hazır.","QE server is ready."],
+  ["QE API erişilebilir; çözücü henüz hazır değil.","QE API is reachable; the solver is not ready."],
+  ["Bağlantı kurulamadı:","Connection failed:"],
+  ["Yerel ağ izni, HTTPS/HTTP tarayıcı kısıtları, CORS ve konteyner portunu kontrol edin.","Check local network permission, HTTPS/HTTP browser restrictions, CORS and the container port."],
+  ["Adres değişti; bağlantıyı yeniden kontrol edin.","Address changed; check the connection again."],
   ["4 · MoS₂ kusur serisi karşılaştırması","4 · MoS₂ defect-series comparison"],
   ["Kusursuz MoS₂ ile S vakansı ve oksijenli kusurları, yerel DFT sonuçlarıyla karşılaştır. Ortak vakum potansiyeli referansı belgelenmemişse grafikler hizalanmaz. Atom eşleme yalnız yakınlık tahminidir.","Compare pristine MoS₂, sulfur vacancies and oxygen-related candidates using local DFT outputs. Curves are not aligned without a documented common vacuum-potential reference. Atom matching is a proximity estimate only."],
   ["Kusur karşılaştırma sonuç dosyası (.json)","Defect comparison results file (.json)"],

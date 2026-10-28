@@ -12,6 +12,7 @@ import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
+import { inspectQeApi } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6807,6 +6808,24 @@ function qeExportPwInput(){
   $('qeExportStatus').textContent=result.atoms+' açık P1 atomu · '+result.species.length+' element · '+result.fixedCount+' sabit atom. UPF dosyalarını kendi bilgisayarınızda ./pseudo içine yerleştirin.';
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
 }
+async function qeTestApiConnection(){
+ const button=$('qeApiTest'),input=$('qeApiAddress'),status=$('qeApiStatus'),attempt=input.value;
+ button.disabled=true;
+ status.textContent='Yerel QE API bağlantısı kontrol ediliyor...';
+ try{
+  const probe=await inspectQeApi(attempt);
+  if(input.value!==attempt){
+   status.textContent='Adres değişti; yeniden bağlantı testi yapın.';return;
+  }
+  const list=Object.entries(probe.binaries).map(([key,ok])=>key+': '+(ok?'var':'eksik')).join(' · ');
+  status.textContent=(probe.ready?'QE sunucusu hazır.':'QE API erişilebilir; çözücü henüz hazır değil.')+
+   ' QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
+   ' · D0–D1 yalnız sunucu keşfi; DFT işi gönderilemez.';
+ }catch(error){
+  status.textContent='Bağlantı kurulamadı: '+error.message+
+   ' Yerel ağ izni, HTTPS/HTTP tarayıcı kısıtları, CORS ve konteyner portunu kontrol edin.';
+ }finally{button.disabled=false;}
+}
 async function qeLoadDefectComparison(){
  const input=$('qeDefectCompareFile'),file=input.files?.[0],status=$('qeDefectCompareStatus');
  const container=$('qeDefectCompareCharts');container.replaceChildren();
@@ -9564,6 +9583,8 @@ function bind(){
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
  $('qeElectronicOpen').onclick=qeLoadElectronicResults;
+ $('qeApiTest').onclick=qeTestApiConnection;
+ $('qeApiAddress').onchange=()=>{$('qeApiStatus').textContent='Adres değişti; bağlantıyı yeniden kontrol edin.';};
  $('qeDefectCompareOpen').onclick=qeLoadDefectComparison;
  $('qeDefectCompareFile').onchange=()=>{$('qeDefectCompareCharts').replaceChildren();$('qeDefectCompareStatus').textContent='Kusur serisi dosyası seçildi; açın.';};
  $('qeElectronicFile').onchange=()=>{$('qeElectronicCharts').replaceChildren();$('qeElectronicStatus').textContent='Dosya seçildi; grafik için açın.';};

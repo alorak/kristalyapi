@@ -253,6 +253,19 @@ Bu bölüm **genel DFT web/API altyapısıdır**. Yukarıdaki **M-P0–M-P5**,
 karşılaştırması için ayrı kalır. Yeni platform mevcut runner/pipeline'ı
 tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 
+### D0–D1 — Docker QE kurulumu ve read-only bağlantı (ilk altyapı)
+
+- [x] İlk konteyner: Debian Trixie QE 6.7-3+b1 sürümünü paket düzeyinde sabitleyen Dockerfile; `pw.x`, `bands.x`, `dos.x`, `projwfc.x` varlık kontrolleri ve `pw.x` banner smoke. **Bu gerçek SCF/relax fizik koşumu değildir.**
+- [x] FastAPI salt-okunur `GET /api/health`, `GET /api/capabilities`: QE sürüm, binary durumu ve API şemasını sunma; kimlik doğrulamasız iş yürütme uç noktası yok.
+- [x] Docker Compose varsayılan loopback binding, isteğe bağlı LAN IP/port, kesin origin CORS, host doğrulama, root olmayan kullanıcı, salt-okunur kök FS ve kaynak sınırları.
+- [x] KristalYapı DFT panelinde IP/port ve **kullanıcı tıklamasıyla bağlantı testi**; sonuçlar tarayıcıda gösterilir, iş/model/UPF gönderilmez ve sunucu adresi saklanmaz.
+- [x] Python API mock smoke + tarayıcı ağ/şema/negatif senaryo testleri, offline cache, EN/TR, Docker ve browser kısıtları belgelendi.
+- [ ] **Gerçek Docker doğrulaması:** x86_64/arm64 hostta `docker compose build/up`, gerçek `pw.x` banner, yerel CORS ve Chrome LNA izin akışı; Docker çalıştırılmadan doğrulandı sayılmamalı.
+- [ ] **Bilimsel D-P0 kabulü ayrı:** gerçek UPF ile Si SCF / MoS₂ SCF ve yakınsama deneyleri; bu D0–D1 API hiçbir fizik hesabı başlatmıyor.
+- [x] Merge sonrası MoS₂ serisi CI regresyonu: pristine atom eşleme döngüsü bitmeden erken silinmemeli (`KeyError: atoms`).
+
+**Sınır:** Bu paket D-P1 iş API'sini tamamlamaz. İlk gerçek job gönderme ancak şemalı girdi, yetki, kotalar, güvenli UPF profili, kuyruğa alma ve gerçek QE doğrulama sonrası gelecek.
+
 ### D-P0 — Mevcut yetenekleri ve sınırlarını sabitle
 
 - [x] CIF/COD, P1, vakum/kusur araçları ve CIF/POSCAR dışa aktarımı.
