@@ -1,0 +1,32 @@
+{
+  "schema": "kristalyapi.qe-scf-result.v1",
+  "job_id": "29e898f4180e4f6d8a73b7643af26f06",
+  "structure_hash": "ed1d9a7c49800fcb80797d0107683f800fadfd2a8c7dd5312fe86e85aaf8582b",
+  "engine": "quantum-espresso",
+  "engine_version": "6.7MaX",
+  "energy_ry": -181.58136256,
+  "energy_ev": -2470.540295846472,
+  "total_force_ry_bohr": 0.006024,
+  "scf_converged": true,
+  "job_done": true,
+  "functional_declared": "PBE",
+  "pseudopotentials": {
+    "Mo": {
+      "file": "Mo.UPF",
+      "sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP)",
+      "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+      "functional": "PBE"
+    },
+    "S": {
+      "file": "S.UPF",
+      "sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP)",
+      "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+      "functional": "PBE"
+    }
+  },
+  "input_sha256": "2d21c4ff6fd9100c959b27eba9b01343d73c3e0d7cf092450acf3681c5d7f039",
+  "output_sha256": "e772e6db110a9943087df0e761b7c6442bce28942ceb0b1575a4cacc7c8d2800",
+  "scientific_convergence_study_completed": false
+}

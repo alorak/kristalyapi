@@ -312,13 +312,14 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 
 **Kanıt ve tekrar çalıştırma:** [D2.1 kılavuzu](docs/qe-scf-validation.md), [gerçek koşu raporu](validation-results/qe-si-d21-20261028-arm64/README.md). Bu kabul yalnız sabit Si protokolünü kapsar; MoS₂, relaksasyon ve genel fiziksel doğruluk ayrı kalır.
 
-### D2.2 — Pristine 1H-MoS₂ gerçek SCF kabulü (uygulama ve test altyapısı, fizik hesabı bekliyor)
+### D2.2 — Pristine 1H-MoS₂ gerçek SCF kabulü (7/7 SCF tamamlandı, kesme enerjisi kapısı başarısız)
 
 - [x] D2.1'deki gerçek Si kabul API/Docker/worker alt yapısını yeniden kullanan **MoS₂ kabul planı**: ideal üç atomlu 1H yapı, sabit PBE, 8/12/16×k×1, 60/80/100 Ry ve c=18/24/30 Å; vaka parametreleri ve test öncesi duyarlılık ölçütleri.
 - [x] Gerçek Mo ve S PSlibrary 1.0.0 UPF kaynak URL/lisans; **her iki SHA-256 operatör tarafından açıkça sağlanmadan hesap başlatma**. Dosyalar doğrulanmadan "pinned" denilmez.
 - [x] `tools/qe_mos2_acceptance.py --run/--verify`: gerçek QE/API işlerinin ham çıktısı, SCF yakınsama, Ry/eV, input/cell/atom/k-örgüsü, pseudo ve çıktı hash'leri ve ortak kabul eşiği kanıt denetimi.
 - [x] `tests/test_qe_mos2_acceptance.py` negatif/sentetik testleri, manuel iş akışı ve CI/usage rehberi; **gerçek veri oldukları iddia edilmez**.
-- [ ] **D2.2 gerçek bilimsel kabul:** operatörün doğruladığı Mo/S UPF SHA-256 değerleriyle manuel Docker/CI koşusu; gerçek başarısızlık/başarı paketlerinin incelenmesi, tekrarlanabilir koşum ve sınırlı k/c/ecut duyarlılığı.
+- [x] **Gerçek manuel koşu ve kanıt incelemesi:** resmi Mo/S UPF baytları ve metadata'sı doğrulandı; [Linux CI](https://github.com/alorak/kristalyapi/actions/runs/40770083516) üzerinde 7/7 gerçek SCF işi tamamlandı. Ham QE/API, 26 elektron, SHA-256 ve ≤1e-8 Ry SCF hata tahminleri yerelde tekrar doğrulandı. [Kalıcı kanıtlar](validation-results/qe-mos2-d22-20261029-amd64/README.md).
+- [ ] **D2.2 genel bilimsel kabul:** kesme enerjisi 80→100 Ry farkı **2.374556 >1 meV/atom**, kabul başarısız. K-örgüsü **0.000635 ≤1**, vakum **0.000363 ≤2 meV/atom** geçti. Daha yüksek ecut için yeni ön kayıtlı tarama ve gerekirse yeni protokolde k/vakum kontrolleri gerekir; eşikler değiştirilmedi.
 - [ ] **D3 (sonraki PR):** gerçek MoS₂ kabulünden sonra `relax → scf` sunucu worker iş şeması, atomik kuvvet/geometri doğrulaması ve kaynak eşleşmeli 3B önizleme.
 - [ ] **D4:** gerçek `bands.x`, `dos.x`, `projwfc.x` zinciri; spin, referans enerji ve yakınsama kanıtı olmadan fiziksel sonuçları birleştirme.
 - [ ] **D5:** V_S / V₂S / O_S / O₂@V_S kusur karşılaştırması ve spin/SOC; bağımsız araştırma kabulü.

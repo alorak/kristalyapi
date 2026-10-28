@@ -22,12 +22,28 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import xml.etree.ElementTree as ET
 
 from qe_scf_acceptance import Api, require, write_json, sha, numeric, NUMBER, RY_TO_EV
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "tests/fixtures/qe/mos2-scf-acceptance.json"
 HEX = re.compile(r"[a-fA-F0-9]{64}\Z")
+
+
+def validate_upf_metadata(data, element):
+    head = data[:16000]
+    header = re.search(rb"<PP_HEADER\b[\s\S]*?/>", head)
+    require(b"<UPF" in head and header is not None, element+" UPF header missing")
+    try:
+        attributes = ET.fromstring(header.group()).attrib
+    except ET.ParseError as exc:
+        raise ValueError(element+" UPF header is not valid XML") from exc
+    # Official PSlibrary S encodes element=" S". Normalize metadata values,
+    # leaving the reviewed UPF bytes and their SHA-256 entirely unchanged.
+    require(attributes.get("element", "").strip() == element and
+            attributes.get("functional", "").strip() == "PBE",
+            element+" UPF elemental/XC metadata mismatch")
 
 
 def load_plan():
@@ -230,11 +246,7 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
                         data = response.read(20_000_001)
                 require(1000 <= len(data) <= 20_000_000 and sha(data) == meta["sha256"],
                         el+" UPF does not match explicitly pinned SHA-256")
-                head = data[:16000]
-                require(b"<UPF" in head and
-                        re.search(rb'\belement\s*=\s*["\']'+el.encode()+rb'["\']', head) and
-                        re.search(rb'\bfunctional\s*=\s*["\']PBE["\']', head),
-                        el+" UPF elemental/XC metadata mismatch")
+                validate_upf_metadata(data, el)
                 (work/"pseudos"/meta["filename"]).write_bytes(data)
                 profile["elements"][el] = {
                     "file": meta["filename"], "sha256": meta["sha256"],
