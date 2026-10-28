@@ -85,7 +85,8 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
                 raise ValueError("QE output exceeds 16 MB safe parser limit")
             raw=output_file.read_text(encoding="utf-8",errors="replace")
             parsed=summarize_output(raw,"scf",process.returncode)
-            status="completed" if parsed["status"]=="completed" else "not_converged"
+            status=("completed" if parsed["status"]=="completed" else
+                    "failed" if process.returncode!=0 else "not_converged")
             result={
                 "schema":"kristalyapi.qe-scf-result.v1",
                 "job_id":job_id,"structure_hash":job["structure_hash"],
