@@ -7,6 +7,14 @@
 (() => {
  'use strict';
  const entries=[
+  ["Atom / element / orbital katkılarını incele","Inspect atom / element / orbital contributions"],
+  ["PDOS atom ve orbital seçimi","PDOS atom and orbital selection"],
+  ["orbitali (element toplamı)","orbital (element sum)"],
+  ["Toplam projeksiyon ve","Total projection and"],
+  ["Mavi: tüm atomların toplam PDOS katkısı","Blue: total PDOS contributions from all atoms"],
+  ["Turuncu:","Orange:"],
+  ["Bu yansıtma kimyasal bağ veya optik geçiş kanıtı değildir.","This projection does not establish chemical bonding or optical transitions."],
+  ["Elektronik sonuç dosyası 24 MB sınırını aşıyor.","The electronic result file exceeds the 24 MB limit."],
   ["QE bant / DOS hesaplama kılavuzu","QE band / DOS calculation guide"],
   ["3 · Gerçek elektronik bant ve DOS verileri","3 · Calculated electronic bands and DOS"],
   ["Harici Quantum ESPRESSO hesaplamasından gelen electronic-results.json dosyasını yerel olarak açın. Bu görüntüleme DFT, optik geçiş veya foton emisyonu hesabı yapmaz.","Open the electronic-results.json file from an external Quantum ESPRESSO calculation locally. This viewer does not perform DFT, optical-transition or photon-emission calculations."],
