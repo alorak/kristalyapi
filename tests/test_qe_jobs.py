@@ -168,6 +168,27 @@ class D2Tests(unittest.TestCase):
         self.assertEqual(response.status_code,422)
         self.assertIn("Overlapping",response.text)
 
+    def test_running_process_cancellation_is_terminal_and_no_result(self):
+        import threading
+        import time
+        p,f=canonical_request(payload())
+        binary=self.root/"slow-pw.x"
+        binary.write_text("#!/usr/bin/env python3\nimport time\ntime.sleep(10)\n")
+        binary.chmod(0o700)
+        jid=self.store.submit(p,f)
+        task=self.store.claim()
+        thread=threading.Thread(
+            target=execute,args=(self.store,task),
+            kwargs={"qe_binary":str(binary),"profiles_dir":self.profiles,
+                    "pseudo_dir":self.pseudo,"timeout":30},daemon=True)
+        thread.start()
+        time.sleep(0.2)
+        self.store.cancel(jid)
+        thread.join(timeout=8)
+        self.assertFalse(thread.is_alive(),"cancelled worker did not terminate")
+        self.assertEqual(self.store.get(jid)["status"],"cancelled")
+        self.assertIsNone(self.store.get(jid)["result_json"])
+
     def test_auth_and_body_size_and_missing_job_id(self):
         self.assertEqual(self.client.get("/api/v1/calculations/"+("a"*32)).status_code,401)
         response=self.client.post("/api/v1/calculations",headers={
