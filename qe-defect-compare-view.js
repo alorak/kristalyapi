@@ -77,6 +77,9 @@ export function parseDefectComparisonResult(obj){
   if(!Array.isArray(c.near_atom_indices)||!Array.isArray(c.far_atom_indices)||
      c.near_atom_indices.length+c.far_atom_indices.length!==counts.Mo+counts.S+counts.O)
    throw Error('Kusura yakın/uzak atom sayıları uyumsuz.');
+  const indices=[...c.near_atom_indices,...c.far_atom_indices].sort((a,b)=>a-b);
+  if(indices.some((value,i)=>!Number.isInteger(value)||value!==i+1))
+   throw Error('Yakın/uzak atom indeksleri tam ve tekrarsız olmalı.');
   if(!URL_PATTERN.test(c.input_sha256||''))throw Error('DFT girdi SHA-256 kaydı eksik.');
   return {id:c.id,label:label(c.label||c.id),counts,energy:x,raw,groups,
    referenceEv:aligned?c.reference_energy_ev:null,
@@ -178,6 +181,10 @@ export function renderDefectComparison(container,data){
    legend.textContent='Mavi: pristine; turuncu: '+selected.label+
     '. Her eğri kendi element atom sayısına bölünmüştür (durum/eV/atom). Referans kanıtı: '+
     selected.evidence+'.';
+  }else if(data.aligned){
+   charts.append(plot([{x:selected.energy,y:target}],
+     selected.label+' '+channel.value+' (vakum referanslı)','E − E_vac (eV), dış referans'));
+   legend.textContent='Pristine yapıda '+element+'-'+orbital+' orbitali bulunmadığından üst üste çizim yok. Referans dışarıdan verilmiştir; fiziksel doğrulama yapılmadı.';
   }else{
    if(ref)charts.append(plot([{x:pristine.raw,y:ref}],
      'Pristine '+channel.value+' (ayrı enerji sıfırı)','Ham QE enerji (eV)'));
