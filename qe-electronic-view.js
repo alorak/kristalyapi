@@ -25,6 +25,7 @@ export function parseQeElectronicResult(data){
   const curves=data.bands.energies_ev;
   if(!Array.isArray(curves)||!curves.length||curves.length>300)
    throw Error('Bant sayısı 1–300 arasında olmalı.');
+  if(curves.length*d.length>120000)throw Error('Görselleştirme için en fazla 120.000 bant noktası desteklenir.');
   output.bands={distance:d,curves:curves.map((v,i)=>{
    const y=checkedArray(v,'Bant '+(i+1),20000);
    if(y.length!==d.length)throw Error('Bant k noktası sayıları eşleşmiyor.');
@@ -60,8 +61,9 @@ function chart(title,xName,yName,curves,width=660,height=260){
  svg.style.cssText='width:100%;height:auto;display:block;max-height:360px';
  const left=57,right=12,top=18,bottom=42;
  const plotW=width-left-right,plotH=height-top-bottom;
- const xs=curves.flatMap(c=>c.x),ys=curves.flatMap(c=>c.y);
- let xMin=Math.min(...xs),xMax=Math.max(...xs),yMin=Math.min(...ys),yMax=Math.max(...ys);
+ let xMin=Infinity,xMax=-Infinity,yMin=Infinity,yMax=-Infinity;
+ for(const c of curves){for(const v of c.x){xMin=Math.min(xMin,v);xMax=Math.max(xMax,v);}
+  for(const v of c.y){yMin=Math.min(yMin,v);yMax=Math.max(yMax,v);}}
  if(xMin===xMax)xMax=xMin+1;
  if(yMin===yMax){yMin-=.5;yMax+=.5;}
  const xVal=x=>left+(x-xMin)/(xMax-xMin)*plotW;
