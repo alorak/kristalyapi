@@ -110,6 +110,16 @@ class RelaxationTests(unittest.TestCase):
         self.assertIn('Si 0.2400000000', (self.jobs/'runs'/jid/'structure.in').read_text())
         self.assertEqual(result["initial_structure"]["atoms"][1]["fractional"][0],.25)
 
+    def test_high_verbosity_force_contributions_are_not_extra_total_force_rows(self):
+        p,_=canonical_request(request())
+        text=raw().replace(' Total force =',
+            ' The non-local contrib.  to forces\n'
+            ' atom 1 type 1 force = 0.5 0.5 0.5\n'
+            ' atom 2 type 1 force = -0.5 -0.5 -0.5\n Total force =')
+        proof=final_forces(text,p['structure'])
+        self.assertEqual(len(proof['forces_ry_bohr']),2)
+        self.assertEqual(proof['max_force_component_ry_bohr'],1e-5)
+
     def test_unconverged_relaxation_never_starts_scf_or_publishes_result(self):
         jid,row=self.run_job(relax_text=raw(True).replace('bfgs converged','bfgs stopped'))
         self.assertEqual(row["status"],"not_converged")

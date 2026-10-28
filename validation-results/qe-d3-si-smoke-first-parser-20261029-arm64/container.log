@@ -1,0 +1,19 @@
+qe-worker-1  | /app/relax_core.py:76: SyntaxWarning: invalid escape sequence '\s'
+qe-worker-1  |   +"\s+".join(["("+NUMBER+")"]*3)+r"\s*$", block)
+qe-api-1     | INFO:     Started server process [1]
+qe-api-1     | INFO:     Waiting for application startup.
+qe-api-1     | INFO:     Application startup complete.
+qe-api-1     | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1     | INFO:     192.168.128.1:60710 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1     | /app/relax_core.py:76: SyntaxWarning: invalid escape sequence '\s'
+qe-api-1     |   +"\s+".join(["("+NUMBER+")"]*3)+r"\s*$", block)
+qe-api-1     | INFO:     192.168.128.1:60716 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60728 - "POST /api/v1/calculations HTTP/1.1" 202 Accepted
+qe-api-1     | INFO:     192.168.128.1:60736 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60738 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60740 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60756 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60758 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60764 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:60770 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK
+qe-api-1     | INFO:     192.168.128.1:62092 - "GET /api/v1/calculations/fd5e4bfc47af47308d5774de138045a8 HTTP/1.1" 200 OK

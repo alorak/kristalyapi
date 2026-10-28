@@ -72,8 +72,17 @@ def final_forces(raw, structure):
     if len(sections) < 2:
         raise ValueError("Missing final atomic forces")
     block = re.split(r"(?im)^\s*Total force\s*=", sections[-1], maxsplit=1)[0]
-    rows = re.findall(r"(?im)^\s*atom\s+(\d+)\s+type\s+(\d+)\s+force\s*=\s*"
-                      +"\s+".join(["("+NUMBER+")"]*3)+r"\s*$", block)
+    pattern = re.compile(r"^\s*atom\s+(\d+)\s+type\s+(\d+)\s+force\s*=\s*"
+                         +"\s+".join(["("+NUMBER+")"]*3)+r"\s*$", re.I)
+    rows = []
+    # verbosity='high' prints force contribution blocks after the first, total
+    # atomic-force block. Never combine their repeated atom indices with it.
+    for line in block.splitlines():
+        match = pattern.fullmatch(line)
+        if match:
+            rows.append(match.groups())
+        elif rows and line.strip():
+            break
     atoms = structure["atoms"]
     if len(rows) != len(atoms):
         raise ValueError("Final atomic force count mismatch")
