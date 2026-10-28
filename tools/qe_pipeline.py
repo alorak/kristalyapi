@@ -115,7 +115,7 @@ def use_relaxed_positions(source, relax_output, nat):
     positions = "\n".join(
         " ".join([symbol] + [f"{x % 1:.12f}" for x in xyz])
         for symbol, xyz in rows)
-    return source[:original.start()] + "ATOMIC_POSITIONS crystal\n" + positions + "\n" + source[original.end():]
+    return source[:original.start()] + "ATOMIC_POSITIONS crystal\n" + positions + "\nK_POINTS automatic" + source[original.end():]
 
 
 def insert_nbnd(source, nbnd):
@@ -164,11 +164,11 @@ def post_input(kind):
     if kind == "bands_pp":
         return "&BANDS\n prefix='kristalyapi',\n outdir='./tmp',\n filband='bands.dat',\n lsym=.false.,\n/\n"
     if kind == "dos":
-        return "&DOS\n prefix='kristalyapi',\n outdir='./tmp',\n fildos='dos.dat',\n"
-               " DeltaE=0.02,\n degauss=0.01,\n/\n"
+        return ("&DOS\n prefix='kristalyapi',\n outdir='./tmp',\n fildos='dos.dat',\n"
+                " DeltaE=0.02,\n degauss=0.01,\n/\n")
     if kind == "projwfc":
-        return "&PROJWFC\n prefix='kristalyapi',\n outdir='./tmp',\n filpdos='pdos',\n"
-               " DeltaE=0.02,\n degauss=0.01,\n/\n"
+        return ("&PROJWFC\n prefix='kristalyapi',\n outdir='./tmp',\n filpdos='pdos',\n"
+                " DeltaE=0.02,\n degauss=0.01,\n/\n")
     raise ValueError("Unknown postprocessor")
 
 
@@ -270,6 +270,8 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
         needed.update({"nscf", "dos", "projwfc"})
     source = input_file.read_text(encoding="utf-8")
     model = parse_pw_input(source)
+    if re.search(r"(?i)\bnspin\s*=\s*[2-9]|\bnoncolin\s*=\s*\.true\.|\blspinorb\s*=\s*\.true\.", source):
+        raise ValueError("Spin-polarized / SOC QE inputs are not supported by this pipeline")
     if model["calculation"] == "relax":
         needed.add("relax")
     if execute:
