@@ -1,0 +1,2698 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/health",
+    "status": 200,
+    "response": {
+      "status": "ready",
+      "api_version": "0.2.0",
+      "engine": "quantum-espresso",
+      "binary_smoke": "pwscf_banner",
+      "read_only": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/capabilities",
+    "status": 200,
+    "response": {
+      "api_version": "0.2.0",
+      "engine": {
+        "id": "quantum-espresso",
+        "version": "6.7MaX",
+        "available": true
+      },
+      "binaries": {
+        "pw.x": true,
+        "bands.x": true,
+        "dos.x": true,
+        "projwfc.x": true
+      },
+      "supported_operations": [
+        "health",
+        "capabilities",
+        "scf",
+        "status",
+        "results",
+        "cancel"
+      ],
+      "job_submission_enabled": true,
+      "calculations_executed_by_api": false,
+      "binary_smoke": "pwscf_banner",
+      "scientific_calculation_performed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations",
+    "status": 401,
+    "response": {
+      "detail": "Invalid API token"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "queued",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.208090+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "running",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:00.483197+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091",
+    "status": 200,
+    "response": {
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "status": "completed",
+      "created": "2026-10-28T20:42:00.208090+00:00",
+      "updated": "2026-10-28T20:42:04.031478+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.83950736,
+      "energy_ev": -310.74732822052283,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "61b46f5db3492280fd12e21e68817256e52394e0548021995b8fa9634046d69f",
+      "output_sha256": "bd6e56e1d12de3c617fc5238fefa7e64e272e7d3c38a191b63a8bcc6bf26ff88",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/33f0257cbf0e4398a614dd0178dcd091/logs",
+    "status": 200,
+    "response": {
+      "text": "on #  3     ecut=    45.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  3.07E-04,  avg # of iterations =  1.2\n\n     total cpu time spent up to now is        1.3 secs\n\n     total energy              =     -22.83916976 Ry\n     estimated scf accuracy    <       0.00044581 Ry\n\n     iteration #  4     ecut=    45.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.57E-06,  avg # of iterations =  3.9\n\n     total cpu time spent up to now is        1.6 secs\n\n     total energy              =     -22.83950513 Ry\n     estimated scf accuracy    <       0.00013097 Ry\n\n     iteration #  5     ecut=    45.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.64E-06,  avg # of iterations =  2.0\n\n     total cpu time spent up to now is        1.8 secs\n\n     total energy              =     -22.83950144 Ry\n     estimated scf accuracy    <       0.00003886 Ry\n\n     iteration #  6     ecut=    45.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  4.86E-07,  avg # of iterations =  1.8\n\n     total cpu time spent up to now is        2.1 secs\n\n     total energy              =     -22.83950643 Ry\n     estimated scf accuracy    <       0.00000005 Ry\n\n     iteration #  7     ecut=    45.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  6.31E-10,  avg # of iterations = 10.3\n\n     total cpu time spent up to now is        2.6 secs\n\n     total energy              =     -22.83950723 Ry\n     estimated scf accuracy    <       0.00000152 Ry\n\n     iteration #  8     ecut=    45.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  6.31E-10,  avg # of iterations =  3.3\n\n     total cpu time spent up to now is        3.0 secs\n\n     End of self-consistent calculation\n\n          k = 0.0000 0.0000 0.0000 (  1411 PWs)   bands (ev):\n\n    -5.7589   6.2021   6.2021   6.2021\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0884 0.0884-0.0884 (  1387 PWs)   bands (ev):\n\n    -5.5549   4.6025   5.9128   5.9128\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.1768-0.1768 (  1375 PWs)   bands (ev):\n\n    -4.9596   2.2739   5.4417   5.4417\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2652 0.2652-0.2652 (  1377 PWs)   bands (ev):\n\n    -4.0662   0.2539   5.1144   5.1144\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.3536-0.3536 0.3536 (  1380 PWs)   bands (ev):\n\n    -3.4285  -0.7685   5.0025   5.0025\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.0000 0.0000 (  1395 PWs)   bands (ev):\n\n    -5.4861   4.8672   5.3948   5.3948\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2652 0.0884-0.0884 (  1370 PWs)   bands (ev):\n\n    -5.0176   2.9767   4.8828   4.9590\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1768-0.1768 (  1382 PWs)   bands (ev):\n\n    -4.2030   0.9161   4.3673   4.6146\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2652-0.4419 0.4419 (  1383 PWs)   bands (ev):\n\n    -3.3419  -0.5471   3.9215   4.6390\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.3536 0.3536 (  1388 PWs)   bands (ev):\n\n    -3.5864  -0.1766   3.7398   4.9356\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.2652 0.2652 (  1376 PWs)   bands (ev):\n\n    -4.5092   1.5753   3.8908   5.4274\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.1768 0.1768 (  1375 PWs)   bands (ev):\n\n    -5.2188   3.5169   4.5731   5.9089\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.0000 0.0000 (  1355 PWs)   bands (ev):\n\n    -4.6774   2.6835   4.3114   4.3114\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4419 0.0884-0.0884 (  1375 PWs)   bands (ev):\n\n    -3.9677   1.2598   3.5309   3.9931\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.5303 (  1374 PWs)   bands (ev):\n\n    -3.0420  -0.1819   2.6675   3.9962\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.4419 0.4419 (  1377 PWs)   bands (ev):\n\n    -2.8378  -0.4403   2.2090   4.3147\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.3536 (  1368 PWs)   bands (ev):\n\n    -3.7160   0.7203   2.4492   4.8734\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.5303-0.0000 0.0000 (  1371 PWs)   bands (ev):\n\n    -3.3654   0.4553   3.5946   3.5946\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.6187 0.6187 (  1370 PWs)   bands (ev):\n\n    -2.4684  -0.6296   2.7659   3.5184\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.5303 0.5303 (  1360 PWs)   bands (ev):\n\n    -2.0297  -1.0261   1.9002   3.7761\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  1362 PWs)   bands (ev):\n\n    -1.6160  -1.6160   3.3489   3.3489\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1768 0.0000 (  1371 PWs)   bands (ev):\n\n    -4.4301   1.9111   3.4886   4.7738\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2652-0.4419 0.6187 (  1380 PWs)   bands (ev):\n\n    -3.5421   0.3593   2.8806   4.2722\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.3536 0.5303 (  1382 PWs)   bands (ev):\n\n    -2.8900  -0.5856   2.7517   4.0425\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.7071 (  1377 PWs)   bands (ev):\n\n    -3.1669   0.2364   2.8395   3.4424\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.4419 0.6187 (  1380 PWs)   bands (ev):\n\n    -2.2923  -0.7315   2.1415   3.2417\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.5303 (  1375 PWs)   bands (ev):\n\n    -2.6429  -0.3683   1.9747   3.6177\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.1768-0.0000 (  1382 PWs)   bands (ev):\n\n    -1.5381  -1.5381   2.7850   2.7850\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.3536 0.0000 (  1384 PWs)   bands (ev):\n\n    -1.4522  -1.4522   2.3493   2.3493\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2021\n\n!    total energy              =     -22.83950736 Ry\n     estimated scf accuracy    <          8.0E-09 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16394095 Ry\n     hartree contribution      =       1.10145089 Ry\n     xc contribution           =     -12.30904863 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in   8 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000   -0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =    -0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000    0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =    -0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      0.32s CPU      0.34s WALL (       1 calls)\n     electrons    :      2.53s CPU      2.59s WALL (       1 calls)\n     forces       :      0.13s CPU      0.13s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.11s CPU      0.11s WALL (       1 calls)\n     wfcinit:atom :      0.00s CPU      0.00s WALL (      29 calls)\n     wfcinit:wfcr :      0.10s CPU      0.10s WALL (      29 calls)\n     potinit      :      0.02s CPU      0.03s WALL (       1 calls)\n     hinit0       :      0.14s CPU      0.15s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :      1.70s CPU      1.71s WALL (       9 calls)\n     sum_band     :      0.45s CPU      0.47s WALL (       9 calls)\n     v_of_rho     :      0.13s CPU      0.16s WALL (       9 calls)\n     v_h          :      0.01s CPU      0.01s WALL (       9 calls)\n     v_xc         :      0.14s CPU      0.17s WALL (      10 calls)\n     newd         :      0.27s CPU      0.29s WALL (       9 calls)\n     mix_rho      :      0.01s CPU      0.01s WALL (       9 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.07s CPU      0.07s WALL (     580 calls)\n     cegterg      :      1.51s CPU      1.52s WALL (     261 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (       9 calls)\n     sum_band:loo :      0.25s CPU      0.26s WALL (       9 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (     261 calls)\n     sum_band:ini :      0.03s CPU      0.03s WALL (     261 calls)\n     sum_band:cal :      0.04s CPU      0.04s WALL (     261 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (     261 calls)\n     addusdens    :      0.18s CPU      0.19s WALL (       9 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (       9 calls)\n     addusd:dgemm :      0.06s CPU      0.07s WALL (       9 calls)\n     addusd:qvan2 :      0.09s CPU      0.09s WALL (       9 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.01s CPU      0.01s WALL (    1017 calls)\n     cegterg:over :      0.04s CPU      0.04s WALL (     785 calls)\n     cegterg:upda :      0.01s CPU      0.01s WALL (     785 calls)\n     cegterg:last :      0.03s CPU      0.03s WALL (     713 calls)\n     h_psi        :      1.41s CPU      1.42s WALL (    1075 calls)\n     s_psi        :      0.08s CPU      0.08s WALL (    1075 calls)\n     g_psi        :      0.01s CPU      0.01s WALL (     785 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.13s CPU      0.13s WALL (    1075 calls)\n     vloc_psi     :      1.20s CPU      1.20s WALL (    1075 calls)\n     add_vuspsi   :      0.08s CPU      0.08s WALL (    1075 calls)\n\n     General routines\n     calbec       :      0.18s CPU      0.19s WALL (    1452 calls)\n     fft          :      0.09s CPU      0.10s WALL (     127 calls)\n     ffts         :      0.01s CPU      0.01s WALL (      18 calls)\n     fftw         :      1.23s CPU      1.24s WALL (    8572 calls)\n     interpolate  :      0.01s CPU      0.01s WALL (       9 calls)\n\n     Parallel routines\n\n     PWSCF        :      3.02s CPU      3.12s WALL\n\n\n   This run was terminated on:  20:42: 3  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "queued",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:04.417029+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "queued",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:04.417029+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "running",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:05.036212+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6",
+    "status": 200,
+    "response": {
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "status": "completed",
+      "created": "2026-10-28T20:42:04.417029+00:00",
+      "updated": "2026-10-28T20:42:09.583390+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "ca6d280222c3442bbf72633158334fb6",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.83956744,
+      "energy_ev": -310.7481456505657,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "3df8e0999ade2973998c7548c92d92afd6156ce653e3671cab2212be1c2ffb1c",
+      "output_sha256": "e0df231415ab5139ad88f4a77998df7506def3d1fc76e0a074e58c3750a6f080",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/ca6d280222c3442bbf72633158334fb6/logs",
+    "status": 200,
+    "response": {
+      "text": "on #  4     ecut=    60.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.70E-06,  avg # of iterations =  3.9\n\n     total cpu time spent up to now is        2.0 secs\n\n     total energy              =     -22.83956460 Ry\n     estimated scf accuracy    <       0.00013455 Ry\n\n     iteration #  5     ecut=    60.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.68E-06,  avg # of iterations =  2.0\n\n     total cpu time spent up to now is        2.4 secs\n\n     total energy              =     -22.83956113 Ry\n     estimated scf accuracy    <       0.00004483 Ry\n\n     iteration #  6     ecut=    60.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.60E-07,  avg # of iterations =  1.9\n\n     total cpu time spent up to now is        2.7 secs\n\n     total energy              =     -22.83956648 Ry\n     estimated scf accuracy    <       0.00000005 Ry\n\n     iteration #  7     ecut=    60.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  6.34E-10,  avg # of iterations = 10.1\n\n     total cpu time spent up to now is        3.4 secs\n\n     total energy              =     -22.83956735 Ry\n     estimated scf accuracy    <       0.00000110 Ry\n\n     iteration #  8     ecut=    60.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  6.34E-10,  avg # of iterations =  3.0\n\n     total cpu time spent up to now is        3.8 secs\n\n     total energy              =     -22.83956744 Ry\n     estimated scf accuracy    <       0.00000001 Ry\n\n     iteration #  9     ecut=    60.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.30E-10,  avg # of iterations =  2.3\n\n     total cpu time spent up to now is        4.1 secs\n\n     End of self-consistent calculation\n\n          k = 0.0000 0.0000 0.0000 (  2109 PWs)   bands (ev):\n\n    -5.7590   6.2020   6.2020   6.2020\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0884 0.0884-0.0884 (  2112 PWs)   bands (ev):\n\n    -5.5549   4.6023   5.9127   5.9127\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.1768-0.1768 (  2106 PWs)   bands (ev):\n\n    -4.9596   2.2738   5.4416   5.4416\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2652 0.2652-0.2652 (  2114 PWs)   bands (ev):\n\n    -4.0662   0.2538   5.1143   5.1143\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.3536-0.3536 0.3536 (  2120 PWs)   bands (ev):\n\n    -3.4286  -0.7685   5.0024   5.0024\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.0000 0.0000 (  2125 PWs)   bands (ev):\n\n    -5.4862   4.8671   5.3947   5.3947\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2652 0.0884-0.0884 (  2106 PWs)   bands (ev):\n\n    -5.0177   2.9765   4.8827   4.9588\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1768-0.1768 (  2116 PWs)   bands (ev):\n\n    -4.2031   0.9160   4.3672   4.6144\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2652-0.4419 0.4419 (  2115 PWs)   bands (ev):\n\n    -3.3420  -0.5472   3.9214   4.6389\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.3536 0.3536 (  2126 PWs)   bands (ev):\n\n    -3.5864  -0.1766   3.7397   4.9355\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.2652 0.2652 (  2117 PWs)   bands (ev):\n\n    -4.5093   1.5752   3.8906   5.4273\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.1768 0.1768 (  2111 PWs)   bands (ev):\n\n    -5.2189   3.5168   4.5730   5.9088\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.0000 0.0000 (  2085 PWs)   bands (ev):\n\n    -4.6775   2.6833   4.3112   4.3112\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4419 0.0884-0.0884 (  2114 PWs)   bands (ev):\n\n    -3.9677   1.2597   3.5308   3.9930\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.5303 (  2123 PWs)   bands (ev):\n\n    -3.0420  -0.1820   2.6674   3.9961\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.4419 0.4419 (  2125 PWs)   bands (ev):\n\n    -2.8378  -0.4404   2.2089   4.3146\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.3536 (  2119 PWs)   bands (ev):\n\n    -3.7160   0.7203   2.4491   4.8733\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.5303-0.0000 0.0000 (  2120 PWs)   bands (ev):\n\n    -3.3654   0.4552   3.5945   3.5945\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.6187 0.6187 (  2127 PWs)   bands (ev):\n\n    -2.4684  -0.6297   2.7658   3.5183\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.5303 0.5303 (  2129 PWs)   bands (ev):\n\n    -2.0298  -1.0262   1.9001   3.7759\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  2100 PWs)   bands (ev):\n\n    -1.6161  -1.6161   3.3488   3.3488\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1768 0.0000 (  2111 PWs)   bands (ev):\n\n    -4.4301   1.9110   3.4885   4.7736\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2652-0.4419 0.6187 (  2117 PWs)   bands (ev):\n\n    -3.5422   0.3592   2.8805   4.2720\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.3536 0.5303 (  2132 PWs)   bands (ev):\n\n    -2.8900  -0.5856   2.7516   4.0423\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.7071 (  2120 PWs)   bands (ev):\n\n    -3.1669   0.2363   2.8394   3.4423\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.4419 0.6187 (  2132 PWs)   bands (ev):\n\n    -2.2924  -0.7315   2.1414   3.2416\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.5303 (  2128 PWs)   bands (ev):\n\n    -2.6429  -0.3684   1.9746   3.6175\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.1768-0.0000 (  2142 PWs)   bands (ev):\n\n    -1.5381  -1.5381   2.7849   2.7849\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.3536 0.0000 (  2148 PWs)   bands (ev):\n\n    -1.4523  -1.4523   2.3492   2.3492\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2020\n\n!    total energy              =     -22.83956744 Ry\n     estimated scf accuracy    <          3.9E-09 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16390306 Ry\n     hartree contribution      =       1.10146241 Ry\n     xc contribution           =     -12.30908233 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in   9 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000   -0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      0.43s CPU      0.46s WALL (       1 calls)\n     electrons    :      3.47s CPU      3.58s WALL (       1 calls)\n     forces       :      0.17s CPU      0.18s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.14s CPU      0.14s WALL (       1 calls)\n     wfcinit:atom :      0.00s CPU      0.00s WALL (      29 calls)\n     wfcinit:wfcr :      0.12s CPU      0.12s WALL (      29 calls)\n     potinit      :      0.04s CPU      0.05s WALL (       1 calls)\n     hinit0       :      0.18s CPU      0.18s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :      2.15s CPU      2.15s WALL (      10 calls)\n     sum_band     :      0.64s CPU      0.68s WALL (      10 calls)\n     v_of_rho     :      0.26s CPU      0.31s WALL (      10 calls)\n     v_h          :      0.01s CPU      0.01s WALL (      10 calls)\n     v_xc         :      0.27s CPU      0.33s WALL (      11 calls)\n     newd         :      0.46s CPU      0.49s WALL (      10 calls)\n     mix_rho      :      0.03s CPU      0.03s WALL (      10 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.11s CPU      0.11s WALL (     638 calls)\n     cegterg      :      1.83s CPU      1.84s WALL (     290 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (      10 calls)\n     sum_band:loo :      0.31s CPU      0.31s WALL (      10 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (     290 calls)\n     sum_band:ini :      0.05s CPU      0.05s WALL (     290 calls)\n     sum_band:cal :      0.06s CPU      0.06s WALL (     290 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (     290 calls)\n     addusdens    :      0.30s CPU      0.33s WALL (      10 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (      10 calls)\n     addusd:dgemm :      0.10s CPU      0.12s WALL (      10 calls)\n     addusd:qvan2 :      0.16s CPU      0.16s WALL (      10 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.01s CPU      0.01s WALL (    1105 calls)\n     cegterg:over :      0.06s CPU      0.06s WALL (     844 calls)\n     cegterg:upda :      0.02s CPU      0.02s WALL (     844 calls)\n     cegterg:last :      0.05s CPU      0.05s WALL (     753 calls)\n     h_psi        :      1.62s CPU      1.62s WALL (    1163 calls)\n     s_psi        :      0.13s CPU      0.13s WALL (    1163 calls)\n     g_psi        :      0.01s CPU      0.01s WALL (     844 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.23s CPU      0.23s WALL (    1163 calls)\n     vloc_psi     :      1.26s CPU      1.26s WALL (    1163 calls)\n     add_vuspsi   :      0.13s CPU      0.13s WALL (    1163 calls)\n\n     General routines\n     calbec       :      0.31s CPU      0.31s WALL (    1569 calls)\n     fft          :      0.17s CPU      0.17s WALL (     140 calls)\n     ffts         :      0.01s CPU      0.01s WALL (      20 calls)\n     fftw         :      1.23s CPU      1.23s WALL (    9164 calls)\n     interpolate  :      0.02s CPU      0.02s WALL (      10 calls)\n\n     Parallel routines\n\n     PWSCF        :      4.13s CPU      4.27s WALL\n\n\n   This run was terminated on:  20:42: 9  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "queued",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.161388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "running",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:10.590826+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887",
+    "status": 200,
+    "response": {
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "status": "completed",
+      "created": "2026-10-28T20:42:10.161388+00:00",
+      "updated": "2026-10-28T20:42:21.171731+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "3149949372fa4ff9b248a04086aac887",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.83958475,
+      "energy_ev": -310.74838116511364,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "ce67559b4311d541a55e4bb97338aed2ce6c98779b9fd80e91c09e92433b002a",
+      "output_sha256": "7d5a52d905c9eaadea107615384d62f925f5ae4a0e2e1687fcd1fbf7c46bedd6",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/3149949372fa4ff9b248a04086aac887/logs",
+    "status": 200,
+    "response": {
+      "text": "on #  4     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.62E-06,  avg # of iterations =  3.8\n\n     total cpu time spent up to now is        4.5 secs\n\n     total energy              =     -22.83958163 Ry\n     estimated scf accuracy    <       0.00013314 Ry\n\n     iteration #  5     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.66E-06,  avg # of iterations =  2.0\n\n     total cpu time spent up to now is        5.3 secs\n\n     total energy              =     -22.83957838 Ry\n     estimated scf accuracy    <       0.00004440 Ry\n\n     iteration #  6     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.55E-07,  avg # of iterations =  1.9\n\n     total cpu time spent up to now is        6.0 secs\n\n     total energy              =     -22.83958364 Ry\n     estimated scf accuracy    <       0.00000010 Ry\n\n     iteration #  7     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.28E-09,  avg # of iterations =  9.3\n\n     total cpu time spent up to now is        7.9 secs\n\n     total energy              =     -22.83958460 Ry\n     estimated scf accuracy    <       0.00000173 Ry\n\n     iteration #  8     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.28E-09,  avg # of iterations =  3.0\n\n     total cpu time spent up to now is        8.9 secs\n\n     total energy              =     -22.83958474 Ry\n     estimated scf accuracy    <       0.00000001 Ry\n\n     iteration #  9     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.85E-10,  avg # of iterations =  3.1\n\n     total cpu time spent up to now is        9.8 secs\n\n     End of self-consistent calculation\n\n          k = 0.0000 0.0000 0.0000 (  2975 PWs)   bands (ev):\n\n    -5.7592   6.2017   6.2017   6.2017\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0884 0.0884-0.0884 (  2957 PWs)   bands (ev):\n\n    -5.5551   4.6021   5.9124   5.9124\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.1768-0.1768 (  2947 PWs)   bands (ev):\n\n    -4.9598   2.2735   5.4413   5.4413\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2652 0.2652-0.2652 (  2959 PWs)   bands (ev):\n\n    -4.0665   0.2536   5.1141   5.1141\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.3536-0.3536 0.3536 (  2938 PWs)   bands (ev):\n\n    -3.4288  -0.7687   5.0021   5.0021\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.0000 0.0000 (  2950 PWs)   bands (ev):\n\n    -5.4864   4.8668   5.3944   5.3944\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2652 0.0884-0.0884 (  2943 PWs)   bands (ev):\n\n    -5.0179   2.9763   4.8824   4.9586\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1768-0.1768 (  2952 PWs)   bands (ev):\n\n    -4.2033   0.9158   4.3669   4.6142\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2652-0.4419 0.4419 (  2962 PWs)   bands (ev):\n\n    -3.3422  -0.5474   3.9212   4.6386\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.3536 0.3536 (  2966 PWs)   bands (ev):\n\n    -3.5867  -0.1768   3.7395   4.9352\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.2652 0.2652 (  2954 PWs)   bands (ev):\n\n    -4.5095   1.5750   3.8904   5.4270\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.1768 0.1768 (  2944 PWs)   bands (ev):\n\n    -5.2191   3.5165   4.5728   5.9085\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.0000 0.0000 (  2906 PWs)   bands (ev):\n\n    -4.6777   2.6831   4.3110   4.3110\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4419 0.0884-0.0884 (  2963 PWs)   bands (ev):\n\n    -3.9680   1.2594   3.5306   3.9928\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.5303 (  2966 PWs)   bands (ev):\n\n    -3.0423  -0.1823   2.6672   3.9959\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.4419 0.4419 (  2968 PWs)   bands (ev):\n\n    -2.8381  -0.4406   2.2088   4.3144\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.3536 (  2968 PWs)   bands (ev):\n\n    -3.7163   0.7200   2.4489   4.8731\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.5303-0.0000 0.0000 (  2958 PWs)   bands (ev):\n\n    -3.3657   0.4549   3.5943   3.5943\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.6187 0.6187 (  2961 PWs)   bands (ev):\n\n    -2.4687  -0.6299   2.7656   3.5181\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.5303 0.5303 (  2964 PWs)   bands (ev):\n\n    -2.0301  -1.0264   1.8999   3.7757\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  2954 PWs)   bands (ev):\n\n    -1.6163  -1.6163   3.3486   3.3486\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1768 0.0000 (  2962 PWs)   bands (ev):\n\n    -4.4304   1.9108   3.4883   4.7734\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2652-0.4419 0.6187 (  2976 PWs)   bands (ev):\n\n    -3.5424   0.3590   2.8803   4.2718\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.3536 0.5303 (  2968 PWs)   bands (ev):\n\n    -2.8903  -0.5858   2.7514   4.0421\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.7071 (  2976 PWs)   bands (ev):\n\n    -3.1671   0.2360   2.8392   3.4421\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0884-0.4419 0.6187 (  2970 PWs)   bands (ev):\n\n    -2.2927  -0.7318   2.1413   3.2414\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.5303 (  2983 PWs)   bands (ev):\n\n    -2.6432  -0.3686   1.9744   3.6174\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.1768-0.0000 (  2964 PWs)   bands (ev):\n\n    -1.5384  -1.5384   2.7847   2.7847\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.3536 0.0000 (  2996 PWs)   bands (ev):\n\n    -1.4525  -1.4525   2.3490   2.3490\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2017\n\n!    total energy              =     -22.83958475 Ry\n     estimated scf accuracy    <          2.2E-09 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16384886 Ry\n     hartree contribution      =       1.10149764 Ry\n     xc contribution           =     -12.30908067 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in   9 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =    -0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000    0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000    0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      0.63s CPU      0.66s WALL (       1 calls)\n     electrons    :      8.88s CPU      9.08s WALL (       1 calls)\n     forces       :      0.23s CPU      0.24s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.35s CPU      0.35s WALL (       1 calls)\n     wfcinit:atom :      0.00s CPU      0.00s WALL (      29 calls)\n     wfcinit:wfcr :      0.32s CPU      0.32s WALL (      29 calls)\n     potinit      :      0.04s CPU      0.04s WALL (       1 calls)\n     hinit0       :      0.16s CPU      0.17s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :      6.44s CPU      6.46s WALL (      10 calls)\n     sum_band     :      1.51s CPU      1.59s WALL (      10 calls)\n     v_of_rho     :      0.30s CPU      0.34s WALL (      10 calls)\n     v_h          :      0.02s CPU      0.02s WALL (      10 calls)\n     v_xc         :      0.31s CPU      0.35s WALL (      11 calls)\n     newd         :      0.66s CPU      0.73s WALL (      10 calls)\n     mix_rho      :      0.03s CPU      0.04s WALL (      10 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.17s CPU      0.17s WALL (     638 calls)\n     cegterg      :      5.96s CPU      5.98s WALL (     290 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (      10 calls)\n     sum_band:loo :      0.99s CPU      0.99s WALL (      10 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (     290 calls)\n     sum_band:ini :      0.08s CPU      0.08s WALL (     290 calls)\n     sum_band:cal :      0.10s CPU      0.10s WALL (     290 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (     290 calls)\n     addusdens    :      0.47s CPU      0.54s WALL (      10 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (      10 calls)\n     addusd:dgemm :      0.16s CPU      0.21s WALL (      10 calls)\n     addusd:qvan2 :      0.25s CPU      0.25s WALL (      10 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.02s CPU      0.02s WALL (    1104 calls)\n     cegterg:over :      0.10s CPU      0.10s WALL (     843 calls)\n     cegterg:upda :      0.03s CPU      0.03s WALL (     843 calls)\n     cegterg:last :      0.08s CPU      0.08s WALL (     759 calls)\n     h_psi        :      5.78s CPU      5.80s WALL (    1162 calls)\n     s_psi        :      0.19s CPU      0.19s WALL (    1162 calls)\n     g_psi        :      0.02s CPU      0.02s WALL (     843 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.33s CPU      0.33s WALL (    1162 calls)\n     vloc_psi     :      5.25s CPU      5.26s WALL (    1162 calls)\n     add_vuspsi   :      0.19s CPU      0.19s WALL (    1162 calls)\n\n     General routines\n     calbec       :      0.46s CPU      0.46s WALL (    1568 calls)\n     fft          :      0.18s CPU      0.18s WALL (     140 calls)\n     ffts         :      0.02s CPU      0.02s WALL (      20 calls)\n     fftw         :      5.51s CPU      5.52s WALL (    9210 calls)\n     interpolate  :      0.02s CPU      0.02s WALL (      10 calls)\n\n     Parallel routines\n\n     PWSCF        :      9.79s CPU     10.02s WALL\n\n\n   This run was terminated on:  20:42:20  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "queued",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:21.518201+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "queued",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:21.518201+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "running",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:22.180670+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4",
+    "status": 200,
+    "response": {
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "status": "completed",
+      "created": "2026-10-28T20:42:21.518201+00:00",
+      "updated": "2026-10-28T20:42:26.232919+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.82604899,
+      "energy_ev": -310.56421776836714,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "515fba88d06c103c5ec125e9a8018cbb3051dbe751c371398a90d68cf44617f2",
+      "output_sha256": "1ee312860166938cd3d98600693b3e3f7a677eb152af546e03458a3c75af8b8b",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/26c68d2b216044f2bdfa529f947d79c4/logs",
+    "status": 200,
+    "response": {
+      "text": "   k(    3) = (  -0.3535534  -0.3535534   0.3535534), wk =   0.1250000\n        k(    4) = (   0.3535534   0.0000000   0.0000000), wk =   0.1875000\n        k(    5) = (  -0.1767767  -0.5303301   0.5303301), wk =   0.7500000\n        k(    6) = (   0.0000000  -0.3535534   0.3535534), wk =   0.3750000\n        k(    7) = (  -0.7071068   0.0000000   0.0000000), wk =   0.0937500\n        k(    8) = (  -0.7071068   0.3535534   0.0000000), wk =   0.1875000\n\n                       cryst. coord.\n        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.0312500\n        k(    2) = (   0.0000000   0.0000000   0.2500000), wk =   0.2500000\n        k(    3) = (  -0.0000000  -0.0000000  -0.5000000), wk =   0.1250000\n        k(    4) = (   0.0000000   0.2500000   0.2500000), wk =   0.1875000\n        k(    5) = (   0.0000000   0.2500000  -0.5000000), wk =   0.7500000\n        k(    6) = (  -0.0000000   0.2500000  -0.2500000), wk =   0.3750000\n        k(    7) = (   0.0000000  -0.5000000  -0.5000000), wk =   0.0937500\n        k(    8) = (   0.2500000  -0.5000000  -0.2500000), wk =   0.1875000\n\n     Dense  grid:    66953 G-vectors     FFT dimensions: (  60,  60,  60)\n\n     Smooth grid:    23589 G-vectors     FFT dimensions: (  48,  48,  48)\n\n     Dynamical RAM for                 wfc:       0.18 MB\n\n     Dynamical RAM for     wfc (w. buffer):       1.63 MB\n\n     Dynamical RAM for           str. fact:       1.02 MB\n\n     Dynamical RAM for           local pot:       0.00 MB\n\n     Dynamical RAM for          nlocal pot:       1.63 MB\n\n     Dynamical RAM for                qrad:       1.97 MB\n\n     Dynamical RAM for          rho,v,vnew:       8.01 MB\n\n     Dynamical RAM for               rhoin:       2.67 MB\n\n     Dynamical RAM for            rho*nmix:      16.35 MB\n\n     Dynamical RAM for           G-vectors:       4.01 MB\n\n     Dynamical RAM for          h,s,v(r/c):       0.00 MB\n\n     Dynamical RAM for          <psi|beta>:       0.00 MB\n\n     Dynamical RAM for                 psi:       0.36 MB\n\n     Dynamical RAM for                hpsi:       0.36 MB\n\n     Dynamical RAM for                spsi:       0.36 MB\n\n     Dynamical RAM for      wfcinit/wfcrot:       0.73 MB\n\n     Dynamical RAM for           addusdens:     192.06 MB\n\n     Dynamical RAM for          addusforce:     194.63 MB\n\n     Estimated static dynamical RAM per process >      47.56 MB\n\n     Estimated max dynamical RAM per process >     242.19 MB\n\n     Initial potential from superposition of free atoms\n\n     starting charge    7.99888, renormalised to    8.00000\n     Starting wfcs are    8 randomized atomic wfcs\n\n     total cpu time spent up to now is        0.4 secs\n\n     Self-consistent Calculation\n\n     iteration #  1     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.00E-02,  avg # of iterations =  2.0\n\n     Threshold (ethr) on eigenvalues was too large:\n     Diagonalizing with lowered threshold\n\n     Davidson diagonalization with overlap\n     ethr =  6.81E-04,  avg # of iterations =  1.5\n\n     total cpu time spent up to now is        1.0 secs\n\n     total energy              =     -22.82983827 Ry\n     estimated scf accuracy    <       0.05921824 Ry\n\n     iteration #  2     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  7.40E-04,  avg # of iterations =  1.0\n\n     total cpu time spent up to now is        1.2 secs\n\n     total energy              =     -22.82388716 Ry\n     estimated scf accuracy    <       0.02720113 Ry\n\n     iteration #  3     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  3.40E-04,  avg # of iterations =  1.4\n\n     total cpu time spent up to now is        1.6 secs\n\n     total energy              =     -22.82573745 Ry\n     estimated scf accuracy    <       0.00048886 Ry\n\n     iteration #  4     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  6.11E-06,  avg # of iterations =  3.4\n\n     total cpu time spent up to now is        2.0 secs\n\n     total energy              =     -22.82604722 Ry\n     estimated scf accuracy    <       0.00014696 Ry\n\n     iteration #  5     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.84E-06,  avg # of iterations =  1.9\n\n     total cpu time spent up to now is        2.3 secs\n\n     total energy              =     -22.82604263 Ry\n     estimated scf accuracy    <       0.00004717 Ry\n\n     iteration #  6     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.90E-07,  avg # of iterations =  1.9\n\n     total cpu time spent up to now is        2.5 secs\n\n     total energy              =     -22.82604880 Ry\n     estimated scf accuracy    <       0.00000011 Ry\n\n     iteration #  7     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.42E-09,  avg # of iterations =  9.4\n\n     total cpu time spent up to now is        3.1 secs\n\n     total energy              =     -22.82604853 Ry\n     estimated scf accuracy    <       0.00000480 Ry\n\n     iteration #  8     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.42E-09,  avg # of iterations =  3.5\n\n     total cpu time spent up to now is        3.5 secs\n\n     End of self-consistent calculation\n\n          k = 0.0000 0.0000 0.0000 (  2975 PWs)   bands (ev):\n\n    -5.7255   6.2437   6.2437   6.2437\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1768 0.1768-0.1768 (  2947 PWs)   bands (ev):\n\n    -4.9255   2.3091   5.4798   5.4798\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.3536-0.3536 0.3536 (  2938 PWs)   bands (ev):\n\n    -3.3921  -0.7369   5.0399   5.0399\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.0000 0.0000 (  2906 PWs)   bands (ev):\n\n    -4.6433   2.7239   4.3451   4.3451\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.5303 (  2966 PWs)   bands (ev):\n\n    -3.0060  -0.1459   2.6984   4.0298\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.3536 (  2968 PWs)   bands (ev):\n\n    -3.6808   0.7576   2.4787   4.9098\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  2954 PWs)   bands (ev):\n\n    -1.5793  -1.5793   3.3810   3.3810\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.3536 0.0000 (  2996 PWs)   bands (ev):\n\n    -1.4146  -1.4146   2.3779   2.3779\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2437\n\n!    total energy              =     -22.82604899 Ry\n     estimated scf accuracy    <          3.8E-09 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16566449 Ry\n     hartree contribution      =       1.12461578 Ry\n     xc contribution           =     -12.32047868 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in   8 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =    -0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000    0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000   -0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000    0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      0.39s CPU      0.40s WALL (       1 calls)\n     electrons    :      2.92s CPU      3.02s WALL (       1 calls)\n     forces       :      0.19s CPU      0.20s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.10s CPU      0.10s WALL (       1 calls)\n     wfcinit:atom :      0.00s CPU      0.00s WALL (       8 calls)\n     wfcinit:wfcr :      0.09s CPU      0.09s WALL (       8 calls)\n     potinit      :      0.04s CPU      0.04s WALL (       1 calls)\n     hinit0       :      0.16s CPU      0.17s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :      1.48s CPU      1.48s WALL (       9 calls)\n     sum_band     :      0.69s CPU      0.72s WALL (       9 calls)\n     v_of_rho     :      0.24s CPU      0.28s WALL (       9 calls)\n     v_h          :      0.01s CPU      0.01s WALL (       9 calls)\n     v_xc         :      0.25s CPU      0.29s WALL (      10 calls)\n     newd         :      0.56s CPU      0.59s WALL (       9 calls)\n     mix_rho      :      0.02s CPU      0.03s WALL (       9 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.04s CPU      0.04s WALL (     160 calls)\n     cegterg      :      1.37s CPU      1.37s WALL (      72 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (       9 calls)\n     sum_band:loo :      0.23s CPU      0.23s WALL (       9 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (      72 calls)\n     sum_band:ini :      0.02s CPU      0.02s WALL (      72 calls)\n     sum_band:cal :      0.02s CPU      0.02s WALL (      72 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (      72 calls)\n     addusdens    :      0.42s CPU      0.45s WALL (       9 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (       9 calls)\n     addusd:dgemm :      0.16s CPU      0.18s WALL (       9 calls)\n     addusd:qvan2 :      0.20s CPU      0.20s WALL (       9 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.00s CPU      0.00s WALL (     271 calls)\n     cegterg:over :      0.02s CPU      0.02s WALL (     207 calls)\n     cegterg:upda :      0.01s CPU      0.01s WALL (     207 calls)\n     cegterg:last :      0.02s CPU      0.02s WALL (     193 calls)\n     h_psi        :      1.35s CPU      1.35s WALL (     287 calls)\n     s_psi        :      0.04s CPU      0.04s WALL (     287 calls)\n     g_psi        :      0.00s CPU      0.00s WALL (     207 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.08s CPU      0.08s WALL (     287 calls)\n     vloc_psi     :      1.23s CPU      1.23s WALL (     287 calls)\n     add_vuspsi   :      0.04s CPU      0.04s WALL (     287 calls)\n\n     General routines\n     calbec       :      0.11s CPU      0.11s WALL (     391 calls)\n     fft          :      0.15s CPU      0.15s WALL (     127 calls)\n     ffts         :      0.01s CPU      0.01s WALL (      18 calls)\n     fftw         :      1.29s CPU      1.29s WALL (    2316 calls)\n     interpolate  :      0.02s CPU      0.02s WALL (       9 calls)\n\n     Parallel routines\n\n     PWSCF        :      3.54s CPU      3.67s WALL\n\n\n   This run was terminated on:  20:42:25  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "queued",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:26.751709+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "running",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:27.240824+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c",
+    "status": 200,
+    "response": {
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "status": "completed",
+      "created": "2026-10-28T20:42:26.751709+00:00",
+      "updated": "2026-10-28T20:42:33.296660+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "f6d0a321ba1c491e902ab7d16844823c",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.83810997,
+      "energy_ev": -310.7283157610097,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "2cce2edce7c466fa4067d96dd647cc4b020c7412dbff520acdaa70a18af5aa35",
+      "output_sha256": "437f2e15cf24441fe2b7e968c4e3dfc4ee04ad2fba0e45305e219c78de38f5f0",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/f6d0a321ba1c491e902ab7d16844823c/logs",
+    "status": 200,
+    "response": {
+      "text": "ffer):       3.08 MB\n\n     Dynamical RAM for           str. fact:       1.02 MB\n\n     Dynamical RAM for           local pot:       0.00 MB\n\n     Dynamical RAM for          nlocal pot:       1.63 MB\n\n     Dynamical RAM for                qrad:       1.97 MB\n\n     Dynamical RAM for          rho,v,vnew:       8.01 MB\n\n     Dynamical RAM for               rhoin:       2.67 MB\n\n     Dynamical RAM for            rho*nmix:      16.35 MB\n\n     Dynamical RAM for           G-vectors:       4.01 MB\n\n     Dynamical RAM for          h,s,v(r/c):       0.00 MB\n\n     Dynamical RAM for          <psi|beta>:       0.00 MB\n\n     Dynamical RAM for                 psi:       0.36 MB\n\n     Dynamical RAM for                hpsi:       0.36 MB\n\n     Dynamical RAM for                spsi:       0.36 MB\n\n     Dynamical RAM for      wfcinit/wfcrot:       0.73 MB\n\n     Dynamical RAM for           addusdens:     192.06 MB\n\n     Dynamical RAM for          addusforce:     194.63 MB\n\n     Estimated static dynamical RAM per process >      49.01 MB\n\n     Estimated max dynamical RAM per process >     243.64 MB\n\n     Initial potential from superposition of free atoms\n\n     starting charge    7.99888, renormalised to    8.00000\n     Starting wfcs are    8 randomized atomic wfcs\n\n     total cpu time spent up to now is        0.5 secs\n\n     Self-consistent Calculation\n\n     iteration #  1     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.00E-02,  avg # of iterations =  2.0\n\n     Threshold (ethr) on eigenvalues was too large:\n     Diagonalizing with lowered threshold\n\n     Davidson diagonalization with overlap\n     ethr =  6.30E-04,  avg # of iterations =  1.5\n\n     total cpu time spent up to now is        1.5 secs\n\n     total energy              =     -22.84126613 Ry\n     estimated scf accuracy    <       0.05459227 Ry\n\n     iteration #  2     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  6.82E-04,  avg # of iterations =  1.0\n\n     total cpu time spent up to now is        2.0 secs\n\n     total energy              =     -22.83600928 Ry\n     estimated scf accuracy    <       0.02488236 Ry\n\n     iteration #  3     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  3.11E-04,  avg # of iterations =  1.3\n\n     total cpu time spent up to now is        2.4 secs\n\n     total energy              =     -22.83778159 Ry\n     estimated scf accuracy    <       0.00043773 Ry\n\n     iteration #  4     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  5.47E-06,  avg # of iterations =  3.4\n\n     total cpu time spent up to now is        3.0 secs\n\n     total energy              =     -22.83810328 Ry\n     estimated scf accuracy    <       0.00013219 Ry\n\n     iteration #  5     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.65E-06,  avg # of iterations =  2.0\n\n     total cpu time spent up to now is        3.5 secs\n\n     total energy              =     -22.83810337 Ry\n     estimated scf accuracy    <       0.00003663 Ry\n\n     iteration #  6     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  4.58E-07,  avg # of iterations =  2.2\n\n     total cpu time spent up to now is        4.0 secs\n\n     total energy              =     -22.83810884 Ry\n     estimated scf accuracy    <       0.00000013 Ry\n\n     iteration #  7     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.60E-09,  avg # of iterations =  8.4\n\n     total cpu time spent up to now is        5.0 secs\n\n     total energy              =     -22.83810992 Ry\n     estimated scf accuracy    <       0.00000066 Ry\n\n     iteration #  8     ecut=    75.00 Ry     beta= 0.30\n     Davidson diagonalization with overlap\n     ethr =  1.60E-09,  avg # of iterations =  2.1\n\n     total cpu time spent up to now is        5.5 secs\n\n     End of self-consistent calculation\n\n          k = 0.0000 0.0000 0.0000 (  2975 PWs)   bands (ev):\n\n    -5.7537   6.2085   6.2085   6.2085\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.1179 0.1179-0.1179 (  2948 PWs)   bands (ev):\n\n    -5.3927   3.8258   5.7573   5.7573\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2357 0.2357-0.2357 (  2950 PWs)   bands (ev):\n\n    -4.3774   0.8719   5.2066   5.2066\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.3536-0.3536 0.3536 (  2938 PWs)   bands (ev):\n\n    -3.4229  -0.7636   5.0083   5.0083\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2357 0.0000-0.0000 (  2938 PWs)   bands (ev):\n\n    -5.2698   4.1690   5.0139   5.0139\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1179-0.1179 (  2950 PWs)   bands (ev):\n\n    -4.4547   1.7701   4.2140   4.4605\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2357-0.4714 0.4714 (  2965 PWs)   bands (ev):\n\n    -3.2635  -0.3994   3.4298   4.4303\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.3536 0.3536 (  2972 PWs)   bands (ev):\n\n    -3.6484   0.1999   3.1591   4.9096\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.2357 0.2357 (  2950 PWs)   bands (ev):\n\n    -4.8046   2.4893   3.7941   5.6426\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4714 0.0000-0.0000 (  2950 PWs)   bands (ev):\n\n    -3.8500   1.1956   3.7886   3.7886\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.5893 0.5893 (  2965 PWs)   bands (ev):\n\n    -2.6864  -0.3590   2.5744   3.6521\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0000-0.4714 0.4714 (  2970 PWs)   bands (ev):\n\n    -2.4903  -0.5641   1.7936   4.0946\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  2954 PWs)   bands (ev):\n\n    -1.6103  -1.6103   3.3538   3.3538\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2357-0.4714 0.7071 (  2966 PWs)   bands (ev):\n\n    -3.4650   0.5625   2.6369   3.9117\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.3536 0.5893 (  2972 PWs)   bands (ev):\n\n    -2.4803  -0.6370   2.1968   3.4449\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.2357 0.0000 (  2966 PWs)   bands (ev):\n\n    -1.4904  -1.4904   2.5615   2.5615\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2085\n\n!    total energy              =     -22.83810997 Ry\n     estimated scf accuracy    <          8.9E-09 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16352969 Ry\n     hartree contribution      =       1.10500138 Ry\n     xc contribution           =     -12.31079047 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in   8 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      0.47s CPU      0.48s WALL (       1 calls)\n     electrons    :      4.91s CPU      5.02s WALL (       1 calls)\n     forces       :      0.23s CPU      0.24s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.19s CPU      0.19s WALL (       1 calls)\n     wfcinit:atom :      0.00s CPU      0.00s WALL (      16 calls)\n     wfcinit:wfcr :      0.17s CPU      0.17s WALL (      16 calls)\n     potinit      :      0.03s CPU      0.04s WALL (       1 calls)\n     hinit0       :      0.16s CPU      0.17s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :      3.09s CPU      3.10s WALL (       9 calls)\n     sum_band     :      1.01s CPU      1.05s WALL (       9 calls)\n     v_of_rho     :      0.25s CPU      0.28s WALL (       9 calls)\n     v_h          :      0.01s CPU      0.01s WALL (       9 calls)\n     v_xc         :      0.27s CPU      0.30s WALL (      10 calls)\n     newd         :      0.59s CPU      0.63s WALL (       9 calls)\n     mix_rho      :      0.03s CPU      0.03s WALL (       9 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.09s CPU      0.09s WALL (     320 calls)\n     cegterg      :      2.85s CPU      2.85s WALL (     144 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (       9 calls)\n     sum_band:loo :      0.51s CPU      0.52s WALL (       9 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (     144 calls)\n     sum_band:ini :      0.04s CPU      0.04s WALL (     144 calls)\n     sum_band:cal :      0.05s CPU      0.05s WALL (     144 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (     144 calls)\n     addusdens    :      0.43s CPU      0.46s WALL (       9 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (       9 calls)\n     addusd:dgemm :      0.14s CPU      0.16s WALL (       9 calls)\n     addusd:qvan2 :      0.22s CPU      0.22s WALL (       9 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.01s CPU      0.01s WALL (     511 calls)\n     cegterg:over :      0.04s CPU      0.04s WALL (     383 calls)\n     cegterg:upda :      0.02s CPU      0.02s WALL (     383 calls)\n     cegterg:last :      0.04s CPU      0.04s WALL (     344 calls)\n     h_psi        :      2.79s CPU      2.80s WALL (     543 calls)\n     s_psi        :      0.09s CPU      0.09s WALL (     543 calls)\n     g_psi        :      0.01s CPU      0.01s WALL (     383 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.15s CPU      0.16s WALL (     543 calls)\n     vloc_psi     :      2.53s CPU      2.54s WALL (     543 calls)\n     add_vuspsi   :      0.10s CPU      0.10s WALL (     543 calls)\n\n     General routines\n     calbec       :      0.22s CPU      0.23s WALL (     751 calls)\n     fft          :      0.15s CPU      0.16s WALL (     127 calls)\n     ffts         :      0.02s CPU      0.02s WALL (      18 calls)\n     fftw         :      2.69s CPU      2.69s WALL (    4390 calls)\n     interpolate  :      0.02s CPU      0.02s WALL (       9 calls)\n\n     Parallel routines\n\n     PWSCF        :      5.66s CPU      5.79s WALL\n\n\n   This run was terminated on:  20:42:33  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "queued",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:33.491769+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "queued",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:33.491769+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "running",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:34.313308+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da",
+    "status": 200,
+    "response": {
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "status": "completed",
+      "created": "2026-10-28T20:42:33.491769+00:00",
+      "updated": "2026-10-28T20:42:48.385374+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "10ac400396fb45df899b69eef97420da",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.83981736,
+      "energy_ev": -310.751545985391,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "19eaa15ff934b4b5975e6e72883b24fd6252b9021f97482c272bc82a56fbe524",
+      "output_sha256": "ae48aeb64a99f5c1f85e08c3858a715d0dbe159a79c241a0036c5a89fc2a0d90",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/10ac400396fb45df899b69eef97420da/logs",
+    "status": 200,
+    "response": {
+      "text": "  2939 PWs)   bands (ev):\n\n    -5.2829   3.7484   5.1884   5.3598\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2828 0.1414-0.1414 (  2949 PWs)   bands (ev):\n\n    -4.7395   1.9874   4.8692   4.9262\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.2121-0.2121 (  2963 PWs)   bands (ev):\n\n    -4.0158   0.4139   4.5143   4.7216\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2828-0.4243 0.4243 (  2968 PWs)   bands (ev):\n\n    -3.3753  -0.6233   4.2237   4.7546\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2121-0.3536 0.3536 (  2963 PWs)   bands (ev):\n\n    -3.5424  -0.3745   4.0952   4.9545\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1414-0.2828 0.2828 (  2956 PWs)   bands (ev):\n\n    -4.2712   0.9078   4.1551   5.2894\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.2121 0.2121 (  2948 PWs)   bands (ev):\n\n    -4.9468   2.5575   4.4305   5.6961\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.1414 0.1414 (  2964 PWs)   bands (ev):\n\n    -5.4126   4.1692   5.0399   6.0237\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2828-0.0000 0.0000 (  2934 PWs)   bands (ev):\n\n    -5.0648   3.5759   4.7119   4.7119\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.0707-0.0707 (  2950 PWs)   bands (ev):\n\n    -4.5992   2.3288   4.2047   4.3635\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4243 0.1414-0.1414 (  2958 PWs)   bands (ev):\n\n    -3.9241   0.8912   3.5763   4.2037\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2121-0.4950 0.4950 (  2965 PWs)   bands (ev):\n\n    -3.1933  -0.2933   3.0664   4.2477\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1414-0.4243 0.4243 (  2964 PWs)   bands (ev):\n\n    -3.0403  -0.5017   2.7677   4.4861\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.3536 0.3536 (  2967 PWs)   bands (ev):\n\n    -3.6940   0.4854   2.7470   4.8837\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.2828 0.2828 (  2946 PWs)   bands (ev):\n\n    -4.4117   1.7239   3.2000   5.3545\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4243 0.0000-0.0000 (  2942 PWs)   bands (ev):\n\n    -4.2113   1.7836   3.9704   3.9704\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4950 0.0707-0.0707 (  2965 PWs)   bands (ev):\n\n    -3.5987   0.7778   3.3443   3.7655\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1414-0.5657 0.5657 (  2961 PWs)   bands (ev):\n\n    -2.8486  -0.2282   2.5155   3.7721\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.4950 0.4950 (  2960 PWs)   bands (ev):\n\n    -2.4295  -0.7041   1.9619   3.9878\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0000-0.4243 0.4243 (  2968 PWs)   bands (ev):\n\n    -2.9678  -0.1145   1.9359   4.3843\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.5657-0.0000 0.0000 (  2958 PWs)   bands (ev):\n\n    -3.0488   0.0214   3.5054   3.5054\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.6364 0.6364 (  2963 PWs)   bands (ev):\n\n    -2.3200  -0.8189   2.9196   3.4568\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.5657 0.5657 (  2958 PWs)   bands (ev):\n\n    -1.8443  -1.2393   2.1366   3.6241\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  2954 PWs)   bands (ev):\n\n    -1.6172  -1.6172   3.3478   3.3478\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2828 0.1414 0.0000 (  2946 PWs)   bands (ev):\n\n    -4.8996   2.8256   4.1195   5.2289\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.2121-0.0707 (  2962 PWs)   bands (ev):\n\n    -4.2883   1.4165   3.5309   4.8535\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2828-0.4243 0.5657 (  2976 PWs)   bands (ev):\n\n    -3.5417   0.0536   3.2996   4.5031\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2121-0.3536 0.4950 (  2968 PWs)   bands (ev):\n\n    -3.0829  -0.6240   3.2399   4.3652\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4243 0.1414-0.0000 (  2962 PWs)   bands (ev):\n\n    -4.0617   1.4275   3.3927   4.1147\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2121-0.4950 0.6364 (  2975 PWs)   bands (ev):\n\n    -3.3417   0.3258   2.7743   3.7859\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1414-0.4243 0.5657 (  2974 PWs)   bands (ev):\n\n    -2.6918  -0.5370   2.3659   3.7303\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.3536 0.4950 (  2974 PWs)   bands (ev):\n\n    -2.8932  -0.2776   2.2153   3.9704\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.2828 0.4243 (  2968 PWs)   bands (ev):\n\n    -3.6285   0.6717   2.5157   4.4107\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1414-0.5657 0.7071 (  2971 PWs)   bands (ev):\n\n    -2.9305  -0.0642   2.9817   3.3081\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.4950 0.6364 (  2964 PWs)   bands (ev):\n\n    -2.1923  -0.8387   2.2800   3.2174\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.4243 0.5657 (  2967 PWs)   bands (ev):\n\n    -2.1980  -0.8120   1.8642   3.4871\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.1414 0.0000 (  2962 PWs)   bands (ev):\n\n    -1.5641  -1.5641   2.9389   2.9389\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1414-0.4243 0.7071 (  2992 PWs)   bands (ev):\n\n    -2.6098  -0.3620   2.2214   3.2083\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0707-0.3536 0.6364 (  2972 PWs)   bands (ev):\n\n    -2.0988  -0.8712   2.0637   2.9571\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.2828 0.0000 (  2986 PWs)   bands (ev):\n\n    -1.4705  -1.4705   2.4257   2.4257\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2007\n\n!    total energy              =     -22.83981736 Ry\n     estimated scf accuracy    <          6.7E-09 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16402943 Ry\n     hartree contribution      =       1.10069019 Ry\n     xc contribution           =     -12.30868640 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in   9 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =     0.00000000   -0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000    0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000   -0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000    0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000   -0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      0.89s CPU      0.91s WALL (       1 calls)\n     electrons    :     12.41s CPU     12.53s WALL (       1 calls)\n     forces       :      0.26s CPU      0.27s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.60s CPU      0.61s WALL (       1 calls)\n     wfcinit:atom :      0.01s CPU      0.01s WALL (      47 calls)\n     wfcinit:wfcr :      0.56s CPU      0.56s WALL (      47 calls)\n     potinit      :      0.04s CPU      0.04s WALL (       1 calls)\n     hinit0       :      0.17s CPU      0.17s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :      9.53s CPU      9.55s WALL (      10 calls)\n     sum_band     :      2.03s CPU      2.07s WALL (      10 calls)\n     v_of_rho     :      0.26s CPU      0.29s WALL (      10 calls)\n     v_h          :      0.01s CPU      0.01s WALL (      10 calls)\n     v_xc         :      0.27s CPU      0.30s WALL (      11 calls)\n     newd         :      0.62s CPU      0.65s WALL (      10 calls)\n     mix_rho      :      0.03s CPU      0.03s WALL (      10 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.27s CPU      0.27s WALL (    1034 calls)\n     cegterg      :      8.80s CPU      8.83s WALL (     470 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (      10 calls)\n     sum_band:loo :      1.56s CPU      1.57s WALL (      10 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (     470 calls)\n     sum_band:ini :      0.12s CPU      0.13s WALL (     470 calls)\n     sum_band:cal :      0.15s CPU      0.15s WALL (     470 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (     470 calls)\n     addusdens    :      0.42s CPU      0.45s WALL (      10 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (      10 calls)\n     addusd:dgemm :      0.15s CPU      0.17s WALL (      10 calls)\n     addusd:qvan2 :      0.22s CPU      0.22s WALL (      10 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.02s CPU      0.02s WALL (    1749 calls)\n     cegterg:over :      0.14s CPU      0.14s WALL (    1326 calls)\n     cegterg:upda :      0.05s CPU      0.05s WALL (    1326 calls)\n     cegterg:last :      0.12s CPU      0.12s WALL (    1193 calls)\n     h_psi        :      8.63s CPU      8.65s WALL (    1843 calls)\n     s_psi        :      0.28s CPU      0.29s WALL (    1843 calls)\n     g_psi        :      0.02s CPU      0.02s WALL (    1326 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.50s CPU      0.50s WALL (    1843 calls)\n     vloc_psi     :      7.83s CPU      7.85s WALL (    1843 calls)\n     add_vuspsi   :      0.29s CPU      0.29s WALL (    1843 calls)\n\n     General routines\n     calbec       :      0.71s CPU      0.71s WALL (    2501 calls)\n     fft          :      0.17s CPU      0.17s WALL (     140 calls)\n     ffts         :      0.02s CPU      0.02s WALL (      20 calls)\n     fftw         :      8.28s CPU      8.31s WALL (   14634 calls)\n     interpolate  :      0.02s CPU      0.02s WALL (      10 calls)\n\n     Parallel routines\n\n     PWSCF        :     13.60s CPU     13.76s WALL\n\n\n   This run was terminated on:  20:42:48  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "scf",
+      "notice": "Validation is not a DFT convergence study"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 202,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "queued",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "queued",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:48.906663+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "running",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:42:49.390388+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9",
+    "status": 200,
+    "response": {
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "status": "completed",
+      "created": "2026-10-28T20:42:48.906663+00:00",
+      "updated": "2026-10-28T20:43:11.556085+00:00",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9/results",
+    "status": 200,
+    "response": {
+      "schema": "kristalyapi.qe-scf-result.v1",
+      "job_id": "e4e9955b52dd4148b14bcba42b43e4d9",
+      "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+      "engine": "quantum-espresso",
+      "engine_version": "6.7MaX",
+      "energy_ry": -22.83986004,
+      "energy_ev": -310.75212667637345,
+      "total_force_ry_bohr": 0.0,
+      "scf_converged": true,
+      "job_done": true,
+      "functional_declared": "PBE",
+      "pseudopotentials": {
+        "Si": {
+          "file": "Si.UPF",
+          "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+          "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+          "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+          "functional": "PBE"
+        }
+      },
+      "input_sha256": "1501dfff6f327da5eca43cbce5655d2473d9e3a0f84c6e89357061501886e50c",
+      "output_sha256": "296ceb329a49b8b3dd38b5f908dccd646a4b8da25bd4e3e04776eff15d22a2d7",
+      "scientific_convergence_study_completed": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations/e4e9955b52dd4148b14bcba42b43e4d9/logs",
+    "status": 200,
+    "response": {
+      "text": "  2971 PWs)   bands (ev):\n\n    -3.0957  -0.1041   2.1838   4.4795\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.3536 (  2968 PWs)   bands (ev):\n\n    -3.7175   0.7187   2.4479   4.8718\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4714 0.0000-0.0000 (  2950 PWs)   bands (ev):\n\n    -3.8570   1.1878   3.7821   3.7821\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.5303 0.0589-0.0589 (  2969 PWs)   bands (ev):\n\n    -3.3224   0.4019   3.2964   3.6394\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.5893 0.5893 (  2965 PWs)   bands (ev):\n\n    -2.6936  -0.3665   2.5685   3.6455\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0589-0.5303 0.5303 (  2964 PWs)   bands (ev):\n\n    -2.2248  -0.8576   1.9899   3.7993\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0000-0.4714 0.4714 (  2970 PWs)   bands (ev):\n\n    -2.4976  -0.5714   1.7881   4.0878\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.5893 0.0000-0.0000 (  2966 PWs)   bands (ev):\n\n    -2.8279  -0.2631   3.4570   3.4570\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0589-0.6482 0.6482 (  2966 PWs)   bands (ev):\n\n    -2.2145  -0.9510   3.0255   3.4233\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.5893 0.5893 (  2964 PWs)   bands (ev):\n\n    -1.7588  -1.3550   2.3550   3.5404\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.0000 0.0000 (  2954 PWs)   bands (ev):\n\n    -1.6176  -1.6176   3.3474   3.3474\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2357 0.1179 0.0000 (  2935 PWs)   bands (ev):\n\n    -5.1595   3.4721   4.5660   5.4936\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.2946 0.1768-0.0589 (  2957 PWs)   bands (ev):\n\n    -4.7232   2.2306   4.0338   5.2183\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.2357-0.1179 (  2963 PWs)   bands (ev):\n\n    -4.1482   0.9288   3.7643   4.8907\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2946-0.4125 0.5303 (  2972 PWs)   bands (ev):\n\n    -3.5267  -0.1610   3.6371   4.6440\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2357-0.3536 0.4714 (  2960 PWs)   bands (ev):\n\n    -3.1885  -0.6592   3.6016   4.5522\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.3536 0.1179 0.0000 (  2954 PWs)   bands (ev):\n\n    -4.5685   2.2787   3.8704   4.5730\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4125 0.1768-0.0589 (  2965 PWs)   bands (ev):\n\n    -4.0361   1.2282   3.3332   4.2843\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2357-0.4714 0.5893 (  2975 PWs)   bands (ev):\n\n    -3.4108   0.1736   2.9768   4.0735\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.4125 0.5303 (  2966 PWs)   bands (ev):\n\n    -2.9141  -0.5329   2.7310   4.0553\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.3536 0.4714 (  2973 PWs)   bands (ev):\n\n    -3.0498  -0.3457   2.6127   4.2281\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0589-0.2946 0.4125 (  2968 PWs)   bands (ev):\n\n    -3.6398   0.5314   2.6867   4.5452\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.2357 0.3536 (  2963 PWs)   bands (ev):\n\n    -4.2422   1.5109   3.1017   4.9272\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.4714 0.1179-0.0000 (  2966 PWs)   bands (ev):\n\n    -3.7583   1.0125   3.3607   3.7883\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.5303 0.6482 (  2968 PWs)   bands (ev):\n\n    -3.1529   0.1770   2.7729   3.5712\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.4714 0.5893 (  2969 PWs)   bands (ev):\n\n    -2.5637  -0.5378   2.2519   3.5792\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0589-0.4125 0.5303 (  2975 PWs)   bands (ev):\n\n    -2.4927  -0.6087   1.9632   3.7778\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0000-0.3536 0.4714 (  2982 PWs)   bands (ev):\n\n    -3.0302  -0.0183   2.0500   4.1231\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.5893 0.7071 (  2968 PWs)   bands (ev):\n\n    -2.7505  -0.2997   3.0768   3.2732\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0589-0.5303 0.6482 (  2967 PWs)   bands (ev):\n\n    -2.1216  -0.9426   2.4484   3.2294\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0000-0.4714 0.5893 (  2973 PWs)   bands (ev):\n\n    -1.9670  -1.0560   1.9504   3.4265\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.1179-0.0000 (  2960 PWs)   bands (ev):\n\n    -1.5795  -1.5795   3.0414   3.0414\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.2357-0.4714 0.7071 (  2966 PWs)   bands (ev):\n\n    -3.4720   0.5549   2.6310   3.9053\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1768-0.4125 0.6482 (  2980 PWs)   bands (ev):\n\n    -2.8480  -0.2150   2.2839   3.5682\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.3536 0.5893 (  2972 PWs)   bands (ev):\n\n    -2.4876  -0.6442   2.1910   3.4387\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.1179-0.4714 0.7071 (  2964 PWs)   bands (ev):\n\n    -2.5367  -0.4438   2.4322   3.0508\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.0589-0.4125 0.6482 (  2975 PWs)   bands (ev):\n\n    -2.0136  -0.9504   2.1168   2.8966\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k = 0.0000-0.3536 0.5893 (  2977 PWs)   bands (ev):\n\n    -2.2451  -0.7205   1.9919   3.1216\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.2357 0.0000 (  2966 PWs)   bands (ev):\n\n    -1.4979  -1.4979   2.5558   2.5558\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n          k =-0.7071 0.3536 0.0000 (  2996 PWs)   bands (ev):\n\n    -1.4539  -1.4539   2.3480   2.3480\n\n     occupation numbers \n     1.0000   1.0000   1.0000   1.0000\n\n     highest occupied level (ev):     6.2002\n\n!    total energy              =     -22.83986004 Ry\n     estimated scf accuracy    <          4.0E-10 Ry\n\n     The total energy is the sum of the following terms:\n     one-electron contribution =       5.16406052 Ry\n     hartree contribution      =       1.10055082 Ry\n     xc contribution           =     -12.30862080 Ry\n     ewald contribution        =     -16.79585057 Ry\n\n     convergence has been achieved in  10 iterations\n\n     Forces acting on atoms (cartesian axes, Ry/au):\n\n     atom    1 type  1   force =    -0.00000000   -0.00000000    0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000    0.00000000\n     The non-local contrib.  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000    0.00000000\n     The ionic contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The local contribution  to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000   -0.00000000   -0.00000000\n     The core correction contribution to forces\n     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000   -0.00000000   -0.00000000\n     The Hubbard contrib.    to forces\n     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000\n     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000\n     The SCF correction term to forces\n     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000\n     atom    2 type  1   force =    -0.00000000    0.00000000    0.00000000\n\n     Total force =     0.000000     Total SCF correction =     0.000000\n\n     Writing output data file ./tmp/kristalyapi.save/\n\n     init_run     :      1.15s CPU      1.16s WALL (       1 calls)\n     electrons    :     20.21s CPU     20.37s WALL (       1 calls)\n     forces       :      0.30s CPU      0.31s WALL (       1 calls)\n\n     Called by init_run:\n     wfcinit      :      0.86s CPU      0.86s WALL (       1 calls)\n     wfcinit:atom :      0.01s CPU      0.01s WALL (      72 calls)\n     wfcinit:wfcr :      0.79s CPU      0.80s WALL (      72 calls)\n     potinit      :      0.03s CPU      0.04s WALL (       1 calls)\n     hinit0       :      0.16s CPU      0.17s WALL (       1 calls)\n\n     Called by electrons:\n     c_bands      :     16.28s CPU     16.32s WALL (      11 calls)\n     sum_band     :      2.98s CPU      3.03s WALL (      11 calls)\n     v_of_rho     :      0.29s CPU      0.32s WALL (      11 calls)\n     v_h          :      0.02s CPU      0.02s WALL (      11 calls)\n     v_xc         :      0.30s CPU      0.34s WALL (      12 calls)\n     newd         :      0.68s CPU      0.73s WALL (      11 calls)\n     mix_rho      :      0.03s CPU      0.03s WALL (      11 calls)\n\n     Called by c_bands:\n     init_us_2    :      0.44s CPU      0.44s WALL (    1728 calls)\n     cegterg      :     15.05s CPU     15.08s WALL (     792 calls)\n\n     Called by sum_band:\n     sum_band:wei :      0.00s CPU      0.00s WALL (      11 calls)\n     sum_band:loo :      2.46s CPU      2.46s WALL (      11 calls)\n     sum_band:buf :      0.00s CPU      0.00s WALL (     792 calls)\n     sum_band:ini :      0.20s CPU      0.20s WALL (     792 calls)\n     sum_band:cal :      0.25s CPU      0.25s WALL (     792 calls)\n     sum_band:bec :      0.00s CPU      0.00s WALL (     792 calls)\n     addusdens    :      0.47s CPU      0.52s WALL (      11 calls)\n     addusd:skk   :      0.00s CPU      0.00s WALL (      11 calls)\n     addusd:dgemm :      0.16s CPU      0.19s WALL (      11 calls)\n     addusd:qvan2 :      0.25s CPU      0.25s WALL (      11 calls)\n\n     Called by *egterg:\n     cdiaghg      :      0.03s CPU      0.03s WALL (    2960 calls)\n     cegterg:over :      0.24s CPU      0.24s WALL (    2240 calls)\n     cegterg:upda :      0.08s CPU      0.09s WALL (    2240 calls)\n     cegterg:last :      0.20s CPU      0.20s WALL (    1994 calls)\n     h_psi        :     14.61s CPU     14.64s WALL (    3104 calls)\n     s_psi        :      0.49s CPU      0.49s WALL (    3104 calls)\n     g_psi        :      0.04s CPU      0.04s WALL (    2240 calls)\n\n     Called by h_psi:\n     h_psi:calbec :      0.85s CPU      0.85s WALL (    3104 calls)\n     vloc_psi     :     13.25s CPU     13.28s WALL (    3104 calls)\n     add_vuspsi   :      0.48s CPU      0.49s WALL (    3104 calls)\n\n     General routines\n     calbec       :      1.18s CPU      1.18s WALL (    4184 calls)\n     fft          :      0.17s CPU      0.18s WALL (     153 calls)\n     ffts         :      0.02s CPU      0.02s WALL (      22 calls)\n     fftw         :     13.87s CPU     13.90s WALL (   24614 calls)\n     interpolate  :      0.02s CPU      0.02s WALL (      11 calls)\n\n     Parallel routines\n\n     PWSCF        :     21.70s CPU     21.90s WALL\n\n\n   This run was terminated on:  20:43:11  28Oct2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\n",
+      "truncated": true
+    }
+  }
+]

@@ -297,10 +297,20 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] Docker üzerinde ayrı worker, kabuksuz `pw.x`, process-group iptal ve timeout; 10 bekleyen iş limiti, konteyner CPU/RAM/process sınırları.
 - [x] DFT panelinde açık onayla SCF işi gönderme, durum/result ve iptal; erişim token'ı saklanmaz ve HTTP üzerinden özel LAN IP'ye gönderilmez.
 - [x] Node API istemci testleri, Python API/worker/sentetik solver/UPF testleri, Compose ve PWA dağıtım entegrasyonu.
-- [ ] **Gerçek hesaplama kabulü:** Docker imajı build, gerçek Si SCF ve MoS₂ SCF/relax, pseudopotensiyel/ecut/k-örgüsü yakınsaması, fiziksel bağımsız doğrulama. Bu PR mock testlerle sınırlıdır.
+- [ ] **Kapsamlı bilimsel kabul:** Si Docker/API SCF ve sınırlı enerji hassasiyeti D2.1 ile doğrulandı. MoS₂ SCF/relax, farklı pseudopotansiyeller ve fiziksel bağımsız referans doğrulaması ayrı bekliyor.
 - [ ] **D3+ sonraki işler:** relaksasyon/bands/DOS/PDOS job pipeline, otomatik geometri önizleme, çok kullanıcılı kimlik/quotas, GPU/HPC/AiiDA, bilimsel yakınsama taramaları ve yalnız sonra vekil modeller. Mevcut D-P1–D-P7 ayrıntılı adımlar korunur.
 
-**Kabul notu:** D2 iş kodu, D-P1 bilimsel kabulünün tamamlandığı anlamına gelmez; gerçek UPF ve QE çalıştırması ayrı doğrulanacaktır.
+**Kabul notu:** D2.1, gerçek UPF/QE ile Si SCF iş hattını ve belirtilen sonlu enerji hassasiyeti ölçütlerini doğrular. MoS₂ ve bağımsız fiziksel doğruluk kabulü bu kanıttan çıkarılmaz.
+
+### D2.1 — Gerçek SCF doğrulaması (P0, Si kabulü tamamlandı)
+
+- [x] `tools/qe_scf_acceptance.py --run`: sabit SHA-256'lı gerçek PSlibrary Si PBE UPF; Docker imajı build, yalıtılmış API/worker ve yalnız loopback erişimi.
+- [x] Kimlikli API'den ön kontrol → 202 iş gönderme → job ID ile izleme → gerçek sonuç ve tam QE çıktısı; kaynak yapı, girdi/çıktı ve UPF hash kontrolü.
+- [x] Yedi gerçek işin tamamında `JOB DONE`, ham SCF yakınsama bildirimi ve son `estimated scf accuracy ≤1e-8 Ry`; API/raw enerji ve Ry/eV dönüşümü uyumu.
+- [x] 45/60/75 Ry kesme enerjisi ve 4/6/8/10/12 k-örgüsü taraması. Son iki noktada önceden tanımlı ≤1 meV/atom ölçütü: kesme enerjisi 0.118, k-örgüsü 0.290 meV/atom. İlk 6→8 başarısız kontrolü de kaydedildi; eşik gevşetilmedi.
+- [x] ARM64 gerçek koşu kanıtları, çevrimdışı tekrar doğrulama, sahte/tutarsız/eksik kanıtı reddeden 11 birim testi ve manuel Linux CI/artifact workflow'u.
+
+**Kanıt ve tekrar çalıştırma:** [D2.1 kılavuzu](docs/qe-scf-validation.md), [gerçek koşu raporu](validation-results/qe-si-d21-20261028-arm64/README.md). Bu kabul yalnız sabit Si protokolünü kapsar; MoS₂, relaksasyon ve genel fiziksel doğruluk ayrı kalır.
 
 ### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 

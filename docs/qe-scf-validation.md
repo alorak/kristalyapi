@@ -79,6 +79,25 @@ ve başarılı/başarısız çıktı paketini 30 gün saklar. Normal CI yalnız 
 kontrolünün negatif birim testlerini çalıştırır; otomatik PR kontrolleri
 fiziksel DFT hesabı başlatmaz.
 
+## Kaydedilen gerçek koşu
+
+[28 Ekim 2026 ARM64 raporu](../validation-results/qe-si-d21-20261028-arm64/README.md)
+ve [makinece okunabilir özeti](../validation-results/qe-si-d21-20261028-arm64/summary.json):
+Debian QE 6.7-3+b1 (`6.7MaX`), Docker 29.9.2, yedi gerçek API işi başarılı.
+Tüm son SCF hata tahminleri 1e-8 Ry altında; 75 Ry / 12×12×12 son noktası
+−22.83986004 Ry ve 4e-10 Ry son SCF hata tahmini verdi.
+
+| Önceden belirlenmiş kontrol | Ölçülen fark | Eşik | Sonuç |
+| --- | ---: | ---: | --- |
+| 60→75 Ry, sabit k=8 | 0.117757 meV/atom | 1 meV/atom | Geçti |
+| k=10→12, sabit 75/600 Ry | 0.290345 meV/atom | 1 meV/atom | Geçti |
+
+İlk k=6→8 karşılaştırması **10.032702 meV/atom** verdi ve kapı başarısız
+oldu. [İlk başarısız koşunun özeti](../validation-results/qe-si-d21-preliminary-k8.json)
+korundu. Eşik değiştirilmeden daha sık k=10/12 noktalarıyla yeni koşu yapıldı.
+Kesme enerjisi kontrolü sabit k=8'de, k-örgüsü kontrolü sabit 75/600 Ry'dedir;
+tam iki boyutlu bir parametre taraması olduğu iddia edilmez.
+
 ## Kabulün sınırı
 
 Bu, belirtilen Si geometrisi/UPF/protokolü için gerçek SCF ve sınırlı enerji

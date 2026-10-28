@@ -1,0 +1,29 @@
+{
+  "validation": {
+    "valid": true,
+    "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+    "atoms": 2,
+    "profile_id": "si-pbe",
+    "upf_sha256": {
+      "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+    },
+    "calculation": "scf",
+    "notice": "Validation is not a DFT convergence study"
+  },
+  "submitted": {
+    "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+    "status": "queued",
+    "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94"
+  },
+  "terminal": {
+    "job_id": "26c68d2b216044f2bdfa529f947d79c4",
+    "status": "completed",
+    "created": "2026-10-28T20:42:21.518201+00:00",
+    "updated": "2026-10-28T20:42:26.232919+00:00",
+    "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null
+  },
+  "staged_upf_sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+}

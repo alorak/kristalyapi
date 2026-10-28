@@ -1,0 +1,80 @@
+ Image kristalyapi-qe-api:d2-scf Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 636B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.36kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:trixie-slim
+#3 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 161B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 272B done
+#5 DONE 0.0s
+
+#6 [1/6] FROM docker.io/library/debian:trixie-slim@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4
+#6 resolve docker.io/library/debian:trixie-slim@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4 0.0s done
+#6 DONE 0.0s
+
+#7 [2/6] RUN apt-get update && apt-get install -y --no-install-recommends       ca-certificates python3 python3-fastapi python3-uvicorn       "quantum-espresso=6.7-3+b1"     && test "$(dpkg-query -W -f='${Version}' quantum-espresso)" = "6.7-3+b1"     && for tool in pw.x bands.x dos.x projwfc.x; do command -v "$tool"; done     && rm -rf /var/lib/apt/lists/*
+#7 CACHED
+
+#8 [3/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin qeapi     && mkdir -p /var/lib/qe && chown -R 10001:10001 /var/lib/qe
+#8 CACHED
+
+#9 [5/6] COPY --chown=10001:10001 server/api.py server/qe_probe.py server/job_core.py      server/job_store.py server/worker.py ./
+#9 CACHED
+
+#10 [4/6] WORKDIR /app
+#10 CACHED
+
+#11 [6/6] COPY --chown=10001:10001 tools/qe_run.py ./
+#11 CACHED
+
+#12 exporting to image
+#12 exporting layers done
+#12 exporting manifest sha256:da49fdf7cfcf0b60d64c946faefe830175a570584a4d5454a98e022b4aaa7018 done
+#12 exporting config sha256:9350ef87089e61b197c259da7830cfa46f6e656f62d558c450b018d5b8ed5902 done
+#12 exporting attestation manifest sha256:4be0fa0b7a07be6b7869acf59a435cbe0c3c80680a2b701ef32c2a37b3e22774 done
+#12 exporting manifest list sha256:42c2d8aacfa0ac5eb58c843bc6d72127ea6d4df3ba91247816af4c62cdf58c2b done
+#12 naming to docker.io/library/kristalyapi-qe-api:d2-scf done
+#12 unpacking to docker.io/library/kristalyapi-qe-api:d2-scf done
+#12 DONE 0.0s
+
+#13 resolving provenance for metadata file
+#13 DONE 0.0s
+ Image kristalyapi-qe-api:d2-scf Built 
+ Network kristalyapi-si-b5ca720dd0f4_default Creating 
+ Volume kristalyapi-si-b5ca720dd0f4_qe-state Creating 
+ Volume kristalyapi-si-b5ca720dd0f4_qe-state Creating 
+ Network kristalyapi-si-b5ca720dd0f4_default Creating 
+ Volume kristalyapi-si-b5ca720dd0f4_qe-state Created 
+ Volume kristalyapi-si-b5ca720dd0f4_qe-state Created 
+ Network kristalyapi-si-b5ca720dd0f4_default Created 
+ Network kristalyapi-si-b5ca720dd0f4_default Created 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Creating 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Created 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Creating 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Created 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Starting 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Started 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Starting 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Started 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Stopping 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Stopped 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Removing 
+ Container kristalyapi-si-b5ca720dd0f4-qe-worker-1 Removed 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Stopping 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Stopped 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Removing 
+ Container kristalyapi-si-b5ca720dd0f4-qe-api-1 Removed 
+ Network kristalyapi-si-b5ca720dd0f4_default Removing 
+ Volume kristalyapi-si-b5ca720dd0f4_qe-state Removing 
+ Volume kristalyapi-si-b5ca720dd0f4_qe-state Removed 
+ Network kristalyapi-si-b5ca720dd0f4_default Removed 

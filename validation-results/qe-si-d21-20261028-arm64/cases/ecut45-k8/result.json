@@ -1,0 +1,25 @@
+{
+  "schema": "kristalyapi.qe-scf-result.v1",
+  "job_id": "33f0257cbf0e4398a614dd0178dcd091",
+  "structure_hash": "1d219a46bd59c6ad10de5cce78c448240d232d2b287eb3b490b1cdfcd29e0d94",
+  "engine": "quantum-espresso",
+  "engine_version": "6.7MaX",
+  "energy_ry": -22.83950736,
+  "energy_ev": -310.74732822052283,
+  "total_force_ry_bohr": 0.0,
+  "scf_converged": true,
+  "job_done": true,
+  "functional_declared": "PBE",
+  "pseudopotentials": {
+    "Si": {
+      "file": "Si.UPF",
+      "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Si.pbe-n-rrkjus_psl.1.0.0.UPF (PSlibrary 1.0.0; A. Dal Corso)",
+      "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+      "functional": "PBE"
+    }
+  },
+  "input_sha256": "61b46f5db3492280fd12e21e68817256e52394e0548021995b8fa9634046d69f",
+  "output_sha256": "bd6e56e1d12de3c617fc5238fefa7e64e272e7d3c38a191b63a8bcc6bf26ff88",
+  "scientific_convergence_study_completed": false
+}
