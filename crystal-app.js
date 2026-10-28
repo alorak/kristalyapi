@@ -10,6 +10,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
+import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -5844,6 +5845,42 @@ function renderBondRuleEditor(){
 }
 
 
+/* ACS Nano 2022 MoS2 preflight: report geometry, never claim DFT or experiment. */
+function currentMos2StudyModel(){
+ return {name:state.name,cell:state.cell,sites:state.sites,
+  explicitP1:!state.symmetryEnabled&&state.sgNumber===1&&state.rep.every(n=>n===1),
+  nonPeriodic:Boolean(state.nonPeriodic)};
+}
+function inspectMos2Study(){
+ const reportEl=$('mos2StudyResult');
+ try{
+  const result=analyzeMos2Structure(currentMos2StudyModel());
+  const count=result.counts;
+  const formula=Object.keys(count).sort().map(k=>k+': '+count[k]).join(' · ');
+  const gap=result.largestPeriodicEmptyGapAngstrom;
+  const rows=[
+   'Bileşim: '+formula,
+   'Kusur: '+result.candidateLabel,
+   'Mo düzlemi: '+(result.moPlanes??'belirsiz')+' · c-yönü boşluğu: '+(gap===null?'belirsiz':gap+' Å'),
+   'Geometri ön denetimi: '+(result.geometryReady?'uygun aday; DFT yakınsaması ayrıca gerekli':'eksik / doğrulanmalı'),
+   ...result.errors.map(x=>'Hata: '+x),
+   ...result.warnings.map(x=>'Not: '+x)
+  ];
+  reportEl.textContent=rows.join('\n');
+  $('mos2StudyExport').disabled=result.errors.length>0;
+ }catch(error){
+  reportEl.textContent='Ön denetim başarısız: '+error.message;
+  $('mos2StudyExport').disabled=true;
+ }
+}
+function exportMos2Study(){
+ try{
+  const manifest=createMos2StudyManifest(currentMos2StudyModel());
+  download(safeName(state.name)+'_mos2-study.json',JSON.stringify(manifest,null,2)+'\n','application/json;charset=utf-8');
+  $('mos2StudyResult').textContent+='\\nAraştırma manifesti indirildi. DFT veya deney sonucu içermez.';
+ }catch(error){$('mos2StudyResult').textContent='Dışa aktarma: '+error.message;inform(error.message);}
+}
+
 function updateDefectMode(){
  const kind=$('defectKind').value;
  $('defectTargetField').hidden=kind==='interstitial';
@@ -5864,6 +5901,8 @@ function refreshDefectControls(){
   ?'P1 hazır · '+state.sites.length+' atom. Düzenleme yalnız seçilen konumu etkiler.'
   :'Önce '+state.rep.join(' × ')+' görüntüleme tekrarını gerçek P1 süperhücreye dönüştürün.';
  $('defectPrepare').disabled=ready;$('defectApply').disabled=!ready;updateDefectMode();
+ $('mos2StudyExport').disabled=true;
+ $('mos2StudyResult').textContent='Güncel yapı için “MoS₂ ön denetimi” çalıştırın.';
 }
 function prepareDefectCell(){
  try{
@@ -9480,6 +9519,8 @@ function bind(){
  $('defectPrepare').onclick=prepareDefectCell;
  $('defectKind').onchange=updateDefectMode;
  $('defectApply').onclick=applyPointDefect;
+ $('mos2StudyAnalyze').onclick=inspectMos2Study;
+ $('mos2StudyExport').onclick=exportMos2Study;
  $('qePseudoAuto').onclick=()=>{ $('qePseudoFiles').value='';qeEnsurePseudoNames();};
  $('qeExportPw').onclick=qeExportPwInput;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};

@@ -160,3 +160,65 @@ Bu MVP için önerilen PR, mevcut `main` üzerine ayrı dalda tutulur.
 Kullanıcı onayından sonra birleştirilir; ana dağıtımdaki sayfalar GitHub
 Pages yeniden yayımlandığında erişilir. PR'deki testler ve yayımdan sonraki
 gerçek cihaz kontrolleri ayrıca raporlanır.
+
+
+---
+
+## M — 2B MoS₂ kusur fiziği / ACS Nano (2022) yeniden üretim programı
+
+**Kaynak:** Wang, Jones, Chen, Schatz ve Ma, *Utilizing Ultraviolet Photons to Generate Single-Photon Emitters in Semiconductor Monolayers*, ACS Nano **16** (2022) 21240–21247; DOI: https://doi.org/10.1021/acsnano.2c09209.
+**Araştırma hedefi:** Önce makalenin Şekil 4(c,g)'deki kusur atomik modelleri, bant yapısı ve PDOS karşılaştırmasını bağımsız hesaplamayla yeniden üretmek; ardından optik geçişleri ve ML/vekil modelleri değerlendirmek.
+**Bilimsel ayrım:** KristalYapı geometriyi oluşturur; DFT tarayıcı dışında çalıştırılır; deneysel UV ışınlaması, PL ve foton antibunching ölçümleri bir laboratuvarın işidir. Simülasyon hücresindeki c-yönü vakumu **deneysel vakum** değildir. Geometrik kusurdan tek foton emisyonu kanıtı çıkarılmaz.
+
+### M-P0 — Tek katman ve kusur modeli ön denetimi (ilk geliştirme)
+
+- [x] Mevcut CIF/COD, P1 süperhücre, vakans/ikame, CIF/POSCAR ve QE \`relax\`/\`scf\` akışını yeniden kullan; mevcut araçları ikinci kez yazma.
+- [x] Kusur panelinden erişilen **MoS₂ araştırma ön denetimi**: açık P1 atomları, Mo:S sayıları, tam doluluk, yaklaşık Mo düzlem sayısı ve c-yönü periyodik boşluk kontrolü. İleri sürülen tek katman/vakum uygunluğu konusunda açık koşullar ve sınırlamalar göster.
+- [x] Stokiyometriye dayalı **aday** sınıflandırması: kusursuz MoS₂, tek S vakansı (\`V_S\`), iki S kaybı (\`V_2S\`), \`O_S\`, iki O içeren kusur adayı. **Komşuluk, adsorpsiyon ve kimyasal bağ doğrulanmış gibi gösterilmez.**
+- [x] İncelenen yapı atomlarını ve uyarıları içeren, **DFT/deney sonucu içermeyen** JSON araştırma bildirimi dışa aktarımı. Dosya, KristalYapı proje JSON'u değildir.
+- [x] Bağımsız Node testleri: kusursuz 1H-MoS₂, \`V_S\`, \`V_2S\`, \`O_S\`, iki O adayı, çok katman, vakum eksikliği, kısmi doluluk, P1 olmayan yapı ve geçersiz koordinatlar.
+- [x] Yeni modülü Pages dağıtımına ve sürümlü çevrimdışı önbelleğe dahil et; mevcut doğrulama testlerinden bağımsız yeni regresyon testi ekle.
+- [ ] Yayın sonrası gerçek tarayıcı/PWA kontrolleri: COD örneği, P1 hazırlama, Undo/Redo, TR/EN, mobil panel, manifest indirme.
+- [ ] Kaynaktan tek tabaka ayırma aracı (otomatik katman tespiti ve atom korunumu testi). **Vakum eklemek katman ayırmak değildir.**
+- [ ] Tek kusurdan bağımsız tekrar üretilebilir örnek seti: 4×4×1 MoS₂, \`V_S\`, komşu/uzak \`V_{2S}\`, \`O_S\`, \`O_2@V_S\`; her biri için koordinatlı referans, biçim kontrolü ve açık kaynak/lisans.
+- [ ] hBN/MoS₂/hBN heteroyapı katman birleştirme, hizalama ve arayüz doğrulaması; tek tabaka MoS₂ hesabından ayrı tutulmalı.
+
+### M-P1 — DFT iş akışının bilimsel güvenilirliği
+
+- [ ] SIESTA makale ayarlarını **referans protokol** olarak kaydet: SIESTA 4.1 b4, PBE, DZP, 4×4×1 gamma merkezli k-ağı, 200 Ry mesh cutoff, 150 Ry filter cutoff, Grimme vdW, CG relaksasyon; QE parametreleriyle bire bir eşit olmadığını belirt.
+- [ ] QE'de bağımsız pseudopotential/PAW, ecutwfc/ecutrho, k-ağı, vakum kalınlığı, süperhücre boyutu ve kuvvet yakınsama testleri; fiziksel parametreler ve yazılım sürümü kaydedilmeli.
+- [ ] 2B elektrostatik sınır koşulları ve yüklü kusurlara özel sonlu-hücre düzeltmelerini sonraki iş akışına dahil et; ilk P0 yalnız nötr modelleri tanımlar.
+- [ ] Her geometri için \`relax\` → \`scf\` → \`nscf\`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.
+- [ ] DFT sonuçlarına: solver/sürüm, işlevsel, pseudopotential SHA256, k-ızgara, toplam enerji, kuvvet, çalıştırma tarihi, yakınsama ve model kimliği ekle.
+- [ ] Farklı atom sayısı ve kimyasal potansiyeller için doğru kusur oluşum enerjileri; yalnız toplam enerjileri doğrudan karşılaştırma.
+
+### M-P2 — Makale Şekil 4(c,g): bantlar ve PDOS
+
+- [ ] Quantum ESPRESSO \`bands.x\`, \`dos.x\`, \`projwfc.x\` çıktılarının kaynak/birim doğrulamalı içe aktarımı.
+- [ ] Band / DOS / PDOS grafiklerinin ortak enerji referansı, spin kanalı, orbital ve atom projeksiyonları; yoğunluk–bant enerjisi ayrımını koru.
+- [ ] Kusursuz–\`V_{2S}\`–\`O_2@V_S\` karşılaştırması, kusur kaynaklı lokalize durumlar; elektron yoğunluğunu CUBE/XSF ile birlikte göster.
+- [ ] Şekil 4'ün k yolu ve süperhücre bant katlanması sorununu açıkça ele al; gerektiğinde band unfolding.
+- [ ] Önce sayısal yeniden üretim, ardından bağımsız ikinci çözücü (SIESTA/GPAW) kontrolü; farklı yöntemleri aynı çıktı gibi sunma.
+
+### M-P3 — Optik ve makaledeki deneysel verilerle karşılaştırma
+
+- [ ] Makalenin Şekil 1–3 PL pikleri, çizgi genişlikleri, ömürler, doz/süre verileri için **kaynak etiketli deneysel veri** içe aktarma ve grafik; veri varsa Supporting Information ile doğrula, grafikten değer uydurma.
+- [ ] Şekil 4(b,f)'deki yaklaşık optik geçiş enerji farklarını hesaplamak için yöntem sınırları; yalnız Kohn–Sham orbital farkını doğrulanmış PL enerjisi diye adlandırma.
+- [ ] Optik geçiş, eksiton ve fonon etkileri için uygun ΔSCF, GW/BSE ve elektron–fonon yöntemlerini ayrı modüller olarak tasarla.
+- [ ] PL eğrisi uydurma ve \`g^(2)(tau)\` analizini **ölçülmüş dosyalara** uygula; girdi olmadığında deney/tek foton üretimi varmış gibi simüle sonuç sunma.
+- [ ] UV kaynaklı kusur oluşumunu statik atom silme eylemiyle eşitleme; reaksiyon bariyerleri/kinetik/uyarılmış durumlar ayrı araştırma konusudur.
+
+### M-P4 — AI/ML/vekil model ve aktif öğrenme
+
+- [ ] DFT verisinin provenance, split ve kör dış-test tasarımı; aynı yapının türevleri eğitim/test sızıntısı yapmamalı.
+- [ ] GPR, CatBoost ve grafik modeli için kusur oluşum enerjisi / elektronik seviye baseline'ları; MAE, RMSE ve genelleme.
+- [ ] Belirsizlik kalibrasyonu ve conformal prediction; model belirsizliği doğrulanmamışsa güvenilirlik iddiası yok.
+- [ ] Aktif öğrenme: rastgele/çeşitlilik/en yüksek belirsizlik seçimini **eşit DFT maliyeti** ile karşılaştır; yeni hesaplama karar kapısı.
+- [ ] LLM yalnız girdi planlama, dokümantasyon ve araç orkestrasyonu için; fiziksel hesap sonucu ve doğrulama kaynağı değildir.
+
+### M-P5 — Yayınlanabilir bilimsel doğrulama koşulları
+
+- [ ] Tek katmanlı referans, kusur geometrisi, atom sayısı ve komşuluk testleri; bağımsız ASE/pymatgen kıyası.
+- [ ] Makale Şekil 4 için veri/sürüm/hesaplama/çizim tekrarlanabilirliği, PBE bant aralığı ve optik yorum sınırlamaları.
+- [ ] Negatif kontroller: vakumsuz/hacim MoS₂, \`O_S\` vs \`O_2@V_S\`, farklı komşuluk ve spin durumları.
+- [ ] Deneysel X_vacuum / X_air PL, ömür ve antibunching iddialarının yalnız kaynaklandırılmış **deney kanıtıyla** sunulması; KristalYapı'da DFT/deney ayrımı açık.
