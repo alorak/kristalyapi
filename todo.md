@@ -185,6 +185,10 @@ gerçek cihaz kontrolleri ayrıca raporlanır.
 
 ### M-P1 — DFT iş akışının bilimsel güvenilirliği
 
+- [x] Başlangıç: tarayıcıdaki `pw.x` girdisini gerçek yerel/VM Quantum ESPRESSO ile çalıştırmak için Python CLI; pseudopotential SHA-256, ayrı çalışma dizini, süre sınırı, toplam enerji/kuvvet ve yakınsama kapısı; sahte solver testleri. **Gerçek MoS₂ DFT çalıştırması henüz doğrulanmadı.**
+- [x] Merge sonrası P0 CI hatasının nedeni olan yeni MoS₂ etiketlerinin İngilizce sözlüğünü tamamla; offline önbellek sürümünü yenile.
+- [ ] Gerçek `pw.x` ile en az bir MoS₂ `scf` ve `relax` uçtan uca testi, enerji/kuvvet ve denge geometrisi denetimi; bilimsel yakınsama ayrıca değerlendirilmeli.
+
 - [ ] SIESTA makale ayarlarını **referans protokol** olarak kaydet: SIESTA 4.1 b4, PBE, DZP, 4×4×1 gamma merkezli k-ağı, 200 Ry mesh cutoff, 150 Ry filter cutoff, Grimme vdW, CG relaksasyon; QE parametreleriyle bire bir eşit olmadığını belirt.
 - [ ] QE'de bağımsız pseudopotential/PAW, ecutwfc/ecutrho, k-ağı, vakum kalınlığı, süperhücre boyutu ve kuvvet yakınsama testleri; fiziksel parametreler ve yazılım sürümü kaydedilmeli.
 - [ ] 2B elektrostatik sınır koşulları ve yüklü kusurlara özel sonlu-hücre düzeltmelerini sonraki iş akışına dahil et; ilk P0 yalnız nötr modelleri tanımlar.
