@@ -403,6 +403,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button type="button" class="primary" id="qeApplyGeometry" disabled>Relakse atom konumlarını uygula</button>
     <p class="hint">Geometri yalnız tamamlanmış relaksasyondan ve mevcut kristalle atom sayısı/türleri eşleştiğinde aktarılır. SCF çıktısı enerji olarak görüntülenir. İçe aktarılan yapı Geri Al ile eski haline döndürülebilir.</p>
    </div>
+   <div class="qe-workflow">
+    <strong class="measure-subheading">3 · Gerçek elektronik bant ve DOS verileri</strong>
+    <p class="hint">Harici Quantum ESPRESSO hesaplamasından gelen electronic-results.json dosyasını yerel olarak açın. Bu görüntüleme DFT, optik geçiş veya foton emisyonu hesabı yapmaz.</p>
+    <label class="field"><span>Elektronik sonuç (.json)</span><input type="file" id="qeElectronicFile" accept=".json,application/json"></label>
+    <button type="button" id="qeElectronicOpen">Bant / DOS grafiklerini göster</button>
+    <div id="qeElectronicStatus" class="note" role="status" aria-live="polite">Henüz elektronik hesaplama dosyası seçilmedi.</div>
+    <div id="qeElectronicCharts" class="qe-electronic-charts" aria-live="polite"></div>
+    <p class="hint">Enerji referansı ham QE özdeğer enerjisidir; otomatik Fermi/vakum hizalaması yoktur. Yüklenen dosya mevcut kristalle doğrulanarak eşleştirilmez.</p>
+   </div>
   </div>
 
   <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
