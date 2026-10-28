@@ -151,6 +151,23 @@ class D2Tests(unittest.TestCase):
                               headers=self.auth)
         self.assertEqual(fail.status_code,422,fail.text)
 
+    def test_structure_hash_tracks_geometry_not_numerical_cutoff(self):
+        p=payload()
+        _,geometry_hash=canonical_request(p)
+        p["parameters"]["ecutwfc_ry"]=55
+        _,same_hash=canonical_request(p)
+        self.assertEqual(geometry_hash,same_hash)
+        p["structure"]["atoms"][1]["fractional"]=[.2,.2,.2]
+        _,different=canonical_request(p)
+        self.assertNotEqual(geometry_hash,different)
+
+    def test_duplicate_periodic_sites_rejected(self):
+        p=payload()
+        p["structure"]["atoms"][1]["fractional"]=[1,0,0]
+        response=self.client.post("/api/v1/calculations/validate",json=p,headers=self.auth)
+        self.assertEqual(response.status_code,422)
+        self.assertIn("Overlapping",response.text)
+
     def test_auth_and_body_size_and_missing_job_id(self):
         self.assertEqual(self.client.get("/api/v1/calculations/"+("a"*32)).status_code,401)
         response=self.client.post("/api/v1/calculations",headers={
