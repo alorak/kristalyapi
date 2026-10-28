@@ -93,3 +93,35 @@ test('old QE output without per-atom PDOS remains backward compatible',()=>{
  const result=parseQeElectronicResult(valid());
  assert.equal(result.pdosDetailed,null);
 });
+
+test('orbital selector renders per-atom PDOS against total projection without claiming PL',async()=>{
+ const previous=globalThis.document;
+ class FakeNode{
+  constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.style={};this.textContent='';this.value='';this.listeners={};}
+  append(...children){this.children.push(...children);if(this.tag==='select'&&!this.value)this.value=this.children[0]?.value||'';}
+  replaceChildren(...children){this.children=children;}
+  setAttribute(k,v){this.attrs[k]=v;}
+  addEventListener(name,callback){this.listeners[name]=callback;}
+  set selectedIndex(i){this.value=this.children[i]?.value||'';}
+ }
+ globalThis.document={
+  createElement(tag){return new FakeNode(tag);},
+  createElementNS(ns,tag){return new FakeNode(tag);}
+ };
+ try{
+  const {renderQeElectronicResults}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+  const host=new FakeNode('div');
+  const result=parseQeElectronicResult(atomPdos());
+  renderQeElectronicResults(host,result);
+  const selects=host.children.filter(node=>node.tag==='select');
+  assert.equal(selects.length,1);
+  assert.ok(selects[0].children.some(child=>String(child.textContent).includes('Mo')));
+  const slots=host.children.filter(node=>node.tag==='div');
+  assert.ok(slots.some(slot=>slot.children[0]?.tag==='svg'));
+  assert.match(host.children.at(-1).textContent,/optik geçiş kanıtı değildir/);
+  assert.equal(result.pdosDetailed.elements.length,2);
+ }finally{
+  if(previous===undefined)delete globalThis.document;
+  else globalThis.document=previous;
+ }
+});
