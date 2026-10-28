@@ -189,6 +189,29 @@ class D2Tests(unittest.TestCase):
         self.assertEqual(self.store.get(jid)["status"],"cancelled")
         self.assertIsNone(self.store.get(jid)["result_json"])
 
+    def test_worker_timeout_explains_limit_and_never_publishes_partial_results(self):
+        p,f=canonical_request(payload())
+        binary=self.root/"timeout-pw.x"
+        binary.write_text("#!/usr/bin/env python3\nimport time\n"
+                          "print('Program PWSCF v.7.5',flush=True)\n"
+                          "print('convergence has been achieved in 3 iterations',flush=True)\n"
+                          "print('!    total energy = -8.0 Ry',flush=True)\n"
+                          "print('JOB DONE.',flush=True)\ntime.sleep(10)\n")
+        binary.chmod(0o700)
+        jid=self.store.submit(p,f)
+        execute(self.store,self.store.claim(),qe_binary=str(binary),
+                profiles_dir=self.profiles,pseudo_dir=self.pseudo,timeout=1)
+        record=self.store.get(jid)
+        self.assertEqual(record["status"],"timed_out")
+        self.assertIn("1 s wall-time limit",record["error"])
+        self.assertIsNone(record["result_json"])
+        response=self.client.get("/api/v1/calculations/"+jid,headers=self.auth)
+        self.assertEqual(response.json()["error"],record["error"])
+        self.assertEqual(self.client.get("/api/v1/calculations/"+jid+"/results",
+                                         headers=self.auth).status_code,409)
+        logs=self.client.get("/api/v1/calculations/"+jid+"/logs",headers=self.auth)
+        self.assertIn("JOB DONE.",logs.json()["text"])
+
     def test_auth_and_body_size_and_missing_job_id(self):
         self.assertEqual(self.client.get("/api/v1/calculations/"+("a"*32)).status_code,401)
         response=self.client.post("/api/v1/calculations",headers={
