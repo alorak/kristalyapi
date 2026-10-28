@@ -141,6 +141,8 @@ hesabını kendi başına yapmaz/doğrulamaz**; çıktı durumu
 Yalnızca bir kısmında referans olan seri veya referansı
 `fermi_level` diye tanımlayan seri reddedilir.
 
+Vakum düzeyini kullanıcı kendi hesaplamasından çıkarabilir: QE'nin [`pp.x` ve `average.x` akışı](https://www.quantum-espresso.org/Doc/pp_user_guide/node6.html) elektrostatik potansiyel üzerinden düzlemsel ortalama elde etme imkânı sunar. **Bu PR bu iki programı otomatik çalıştırmaz**, potansiyelin vakum platosunu kendiliğinden doğrulamaz.
+
 **Önemli:** 2B slab hesaplarında gerçek vakum plato bölgesi
 oluştuğunu, toplam elektrostatik potansiyelin tutarlı tanımını,
 dipol ve elektrostatik sınır koşullarını uzman değerlendirmesiyle
