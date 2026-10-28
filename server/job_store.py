@@ -75,7 +75,7 @@ class JobStore:
                 return None
             db.execute("UPDATE jobs SET status='running',updated=? WHERE id=? AND status='queued'",
                        (now(),row["id"]))
-            return self.get(row["id"])
+            return dict(db.execute("SELECT * FROM jobs WHERE id=?",(row["id"],)).fetchone())
 
     def set_result(self,job_id,status,*,result=None,error=None,input_sha=None,output_sha=None):
         if status not in ("completed","not_converged","failed","timed_out","cancelled"):
