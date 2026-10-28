@@ -89,6 +89,22 @@ class MoS2PlanAndEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"Unknown"):
             mos2.load_plan("custom")
 
+    def test_extended_retry_changes_only_operational_limits(self):
+        original=mos2.load_plan("d22b")
+        retry=mos2.load_plan("d22b-extended")
+        for key in ("geometry","pseudopotentials","cases","criteria","baseline","scope"):
+            self.assertEqual(original[key],retry[key])
+        self.assertEqual(original["limits"]["max_seconds_per_job"],900)
+        self.assertEqual(retry["limits"]["max_seconds_per_job"],3600)
+        self.assertEqual(retry["limits"]["docker_worker_memory_bytes"],6*1024**3)
+        self.assertIsNone(mos2.worker_resource_override(original))
+        self.assertEqual(mos2.worker_resource_override(retry),
+                         {"services":{"qe-worker":{"mem_limit":6*1024**3,
+                                                     "memswap_limit":6*1024**3}}})
+        mo=retry["pseudopotentials"]["Mo"]["reviewed_sha256"]
+        with self.assertRaisesRegex(ValueError,"reviewed protocol"):
+            mos2.locked_plan(mo,"a"*64,"d22b-extended")
+
     def test_cutoff_followup_does_not_promote_failed_high_cutoff_pair(self):
         p=mos2.load_plan("d22b")
         cases=[{**c,"proof":{"energy_ry":-12.0}} for c in p["cases"]]

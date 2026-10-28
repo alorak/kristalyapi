@@ -11,6 +11,7 @@ on:
         options:
           - d22
           - d22b
+          - d22b-extended
       mo_sha256:
         description: "Pre-reviewed SHA-256 of official PSlibrary Mo.pbe-spn-rrkjus_psl.1.0.0.UPF"
         required: true

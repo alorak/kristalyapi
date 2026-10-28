@@ -32,6 +32,8 @@ PROTOCOLS = {
     "d22": (PLAN, "kristalyapi.qe-mos2-acceptance-plan.v1", 7, "D2.2"),
     "d22b": (ROOT / "tests/fixtures/qe/mos2-cutoff-acceptance.json",
              "kristalyapi.qe-mos2-cutoff-acceptance-plan.v1", 3, "D2.2b"),
+    "d22b-extended": (ROOT / "tests/fixtures/qe/mos2-cutoff-extended-acceptance.json",
+                      "kristalyapi.qe-mos2-cutoff-acceptance-plan.v2", 3, "D2.2b"),
 }
 HEX = re.compile(r"[a-fA-F0-9]{64}\Z")
 
@@ -216,6 +218,11 @@ def verify_evidence(directory, protocol=None):
     deltas = comparisons(cases, plan)
     require(all(x["passed"] for x in deltas), "At least one material sensitivity gate failed")
     summary = json.loads((directory/"summary.json").read_text())
+    if "docker_worker_memory_bytes" in plan["limits"]:
+        memory = plan["limits"]["docker_worker_memory_bytes"]
+        require(summary["provenance"]["worker_resources"] ==
+                {"memory_bytes": memory, "memory_swap_bytes": memory},
+                "Recorded worker resources differ from acceptance plan")
     require(summary["status"] == "passed" and len(summary["cases"]) == len(cases),
             "Acceptance summary did not report completed suite")
     require(summary["comparisons"] == deltas, "Summary comparison differs from raw QE evidence")
@@ -230,6 +237,14 @@ def command(argv, output, environment, *, timeout=1800):
             log.write(proc.stdout)
         raise ValueError("Command failed: "+ " ".join(argv[:3])+"; inspect docker.log")
     return proc.stdout
+
+
+def worker_resource_override(plan):
+    memory = plan["limits"].get("docker_worker_memory_bytes")
+    if memory is None:
+        return None
+    # Equal memory/swap limits disable swap in this acceptance-only profile.
+    return {"services": {"qe-worker": {"mem_limit": memory, "memswap_limit": memory}}}
 
 
 def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None, protocol="d22"):
@@ -251,6 +266,10 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None, protocol="d
         project = "kristalyapi-mos2-"+secrets.token_hex(6)
         compose = ["docker","compose","--env-file",str(work/".env"),"-p",project,
                    "-f",str(ROOT/"compose.qe.yml"),"--profile","compute"]
+        override = worker_resource_override(plan)
+        if override is not None:
+            write_json(work/"resources.json", override)
+            compose += ["-f", str(work/"resources.json")]
         started = False
         api = None
         try:
@@ -316,6 +335,14 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None, protocol="d
             api_container = command(compose+["ps","-q","qe-api"],output,env).decode().strip()
             info = json.loads(command(["docker","inspect",api_container],output,env))[0]
             report["provenance"]["image_id"] = info["Image"]
+            if override is not None:
+                worker = command(compose+["ps","-q","qe-worker"],output,env).decode().strip()
+                config = json.loads(command(["docker","inspect",worker],output,env))[0]["HostConfig"]
+                memory = plan["limits"]["docker_worker_memory_bytes"]
+                require(config["Memory"] == config["MemorySwap"] == memory,
+                        "Worker memory/swap limits differ from acceptance plan")
+                report["provenance"]["worker_resources"] = {
+                    "memory_bytes": config["Memory"], "memory_swap_bytes": config["MemorySwap"]}
             for case in plan["cases"]:
                 path = output/"cases"/case["id"]
                 path.mkdir(parents=True)

@@ -54,8 +54,8 @@ python3 tools/qe_mos2_acceptance.py --verify validation-results/qe-mos2-cutoff-l
 ```
 
 `--run` varsayılanı hâlâ eski `d22` protokolüdür; yeni üçlü tarama açıkça
-`--protocol d22b` ister. `--verify`, kaydedilmiş schema'dan yalnız bilinen
-iki kaynak protokolünden birini seçer; değiştirilmiş plan veya bilinmeyen
+`--protocol d22b` ister. `--verify`, kaydedilmiş schema'dan yalnız kaynakta tanımlı
+protokollerden birini seçer; değiştirilmiş plan veya bilinmeyen
 schema reddedilir. Doğru protokol CLI'dan ayrıca sabitlenebilir.
 
 Manuel [GitHub Actions workflow'unda](../.github/workflows/qe-mos2-acceptance.yml)
@@ -69,3 +69,27 @@ D2.2b geçerse seçilecek kesme enerjisinde k-örgüsü ve vakumun kritik
 karşılaştırmaları ayrıca doğrulanmalıdır. D2.2'nin 100 Ry'de geçen k/vakum
 sonuçları 120 veya 140 Ry protokolünün yerine konulmaz. D3 `relax → scf`
 ve kuvvet/geometri kabulü bu adımlardan sonra ele alınır.
+
+## İlk koşu ve ön kayıtlı kaynak tekrarı
+
+[İlk Linux koşusu](https://github.com/alorak/kristalyapi/actions/runs/40778844038),
+`2eb352ac18c00d93d5a0bd4e28db1b8cef4cde9b` kaynağıyla 100 ve 120 Ry
+SCF işlerini tamamladı. 100 Ry enerjisi önceki D2.2 ile tam aynı çıktı.
+140 Ry işi 900 saniyede `timed_out` oldu; son hata tahmini 0.00045160 Ry,
+`JOB DONE.` yok. Bu nedenle 120→140 kapısı **henüz belirlenemedi**;
+son iterasyon enerjisi kabul enerjisi yerine kullanılmaz.
+[İlk ham kanıtlar](../validation-results/qe-mos2-d22b-first-timeout-20261029-amd64/README.md)
+ve eski v1/900 saniye planı değiştirilmeden korunur.
+
+QE 140 Ry için en fazla 3.22 GB dinamik bellek öngörüyor; varsayılan
+worker sınırı 2 GiB. Bu tahmin tek başına OOM veya swap kanıtı değildir;
+zaman aşımı API kaydından doğrulanmıştır. Tekrarda yalnız kabul ortamına
+6 GiB worker belleği, swap kapalı ve iş başına 3600 saniye verilir.
+Üretim `compose.qe.yml`, solver girdileri, UPF baytları ve 1 meV/atom
+ölçütü değişmez. Gerçek Docker bellek/swap sınırları ayrıca kaydedilip
+hem koşuda hem offline denetimde kontrol edilir.
+
+[Yeni sabit v2 planı](../tests/fixtures/qe/mos2-cutoff-extended-acceptance.json),
+`--protocol d22b-extended` ile çalıştırılır; üç nokta da yeni API işleridir.
+Bu plan tekrar başlamadan commit edilir. Eski `d22b` seçeneği v1 planını
+kullanmaya devam eder. İkinci koşunun sonucu henüz bekleniyor.
