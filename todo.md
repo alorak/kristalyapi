@@ -308,7 +308,7 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] Kimlikli API'den ön kontrol → 202 iş gönderme → job ID ile izleme → gerçek sonuç ve tam QE çıktısı; kaynak yapı, girdi/çıktı ve UPF hash kontrolü.
 - [x] Yedi gerçek işin tamamında `JOB DONE`, ham SCF yakınsama bildirimi ve son `estimated scf accuracy ≤1e-8 Ry`; API/raw enerji ve Ry/eV dönüşümü uyumu.
 - [x] 45/60/75 Ry kesme enerjisi ve 4/6/8/10/12 k-örgüsü taraması. Son iki noktada önceden tanımlı ≤1 meV/atom ölçütü: kesme enerjisi 0.118, k-örgüsü 0.290 meV/atom. İlk 6→8 başarısız kontrolü de kaydedildi; eşik gevşetilmedi.
-- [x] ARM64 gerçek koşu kanıtları, çevrimdışı tekrar doğrulama, sahte/tutarsız/eksik kanıtı reddeden 11 birim testi ve manuel Linux CI/artifact workflow'u.
+- [x] ARM64 ve Linux x86_64 üzerinde ayrı ayrı yedi gerçek iş; kalıcı ham kanıtlar, çevrimdışı tekrar doğrulama, sahte/tutarsız/eksik kanıtı reddeden 11 birim testi ve başarılı [Linux CI/artifact koşusu](https://github.com/alorak/kristalyapi/actions/runs/40766130544).
 
 **Kanıt ve tekrar çalıştırma:** [D2.1 kılavuzu](docs/qe-scf-validation.md), [gerçek koşu raporu](validation-results/qe-si-d21-20261028-arm64/README.md). Bu kabul yalnız sabit Si protokolünü kapsar; MoS₂, relaksasyon ve genel fiziksel doğruluk ayrı kalır.
 

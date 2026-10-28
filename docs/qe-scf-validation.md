@@ -87,6 +87,13 @@ Debian QE 6.7-3+b1 (`6.7MaX`), Docker 29.9.2, yedi gerçek API işi başarılı.
 Tüm son SCF hata tahminleri 1e-8 Ry altında; 75 Ry / 12×12×12 son noktası
 −22.83986004 Ry ve 4e-10 Ry son SCF hata tahmini verdi.
 
+Aynı yedi iş [Linux x86_64 CI koşusunda](https://github.com/alorak/kristalyapi/actions/runs/40766130544)
+da geçti. [Tam Linux kanıt paketi](../validation-results/qe-si-d21-20261028-amd64/README.md)
+depoda kalıcı olarak saklanır; CI artifact'ının 30 günlük süresine bağlı değildir.
+İndirilen paket yerelde yeniden denetlendi; çalıştırılan kaynak dosyalarının
+hash'leri mevcut kabul aracı/API/worker kaynaklarıyla eşleşti. İki mimari
+aynı bildirilen enerji farklarını verdi.
+
 | Önceden belirlenmiş kontrol | Ölçülen fark | Eşik | Sonuç |
 | --- | ---: | ---: | --- |
 | 60→75 Ry, sabit k=8 | 0.117757 meV/atom | 1 meV/atom | Geçti |
