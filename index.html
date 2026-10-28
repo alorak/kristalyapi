@@ -413,6 +413,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <p class="hint"><a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-electronic.md" target="_blank" rel="noopener noreferrer">QE bant / DOS hesaplama kılavuzu</a></p>
     <p class="hint">Enerji referansı ham QE özdeğer enerjisidir; otomatik Fermi/vakum hizalaması yoktur. Yüklenen dosya mevcut kristalle doğrulanarak eşleştirilmez.</p>
    </div>
+   <div class="qe-workflow">
+    <strong class="measure-subheading">4 · MoS₂ kusur serisi karşılaştırması</strong>
+    <p class="hint">Kusursuz MoS₂ ile S vakansı ve oksijenli kusurları, yerel DFT sonuçlarıyla karşılaştır. Ortak vakum potansiyeli referansı belgelenmemişse grafikler hizalanmaz. Atom eşleme yalnız yakınlık tahminidir.</p>
+    <label class="field"><span>Kusur karşılaştırma sonuç dosyası (.json)</span><input type="file" id="qeDefectCompareFile" accept=".json,application/json"></label>
+    <button type="button" id="qeDefectCompareOpen">MoS₂ karşılaştırmasını göster</button>
+    <div id="qeDefectCompareStatus" class="note" role="status" aria-live="polite">Kusur serisi verisi seçilmedi.</div>
+    <div id="qeDefectCompareCharts" class="qe-electronic-charts"></div>
+    <p class="hint"><a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-defect-comparison.md" target="_blank" rel="noopener noreferrer">MoS₂ kusur serisi hazırlama ve enerji hizalama kılavuzu</a></p>
+    <p class="hint">Bu araç DFT'yi çalıştırmaz, optik geçiş veya tek foton emisyonu doğrulamaz; sonuç dosyası bilimsel doğrulamaya tabi değildir.</p>
+   </div>
   </div>
 
   <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
