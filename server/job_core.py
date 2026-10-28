@@ -67,6 +67,14 @@ def canonical_request(data):
             raise ValueError("Three fractional coordinates required")
         frac=[num(v,-100,100,"fractional coordinate")%1 for v in xyz]
         atoms.append({"element":sp,"fractional":frac})
+    # Reject duplicate/overlapping atomic sites under periodic minimum-image distance.
+    for j, atom in enumerate(atoms):
+        for other in atoms[:j]:
+            delta=[atom["fractional"][k]-other["fractional"][k] for k in range(3)]
+            delta=[v-round(v) for v in delta]
+            cart=[sum(delta[k]*cell[k][axis] for k in range(3)) for axis in range(3)]
+            if math.sqrt(sum(v*v for v in cart))<0.35:
+                raise ValueError("Overlapping or duplicate atomic sites in periodic cell")
     if settings["calculation"]!="scf" or settings["functional"]!="PBE" or settings["spin"]!="unpolarized":
         raise ValueError("D2 only supports PBE, unpolarized single-point SCF")
     ecutwfc=num(settings["ecutwfc_ry"],10,200,"ecutwfc")
@@ -84,7 +92,7 @@ def canonical_request(data):
                       "ecutwfc_ry":ecutwfc,"ecutrho_ry":ecutrho,
                       "kpoints":mesh,"spin":"unpolarized"},
     }
-    fingerprint=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    fingerprint=hashlib.sha256(json.dumps(result["structure"],sort_keys=True,separators=(",",":")).encode()).hexdigest()
     return result,fingerprint
 
 
