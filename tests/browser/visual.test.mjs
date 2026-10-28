@@ -531,7 +531,11 @@ try{
  assert.ok(Math.abs(restoredView.ink-originalView.ink)<originalView.ink*.22,
   'repeated projection switching must not gradually zoom the structure');
  const tools=page.locator('[data-right-tool]');
- assert.equal(await tools.count(),13,'measurement history and Miller need independent analysis icons');
+ assert.equal(await tools.count(),15,'measurement history, Miller, defects and QE must retain independent analysis icons');
+  for(const tool of ['measurement','history','miller','defects','qe']){
+    assert.equal(await page.locator('[data-right-tool="'+tool+'"]').count(),1,
+      tool+' must have exactly one right-toolbar icon');
+  }
  assert.equal(await page.locator('[data-right-tool="measurement"]').evaluate(el=>el.nextElementSibling?.dataset.rightTool),'history',
   'measurement and history icons should be immediately adjacent');
  for(const [source,destination] of [
