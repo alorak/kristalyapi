@@ -58,11 +58,20 @@ def build_run(root, kind):
           "S": {"filename": "S.UPF", "sha256": "b" * 64}}
     if any(x[0] == "O" for x in values):
         pp["O"] = {"filename": "O.UPF", "sha256": "c" * 64}
-    step = {"status": "completed"}
+    nscf = text.replace("calculation='scf'", "calculation='nscf'").replace(
+        " ntyp=3,\n", " ntyp=3,\n nbnd=24,\n").replace(
+        "4 4 1 0 0 0", "12 12 1 0 0 0")
+    dos = "&DOS\n prefix='kristalyapi',\n outdir='./tmp',\n fildos='dos.dat',\n DeltaE=0.02,\n degauss=0.01,\n/\n"
+    projwfc = "&PROJWFC\n prefix='kristalyapi',\n outdir='./tmp',\n filpdos='pdos',\n DeltaE=0.02,\n degauss=0.01,\n/\n"
+    step_files = {"nscf": nscf, "dos": dos, "projwfc": projwfc}
+    for step, content in step_files.items():
+        (folder / (step + ".in")).write_text(content)
     pipeline = {"schema": "kristalyapi.qe-pipeline.v1", "status": "completed",
                 "input_sha256": input_sha, "pseudopotentials": pp,
                 "steps": {"scf": {"status": "completed", "input_sha256": input_sha},
-                          "nscf": step, "dos": step, "projwfc": step}}
+                          **{name: {"status": "completed",
+                                    "input_sha256": hashlib.sha256(content.encode()).hexdigest()}
+                             for name, content in step_files.items()}}}
     energy = [-1., 0., 1.]
     pdos_atoms = []
     per_atom = [0.01, 0.02, 0.03]
@@ -149,6 +158,29 @@ class DefectSeriesTests(unittest.TestCase):
         self.config["cases"][1]["run_dir"] = "pristine"
         self.save()
         with self.assertRaisesRegex(ValueError, "composition mismatches"):
+            generate(self.config_file)
+
+    def test_nscf_mesh_and_dos_broadening_must_agree(self):
+        nscf_file = self.root / "V_S" / "nscf.in"
+        altered = nscf_file.read_text().replace("12 12 1 0 0 0", "10 10 1 0 0 0")
+        nscf_file.write_text(altered)
+        pipeline_file = self.root / "V_S" / "pipeline.json"
+        pipeline = json.loads(pipeline_file.read_text())
+        pipeline["steps"]["nscf"]["input_sha256"] = hashlib.sha256(altered.encode()).hexdigest()
+        pipeline_file.write_text(json.dumps(pipeline))
+        self.save()
+        with self.assertRaisesRegex(ValueError, "protocol differs"):
+            generate(self.config_file)
+        nscf_file.write_text(altered.replace("10 10 1 0 0 0", "12 12 1 0 0 0"))
+        baseline = nscf_file.read_text()
+        pipeline["steps"]["nscf"]["input_sha256"] = hashlib.sha256(baseline.encode()).hexdigest()
+        pipeline_file.write_text(json.dumps(pipeline))
+        dos_file = self.root / "V_S" / "dos.in"
+        changed = dos_file.read_text().replace("DeltaE=0.02", "DeltaE=0.04")
+        dos_file.write_text(changed)
+        pipeline["steps"]["dos"]["input_sha256"] = hashlib.sha256(changed.encode()).hexdigest()
+        pipeline_file.write_text(json.dumps(pipeline))
+        with self.assertRaisesRegex(ValueError, "protocol differs"):
             generate(self.config_file)
 
     def test_reject_mismatched_ecut_cell_and_upf(self):
