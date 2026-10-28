@@ -93,7 +93,7 @@ export function parseQeElectronicResult(data){
   };
   const atoms=validateGroups(raw.atoms,'atoms');
   const elements=validateGroups(raw.elements,'elements');
-  if(energy.length*atoms.length>200000)
+  if(energy.length*atoms.length>400000)
    throw Error('Atomik PDOS görüntüleme boyut sınırını aşıyor.');
   const atomSum=energy.map((_,i)=>atoms.reduce((sum,a)=>sum+a.total[i],0));
   const elementSum=energy.map((_,i)=>elements.reduce((sum,a)=>sum+a.total[i],0));
