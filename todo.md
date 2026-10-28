@@ -193,7 +193,7 @@ gerçek cihaz kontrolleri ayrıca raporlanır.
 - [ ] QE'de bağımsız pseudopotential/PAW, ecutwfc/ecutrho, k-ağı, vakum kalınlığı, süperhücre boyutu ve kuvvet yakınsama testleri; fiziksel parametreler ve yazılım sürümü kaydedilmeli.
 - [ ] 2B elektrostatik sınır koşulları ve yüklü kusurlara özel sonlu-hücre düzeltmelerini sonraki iş akışına dahil et; ilk P0 yalnız nötr modelleri tanımlar.
 - [x] **Teknik ilk sürüm:** yerel Python QE pipeline: shared `prefix/outdir`, durdurmalı `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x`, kullanıcı doğrulamalı `crystal_b` k-yolu, enerji/DOS JSON ve ham çıktı saklama. Mock-çıktı testleri var; **gerçek MoS₂ hesabı / bilimsel tekrarlanabilirlik henüz doğrulanmadı**.
-- [ ] Her geometri için `relax` → `scf` → `nscf`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.- [ ] Her geometri için `relax` → `scf` → `nscf`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.
+- [ ] Her geometri için `relax` → `scf` → `nscf`/bands/PDOS sırasını durum makinesiyle yönet; hesabı tamamlanmış gibi gösterme.
 - [ ] DFT sonuçlarına: solver/sürüm, işlevsel, pseudopotential SHA256, k-ızgara, toplam enerji, kuvvet, çalıştırma tarihi, yakınsama ve model kimliği ekle.
 - [ ] Farklı atom sayısı ve kimyasal potansiyeller için doğru kusur oluşum enerjileri; yalnız toplam enerjileri doğrudan karşılaştırma.
 
@@ -230,3 +230,216 @@ gerçek cihaz kontrolleri ayrıca raporlanır.
 - [ ] Makale Şekil 4 için veri/sürüm/hesaplama/çizim tekrarlanabilirliği, PBE bant aralığı ve optik yorum sınırlamaları.
 - [ ] Negatif kontroller: vakumsuz/hacim MoS₂, `O_S` vs `O_2@V_S`, farklı komşuluk ve spin durumları.
 - [ ] Deneysel X_vacuum / X_air PL, ömür ve antibunching iddialarının yalnız kaynaklandırılmış **deney kanıtıyla** sunulması; KristalYapı'da DFT/deney ayrımı açık.
+
+---
+
+## D — DFT web platformu: QE hesabını KristalYapı'ya bağlama
+
+**Plan tarihi:** 28 Ekim 2026. **Amaç:** Statik GitHub Pages üzerinde
+çalışan KristalYapı'yı bozmadan, isteğe bağlı bir web API üzerinden gerçek
+DFT hesaplarını Linux VM/HPC'de çalıştırmak, iş durumunu takip etmek ve
+sonuçları 3B kristal üzerinde incelemek. Birincil motor **Quantum ESPRESSO**;
+**VASP** yalnız kullanıcının lisanslı kurulumuyla çalışan isteğe bağlı
+ileriki adaptör olacak. Tarayıcı ve ML modelleri fizik hesabı yapıyor gibi
+gösterilmeyecek.
+
+**İlgili mevcut çalışmalar:** [QE runner](docs/qe-runner.md),
+[elektronik hesaplama zinciri](docs/qe-electronic.md),
+[`tools/qe_run.py`](tools/qe_run.py),
+[`tools/qe_pipeline.py`](tools/qe_pipeline.py).
+Bu bölüm **genel DFT web/API altyapısıdır**. Yukarıdaki **M-P0–M-P5**,
+özellikle MoS₂ makalesinin *bilimsel yeniden üretimi* ve optik deney
+karşılaştırması için ayrı kalır. Yeni platform mevcut runner/pipeline'ı
+tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
+
+### D-P0 — Mevcut yetenekleri ve sınırlarını sabitle
+
+- [x] CIF/COD, P1, vakum/kusur araçları ve CIF/POSCAR dışa aktarımı.
+- [x] DFT panelinden QE `pw.x` için sabit hücreli `relax` / `scf`
+  girdisi üretme; yerel tamamlanmış `.out` dosyasını okuyup uygun son
+  koordinatları kullanıcı onayı ve Undo ile uygulama.
+- [x] Gerçek yerel QE'yi çalıştırmaya hazır `tools/qe_run.py`:
+  girdi/UPF staging, SHA-256, ayrı iş dizini, timeout, çıktı/
+  yakınsama kontrolü ve fake-solver testleri. **Web servisi değildir.**
+- [x] `tools/qe_pipeline.py`: isteğe bağlı `relax → scf → bands/bands.x
+  → nscf → dos.x/projwfc.x` zinciri; JSON sonuçları ve yerel bant/DOS
+  görselleştirme. Testler tek başına gerçek DFT doğrulaması değildir.
+- [ ] API'ye bağlanabilecek CLI ve parser fonksiyonlarının envanteri:
+  mevcut seçenekler, kabul edilen girdi alt kümesi, yakınsama statüleri,
+  desteklenmeyen `vc-relax`/spin/SOC vb. ve sürüm sınırları.
+- [ ] Gerçek QE kurulumunda **Si SCF** ve ayrı **MoS₂ SCF/relax**
+  smoke testlerini, solver sürümü/UPF hash'i ve fiziksel sınırlarıyla
+  çalıştır; mock test ile gerçek koşumu açıkça ayır.
+
+**Kabul:** Mevcut çevrimdışı/PWA uygulaması ve elle dosya indirip içe
+aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
+
+### D-P1 — İlk çalışan web dilimi: tek SCF işi (sıradaki geliştirme)
+
+- [ ] **Sürümlü motor-bağımsız JSON girdi şeması (v1):** hücre
+  vektörleri (Å), atom sırası/türü, koordinat sistemi, periyodiklik,
+  `structure_hash`/snapshot, iş türü, fonksiyonel, k-ağı,
+  `ecutwfc`/`ecutrho` (Ry), spin ve pseudopotansiyel profil kimliği.
+  Kesirli doluluk, desteklenmeyen simetri, eksik/NaN koordinat, atom/
+  hücre tutarsızlığında hesaplamayı reddet; sunucu da doğrulasın.
+- [ ] Frontend'den ayrı **Python/FastAPI** servisi (örn. `server/`);
+  ilk aşamada yalnız gerçek `pw.x` **SCF** hesabını başlat.
+  GitHub Pages'in statik ve sunucudan bağımsız çalışma biçimi değişmesin.
+- [ ] Minimal API: `GET /api/v1/engines`,
+  `POST /api/v1/calculations/validate`,
+  `POST /api/v1/calculations` (**202 + job_id**),
+  `GET /api/v1/calculations/{id}`,
+  `GET /api/v1/calculations/{id}/results`.
+  Hesaplamayı HTTP isteğinin içinde bekletme; ilk sürüm tek VM/tek
+  worker olabilir, P2'de kalıcı kuyruk eklenecek.
+- [ ] Sunucuda **izinli pseudopotansiyel profili**: gerçek UPF, kaynak,
+  lisans, XC uyumu ve SHA-256 kontrolü; varsayılan/uydurma UPF dosyası
+  ile yürütme yapma. Backend yalnız şemadan doğrulanmış `.in` üretmeli;
+  istemciden shell komutu, keyfî dosya yolu veya executable kabul etme.
+- [ ] Benzersiz izole iş dizini, kabuksuz `subprocess`, CPU/bellek/disk/
+  süre/eşzamanlılık limitleri, input boyut sınırları, hata kaydı ve
+  başarısızlık/timeout durumları. İnternete açılacak API için
+  kimlik doğrulama, yetkilendirme, HTTPS, dar CORS, iş kotası ve audit
+  kaydı **başlangıçtan zorunlu**.
+- [ ] Mevcut DFT panelinden açılan **DFT Çalışma Alanı** (ilk ekran):
+  aktif yapıyı önizle, motor=QE, iş=SCF, profil ve ön kontrolü göster,
+  kullanıcı onayıyla işi gönder, iş durumu ve gerçek toplam enerji/
+  SCF yakınsama sonucunu göster. API yoksa dosyadan çalışma sürer.
+- [ ] API sözleşmesi, hatalı JSON/UPF, auth, yol/komut enjeksiyonu,
+  timeout, çözücü hatası ve sahte `JOB DONE.` için testler.
+  Gerçek QE smoke testi ayrı ve kurulum varsa koşulsun.
+
+**P1 kabul kapısı:** Gerçek kurulu QE üzerinde bir Si `scf` işi,
+KristalYapı'dan onayla başlatılıp `job_id` ile izlenebilir; sonuç
+yalnız gerçekten üretilen `pw.x` çıktısından okunur ve başarısızlıklar
+başarı diye gösterilmez. API devre dışıyken statik uygulama çalışır.
+
+### D-P2 — Kalıcı işler, kuyruğa alma ve geçmiş
+
+- [ ] SQLite destekli kalıcı iş kayıtları + ayrı worker; tanımlı durumlar:
+  `created`, `queued`, `running`, `completed`, `failed`,
+  `timed_out`, `cancelled`, `not_converged`. Workflow alt aşamalarının
+  durumu ve yarım kalan işlerin yeniden başlatılma politikası belirli olsun.
+  `completed`, **bilimsel yakınsama çalışması yapıldı** demek değildir.
+- [ ] Eşzamanlı iş limiti, kullanıcı kota/önceliği, idempotent gönderim,
+  iptal ve güvenli temizleme; gerçek log ve polling/SSE; bilimsel solver'ın
+  vermediği ilerleme yüzdesini uydurma.
+- [ ] `GET /api/v1/calculations/{id}/artifacts` ve
+  `POST /api/v1/calculations/{id}/cancel`; yalnız iş sahibine
+  erişilebilir ham çıktı ve loglar; artifact boyutu/saklama politikası.
+- [ ] Job ile kaynak yapı hash'ini, ayar snapshot'ını, çalışma alanı
+  kimliğini ve tarih bilgisini ilişkilendir. Kullanıcı kristali sonradan
+  değiştirirse eski çıktıyı yeni geometriye otomatik bağlama.
+- [ ] Yeniden başlatma, eşzamanlı iki kullanıcı, yasak artifact erişimi,
+  iptal/timeout ve yeniden deneme için entegrasyon testleri.
+
+**P2 kabul:** Restart sonrası geçmiş korunur; iş durumu tutarlıdır
+ve kullanıcılar birbirlerinin sonuçlarını göremez.
+
+### D-P3 — Standart sonuç modeli ve görselleştirme
+
+- [ ] Motor-bağımsız, sürümlü `CalculationResult`:
+  `job_id`, `structure_hash`, engine/version, calculation,
+  input snapshot, fonksiyonel, UPF SHA-256, k-ağı, SCF/iyonik yakınsama,
+  enerji (eV), kuvvet (eV/Å), gerilim, son atomik yapı, Fermi referansı,
+  zaman/süre, hata, provenance ve artifact referansları.
+  Hesaplanmamış alanlar zorunlu doldurulmasın.
+- [ ] Mevcut `electronic-results.json` formatını geriye uyumlu bağla;
+  gerçek `bands.x`/`dos.x`/`projwfc.x` çıktıları için kaynak ve birim
+  doğrulaması yap. k-yolu, atom/orbital, spin ve enerji referansı
+  etiketlenmeden fiziksel karşılaştırma sunma.
+- [ ] QE relaksasyon sonucunu aktif 3B yapının yanında **önizle**;
+  final koordinatları/hücreyi kullanıcı onayıyla, Undo/Redo ve
+  eşleşen `structure_hash` kontrolüyle uygula. `vc-relax` desteği
+  ayrı validasyon ister.
+- [ ] CUBE/XSF/yük yoğunluğu/dalga fonksiyonu gibi büyük dosyaları JSON
+  içine gömme; artifact referansıyla, boyut sınırı ve gerektiğinde
+  hacimsel veri indirgeme ile işle.
+- [ ] Hatalı/eksik/uyumsuz veri, farklı yapı, near-convergence,
+  farklı enerji sıfırı, büyük dosya ve spin kanalları için negatif testler.
+
+**P3 kabul:** Gerçek QE çıktısı hem kaynağı doğrulanabilir
+sayısal grafiklerde hem de doğru kaynak yapıyla 3B görüntüde incelenir.
+
+### D-P4 — Bilimsel parametreler, yakınsama ve tekrarlanabilirlik
+
+- [ ] Pseudopotansiyel/XC ailesi, `ecutwfc`/`ecutrho`, k-örgüsü, spin,
+  SOC, sınır koşulları, k-yolu ve kuvvet/SCF toleranslarını açıklayan
+  kontrollü **temel/gelişmiş** hesap profilleri; öneri=yakınsama
+  kanıtı değildir.
+- [ ] Ecut, k-ağı, vakum, süperhücre ve kuvvet toleransı taramalarını
+  ayrı iş serisi yap; ölçülen duyarlılık/toleransı ve başarısızlıkları
+  açıkça raporla. 2B/yüklü kusurlarda uygun düzeltmeler yoksa uyar.
+- [ ] Girdi/çıktı hash'leri, QE sürümü, UPF sürümü ve lisansı,
+  kullanılan tam hesaplama parametreleri, MPI/CPU/ortam ve tarihle
+  **yeniden üretilebilir hesap manifesti**.
+- [ ] Gerçek solver kurulumu olan ayrı test ortamında Si/MoS₂ referans
+  koşumları; gerçek sayısal sonuç, bağımsız kontrol ve negatif testler.
+  CI'daki mock hesaplar fiziksel doğrulama sayılamaz. MoS₂'nin
+  makale protokolü ve yayın kanıtı için `M-P1` ve `M-P5` izlenmeli.
+
+### D-P5 — Kusur/malzeme sonuçlarını karşılaştırma
+
+- [ ] Aynı araştırma projesinde kusursuz MoS₂ ve `V_S`, `V_2S`,
+  `O_S` gibi kusurlu varyantlara ayrı yapı/job kimliği; karşılaştırılabilir
+  hücre, atom sırası, spin, fonksiyonel, pseudo ve k-örgüsü ön denetimi.
+- [ ] Relaksasyon öncesi/sonrası 3B örtüşme, atomik yer değiştirme ve
+  kuvvetleri; bant/DOS/atom-orbital PDOS karşılaştırmalarını seçilebilir
+  grafiklerde sun. Farklı işlerin Fermi/vakum sıfırlarını eşit varsayma.
+- [ ] Kusur oluşum enerjisi yalnız kimyasal potansiyeller, yük durumları,
+  Fermi seviyesi ve gerekli sonlu-boyut düzeltmeleriyle hesaplanabilir;
+  farklı atom sayılı yapıların ham toplam enerjisini çıkarma.
+- [ ] Spin/SOC, 2B elektrostatik, defect localization ve band unfolding
+  ayrı araştırma/analiz modülleri; DFT DOS sonuçlarını doğrulanmış
+  fotolüminesans veya tek-foton yayılımı olarak yorumlama (`M-P2/M-P3`).
+
+### D-P6 — AiiDA, HPC ve VASP adaptörü (gereksinim doğunca)
+
+- [ ] `aiida-quantumespresso` / AiiDAlab QE ile PoC: iş akışı,
+  hata kurtarma, veri kökeni, parser kapsamı, operasyonel maliyet ve
+  mevcut Python pipeline'a göre kazanımı ölç; çalışan kodu gerekçesiz
+  yeniden yazma.
+- [ ] Gerektikçe PostgreSQL/AiiDA, HPC/Slurm/MPI veya Kubernetes Jobs
+  bağlantısı; uzun `pw.x` süreçleri API sunucusunun içinde çalışmaz.
+  Kullanıcı/proje kota, hesap maliyeti, gözlemlenebilirlik ve kaynak
+  izolasyonunu ekle.
+- [ ] `EngineAdapter` sözleşmesi (`validate/prepare/submit/status/parse`)
+  ile QE/VASP ayrımı; VASP çalıştırılabilir dosyası veya POTCAR'ı
+  dağıtma, yalnız lisanslı kullanıcının kurulumuna güvenli bağlantı.
+- [ ] Çoklu kullanıcı yetkilendirmesi, secret saklama, log temizliği,
+  hesaplama kaynağı erişimi ve artifact izolasyonu güvenlik denetimi.
+
+### D-P7 — Fizik bilgili vekil model ve aktif öğrenme (en son)
+
+- [ ] Provenance ve yakınsaması doğrulanmış hesaplardan veri kümesi
+  üret; türev yapı/süperhücrelerin eğitim-test sızıntısını engelle;
+  kör dış test ve dağılım dışı değerlendirme yap (`M-P4`).
+- [ ] GPR/ağaç/graf baseline'ları, MAE/RMSE ve kalibrasyon;
+  belirsizliği doğrulanmadan vekil model güvenilir kararı vermez.
+- [ ] Eşit DFT bütçesinde rastgele/çeşitlilik/belirsizlik temelli
+  aktif öğrenmeyi karşılaştır; model yalnız hesaplama önerir,
+  gerçek DFT sonucunun yerini almaz.
+- [ ] LLM yalnız dokümantasyon, kontrollü girdi önerisi veya
+  araç orkestrasyonu için; bilimsel çözücü/doğrulayıcı değildir.
+
+### D — Bütün aşamalar için yatay kalite koşulları
+
+- [ ] **Güvenlik:** shell komutu/rasgele executable, sunucu dosya yolu,
+  izinsiz pseudo, arşiv gezinmesi, sınırsız compute ve yetkisiz artifact
+  erişimine karşı test; CORS, kimlik doğrulamanın yerine geçmez.
+- [ ] **Lisans:** QE açık kaynak olsa da UPF veri kümelerinin ayrı
+  dağıtım koşullarına uy; lisanslı VASP/POTCAR dosyalarını açık
+  repoya veya genel container imajına koyma.
+- [ ] **Frontend:** TR/EN, mobil, klavye/erişilebilirlik, çevrimdışı
+  fallback, servis çalışanı cache sürümü, büyük yapı sınırları ve
+  mevcut CIF/Undo/DFT panelinin regresyon testleri.
+- [ ] **Kanıt:** Her paket gerçek/mocked test ayrımı, hata durumları,
+  sürüm ve belge güncellemesi, açık kabul kapısı içermeli. `JOB DONE.`,
+  tek başına bilimsel doğruluğu veya yeterli yakınsamayı göstermez.
+
+**Uygulama sırası:** Önce `D-P0` envanter + gerçek yerel smoke;
+ardından **`D-P1` tek gerçek SCF uçtan uca**; sonra `D-P2` iş
+yönetimi, `D-P3` sonuç/3B, `D-P4` bilimsel doğrulama, `D-P5`
+kusur karşılaştırması; ihtiyaç halinde `D-P6` çoklu kaynak ve
+yeterli güvenilir veri oluşunca `D-P7` vekil model.
+
