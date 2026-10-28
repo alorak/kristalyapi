@@ -203,6 +203,7 @@ gerçek cihaz kontrolleri ayrıca raporlanır.
 - [x] **Atom/orbital PDOS teknik ilk paket:** `projwfc.x` atom indeksi ve elementleri son SCF atom sırasıyla doğrulanır; s/p/d/f LDOS toplamları `pdos.pdos_tot` ile karşılaştırılır ve Mo-d, S-p, O-p ile tek atom görünümleri sağlanır. Yalnız kollineer-spin-polarize olmayan sonuçlar; gerçek MoS₂ DFT koşumu henüz doğrulanmadı.
 - [ ] Quantum ESPRESSO `bands.x`, `dos.x`, `projwfc.x` çıktılarının kaynak/birim doğrulamalı içe aktarımı.
 - [ ] Band / DOS / PDOS grafiklerinin ortak enerji referansı, spin kanalı, orbital ve atom projeksiyonları; yoğunluk–bant enerjisi ayrımını koru.
+- [x] **MoS₂ serisi P2 teknik karşılaştırma:** tamamlanmış QE sonuçları, Mo/S/O bileşimi, aynı hücre ve SCF/NSCF/son işlem parametreleri, UPF ve SHA-256 kontrolleri; kullanıcı tarafından belirtilen kusur merkeziyle periyodik yakın/uzak atom grupları ve yaklaşık atom eşlemesi. **Belgelendirilmiş vakum potansiyeli referansı yoksa enerji grafikleri hizalanmaz.** Sentetik Python/JS testleri eklendi; gerçek MoS₂ DFT hesaplaması ve fiziksel doğrulama henüz yapılmadı.
 - [ ] Pristine–V_S–V₂S–O_S–O₂@V_S vakans/adsorpsiyon modellerini yakın/uzak kusur atomları üzerinden **atom bazlı** PDOS ile karşılaştır: atom numaraları ve ham QE enerji sıfırları farklı hesaplar arasında doğrudan eşitlenemez.
 - [ ] Kusursuz–`V_{2S}`–`O_2@V_S` karşılaştırması, kusur kaynaklı lokalize durumlar; elektron yoğunluğunu CUBE/XSF ile birlikte göster.
 - [ ] Şekil 4'ün k yolu ve süperhücre bant katlanması sorununu açıkça ele al; gerektiğinde band unfolding.
