@@ -1,0 +1,189 @@
+{
+  "schema": "kristalyapi.qe-electronic-convergence-plan.v1",
+  "stage": "D4.1",
+  "scope": "Finite empty-band and NSCF-mesh stability at fixed accepted D3 geometry, PBE/scalar/unpolarized and sigma=0.01 Ry. DOS width is sensitivity only, not a zero-width/optical/SOC acceptance.",
+  "reference": {
+    "evidence_path": "validation-results/qe-mos2-d4-20261029-amd64",
+    "source_commit": "d25e112312acd6f02591c0abe5b03acc5ed3b024",
+    "summary_sha256": "32a36d14d770e3afa819d784ca3e7f1c45c6cda520119ae8c07c5c2e4981fc8e",
+    "result_sha256": "37e06f68cd42190449bd17f5687f91f92b0d9ba2a449b7a4b0146ece3b595a87",
+    "structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063"
+  },
+  "pseudopotentials": {
+    "Mo": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "filename": "Mo.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd"
+    },
+    "S": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "S.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    }
+  },
+  "electronic": {
+    "nbnd": 26,
+    "nscf_k": 16,
+    "band_path": [
+      {
+        "label": "Gamma",
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "M",
+        "k": [
+          0.5,
+          0,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "K",
+        "k": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "Gamma",
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "segments": 1
+      }
+    ]
+  },
+  "dos": {
+    "delta_e_ev": 0.01,
+    "energy_min_ev": -65,
+    "energy_max_ev": 30
+  },
+  "cases": [
+    {
+      "id": "nbnd32-k16-s010",
+      "nbnd": 32,
+      "nscf_k": 16,
+      "degauss_ry": 0.01
+    },
+    {
+      "id": "nbnd40-k16-s010",
+      "nbnd": 40,
+      "nscf_k": 16,
+      "degauss_ry": 0.01
+    },
+    {
+      "id": "nbnd40-k18-s010",
+      "nbnd": 40,
+      "nscf_k": 18,
+      "degauss_ry": 0.01
+    },
+    {
+      "id": "nbnd40-k24-s010",
+      "nbnd": 40,
+      "nscf_k": 24,
+      "degauss_ry": 0.01
+    },
+    {
+      "id": "nbnd40-k24-s005",
+      "nbnd": 40,
+      "nscf_k": 24,
+      "degauss_ry": 0.005
+    },
+    {
+      "id": "nbnd40-k24-s0025",
+      "nbnd": 40,
+      "nscf_k": 24,
+      "degauss_ry": 0.0025
+    }
+  ],
+  "decision_pairs": [
+    {
+      "axis": "nbnd",
+      "from": "nbnd32-k16-s010",
+      "to": "nbnd40-k16-s010",
+      "gated": true
+    },
+    {
+      "axis": "nscf_k",
+      "from": "nbnd40-k18-s010",
+      "to": "nbnd40-k24-s010",
+      "gated": true
+    },
+    {
+      "axis": "dos_width",
+      "from": "nbnd40-k24-s005",
+      "to": "nbnd40-k24-s0025",
+      "gated": false
+    }
+  ],
+  "diagnostic_pairs": [
+    {
+      "axis": "nbnd",
+      "from": "reference-d4",
+      "to": "nbnd32-k16-s010"
+    },
+    {
+      "axis": "nscf_k",
+      "from": "nbnd40-k16-s010",
+      "to": "nbnd40-k18-s010"
+    },
+    {
+      "axis": "dos_width",
+      "from": "nbnd40-k24-s010",
+      "to": "nbnd40-k24-s005"
+    }
+  ],
+  "comparison": {
+    "common_lowest_bands": 24,
+    "occupied_bands": 13,
+    "energy_min_ev": -8,
+    "energy_max_ev": 6,
+    "grid_ev": 0.01,
+    "legacy_reference_grid_ev": 0.02,
+    "energy_grid_tolerance_ev": 0.0001,
+    "energy_alignment": "raw fixed-potential QE zero; no shifts, interpolation or rescaling",
+    "orbital_groups": [
+      "Mo-d",
+      "S-p"
+    ]
+  },
+  "criteria": {
+    "max_scf_accuracy_ry": 1e-08,
+    "max_reference_energy_difference_ry": 1e-06,
+    "max_final_force_component_ry_bohr": 0.0001,
+    "max_integrated_state_count_error": 0.2,
+    "dos_step_ev": 0.01,
+    "max_common_band_delta_ev": 0.01,
+    "max_edge_delta_ev": 0.01,
+    "max_dos_relative_l1": 0.05,
+    "max_pdos_relative_l1": 0.05,
+    "min_curve_area": 1e-10
+  },
+  "limits": {
+    "max_seconds_per_job": 14400,
+    "docker_worker_memory_bytes": 6442450944,
+    "workflow_max_parallel": 2
+  },
+  "interpretation": {
+    "band_comparison": "Sort eigenvalues independently at each identical path point; compare common lowest 24 states, without branch-label matching.",
+    "mesh_edges": "From actual NSCF eigenvalues/2-or-0 occupations, not from the unchanged explicit band path. Unshifted 18 and 24 meshes sample the fractional thirds used for K.",
+    "width_comparison": "Report curve changes and enforce unchanged underlying NSCF spectrum; no width-to-zero convergence gate.",
+    "thresholds": "Preregistered project targets (10 meV edges/common eigenvalues and 5% relative L1), not universal physical-accuracy standards."
+  }
+}
