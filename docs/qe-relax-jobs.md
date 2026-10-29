@@ -91,4 +91,16 @@ python3 tools/qe_relax_acceptance.py --verify validation-results/qe-mos2-relax-l
 `--reference` verilmezse plandaki repoya göreli D2.2c kanıt klasörü kullanılır.
 D3 özeti, ön koşul summary/result/output hash'lerini kaydeder; yeniden
 doğrulamada aynı kanıt zorunludur. 103 Python QE testi geçti. Gerçek MoS₂
-D3 sonucu henüz bekleniyor.
+## Gerçek MoS₂ kabulü tamamlandı
+
+[Ham QE/API kanıtları ve 3B karşılaştırma](../validation-results/qe-mos2-d3-20261029-amd64/INCELEME.md):
+ön kayıtlı kaynak `2b3c6dce97568f0fca9b85a3e35acedde2399a0a`,
+[başarılı Linux/Docker çalışması](https://github.com/alorak/kristalyapi/actions/runs/40793759416).
+Sekiz ölçüt 8/8 geçti. Son 120 Ry bağımsız SCF enerjisi -181.58168684 Ry,
+en büyük kuvvet bileşeni 1.29e-5 Ry/Bohr; 140 Ry kontrolü 5.5e-7 Ry/Bohr.
+120→140 farkı 0.267442574 meV/atom. S atomları 0.0058226472 Å yer değiştirdi.
+Bu son geometri D4'ün kaynak/hash eşleşmeli girdisidir.
+
+```bash
+python3 tools/qe_relax_acceptance.py --verify validation-results/qe-mos2-d3-20261029-amd64
+```
