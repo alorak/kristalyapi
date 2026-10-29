@@ -66,7 +66,7 @@ test('activation removes only old Kristal Yapı shell caches',async()=>{
  assert.equal(sw.claimed,1);
 });
 
-test('all GitHub Actions jobs run only for PRs merged into main and check out the trusted merge',()=>{
+test('Pages deployment jobs run only for PRs merged into main and check out the trusted merge',()=>{
  for(const name of ['pages.yml','browser-visual.yml']){
   const content=readFileSync(new URL('../.github/workflows/'+name,import.meta.url),'utf8');
   assert.match(content,/^  pull_request_target:\s*\n    types: \[closed\]\s*\n    branches: \[main\]/m,name);
