@@ -1127,6 +1127,7 @@ body.lesson-open #app{display:none!important}
 
 /* Offline Quantum ESPRESSO import/export workflow in right drawer. */
 .qe-workflow{margin:13px 0;padding:14px;border:1px solid #cbdcf0;border-radius:13px;background:#f5f8fd;display:grid;gap:10px}
+.qe-workflow[hidden]{display:none}
 .qe-workflow .hint{margin:0;line-height:1.52}
 .qe-workflow .note{min-height:36px;white-space:pre-wrap;overflow-wrap:anywhere}
 .qe-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
