@@ -74,3 +74,26 @@ Gerçek sonuçlar geldikten sonra mevcut [PDOS karşılaştırma aracı](qe-defe
 kullanılabilir. Farklı stokiyometrilerin toplam enerjileri doğrudan kararlılık
 sıralaması veya kusur oluşum enerjisi değildir; enerji eksenleri vakum
 referansı olmadan ortaklaştırılmaz.
+
+## Yalnız başlatma için sabit kaynak pilotu
+
+`tools/qe_defect_init.py` aynı hazırlanmış dört aday için ayrı, operatöre
+özel `nstep=0` kontrolüdür. [QE kılavuzu](https://quantum-espresso.org/Doc/pw_user_guide/node9.html)
+bu seçeneği başlangıç/girdi doğrulaması için tanımlar. Araç yalnız açıkça
+verilen mevcut Docker imajının SHA-256 kimliğini kabul eder; imaj indirmez.
+
+Sabit sınırlar: 416 bant, 2 CPU, 6 GiB RAM, swap kapalı, 120 saniye/vaka,
+ağ kapalı, salt okunur kök ve UPF/girdi bağları, geçici scratch. Her vaka
+sonunda konteyner kaldırılır. Gerçek QE atom/elektron/bant sayıları, sürüm,
+ham bellek tahmin satırları, OOM/exit ve dosya hash'leri korunur. Enerji
+veya SCF yakınsaması üreten çıktı `initialization-only` diye kabul edilmez.
+
+```bash
+python3 tools/qe_defect_init.py --pseudo-dir /path/to/reviewed-Mo-S-O-upfs \
+  --image sha256:EXPLICIT_LOCAL_IMAGE_DIGEST --output /tmp/mos2-d5-init
+```
+
+`initialized` sonucu yalnız başlangıcın tamamlandığını gösterir. SCF,
+relaksasyon, PDOS, tam hesabın RAM/wall-time yeterliliği veya API'nin 128
+bant sınırının kaldırıldığı anlamına gelmez. Bu pilotun gerçek sonucu
+ayrıca kaydedilecektir.
