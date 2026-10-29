@@ -1,0 +1,25 @@
+{
+  "baseline_120_identity": {
+    "input_sha256": true,
+    "structure_hash": true,
+    "engine_version": true,
+    "energy_ry": true,
+    "upf_hashes": true
+  },
+  "baseline_delta_mev_per_atom": 0.0,
+  "diagnostic_comparisons": [
+    {
+      "from": "ecut120-k8-c24",
+      "to": "ecut120-k12-c24",
+      "delta_mev_per_atom": 0.07192876439673557
+    },
+    {
+      "from": "ecut120-k16-c18",
+      "to": "ecut120-k16-c24",
+      "delta_mev_per_atom": 0.00018140925664978793
+    }
+  ],
+  "selected_reference": "ecut120-k16-c24",
+  "selected_energy_ry": -181.58163993,
+  "vacuum_zero_note": "0.0 at the printed 8-decimal Ry precision, not proof of exact zero physical interaction."
+}
