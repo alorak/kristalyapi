@@ -1,4 +1,4 @@
-name: QE MoS2 SCF acceptance (D2.2 / D2.2b, manual)
+name: QE MoS2 SCF acceptance (D2.2 / D2.2b / D2.2c, manual)
 
 on:
   workflow_dispatch:
@@ -12,6 +12,7 @@ on:
           - d22
           - d22b
           - d22b-extended
+          - d22c
       mo_sha256:
         description: "Pre-reviewed SHA-256 of official PSlibrary Mo.pbe-spn-rrkjus_psl.1.0.0.UPF"
         required: true
@@ -31,7 +32,7 @@ concurrency:
 jobs:
   real-mos2-scf:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: ${{ inputs.protocol == 'd22c' && 180 || 100 }}
     env:
       MO_SHA256: ${{ inputs.mo_sha256 }}
       S_SHA256: ${{ inputs.s_sha256 }}

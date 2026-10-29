@@ -1,0 +1,154 @@
+{
+  "schema": "kristalyapi.qe-mos2-kvac-acceptance-plan.v1",
+  "material": "1H-MoS2 pristine monolayer",
+  "geometry": {
+    "a_angstrom": 3.18,
+    "s_plane_distance_angstrom": 1.56,
+    "mo_fractional_xy": [
+      0,
+      0
+    ],
+    "s_fractional_xy": [
+      0.3333333333333333,
+      0.6666666666666666
+    ],
+    "structure_note": "Idealized 1H trigonal-prismatic MoS2 initial geometry; NOT relaxed or independently experimental reference"
+  },
+  "pseudopotentials": {
+    "Mo": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "filename": "Mo.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd"
+    },
+    "S": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "S.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    }
+  },
+  "cases": [
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    },
+    {
+      "id": "ecut120-k12-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        12,
+        12,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    },
+    {
+      "id": "ecut120-k16-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    },
+    {
+      "id": "ecut120-k16-c18",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 18
+    },
+    {
+      "id": "ecut120-k16-c30",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 30
+    },
+    {
+      "id": "ecut140-k16-c24",
+      "ecutwfc_ry": 140,
+      "ecutrho_ry": 1120,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    }
+  ],
+  "criteria": {
+    "max_scf_accuracy_ry": 1e-08,
+    "api_energy_tolerance_ry": 1e-08,
+    "energy_sensitivity_mev_per_atom": {
+      "cutoff": 1.0,
+      "kpoints": 1.0,
+      "vacuum": 2.0
+    },
+    "comparisons": [
+      {
+        "axis": "cutoff",
+        "from": "ecut120-k16-c24",
+        "to": "ecut140-k16-c24"
+      },
+      {
+        "axis": "kpoints",
+        "from": "ecut120-k12-c24",
+        "to": "ecut120-k16-c24"
+      },
+      {
+        "axis": "vacuum",
+        "from": "ecut120-k16-c24",
+        "to": "ecut120-k16-c30"
+      }
+    ]
+  },
+  "limits": {
+    "max_seconds_per_job": 3600,
+    "protocol": "PBE, fixed occupations, collinear-unpolarized SCF, periodic P1, 3 atoms, gamma-centered even mesh; no SOC, no dipole corrections, no force/geometry optimization",
+    "docker_worker_memory_bytes": 6442450944
+  },
+  "stage": "D2.2c",
+  "scope": "Finite cutoff/k-mesh/vacuum energy sensitivity of ideal unrelaxed pristine 1H-MoS2 at proposed 120/960 Ry, 16x16x1, c=24 Angstrom reference. Not relaxation/force or independent physical-reference validation.",
+  "baseline": {
+    "case": "ecut120-k8-c24",
+    "source_result": "validation-results/qe-mos2-d22b-20261029-amd64/cases/ecut120-k8-c24/result.json",
+    "source_commit": "7a80999b4c23fa0258326b5d7334a84e4f9a18ca",
+    "energy_ry": -181.58162387,
+    "purpose": "Fresh repeat of the D2.2b 120 Ry baseline; all six cases are new API jobs."
+  },
+  "selected_reference_case": "ecut120-k16-c24",
+  "diagnostic_pairs": [
+    {
+      "from": "ecut120-k8-c24",
+      "to": "ecut120-k12-c24"
+    },
+    {
+      "from": "ecut120-k16-c18",
+      "to": "ecut120-k16-c24"
+    }
+  ]
+}

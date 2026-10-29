@@ -1,0 +1,35 @@
+{
+  "health": {
+    "status": "ready",
+    "api_version": "0.2.0",
+    "engine": "quantum-espresso",
+    "binary_smoke": "pwscf_banner",
+    "read_only": false
+  },
+  "capabilities": {
+    "api_version": "0.2.0",
+    "engine": {
+      "id": "quantum-espresso",
+      "version": "6.7MaX",
+      "available": true
+    },
+    "binaries": {
+      "pw.x": true,
+      "bands.x": true,
+      "dos.x": true,
+      "projwfc.x": true
+    },
+    "supported_operations": [
+      "health",
+      "capabilities",
+      "scf",
+      "status",
+      "results",
+      "cancel"
+    ],
+    "job_submission_enabled": true,
+    "calculations_executed_by_api": false,
+    "binary_smoke": "pwscf_banner",
+    "scientific_calculation_performed": false
+  }
+}

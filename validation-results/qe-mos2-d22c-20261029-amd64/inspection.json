@@ -1,0 +1,191 @@
+{
+  "source_commit_verified": "78d116baec28419072a6d63c9d0842d28af79ac3",
+  "recorded_status": "passed",
+  "recorded_error": null,
+  "verified_cases": 6,
+  "case_failures": [],
+  "raw_derived_comparisons": [
+    {
+      "axis": "cutoff",
+      "from": "ecut120-k16-c24",
+      "to": "ecut140-k16-c24",
+      "delta_mev_per_atom": 0.2677146884269676,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "kpoints",
+      "from": "ecut120-k12-c24",
+      "to": "ecut120-k16-c24",
+      "delta_mev_per_atom": 0.0009070461543499209,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "vacuum",
+      "from": "ecut120-k16-c24",
+      "to": "ecut120-k16-c30",
+      "delta_mev_per_atom": 0.0,
+      "limit_mev_per_atom": 2.0,
+      "passed": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58162387,
+        "energy_ev": -2470.543851150142,
+        "last_scf_accuracy_ry": 6.1e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "f5ba872f0dcb69ce31b0d4c754c1e0ad29cc55d5ce28a1a0863570a7d6788f69",
+        "output_sha256": "4beee88b8f87ddce1b71eb905dc3b6024293ee532be3fdd7de5f9f107ad1fb29",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "d44698621e894996b40037fc683e9ab9",
+      "electrons": 26.0,
+      "created": "2026-10-28T23:20:00.353246+00:00",
+      "finished": "2026-10-28T23:25:26.586035+00:00",
+      "total_force_ry_bohr": 0.006
+    },
+    {
+      "id": "ecut120-k12-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        12,
+        12,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58163973,
+        "energy_ev": -2470.5440669364352,
+        "last_scf_accuracy_ry": 3.3e-09,
+        "scf_iterations": 17,
+        "qe_version": "6.7MaX",
+        "input_sha256": "25ab7f5d5b70c193e01c2a28f355fafc19436601c5095cd0083711b5240f03a2",
+        "output_sha256": "c50ed39801affbe9550a1690268d78d542409f4f868f358abb3e304879a47182",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "ac06960679b64bd081917d21cb95cc6c",
+      "electrons": 26.0,
+      "created": "2026-10-28T23:25:27.529300+00:00",
+      "finished": "2026-10-28T23:34:20.712874+00:00",
+      "total_force_ry_bohr": 0.006049
+    },
+    {
+      "id": "ecut120-k16-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58163993,
+        "energy_ev": -2470.5440696575733,
+        "last_scf_accuracy_ry": 7.2e-09,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "249c02c7b1be7b1f3d98b0df8f91e99a5b7dc04bf71a47b1b95548e2a67f7040",
+        "output_sha256": "ad7d1c01964019128476b9cc715a550b4a0f4d817bedafb298f20ea271ab1807",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "01f75ac487594f9aad67f8d26017e3c9",
+      "electrons": 26.0,
+      "created": "2026-10-28T23:34:21.363620+00:00",
+      "finished": "2026-10-28T23:44:14.420478+00:00",
+      "total_force_ry_bohr": 0.005998
+    },
+    {
+      "id": "ecut120-k16-c18",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 18,
+      "proof": {
+        "energy_ry": -181.58163997,
+        "energy_ev": -2470.5440702018013,
+        "last_scf_accuracy_ry": 5.8e-09,
+        "scf_iterations": 15,
+        "qe_version": "6.7MaX",
+        "input_sha256": "e72d2b631c680dfd155dad993dab273d26a5013527e03e0efff3b18f4c7eeb18",
+        "output_sha256": "75f0179c70a698a99b2ab45e6ecf73bba9459847ba28ca04d7042edf21dea5ed",
+        "structure_hash": "81ad6854dc2ac4a3f332d355e447c95803989cda7fd71c8d91f8bdc3df3b62b1"
+      },
+      "job_id": "b2174a744e36420388d1d57883968afe",
+      "electrons": 26.0,
+      "created": "2026-10-28T23:44:15.334505+00:00",
+      "finished": "2026-10-28T23:52:05.020279+00:00",
+      "total_force_ry_bohr": 0.006007
+    },
+    {
+      "id": "ecut120-k16-c30",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 30,
+      "proof": {
+        "energy_ry": -181.58163993,
+        "energy_ev": -2470.5440696575733,
+        "last_scf_accuracy_ry": 4.5e-09,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "372449ace902fce5fbfb87d34e409f13e74078372be6869b6060e21b3ef9e573",
+        "output_sha256": "e65cade98266bb15a1ee5e0d45efe404e36a51e0de8db006bce98357bbee523c",
+        "structure_hash": "ed1d9a7c49800fcb80797d0107683f800fadfd2a8c7dd5312fe86e85aaf8582b"
+      },
+      "job_id": "d388523a0019416c8f3a8437ede9c9af",
+      "electrons": 26.0,
+      "created": "2026-10-28T23:52:05.925749+00:00",
+      "finished": "2026-10-29T00:05:45.968137+00:00",
+      "total_force_ry_bohr": 0.005962
+    },
+    {
+      "id": "ecut140-k16-c24",
+      "ecutwfc_ry": 140,
+      "ecutrho_ry": 1120,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58169896,
+        "energy_ev": -2470.544872801639,
+        "last_scf_accuracy_ry": 1e-08,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "22c3c0b70b45ad9e88e38fb27415e49bb0c04facc8c1cbd4cffac061175af8c8",
+        "output_sha256": "1c3419b4b22be5c0ddbf148b059e634e3f67deb37f143d33e61517045f4cdaa6",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "c2b256a0c5274ec6b78a33286c1dd07d",
+      "electrons": 26.0,
+      "created": "2026-10-29T00:05:46.644514+00:00",
+      "finished": "2026-10-29T00:18:39.876859+00:00",
+      "total_force_ry_bohr": 0.005935
+    }
+  ]
+}

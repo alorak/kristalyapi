@@ -1,0 +1,195 @@
+{
+  "schema": "kristalyapi.qe-mos2-acceptance.v1",
+  "status": "passed",
+  "started_at": "2026-10-28T23:19:33.086824+00:00",
+  "cases": [
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58162387,
+        "energy_ev": -2470.543851150142,
+        "last_scf_accuracy_ry": 6.1e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "f5ba872f0dcb69ce31b0d4c754c1e0ad29cc55d5ce28a1a0863570a7d6788f69",
+        "output_sha256": "4beee88b8f87ddce1b71eb905dc3b6024293ee532be3fdd7de5f9f107ad1fb29",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "d44698621e894996b40037fc683e9ab9"
+    },
+    {
+      "id": "ecut120-k12-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        12,
+        12,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58163973,
+        "energy_ev": -2470.5440669364352,
+        "last_scf_accuracy_ry": 3.3e-09,
+        "scf_iterations": 17,
+        "qe_version": "6.7MaX",
+        "input_sha256": "25ab7f5d5b70c193e01c2a28f355fafc19436601c5095cd0083711b5240f03a2",
+        "output_sha256": "c50ed39801affbe9550a1690268d78d542409f4f868f358abb3e304879a47182",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "ac06960679b64bd081917d21cb95cc6c"
+    },
+    {
+      "id": "ecut120-k16-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58163993,
+        "energy_ev": -2470.5440696575733,
+        "last_scf_accuracy_ry": 7.2e-09,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "249c02c7b1be7b1f3d98b0df8f91e99a5b7dc04bf71a47b1b95548e2a67f7040",
+        "output_sha256": "ad7d1c01964019128476b9cc715a550b4a0f4d817bedafb298f20ea271ab1807",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "01f75ac487594f9aad67f8d26017e3c9"
+    },
+    {
+      "id": "ecut120-k16-c18",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 18,
+      "proof": {
+        "energy_ry": -181.58163997,
+        "energy_ev": -2470.5440702018013,
+        "last_scf_accuracy_ry": 5.8e-09,
+        "scf_iterations": 15,
+        "qe_version": "6.7MaX",
+        "input_sha256": "e72d2b631c680dfd155dad993dab273d26a5013527e03e0efff3b18f4c7eeb18",
+        "output_sha256": "75f0179c70a698a99b2ab45e6ecf73bba9459847ba28ca04d7042edf21dea5ed",
+        "structure_hash": "81ad6854dc2ac4a3f332d355e447c95803989cda7fd71c8d91f8bdc3df3b62b1"
+      },
+      "job_id": "b2174a744e36420388d1d57883968afe"
+    },
+    {
+      "id": "ecut120-k16-c30",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 30,
+      "proof": {
+        "energy_ry": -181.58163993,
+        "energy_ev": -2470.5440696575733,
+        "last_scf_accuracy_ry": 4.5e-09,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "372449ace902fce5fbfb87d34e409f13e74078372be6869b6060e21b3ef9e573",
+        "output_sha256": "e65cade98266bb15a1ee5e0d45efe404e36a51e0de8db006bce98357bbee523c",
+        "structure_hash": "ed1d9a7c49800fcb80797d0107683f800fadfd2a8c7dd5312fe86e85aaf8582b"
+      },
+      "job_id": "d388523a0019416c8f3a8437ede9c9af"
+    },
+    {
+      "id": "ecut140-k16-c24",
+      "ecutwfc_ry": 140,
+      "ecutrho_ry": 1120,
+      "kpoints": [
+        16,
+        16,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58169896,
+        "energy_ev": -2470.544872801639,
+        "last_scf_accuracy_ry": 1e-08,
+        "scf_iterations": 14,
+        "qe_version": "6.7MaX",
+        "input_sha256": "22c3c0b70b45ad9e88e38fb27415e49bb0c04facc8c1cbd4cffac061175af8c8",
+        "output_sha256": "1c3419b4b22be5c0ddbf148b059e634e3f67deb37f143d33e61517045f4cdaa6",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "c2b256a0c5274ec6b78a33286c1dd07d"
+    }
+  ],
+  "comparisons": [
+    {
+      "axis": "cutoff",
+      "from": "ecut120-k16-c24",
+      "to": "ecut140-k16-c24",
+      "delta_mev_per_atom": 0.2677146884269676,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "kpoints",
+      "from": "ecut120-k12-c24",
+      "to": "ecut120-k16-c24",
+      "delta_mev_per_atom": 0.0009070461543499209,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "vacuum",
+      "from": "ecut120-k16-c24",
+      "to": "ecut120-k16-c30",
+      "delta_mev_per_atom": 0.0,
+      "limit_mev_per_atom": 2.0,
+      "passed": true
+    }
+  ],
+  "planned_cases": 6,
+  "protocol": "d22c",
+  "scope": "Finite cutoff/k-mesh/vacuum energy sensitivity of ideal unrelaxed pristine 1H-MoS2 at proposed 120/960 Ry, 16x16x1, c=24 Angstrom reference. Not relaxation/force or independent physical-reference validation.",
+  "provenance": {
+    "git_commit": "78d116baec28419072a6d63c9d0842d28af79ac3",
+    "host_machine": "x86_64",
+    "host_platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "docker_arch": "x86_64",
+    "docker_version": "28.0.4",
+    "plan_sha256": "8a809c415b387136d6f491905053dd3e0c0b2db4bf266951cab4f85237842919",
+    "source_sha256": {
+      "tools/qe_mos2_acceptance.py": "b93948fb37fa69d3782b769b4557fcb91f4ce17eed405bf66b360a10356b8fd6",
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "6c175a2aae7f2d9dc6a5794373c1907630b1adbed2413f87e345adbf4b1ef679",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "server/api.py": "d9f26ba9f292899642878b27796034ba4c082a66e6e811fcd787f6e09a5be815",
+      "server/job_core.py": "5b19e1c33214df246da92d3a6635a4440221bd63d98b19a5d925d7367a0ab2c7",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/worker.py": "b36bb1a6a2ea424445c047a95f1a6381e9284ce6cdaad9f6368feacc80803440"
+    },
+    "image_id": "sha256:35fd96a54527d2d0e49b69e9eaefc647572f536613624da4edbda992c75259f7",
+    "worker_resources": {
+      "memory_bytes": 6442450944,
+      "memory_swap_bytes": 6442450944
+    }
+  },
+  "resources_removed": true,
+  "finished_at": "2026-10-29T00:18:50.992817+00:00"
+}

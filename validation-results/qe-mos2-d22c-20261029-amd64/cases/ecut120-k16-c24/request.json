@@ -1,0 +1,62 @@
+{
+  "schema": "kristalyapi.qe-scf-job.v1",
+  "profile_id": "mos2-pbe",
+  "structure": {
+    "periodic": true,
+    "cell_angstrom": [
+      [
+        3.18,
+        0.0,
+        0.0
+      ],
+      [
+        -1.59,
+        2.753960784034515,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        24.0
+      ]
+    ],
+    "atoms": [
+      {
+        "element": "Mo",
+        "fractional": [
+          0.0,
+          0.0,
+          0.5
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333333333,
+          0.6666666666666666,
+          0.565
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333333333,
+          0.6666666666666666,
+          0.435
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "calculation": "scf",
+    "functional": "PBE",
+    "spin": "unpolarized",
+    "ecutwfc_ry": 120,
+    "ecutrho_ry": 960,
+    "kpoints": [
+      16,
+      16,
+      1
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D2.2/D2.2b: real 1H-MoS2 Docker/API SCF acceptance with fail-closed evidence.
+"""D2.2/D2.2b/D2.2c: real 1H-MoS2 Docker/API SCF acceptance and evidence.
 
 No pseudopotentials or DFT energies are fabricated. --run is explicit and
 requires two user-reviewed SHA-256 hashes; --verify works without Docker.
@@ -34,6 +34,8 @@ PROTOCOLS = {
              "kristalyapi.qe-mos2-cutoff-acceptance-plan.v1", 3, "D2.2b"),
     "d22b-extended": (ROOT / "tests/fixtures/qe/mos2-cutoff-extended-acceptance.json",
                       "kristalyapi.qe-mos2-cutoff-acceptance-plan.v2", 3, "D2.2b"),
+    "d22c": (ROOT / "tests/fixtures/qe/mos2-kvac-acceptance.json",
+              "kristalyapi.qe-mos2-kvac-acceptance-plan.v1", 6, "D2.2c"),
 }
 HEX = re.compile(r"[a-fA-F0-9]{64}\Z")
 
