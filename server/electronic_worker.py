@@ -11,7 +11,7 @@ import sys
 import time
 
 from job_core import canonical_request,load_profile,make_pw_input
-from electronic_core import scf_request,path_text
+from electronic_core import scf_request,path_text,checked_band_capacity
 from relax_worker import digest,Stopped
 
 
@@ -24,6 +24,7 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
         request,fingerprint=canonical_request(json.loads(job["request_json"]))
         if fingerprint!=job["structure_hash"]:raise ValueError("Electronic source hash mismatch")
         upf=load_profile(request,Path(profiles_dir),Path(pseudo_dir))
+        capacity=checked_band_capacity(request,upf,Path(pseudo_dir))
         root.mkdir(parents=True,exist_ok=False);(root/"pseudo").mkdir()
         for meta in upf.values():
             target=root/"pseudo"/meta["file"];shutil.copyfile(Path(pseudo_dir)/meta["file"],target)
@@ -78,6 +79,7 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
             "total_force_ry_bohr":proof["total_force_ry_bohr"],"pseudopotentials":upf,
             "input_sha256":input_sha,"output_sha256":output_sha,"electronic_settings":request["electronic"],
             "pipeline_steps":manifest["steps"],"artifact_sha256":artifacts,"electronic":electronic,
+            "electronic_preflight":capacity,
             "scientific_convergence_study_completed":False}
         status="completed"
     except Stopped as exc:status,error=exc.status,str(exc)

@@ -2,6 +2,7 @@
 from pathlib import Path
 import sys
 import json
+import hashlib
 import threading
 import time
 import unittest
@@ -10,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'server'),str(ROOT/'tools')]
 import test_qe_jobs as fixtures
 from job_core import canonical_request
-from electronic_core import path_text
+from electronic_core import path_text,checked_band_capacity
 from electronic_worker import execute_electronic
 from worker import _limits,_kill_group
 
@@ -24,7 +25,17 @@ def request():
 
 
 class ElectronicJobTests(unittest.TestCase):
-    def setUp(self):fixtures.D2Tests.setUp(self)
+    def setUp(self):
+        fixtures.D2Tests.setUp(self)
+        self.set_header('Si','4')
+
+    def set_header(self,element,valence,header=True):
+        raw=(f'<UPF version="2.0.1"><PP_HEADER element="{element}" z_valence="{valence}"/>'
+             '<!-- SYNTHETIC, not a real pseudopotential -->' if header else
+             '<UPF version="2.0.1">synthetic missing header').encode()
+        self.upf.write_bytes(raw);self.meta['sha256']=hashlib.sha256(raw).hexdigest()
+        profile=self.profiles/'si-pbe.json';data=json.loads(profile.read_text())
+        data['elements']['Si']=self.meta;profile.write_text(json.dumps(data))
 
     def binary(self,fail='',sleep=''):
         path=self.root/'fake-electronic'
@@ -95,8 +106,45 @@ if step=='projwfc':
         r=self.client.post('/api/v1/calculations/validate',json=request(),headers=self.auth)
         self.assertEqual(r.status_code,200,r.text)
         self.assertEqual(r.json()['calculation'],'electronic')
+        self.assertEqual(r.json()['electronic_preflight']['neutral_valence_electrons'],8)
+        self.assertEqual(r.json()['electronic_preflight']['minimum_nbnd'],4)
         self.assertIn('electronic',self.client.get('/api/capabilities').json()['supported_operations'])
         self.assertFalse((self.jobs/'runs').exists())
+
+    def test_insufficient_bands_fail_both_http_paths_before_queue_or_execution(self):
+        p=request();p['electronic']['nbnd']=3
+        for endpoint in ('/validate',''):
+            result=self.client.post('/api/v1/calculations'+endpoint,json=p,headers=self.auth)
+            self.assertEqual(result.status_code,422,result.text)
+            self.assertIn('at least 4 bands',result.text)
+        self.assertIsNone(self.store.claim())
+        self.assertFalse((self.jobs/'runs').exists())
+
+    def test_worker_rechecks_capacity_for_a_previously_queued_request(self):
+        p=request();p['electronic']['nbnd']=3;p,h=canonical_request(p)
+        jid=self.store.submit(p,h);job=self.store.claim()
+        execute_electronic(self.store,job,qe_binary='must-not-run',profiles_dir=self.profiles,
+            pseudo_dir=self.pseudo,timeout=10,limits=_limits,kill=_kill_group)
+        result=self.store.get(jid)
+        self.assertEqual(result['status'],'failed');self.assertIn('at least 4 bands',result['error'])
+        self.assertFalse((self.jobs/'runs').exists())
+
+    def test_missing_mismatched_or_nonfinite_header_is_not_an_accepted_electron_count(self):
+        for element,valence,header in [('O','4',True),('Si','nan',True),('Si','inf',True),
+                                      ('Si','-1',True),('Si','4',False)]:
+            self.set_header(element,valence,header)
+            result=self.client.post('/api/v1/calculations/validate',json=request(),headers=self.auth)
+            self.assertEqual(result.status_code,422,result.text)
+
+    def test_valence_is_taken_from_pinned_bytes_and_mutation_is_rejected(self):
+        self.set_header('Si','6')
+        result=self.client.post('/api/v1/calculations/validate',json=request(),headers=self.auth)
+        self.assertEqual(result.json()['electronic_preflight']['minimum_nbnd'],6)
+        p,h=canonical_request(request())
+        meta={'Si':self.meta.copy()}
+        self.upf.write_bytes(self.upf.read_bytes().replace(b'z_valence="6"',b'z_valence="4"'))
+        with self.assertRaisesRegex(ValueError,'UPF changed'):
+            checked_band_capacity(p,meta,self.pseudo)
 
     def test_cancelled_child_pipeline_does_not_publish_or_continue(self):
         p,h=canonical_request(request());jid=self.store.submit(p,h);job=self.store.claim()
