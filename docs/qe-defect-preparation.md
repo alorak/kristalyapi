@@ -28,7 +28,8 @@ python3 tools/qe_defect_prepare.py --verify /tmp/mos2-d5-initial
 
 [Kaydedilmiş hazırlık paketi](../validation-results/qe-mos2-d5-preparation-20261029/preparation.json)
 aynı komutla doğrulanabilir. Her vaka altında `initial.cif`, `structure.json`,
-`site-map.json`, `candidate-relax-request.json` bulunur. CIF'ler üretim
+`site-map.json`, `candidate-relax-request.json` ve operatör incelemesi için
+`candidate-relax.in` bulunur. CIF'ler üretim
 KristalYapı ayrıştırıcısında atom/hücre/koordinat eşleşmesiyle test edildi.
 [Gerçek uygulama içe aktarma kanıtı](../validation-results/qe-d5-ui-smoke-20261029/INCELEME.md):
 V_S adayı 47 P1 atomu / Mo16S31 olarak doğru tanındı.
@@ -46,6 +47,8 @@ python3 tools/qe_defect_prepare.py --output /tmp/mos2-d5-with-explicit-o2 \
 Dosya iki üçlüden oluşan JSON dizisidir; her sayı 0≤x<1. Otomatik O–O
 mesafesi, yönelim veya adsorpsiyon bağı seçilmez. Atom çakışmaları reddedilir;
 geometrik olarak geçerli aday kimyasal bağ/relaksasyon kabulü değildir.
+
+[Sonraki hesap için hazırlanmış protokol ve uygulama açıkları](qe-defect-compute-protocol.md).
 
 ## Hesaptan önce açık kalan koşullar
 

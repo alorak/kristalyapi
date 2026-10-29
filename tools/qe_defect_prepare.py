@@ -22,6 +22,7 @@ from qe_defect_compare import periodic_distance, expected_stoichiometry
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'server'))
 from job_core import canonical_request
+from relax_core import make_relax_input
 
 PLAN = ROOT / 'tests/fixtures/qe/mos2-defect-preparation.json'
 
@@ -216,6 +217,10 @@ def write_bundle(output, manifest, plan):
         folder = output/case['id'];folder.mkdir()
         write(folder/'structure.json', case['structure'])
         write(folder/'candidate-relax-request.json', case['candidate_relax_request'])
+        # Operator-reviewable QE input; generation does not authorize execution.
+        elements={a['element'] for a in case['sites']}
+        upf={el:profile['elements'][el] for el in elements}
+        (folder/'candidate-relax.in').write_text(make_relax_input(case['candidate_relax_request'],upf))
         write(folder/'site-map.json', {k:case[k] for k in ('sites','removed_source_site_ids','substitutions','defect_center_fractional')})
         (folder/'initial.cif').write_text(cif_text(case['structure'], case['id']))
     files = {str(p.relative_to(output)): digest(p.read_bytes()) for p in sorted(output.rglob('*')) if p.is_file()}

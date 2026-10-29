@@ -354,6 +354,7 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] Valans elektron/bant kapasitesi ön kontrolü: 4×4 pristine 416 elektron / en az 208 dolu bant; mevcut 128 bant elektronik API sınırına sığmaz. Kaynak limitleri yükseltilmedi.
 - [x] Ön kayıtlı 4×4, 416 bant, `nstep=0` gerçek başlangıç pilotu: 4/4 aday 6 GiB/no-swap sınırında OOM/exit137; SCF başlamadı. Ham bellek tahminleri 71.76–80.49 GB; ölçülmüş peak değildir. [Başarısız kaynak pilotu](validation-results/qe-mos2-d5-init-first-20261029-arm64/INCELEME.md) korunur, sınır artırılmadı.
 - [x] Başarısız başlangıçta sayı/bellek tanısı, timeout/cleanup testleri ve beklenmeyen SCF çalışmasını başlangıç gibi göstermeyi reddetme.
+- [x] D4 kabulüne bağlı, çalıştırması kapalı [D5 hesap protokolü](docs/qe-defect-compute-protocol.md) ve her adayın sunucu derleyicisiyle üretilmiş `candidate-relax.in` dosyası; source manifest hash'i korundu.
 - [ ] Gerçek kusur relax/SCF/elektronik sonuçları; spin/doluluk, süperhücre boyutu, k-örgüsü/cutoff yakınsaması ve büyük hücre kaynak profili kabulü.
 
 [Üretim ve doğrulama rehberi](docs/qe-defect-preparation.md). Hazırlanan modeller hesap sonucu değildir.

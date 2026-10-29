@@ -105,7 +105,7 @@ class DefectPreparationTests(unittest.TestCase):
             path = Path(tmp)/'prepared'
             prep.write_bundle(path,self.result,self.plan)
             files = json.loads((path/'files-sha256.json').read_text())
-            self.assertEqual(len(files),19)
+            self.assertEqual(len(files),23)
             for name,checksum in files.items():self.assertEqual(prep.digest((path/name).read_bytes()),checksum)
             cif = (path/'V_S/initial.cif').read_text()
             self.assertIn('_cell_length_c 24\n',cif)
