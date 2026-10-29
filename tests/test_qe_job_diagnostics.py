@@ -87,6 +87,20 @@ class JobDiagnosticTests(unittest.TestCase):
             self.assertEqual(value['reason_code'],expected)
             self.assertEqual(value['resources']['cgroup_oom_kill_delta'],final_count-10)
 
+    def test_committed_real_si_endpoint_timings_match_raw_pipeline(self):
+        folder=ROOT/'validation-results/qe-job-diagnostics-si-20261029-arm64'
+        actual=json.loads((folder/'diagnostics.json').read_text())
+        summary=json.loads((folder/'summary.json').read_text())
+        result=json.loads((folder/'result.json').read_text())
+        manifest=json.loads((folder/'pipeline/pipeline.json').read_text())
+        self.assertTrue(summary['diagnostics_verified'] and summary['image_source_verified'] and summary['resources_removed'])
+        self.assertEqual(actual['job_id'],result['job_id']);self.assertEqual(actual['reason_code'],'completed')
+        self.assertEqual(len(actual['stages']),6)
+        for stage in actual['stages']:
+            self.assertEqual(stage['duration_seconds'],manifest['steps'][stage['name']]['duration_seconds'])
+        self.assertGreater(actual['resources']['sampled_worker_memory_max_bytes'],0)
+        self.assertEqual(actual['resources']['cgroup_oom_kill_delta'],0)
+
     def test_sidecar_symlinks_cannot_return_arbitrary_operator_files(self):
         f=self.fixture();p,h=canonical_request(fixtures.payload());jid=f.store.submit(p,h)
         path=f.jobs/'diagnostics';path.mkdir();target=f.root/'outside.json'
