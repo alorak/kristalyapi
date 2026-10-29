@@ -71,8 +71,8 @@
   },
   "dos": {
     "delta_e_ev": 0.01,
-    "energy_min_ev": -65,
-    "energy_max_ev": 30
+    "energy_min_ev": -8,
+    "energy_max_ev": 6
   },
   "cases": [
     {
@@ -185,6 +185,13 @@
     "band_comparison": "Sort eigenvalues independently at each identical path point; compare common lowest 24 states, without branch-label matching.",
     "mesh_edges": "From actual NSCF eigenvalues and normalized 1/0 occupation blocks printed by QE 6.7 for this unpolarized fixed-occupation job; multiply occupied state count by two for electrons, not by path band extrema. Unshifted 18 and 24 meshes sample fractional thirds used for K.",
     "width_comparison": "Report curve changes and enforce unchanged underlying NSCF spectrum; no width-to-zero convergence gate.",
-    "thresholds": "Preregistered project targets (10 meV edges/common eigenvalues and 5% relative L1), not universal physical-accuracy standards."
+    "thresholds": "Preregistered project targets (10 meV edges/common eigenvalues and 5% relative L1), not universal physical-accuracy standards.",
+    "qe67_window": "QE 6.7 partialdos clamps requested bounds to eigenvalue extrema +/- 3 sigma. Use an interior -8..6 eV common DOS/PDOS window and a separate raw dos.x -65..30 eV integral check at fixed 0.01 Ry; never shift/interpolate/pad curves."
+  },
+  "full_dos": {
+    "delta_e_ev": 0.01,
+    "degauss_ry": 0.01,
+    "energy_min_ev": -65,
+    "energy_max_ev": 30
   }
 }

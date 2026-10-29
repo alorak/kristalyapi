@@ -151,6 +151,29 @@ class Runtime:
         print("Acceptance:",name,"completed",result["energy_ry"],"Ry",flush=True)
         return result
 
+    def electronic_full_dos(self, job_id, evidence_path, settings):
+        """Independent dos.x integral from the completed API job's unchanged NSCF save."""
+        from qe_pipeline import post_input
+        require(re.fullmatch(r"[a-f0-9]{32}",job_id) is not None,"Invalid full-DOS job identity")
+        evidence_path.mkdir()
+        source=post_input('dos',settings).replace("fildos='dos.dat'","fildos='state-count.dat'")
+        (evidence_path/'state-count.in').write_text(source)
+        remote='/var/lib/qe/runs/'+job_id+'/pipeline/'
+        self.command(['docker','cp',str(evidence_path/'state-count.in'),self.container+':'+remote+'state-count.in'])
+        script=("import subprocess;"
+                "r=subprocess.run(['dos.x','-in','state-count.in'],stdout=open('state-count.out','wb'),"
+                "stderr=open('state-count.stderr','wb'),timeout=120);raise SystemExit(r.returncode)")
+        try:
+            self.command(['docker','exec','-w',remote,self.container,'python3','-c',script],timeout=150)
+        finally:
+            for name in ('state-count.out','state-count.stderr','state-count.dat'):
+                try:self.command(['docker','cp',self.container+':'+remote+name,str(evidence_path/name)])
+                except ValueError:pass
+        write_json(evidence_path/'provenance.json',{'job_id':job_id,
+            'command':['dos.x','-in','state-count.in'],
+            'source_nscf_stdout_sha256':sha((evidence_path.parent/'pipeline/nscf.out').read_bytes()),
+            'sha256':{p.name:sha(p.read_bytes()) for p in evidence_path.iterdir() if p.name!='provenance.json'}})
+
     def __exit__(self,*_):
         if self.api is not None:
             try:write_json(self.output/"api-audit.json",self.api.audit)

@@ -47,8 +47,10 @@ evrensel fiziksel doğruluk ölçütleri veya deneysel hata sınırları değild
 
 ## Enerji gridi ve DOS genişliği
 
-Yeni dosyalarda DOS/projwfc ortak ve açık `Emin=-65`, `Emax=30`,
-`DeltaE=0.01 eV` kullanacak. Genişlik `degauss` **Ry** birimindedir;
+Yeni dosyalarda DOS/projwfc ortak ve açık `Emin=-8`, `Emax=6`,
+`DeltaE=0.01 eV` kullanacak. Tam durum sayısı ayrıca aynı API işinin
+değişmeyen NSCF kaydından `dos.x` ile −65…30 eV ve sabit 0.01 Ry
+genişlikte doğrulanır; bu ek ham çıktı API eğrisiyle karıştırılmaz. Genişlik `degauss` **Ry** birimindedir;
 Emin/Emax/DeltaE **eV** birimindedir. Her iki postprocessor aynı ayarları
 alır. [dos.x](https://www.quantum-espresso.org/Doc/INPUT_DOS.html),
 [projwfc.x](https://www.quantum-espresso.org/Doc/INPUT_PROJWFC.html).
@@ -106,3 +108,15 @@ sırasıyla 0.005–0.2 eV, 0.001–0.05 Ry ve −500…500 eV; grid tam sayı
 aralıklı ve en fazla 10001 noktalı olmalıdır. `dos.x` ve `projwfc.x`
 aynı ayarları kullanır. Alan verilmezse önceki D4 girişleri korunur.
 Bu PR bir UI ayar paneli eklemez; operatör/API protokolünü hazırlar.
+
+## QE 6.7 pencere düzeltmesi (MoS₂ taramasından önce)
+
+İlk gerçek Si işlev testi başarısız oldu ve API sonuç yayımlamadı:
+`projwfc.x` istenen −65…30 eV aralığını özdeğer uçları ±3σ ile
+sınırlayıp DOS ile farklı başlangıç fazı üretti. Bu davranış
+[QE 6.7 partialdos kaynağında](https://github.com/QEF/q-e/blob/qe-6.7.0/PP/src/partialdos.f90#L41-L56)
+açıktır. Enerji kaydırmak, interpolasyon veya sıfırla doldurmak yerine,
+MoS₂ eğri penceresi mevcut durum aralığının içindeki −8…6 eV olarak
+önceden sabitlendi; geniş pencerede durum integrali ayrı `dos.x` çıktısıyla
+korundu. Sayısal kabul eşikleri değiştirilmedi. İlk başarısız Si kanıtı
+saklanır; bu düzeltmeden önce yeni bir MoS₂ D4.1 vakası çalıştırılmadı.

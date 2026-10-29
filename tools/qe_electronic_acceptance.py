@@ -46,7 +46,7 @@ def make_request(plan,old,result):
     return request
 
 
-def derive(directory,plan,old,reference_result,case_name='electronic'):
+def derive(directory,plan,old,reference_result,case_name='electronic',state_count_dos=None):
     require(re.fullmatch(r'[a-z0-9-]{1,80}',case_name) is not None,'Invalid evidence case name')
     path=directory/'cases'/case_name;folder=path/'pipeline'
     request=make_request(plan,old,reference_result)
@@ -98,9 +98,10 @@ def derive(directory,plan,old,reference_result,case_name='electronic'):
     require(len(atomic['atoms'])==3 and {p['element'] for p in atomic['elements']}=={'Mo','S'} and
         any(p['element']=='Mo' and 'd' in p['orbitals'] for p in atomic['elements']) and
         any(p['element']=='S' and 'p' in p['orbitals'] for p in atomic['elements']),'Missing Mo-d or S-p atomic projections')
+    counted_dos=dos if state_count_dos is None else state_count_dos
     c=plan['criteria'];values={'reference_energy_difference_ry':abs(proof['energy_ry']-reference_result['energy_ry']),
         'max_final_force_component_ry_bohr':proof['max_force_component_ry_bohr'],
-        'integrated_state_count_error':abs((dos['integrated_states'][-1]-dos['integrated_states'][0])-2*settings['nbnd'])}
+        'integrated_state_count_error':abs((counted_dos['integrated_states'][-1]-counted_dos['integrated_states'][0])-2*settings['nbnd'])}
     limits={'reference_energy_difference_ry':c['max_reference_energy_difference_ry'],
         'max_final_force_component_ry_bohr':c['max_final_force_component_ry_bohr'],
         'integrated_state_count_error':c['max_integrated_state_count_error']}

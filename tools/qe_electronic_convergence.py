@@ -32,6 +32,7 @@ def load_plan():
         require(type(c['nbnd']) is int and 24 <= c['nbnd'] <= 128 and
                 type(c['nscf_k']) is int and 2 <= c['nscf_k'] <= 24, 'Invalid band/mesh settings')
         canonical_dos_settings(dict(plan['dos'], degauss_ry=c['degauss_ry']))
+    canonical_dos_settings(plan['full_dos'])
     settings = {c['id']: c for c in cases}
     settings['reference-d4'] = dict(plan['electronic'], degauss_ry=.01)
     for pair in plan['decision_pairs'] + plan['diagnostic_pairs']:
@@ -216,10 +217,38 @@ def source_proof(provenance):
             'Recorded source differs from committed source; dirty calculations are rejected')
 
 
+def full_dos_proof(path, plan):
+    """Keep the complete state integral separate from the interior comparison window."""
+    folder = path/'state-count'
+    result = json.loads((path/'result.json').read_text())
+    proof = json.loads((folder/'provenance.json').read_text())
+    expected = d4.post_input('dos', plan['full_dos']).replace("fildos='dos.dat'", "fildos='state-count.dat'")
+    require((folder/'state-count.in').read_text() == expected and proof['job_id'] == result['job_id'] and
+            proof['command'] == ['dos.x', '-in', 'state-count.in'] and
+            proof['source_nscf_stdout_sha256'] == sha((path/'pipeline/nscf.out').read_bytes()),
+            'Full DOS input/job/NSCF identity mismatch')
+    require(set(proof['sha256']) == {'state-count.in', 'state-count.out', 'state-count.stderr', 'state-count.dat'} and
+            all(sha((folder/name).read_bytes()) == digest for name, digest in proof['sha256'].items()),
+            'Full DOS artifact hash mismatch')
+    text = (folder/'state-count.out').read_text()
+    version = re.search(r'Program\s+DOS\s+v\.?(\S+)', text)
+    require('JOB DONE.' in text and 'Error in routine' not in text and version is not None and
+            version[1] == result['engine_version'], 'Incomplete/wrong-version full DOS postprocessor')
+    dos = d4.parse_dos(folder/'state-count.dat'); energy = dos['energy_ev']; settings = plan['full_dos']
+    require(len(energy) == round((settings['energy_max_ev']-settings['energy_min_ev'])/settings['delta_e_ev'])+1 and
+            abs(energy[0]-settings['energy_min_ev']) <= 2e-4 and abs(energy[-1]-settings['energy_max_ev']) <= 2e-4 and
+            all(abs(b-a-settings['delta_e_ev']) <= 2e-4 for a,b in zip(energy,energy[1:])) and
+            all(x >= 0 for x in dos['dos_states_per_ev']) and
+            all(a <= b for a,b in zip(dos['integrated_states'],dos['integrated_states'][1:])),
+            'Full DOS window/grid/state values changed')
+    return dos
+
+
 def verify_case(directory, plan, case, old, ref, baseline):
     cp = case_plan(plan, case)
     require(json.loads((directory/'plan.json').read_text()) == cp, 'Case plan changed')
-    derived = d4.derive(directory, cp, old, ref, case_name=case['id'])
+    derived = d4.derive(directory, cp, old, ref, case_name=case['id'],
+                        state_count_dos=full_dos_proof(directory/'cases'/case['id'], plan))
     require(all(g['passed'] for g in derived['gates']), 'Case finite D4 gates failed')
     summary = json.loads((directory/'summary.json').read_text())
     require(summary['status'] == 'completed' and summary['case_id'] == case['id'] and summary['derived'] == derived and
@@ -292,8 +321,10 @@ def run_case(directory, case_id):
         with runtime:
             source_proof(runtime.report['provenance'])  # Reject dirty source before submitting a scientific job.
             require(runtime.report['provenance']['docker_arch'] == 'x86_64', 'Use x86_64 for the D4.1 cohort')
-            runtime.job(d4.make_request(cp, old, ref), case_id)
-            summary['derived'] = d4.derive(output, cp, old, ref, case_name=case_id)
+            result = runtime.job(d4.make_request(cp, old, ref), case_id)
+            runtime.electronic_full_dos(result['job_id'], output/'cases'/case_id/'state-count', plan['full_dos'])
+            summary['derived'] = d4.derive(output, cp, old, ref, case_name=case_id,
+                                          state_count_dos=full_dos_proof(output/'cases'/case_id, plan))
             require(all(g['passed'] for g in summary['derived']['gates']), 'Finite D4 case gate failed')
             data = read_data(output/'cases'/case_id, case, plan)
             require(data['input_sha256'] == baseline['input_sha256'] and
