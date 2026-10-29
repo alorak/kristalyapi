@@ -65,7 +65,7 @@ ve üç enerji kapısını yeniden doğrulamadan Docker hesabı başlatmaz.
 Önceden belirlenen hesap ve eşikler:
 
 - 120/960 Ry, 16×16×1, c=24 Å, sabit hücre BFGS; en fazla 30 iyonik adım.
-- İyonik enerji eşiği 1e-6 Ry, kuvvet bileşeni eşiği 1e-4 Ry/Bohr.
+- İyonik enerji eşiği 1e-6 Ry, iç BFGS/son SCF kuvvet hedefi **2e-5 Ry/Bohr**. Bu daha sıkı hedef, ayrı 140 Ry kuvvet denetimine pay bırakmak için gerçek MoS₂ koşusundan önce sabitlendi; kabul kapısı tüm son kuvvetler için 1e-4 kalır.
 - Yeni son koordinatlarla bağımsız 120/960 Ry SCF.
 - Aynı son geometride ayrı 140/1120 Ry SCF: 120→140 farkı ≤1 meV/atom.
 - Relaksasyon, son SCF ve 140 Ry SCF'nin en büyük kuvvet bileşenleri

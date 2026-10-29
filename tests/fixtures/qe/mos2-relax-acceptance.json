@@ -28,7 +28,7 @@
   },
   "relaxation": {
     "max_steps": 30,
-    "force_threshold_ry_bohr": 0.0001,
+    "force_threshold_ry_bohr": 2e-05,
     "energy_threshold_ry": 1e-06
   },
   "final_check": {
@@ -47,5 +47,6 @@
   "limits": {
     "max_seconds_per_job": 10800,
     "docker_worker_memory_bytes": 6442450944
-  }
+  },
+  "optimization_note": "The tighter 2e-5 Ry/Bohr BFGS target is fixed before the real MoS2 run to leave headroom for the separate 140 Ry force check. Acceptance for all final force components stays 1e-4 Ry/Bohr."
 }
