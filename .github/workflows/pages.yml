@@ -59,6 +59,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_relax_acceptance.py' -v
       - name: Test bounded electronic API pipeline execution
         run: python -m unittest discover -s tests -p 'test_qe_electronic_jobs.py' -v
+      - name: Test electronic acceptance raw evidence rejection
+        run: python -m unittest discover -s tests -p 'test_qe_electronic_acceptance.py' -v
       - name: Validate Docker Compose configuration without building the heavy QE image
         run: docker compose -f compose.qe.yml config --quiet
       - name: Install pinned Gemmi map reference

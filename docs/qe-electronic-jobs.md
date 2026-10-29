@@ -51,3 +51,38 @@ gerçek tek-atom orbital seçimi tarayıcıda incelendi.
 Si denemesi işleyiş testidir. Gerçek MoS₂ D4 koşusu, D3'ün kabul edilen
 son geometrisine bağlıdır; sonucu ve sonlu elektronik yapı sınırları ayrıca
 kaydedilecektir.
+
+## Ön kayıtlı gerçek MoS₂ D4 kabulü
+
+[Sabit plan](../tests/fixtures/qe/mos2-electronic-acceptance.json),
+`tools/qe_electronic_acceptance.py` ve mevcut manuel workflow'daki
+`protocol=d4` gerçek koşudan önce commit edilir. Araç, D3'ün son
+geometri/kuvvet/yüksek-cutoff kapılarını yeniden doğrulamadan hesap göndermez.
+D3 referans summary/result hash'leri D4 raporuna bağlanır.
+
+Aynı 120/960 Ry ve 16×16×1 SCF protokolü, aynı doğrulanmış UPF'ler,
+D3 son hücre/atom koordinatları kullanılır. nbnd=26, NSCF=16×16×1;
+açık yol Gamma(0,0,0) → M(1/2,0,0) → K(1/3,1/3,0) → Gamma,
+20/20/20/1 ağırlıklarıyla 61 k noktası. DOS/projeksiyon adımı 0.02 eV,
+mevcut ortak postprocessor girdilerindeki degauss=0.01 Ry'dir.
+
+Kabul: 6/6 gerçek aşama ve ham `JOB DONE.`, ham girdi/çıktı/PDOS hash'leri,
+PW aşamalarında 26 elektron, kaynak SCF hata tahmini ≤1e-8 Ry,
+D3 son SCF ile enerji farkı ≤1e-6 Ry ve son kuvvet bileşeni ≤1e-4 Ry/Bohr.
+Ham bant matrisi 26×61, tüm DOS/PDOS noktaları API JSON'uyla eşleşmeli;
+Mo-d ve S-p atom/orbital grupları bulunmalı. Tam DOS aralığındaki integral
+52 duruma (2×nbnd) 0.2 durum içinde yakın olmalı. Ortak enerji aralığı
+seçimi yalnız birebir eşleşen noktalardan yapılır ve sayıları kaydedilir.
+
+Kabul ortamı 6 GiB RAM, swap kapalı, 2 CPU; iş wall-time 14400 saniye,
+workflow üst sınırı 240 dakikadır. Sonuç bu sonlu yol/örgüde işleyiş ve
+veri tutarlılığını gösterir. Bant sayısı, yoğun k-örgüsü, DOS genişliği,
+SOC veya optik doğruluğuna ilişkin daha geniş yakınsama iddiası değildir.
+
+```bash
+python3 tools/qe_electronic_acceptance.py --run --output validation-results/qe-mos2-electronic-local
+python3 tools/qe_electronic_acceptance.py --verify validation-results/qe-mos2-electronic-local
+```
+
+114 Python QE testi geçti; MoS₂'nin D3 ön koşulu ve gerçek D4 sonucu
+henüz bekleniyor.

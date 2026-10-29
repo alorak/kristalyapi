@@ -1,4 +1,4 @@
-name: QE MoS2 acceptance (D2.2 / D2.2b / D2.2c / D3, manual)
+name: QE MoS2 acceptance (D2.2 / D2.2b / D2.2c / D3 / D4, manual)
 
 on:
   workflow_dispatch:
@@ -14,6 +14,7 @@ on:
           - d22b-extended
           - d22c
           - d3
+          - d4
       mo_sha256:
         description: "Pre-reviewed SHA-256 of official PSlibrary Mo.pbe-spn-rrkjus_psl.1.0.0.UPF"
         required: true
@@ -33,7 +34,7 @@ concurrency:
 jobs:
   real-mos2-scf:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.protocol == 'd3' && 240 || inputs.protocol == 'd22c' && 180 || 100 }}
+    timeout-minutes: ${{ (inputs.protocol == 'd3' || inputs.protocol == 'd4') && 240 || inputs.protocol == 'd22c' && 180 || 100 }}
     env:
       MO_SHA256: ${{ inputs.mo_sha256 }}
       S_SHA256: ${{ inputs.s_sha256 }}
@@ -52,13 +53,14 @@ jobs:
           for element in ("MO","S"):
               value = os.environ[element+"_SHA256"]
               assert re.fullmatch(r"[0-9a-fA-F]{64}",value), element+" requires a SHA-256"
-          if os.environ['MOS2_ACCEPTANCE_PROTOCOL'] == 'd3':
-              plan = json.load(open('tests/fixtures/qe/mos2-relax-acceptance.json'))
+          if os.environ['MOS2_ACCEPTANCE_PROTOCOL'] in ('d3','d4'):
+              name = 'mos2-relax-acceptance.json' if os.environ['MOS2_ACCEPTANCE_PROTOCOL'] == 'd3' else 'mos2-electronic-acceptance.json'
+              plan = json.load(open('tests/fixtures/qe/'+name))
               for element in ('Mo', 'S'):
                   assert os.environ[element.upper()+'_SHA256'].lower() == plan['pseudopotentials'][element]['reviewed_sha256']
           PY
       - name: Run real Docker/API MoS2 SCF jobs for the selected fixed protocol
-        if: ${{ inputs.protocol != 'd3' }}
+        if: ${{ inputs.protocol != 'd3' && inputs.protocol != 'd4' }}
         run: |
           python3 tools/qe_mos2_acceptance.py --run \
             --protocol "$MOS2_ACCEPTANCE_PROTOCOL" \
@@ -68,11 +70,17 @@ jobs:
         if: ${{ inputs.protocol == 'd3' }}
         run: python3 tools/qe_relax_acceptance.py --run --output validation-results/qe-mos2-scf
       - name: Independently reverify raw QE/API/hash evidence offline
-        if: ${{ inputs.protocol != 'd3' }}
+        if: ${{ inputs.protocol != 'd3' && inputs.protocol != 'd4' }}
         run: python3 tools/qe_mos2_acceptance.py --verify validation-results/qe-mos2-scf --protocol "$MOS2_ACCEPTANCE_PROTOCOL"
       - name: Independently verify D3 raw geometry, force and high-cutoff evidence
         if: ${{ inputs.protocol == 'd3' }}
         run: python3 tools/qe_relax_acceptance.py --verify validation-results/qe-mos2-scf
+      - name: Run D4 only after the source-fixed D3 reference passes
+        if: ${{ inputs.protocol == 'd4' }}
+        run: python3 tools/qe_electronic_acceptance.py --run --output validation-results/qe-mos2-scf
+      - name: Independently verify raw bands, DOS and atomic orbital PDOS
+        if: ${{ inputs.protocol == 'd4' }}
+        run: python3 tools/qe_electronic_acceptance.py --verify validation-results/qe-mos2-scf
       - name: Retain evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4
