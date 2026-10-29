@@ -262,7 +262,7 @@ def verify_case(directory, plan, case, old, ref, baseline):
     energy = data['electronic']['dos']['energy_ev']
     require(len(energy) == round((plan['dos']['energy_max_ev']-plan['dos']['energy_min_ev'])/plan['dos']['delta_e_ev'])+1 and
             abs(energy[0]-plan['dos']['energy_min_ev']) <= 2e-4 and
-            abs(energy[-1]-plan['dos']['energy_max_ev']) <= 2e-4, 'Explicit full DOS window changed')
+            abs(energy[-1]-plan['dos']['energy_max_ev']) <= 2e-4, 'Explicit comparison DOS window changed')
     require(data['engine_version'] == baseline['engine_version'] and data['input_sha256'] == baseline['input_sha256'],
             'Case QE version or source SCF input differs from accepted D4')
     return data, summary

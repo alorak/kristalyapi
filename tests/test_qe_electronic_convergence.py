@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import shutil
 import unittest
 from unittest.mock import patch
 
@@ -130,6 +131,57 @@ class ConvergenceTests(unittest.TestCase):
                 result = d41.report(root)
             self.assertEqual(result['status'], 'failed'); self.assertEqual(len(result['errors']), 6)
             self.assertIsNone(result['broadening_converged'])
+
+    def cohort(self, mutation=None):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); (root/'plan.json').write_text(json.dumps(self.plan))
+            baseline = dict(copy.deepcopy(self.left), job_id='0'*32)
+            def fake_case(directory, plan, case, old, ref, base):
+                index = [c['id'] for c in plan['cases']].index(case['id'])
+                d = dict(copy.deepcopy(self.left), job_id=f'{index+1:032x}')
+                summary = {'provenance': {'git_commit': 'a'*40, 'source_sha256': {'synthetic': 'b'*64}}}
+                if mutation: mutation(index, d, summary)
+                return d, summary
+            with patch.object(d41, 'reference', return_value=({}, {}, baseline)), patch.object(d41, 'verify_case', side_effect=fake_case):
+                return d41.report(root)
+
+    def test_complete_synthetic_cohort_and_separate_width_reporting(self):
+        result = self.cohort()
+        self.assertEqual(result['status'], 'passed')
+        self.assertEqual(len(result['pairs']), 6)
+        self.assertIsNone(result['broadening_converged'])
+        self.assertIsNone(result['pairs'][2]['convergence_passed'])
+
+    def test_primary_pair_failure_is_not_replaced_by_other_passed_pairs(self):
+        def change(index, d, summary):
+            if index == 1: d['electronic']['bands']['energies_ev'][10][20] += .1
+        self.assertEqual(self.cohort(change)['status'], 'failed')
+
+    def test_mixed_source_and_width_integrity_fail_closed(self):
+        def mixed(index, d, summary):
+            if index == 5: summary['provenance']['git_commit'] = 'c'*40
+        self.assertIn('source_cohort', self.cohort(mixed)['errors'])
+        def spectrum(index, d, summary):
+            if index == 5: d['nscf']['eigenvalues_ev'][0][20] += .1
+        self.assertEqual(self.cohort(spectrum)['status'], 'failed')
+
+    def test_real_si_full_dos_proof_and_corrupted_raw_integral_are_checked(self):
+        # Functional Si fixture, deliberately not a MoS2 convergence assertion.
+        source = ROOT/'validation-results/qe-d41-si-smoke-20261029-arm64'
+        counted = d41.full_dos_proof(source, self.plan)
+        self.assertLess(abs(counted['integrated_states'][-1]-counted['integrated_states'][0]-16), .2)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'si'; shutil.copytree(source, path)
+            raw = path/'state-count/state-count.dat'; raw.write_text(raw.read_text().replace('30.000', '30.001'))
+            with self.assertRaisesRegex(ValueError, 'hash mismatch'): d41.full_dos_proof(path, self.plan)
+
+    def test_full_dos_cannot_be_borrowed_from_another_nscf_job(self):
+        source = ROOT/'validation-results/qe-d41-si-smoke-20261029-arm64'
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'si'; shutil.copytree(source, path)
+            proof = path/'state-count/provenance.json'; value = json.loads(proof.read_text())
+            value['job_id'] = 'f'*32; proof.write_text(json.dumps(value))
+            with self.assertRaisesRegex(ValueError, 'identity mismatch'): d41.full_dos_proof(path, self.plan)
 
     def test_invalid_reference_blocks_runtime_before_any_job(self):
         with patch.object(d41, 'reference', side_effect=ValueError('Pinned reference changed')), patch.object(d41, 'Runtime') as runtime:

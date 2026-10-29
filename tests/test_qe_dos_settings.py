@@ -1,6 +1,7 @@
 """Bounded DOS controls: synthetic subprocess/API tests, not physical acceptance."""
 import copy
 import json
+import hashlib
 from pathlib import Path
 import sys
 import unittest
@@ -50,6 +51,30 @@ class DosSettingsTests(unittest.TestCase):
             self.assertEqual(response.status_code, 422, response.text)
         self.assertIsNone(f.store.claim())
         self.assertFalse((f.jobs/'runs').exists())
+
+    def test_committed_real_si_raw_stages_settings_and_api_hashes_agree(self):
+        folder = ROOT/'validation-results/qe-d41-si-smoke-20261029-arm64'
+        request = json.loads((folder/'request.json').read_text())
+        result = json.loads((folder/'result.json').read_text())
+        raw = folder/'pipeline'
+        for kind in ('dos', 'projwfc'):
+            self.assertEqual((raw/(kind+'.in')).read_text(), post_input(kind, request['electronic']['dos']))
+        for kind, stage in result['pipeline_steps'].items():
+            self.assertEqual(stage['status'], 'completed')
+            self.assertIn('JOB DONE.', (raw/(kind+'.out')).read_text())
+            self.assertEqual(stage['input_sha256'], hashlib.sha256((raw/(kind+'.in')).read_bytes()).hexdigest())
+            self.assertEqual(stage['stdout_sha256'], hashlib.sha256((raw/(kind+'.out')).read_bytes()).hexdigest())
+        for name, digest in result['artifact_sha256'].items():
+            self.assertEqual(digest, hashlib.sha256((raw/name).read_bytes()).hexdigest())
+        from qe_pipeline import parse_dos, parse_bands_gnu, parse_pdos_total
+        from qe_pdos import parse_atom_orbital_pdos, parse_atom_symbols
+        electronic = result['electronic']; dos = parse_dos(raw/'dos.dat')
+        self.assertEqual(dos, electronic['dos']); self.assertEqual(len(dos['energy_ev']), 1401)
+        self.assertEqual(parse_bands_gnu(raw/'bands.dat.gnu'), electronic['bands'])
+        pdos = parse_pdos_total(raw/'pdos.pdos_tot', dos)
+        self.assertEqual(pdos, electronic['pdos_total'])
+        self.assertEqual(parse_atom_orbital_pdos(raw, dos['energy_ev'], pdos['sum_projected_states_per_ev'],
+                         parse_atom_symbols((raw/'scf.in').read_text())), electronic['pdos_atoms'])
 
     def test_worker_child_process_preserves_explicit_dos_request(self):
         f = jobs.ElectronicJobTests(); f.setUp(); self.addCleanup(f.doCleanups)

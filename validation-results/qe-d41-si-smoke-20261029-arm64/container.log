@@ -1,0 +1,20 @@
+qe-api-1  | INFO:     Started server process [1]
+qe-api-1  | INFO:     Waiting for application startup.
+qe-api-1  | INFO:     Application startup complete.
+qe-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1  | INFO:     192.168.128.1:65436 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:65448 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:65450 - "POST /api/v1/calculations HTTP/1.1" 202 Accepted
+qe-api-1  | INFO:     192.168.128.1:65452 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:65456 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:65462 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:65474 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:65490 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58580 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58584 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58598 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58602 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     127.0.0.1:52382 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58614 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58616 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:58620 - "GET /api/v1/calculations/bc6480e1e9f344fb96d9249eede320ef/results HTTP/1.1" 200 OK
