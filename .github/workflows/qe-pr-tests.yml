@@ -43,6 +43,11 @@ jobs:
         run: node --test tests/*.test.* tests/validation/test_runner.cjs
       - name: Reverify committed real D3 evidence without running DFT
         run: python tools/qe_relax_acceptance.py --verify validation-results/qe-mos2-d3-20261029-amd64
+      - name: Reverify committed real D4 spectra when present
+        run: |
+          if [ -d validation-results/qe-mos2-d4-20261029-amd64 ]; then
+            python tools/qe_electronic_acceptance.py --verify validation-results/qe-mos2-d4-20261029-amd64
+          fi
       - name: Rebuild D5 initial candidates when present
         run: |
           if [ -f tools/qe_defect_prepare.py ]; then
