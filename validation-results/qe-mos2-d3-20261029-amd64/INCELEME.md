@@ -26,10 +26,19 @@ başlangıç/son konumları, girdi/çıktı/stderr ve staged Mo/S UPF SHA-256
 kontrol edildi. 15 kaynak hash'i çalışma commit'indeki dosyalardan yeniden
 hesaplandı ve eşleşti. Gerçek worker 6 GiB RAM, swap kapalı; kaynaklar kaldırıldı.
 
+BFGS 5 SCF çevrimi / 4 iyonik adımda yakınsadı. İlk çevrim enerjisi D2.2c
+referansını tam tekrarladı. Toplam atomik kuvvet bileşenleri ham force bloklarından
+ayrıca çıkarıldı; katkı blokları dahil edilmedi. Son iki basılı toplam enerji aynı
+8 ondalık Ry değerinde olsa da kuvvet hedefi ancak son çevrimde geçti.
+
+![Ham QE çevrimlerinden enerji ve kuvvet yakınsaması](convergence.png)
+
+[Ölçeklenebilir SVG](convergence.svg) ve [kaynak hash'li çevrim verileri](relaxation-history.json).
+
 ![Gerçek sonuçtan eş ölçekli 3B karşılaştırma](comparison.png)
 
 21 özgün artifact dosyası değiştirilmeden korunur. `inspection.json`,
-`github-actions.json`, `comparison.png` ve bu belge sonraki inceleme ekleridir.
+`github-actions.json`, 3B/ yakınsama görselleri, çevrim verileri ve bu belge sonraki inceleme ekleridir.
 İlk Si parser hatası ve başarılı Si işleyiş denemesi ayrı klasörlerde korunur.
 Bu kabul sabit hücreli kusursuz MoS₂ geometri/kuvvet ve sonlu kesme kontrolüdür;
 hücre optimizasyonu, bant/DOS yakınsaması, SOC ve optik doğruluk ayrı kapsamlardır.

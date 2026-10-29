@@ -1,0 +1,18 @@
+{
+  "compose.qe.yml": true,
+  "server/Dockerfile": true,
+  "tools/qe_acceptance_runtime.py": true,
+  "tools/qe_run.py": true,
+  "tools/qe_mos2_acceptance.py": true,
+  "tools/qe_scf_acceptance.py": true,
+  "server/api.py": true,
+  "server/electronic_core.py": true,
+  "server/electronic_worker.py": true,
+  "server/job_core.py": true,
+  "server/job_store.py": true,
+  "server/qe_probe.py": true,
+  "server/relax_core.py": true,
+  "server/relax_worker.py": true,
+  "server/worker.py": true,
+  "tests/fixtures/qe/mos2-electronic-acceptance.json": true
+}

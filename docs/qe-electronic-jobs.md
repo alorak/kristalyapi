@@ -1,16 +1,22 @@
 # D4 — API üzerinden gerçek bant / DOS / atom-orbital PDOS
 
-Durum: kod ve sentetik süreç testleri hazır; gerçek MoS₂ kabulü D3'ün
-son kuvvet/geometri referansından sonra çalıştırılacak. Test değerleri
-bilimsel sonuç değildir.
+Durum: D3 gerçek kabulü geçti. [Gerçek MoS₂ D4 çalışması](https://github.com/alorak/kristalyapi/actions/runs/40821361993)
+ön kayıtlı `d25e112312acd6f02591c0abe5b03acc5ed3b024` kaynağında başlatıldı;
+sonuç henüz bekleniyor. Sentetik test değerleri bilimsel sonuç değildir.
 
 Yeni `kristalyapi.qe-electronic-job.v1` şeması `calculation=electronic`
 ve kesin alanlı `electronic` nesnesini kullanır: `nbnd` 1–128,
 `nscf_k` 2–24, `band_path` 2–16 açık `crystal_b` noktası. Her nokta
 `label`, üçlü `k` ve `segments` içerir. Son ağırlık 1, toplam bölüm
 sayısı ≤300, kz=0 ve SCF ağı kz=1 olmalıdır. Yalnız PBE/spinsiz/sabit
-doluluklu 2B slab akışı desteklenir. Bant sayısının fiziksel uygunluğu
-operatörün sorumluluğundadır; metadata ön kontrolü hesap yakınsaması değildir.
+doluluklu 2B slab akışı desteklenir. İş ön kontrolü gerçek hash eşleşmeli UPF v2 `PP_HEADER` içindeki
+`element` ve `z_valence` alanlarından nötr elektron sayısını hesaplar.
+`nbnd < ceil(nelec/2)` hem validate hem submit uçlarında, kuyruğa girmeden
+422 olarak reddedilir. Worker aynı kontrolü önceden kuyruğa alınmış işler
+üzerinde de tekrarlar. Eksik/yanlış/sonlu olmayan başlık reddedilir;
+sonuçta `electronic_preflight` elektron/minimum/istenen bant sayısını kaydeder.
+Boş bant sayısının fiziksel yeterliliği, spin ve yakınsama ayrıca doğrulanmalıdır;
+bu gerekli kapasite ön koşulu bilimsel kabul değildir.
 
 Worker mevcut `tools/qe_pipeline.py` işlevlerini bir alt süreç grubu olarak
 kullanır: `scf → bands → bands.x → nscf → dos.x → projwfc.x`.
@@ -84,5 +90,13 @@ python3 tools/qe_electronic_acceptance.py --run --output validation-results/qe-m
 python3 tools/qe_electronic_acceptance.py --verify validation-results/qe-mos2-electronic-local
 ```
 
-116 Python QE testi geçti; MoS₂'nin D3 ön koşulu ve gerçek D4 sonucu
-henüz bekleniyor.
+D3 ön koşulu geçti; gerçek D4 koşusu devam ediyor. Sonradan eklenen bant
+kapasitesi kontrolü hesap girdilerini değiştirmez; devam eden koşunun sabit
+kaynak commit'i yukarıda ayrı kaydedilmiştir. Bu kontrol gerçek Mo/S UPF
+baytlarından 26 elektron / en az 13 dolu bant türetti; 12 bant reddedildi.
+Yeni HTTP/worker negatif testleri de yetersiz bantta hesap açılmadığını doğrular.
+
+
+[Gerçek Docker/API ön kontrol kanıtı](../validation-results/qe-d4-band-preflight-20261029-arm64/INCELEME.md):
+26 bant validate=200, 12 bant validate/submit=422 ve boş kuyruk doğrulandı.
+Bu denemede DFT işi gönderilmedi; gerçek D4 spektrum kabulü ayrı çalışmadır.

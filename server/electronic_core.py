@@ -1,6 +1,9 @@
 """D4 strictly structured 2D band/DOS/PDOS jobs; no raw inputs or paths."""
 import copy
+import hashlib
+import math
 import re
+import xml.etree.ElementTree as ET
 
 from job_core import ALLOWED_TOP, canonical_request, num
 
@@ -54,3 +57,40 @@ def canonical_electronic_request(data):
 def path_text(request):
     return "\n".join(point["label"]+" "+" ".join(f"{x:.12g}" for x in point["k"])+
                      " "+str(point["segments"]) for point in request["electronic"]["band_path"])+"\n"
+
+
+def checked_band_capacity(request, upf, pseudo_dir):
+    """Necessary band-count check from the actual pinned UPF v2 headers.
+
+    It cannot select a suitable empty-band count or establish spin/convergence.
+    """
+    valence = {}
+    for element, meta in upf.items():
+        raw = (pseudo_dir/meta['file']).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != meta['sha256']:
+            raise ValueError('UPF changed during electronic preflight: '+element)
+        match = re.search(br'<PP_HEADER\b[^>]*>',raw[:131072])
+        if match is None:
+            raise ValueError('Electronic band preflight requires a UPF v2 PP_HEADER: '+element)
+        tag = match[0]
+        if not tag.endswith(b'/>'):tag = tag[:-1]+b'/>'
+        try:
+            header = ET.fromstring(tag).attrib
+            value = float(header['z_valence'].replace('D','E').replace('d','e'))
+            if header['element'].strip() != element or not math.isfinite(value) or not 0 < value <= 100:
+                raise ValueError('Element or valence mismatch')
+        except (ET.ParseError,KeyError,ValueError) as exc:
+            raise ValueError('Invalid electronic UPF element/z_valence header: '+element) from exc
+        valence[element] = value
+    electrons = sum(valence[a['element']] for a in request['structure']['atoms'])
+    if abs(electrons-round(electrons)) > 1e-7:
+        raise ValueError('Fractional neutral electron counts require a different electronic workflow')
+    electrons = round(electrons)
+    minimum = math.ceil(electrons/2)
+    requested = request['electronic']['nbnd']
+    if requested < minimum:
+        raise ValueError(f'nbnd={requested} cannot hold {electrons} neutral valence electrons; '
+                         f'unpolarized jobs need at least {minimum} bands')
+    return {'neutral_valence_electrons':electrons,'minimum_nbnd':minimum,'requested_nbnd':requested,
+            'upf_valence_electrons':valence,
+            'scope':'Necessary capacity only; empty-band, spin and physical convergence acceptance are separate'}

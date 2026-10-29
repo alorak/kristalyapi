@@ -1,0 +1,71 @@
+{
+  "schema": "kristalyapi.electronic-band-preflight-smoke.v1",
+  "calculation_performed": false,
+  "reference": {
+    "summary_sha256": "a0d4c0e50a4589225df5c7e1bb109ce02372738c673d8335924607feea4493a9",
+    "selected_result_sha256": "05c276ee8ea41705d8f29a3c971acb24ba155dafac77cff70aa2fffda7189340",
+    "final_structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063"
+  },
+  "status": "passed",
+  "validation": {
+    "valid": true,
+    "structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063",
+    "atoms": 3,
+    "profile_id": "mos2-pbe",
+    "upf_sha256": {
+      "Mo": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "S": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    },
+    "calculation": "electronic",
+    "notice": "Validation is not a DFT convergence study",
+    "electronic_preflight": {
+      "neutral_valence_electrons": 26,
+      "minimum_nbnd": 13,
+      "requested_nbnd": 26,
+      "upf_valence_electrons": {
+        "Mo": 14.0,
+        "S": 6.0
+      },
+      "scope": "Necessary capacity only; empty-band, spin and physical convergence acceptance are separate"
+    }
+  },
+  "rejections": [
+    {
+      "detail": "nbnd=12 cannot hold 26 neutral valence electrons; unpolarized jobs need at least 13 bands"
+    },
+    {
+      "detail": "nbnd=12 cannot hold 26 neutral valence electrons; unpolarized jobs need at least 13 bands"
+    }
+  ],
+  "jobs": [],
+  "cleanup_errors": [],
+  "provenance": {
+    "git_commit": "bbd626b1386cb56f8c0928badc1dddc07d9be2a7",
+    "host_machine": "arm64",
+    "docker_arch": "aarch64",
+    "source_sha256": {
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "78e97bd919483bdf2593f73579f7be11f0ad89ccedd91f0faeb959bae625edfe",
+      "tools/qe_acceptance_runtime.py": "34bb41d5027f7b9ef20f4e88de5183ce5bb2c1caaf5567978e8bf43cdae8dee8",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "tools/qe_mos2_acceptance.py": "b93948fb37fa69d3782b769b4557fcb91f4ce17eed405bf66b360a10356b8fd6",
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "server/api.py": "65fb3a7783f972936446415c3e775160a0e78085d7fb1ce22e944d8ee0ec5e2a",
+      "server/electronic_core.py": "5a7602a28e18ce5d2226c2b4343e5f08fd6950a6b22d9bae2db94ecdb1b6287e",
+      "server/electronic_worker.py": "e55cf72eccfe6f0f222e6d79673274fbfdea5fd4da3fe9e7717e67b054cd9505",
+      "server/job_core.py": "5299f4bdfda45088f21cafdc123c2f89e61d99ad2111b1513a31309b857a00e3",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+      "server/relax_worker.py": "cdcee24a9e6bef19ae761a2fbde9af297e805c1f39d49820fed4d1c07e9a04ee",
+      "server/worker.py": "60aed8d03734692cd8230852020de59103cccb74995f07dc07290f4d1f0037e2",
+      "tests/fixtures/qe/mos2-electronic-acceptance.json": "cd2fce94e54a0506df3fca457eaf99c8bc49f194c72d07f268ce6e3aebcae4d9"
+    },
+    "image_id": "sha256:21d4887dfe9a0fd2123beda7ba9847166b1b39b36fc448e498cb3ba9c2660f00",
+    "worker_resources": {
+      "memory_bytes": 6442450944,
+      "memory_swap_bytes": 6442450944
+    }
+  },
+  "resources_removed": true
+}

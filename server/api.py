@@ -112,9 +112,13 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             raw=json.loads(data.decode("utf-8"))
             payload,structure_hash=canonical_request(raw)
             upf=load_profile(payload,profiles,pseudo)
+            capacity=None
+            if payload['parameters']['calculation']=='electronic':
+                from electronic_core import checked_band_capacity
+                capacity=checked_band_capacity(payload,upf,pseudo)
         except (ValueError,TypeError,KeyError,UnicodeError,OSError) as exc:
             raise HTTPException(status_code=422,detail=str(exc)[:300]) from exc
-        return payload,structure_hash,upf
+        return payload,structure_hash,upf,capacity
 
     @app.get("/api/v1/engines")
     async def engines(request:Request):
@@ -124,14 +128,15 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
 
     @app.post("/api/v1/calculations/validate")
     async def validate(request:Request):
-        payload,fingerprint,upf=await validated(request)
+        payload,fingerprint,upf,capacity=await validated(request)
         return {"valid":True,"structure_hash":fingerprint,"atoms":len(payload["structure"]["atoms"]),
                 "profile_id":payload["profile_id"],"upf_sha256":{k:v["sha256"] for k,v in upf.items()},
-                "calculation":payload["parameters"]["calculation"],"notice":"Validation is not a DFT convergence study"}
+                "calculation":payload["parameters"]["calculation"],"notice":"Validation is not a DFT convergence study",
+                **({'electronic_preflight':capacity} if capacity is not None else {})}
 
     @app.post("/api/v1/calculations",status_code=202)
     async def submit(request:Request):
-        payload,fingerprint,_=await validated(request)
+        payload,fingerprint,_,_=await validated(request)
         try:
             job_id=store.submit(payload,fingerprint,max_pending=10)
         except ValueError as exc:

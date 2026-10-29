@@ -1,0 +1,9 @@
+qe-api-1  | INFO:     Started server process [1]
+qe-api-1  | INFO:     Waiting for application startup.
+qe-api-1  | INFO:     Application startup complete.
+qe-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1  | INFO:     192.168.128.1:61252 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61268 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61274 - "POST /api/v1/calculations/validate HTTP/1.1" 422 Unprocessable Content
+qe-api-1  | INFO:     192.168.128.1:61282 - "POST /api/v1/calculations HTTP/1.1" 422 Unprocessable Content
+qe-api-1  | INFO:     192.168.128.1:61290 - "GET /api/v1/calculations HTTP/1.1" 200 OK
