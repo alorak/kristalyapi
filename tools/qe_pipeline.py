@@ -20,7 +20,7 @@ import time
 from datetime import datetime, timezone
 
 from qe_run import parse_pw_input, stage, sha256_file, summarize_output
-from qe_pdos import parse_atom_orbital_pdos, parse_atom_symbols
+from qe_pdos import parse_atom_orbital_pdos, parse_atom_symbols, exact_energy_window
 
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?"
 STEPS = ("relax", "scf", "bands", "bands_pp", "nscf", "dos", "projwfc")
@@ -250,10 +250,13 @@ def parse_pdos_total(path, dos):
     if any(len(row) != 3 for row in rows):
         raise ValueError("Spin-polarized/noncollinear PDOS columns unsupported")
     energies = dos["energy_ev"]
-    if len(rows) != len(energies) or any(abs(r[0] - e) > 1e-4 for r, e in zip(rows, energies)):
-        raise ValueError("DOS and projected DOS energy axes mismatch")
+    source_points = len(rows)
+    rows = exact_energy_window(rows, energies, "DOS and projected DOS energy axes mismatch")
     return {"energy_ev": energies, "total_dos_states_per_ev": [r[1] for r in rows],
-            "sum_projected_states_per_ev": [r[2] for r in rows]}
+            "sum_projected_states_per_ev": [r[2] for r in rows],
+            "grid_selection": {"policy":"exact DOS window; no interpolation or energy shift",
+                               "source_points":source_points,"selected_points":len(rows),
+                               "discarded_outside_window":source_points-len(rows)}}
 
 
 def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",

@@ -96,6 +96,16 @@ class PipelineTest(unittest.TestCase):
         self.assertTrue((dest / "scf.in").exists())
         self.assertEqual(result["steps"]["dos"]["status"], "prepared")
 
+    def test_total_pdos_extra_endpoint_preserves_exact_common_grid(self):
+        path=self.root/'pdos.pdos_tot'
+        path.write_text('-1 .1 .08\n0 .5 .3\n1 .2 .12\n2 0 0\n')
+        result=parse_pdos_total(path,{'energy_ev':[-1,0,1]})
+        self.assertEqual(result['sum_projected_states_per_ev'],[.08,.3,.12])
+        self.assertEqual(result['grid_selection']['discarded_outside_window'],1)
+        path.write_text('-1 .1 .08\n.01 .5 .3\n1 .2 .12\n2 0 0\n')
+        with self.assertRaisesRegex(ValueError,'axes mismatch'):
+            parse_pdos_total(path,{'energy_ev':[-1,0,1]})
+
     def mocked_process(self, calls, fail_stage=None):
         def fake(cmd, *, cwd, stdin, stdout, stderr, timeout, check):
             step = Path(cmd[-1]).stem

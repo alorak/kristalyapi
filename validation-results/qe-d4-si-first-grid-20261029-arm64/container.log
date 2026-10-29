@@ -1,0 +1,19 @@
+qe-api-1  | INFO:     Started server process [1]
+qe-api-1  | INFO:     Waiting for application startup.
+qe-api-1  | INFO:     Application startup complete.
+qe-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1  | INFO:     192.168.128.1:61894 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61910 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61924 - "POST /api/v1/calculations HTTP/1.1" 202 Accepted
+qe-api-1  | INFO:     192.168.128.1:61938 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61952 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61966 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61970 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61974 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61982 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:61994 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62004 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62008 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     127.0.0.1:55134 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62024 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62038 - "GET /api/v1/calculations/9125e484644e449fa32057ad44fd3fe8 HTTP/1.1" 200 OK

@@ -1,0 +1,189 @@
+{
+  "schema": "kristalyapi.qe-pipeline.v1",
+  "status": "failed",
+  "started_at": "2026-10-29T00:04:19.300804+00:00",
+  "input_sha256": "88f1b35e830b323dd005365c9298299b1f193078867295b8bb569e3b5c401395",
+  "pseudopotentials": {
+    "Si": {
+      "filename": "Si.UPF",
+      "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+    }
+  },
+  "model": {
+    "calculation": "scf",
+    "prefix": "kristalyapi",
+    "nat": 2,
+    "ntyp": 1,
+    "kmesh": [
+      2,
+      2,
+      1,
+      0,
+      0,
+      0
+    ],
+    "pseudopotentials": {
+      "Si": "Si.UPF"
+    }
+  },
+  "artifacts": {
+    "input": "structure.in",
+    "stdout": "structure.out",
+    "stderr": "structure.stderr.txt",
+    "scratch": "tmp/"
+  },
+  "calculation": null,
+  "notes": [
+    "No DFT result exists unless status=completed and output contains convergence evidence.",
+    "DFT convergence does not establish accuracy, single-photon emission or experimental UV irradiation.",
+    "Raw QE eigenvalue energy zeros are NOT experimental emission energies."
+  ],
+  "steps": {
+    "scf": {
+      "status": "completed",
+      "input": "scf.in",
+      "input_sha256": "88f1b35e830b323dd005365c9298299b1f193078867295b8bb569e3b5c401395",
+      "started_at": "2026-10-29T00:04:19.301004+00:00",
+      "returncode": 0,
+      "job_done": true,
+      "scf_converged": true,
+      "geometry_converged": null,
+      "has_final_coordinates": null,
+      "energy_ry": -22.47661421,
+      "energy_ev": -305.80991538518623,
+      "total_force_ry_bohr": 5.6e-05,
+      "qe_version": "6.7MaX",
+      "stdout_sha256": "b9a8ae62ecb18b9a9b86dc1b5a24a1e5ba1bbb1486f055de562fb5c03d1389fd",
+      "finished_at": "2026-10-29T00:04:21.001907+00:00",
+      "duration_seconds": 1.7
+    },
+    "bands": {
+      "status": "completed",
+      "input": "bands.in",
+      "input_sha256": "3d4138042b97850b1f595dda5ad17274ecf8177534b73b56faa36a58e0e2e2df",
+      "started_at": "2026-10-29T00:04:21.002370+00:00",
+      "returncode": 0,
+      "job_done": true,
+      "stdout_sha256": "c34da408627bb514a0185b254c8075059e9beb5eecf69e4783163d5e291fd70a",
+      "finished_at": "2026-10-29T00:04:21.718386+00:00",
+      "duration_seconds": 0.716
+    },
+    "bands_pp": {
+      "status": "completed",
+      "input": "bands_pp.in",
+      "input_sha256": "233fe5782b7b5cda18cbb67ba735a8ddaa468022714e54eac2e917d8ca15be4c",
+      "started_at": "2026-10-29T00:04:21.718628+00:00",
+      "returncode": 0,
+      "stdout": "bands_pp.out",
+      "stdout_sha256": "2290d19a5d89b9eeabca5f19d0107c1fa678e2a486c42ae82cf4b6830e91e723",
+      "finished_at": "2026-10-29T00:04:22.006408+00:00",
+      "duration_seconds": 0.288
+    },
+    "nscf": {
+      "status": "completed",
+      "input": "nscf.in",
+      "input_sha256": "94d6cf399f8060cfe8767ecb09cafb77beff793ceea8925d205f8b33a9e718b8",
+      "started_at": "2026-10-29T00:04:22.006714+00:00",
+      "returncode": 0,
+      "job_done": true,
+      "stdout_sha256": "9f8f5bd7315a99948357244db46d9f5e88d72e302bed7196b6e8e45a94a3ece7",
+      "finished_at": "2026-10-29T00:04:22.835587+00:00",
+      "duration_seconds": 0.829
+    },
+    "dos": {
+      "status": "completed",
+      "input": "dos.in",
+      "input_sha256": "7b9a3dfd2972621cb90a904327904088936f1906869b3a20a2be01c5189b310c",
+      "started_at": "2026-10-29T00:04:22.835786+00:00",
+      "returncode": 0,
+      "stdout": "dos.out",
+      "stdout_sha256": "291ff81044d211ed91b76f3e1c37f7cdab1a6f24cba1558f8b58044db129992f",
+      "finished_at": "2026-10-29T00:04:23.116066+00:00",
+      "duration_seconds": 0.28
+    },
+    "projwfc": {
+      "status": "completed",
+      "input": "projwfc.in",
+      "input_sha256": "2ded4e7ec8700376fefa4c121c7542ef4eb5d5d54935b715c71f3193d6d9ceee",
+      "started_at": "2026-10-29T00:04:23.116300+00:00",
+      "returncode": 0,
+      "stdout": "projwfc.out",
+      "stdout_sha256": "9e5ebb0bfab1bf7ff88c539bae3b6e127f1d7dc9d1d6aa9130492e89ffa83fd6",
+      "finished_at": "2026-10-29T00:04:23.444911+00:00",
+      "duration_seconds": 0.329
+    }
+  },
+  "requested": [
+    "scf",
+    "bands",
+    "bands_pp",
+    "nscf",
+    "dos",
+    "projwfc"
+  ],
+  "band_path": [
+    "Gamma",
+    "X"
+  ],
+  "updated_at": "2026-10-29T00:04:23.446417+00:00",
+  "bands": {
+    "distance": [
+      0.0,
+      0.2041,
+      0.4082,
+      0.6124
+    ],
+    "energies_ev": [
+      [
+        -5.4387,
+        -5.0749,
+        -4.0493,
+        -3.0746
+      ],
+      [
+        6.6032,
+        4.1754,
+        1.1912,
+        -0.4703
+      ],
+      [
+        6.6035,
+        6.1293,
+        5.5675,
+        5.3678
+      ],
+      [
+        6.6037,
+        6.1296,
+        5.5678,
+        5.3681
+      ],
+      [
+        9.0135,
+        8.86,
+        8.2863,
+        8.0648
+      ],
+      [
+        9.0136,
+        9.6809,
+        9.9463,
+        9.7605
+      ],
+      [
+        9.0138,
+        9.6811,
+        9.9466,
+        9.7609
+      ],
+      [
+        9.9852,
+        12.0543,
+        14.3369,
+        14.1321
+      ]
+    ],
+    "reference": "raw QE eigenvalue energy zero (not vacuum/experimental PL)"
+  },
+  "error": "DOS and projected DOS energy axes mismatch"
+}
