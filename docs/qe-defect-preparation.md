@@ -30,7 +30,9 @@ python3 tools/qe_defect_prepare.py --verify /tmp/mos2-d5-initial
 aynı komutla doğrulanabilir. Her vaka altında `initial.cif`, `structure.json`,
 `site-map.json`, `candidate-relax-request.json` bulunur. CIF'ler üretim
 KristalYapı ayrıştırıcısında atom/hücre/koordinat eşleşmesiyle test edildi.
-Bütün dosyaların hash'i `files-sha256.json` içindedir. Hedef klasör üzerine
+[Gerçek uygulama içe aktarma kanıtı](../validation-results/qe-d5-ui-smoke-20261029/INCELEME.md):
+V_S adayı 47 P1 atomu / Mo16S31 olarak doğru tanındı.
+Bütün hazırlık dosyalarının hash'i `files-sha256.json` içindedir. Hedef klasör üzerine
 yazılmaz; doğrulama değiştirilmiş dosya veya eklenmiş sahte sonucu reddeder.
 
 O₂@V_S adayı için kullanıcı iki O konumunu **4×4 süperhücrenin** kesirli
