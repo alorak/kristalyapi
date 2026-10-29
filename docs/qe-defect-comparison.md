@@ -12,6 +12,13 @@ hesaplamaları tamamlamalıdır. `tools/qe_pipeline.py` yürütücüsünde
 `--pdos` kullanın; ortaya çıkan her çalışma klasöründe
 `electronic-results.json`, `pipeline.json`, `scf.in` bulunmalıdır.
 
+## D5.1 kaynak eşleşmeli başlangıç modelleri
+
+[D5 hazırlık aracı](qe-defect-preparation.md), kabul edilmiş gerçek D3
+geometrisinden 4×4 adayları, sabit atom kimliklerini, P1 CIF ve aday
+relaksasyon isteklerini üretir. Bunlar henüz hesaplanmış kusur sonuçları
+değildir. Elektronik API kapasitesi ve kusur protokolü ön koşulları raporlanır.
+
 ## 1. Girdi organizasyonu
 
 ```text

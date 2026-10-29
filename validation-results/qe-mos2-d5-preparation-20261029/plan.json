@@ -1,0 +1,79 @@
+{
+  "schema": "kristalyapi.mos2-defect-preparation-plan.v1",
+  "scope": "D5.1 reproducible initial candidates only; no defect DFT, relaxation or stability acceptance.",
+  "reference": {
+    "evidence_path": "validation-results/qe-mos2-d3-20261029-amd64",
+    "source_commit": "2b3c6dce97568f0fca9b85a3e35acedde2399a0a",
+    "summary_sha256": "a0d4c0e50a4589225df5c7e1bb109ce02372738c673d8335924607feea4493a9",
+    "selected_result_sha256": "05c276ee8ea41705d8f29a3c971acb24ba155dafac77cff70aa2fffda7189340",
+    "final_structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063"
+  },
+  "supercell": [
+    4,
+    4,
+    1
+  ],
+  "vacancy_sites": {
+    "primary": {
+      "translation": [
+        2,
+        2,
+        0
+      ],
+      "basis_index": 2
+    },
+    "secondary": {
+      "translation": [
+        3,
+        2,
+        0
+      ],
+      "basis_index": 2
+    }
+  },
+  "candidate_protocol": {
+    "ecutwfc_ry": 120,
+    "ecutrho_ry": 960,
+    "kpoints": [
+      4,
+      4,
+      1
+    ],
+    "functional": "PBE",
+    "spin": "unpolarized",
+    "charge": 0,
+    "status": "requires-defect-spin-and-supercell-convergence-review"
+  },
+  "electronic_candidate_nbnd": 416,
+  "near_radius_angstrom": 3.6,
+  "pseudopotentials": {
+    "Mo": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "filename": "Mo.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "z_valence": 14
+    },
+    "S": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "S.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4",
+      "z_valence": 6
+    },
+    "O": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/O.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "O.UPF",
+      "library": "PSlibrary 1.0.0, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "39cf0077e3ee34edce47746270394a8265ed70d92d73bc97cc1e20401657f8f6",
+      "z_valence": 6,
+      "review_scope": "Byte/header review only. Oxygen defect cutoff, spin and physical suitability are not accepted."
+    }
+  }
+}

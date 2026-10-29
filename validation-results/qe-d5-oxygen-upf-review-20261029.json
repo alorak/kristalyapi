@@ -1,0 +1,20 @@
+{
+  "url": "https://pseudopotentials.quantum-espresso.org/upf_files/O.pbe-n-rrkjus_psl.1.0.0.UPF",
+  "filename": "O.UPF",
+  "library": "PSlibrary 1.0.0, scalar-relativistic PBE USPP",
+  "license": "GPL-2.0-or-later",
+  "license_url": "https://github.com/dalcorso/pslibrary#license",
+  "sha256": "39cf0077e3ee34edce47746270394a8265ed70d92d73bc97cc1e20401657f8f6",
+  "size_bytes": 783711,
+  "header": {
+    "element": " O",
+    "functional": "PBE",
+    "pseudo_type": "USPP",
+    "relativistic": "scalar",
+    "has_so": "false",
+    "z_valence": "6.000000000000e0",
+    "wfc_cutoff": "4.664946111663e1",
+    "rho_cutoff": "3.230246528712e2"
+  },
+  "scope": "Byte/header review only. Oxygen defect cutoff, spin and physical suitability are not accepted."
+}

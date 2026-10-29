@@ -1,0 +1,28 @@
+{
+  "schema": "kristalyapi.upf-profile.v1",
+  "id": "mos2-d5-reviewed",
+  "functional": "PBE",
+  "elements": {
+    "Mo": {
+      "file": "Mo.UPF",
+      "sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "license": "GPL-2.0-or-later",
+      "functional": "PBE"
+    },
+    "S": {
+      "file": "S.UPF",
+      "sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "license": "GPL-2.0-or-later",
+      "functional": "PBE"
+    },
+    "O": {
+      "file": "O.UPF",
+      "sha256": "39cf0077e3ee34edce47746270394a8265ed70d92d73bc97cc1e20401657f8f6",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/O.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "license": "GPL-2.0-or-later",
+      "functional": "PBE"
+    }
+  }
+}

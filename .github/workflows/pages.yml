@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -63,6 +63,10 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_electronic_acceptance.py' -v
       - name: Test bounded acceptance artifact transport
         run: python -m unittest discover -s tests -p 'test_qe_acceptance_runtime.py' -v
+      - name: Test source-fixed MoS2 defect preparation
+        run: python -m unittest discover -s tests -p 'test_qe_defect_prepare.py' -v
+      - name: Rebuild and verify initial defect candidates
+        run: python tools/qe_defect_prepare.py --verify validation-results/qe-mos2-d5-preparation-20261029
       - name: Validate Docker Compose configuration without building the heavy QE image
         run: docker compose -f compose.qe.yml config --quiet
       - name: Install pinned Gemmi map reference

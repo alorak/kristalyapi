@@ -345,6 +345,17 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] D3 öncesi sonlu enerji referansı: **120/960 Ry, 16×16×1, c=24 Å**, -181.58163993 Ry. 120/k8 tekrarı önceki D2.2b ile tam eşleşti.
 - [x] Bu referanstan D3 gerçek relaksasyon/kuvvet/geometri kabulü: son max kuvvet bileşeni 1.29e-5 Ry/Bohr; 120→140 Ry farkı 0.267443 meV/atom; sekiz ölçüt geçti. Bağımsız fiziksel doğruluk ve elektronik/optik kapsam ayrıca bekliyor.
 
+### D5.1 — Kaynak eşleşmeli kusur adayları (kod ve geometri hazırlığı)
+
+- [x] Kabul edilmiş D3 summary/result/yapı hash'ine bağlı 4×4 P1 süperhücre; pristine / V_S / aynı katmanda en yakın iki S boşluğu / O_S başlangıç adayları.
+- [x] Sabit kaynak atom kimlikleri, çıkarılan/ikame atom kaydı, CIF/JSON ve aday relax istekleri; yeniden üretim ve tüm dosya hash'leriyle çevrimdışı doğrulama.
+- [x] O₂ adayında iki açık kesirli koordinat zorunlu; otomatik bağ geometrisi veya adsorpsiyon kabulü yok.
+- [x] Resmi O PBE/skaler UPF bayt/header SHA-256 incelemesi; fiziksel kusur uygunluğu ayrıca bekliyor.
+- [x] Valans elektron/bant kapasitesi ön kontrolü: 4×4 pristine 416 elektron / en az 208 dolu bant; mevcut 128 bant elektronik API sınırına sığmaz. Kaynak limitleri yükseltilmedi.
+- [ ] Gerçek kusur relax/SCF/elektronik sonuçları; spin/doluluk, süperhücre boyutu, k-örgüsü/cutoff yakınsaması ve büyük hücre kaynak profili kabulü.
+
+[Üretim ve doğrulama rehberi](docs/qe-defect-preparation.md). Hazırlanan modeller hesap sonucu değildir.
+
 ### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 
 - [ ] **Sürümlü motor-bağımsız JSON girdi şeması (v1):** hücre
