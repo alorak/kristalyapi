@@ -1,0 +1,33 @@
+{
+  "schema": "kristalyapi.relaxation-history-inspection.v1",
+  "source_output_sha256": "0764f10fb9e60805976c67a612ed98216bf6d271081147f57ba5d141dcac956e",
+  "source_commit": "2b3c6dce97568f0fca9b85a3e35acedde2399a0a",
+  "rows": [
+    {
+      "scf_cycle": 1,
+      "energy_ry": -181.58163993,
+      "max_force_component_ry_bohr": 0.00424127
+    },
+    {
+      "scf_cycle": 2,
+      "energy_ry": -181.58166908,
+      "max_force_component_ry_bohr": 0.00260265
+    },
+    {
+      "scf_cycle": 3,
+      "energy_ry": -181.58168509,
+      "max_force_component_ry_bohr": 0.00079961
+    },
+    {
+      "scf_cycle": 4,
+      "energy_ry": -181.58168684,
+      "max_force_component_ry_bohr": 2.753e-05
+    },
+    {
+      "scf_cycle": 5,
+      "energy_ry": -181.58168684,
+      "max_force_component_ry_bohr": 1.484e-05
+    }
+  ],
+  "note": "Printed per-SCF energy/total atomic force blocks; independent final and 140 Ry SCF shown separately in summary.json."
+}
