@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -53,6 +53,10 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_scf_acceptance.py' -v
       - name: Test D2.2 MoS2 acceptance evidence gates (synthetic negatives only)
         run: python -m unittest discover -s tests -p 'test_qe_mos2_acceptance.py' -v
+      - name: Test fixed-cell relaxation worker and force gates
+        run: python -m unittest discover -s tests -p 'test_qe_relax.py' -v
+      - name: Test MoS2 relaxation acceptance evidence rejection
+        run: python -m unittest discover -s tests -p 'test_qe_relax_acceptance.py' -v
       - name: Validate Docker Compose configuration without building the heavy QE image
         run: docker compose -f compose.qe.yml config --quiet
       - name: Install pinned Gemmi map reference
@@ -143,6 +147,7 @@ jobs:
           cp qe-electronic-view.js public/qe-electronic-view.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
+          cp qe-relax-view.js public/qe-relax-view.js
           cp mos2-defect-study-core.js public/mos2-defect-study-core.js
           cp volume-iso-worker.js public/volume-iso-worker.js
           cp reciprocal-core.js public/reciprocal-core.js
@@ -173,6 +178,7 @@ jobs:
           test -s public/qe-electronic-view.js
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js
+          test -s public/qe-relax-view.js
           test -s public/mos2-defect-study-core.js
           test -s public/semiconductor-p0.css
           test -s public/powder-planes-view.js

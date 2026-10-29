@@ -1,0 +1,13 @@
+{
+  "stage": "scf",
+  "status": "completed",
+  "error": null,
+  "artifact_sha256": {
+    "structure.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "relax.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "relax.in": "9273f6187e7053098484124335bd1238f97e207175c90e9586cb34257260d0cd",
+    "structure.in": "f735cffb5b188acebc4ff1c5f049efb624bd825744054aebbde37245fbf61e2b",
+    "relax.out": "0764f10fb9e60805976c67a612ed98216bf6d271081147f57ba5d141dcac956e",
+    "structure.out": "f53020fb8555735deea1e6f23a50ce8a0b0206702a9991b5031dd2085c31aa51"
+  }
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import resource
@@ -27,6 +28,11 @@ def sha(path):
 
 def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
             pseudo_dir=Path("/pseudos"),timeout=3600):
+    if json.loads(job["request_json"]).get("schema")=="kristalyapi.qe-relax-scf-job.v1":
+        from relax_worker import execute_relax_scf
+        return execute_relax_scf(store,job,qe_binary=qe_binary,profiles_dir=profiles_dir,
+            pseudo_dir=pseudo_dir,timeout=timeout,kill=_kill_group,
+            limits=lambda:_limits(max(4000,math.ceil(2*timeout)+30)))
     job_id=job["id"]
     workdir=store.root/"runs"/job_id
     process=None
@@ -113,9 +119,9 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
                          input_sha=input_sha,output_sha=output_sha)
 
 
-def _limits():
+def _limits(cpu_seconds=4000):
     # Container memory/cpu/disk/pid limits provide the primary isolation.
-    resource.setrlimit(resource.RLIMIT_CPU,(4000,4000))
+    resource.setrlimit(resource.RLIMIT_CPU,(cpu_seconds,cpu_seconds))
     resource.setrlimit(resource.RLIMIT_FSIZE,(2*1024**3,2*1024**3))
     resource.setrlimit(resource.RLIMIT_NOFILE,(256,256))
 

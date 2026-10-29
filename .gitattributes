@@ -8,7 +8,14 @@ validation-results/qe-si-*/docker.log linguist-generated=true
 # Raw MoS2 acceptance evidence, including scientifically failed runs.
 validation-results/qe-mos2-*/** -text
 validation-results/qe-mos2-*/cases/**/structure.out -whitespace
+validation-results/qe-mos2-*/cases/**/relax.out -whitespace
 validation-results/qe-mos2-*/cases/** linguist-generated=true
 validation-results/qe-mos2-*/api-audit.json linguist-generated=true
 validation-results/qe-mos2-*/container.log linguist-generated=true
 validation-results/qe-mos2-*/docker.log linguist-generated=true
+validation-results/qe-d3-*/** -text
+validation-results/qe-d3-*/**/relax.out -whitespace
+validation-results/qe-d3-*/**/structure.out -whitespace
+validation-results/qe-d3-*/relax.out -whitespace
+validation-results/qe-d3-*/structure.out -whitespace
+validation-results/qe-d3-*/container.log linguist-generated=true

@@ -1,0 +1,209 @@
+{
+  "schema": "kristalyapi.qe-relax-scf-result.v1",
+  "job_id": "5a86487254764d7d83a392fbb2c11ae2",
+  "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f",
+  "initial_structure": {
+    "periodic": true,
+    "cell_angstrom": [
+      [
+        3.18,
+        0.0,
+        0.0
+      ],
+      [
+        -1.59,
+        2.753960784034515,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        24.0
+      ]
+    ],
+    "atoms": [
+      {
+        "element": "Mo",
+        "fractional": [
+          0.0,
+          0.0,
+          0.5
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333333333,
+          0.6666666666666666,
+          0.565
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333333333,
+          0.6666666666666666,
+          0.435
+        ]
+      }
+    ]
+  },
+  "final_structure": {
+    "periodic": true,
+    "cell_angstrom": [
+      [
+        3.18,
+        0.0,
+        0.0
+      ],
+      [
+        -1.59,
+        2.753960784034515,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        24.0
+      ]
+    ],
+    "atoms": [
+      {
+        "element": "Mo",
+        "fractional": [
+          0.0,
+          0.0,
+          0.5
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333,
+          0.6666666667,
+          0.5652426103
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333,
+          0.6666666667,
+          0.4347573897
+        ]
+      }
+    ]
+  },
+  "final_structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063",
+  "engine": "quantum-espresso",
+  "engine_version": "6.7MaX",
+  "energy_ry": -181.58168684,
+  "energy_ev": -2470.544707900638,
+  "total_force_ry_bohr": 1.8e-05,
+  "max_force_component_ry_bohr": 1.29e-05,
+  "scf_converged": true,
+  "geometry_converged": true,
+  "job_done": true,
+  "functional_declared": "PBE",
+  "pseudopotentials": {
+    "Mo": {
+      "file": "Mo.UPF",
+      "sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+      "functional": "PBE"
+    },
+    "S": {
+      "file": "S.UPF",
+      "sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4",
+      "source": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "license": "GPL-2.0-or-later; https://github.com/dalcorso/pslibrary#license",
+      "functional": "PBE"
+    }
+  },
+  "input_sha256": "f735cffb5b188acebc4ff1c5f049efb624bd825744054aebbde37245fbf61e2b",
+  "output_sha256": "f53020fb8555735deea1e6f23a50ce8a0b0206702a9991b5031dd2085c31aa51",
+  "relaxation_settings": {
+    "max_steps": 30,
+    "force_threshold_ry_bohr": 2e-05,
+    "energy_threshold_ry": 1e-06
+  },
+  "stages": {
+    "relax": {
+      "status": "completed",
+      "returncode": 0,
+      "job_done": true,
+      "scf_converged": true,
+      "geometry_converged": true,
+      "has_final_coordinates": true,
+      "energy_ry": -181.5816868428,
+      "energy_ev": -2470.544707938734,
+      "total_force_ry_bohr": 2.1e-05,
+      "qe_version": "6.7MaX",
+      "last_scf_accuracy_ry": 3.2e-11,
+      "forces_ry_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          -0.0,
+          -0.0,
+          1.484e-05
+        ],
+        [
+          0.0,
+          0.0,
+          -1.484e-05
+        ]
+      ],
+      "max_force_component_ry_bohr": 1.484e-05,
+      "max_force_norm_ry_bohr": 1.484e-05,
+      "last_ionic_energy_change_ry": 0.0,
+      "structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063"
+    },
+    "scf": {
+      "status": "completed",
+      "returncode": 0,
+      "job_done": true,
+      "scf_converged": true,
+      "geometry_converged": null,
+      "has_final_coordinates": null,
+      "energy_ry": -181.58168684,
+      "energy_ev": -2470.544707900638,
+      "total_force_ry_bohr": 1.8e-05,
+      "qe_version": "6.7MaX",
+      "last_scf_accuracy_ry": 1.2e-09,
+      "forces_ry_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.29e-05
+        ],
+        [
+          0.0,
+          0.0,
+          -1.29e-05
+        ]
+      ],
+      "max_force_component_ry_bohr": 1.29e-05,
+      "max_force_norm_ry_bohr": 1.29e-05,
+      "structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063"
+    }
+  },
+  "artifact_sha256": {
+    "relax.in": "9273f6187e7053098484124335bd1238f97e207175c90e9586cb34257260d0cd",
+    "relax.out": "0764f10fb9e60805976c67a612ed98216bf6d271081147f57ba5d141dcac956e",
+    "relax.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "structure.in": "f735cffb5b188acebc4ff1c5f049efb624bd825744054aebbde37245fbf61e2b",
+    "structure.out": "f53020fb8555735deea1e6f23a50ce8a0b0206702a9991b5031dd2085c31aa51",
+    "structure.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "scientific_convergence_study_completed": false
+}

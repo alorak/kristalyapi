@@ -1,0 +1,177 @@
+{
+  "schema": "kristalyapi.qe-mos2-relax-acceptance.v1",
+  "status": "passed",
+  "reference": {
+    "source_commit": "78d116baec28419072a6d63c9d0842d28af79ac3",
+    "summary_sha256": "4c809275a882f2773680523c289ae8592789578c2cec171c4fcb20ef2bc7a21b",
+    "selected_result_sha256": "bbff030d09e268e26eedde451f1f26b1c27ed4dc771a8f4e2da7da662bc46438",
+    "selected_output_sha256": "ad7d1c01964019128476b9cc715a550b4a0f4d817bedafb298f20ea271ab1807"
+  },
+  "started_at": "2026-10-29T00:23:48.040513+00:00",
+  "scope": "Fixed-cell ideal pristine 1H-MoS2 relaxation and independent final SCF at the D2.2c reference; finite final-force and cutoff check, not electronic/optical validation.",
+  "derived": {
+    "relax": {
+      "energy_ry": -181.5816868428,
+      "last_scf_accuracy_ry": 3.2e-11,
+      "electrons": 26,
+      "qe_version": "6.7MaX",
+      "forces_ry_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          -0.0,
+          -0.0,
+          1.484e-05
+        ],
+        [
+          0.0,
+          0.0,
+          -1.484e-05
+        ]
+      ],
+      "max_force_component_ry_bohr": 1.484e-05,
+      "input_sha256": "9273f6187e7053098484124335bd1238f97e207175c90e9586cb34257260d0cd",
+      "output_sha256": "0764f10fb9e60805976c67a612ed98216bf6d271081147f57ba5d141dcac956e"
+    },
+    "final_scf": {
+      "energy_ry": -181.58168684,
+      "last_scf_accuracy_ry": 1.2e-09,
+      "electrons": 26,
+      "qe_version": "6.7MaX",
+      "forces_ry_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.29e-05
+        ],
+        [
+          0.0,
+          0.0,
+          -1.29e-05
+        ]
+      ],
+      "max_force_component_ry_bohr": 1.29e-05,
+      "input_sha256": "f735cffb5b188acebc4ff1c5f049efb624bd825744054aebbde37245fbf61e2b",
+      "output_sha256": "f53020fb8555735deea1e6f23a50ce8a0b0206702a9991b5031dd2085c31aa51"
+    },
+    "high_cutoff_scf": {
+      "energy_ry": -181.58174581,
+      "last_scf_accuracy_ry": 5.6e-09,
+      "electrons": 26,
+      "qe_version": "6.7MaX",
+      "forces_ry_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          -0.0,
+          -0.0,
+          -5.5e-07
+        ],
+        [
+          -0.0,
+          -0.0,
+          5.5e-07
+        ]
+      ],
+      "max_force_component_ry_bohr": 5.5e-07,
+      "input_sha256": "e0aa445b12867e10adcbdab03776560b2c47a5338686314a711548509222b805",
+      "output_sha256": "39ffd8af0d4c205ff8b9db2d7aa1b62daa2ab3628f7d5d4224020d27979dcb42"
+    },
+    "displacements_angstrom": [
+      0.0,
+      0.005822647200001366,
+      0.005822647200000033
+    ],
+    "gates": [
+      {
+        "axis": "relax_force",
+        "value": 1.484e-05,
+        "limit": 0.0001,
+        "passed": true
+      },
+      {
+        "axis": "final_scf_force",
+        "value": 1.29e-05,
+        "limit": 0.0001,
+        "passed": true
+      },
+      {
+        "axis": "high_cutoff_force",
+        "value": 5.5e-07,
+        "limit": 0.0001,
+        "passed": true
+      },
+      {
+        "axis": "force_difference",
+        "value": 1.345e-05,
+        "limit": 0.0001,
+        "passed": true
+      },
+      {
+        "axis": "relaxed_cutoff_mev_per_atom",
+        "value": 0.26744257447754344,
+        "limit": 1.0,
+        "passed": true
+      },
+      {
+        "axis": "relax_final_scf_energy_difference_ry",
+        "value": 2.799993126245681e-09,
+        "limit": 1e-06,
+        "passed": true
+      },
+      {
+        "axis": "max_displacement_angstrom",
+        "value": 0.005822647200001366,
+        "limit": 0.5,
+        "passed": true
+      },
+      {
+        "axis": "energy_increase_from_reference_ry",
+        "value": -4.6910000008892894e-05,
+        "limit": 1e-06,
+        "passed": true
+      }
+    ]
+  },
+  "cleanup_errors": [],
+  "provenance": {
+    "git_commit": "2b3c6dce97568f0fca9b85a3e35acedde2399a0a",
+    "host_machine": "x86_64",
+    "docker_arch": "x86_64",
+    "source_sha256": {
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "177a6bf4e8d4988b5a9a41eafbbcbb3cdbdea674e1d416c78babc64ae56e7a2f",
+      "tools/qe_acceptance_runtime.py": "a3fcfff9bc0251ed66ef10af3d45c8bb5e8a00617a69cfea9d1fab63b852ad13",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "tools/qe_mos2_acceptance.py": "b93948fb37fa69d3782b769b4557fcb91f4ce17eed405bf66b360a10356b8fd6",
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "server/api.py": "3de5c279252e62c53ba688a7114425beb9dd9848244b38820f6f157d2ba90b81",
+      "server/job_core.py": "008480fd9e3814f2a77347bcf0d63060a327761fb2c0b9ddb9335fa5b6bee2d3",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+      "server/relax_worker.py": "cdcee24a9e6bef19ae761a2fbde9af297e805c1f39d49820fed4d1c07e9a04ee",
+      "server/worker.py": "0786ad60f7b1fb8e312e93b49fe7056d712d14ed9afc5ec8e5a3083a400e1da6",
+      "tools/qe_relax_acceptance.py": "185533183c836644a1ec64437afeda79ff46cab23a6d47d0884174fb71654945",
+      "tests/fixtures/qe/mos2-relax-acceptance.json": "abdb9051cb6dfe9a9359ea10aeda81ddc6d625f52327b613f2fd03ef4835f414"
+    },
+    "image_id": "sha256:faf98fa6629b618369aa63d9e7491d5dc1ee043993a03dbc338a5c3ac654208e",
+    "worker_resources": {
+      "memory_bytes": 6442450944,
+      "memory_swap_bytes": 6442450944
+    }
+  },
+  "resources_removed": true,
+  "finished_at": "2026-10-29T01:19:34.425606+00:00"
+}

@@ -20,7 +20,7 @@ from job_core import canonical_request,load_profile
 from job_store import JobStore
 from qe_probe import inspect_qe
 
-API_VERSION="0.2.0"
+API_VERSION="0.3.0"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -79,7 +79,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             "engine":{"id":"quantum-espresso","version":status["qe_version"],
                       "available":status["ready"]},
             "binaries":status["binaries"],
-            "supported_operations":(["health","capabilities","scf","status","results","cancel"]
+            "supported_operations":(["health","capabilities","scf","relax-scf","status","results","cancel"]
                                    if enabled else ["health","capabilities"]),
             "job_submission_enabled":enabled,
             "calculations_executed_by_api":False,
@@ -127,7 +127,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         payload,fingerprint,upf=await validated(request)
         return {"valid":True,"structure_hash":fingerprint,"atoms":len(payload["structure"]["atoms"]),
                 "profile_id":payload["profile_id"],"upf_sha256":{k:v["sha256"] for k,v in upf.items()},
-                "calculation":"scf","notice":"Validation is not a DFT convergence study"}
+                "calculation":payload["parameters"]["calculation"],"notice":"Validation is not a DFT convergence study"}
 
     @app.post("/api/v1/calculations",status_code=202)
     async def submit(request:Request):
@@ -171,8 +171,10 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
 
     @app.get("/api/v1/calculations/{job_id}/logs")
     async def get_logs(request:Request,job_id:str):
-        await lookup(request,job_id)
+        row=await lookup(request,job_id)
         path=store.root/"runs"/job_id/"structure.out"
+        if not path.exists() and json.loads(row["request_json"])["schema"]=="kristalyapi.qe-relax-scf-job.v1":
+            path=store.root/"runs"/job_id/"relax.out"
         if not path.is_file() or path.is_symlink():
             return {"text":"","truncated":False}
         # Never return a full unbounded log or arbitrary file path.

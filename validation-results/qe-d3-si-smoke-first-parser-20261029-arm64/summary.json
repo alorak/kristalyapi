@@ -1,0 +1,48 @@
+{
+  "scope": "Real Si Docker/API D3 process smoke at 45/360 Ry and k=2, not MoS2 acceptance or a Si accuracy study.",
+  "source_commit": "5363e377d188614de865751dde9520d6b4c1ef4c",
+  "status": "failed",
+  "terminal": {
+    "job_id": "fd5e4bfc47af47308d5774de138045a8",
+    "status": "failed",
+    "created": "2026-10-28T23:35:30.932957+00:00",
+    "updated": "2026-10-28T23:35:34.470621+00:00",
+    "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": "Final atomic force count mismatch"
+  },
+  "missing_artifacts": [
+    "structure.in",
+    "structure.out",
+    "structure.stderr"
+  ],
+  "api": {
+    "validation": {
+      "valid": true,
+      "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "relax-scf",
+      "notice": "Validation is not a DFT convergence study"
+    },
+    "submitted": {
+      "job_id": "fd5e4bfc47af47308d5774de138045a8",
+      "status": "queued",
+      "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952"
+    },
+    "terminal": {
+      "job_id": "fd5e4bfc47af47308d5774de138045a8",
+      "status": "failed",
+      "created": "2026-10-28T23:35:30.932957+00:00",
+      "updated": "2026-10-28T23:35:34.470621+00:00",
+      "structure_hash": "7d4f6f0dd784bf153ba386e2b8a66b06efe76de8118d36397eaded7917247952",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": "Final atomic force count mismatch"
+    }
+  }
+}

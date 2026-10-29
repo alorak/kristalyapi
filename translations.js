@@ -7,6 +7,35 @@
 (() => {
  'use strict';
  const entries=[
+  ["Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Son atomlar başlangıçla periyodik olarak eşlenir. Konumlar Å birimindedir; aktif yapı değiştirilmez.", "Shared scale · drag to rotate and scroll to zoom. Final atoms are matched to the initial periodic images. Positions are in Å; the active structure is unchanged."],
+  ["D2–D3 · Gerçek SCF / relaksasyon işi", "D2–D3 · Real SCF / relaxation jobs"],
+  ["PBE ve spinsiz SCF veya sabit hücreli relaksasyon → son SCF seçin. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.", "Choose PBE non-spin SCF or fixed-cell relaxation → final SCF. All atoms are free during relaxation. The operator must configure a UPF profile. The API key stays in page memory; authenticated LAN jobs require HTTPS."],
+  ["En fazla iyonik adım", "Maximum ionic steps"],
+  ["İyonik enerji eşiği (Ry)", "Ionic energy threshold (Ry)"],
+  ["Gerçek hesabı gönder", "Submit real calculation"],
+  ["SCF veya sabit hücreli relaksasyon seçin.", "Choose SCF or fixed-cell relaxation."],
+  ["Sunucu işleri sabit doluluklu ve spinsiz olmalı.", "Server jobs require fixed occupations and no spin polarization."],
+  ["QE API en fazla 64 atom destekler.", "The QE API supports at most 64 atoms."],
+  ["Sunucu relaksasyonunda tüm atomlar serbest olmalı.", "All atoms must be free during server relaxation."],
+  ["Başlangıç / son yapı · 3B karşılaştırma", "Initial / final structure · 3D comparison"],
+  ["Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Konumlar Å birimindedir; aktif yapı değiştirilmez.", "Shared scale · drag to rotate and scroll to zoom. Positions are in Å; the active structure is unchanged."],
+  ["Son SCF yapısı", "Final SCF structure"],
+  ["Başlangıç", "Initial"],
+  ["Son atom konumları, 3B", "Final atomic positions, 3D"],
+  ["Başlangıç atom konumları, 3B", "Initial atomic positions, 3D"],
+  ["Başlangıç (kesirli)", "Initial (fractional)"],
+  ["Son (kesirli)", "Final (fractional)"],
+  ["Sarılmış fark (Å)", "Wrapped displacement (Å)"],
+  ["Relaksasyon hücresi geçersiz.", "Invalid relaxation cell."],
+  ["Relaksasyon atom sayısı veya hücre hacmi geçersiz.", "Invalid relaxation atom count or cell volume."],
+  ["Relaksasyon atom koordinatları geçersiz.", "Invalid relaxed atomic coordinates."],
+  ["Relaksasyon sonucu kaynak yapıyla veya yakınsama kaydıyla uyuşmuyor.", "The relaxation result does not match the source structure or convergence record."],
+  ["Sabit hücre veya atom sırası değişmiş.", "The fixed cell or atom order changed."],
+  ["İki aşamanın enerji/kuvvet yakınsama kanıtı eksik veya geçersiz.", "Energy/force convergence evidence is missing or invalid for the two stages."],
+  ["Önceki QE işi", "Previous QE job"],
+  ["Henüz QE işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.", "No QE job submitted. Explicit confirmation is required to start a calculation."],
+  ["Hesaplamayı tarayıcı çalıştırmaz. QE girdisini dışa aktarabilir veya yapılandırılmış Docker sunucusuna açık onayla hesap gönderebilirsiniz.", "The browser does not run DFT. Export QE input or explicitly confirm a calculation on a configured Docker server."],
+
   ["Sunucudaki iş geçmişini yükle","Load server job history"],
   ["Önceki SCF işi","Previous SCF job"],
   ["Bu oturumda iş geçmişi yüklenmedi","Job history has not been loaded this session"],
@@ -1246,6 +1275,15 @@
  ];
  const dictionary=new Map(entries);
  const parts=[
+  ["Son en büyük kuvvet bileşeni: ", "Maximum final force component: "],
+  [" · sınır ", " · limit "],
+  [" Relaksasyon ve son SCF geçti; en büyük kuvvet bileşeni ", " Relaxation and final SCF passed; maximum force component "],
+  [" Ry/Bohr. Başlangıç/son yapı aşağıda karşılaştırılabilir.", " Ry/Bohr. Compare initial and final structures below."],
+  ["QE ön kontrol: ", "QE preflight: "],
+  ["QE işi gönderme: ", "QE job submission: "],
+  ["QE işi kuyruğa alındı: ", "QE job queued: "],
+  [" · QE işi alımı açık; gerçek UPF profili ve anahtar gerekir.", " · QE jobs enabled; a real UPF profile and API key are required."],
+
   [' ayırt edilebilir pik grubu · ',' distinguishable peak groups · '],
   [' yansıma · varsayımsal profil',' reflections · illustrative profile'],
   [' atom · ',' atoms · '],

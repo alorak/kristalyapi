@@ -1,0 +1,10 @@
+{
+  "stage": "relax",
+  "status": "failed",
+  "error": "Final atomic force count mismatch",
+  "artifact_sha256": {
+    "relax.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "relax.out": "42e10f85a49651cb80a69f06ec2c3448253f50ff87a7e9455e90010a006436a7",
+    "relax.in": "17b5dfcf5a28695fd3a82ef0e9b471fad229489f3c586d911d3fb5b58ffdad36"
+  }
+}
