@@ -33,6 +33,7 @@ def classify(status, error, returncodes, oom_delta):
     text = str(error or '').lower()
     if status == 'completed': return 'completed'
     if status in ('queued', 'running'): return 'in_progress'
+    if status == 'paused': return 'paused_at_stage_boundary'
     if status == 'cancelled': return 'cancelled'
     if status == 'timed_out': return 'wall_time_limit'
     if oom_delta is not None and oom_delta > 0: return 'cgroup_oom_kill'
@@ -45,6 +46,7 @@ def classify(status, error, returncodes, oom_delta):
         return 'memory_allocation_failed'
     if any(x in (-9, 137, -15, 143) for x in returncodes): return 'process_killed_unconfirmed'
     if 'binary unavailable' in text: return 'solver_unavailable'
+    if 'checkpoint' in text and ('changed' in text or 'refusing resume' in text): return 'input_evidence_mismatch'
     if 'hash mismatch' in text or 'upf' in text and ('changed' in text or 'mismatch' in text):
         return 'input_evidence_mismatch'
     return 'solver_or_pipeline_failed'
@@ -80,6 +82,7 @@ def stage_details(folder):
 class Recorder:
     def __init__(self, store, job):
         self.store, self.jid = store, job['id']
+        self.attempt=1+job.get('resume_count',0)
         self.folder = store.root/'runs'/self.jid
         self.path = store.root/'diagnostics'/(self.jid+'.json')
         self.began = time.monotonic(); self.last_write = -1
@@ -115,7 +118,7 @@ class Recorder:
         delta = (max(0, current['oom_kill']-self.before['oom_kill']) if
                  current['oom_kill'] is not None and self.before['oom_kill'] is not None else None)
         r = resource.getrusage(resource.RUSAGE_CHILDREN)
-        value = {'schema': SCHEMA, 'job_id': self.jid, 'availability': 'recorded', 'status': row['status'],
+        value = {'schema': SCHEMA, 'job_id': self.jid, 'availability': 'recorded', 'status': row['status'], 'execution_attempt': self.attempt,
                  'elapsed_seconds': round(elapsed, 3), 'active_stage': active if active in STAGES else None,
                  'reason_code': classify(row['status'], row['error'], self.returncodes+[s['returncode'] for s in stages], delta),
                  'process_returncodes': self.returncodes, 'stages': stages,

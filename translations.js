@@ -7,6 +7,15 @@
 (() => {
  'use strict';
  const entries=[
+  ["Elektronik işi aşama sonunda duraklat", "Pause electronic job after the active stage"],
+  ["Duraklatılan işe devam et", "Resume paused job"],
+  ["Tamamlanan aşama sınırında duraklatıldı", "Paused at a completed stage boundary"],
+  ["Tamamlanan aşama sınırında duraklatıldı; kayıtlar denetlenerek devam edilebilir.", "Paused at a completed stage boundary; saved data will be checked before resuming."],
+  ["Duraklatma istendi; çalışan aşamanın tamamlanması bekleniyor.", "Pause requested; waiting for the active stage to finish."],
+  ["Aynı ayarlarla gerçek QE işine devam edilsin mi?", "Resume the real QE job with the same settings?"],
+  ["Geçen süre (bu çalıştırma): ", "Elapsed time (this attempt): "],
+  ["Çalıştırma denemesi: ", "Execution attempt: "],
+
   ["İş tanısı: ", "Job diagnosis: "],
   ["Hesap tamamlandı", "Calculation completed"],
   ["İş sürüyor", "Job in progress"],

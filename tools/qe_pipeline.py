@@ -26,6 +26,8 @@ from qe_pdos import parse_atom_orbital_pdos, parse_atom_symbols, exact_energy_wi
 if (Path(__file__).resolve().parents[1]/'server').is_dir():
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'server'))
 from qe_post_settings import canonical_dos_settings
+import qe_checkpoint as checkpoint
+import qe_run,qe_pdos,qe_post_settings
 
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?"
 STEPS = ("relax", "scf", "bands", "bands_pp", "nscf", "dos", "projwfc")
@@ -274,7 +276,9 @@ def parse_pdos_total(path, dos):
 
 def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                  bands_x="bands.x", dos_x="dos.x", projwfc_x="projwfc.x",
-                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None):
+                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None,pause_file=None,resume=False,expected_checkpoint_sha=None):
+    if (resume or pause_file is not None) and not execute:
+        raise ValueError("Checkpoint pause/resume requires actual execution")
     if dos_settings is not None:
         dos_settings=canonical_dos_settings(dos_settings)
         if not pdos:raise ValueError('DOS settings require the DOS/PDOS pipeline')
@@ -302,9 +306,16 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
         for step in needed:
             if not shutil.which(commands[step]):
                 raise ValueError("Executable not available for " + step + ": " + commands[step])
-    result = stage(input_file, pseudo_dir, workdir)
+    identity=None
+    if pause_file is not None or resume:
+        identity=checkpoint.contract(input_file,pseudo_dir,model,
+            {'nbnd':nbnd,'nscf_k':nscf_k,'dos_settings':dos_settings,'pdos':pdos,
+             'band_path':band_path.read_text() if band_path else None},
+            {name:shutil.which(commands[name]) for name in needed},
+            [Path(__file__),Path(checkpoint.__file__),Path(qe_run.__file__),Path(qe_pdos.__file__),Path(qe_post_settings.__file__)])
+    result = checkpoint.load(workdir,identity,expected_checkpoint_sha) if resume else stage(input_file, pseudo_dir, workdir)
+    if not resume:result["steps"]={}
     result["schema"] = "kristalyapi.qe-pipeline.v1"
-    result["steps"] = {}
     result["requested"] = list(step for step in STEPS if step in needed)
     result["band_path"] = [name for name, _, _ in path] if path else None
     if dos_settings is not None:result['dos_settings']=dos_settings
@@ -321,6 +332,14 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
         (workdir/"progress.json").write_text(json.dumps({"status":result["status"],"active_stage":active})+"\n",encoding="utf-8")
 
     def step_run(name, content, *, post=False):
+        previous=result['steps'].get(name)
+        if resume and previous and previous['status']=='completed':
+            if previous['input_sha256']!=hashlib.sha256(content.encode()).hexdigest() or previous['stdout_sha256']!=sha256_file(workdir/(name+'.out')):
+                raise ValueError('Completed checkpoint stage does not match requested input/output: '+name)
+            return output_text(workdir/(name+'.out'))
+        if execute and pause_file is not None and pause_file.exists():
+            result['status']='paused';persist();checkpoint.save(workdir,identity,result)
+            raise checkpoint.Paused()
         infile = workdir / (name + ".in")
         outfile = workdir / (name + ".out")
         infile.write_text(content, encoding="utf-8")
@@ -402,6 +421,8 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                 result["pdos_atoms"] = orbital
                 persist()
         result["status"] = "completed" if execute else "prepared"
+    except checkpoint.Paused:
+        result['status']='paused'
     except (RuntimeError, ValueError, OSError) as exc:
         result["status"] = "failed"
         result["error"] = str(exc)
@@ -443,6 +464,9 @@ def main(argv=None):
     parser.add_argument("--nbnd", type=int)
     parser.add_argument("--nscf-k", type=int, default=12)
     parser.add_argument("--pdos", action="store_true")
+    parser.add_argument('--pause-file',type=Path)
+    parser.add_argument('--resume',action='store_true')
+    parser.add_argument('--expected-checkpoint-sha')
     parser.add_argument('--dos-delta-e',type=float)
     parser.add_argument('--dos-degauss',type=float)
     parser.add_argument('--dos-emin',type=float)
@@ -461,10 +485,11 @@ def main(argv=None):
                               pw=args.pw, bands_x=args.bands_x, dos_x=args.dos_x,
                               projwfc_x=args.projwfc_x, band_path=args.band_path,
                               nbnd=args.nbnd, nscf_k=args.nscf_k, pdos=args.pdos,
-                              timeout=args.timeout,dos_settings=settings)
+                              timeout=args.timeout,dos_settings=settings,pause_file=args.pause_file,
+                              resume=args.resume,expected_checkpoint_sha=args.expected_checkpoint_sha)
         print(json.dumps({"status": result["status"], "manifest": str(args.workdir / "pipeline.json")},
                          ensure_ascii=False))
-        return 0 if result["status"] in ("prepared", "completed") else 1
+        return 75 if result["status"]=="paused" else 0 if result["status"] in ("prepared", "completed") else 1
     except (OSError, ValueError, UnicodeError) as exc:
         print("QE pipeline: " + str(exc), file=sys.stderr)
         return 2

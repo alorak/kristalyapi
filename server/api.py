@@ -21,7 +21,7 @@ from job_store import JobStore
 from qe_probe import inspect_qe
 from job_diagnostics import read_diagnostics
 
-API_VERSION="0.4.2"
+API_VERSION="0.4.3"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -80,7 +80,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             "engine":{"id":"quantum-espresso","version":status["qe_version"],
                       "available":status["ready"]},
             "binaries":status["binaries"],
-            "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel","diagnostics"]
+            "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel","diagnostics","pause-electronic","resume-electronic"]
                                    if enabled else ["health","capabilities"]),
             "job_submission_enabled":enabled,
             "calculations_executed_by_api":False,
@@ -148,7 +148,9 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         return {"job_id":row["id"],"status":row["status"],"created":row["created"],
                 "updated":row["updated"],"structure_hash":row["structure_hash"],
                 "profile_id":row["profile_id"],"cancel_requested":bool(row["cancel_requested"]),
-                "error":row["error"]}
+                "error":row["error"],"resume_count":row.get("resume_count",0),"pause_requested":bool(row.get('pause_requested')),
+                "can_pause":row['status']=='running' and not row['cancel_requested'] and json.loads(row['request_json'])['schema']=='kristalyapi.qe-electronic-job.v1',
+                "can_resume":row['status']=='paused' and bool(row.get('checkpoint_sha256')) and row.get('resume_count',0)<20}
 
     async def lookup(request,job_id):
         await authorized(request)
@@ -203,6 +205,18 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             f.seek(max(0,size-12000))
             data=f.read(12000)
         return {"text":data.decode("utf-8",errors="replace"),"truncated":size>12000}
+
+    @app.post("/api/v1/calculations/{job_id}/pause")
+    async def pause_job(request:Request,job_id:str):
+        await lookup(request,job_id)
+        try:return public_job(store.pause(job_id))
+        except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc)) from exc
+
+    @app.post("/api/v1/calculations/{job_id}/resume")
+    async def resume_job(request:Request,job_id:str):
+        await lookup(request,job_id)
+        try:return public_job(store.resume(job_id))
+        except ValueError as exc:raise HTTPException(status_code=409,detail=str(exc)) from exc
 
     @app.post("/api/v1/calculations/{job_id}/cancel")
     async def cancel_job(request:Request,job_id:str):
