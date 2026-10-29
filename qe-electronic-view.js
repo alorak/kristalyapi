@@ -155,11 +155,13 @@ export function renderQeElectronicResults(container,data){
  container.append(note);
  if(data.inputHash){
   const hash=document.createElement('small');
+  hash.style.cssText='display:block;overflow-wrap:anywhere;margin:8px 0';
   hash.textContent='Hesaplama girdisi SHA-256: '+data.inputHash;
   container.append(hash);
  }
  if(data.bands){
   const heading=document.createElement('strong');
+  heading.style.cssText='display:block;margin:14px 0 6px';
   heading.textContent='Elektronik bantlar · ham QE enerjileri';
   container.append(heading);
   const result=chart('QE elektronik bant yapısı','k-yolu uzaklığı','Enerji (eV)',
@@ -167,21 +169,24 @@ export function renderQeElectronicResults(container,data){
   container.append(result);
   if(data.bandLabels.length){
    const caption=document.createElement('small');
+   caption.style.cssText='display:block;margin:6px 0';
    caption.textContent='K-yolu etiket sırası: '+data.bandLabels.join(' → ')+'. Uzaklık eksenindeki etiket konumları otomatik çıkarılmaz.';
    container.append(caption);
   }
  }
  if(data.dos){
-  const head=document.createElement('strong');head.textContent='DOS / toplam projeksiyon · ham enerji';container.append(head);
+  const head=document.createElement('strong');head.style.cssText='display:block;margin:14px 0 6px';head.textContent='DOS / toplam projeksiyon · ham enerji';container.append(head);
   const curves=[{x:data.dos.energy,y:data.dos.values}];
   if(data.pdos)curves.push({x:data.dos.energy,y:data.pdos});
   container.append(chart('QE toplam DOS ve PDOS','Enerji (eV)','Durum/(eV hücre)',curves));
   const leg=document.createElement('small');
+  leg.style.cssText='display:block;margin:6px 0';
   leg.textContent='Mavi: toplam DOS'+(data.pdos?' · Turuncu: atomik orbitallerin toplam PDOS katkısı':'')+'. Enerjiler Fermi seviyesine hizalanmamıştır.';
   container.append(leg);
  }
  if(data.pdosDetailed){
   const heading=document.createElement('strong');
+  heading.style.cssText='display:block;margin:14px 0 6px';
   const localized=text=>typeof window==='undefined'?text:(window.CrystalI18n?.t(text)||text);
   heading.textContent=localized('Atom / element / orbital katkılarını incele');
   container.append(heading);
@@ -209,6 +214,7 @@ export function renderQeElectronicResults(container,data){
   if(defaultIndex>=0)select.selectedIndex=defaultIndex;
   const plot=document.createElement('div');
   const legend=document.createElement('small');
+  legend.style.cssText='display:block;margin:6px 0';
   const update=()=>{
    const c=choices.find(c=>c.key===select.value)||choices[0];
    if(!c)return;

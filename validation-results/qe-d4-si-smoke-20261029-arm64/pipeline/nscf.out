@@ -1,0 +1,317 @@
+
+     Program PWSCF v.6.7MaX starts on 29Oct2026 at  0: 7:50 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     1 processors
+
+     MPI processes distributed on     1 nodes
+     Reading input from nscf.in
+
+     Current dimensions of program PWSCF are:
+     Max number of different atomic species (ntypx) = 10
+     Max number of k-points (npk) =  40000
+     Max angular momentum in pseudopotentials (lmaxx) =  3
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/kristalyapi.save/
+     Atomic positions from file used, from input discarded
+
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     a serial algorithm will be used
+
+     Message from routine setup:
+     using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
+
+     G-vector sticks info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Sum        1285     649    199                30923    11017    1807
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       7.2571  a.u.
+     unit-cell volume          =     270.2564 (a.u.)^3
+     number of atoms/cell      =            2
+     number of atomic types    =            1
+     number of electrons       =         8.00
+     number of Kohn-Sham states=            8
+     kinetic-energy cutoff     =      45.0000  Ry
+     charge density cutoff     =     360.0000  Ry
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+     celldm(1)=   7.257109  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.000000   0.707107   0.707107 )  
+               a(2) = (   0.707107   0.000000   0.707107 )  
+               a(3) = (   0.707107   0.707107   0.000000 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = ( -0.707107  0.707107  0.707107 )  
+               b(2) = (  0.707107 -0.707107  0.707107 )  
+               b(3) = (  0.707107  0.707107 -0.707107 )  
+
+
+     PseudoPot. # 1 for Si read from file:
+     ./pseudo/Si.UPF
+     MD5 check sum: fa25574f73a70a4139f2adfbefec430c
+     Pseudo is Ultrasoft + core correction, Zval =  4.0
+     Generated using &quot;atomic&quot; code by A. Dal Corso  v.6.3
+     Using radial grid of 1141 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     atomic species   valence    mass     pseudopotential
+        Si             4.00    28.08500     Si( 1.00)
+
+      2 Sym. Ops. (no inversion) found
+
+
+                                    s                        frac. trans.
+
+      isym =  1     identity                                     
+
+ cryst.   s( 1) = (     1          0          0      )
+                  (     0          1          0      )
+                  (     0          0          1      )
+
+ cart.    s( 1) = (  1.0000000 -0.0000000  0.0000000 )
+                  ( -0.0000000  1.0000000  0.0000000 )
+                  ( -0.0000000  0.0000000  1.0000000 )
+
+
+      isym =  2     inv. 180 deg rotation - cart. axis [0,1,-1]  
+
+ cryst.   s( 2) = (     1          0          0      )
+                  (     0          0          1      )
+                  (     0          1          0      )
+
+ cart.    s( 2) = (  1.0000000  0.0000000 -0.0000000 )
+                  ( -0.0000000  0.0000000  1.0000000 )
+                  ( -0.0000000  1.0000000  0.0000000 )
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Si  tau(   1) = (   1.4142068   0.7106419   0.7106419  )
+         2           Si  tau(   2) = (   0.3535601   0.3570894   0.3570894  )
+
+   Crystallographic axes
+
+     site n.     atom                  positions (cryst. coord.)
+         1           Si  tau(   1) = (  0.0050041  0.9999952  0.9999952  )
+         2           Si  tau(   2) = (  0.2549959  0.2500048  0.2500048  )
+
+     number of k points=     6
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.5000000
+        k(    2) = (  -0.3535534   0.3535534  -0.3535534), wk =   0.5000000
+        k(    3) = (   0.0000000   0.0000000  -0.7071068), wk =   0.3333333
+        k(    4) = (   0.3535534   0.3535534   0.3535534), wk =   0.2500000
+        k(    5) = (  -0.3535534   0.3535534   0.3535534), wk =   0.2500000
+        k(    6) = (  -0.7071068   0.0000000   0.0000000), wk =   0.1666667
+
+                       cryst. coord.
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.5000000
+        k(    2) = (   0.0000000  -0.5000000   0.0000000), wk =   0.5000000
+        k(    3) = (  -0.5000000  -0.5000000   0.0000000), wk =   0.3333333
+        k(    4) = (   0.5000000   0.5000000   0.5000000), wk =   0.2500000
+        k(    5) = (   0.5000000  -0.0000000   0.0000000), wk =   0.2500000
+        k(    6) = (   0.0000000  -0.5000000  -0.5000000), wk =   0.1666667
+
+     Dense  grid:    30923 G-vectors     FFT dimensions: (  45,  45,  45)
+
+     Smooth grid:    11017 G-vectors     FFT dimensions: (  32,  32,  32)
+
+     Dynamical RAM for                 wfc:       0.17 MB
+
+     Dynamical RAM for     wfc (w. buffer):       0.17 MB
+
+     Dynamical RAM for           str. fact:       0.47 MB
+
+     Dynamical RAM for           local pot:       0.00 MB
+
+     Dynamical RAM for          nlocal pot:       0.76 MB
+
+     Dynamical RAM for                qrad:       1.52 MB
+
+     Dynamical RAM for          rho,v,vnew:       3.50 MB
+
+     Dynamical RAM for           G-vectors:       1.85 MB
+
+     Dynamical RAM for          h,s,v(r/c):       0.01 MB
+
+     Dynamical RAM for          <psi|beta>:       0.00 MB
+
+     Dynamical RAM for                 psi:       0.34 MB
+
+     Dynamical RAM for                hpsi:       0.34 MB
+
+     Dynamical RAM for                spsi:       0.34 MB
+
+     Dynamical RAM for      wfcinit/wfcrot:       0.34 MB
+
+     Dynamical RAM for           addusdens:      88.71 MB
+
+     Estimated static dynamical RAM per process >      12.69 MB
+
+     Estimated max dynamical RAM per process >     101.40 MB
+
+     The potential is recalculated from file :
+     ./tmp/kristalyapi.save/charge-density
+
+     Starting wfcs are    8 randomized atomic wfcs
+
+     Band Structure Calculation
+     Davidson diagonalization with overlap
+
+     Computing kpt #:     1  of     6
+     total cpu time spent up to now is        0.3 secs
+
+     Computing kpt #:     2  of     6
+     total cpu time spent up to now is        0.4 secs
+
+     Computing kpt #:     3  of     6
+     total cpu time spent up to now is        0.5 secs
+
+     Computing kpt #:     4  of     6
+     total cpu time spent up to now is        0.6 secs
+
+     Computing kpt #:     5  of     6
+     total cpu time spent up to now is        0.7 secs
+
+     Computing kpt #:     6  of     6
+     total cpu time spent up to now is        0.8 secs
+
+     ethr =  1.25E-10,  avg # of iterations = 28.5
+
+     total cpu time spent up to now is        0.8 secs
+
+     End of band structure calculation
+
+          k = 0.0000 0.0000 0.0000 (  1411 PWs)   bands (ev):
+
+    -5.4387   6.6032   6.6035   6.6037   9.0135   9.0136   9.0138   9.9852
+
+     occupation numbers 
+     1.0000   1.0000   1.0000   1.0000   0.0000   0.0000   0.0000   0.0000
+
+          k =-0.3536 0.3536-0.3536 (  1380 PWs)   bands (ev):
+
+    -3.0745  -0.4706   5.3679   5.3682   8.0649   9.7606   9.7610  14.1322
+
+     occupation numbers 
+     1.0000   1.0000   1.0000   1.0000   0.0000   0.0000   0.0000   0.0000
+
+          k = 0.0000 0.0000-0.7071 (  1362 PWs)   bands (ev):
+
+    -1.2604  -1.2604   3.6638   3.6639   7.1298   7.1298  16.6421  16.6422
+
+     occupation numbers 
+     1.0000   1.0000   1.0000   1.0000   0.0000   0.0000   0.0000   0.0000
+
+          k = 0.3536 0.3536 0.3536 (  1380 PWs)   bands (ev):
+
+    -3.0746  -0.4703   5.3678   5.3681   8.0648   9.7605   9.7609  14.1321
+
+     occupation numbers 
+     1.0000   1.0000   1.0000   1.0000   0.0000   0.0000   0.0000   0.0000
+
+          k =-0.3536 0.3536 0.3536 (  1380 PWs)   bands (ev):
+
+    -3.0746  -0.4703   5.3678   5.3681   8.0648   9.7605   9.7609  14.1321
+
+     occupation numbers 
+     1.0000   1.0000   1.0000   1.0000   0.0000   0.0000   0.0000   0.0000
+
+          k =-0.7071 0.0000 0.0000 (  1362 PWs)   bands (ev):
+
+    -1.2606  -1.2602   3.6637   3.6639   7.1297   7.1299  16.6421  16.6422
+
+     occupation numbers 
+     1.0000   1.0000   1.0000   1.0000   0.0000   0.0000   0.0000   0.0000
+
+     highest occupied, lowest unoccupied level (ev):     6.6037    7.1297
+
+     Writing output data file ./tmp/kristalyapi.save/
+
+     init_run     :      0.17s CPU      0.18s WALL (       1 calls)
+     electrons    :      0.52s CPU      0.52s WALL (       1 calls)
+
+     Called by init_run:
+     wfcinit      :      0.00s CPU      0.00s WALL (       1 calls)
+     wfcinit:atom :      0.00s CPU      0.00s WALL (       6 calls)
+     wfcinit:wfcr :      0.02s CPU      0.02s WALL (       6 calls)
+     potinit      :      0.01s CPU      0.02s WALL (       1 calls)
+     hinit0       :      0.12s CPU      0.12s WALL (       1 calls)
+
+     Called by electrons:
+     c_bands      :      0.52s CPU      0.52s WALL (       1 calls)
+     v_of_rho     :      0.01s CPU      0.01s WALL (       1 calls)
+     v_h          :      0.00s CPU      0.00s WALL (       1 calls)
+     v_xc         :      0.01s CPU      0.01s WALL (       1 calls)
+     newd         :      0.03s CPU      0.03s WALL (       1 calls)
+
+     Called by c_bands:
+     init_us_2    :      0.00s CPU      0.00s WALL (       6 calls)
+     cegterg      :      0.49s CPU      0.50s WALL (      12 calls)
+
+     Called by sum_band:
+
+     Called by *egterg:
+     cdiaghg      :      0.01s CPU      0.01s WALL (     177 calls)
+     cegterg:over :      0.03s CPU      0.03s WALL (     171 calls)
+     cegterg:upda :      0.01s CPU      0.01s WALL (     171 calls)
+     cegterg:last :      0.03s CPU      0.03s WALL (     128 calls)
+     h_psi        :      0.41s CPU      0.42s WALL (     189 calls)
+     s_psi        :      0.02s CPU      0.02s WALL (     189 calls)
+     g_psi        :      0.00s CPU      0.00s WALL (     171 calls)
+
+     Called by h_psi:
+     h_psi:calbec :      0.04s CPU      0.04s WALL (     189 calls)
+     vloc_psi     :      0.35s CPU      0.36s WALL (     189 calls)
+     add_vuspsi   :      0.02s CPU      0.02s WALL (     189 calls)
+
+     General routines
+     calbec       :      0.04s CPU      0.04s WALL (     189 calls)
+     fft          :      0.01s CPU      0.01s WALL (      13 calls)
+     ffts         :      0.00s CPU      0.00s WALL (       1 calls)
+     fftw         :      0.32s CPU      0.32s WALL (    2196 calls)
+     interpolate  :      0.00s CPU      0.00s WALL (       1 calls)
+     davcio       :      0.00s CPU      0.00s WALL (      12 calls)
+
+     Parallel routines
+
+     PWSCF        :      0.75s CPU      0.76s WALL
+
+
+   This run was terminated on:   0: 7:50  29Oct2026            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=

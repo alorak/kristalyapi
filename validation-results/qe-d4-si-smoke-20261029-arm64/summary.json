@@ -1,0 +1,47 @@
+{
+  "scope": "Real Si Docker/API D4 electronic process smoke at 45/360 Ry, k=2x2x1, nbnd8; no MoS2/Si scientific accuracy acceptance.",
+  "source_commit": "55e683e40967ffb3ae2b5eb1f7e596e3d0290fc0",
+  "status": "passed",
+  "terminal": {
+    "job_id": "df5988c80e3a40dc83cfe037f3f90906",
+    "status": "completed",
+    "created": "2026-10-29T00:07:46.976572+00:00",
+    "updated": "2026-10-29T00:07:51.724427+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null
+  },
+  "energy_ry": -22.47661421,
+  "band_count": 8,
+  "dos_points": 1145,
+  "pdos_atoms": 2,
+  "api": {
+    "validation": {
+      "valid": true,
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "electronic",
+      "notice": "Validation is not a DFT convergence study"
+    },
+    "submitted": {
+      "job_id": "df5988c80e3a40dc83cfe037f3f90906",
+      "status": "queued",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3"
+    },
+    "terminal": {
+      "job_id": "df5988c80e3a40dc83cfe037f3f90906",
+      "status": "completed",
+      "created": "2026-10-29T00:07:46.976572+00:00",
+      "updated": "2026-10-29T00:07:51.724427+00:00",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  }
+}

@@ -47,7 +47,12 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
                 if store.get(jid)["cancel_requested"]:raise Stopped("cancelled","Electronic pipeline cancelled")
                 if time.monotonic()>=deadline:raise Stopped("timed_out",f"Electronic pipeline exceeded its {timeout:g} s wall-time limit")
                 time.sleep(.2)
-            if process.wait(timeout=10)!=0:raise ValueError("Electronic pipeline failed; inspect retained stage logs")
+            if process.wait(timeout=10)!=0:
+                failure=root/"pipeline/pipeline.json"
+                detail="inspect retained stage logs"
+                if failure.is_file() and failure.stat().st_size<=32_000_000:
+                    detail=str(json.loads(failure.read_text()).get("error",detail))[:300]
+                raise ValueError("Electronic pipeline failed: "+detail)
         manifest_path=root/"pipeline/pipeline.json";data_path=root/"pipeline/electronic-results.json"
         if manifest_path.stat().st_size>32_000_000 or data_path.stat().st_size>24_000_000:
             raise ValueError("Electronic result exceeds bounded API size")

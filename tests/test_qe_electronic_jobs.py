@@ -80,6 +80,7 @@ if step=='projwfc':
     def test_failed_bands_blocks_nscf_and_result_publication(self):
         jid,row=self.execute(fail='bands')
         self.assertEqual(row['status'],'failed')
+        self.assertIn('bands failed',row['error'])
         self.assertIsNone(row['result_json'])
         self.assertFalse((self.jobs/'runs'/jid/'pipeline/nscf.in').exists())
         self.assertEqual(self.client.get('/api/v1/calculations/'+jid+'/results',headers=self.auth).status_code,409)

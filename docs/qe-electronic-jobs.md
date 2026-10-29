@@ -36,3 +36,18 @@ Kurulum için [iş API kılavuzu](qe-jobs.md). Docker imajı mevcut pipeline
 ve PDOS ayrıştırıcılarını içerir; API 0.4.0 `electronic` yeteneğini duyurur.
 Yoğun MoS₂ hesabı için D3'teki aynı doğrulanmış UPF ve kaynak profili
 kullanılmalıdır. Gerçek Si işleyiş ve MoS₂ kabul sonuçları ayrıca eklenecek.
+
+## Gerçek Si denemesi ve kaynak verilerin korunması
+
+[Gerçek raw/API kanıtları](../validation-results/qe-d4-si-smoke-20261029-arm64/INCELEME.md):
+6/6 solver aşaması, 8 bant, 1145 DOS noktası ve iki atomun s/p PDOS'u geçti.
+İlk koşu, QE dosyalarının bir uç enerji noktasındaki farklılığı nedeniyle
+sonuç yayınlamadan reddedildi. Yeni okuyucu yalnız DOS aralığındaki mevcut,
+birebir eşleşen PDOS noktalarını seçer. Kaynak/seçilen nokta sayıları kaydedilir;
+interpolasyon veya enerji kaydırması yapılmaz. İç grid kayması/eksikliği
+hâlâ reddedilir. 111 Python QE testi ve 439 JavaScript testi geçti;
+gerçek tek-atom orbital seçimi tarayıcıda incelendi.
+
+Si denemesi işleyiş testidir. Gerçek MoS₂ D4 koşusu, D3'ün kabul edilen
+son geometrisine bağlıdır; sonucu ve sonlu elektronik yapı sınırları ayrıca
+kaydedilecektir.
