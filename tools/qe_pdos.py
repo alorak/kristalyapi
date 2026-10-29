@@ -23,6 +23,17 @@ MAX_FILE_BYTES = 8_000_000
 GRID_TOL_EV = 1e-4
 
 
+def exact_energy_window(rows, energy_ev, label):
+    """Select existing matching samples; only out-of-window endpoints are omitted."""
+    if len(energy_ev)<2 or any(a>=b for a,b in zip(energy_ev,energy_ev[1:])) or \
+            any(a[0]>=b[0] for a,b in zip(rows,rows[1:])):
+        raise ValueError(label+": DOS/PDOS energy axes mismatch")
+    selected=[row for row in rows if energy_ev[0]-GRID_TOL_EV<=row[0]<=energy_ev[-1]+GRID_TOL_EV]
+    if len(selected)!=len(energy_ev) or any(abs(row[0]-e)>GRID_TOL_EV for row,e in zip(selected,energy_ev)):
+        raise ValueError(label+": DOS/PDOS energy axes mismatch")
+    return selected
+
+
 def _numeric_rows(path: Path, expected: int):
     if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_FILE_BYTES:
         raise ValueError("Missing, symlinked or oversized projected DOS: " + path.name)
@@ -116,8 +127,8 @@ def parse_atom_orbital_pdos(
             raise ValueError(file.name + ": duplicate atomic wfc index")
         unique.add(key)
         rows = _numeric_rows(file, 2 + L_COUNT[orbital])
-        if len(rows) != size:
-            raise ValueError(file.name + ": DOS energy-grid length mismatch")
+        source_points = len(rows)
+        rows = exact_energy_window(rows, energy_ev, file.name)
         a = atom_data.setdefault(idx, blank())
         e = element_data.setdefault(element, blank())
 
@@ -138,7 +149,9 @@ def parse_atom_orbital_pdos(
                 orbital_curve[row_index] += ldos
         provenance.append({
             "filename": file.name, "atom_index": idx, "element": element,
-            "wfc": wfc_no, "orbital": orbital
+            "wfc": wfc_no, "orbital": orbital,
+            "source_points": source_points, "selected_points": size,
+            "discarded_outside_window": source_points-size
         })
 
     # The projection total in pdos.pdos_tot must agree with the sum over ALL

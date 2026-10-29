@@ -116,17 +116,30 @@ class Runtime:
         names=["structure.in","structure.out","structure.stderr"]
         if request["schema"]=="kristalyapi.qe-relax-scf-job.v1":
             names=["relax.in","relax.out","relax.stderr","pipeline.json"]+names
+        electronic=request["schema"]=="kristalyapi.qe-electronic-job.v1"
+        if electronic:names=["source.in","band-path.txt","pipeline.stdout","pipeline.stderr"]
         missing=[]
         for filename in names:
             try:self.command(["docker","cp",self.container+":/var/lib/qe/runs/"+jid+"/"+filename,str(path/filename)])
             except ValueError:missing.append(filename)
         if missing:write_json(path/"missing-artifacts.json",missing)
+        if electronic:
+            try:
+                filenames=json.loads(self.command(["docker","exec",self.container,"python3","-c",
+                    "import pathlib,json,sys;p=pathlib.Path('/var/lib/qe/runs')/sys.argv[1]/'pipeline';print(json.dumps([x.name for x in p.iterdir() if x.is_file()]))",jid]))
+            except ValueError:
+                if terminal["status"]=="completed":raise
+                filenames=[]
+            (path/"pipeline").mkdir()
+            for filename in filenames:
+                require(re.fullmatch(r"[A-Za-z0-9_.#()+-]+",filename) is not None,"Unexpected pipeline artifact name")
+                self.command(["docker","cp",self.container+":/var/lib/qe/runs/"+jid+"/pipeline/"+filename,str(path/"pipeline"/filename)])
         require(terminal["status"]=="completed",name+" ended "+terminal["status"]+": "+str(terminal.get("error")))
         require(not missing,"Completed job lacks raw evidence")
         trace["staged_upf_sha256"]={}
         for element in ("Mo","S"):
             digest=self.command(["docker","exec",self.container,"python3","-c",
-                "import hashlib,sys;print(hashlib.sha256(open('/var/lib/qe/runs/'+sys.argv[1]+'/pseudo/'+sys.argv[2]+'.UPF','rb').read()).hexdigest())",jid,element]).decode().strip()
+                "import hashlib,sys;print(hashlib.sha256(open('/var/lib/qe/runs/'+sys.argv[1]+sys.argv[3]+'/pseudo/'+sys.argv[2]+'.UPF','rb').read()).hexdigest())",jid,element,"/pipeline" if electronic else ""]).decode().strip()
             trace["staged_upf_sha256"][element]=digest
         result=self.api.request("/api/v1/calculations/"+jid+"/results")
         write_json(path/"api.json",trace);write_json(path/"result.json",result)

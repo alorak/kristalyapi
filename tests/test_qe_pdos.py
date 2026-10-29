@@ -119,6 +119,15 @@ class AtomOrbitalPdosTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Missing, symlinked"):
             parse_atom_orbital_pdos(self.root, self.energy, self.total, self.symbols)
 
+    def test_extra_endpoint_is_selected_on_the_exact_dos_window(self):
+        self.populate()
+        for file in self.root.glob('pdos.pdos_atm#*'):
+            with file.open('a') as stream:stream.write('2 0 0 0 0\n')
+        result=parse_atom_orbital_pdos(self.root,self.energy,self.total,self.symbols)
+        self.assertEqual(result['energy_ev'],self.energy)
+        self.assertTrue(all(p['discarded_outside_window']==1 for p in result['source_files']))
+        self.assertLess(result['max_projection_reconciliation_error'],1e-9)
+
 
 if __name__ == "__main__":
     unittest.main()

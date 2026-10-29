@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {parseRelaxationResult} from '../qe-relax-view.js';
+import {parseQeBandPath} from '../qe-api-client.js';
 
 const hash='a'.repeat(64),final='b'.repeat(64);
 function fixture(){
@@ -53,4 +54,17 @@ test('D3 form sends the selected operation and explicit bounded ionic settings',
  values.qeFreezeBottom=0;values.qeCalcType='scf';const scf=run();
  assert.equal(scf.schema,'kristalyapi.qe-scf-job.v1');assert.equal(scf.parameters.calculation,'scf');
  assert.equal(scf.relaxation,undefined);
+});
+test('D4 explicitly selected final geometry is submitted without changing the active structure',()=>{
+ const source=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
+ const func=source.match(/function qeJobPayload\(\)\{[\s\S]+?\n\}\nasync function qeJobPreflight/)[0].replace(/\nasync function qeJobPreflight$/,'');
+ const chosen={structure:fixture().final_structure,hash:final},before=JSON.stringify(chosen);
+ const values={qeJobWorkflow:'electronic',qeCalcType:'relax',qeOccupation:'fixed',qeJobProfile:'si-pbe',
+  qeKx:2,qeKy:2,qeKz:1,qeEcutwfc:45,qeEcutrho:360,qeElectronicNbnd:8,qeElectronicMesh:2,
+  qeElectronicPath:'Gamma 0 0 0 3\nX .5 0 0 1'};
+ const run=Function('$','state','qeCalculationStructure','basis','validateCell','qeElectronicSource','parseQeBandPath','return ('+func+')()');
+ const result=run(id=>({value:values[id]}),{},()=>{throw Error('active geometry must not be used');},null,null,chosen,parseQeBandPath);
+ assert.equal(result.schema,'kristalyapi.qe-electronic-job.v1');assert.equal(result.parameters.calculation,'electronic');
+ assert.equal(result.electronic.nbnd,8);assert.deepEqual(result.structure,chosen.structure);
+ assert.equal(JSON.stringify(chosen),before);assert.equal(result.relaxation,undefined);
 });

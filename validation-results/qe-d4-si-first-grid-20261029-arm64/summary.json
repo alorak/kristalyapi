@@ -1,0 +1,43 @@
+{
+  "scope": "Real Si Docker/API D4 electronic process smoke at 45/360 Ry, k=2x2x1, nbnd8; no MoS2/Si scientific accuracy acceptance.",
+  "source_commit": "7e406018c92b16386cebe1d5ba3b4c9526037024",
+  "status": "failed",
+  "terminal": {
+    "job_id": "9125e484644e449fa32057ad44fd3fe8",
+    "status": "failed",
+    "created": "2026-10-29T00:04:18.768403+00:00",
+    "updated": "2026-10-29T00:04:23.503862+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": "Electronic pipeline failed; inspect retained stage logs"
+  },
+  "api": {
+    "validation": {
+      "valid": true,
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "electronic",
+      "notice": "Validation is not a DFT convergence study"
+    },
+    "submitted": {
+      "job_id": "9125e484644e449fa32057ad44fd3fe8",
+      "status": "queued",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3"
+    },
+    "terminal": {
+      "job_id": "9125e484644e449fa32057ad44fd3fe8",
+      "status": "failed",
+      "created": "2026-10-29T00:04:18.768403+00:00",
+      "updated": "2026-10-29T00:04:23.503862+00:00",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": "Electronic pipeline failed; inspect retained stage logs"
+    }
+  }
+}

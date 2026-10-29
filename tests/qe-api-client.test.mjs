@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {parseQeBandPath} from '../qe-api-client.js';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../qe-api-client.js',import.meta.url),'utf8');
@@ -66,6 +67,12 @@ test('reject mixed API versions and non-JSON responses',async()=>{
 
 
 const secret='x'.repeat(48);
+test('D4 accepts only explicit bounded kz=0 paths with a final weight of one',()=>{
+ const points=parseQeBandPath('Gamma 0 0 0 20\nM .5 0 0 20\nK .333333 .333333 0 20\nGamma 0 0 0 1');
+ assert.equal(points.length,4);assert.equal(points[2].k[0],.333333);
+ for(const bad of ['', 'Gamma 0 0 0 2\nM .5 0 0 2','Gamma 0 0 .5 2\nM .5 0 0 1',
+  '../file 0 0 0 2\nM .5 0 0 1','Gamma NaN 0 0 2\nM .5 0 0 1'])assert.throws(()=>parseQeBandPath(bad));
+});
 const model={schema:'kristalyapi.qe-scf-job.v1',profile_id:'si-pbe',
  structure:{periodic:true,cell_angstrom:[[5,0,0],[0,5,0],[0,0,5]],
  atoms:[{element:'Si',fractional:[0,0,0]}]},

@@ -28,6 +28,11 @@ def sha(path):
 
 def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
             pseudo_dir=Path("/pseudos"),timeout=3600):
+    if json.loads(job["request_json"]).get("schema")=="kristalyapi.qe-electronic-job.v1":
+        from electronic_worker import execute_electronic
+        return execute_electronic(store,job,qe_binary=qe_binary,profiles_dir=profiles_dir,
+            pseudo_dir=pseudo_dir,timeout=timeout,kill=_kill_group,
+            limits=lambda:_limits(max(4000,math.ceil(2*timeout)+30)))
     if json.loads(job["request_json"]).get("schema")=="kristalyapi.qe-relax-scf-job.v1":
         from relax_worker import execute_relax_scf
         return execute_relax_scf(store,job,qe_binary=qe_binary,profiles_dir=profiles_dir,
