@@ -29,7 +29,7 @@ K noktalarını içerir. SCF ve açık 61 noktalı Γ–M–K–Γ yolu sabit tu
 - Aynı açık k-yolunda her noktada özdeğerleri sırala, en düşük ortak 24
   durumu karşılaştır: en büyük fark ≤0.01 eV. Dal etiketlerini/çaprazlaşma
   sırasını aynı fiziksel bant gibi eşleme.
-- NSCF'nin gerçek eigenvalue ve 2/0 doluluk bloklarından örneklenmiş
+- NSCF'nin gerçek eigenvalue ve QE 6.7'nin yazdığı 1/0 normalize doluluk bloklarından (13 dolu durum × iki spin = 26 elektron) örneklenmiş
   VBM/CBM/aralık türet: ilgili değişimler ≤0.01 eV. NSCF örgüsünü
   değiştirince sabit açık yolun bantları değişmediğinden, o grafikten
   NSCF örgüsü yakınsaması iddia edilmez. Bunlar örneklenmiş PBE aralıklarıdır.
@@ -67,3 +67,42 @@ hedeflerini kapsar; genişlik duyarlılığının raporlanması ayrıca belirtil
 Her vaka en fazla 4 saat, 6 GiB/no-swap ve 2 CPU kullanacak; manuel CI
 aynı anda en fazla iki vaka çalıştıracak. Bunlar yalnız üç atomlu referans
 içindir; D5 büyük hücre kapasitesi bu protokolden çıkarılmaz.
+
+## Çalıştırma ve bağımsız doğrulama
+
+Önce kayıtlı plan ve tam D4/D3 kanıt zincirini kontrol et (DFT çalıştırmaz):
+
+```sh
+python tools/qe_electronic_convergence.py --preflight
+```
+
+Manuel `qe-mos2-acceptance.yml` iş akışında `protocol=d41` seçilir;
+Mo/S SHA-256 girdileri sabit plandaki değerlerle birebir eşleşmelidir.
+Altı vaka iki paralel Linux/x86_64 runner üzerinde bağımsız API işleri
+olarak çalışır. Her vaka tamamlanmış olsa bile tek başına yakınsama kabulü
+vermez. Son iş bütün vakaları toplayıp ham çıktılardan yeniden türetir.
+Eksik veya başarısız bir vakada genel sonuç başarısızdır; ham kanıt saklanır.
+
+Yerelde aynı x86_64 kohortu vaka vaka üretmek için temiz, commit edilmiş
+kaynakla şu komut her sabit vaka kimliği için çalıştırılır:
+
+```sh
+python tools/qe_electronic_convergence.py --run-case nbnd32-k16-s010 --output validation-results/qe-mos2-d41
+# Diğer beş vaka da aynı kök dizine, aynı kaynak commit ile çalıştırılır.
+python tools/qe_electronic_convergence.py --report validation-results/qe-mos2-d41
+python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41
+```
+
+`comparison.json` karar çiftlerini, yardımcı çiftleri, ham NSCF kenarlarını,
+DOS/PDOS farklarını ve başarısızlıkları içerir. `--verify` raporu ham
+kanıtlardan yeniden hesaplar ve kayıtla eşleştirir. `broadening_converged`
+alanı daima `null` kalır. Yalnız bant/örgü için ön kayıtlı sonlu kabul vardır.
+Kaynak hash'leri kayıtlı git commit içeriğiyle denetlenir; doğrulayan
+checkout ilgili commit nesnelerini içermelidir (`fetch-depth: 0`).
+
+API'deki isteğe bağlı `electronic.dos` nesnesi tam dört alan alır:
+`delta_e_ev`, `degauss_ry`, `energy_min_ev`, `energy_max_ev`. Aralıklar
+sırasıyla 0.005–0.2 eV, 0.001–0.05 Ry ve −500…500 eV; grid tam sayı
+aralıklı ve en fazla 10001 noktalı olmalıdır. `dos.x` ve `projwfc.x`
+aynı ayarları kullanır. Alan verilmezse önceki D4 girişleri korunur.
+Bu PR bir UI ayar paneli eklemez; operatör/API protokolünü hazırlar.

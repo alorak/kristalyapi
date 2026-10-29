@@ -178,11 +178,12 @@
   "limits": {
     "max_seconds_per_job": 14400,
     "docker_worker_memory_bytes": 6442450944,
-    "workflow_max_parallel": 2
+    "workflow_max_parallel": 2,
+    "docker_worker_nano_cpus": 2000000000
   },
   "interpretation": {
     "band_comparison": "Sort eigenvalues independently at each identical path point; compare common lowest 24 states, without branch-label matching.",
-    "mesh_edges": "From actual NSCF eigenvalues/2-or-0 occupations, not from the unchanged explicit band path. Unshifted 18 and 24 meshes sample the fractional thirds used for K.",
+    "mesh_edges": "From actual NSCF eigenvalues and normalized 1/0 occupation blocks printed by QE 6.7 for this unpolarized fixed-occupation job; multiply occupied state count by two for electrons, not by path band extrema. Unshifted 18 and 24 meshes sample fractional thirds used for K.",
     "width_comparison": "Report curve changes and enforce unchanged underlying NSCF spectrum; no width-to-zero convergence gate.",
     "thresholds": "Preregistered project targets (10 meV edges/common eigenvalues and 5% relative L1), not universal physical-accuracy standards."
   }

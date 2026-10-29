@@ -140,3 +140,6 @@ Teknik referanslar:
 [PWscf elektronik hesaplamalar](https://www.quantum-espresso.org/Doc/pw_user_guide/node10.html),
 [bands.x](https://www.quantum-espresso.org/Doc/INPUT_BANDS.html),
 [projwfc.x](https://www.quantum-espresso.org/Doc/INPUT_PROJWFC.html).
+
+
+D4.1: [ön kayıtlı elektronik yakınsama planı, sınırlı DOS API ayarları ve manuel iş akışı](qe-electronic-convergence.md). Yeni MoS₂ karşılaştırma sonuçları henüz yok.

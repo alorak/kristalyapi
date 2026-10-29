@@ -40,6 +40,11 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
               "--nbnd",str(request["electronic"]["nbnd"]),"--nscf-k",str(request["electronic"]["nscf_k"]),
               "--pw",qe_binary,"--bands-x",bands_x,"--dos-x",dos_x,"--projwfc-x",projwfc_x,
               "--timeout",str(max(1,int(timeout))),"--pdos","--run"]
+        if 'dos' in request['electronic']:
+            p=request['electronic']['dos']
+            for flag,key in [('--dos-delta-e','delta_e_ev'),('--dos-degauss','degauss_ry'),
+                             ('--dos-emin','energy_min_ev'),('--dos-emax','energy_max_ev')]:
+                argv.extend([flag,str(p[key])])
         with (root/"pipeline.stdout").open("wb") as out,(root/"pipeline.stderr").open("wb") as err:
             process=subprocess.Popen(argv,cwd=root,stdout=out,stderr=err,start_new_session=True,
                 env={**os.environ,"OMP_NUM_THREADS":"2"},preexec_fn=limits)
@@ -58,6 +63,8 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
         if manifest_path.stat().st_size>32_000_000 or data_path.stat().st_size>24_000_000:
             raise ValueError("Electronic result exceeds bounded API size")
         manifest=json.loads(manifest_path.read_text());electronic=json.loads(data_path.read_text())
+        if manifest.get('dos_settings')!=request['electronic'].get('dos'):
+            raise ValueError('Pipeline DOS settings differ from the validated request')
         required={"scf","bands","bands_pp","nscf","dos","projwfc"}
         if manifest["status"]!="completed" or set(manifest["steps"])!=required or any(
                 step["status"]!="completed" for step in manifest["steps"].values()):

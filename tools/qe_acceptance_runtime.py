@@ -92,6 +92,10 @@ class Runtime:
             require(config["Memory"]==config["MemorySwap"]==memory,"Worker resources differ from fixed plan")
             self.report["provenance"].update(image_id=info["Image"],worker_resources={
                 "memory_bytes":config["Memory"],"memory_swap_bytes":config["MemorySwap"]})
+            if 'docker_worker_nano_cpus' in self.plan['limits']:
+                actual=config.get('NanoCpus')
+                require(actual==self.plan['limits']['docker_worker_nano_cpus'],'Worker CPU allocation differs from fixed plan')
+                self.report['provenance']['worker_nano_cpus']=actual
             return self
         except Exception:
             self.__exit__(None,None,None)

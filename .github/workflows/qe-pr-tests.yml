@@ -53,3 +53,5 @@ jobs:
           if [ -f tools/qe_defect_prepare.py ]; then
             python tools/qe_defect_prepare.py --verify validation-results/qe-mos2-d5-preparation-20261029
           fi
+      - name: Validate D4.1 preregistered plan and pinned raw reference without DFT
+        run: python tools/qe_electronic_convergence.py --preflight

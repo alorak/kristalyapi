@@ -61,6 +61,10 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_electronic_jobs.py' -v
       - name: Test electronic acceptance raw evidence rejection
         run: python -m unittest discover -s tests -p 'test_qe_electronic_acceptance.py' -v
+      - name: Test bounded DOS controls and D4.1 convergence decisions
+        run: |
+          python -m unittest discover -s tests -p 'test_qe_dos_settings.py' -v
+          python -m unittest discover -s tests -p 'test_qe_electronic_convergence.py' -v
       - name: Test bounded acceptance artifact transport
         run: python -m unittest discover -s tests -p 'test_qe_acceptance_runtime.py' -v
       - name: Test source-fixed MoS2 defect preparation
