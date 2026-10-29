@@ -84,5 +84,5 @@ python3 tools/qe_electronic_acceptance.py --run --output validation-results/qe-m
 python3 tools/qe_electronic_acceptance.py --verify validation-results/qe-mos2-electronic-local
 ```
 
-114 Python QE testi geçti; MoS₂'nin D3 ön koşulu ve gerçek D4 sonucu
+116 Python QE testi geçti; MoS₂'nin D3 ön koşulu ve gerçek D4 sonucu
 henüz bekleniyor.

@@ -124,8 +124,12 @@ class Runtime:
             except ValueError:missing.append(filename)
         if missing:write_json(path/"missing-artifacts.json",missing)
         if electronic:
-            filenames=json.loads(self.command(["docker","exec",self.container,"python3","-c",
-                "import pathlib,json,sys;p=pathlib.Path('/var/lib/qe/runs')/sys.argv[1]/'pipeline';print(json.dumps([x.name for x in p.iterdir() if x.is_file()]))",jid]))
+            try:
+                filenames=json.loads(self.command(["docker","exec",self.container,"python3","-c",
+                    "import pathlib,json,sys;p=pathlib.Path('/var/lib/qe/runs')/sys.argv[1]/'pipeline';print(json.dumps([x.name for x in p.iterdir() if x.is_file()]))",jid]))
+            except ValueError:
+                if terminal["status"]=="completed":raise
+                filenames=[]
             (path/"pipeline").mkdir()
             for filename in filenames:
                 require(re.fullmatch(r"[A-Za-z0-9_.#()+-]+",filename) is not None,"Unexpected pipeline artifact name")
