@@ -1,0 +1,65 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/health",
+    "status": 200,
+    "response": {
+      "status": "ready",
+      "api_version": "0.4.0",
+      "engine": "quantum-espresso",
+      "binary_smoke": "pwscf_banner",
+      "read_only": false
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 200,
+    "response": {
+      "valid": true,
+      "structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063",
+      "atoms": 3,
+      "profile_id": "mos2-pbe",
+      "upf_sha256": {
+        "Mo": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+        "S": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+      },
+      "calculation": "electronic",
+      "notice": "Validation is not a DFT convergence study",
+      "electronic_preflight": {
+        "neutral_valence_electrons": 26,
+        "minimum_nbnd": 13,
+        "requested_nbnd": 26,
+        "upf_valence_electrons": {
+          "Mo": 14.0,
+          "S": 6.0
+        },
+        "scope": "Necessary capacity only; empty-band, spin and physical convergence acceptance are separate"
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations/validate",
+    "status": 422,
+    "response": {
+      "detail": "nbnd=12 cannot hold 26 neutral valence electrons; unpolarized jobs need at least 13 bands"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/calculations",
+    "status": 422,
+    "response": {
+      "detail": "nbnd=12 cannot hold 26 neutral valence electrons; unpolarized jobs need at least 13 bands"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/calculations",
+    "status": 200,
+    "response": {
+      "jobs": []
+    }
+  }
+]

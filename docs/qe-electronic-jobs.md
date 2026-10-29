@@ -95,3 +95,8 @@ kapasitesi kontrolü hesap girdilerini değiştirmez; devam eden koşunun sabit
 kaynak commit'i yukarıda ayrı kaydedilmiştir. Bu kontrol gerçek Mo/S UPF
 baytlarından 26 elektron / en az 13 dolu bant türetti; 12 bant reddedildi.
 Yeni HTTP/worker negatif testleri de yetersiz bantta hesap açılmadığını doğrular.
+
+
+[Gerçek Docker/API ön kontrol kanıtı](../validation-results/qe-d4-band-preflight-20261029-arm64/INCELEME.md):
+26 bant validate=200, 12 bant validate/submit=422 ve boş kuyruk doğrulandı.
+Bu denemede DFT işi gönderilmedi; gerçek D4 spektrum kabulü ayrı çalışmadır.
