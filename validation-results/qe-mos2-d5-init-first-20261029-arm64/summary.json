@@ -1,0 +1,118 @@
+{
+  "schema": "kristalyapi.mos2-defect-initialization-pilot.v1",
+  "initialization_only": true,
+  "calculation_performed": false,
+  "source_commit": "4f9173b122383068a1c40cec596fc895ebb0d558",
+  "source_sha256": {
+    "tools/qe_defect_init.py": "bfd7a0dc8efc430f3329c51e840e5e0a84a173f10f0351680cf69bdaffbfb703",
+    "tools/qe_defect_prepare.py": "ec3c5d8f442d89c5fdbc50d46fcae93684794af8dbe20fd536a7699d3b271cb5",
+    "tests/fixtures/qe/mos2-defect-preparation.json": "dc0eea768e534d4bf3e3cf22672a2992f033b1e6ae3a75ed19ebc30d1f2fc0af",
+    "server/job_core.py": "5299f4bdfda45088f21cafdc123c2f89e61d99ad2111b1513a31309b857a00e3"
+  },
+  "preparation_sha256": "7dd710427f25552718f5b92bc287173cd56c90032c1101f800c27974113df759",
+  "pseudopotential_sha256": {
+    "Mo": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+    "S": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4",
+    "O": "39cf0077e3ee34edce47746270394a8265ed70d92d73bc97cc1e20401657f8f6"
+  },
+  "image_id": "sha256:21d4887dfe9a0fd2123beda7ba9847166b1b39b36fc448e498cb3ba9c2660f00",
+  "architecture": "arm64",
+  "limits": {
+    "memory_bytes": 6442450944,
+    "cpus": 2,
+    "timeout_seconds_per_case": 120,
+    "nbnd": 416
+  },
+  "scope": "QE nstep=0 initialization only; no energies, relaxation, SCF convergence or full-run resource acceptance",
+  "cases": [
+    {
+      "id": "pristine",
+      "status": "failed",
+      "initialization_only": true,
+      "calculation_performed": false,
+      "resources": {
+        "memory_bytes": 6442450944,
+        "memory_swap_bytes": 6442450944,
+        "nano_cpus": 2000000000,
+        "network": "none",
+        "read_only": true
+      },
+      "exit_code": 137,
+      "oom_killed": true,
+      "error": "Initialization failed, timed out or exceeded memory",
+      "container_removed": true,
+      "artifact_sha256": {
+        "initialization.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "initialization.out": "17b0ad0fd8084ebbada0a33b737fd92ade81ec48516e6a4b9c6261aa63d807b6",
+        "initialization.in": "dd86451911f1ce928217a8d718a2fcfcc00fae339d2fbb79295a805f36dd0419"
+      }
+    },
+    {
+      "id": "V_S",
+      "status": "failed",
+      "initialization_only": true,
+      "calculation_performed": false,
+      "resources": {
+        "memory_bytes": 6442450944,
+        "memory_swap_bytes": 6442450944,
+        "nano_cpus": 2000000000,
+        "network": "none",
+        "read_only": true
+      },
+      "exit_code": 137,
+      "oom_killed": true,
+      "error": "Initialization failed, timed out or exceeded memory",
+      "container_removed": true,
+      "artifact_sha256": {
+        "initialization.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "initialization.out": "6b62a1b5b0aeacf2ed85aa2e858e5585c02165adf96507ab54a60c99a2c35af8",
+        "initialization.in": "2b742d6744ca170d43c1c4a1c505a55b0c950dfc9815f554bda650460acfa3bc"
+      }
+    },
+    {
+      "id": "V_2S",
+      "status": "failed",
+      "initialization_only": true,
+      "calculation_performed": false,
+      "resources": {
+        "memory_bytes": 6442450944,
+        "memory_swap_bytes": 6442450944,
+        "nano_cpus": 2000000000,
+        "network": "none",
+        "read_only": true
+      },
+      "exit_code": 137,
+      "oom_killed": true,
+      "error": "Initialization failed, timed out or exceeded memory",
+      "container_removed": true,
+      "artifact_sha256": {
+        "initialization.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "initialization.out": "d57b09e684d500c5711b09a1365193c21723a9d12d5f072212454924174a3de7",
+        "initialization.in": "d3e32c3ad7e1514bbc21f8c4029a7fb0734e464bacf2912abd3f726f35d685d5"
+      }
+    },
+    {
+      "id": "O_S",
+      "status": "failed",
+      "initialization_only": true,
+      "calculation_performed": false,
+      "resources": {
+        "memory_bytes": 6442450944,
+        "memory_swap_bytes": 6442450944,
+        "nano_cpus": 2000000000,
+        "network": "none",
+        "read_only": true
+      },
+      "exit_code": 137,
+      "oom_killed": true,
+      "error": "Initialization failed, timed out or exceeded memory",
+      "container_removed": true,
+      "artifact_sha256": {
+        "initialization.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "initialization.out": "225a804de9e012a87926fb3fd40a67847369e3c31b9751f16fe85da67c65c457",
+        "initialization.in": "fe56804d3b7ae207e6628ebb7095f70439ba18a3c672aeca96226ef00861d398"
+      }
+    }
+  ],
+  "status": "failed"
+}

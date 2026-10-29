@@ -25,3 +25,4 @@ validation-results/qe-d4-*/pipeline/** -whitespace
 validation-results/qe-d4-*/pipeline/** linguist-generated=true
 validation-results/qe-d4-*/container.log linguist-generated=true
 validation-results/qe-d4-*/result.json linguist-generated=true
+validation-results/qe-mos2-d5-init-*/**/initialization.out -whitespace

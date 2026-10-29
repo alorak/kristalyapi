@@ -30,22 +30,31 @@ def initialization_input(candidate, profile):
         .replace('&SYSTEM\n', '&SYSTEM\n nbnd='+str(NBND)+',\n'))
 
 
-def initialization_proof(raw,case,exit_code,oom):
-    if oom or exit_code != 0 or 'JOB DONE.' not in raw:
-        raise ValueError('Initialization failed, timed out or exceeded memory')
-    if re.search(r'(?m)^\s*!\s*total energy\s*=',raw) or 'convergence has been achieved' in raw:
-        raise ValueError('Unexpected SCF execution in an initialization-only pilot')
+def initialization_diagnostics(raw):
     integer=lambda label:re.search(label+r'\s*=\s*([0-9.]+)',raw)
     fields={'atoms':integer('number of atoms/cell'),'electrons':integer('number of electrons'),
             'bands':integer('number of Kohn-Sham states')}
-    expected={'atoms':len(case['sites']),'electrons':case['capacity']['neutral_valence_electrons'],'bands':NBND}
-    if any(m is None or float(m[1])!=expected[k] for k,m in fields.items()):
-        raise ValueError('Raw initialized atom/electron/band counts differ from prepared model')
     version=re.search(r'Program\s+PWSCF\s+v\.?(\S+)',raw)
-    if version is None:raise ValueError('Missing actual QE version')
-    estimates=re.findall(r'(?im)^.*(?:estimated.*(?:RAM|memory)|RAM.*estimated).*$',raw)
-    return {'status':'initialized','qe_version':version[1],**expected,'calculation_performed':False,
-            'scf_converged':False,'raw_memory_estimate_lines':estimates,
+    return {**{k:float(m[1]) if m is not None else None for k,m in fields.items()},
+            'qe_version':version[1] if version is not None else None,
+            'has_energy':bool(re.search(r'(?m)^\s*!\s*total energy\s*=',raw)),
+            'has_scf_convergence':'convergence has been achieved' in raw,
+            'scf_started':bool(re.search(r'(?im)^\s*(?:Self-consistent Calculation|iteration\s*#)',raw)),
+            'raw_memory_estimate_lines':re.findall(r'(?im)^.*(?:estimated.*(?:RAM|memory)|RAM.*estimated).*$',raw)}
+
+
+def initialization_proof(raw,case,exit_code,oom):
+    d=initialization_diagnostics(raw)
+    if d['has_energy'] or d['has_scf_convergence'] or d['scf_started']:
+        raise ValueError('Unexpected SCF execution in an initialization-only pilot')
+    if oom or exit_code != 0 or 'JOB DONE.' not in raw:
+        raise ValueError('Initialization failed, timed out or exceeded memory')
+    expected={'atoms':len(case['sites']),'electrons':case['capacity']['neutral_valence_electrons'],'bands':NBND}
+    if any(d[k]!=value for k,value in expected.items()):
+        raise ValueError('Raw initialized atom/electron/band counts differ from prepared model')
+    if d['qe_version'] is None:raise ValueError('Missing actual QE version')
+    return {'status':'initialized','qe_version':d['qe_version'],**expected,'calculation_performed':False,
+            'scf_converged':False,'raw_memory_estimate_lines':d['raw_memory_estimate_lines'],
             'full_scf_memory_or_walltime_validated':False}
 
 
@@ -80,12 +89,15 @@ def run_case(image,pseudos,output,case):
         actual={'memory_bytes':cfg['Memory'],'memory_swap_bytes':cfg['MemorySwap'],
                 'nano_cpus':cfg['NanoCpus'],'network':cfg['NetworkMode'],'read_only':cfg['ReadonlyRootfs']}
         report.update(resources=actual,exit_code=state['ExitCode'],oom_killed=state['OOMKilled'])
+        raw=(folder/'initialization.out').read_text(errors='replace')
+        diagnostics=initialization_diagnostics(raw)
+        report['raw_initialization_diagnostics']=diagnostics
+        report['calculation_performed']=any(diagnostics[k] for k in ('has_energy','has_scf_convergence','scf_started'))
         if actual!={'memory_bytes':MEMORY,'memory_swap_bytes':MEMORY,'nano_cpus':2_000_000_000,
                    'network':'none','read_only':True}:
             raise ValueError('Actual initialization sandbox differs from fixed limits')
         if report.get('timed_out'):raise ValueError('Initialization-only pilot exceeded 120 seconds')
-        report.update(initialization_proof((folder/'initialization.out').read_text(errors='replace'),
-                                          case,state['ExitCode'],state['OOMKilled']))
+        report.update(initialization_proof(raw,case,state['ExitCode'],state['OOMKilled']))
     except (OSError,ValueError,subprocess.SubprocessError) as exc:
         report['error']=str(exc)[:600]
     finally:
@@ -137,6 +149,7 @@ def main():
                 'limits':{'memory_bytes':MEMORY,'cpus':2,'timeout_seconds_per_case':TIMEOUT,'nbnd':NBND},
                 'scope':'QE nstep=0 initialization only; no energies, relaxation, SCF convergence or full-run resource acceptance'}
         report['cases']=[run_case(args.image,pseudos,output,case) for case in manifest['cases']]
+        report['calculation_performed']=any(x['calculation_performed'] for x in report['cases'])
         report['status']='initialized' if all(x['status']=='initialized' and x.get('container_removed') and
                     not x.get('cleanup_error') for x in report['cases']) else 'failed'
         (output/'summary.json').write_text(json.dumps(report,indent=2)+'\n')

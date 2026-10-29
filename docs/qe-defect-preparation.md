@@ -95,5 +95,9 @@ python3 tools/qe_defect_init.py --pseudo-dir /path/to/reviewed-Mo-S-O-upfs \
 
 `initialized` sonucu yalnız başlangıcın tamamlandığını gösterir. SCF,
 relaksasyon, PDOS, tam hesabın RAM/wall-time yeterliliği veya API'nin 128
-bant sınırının kaldırıldığı anlamına gelmez. Bu pilotun gerçek sonucu
-ayrıca kaydedilecektir.
+bant sınırının kaldırıldığı anlamına gelmez. [Gerçek pilot sonucu](../validation-results/qe-mos2-d5-init-first-20261029-arm64/INCELEME.md):
+4/4 aday 6 GiB sınırında OOM/exit137 ile durdu; hiçbirinde SCF başlamadı.
+QE üst bellek tahmini 71.76–80.49 GB bastı; bu ölçülmüş tepe bellek değildir.
+Özgün başarısız ham girdiler/çıktılar korunur. Sonraki kod başarısızlıkta da
+ham sayı/bellek tahminlerini metadata'ya taşır; bu tanı düzeltmesi nedeniyle
+aynı yetersiz kaynakta hesap tekrar edilmedi.

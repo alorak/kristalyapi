@@ -352,6 +352,8 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] O₂ adayında iki açık kesirli koordinat zorunlu; otomatik bağ geometrisi veya adsorpsiyon kabulü yok.
 - [x] Resmi O PBE/skaler UPF bayt/header SHA-256 incelemesi; fiziksel kusur uygunluğu ayrıca bekliyor.
 - [x] Valans elektron/bant kapasitesi ön kontrolü: 4×4 pristine 416 elektron / en az 208 dolu bant; mevcut 128 bant elektronik API sınırına sığmaz. Kaynak limitleri yükseltilmedi.
+- [x] Ön kayıtlı 4×4, 416 bant, `nstep=0` gerçek başlangıç pilotu: 4/4 aday 6 GiB/no-swap sınırında OOM/exit137; SCF başlamadı. Ham bellek tahminleri 71.76–80.49 GB; ölçülmüş peak değildir. [Başarısız kaynak pilotu](validation-results/qe-mos2-d5-init-first-20261029-arm64/INCELEME.md) korunur, sınır artırılmadı.
+- [x] Başarısız başlangıçta sayı/bellek tanısı, timeout/cleanup testleri ve beklenmeyen SCF çalışmasını başlangıç gibi göstermeyi reddetme.
 - [ ] Gerçek kusur relax/SCF/elektronik sonuçları; spin/doluluk, süperhücre boyutu, k-örgüsü/cutoff yakınsaması ve büyük hücre kaynak profili kabulü.
 
 [Üretim ve doğrulama rehberi](docs/qe-defect-preparation.md). Hazırlanan modeller hesap sonucu değildir.

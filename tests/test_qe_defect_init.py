@@ -33,9 +33,17 @@ class DefectInitializationTests(unittest.TestCase):
         self.assertFalse(r['full_scf_memory_or_walltime_validated'])
 
     def test_energy_or_convergence_output_cannot_be_called_initialization_only(self):
-        for addition in ('! total energy = -100 Ry\n','convergence has been achieved in 3 iterations\n'):
+        for addition in ('! total energy = -100 Ry\n','convergence has been achieved in 3 iterations\n',
+                         'Self-consistent Calculation\n','iteration # 1\n'):
             with self.subTest(addition=addition),self.assertRaisesRegex(ValueError,'Unexpected SCF'):
                 init.initialization_proof(self.raw+addition,self.case,0,False)
+
+    def test_failed_initialization_keeps_raw_counts_and_estimates_without_a_success_claim(self):
+        d=init.initialization_diagnostics(self.raw.replace('JOB DONE.',''))
+        self.assertEqual(d['electrons'],416);self.assertEqual(d['bands'],416)
+        self.assertEqual(len(d['raw_memory_estimate_lines']),1)
+        self.assertFalse(d['scf_started']);self.assertFalse(d['has_energy'])
+        self.assertNotIn('status',d)
 
     def test_bad_exit_oom_or_inconsistent_counts_are_rejected(self):
         for raw,code,oom in ((self.raw,137,True),(self.raw,1,False),

@@ -1,0 +1,22 @@
+{
+  "id": "V_2S",
+  "status": "failed",
+  "initialization_only": true,
+  "calculation_performed": false,
+  "resources": {
+    "memory_bytes": 6442450944,
+    "memory_swap_bytes": 6442450944,
+    "nano_cpus": 2000000000,
+    "network": "none",
+    "read_only": true
+  },
+  "exit_code": 137,
+  "oom_killed": true,
+  "error": "Initialization failed, timed out or exceeded memory",
+  "container_removed": true,
+  "artifact_sha256": {
+    "initialization.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initialization.out": "d57b09e684d500c5711b09a1365193c21723a9d12d5f072212454924174a3de7",
+    "initialization.in": "d3e32c3ad7e1514bbc21f8c4029a7fb0734e464bacf2912abd3f726f35d685d5"
+  }
+}
