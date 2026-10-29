@@ -1,0 +1,22 @@
+{
+  "id": "pristine",
+  "status": "failed",
+  "initialization_only": true,
+  "calculation_performed": false,
+  "resources": {
+    "memory_bytes": 6442450944,
+    "memory_swap_bytes": 6442450944,
+    "nano_cpus": 2000000000,
+    "network": "none",
+    "read_only": true
+  },
+  "exit_code": 137,
+  "oom_killed": true,
+  "error": "Initialization failed, timed out or exceeded memory",
+  "container_removed": true,
+  "artifact_sha256": {
+    "initialization.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initialization.out": "17b0ad0fd8084ebbada0a33b737fd92ade81ec48516e6a4b9c6261aa63d807b6",
+    "initialization.in": "dd86451911f1ce928217a8d718a2fcfcc00fae339d2fbb79295a805f36dd0419"
+  }
+}

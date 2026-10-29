@@ -1,0 +1,79 @@
+{
+  "source_hashes_checked_against_recorded_commit": {
+    "tools/qe_defect_init.py": true,
+    "tools/qe_defect_prepare.py": true,
+    "tests/fixtures/qe/mos2-defect-preparation.json": true,
+    "server/job_core.py": true
+  },
+  "cases": [
+    {
+      "id": "pristine",
+      "atoms": 48.0,
+      "electrons": 416.0,
+      "bands": 416.0,
+      "qe_version": "6.7MaX",
+      "has_energy": false,
+      "has_scf_convergence": false,
+      "scf_started": false,
+      "raw_memory_estimate_lines": [
+        "     Estimated static dynamical RAM per process >      24.76 GB",
+        "     Estimated max dynamical RAM per process >      72.41 GB"
+      ],
+      "docker_oom_killed": true,
+      "exit_code": 137,
+      "container_removed": true
+    },
+    {
+      "id": "V_S",
+      "atoms": 47.0,
+      "electrons": 410.0,
+      "bands": 416.0,
+      "qe_version": "6.7MaX",
+      "has_energy": false,
+      "has_scf_convergence": false,
+      "scf_started": false,
+      "raw_memory_estimate_lines": [
+        "     Estimated static dynamical RAM per process >      24.62 GB",
+        "     Estimated max dynamical RAM per process >      71.76 GB"
+      ],
+      "docker_oom_killed": true,
+      "exit_code": 137,
+      "container_removed": true
+    },
+    {
+      "id": "V_2S",
+      "atoms": 46.0,
+      "electrons": 404.0,
+      "bands": 416.0,
+      "qe_version": "6.7MaX",
+      "has_energy": false,
+      "has_scf_convergence": false,
+      "scf_started": false,
+      "raw_memory_estimate_lines": [
+        "     Estimated static dynamical RAM per process >      33.85 GB",
+        "     Estimated max dynamical RAM per process >      80.49 GB"
+      ],
+      "docker_oom_killed": true,
+      "exit_code": 137,
+      "container_removed": true
+    },
+    {
+      "id": "O_S",
+      "atoms": 48.0,
+      "electrons": 416.0,
+      "bands": 416.0,
+      "qe_version": "6.7MaX",
+      "has_energy": false,
+      "has_scf_convergence": false,
+      "scf_started": false,
+      "raw_memory_estimate_lines": [
+        "     Estimated static dynamical RAM per process >      25.02 GB",
+        "     Estimated max dynamical RAM per process >      72.16 GB"
+      ],
+      "docker_oom_killed": true,
+      "exit_code": 137,
+      "container_removed": true
+    }
+  ],
+  "scope": "Post-run raw/OOM inspection; original failed pilot files kept unchanged"
+}
