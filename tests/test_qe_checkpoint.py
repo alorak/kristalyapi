@@ -55,6 +55,21 @@ class StageCheckpointTests(unittest.TestCase):
             with self.subTest(target=target),self.assertRaisesRegex(ValueError,'changed'):self.resume(f)
             self.assertFalse((f.output/'electronic-results.json').exists())
 
+    def test_retained_real_si_pause_chain_preserves_scf_and_checkpoint_hashes(self):
+        folder=ROOT/'validation-results/qe-pause-resume-si-20261029-arm64'
+        summary=json.loads((folder/'summary.json').read_text())
+        audit=json.loads((folder/'pause-api.json').read_text());result=json.loads((folder/'result.json').read_text())
+        saved=json.loads((folder/'paused-checkpoint.json').read_text())
+        manifest=json.loads((folder/'pipeline/pipeline.json').read_text())
+        self.assertTrue(summary['completed_scf_reused'] and summary['image_source_verified'] and summary['resources_removed'])
+        self.assertEqual(audit['paused']['status'],'paused');self.assertEqual(audit['resume_request']['status'],'queued')
+        self.assertEqual(audit['paused']['job_id'],result['job_id'])
+        self.assertEqual(manifest['resumed_from_checkpoint_sha256'],checkpoint.digest(folder/'paused-checkpoint.json'))
+        self.assertEqual(manifest['steps']['scf'],saved['manifest']['steps']['scf'])
+        self.assertEqual(audit['scf_stdout_sha256_before_resume'],checkpoint.digest(folder/'pipeline/scf.out'))
+        self.assertEqual(result['pipeline_steps']['scf']['stdout_sha256'],audit['scf_stdout_sha256_before_resume'])
+        self.assertEqual(manifest['resume_count'],1)
+
     def test_stored_checkpoint_digest_and_symlink_rejection(self):
         f=self.prepare();data=json.loads((f.output/'checkpoint.json').read_text())
         with self.assertRaisesRegex(ValueError,'SHA-256 changed'):checkpoint.load(f.output,data['contract'],'a'*64)
