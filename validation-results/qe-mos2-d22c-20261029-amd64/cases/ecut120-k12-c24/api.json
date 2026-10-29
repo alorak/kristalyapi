@@ -1,0 +1,33 @@
+{
+  "validation": {
+    "valid": true,
+    "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f",
+    "atoms": 3,
+    "profile_id": "mos2-pbe",
+    "upf_sha256": {
+      "Mo": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "S": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    },
+    "calculation": "scf",
+    "notice": "Validation is not a DFT convergence study"
+  },
+  "submitted": {
+    "job_id": "ac06960679b64bd081917d21cb95cc6c",
+    "status": "queued",
+    "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+  },
+  "terminal": {
+    "job_id": "ac06960679b64bd081917d21cb95cc6c",
+    "status": "completed",
+    "created": "2026-10-28T23:25:27.529300+00:00",
+    "updated": "2026-10-28T23:34:20.712874+00:00",
+    "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f",
+    "profile_id": "mos2-pbe",
+    "cancel_requested": false,
+    "error": null
+  },
+  "staged_upf_sha256": {
+    "Mo": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+    "S": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+  }
+}

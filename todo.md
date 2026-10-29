@@ -319,7 +319,7 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] `tools/qe_mos2_acceptance.py --run/--verify`: gerçek QE/API işlerinin ham çıktısı, SCF yakınsama, Ry/eV, input/cell/atom/k-örgüsü, pseudo ve çıktı hash'leri ve ortak kabul eşiği kanıt denetimi.
 - [x] `tests/test_qe_mos2_acceptance.py` negatif/sentetik testleri, manuel iş akışı ve CI/usage rehberi; **gerçek veri oldukları iddia edilmez**.
 - [x] **Gerçek manuel koşu ve kanıt incelemesi:** resmi Mo/S UPF baytları ve metadata'sı doğrulandı; [Linux CI](https://github.com/alorak/kristalyapi/actions/runs/40770083516) üzerinde 7/7 gerçek SCF işi tamamlandı. Ham QE/API, 26 elektron, SHA-256 ve ≤1e-8 Ry SCF hata tahminleri yerelde tekrar doğrulandı. [Kalıcı kanıtlar](validation-results/qe-mos2-d22-20261029-amd64/README.md).
-- [ ] **D2.2 genel bilimsel kabul:** kesme enerjisi 80→100 Ry farkı **2.374556 >1 meV/atom**, kabul başarısız. K-örgüsü **0.000635 ≤1**, vakum **0.000363 ≤2 meV/atom** geçti. D2.2b yeni ön kayıtlı taramasında 120→140 Ry **0.268123 ≤1** geçti; seçilecek yüksek cutoff protokolünde k/vakum kontrolleri bekliyor. İlk başarısız sonuç ve eşikler değiştirilmedi.
+- [ ] **D2.2 genel bilimsel kabul:** kesme enerjisi 80→100 Ry farkı **2.374556 >1 meV/atom**, kabul başarısız. K-örgüsü **0.000635 ≤1**, vakum **0.000363 ≤2 meV/atom** geçti. D2.2b yeni ön kayıtlı taramasında 120→140 Ry **0.268123 ≤1** geçti; D2.2c yeni 120/960 Ry, k=16/c=24 referansında üç kapıyı da geçti. Genel fiziksel doğruluk/kuvvet/relaksasyon ayrı kalır. İlk başarısız sonuç ve eşikler değiştirilmedi.
 - [ ] **D3 (sonraki PR):** gerçek MoS₂ kabulünden sonra `relax → scf` sunucu worker iş şeması, atomik kuvvet/geometri doğrulaması ve kaynak eşleşmeli 3B önizleme.
 - [ ] **D4:** gerçek `bands.x`, `dos.x`, `projwfc.x` zinciri; spin, referans enerji ve yakınsama kanıtı olmadan fiziksel sonuçları birleştirme.
 - [ ] **D5:** V_S / V₂S / O_S / O₂@V_S kusur karşılaştırması ve spin/SOC; bağımsız araştırma kabulü.
@@ -333,9 +333,17 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] Fiziksel plan/eşik değiştirilmeden yalnız kabul ortamına 6 GiB RAM, swap kapalı ve 3600 saniye/iş tanımlayan ayrı v2 ön kaydı; üretim Compose dosyası değişmez.
 - [x] [İkinci gerçek Linux koşusu](https://github.com/alorak/kristalyapi/actions/runs/40783454635): **3/3** SCF, ham QE/API/hash ve 26 elektron denetimi geçti. **120→140 Ry: 0.268123 ≤1 meV/atom**. 100 Ry önceki enerjiyi tam tekrarladı. [Kalıcı kanıt ve inceleme](validation-results/qe-mos2-d22b-20261029-amd64/INCELEME.md).
 - [x] Eksik işte kabul enerjisi üretmeyen `failure.json`, SCF iterasyonu/hatası ve kısmi çıktı hash tanısı; worker API hata açıklamasında süre sınırı. **84 Python QE testi** geçti.
-- [ ] Seçilecek yüksek kesme enerjisinde k-örgüsü/vakum karşılaştırmalarını yeniden doğrula; D2.2 genel kabulü ve D3 bu adımdan önce tamamlanmış sayılmaz.
+- [x] Yüksek kesme enerjisinde k/vakum ve yoğun örgüde cutoff D2.2c ile doğrulandı; sonlu SCF enerji referansı kabul edildi. Kuvvet/relaksasyon ve bağımsız fiziksel doğruluk ayrı kalır.
 
 **Protokol ve kapsam:** [D2.2b kılavuzu](docs/qe-mos2-cutoff-validation.md). İlk D2.2'nin 100 Ry'deki k/vakum sonuçları yeni yüksek-cutoff protokolünün yerine geçmez; kuvvet/relaksasyon kabulü ayrıca gerekir.
+
+### D2.2c — Yüksek-cutoff k/vakum ve ortak SCF referansı (geçti)
+
+- [x] Altı gerçek iş ve üç karar çiftini koşudan önce sabitle; cutoff'u seçilen yoğun örgüde yeniden denetle.
+- [x] [Linux CI](https://github.com/alorak/kristalyapi/actions/runs/40786532333) üzerinde **6/6 SCF**; ham QE/API/26 elektron/SHA-256 ve kaynak kimliği yerelde yeniden doğrulandı.
+- [x] Kesme enerjisi **0.267715 ≤1**, k-örgüsü **0.000907 ≤1**, vakum **basılı hassasiyette 0.000000 ≤2 meV/atom** geçti. [Kalıcı kanıtlar](validation-results/qe-mos2-d22c-20261029-amd64/INCELEME.md).
+- [x] D3 öncesi sonlu enerji referansı: **120/960 Ry, 16×16×1, c=24 Å**, -181.58163993 Ry. 120/k8 tekrarı önceki D2.2b ile tam eşleşti.
+- [ ] Bu referanstan D3 gerçek relaksasyon/kuvvet/geometri kabulü; bağımsız fiziksel doğruluk ve elektronik/optik kapsam ayrıca bekliyor.
 
 ### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 

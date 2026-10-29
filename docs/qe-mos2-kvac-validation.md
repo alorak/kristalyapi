@@ -4,7 +4,7 @@ Bu [sabit plan](../tests/fixtures/qe/mos2-kvac-acceptance.json) ve ölçütler
 gerçek koşudan önce commit edilir. [D2.2b](qe-mos2-cutoff-validation.md)
 120→140 Ry farkını k=8, c=24'te 0.268123 meV/atom olarak doğruladı.
 Bu deney önerilen **120/960 Ry, 16×16×1, c=24 Å** son SCF referansını
-üç sonlu enerji duyarlılığı kapısıyla sınar. Sonuç henüz bekleniyor.
+üç sonlu enerji duyarlılığı kapısıyla sınar. **Gerçek kabul geçti.**
 
 İdeal üç atomlu 1H-MoS₂, a=3.18 Å, S düzlemi uzaklığı 1.56 Å, PBE,
 26 nötr elektron, sabit occupations, spin/SOC yok. Mo/S UPF baytları ve
@@ -54,3 +54,25 @@ Geçerse yalnız belirtilen ideal monolayer SCF protokolünün sonlu enerji
 hassasiyeti kabul edilir. Bağımsız deneysel doğruluk, kuvvet/geometri,
 relaksasyon, elektronik yapı ve optik/tek-foton sonuçları ayrıca doğrulanır.
 D3 `relax → scf` gerçek koşusu bu kabulün başarılı referansından başlar.
+
+## Gerçek sonuçlar
+
+[CI koşusu](https://github.com/alorak/kristalyapi/actions/runs/40786532333),
+kaynak `78d116baec28419072a6d63c9d0842d28af79ac3`, **6/6 gerçek SCF** ve
+üç kapı geçti. [Ham kanıtlar ve bağımsız inceleme](../validation-results/qe-mos2-d22c-20261029-amd64/INCELEME.md).
+
+| Ölçüt | Fark, meV/atom | Sınır | Sonuç |
+| --- | --- | --- | --- |
+| 120→140 Ry, k=16/c=24 | 0.267715 | 1 | geçti |
+| k=12→16, 120 Ry/c=24 | 0.000907 | 1 | geçti |
+| c=24→30, 120 Ry/k=16 | 0.000000 | 2 | geçti |
+
+Vakum farkı basılı 8 ondalık Ry hassasiyetindedir; tam sıfır fiziksel
+etkileşim iddiası değildir. Referans **120/960 Ry, 16×16×1, c=24 Å**,
+enerji **-181.58163993 Ry**. 120/k8/c24 tekrarı D2.2b ile enerji/girdi/yapı/
+UPF/sürüm bakımından tam eşleşti. Altı işin 26 elektron, SCF hata tahmini,
+API/raw enerji ve hash'leri yerelde yeniden denetlendi.
+
+Bu yeni sonlu SCF referansı D3'e geçiş için enerji kapılarını kapatır.
+İlk D2.2 başarısızlığı korunur; relaksasyon/kuvvet ve genel fiziksel
+bağımsız doğruluk ayrıca değerlendirilir.
