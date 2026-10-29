@@ -297,6 +297,8 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
     def persist():
         result["updated_at"] = timestamp()
         manifest.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        active=next(reversed(result["steps"]),None)
+        (workdir/"progress.json").write_text(json.dumps({"status":result["status"],"active_stage":active})+"\n",encoding="utf-8")
 
     def step_run(name, content, *, post=False):
         infile = workdir / (name + ".in")

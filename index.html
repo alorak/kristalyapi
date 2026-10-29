@@ -385,6 +385,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <p class="hint">PBE ve spinsiz SCF veya sabit hücreli relaksasyon → son SCF seçin. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.</p>
      <label class="field"><span>Sunucu UPF profil kimliği</span><input id="qeJobProfile" type="text" maxlength="40" value="si-pbe" spellcheck="false"></label>
      <label class="field"><span>API erişim anahtarı</span><input id="qeApiToken" type="password" autocomplete="off" placeholder="QE_API_TOKEN"></label>
+     <label class="field"><span>Sunucu iş akışı</span><select id="qeJobWorkflow"><option value="selected">Seçili SCF / relaksasyon</option><option value="electronic">SCF → bant → DOS / PDOS</option></select></label>
+     <div id="qeElectronicSettings" class="qe-workflow" hidden>
+      <p id="qeElectronicSourceStatus" class="note">Kaynak: aktif yapı.</p>
+      <button id="qeElectronicUseActive" type="button">Elektronik hesapta aktif yapıyı kullan</button>
+      <div class="qe-form-grid">
+       <label class="field"><span>Toplam bant sayısı (nbnd)</span><input id="qeElectronicNbnd" type="number" min="1" max="128" value="26"></label>
+       <label class="field"><span>Yoğun 2B k-örgüsü</span><input id="qeElectronicMesh" type="number" min="2" max="24" value="16"></label>
+      </div>
+      <label class="field"><span>Açık bant yolu · ETIKET kx ky 0 N</span><textarea id="qeElectronicPath" rows="5" maxlength="10000" spellcheck="false" placeholder="Gamma 0 0 0 20&#10;M 0.5 0 0 20&#10;K 0.333333333333 0.333333333333 0 20&#10;Gamma 0 0 0 1"></textarea></label>
+      <p class="hint">Yolu yapınıza göre açıkça girin; son ağırlık 1 olmalı. Sonuçlar ham QE enerji referansındadır.</p>
+     </div>
      <div class="qe-form-grid">
       <label class="field"><span>En fazla iyonik adım</span><input id="qeJobMaxSteps" type="number" min="1" max="60" value="30"></label>
       <label class="field"><span>İyonik enerji eşiği (Ry)</span><input id="qeJobEnergyThreshold" type="number" min="0.00000001" max="0.001" step="0.000001" value="0.000001"></label>
@@ -400,6 +411,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <button type="button" id="qeJobHistoryOpen">Seçili işi incele</button>
      <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz QE işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
      <div id="qeRelaxComparison" class="qe-workflow" hidden></div>
+     <div id="qeApiElectronicResults" class="qe-workflow" hidden></div>
      <p class="hint">Sonuç yalnız çalışan Quantum ESPRESSO çıktısından gelir. İş geçmişi sunucudaki SQLite veritabanında tutulur; bu ekranın anahtarı veya hesabı tarayıcı depolamasında tutulmaz. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-jobs.md" target="_blank" rel="noopener noreferrer">SCF işi ve worker kurulumu</a></p>
     </div>
    </div>

@@ -20,7 +20,7 @@ from job_core import canonical_request,load_profile
 from job_store import JobStore
 from qe_probe import inspect_qe
 
-API_VERSION="0.3.0"
+API_VERSION="0.4.0"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -79,7 +79,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             "engine":{"id":"quantum-espresso","version":status["qe_version"],
                       "available":status["ready"]},
             "binaries":status["binaries"],
-            "supported_operations":(["health","capabilities","scf","relax-scf","status","results","cancel"]
+            "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel"]
                                    if enabled else ["health","capabilities"]),
             "job_submission_enabled":enabled,
             "calculations_executed_by_api":False,
@@ -173,6 +173,16 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     async def get_logs(request:Request,job_id:str):
         row=await lookup(request,job_id)
         path=store.root/"runs"/job_id/"structure.out"
+        if json.loads(row["request_json"])["schema"]=="kristalyapi.qe-electronic-job.v1":
+            folder=store.root/"runs"/job_id/"pipeline"
+            progress=folder/"progress.json"
+            step="scf"
+            if progress.is_file() and progress.stat().st_size<=65536:
+                try:
+                    value=json.loads(progress.read_text()).get("active_stage")
+                    if value in {"scf","bands","bands_pp","nscf","dos","projwfc"}:step=value
+                except (OSError,ValueError):pass
+            path=folder/(step+".out")
         if not path.exists() and json.loads(row["request_json"])["schema"]=="kristalyapi.qe-relax-scf-job.v1":
             path=store.root/"runs"/job_id/"relax.out"
         if not path.is_file() or path.is_symlink():

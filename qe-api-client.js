@@ -121,3 +121,17 @@ export async function cancelQeScfJob(address,token,jobId,opts){
 export async function listQeScfJobs(address,token,opts){
  return qeRequest(address,token,'/api/v1/calculations',opts);
 }
+
+export function parseQeBandPath(text){
+ if(typeof text!=='string'||text.length>10000)throw Error('Bant yolu en fazla 10000 karakter olmalı.');
+ const points=text.split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&!x.startsWith('#')).map(line=>{
+  const row=line.split(/\s+/),k=row.slice(1,4).map(Number),n=Number(row[4]);
+  if(row.length!==5||!/^[A-Za-z][A-Za-z0-9_-]{0,15}$/.test(row[0])||
+   k.some(x=>!Number.isFinite(x)||Math.abs(x)>2)||k[2]!==0||!Number.isInteger(n)||n<1||n>100)
+   throw Error('Bant yolu satırı: ETIKET kx ky 0 N; N 1–100 olmalı.');
+  return {label:row[0],k,segments:n};
+ });
+ if(points.length<2||points.length>16||points.at(-1).segments!==1||points.reduce((s,p)=>s+p.segments,0)>300)
+  throw Error('2–16 bant noktası, en çok 300 bölüm ve son ağırlık 1 gerekli.');
+ return points;
+}

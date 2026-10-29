@@ -30,6 +30,9 @@ def num(value, low, high, label):
 
 
 def canonical_request(data):
+    if isinstance(data,dict) and data.get("schema")=="kristalyapi.qe-electronic-job.v1":
+        from electronic_core import canonical_electronic_request
+        return canonical_electronic_request(data)
     if isinstance(data,dict) and data.get("schema")=="kristalyapi.qe-relax-scf-job.v1":
         from relax_core import canonical_relax_request
         return canonical_relax_request(data)

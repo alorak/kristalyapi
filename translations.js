@@ -7,6 +7,21 @@
 (() => {
  'use strict';
  const entries=[
+  ["Sunucu iş akışı", "Server workflow"],
+  ["Seçili SCF / relaksasyon", "Selected SCF / relaxation"],
+  ["SCF → bant → DOS / PDOS", "SCF → bands → DOS / PDOS"],
+  ["Kaynak: aktif yapı.", "Source: active structure."],
+  ["Elektronik hesapta aktif yapıyı kullan", "Use active structure for electronic calculation"],
+  ["Toplam bant sayısı (nbnd)", "Total band count (nbnd)"],
+  ["Yoğun 2B k-örgüsü", "Dense 2D k mesh"],
+  ["Açık bant yolu · ETIKET kx ky 0 N", "Explicit band path · LABEL kx ky 0 N"],
+  ["Yolu yapınıza göre açıkça girin; son ağırlık 1 olmalı. Sonuçlar ham QE enerji referansındadır.", "Enter an explicit path for your structure; the final weight must be 1. Results use the raw QE energy reference."],
+  ["Bu son yapıyla elektronik hesap hazırla", "Prepare electronic calculation using this final structure"],
+  ["Seçilen son yapının kaynak özeti değişmiş.", "The selected final structure source hash changed."],
+  ["Bant yolu en fazla 10000 karakter olmalı.", "The band path must not exceed 10000 characters."],
+  ["Bant yolu satırı: ETIKET kx ky 0 N; N 1–100 olmalı.", "Band path row: LABEL kx ky 0 N; N must be 1–100."],
+  ["2–16 bant noktası, en çok 300 bölüm ve son ağırlık 1 gerekli.", "Use 2–16 path points, at most 300 segments and a final weight of 1."],
+
   ["Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Son atomlar başlangıçla periyodik olarak eşlenir. Konumlar Å birimindedir; aktif yapı değiştirilmez.", "Shared scale · drag to rotate and scroll to zoom. Final atoms are matched to the initial periodic images. Positions are in Å; the active structure is unchanged."],
   ["D2–D3 · Gerçek SCF / relaksasyon işi", "D2–D3 · Real SCF / relaxation jobs"],
   ["PBE ve spinsiz SCF veya sabit hücreli relaksasyon → son SCF seçin. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.", "Choose PBE non-spin SCF or fixed-cell relaxation → final SCF. All atoms are free during relaxation. The operator must configure a UPF profile. The API key stays in page memory; authenticated LAN jobs require HTTPS."],
@@ -1275,6 +1290,10 @@
  ];
  const dictionary=new Map(entries);
  const parts=[
+  [" Bant, DOS ve atom/orbital PDOS sonuçları aşağıda gösteriliyor.", " Bands, DOS and atom/orbital PDOS results are shown below."],
+  ["Kaynak: ", "Source: "],
+  [" · son yapı ", " · final structure "],
+
   ["Son en büyük kuvvet bileşeni: ", "Maximum final force component: "],
   [" · sınır ", " · limit "],
   [" Relaksasyon ve son SCF geçti; en büyük kuvvet bileşeni ", " Relaxation and final SCF passed; maximum force component "],
