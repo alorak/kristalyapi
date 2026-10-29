@@ -11,6 +11,7 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
+import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath } from './qe-api-client.js';
@@ -7003,6 +7004,17 @@ async function qeLoadDefectComparison(){
   container.replaceChildren();status.textContent='MoS₂ karşılaştırma: '+error.message;
  }
 }
+async function qeLoadConvergenceView(){
+ const input=$('qeConvergenceFile'),file=input.files?.[0],status=$('qeConvergenceStatus'),host=$('qeConvergenceCharts');
+ host.replaceChildren();if(!file){status.textContent='Önce convergence-view.json dosyasını seçin.';return;}
+ if(file.size>8e6){status.textContent='Yakınsama dosyası 8 MB sınırını aşıyor.';return;}
+ const workspace=activeWorkspaceId;
+ try{
+  const data=parseConvergenceView(JSON.parse(await file.text()));await verifyConvergenceFileHashes(data);
+  if(input.files?.[0]!==file||activeWorkspaceId!==workspace)throw Error('Dosya veya çalışma alanı değişti; tekrar açın.');
+  renderConvergenceView(host,data);status.textContent='D4.1 raporu açıldı · '+(data.report.status==='passed'?'dosyada sonlu kabul geçti.':'dosyada başarısız veya eksik kabul.');
+ }catch(error){host.replaceChildren();status.textContent='Yakınsama raporu: '+error.message;}
+}
 async function qeLoadElectronicResults(){
  const input=$('qeElectronicFile'),file=input.files?.[0],status=$('qeElectronicStatus');
  const container=$('qeElectronicCharts');container.replaceChildren();
@@ -9742,6 +9754,8 @@ function bind(){
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
  $('qeElectronicOpen').onclick=qeLoadElectronicResults;
+ $('qeConvergenceOpen').onclick=qeLoadConvergenceView;
+ $('qeConvergenceFile').onchange=()=>{$('qeConvergenceCharts').replaceChildren();$('qeConvergenceStatus').textContent='Dosya seçildi; raporu açın.';};
  $('qeApiTest').onclick=qeTestApiConnection;
  $('qeJobValidate').onclick=qeJobPreflight;
  $('qeJobSubmit').onclick=qeJobStart;

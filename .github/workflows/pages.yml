@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -61,6 +61,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_electronic_jobs.py' -v
       - name: Test electronic acceptance raw evidence rejection
         run: python -m unittest discover -s tests -p 'test_qe_electronic_acceptance.py' -v
+      - name: Test convergence view raw evidence export
+        run: python -m unittest discover -s tests -p 'test_qe_convergence_view.py' -v
       - name: Test bounded DOS controls and D4.1 convergence decisions
         run: |
           python -m unittest discover -s tests -p 'test_qe_dos_settings.py' -v
@@ -161,6 +163,7 @@ jobs:
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
           cp qe-electronic-view.js public/qe-electronic-view.js
+          cp qe-convergence-view.js public/qe-convergence-view.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
           cp qe-relax-view.js public/qe-relax-view.js
@@ -192,6 +195,7 @@ jobs:
           test -s public/semiconductor-p0.js
           test -s public/semiconductor-physics-p0-core.js
           test -s public/qe-electronic-view.js
+          test -s public/qe-convergence-view.js
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js
           test -s public/qe-relax-view.js

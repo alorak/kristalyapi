@@ -112,7 +112,7 @@ function el(tag,attrs={},text=''){
  if(text)node.textContent=text;
  return node;
 }
-function chart(title,xName,yName,curves,width=660,height=260){
+export function chart(title,xName,yName,curves,width=660,height=260){
  const svg=el('svg',{viewBox:'0 0 '+width+' '+height,role:'img','aria-label':title});
  svg.style.cssText='width:100%;height:auto;display:block;max-height:360px';
  const left=57,right=12,top=18,bottom=42;
