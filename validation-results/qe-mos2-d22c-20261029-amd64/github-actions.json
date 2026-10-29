@@ -1,0 +1,41 @@
+{
+  "run_id": 40786532333,
+  "run_url": "https://github.com/alorak/kristalyapi/actions/runs/40786532333",
+  "source_commit": "78d116baec28419072a6d63c9d0842d28af79ac3",
+  "job_id": 123161021788,
+  "artifact_id": 12862417451,
+  "artifact_sha256": "42a54c490db7f493646b94a73f62417a9ded765839c928cb0f486c640f05bdfc",
+  "conclusion": "success",
+  "protocol": "d22c",
+  "verified_cases": 6,
+  "source_plan_sha256": "b1fa191a7b37e038003fc7ae9924a29bc8e7ed66df110a0082a9a8ef9f86bd9b",
+  "selected_reference_case": "ecut120-k16-c24",
+  "selected_energy_ry": -181.58163993,
+  "comparisons": [
+    {
+      "axis": "cutoff",
+      "from": "ecut120-k16-c24",
+      "to": "ecut140-k16-c24",
+      "delta_mev_per_atom": 0.2677146884269676,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "kpoints",
+      "from": "ecut120-k12-c24",
+      "to": "ecut120-k16-c24",
+      "delta_mev_per_atom": 0.0009070461543499209,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    },
+    {
+      "axis": "vacuum",
+      "from": "ecut120-k16-c24",
+      "to": "ecut120-k16-c30",
+      "delta_mev_per_atom": 0.0,
+      "limit_mev_per_atom": 2.0,
+      "passed": true
+    }
+  ],
+  "scope": "Finite cutoff/k-mesh/vacuum energy sensitivity of ideal unrelaxed pristine 1H-MoS2 at proposed 120/960 Ry, 16x16x1, c=24 Angstrom reference. Not relaxation/force or independent physical-reference validation."
+}
