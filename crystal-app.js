@@ -11,10 +11,11 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
+import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
-import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath } from './qe-api-client.js';
+import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath,getQeJobDiagnostics } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6887,7 +6888,7 @@ async function qeJobStart(){
    throw Error('Gönderilen ve doğrulanan yapı özetleri uyuşmuyor.');
   qeActiveJob={id:created.job_id,address,token,hash:created.structure_hash,
    workspaceId,snapshot};
-  qeClearRelaxationComparison();
+  qeClearRelaxationComparison();$('qeJobDiagnostics').replaceChildren();
   $('qeApiElectronicResults').replaceChildren();$('qeApiElectronicResults').hidden=true;
   status.textContent='QE işi kuyruğa alındı: '+created.job_id+
    '. İşlem durumu için Yenile düğmesini kullanın.';
@@ -6898,6 +6899,7 @@ async function qeJobRefresh(){
  const status=$('qeJobStatus');if(!qeActiveJob){status.textContent='Bu sekmede takip edilen bir iş yok.';return;}
  try{
   const job=qeActiveJob,record=await getQeScfJob(job.address,job.token,job.id);
+  if(qeActiveJob!==job)return;
   let message='İş '+job.id+' · '+record.status+' · yapı özeti '+record.structure_hash.slice(0,12)+'.';
   let stale=true;
   if(job.snapshot!==null){try{stale=activeWorkspaceId!==job.workspaceId||JSON.stringify(qeJobPayload())!==job.snapshot;}catch{stale=true;}}
@@ -6930,6 +6932,10 @@ async function qeJobRefresh(){
    }
   }else if(record.error)message+=' Hata: '+record.error;
   status.textContent=message;
+  const diagnosticHost=$('qeJobDiagnostics');diagnosticHost.replaceChildren();
+  try{const data=await getQeJobDiagnostics(job.address,job.token,job.id);
+   if(qeActiveJob===job)renderJobDiagnostics(diagnosticHost,data);
+  }catch{if(qeActiveJob===job)diagnosticHost.textContent='Bu sunucuda kaynak raporu alınamadı.';}
  }catch(error){qeClearRelaxationComparison();$('qeApiElectronicResults').replaceChildren();
   $('qeApiElectronicResults').hidden=true;status.textContent='İş durumu: '+error.message;}
 }

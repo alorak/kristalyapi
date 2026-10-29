@@ -135,3 +135,8 @@ export function parseQeBandPath(text){
   throw Error('2–16 bant noktası, en çok 300 bölüm ve son ağırlık 1 gerekli.');
  return points;
 }
+
+export async function getQeJobDiagnostics(address,token,jobId,opts={}){
+ if(typeof jobId!=='string'||!(/^[a-f0-9]{32}$/.test(jobId)))throw Error('Geçerli iş kimliği gerekli.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/diagnostics',opts);
+}

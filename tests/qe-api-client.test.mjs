@@ -4,7 +4,7 @@ import {parseQeBandPath} from '../qe-api-client.js';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../qe-api-client.js',import.meta.url),'utf8');
-const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs}=await import(
+const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeJobDiagnostics}=await import(
  'data:text/javascript;base64,'+Buffer.from(source).toString('base64')
 );
 
@@ -135,4 +135,13 @@ test('D2 persisted job history is queried only with the explicit in-memory token
  };
  const data=await listQeScfJobs('http://localhost:8000',secret,{fetcher:fake});
  assert.equal(data.jobs.length,1);
+});
+
+test('diagnostics use the authenticated job path and reject invalid identities before fetch',async()=>{
+ const seen=[];const fetcher=async(url,options)=>{seen.push({url,options});return response(200,{schema:'kristalyapi.qe-job-diagnostics.v1'});};
+ await getQeJobDiagnostics('http://127.0.0.1:8000','a'.repeat(48),'b'.repeat(32),{fetcher});
+ assert.equal(seen[0].url,'http://127.0.0.1:8000/api/v1/calculations/'+'b'.repeat(32)+'/diagnostics');
+ assert.equal(seen[0].options.headers.Authorization,'Bearer '+'a'.repeat(48));
+ await assert.rejects(getQeJobDiagnostics('http://127.0.0.1:8000','a'.repeat(48),'../escape',{fetcher}));
+ assert.equal(seen.length,1);
 });
