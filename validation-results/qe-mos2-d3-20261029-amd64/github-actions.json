@@ -1,0 +1,9 @@
+{
+  "run_url": "https://github.com/alorak/kristalyapi/actions/runs/40793759416",
+  "run_id": 40793759416,
+  "job_id": 123185069018,
+  "source_commit": "2b3c6dce97568f0fca9b85a3e35acedde2399a0a",
+  "artifact_id": 12865117681,
+  "artifact_name": "qe-mos2-scf-d3-5",
+  "artifact_zip_sha256": "c6014cdc8ff425ac4106c44e53b2baabf1fc46a6231a981960013d043307f327"
+}

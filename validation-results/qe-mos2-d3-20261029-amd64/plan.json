@@ -1,0 +1,52 @@
+{
+  "schema": "kristalyapi.qe-mos2-relax-acceptance-plan.v1",
+  "stage": "D3",
+  "scope": "Fixed-cell ideal pristine 1H-MoS2 relaxation and independent final SCF at the D2.2c reference; finite final-force and cutoff check, not electronic/optical validation.",
+  "pseudopotentials": {
+    "Mo": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "filename": "Mo.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd"
+    },
+    "S": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "S.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    }
+  },
+  "reference": {
+    "protocol": "d22c",
+    "source_commit": "78d116baec28419072a6d63c9d0842d28af79ac3",
+    "evidence_path": "validation-results/qe-mos2-d22c-20261029-amd64",
+    "case": "ecut120-k16-c24"
+  },
+  "relaxation": {
+    "max_steps": 30,
+    "force_threshold_ry_bohr": 2e-05,
+    "energy_threshold_ry": 1e-06
+  },
+  "final_check": {
+    "ecutwfc_ry": 140,
+    "ecutrho_ry": 1120
+  },
+  "criteria": {
+    "max_scf_accuracy_ry": 1e-08,
+    "max_final_force_component_ry_bohr": 0.0001,
+    "max_force_component_difference_ry_bohr": 0.0001,
+    "max_relaxed_cutoff_delta_mev_per_atom": 1.0,
+    "max_relax_final_scf_energy_difference_ry": 1e-06,
+    "max_atom_displacement_angstrom": 0.5,
+    "max_energy_increase_from_reference_ry": 1e-06
+  },
+  "limits": {
+    "max_seconds_per_job": 10800,
+    "docker_worker_memory_bytes": 6442450944
+  },
+  "optimization_note": "The tighter 2e-5 Ry/Bohr BFGS target is fixed before the real MoS2 run to leave headroom for the separate 140 Ry force check. Acceptance for all final force components stays 1e-4 Ry/Bohr."
+}
