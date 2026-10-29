@@ -1,8 +1,9 @@
 # D4 — API üzerinden gerçek bant / DOS / atom-orbital PDOS
 
-Durum: D3 gerçek kabulü geçti. [Gerçek MoS₂ D4 çalışması](https://github.com/alorak/kristalyapi/actions/runs/40821361993)
-ön kayıtlı `d25e112312acd6f02591c0abe5b03acc5ed3b024` kaynağında başlatıldı;
-sonuç henüz bekleniyor. Sentetik test değerleri bilimsel sonuç değildir.
+Durum: [Gerçek MoS₂ D4 kabulü geçti](../validation-results/qe-mos2-d4-20261029-amd64/INCELEME.md).
+6/6 aşama, 26×61 bant, 3677 DOS noktası ve üç atomun orbital PDOS'u
+ham QE/API verileriyle yerelde yeniden doğrulandı. Bu sonlu veri/işleyiş
+kabulüdür; geniş elektronik yakınsama, SOC ve optik kapsamlar ayrı kalır.
 
 Yeni `kristalyapi.qe-electronic-job.v1` şeması `calculation=electronic`
 ve kesin alanlı `electronic` nesnesini kullanır: `nbnd` 1–128,
@@ -41,7 +42,7 @@ aralığı doğruluğu veya optik geçiş/tek-foton yorumları yapılmaz.
 Kurulum için [iş API kılavuzu](qe-jobs.md). Docker imajı mevcut pipeline
 ve PDOS ayrıştırıcılarını içerir; API 0.4.0 `electronic` yeteneğini duyurur.
 Yoğun MoS₂ hesabı için D3'teki aynı doğrulanmış UPF ve kaynak profili
-kullanılmalıdır. Gerçek Si işleyiş ve MoS₂ kabul sonuçları ayrıca eklenecek.
+kullanılmalıdır. Gerçek Si işleyiş ve MoS₂ kabul kanıtları aşağıdadır.
 
 ## Gerçek Si denemesi ve kaynak verilerin korunması
 
@@ -54,9 +55,8 @@ interpolasyon veya enerji kaydırması yapılmaz. İç grid kayması/eksikliği
 hâlâ reddedilir. 111 Python QE testi ve 439 JavaScript testi geçti;
 gerçek tek-atom orbital seçimi tarayıcıda incelendi.
 
-Si denemesi işleyiş testidir. Gerçek MoS₂ D4 koşusu, D3'ün kabul edilen
-son geometrisine bağlıdır; sonucu ve sonlu elektronik yapı sınırları ayrıca
-kaydedilecektir.
+Si denemesi işleyiş testidir. Gerçek MoS₂ kabulü D3'ün son geometrisinde
+[ayrıca tamamlandı](../validation-results/qe-mos2-d4-20261029-amd64/INCELEME.md).
 
 ## Ön kayıtlı gerçek MoS₂ D4 kabulü
 
@@ -90,12 +90,13 @@ python3 tools/qe_electronic_acceptance.py --run --output validation-results/qe-m
 python3 tools/qe_electronic_acceptance.py --verify validation-results/qe-mos2-electronic-local
 ```
 
-D3 ön koşulu geçti; gerçek D4 koşusu devam ediyor. Sonradan eklenen bant
-kapasitesi kontrolü hesap girdilerini değiştirmez; devam eden koşunun sabit
-kaynak commit'i yukarıda ayrı kaydedilmiştir. Bu kontrol gerçek Mo/S UPF
-baytlarından 26 elektron / en az 13 dolu bant türetti; 12 bant reddedildi.
-Yeni HTTP/worker negatif testleri de yetersiz bantta hesap açılmadığını doğrular.
-
+Gerçek MoS₂ koşusu `d25e112312acd6f02591c0abe5b03acc5ed3b024` kaynağında
+[başarıyla tamamlandı](https://github.com/alorak/kristalyapi/actions/runs/40821361993).
+19 kaynak hash'i, tam raw/API eğrileri, atomik projeksiyonlar ve üç sayısal
+karar ölçütü tekrar doğrulandı. D3 SCF enerjisi tam tekrarlandı; integral
+52 durumdan yalnız 6.574e-6 farklı. Sonradan eklenen kapasite kontrolü
+hesap girdilerini değiştirmez; bu kontrol ayrıca gerçek Docker/API'de
+26 elektron/minimum13 ve yetersiz12 bant reddiyle test edildi.
 
 [Gerçek Docker/API ön kontrol kanıtı](../validation-results/qe-d4-band-preflight-20261029-arm64/INCELEME.md):
 26 bant validate=200, 12 bant validate/submit=422 ve boş kuyruk doğrulandı.

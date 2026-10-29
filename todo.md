@@ -321,7 +321,7 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 - [x] **Gerçek manuel koşu ve kanıt incelemesi:** resmi Mo/S UPF baytları ve metadata'sı doğrulandı; [Linux CI](https://github.com/alorak/kristalyapi/actions/runs/40770083516) üzerinde 7/7 gerçek SCF işi tamamlandı. Ham QE/API, 26 elektron, SHA-256 ve ≤1e-8 Ry SCF hata tahminleri yerelde tekrar doğrulandı. [Kalıcı kanıtlar](validation-results/qe-mos2-d22-20261029-amd64/README.md).
 - [ ] **D2.2 genel bilimsel kabul:** kesme enerjisi 80→100 Ry farkı **2.374556 >1 meV/atom**, kabul başarısız. K-örgüsü **0.000635 ≤1**, vakum **0.000363 ≤2 meV/atom** geçti. D2.2b yeni ön kayıtlı taramasında 120→140 Ry **0.268123 ≤1** geçti; D2.2c yeni 120/960 Ry, k=16/c=24 referansında üç kapıyı da geçti. Genel fiziksel doğruluk/kuvvet/relaksasyon ayrı kalır. İlk başarısız sonuç ve eşikler değiştirilmedi.
 - [x] **D3:** `relax → scf` worker, atomik kuvvet/geometri doğrulaması ve kaynak eşleşmeli 3B önizleme; [gerçek MoS₂ kabulü 8/8 geçti](validation-results/qe-mos2-d3-20261029-amd64/INCELEME.md).
-- [ ] **D4:** gerçek `bands.x`, `dos.x`, `projwfc.x` zinciri; spin, referans enerji ve yakınsama kanıtı olmadan fiziksel sonuçları birleştirme.
+- [x] **D4 sonlu işleyiş/veri kabulü:** gerçek 6 aşama, 26×61 bant, 3677 DOS ve üç atomun orbital PDOS'u; [ham QE/API kabulü geçti](validation-results/qe-mos2-d4-20261029-amd64/INCELEME.md). Geniş bant/DOS yakınsaması, spin/SOC ve optik doğruluk ayrıca bekliyor.
 - [ ] **D5:** V_S / V₂S / O_S / O₂@V_S kusur karşılaştırması ve spin/SOC; bağımsız araştırma kabulü.
 
 **Bilimsel sınır:** D2.2'nin ideal monolayer SCF enerji duyarlılığı optik/tek-foton doğrulaması veya makalenin SIESTA sonuçlarının yeniden üretimi değildir. [Kabul protokolü](docs/qe-mos2-validation.md).
