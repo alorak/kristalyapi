@@ -1,0 +1,21 @@
+{
+  "baseline_source_result": "validation-results/qe-mos2-d22-20261029-amd64/cases/ecut100-k8-c24/result.json",
+  "baseline_energy_ry": -181.58134678,
+  "repeated_100_energy_ry": -181.58134678,
+  "repeat_delta_mev_per_atom": 0.0,
+  "identity_checks": {
+    "input_sha256": true,
+    "structure_hash": true,
+    "engine_version": true,
+    "upf_hashes_match": true
+  },
+  "consecutive_deltas_mev_per_atom": {
+    "100-120": 1.25666716913796,
+    "120-140": 0.2681228591577553
+  },
+  "primary_pair_ry": [
+    120,
+    140
+  ],
+  "primary_limit_mev_per_atom": 1.0
+}

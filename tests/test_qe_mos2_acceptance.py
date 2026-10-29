@@ -68,6 +68,64 @@ class MoS2PlanAndEvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"SHA-256"):
                 mos2.locked_plan(mo,s)
 
+    def test_cutoff_followup_preserves_material_and_fixes_other_parameters(self):
+        followup=mos2.load_plan("d22b")
+        self.assertEqual(followup["geometry"],self.plan["geometry"])
+        self.assertEqual([(c["ecutwfc_ry"],c["ecutrho_ry"]) for c in followup["cases"]],
+                         [(100,800),(120,960),(140,1120)])
+        self.assertTrue(all(c["kpoints"]==[8,8,1] and c["vacuum_cell_c_angstrom"]==24
+                            for c in followup["cases"]))
+        self.assertEqual(followup["criteria"]["energy_sensitivity_mev_per_atom"],{"cutoff":1.0})
+        self.assertEqual(followup["criteria"]["comparisons"],
+                         [{"axis":"cutoff","from":"ecut120-k8-c24","to":"ecut140-k8-c24"}])
+
+    def test_cutoff_followup_requires_the_previously_reviewed_hashes(self):
+        p=mos2.load_plan("d22b")
+        mo=p["pseudopotentials"]["Mo"]["reviewed_sha256"]
+        s=p["pseudopotentials"]["S"]["reviewed_sha256"]
+        self.assertEqual(mos2.locked_plan(mo,s,"d22b")["pseudopotentials"]["Mo"]["sha256"],mo)
+        with self.assertRaisesRegex(ValueError,"reviewed protocol"):
+            mos2.locked_plan("a"*64,s,"d22b")
+        with self.assertRaisesRegex(ValueError,"Unknown"):
+            mos2.load_plan("custom")
+
+    def test_extended_retry_changes_only_operational_limits(self):
+        original=mos2.load_plan("d22b")
+        retry=mos2.load_plan("d22b-extended")
+        for key in ("geometry","pseudopotentials","cases","criteria","baseline","scope"):
+            self.assertEqual(original[key],retry[key])
+        self.assertEqual(original["limits"]["max_seconds_per_job"],900)
+        self.assertEqual(retry["limits"]["max_seconds_per_job"],3600)
+        self.assertEqual(retry["limits"]["docker_worker_memory_bytes"],6*1024**3)
+        self.assertIsNone(mos2.worker_resource_override(original))
+        self.assertEqual(mos2.worker_resource_override(retry),
+                         {"services":{"qe-worker":{"mem_limit":6*1024**3,
+                                                     "memswap_limit":6*1024**3}}})
+        mo=retry["pseudopotentials"]["Mo"]["reviewed_sha256"]
+        with self.assertRaisesRegex(ValueError,"reviewed protocol"):
+            mos2.locked_plan(mo,"a"*64,"d22b-extended")
+
+    def test_cutoff_followup_does_not_promote_failed_high_cutoff_pair(self):
+        p=mos2.load_plan("d22b")
+        cases=[{**c,"proof":{"energy_ry":-12.0}} for c in p["cases"]]
+        self.assertTrue(mos2.comparisons(cases,p)[0]["passed"])
+        cases[-1]["proof"]["energy_ry"]-=.001
+        self.assertFalse(mos2.comparisons(cases,p)[0]["passed"])
+
+    def test_cutoff_evidence_cannot_change_hashes_or_select_the_old_protocol(self):
+        p=mos2.load_plan("d22b")
+        p=mos2.locked_plan(p["pseudopotentials"]["Mo"]["reviewed_sha256"],
+                          p["pseudopotentials"]["S"]["reviewed_sha256"],"d22b")
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            (root/"plan.json").write_text(json.dumps(p))
+            with self.assertRaisesRegex(ValueError,"source-fixed"):
+                mos2.verify_evidence(root,"d22")
+            p["pseudopotentials"]["Mo"]["sha256"]="a"*64
+            (root/"plan.json").write_text(json.dumps(p))
+            with self.assertRaisesRegex(ValueError,"reviewed protocol"):
+                mos2.verify_evidence(root)
+
     def test_official_s_metadata_whitespace_preserves_reviewed_bytes(self):
         data=b'<UPF version="2.0.1"><PP_HEADER element=" S" functional="PBE"/></UPF>'
         original_hash=mos2.sha(data)
@@ -147,6 +205,35 @@ class MoS2PlanAndEvidenceTests(unittest.TestCase):
         items[2]["proof"]["energy_ry"]=-11.0
         differences=mos2.comparisons(items,self.plan)
         self.assertFalse(differences[0]["passed"])
+
+    def test_timeout_diagnostics_retain_partial_evidence_without_acceptance_energy(self):
+        self.trace["terminal"]["status"]="timed_out"
+        partial=b'iteration # 6\nestimated scf accuracy < 4.5E-4 Ry\niteration # 7\n'
+        failure=mos2.incomplete_case_diagnostics(self.case,self.trace,self.raw_input,partial)
+        self.assertEqual(failure["terminal_status"],"timed_out")
+        self.assertEqual(failure["last_started_scf_iteration"],7)
+        self.assertEqual(failure["last_estimated_scf_accuracy_ry"],4.5e-4)
+        self.assertEqual(failure["partial_output_sha256"],mos2.sha(partial))
+        self.assertFalse(failure["acceptance_eligible"])
+        self.assertFalse(failure["raw_job_done"])
+        self.assertNotIn("energy_ry",failure)
+
+    def test_failed_api_job_cannot_be_promoted_by_success_markers_in_raw_output(self):
+        self.trace["terminal"]["status"]="failed"
+        failure=mos2.incomplete_case_diagnostics(
+            self.case,self.trace,self.raw_input,self.raw_output)
+        self.assertTrue(failure["raw_job_done"])
+        self.assertFalse(failure["acceptance_eligible"])
+        with self.assertRaisesRegex(ValueError,"API job not completed"):
+            self.check()
+
+    def test_diagnostics_survive_empty_or_truncated_solver_output(self):
+        self.trace["terminal"]["status"]="timed_out"
+        for output in (b'',b'iteration # \xff\n'):
+            failure=mos2.incomplete_case_diagnostics(self.case,self.trace,self.raw_input,output)
+            self.assertIsNone(failure["last_started_scf_iteration"])
+            self.assertIsNone(failure["last_estimated_scf_accuracy_ry"])
+            self.assertEqual(failure["partial_output_sha256"],mos2.sha(output))
 
     def test_offline_verify_rejects_missing_or_modified_plan(self):
         with tempfile.TemporaryDirectory() as tmp:

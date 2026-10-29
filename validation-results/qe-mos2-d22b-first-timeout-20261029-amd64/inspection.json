@@ -1,0 +1,66 @@
+{
+  "recorded_status": "failed",
+  "recorded_error": "ecut140-k8-c24 SCF not completed",
+  "verified_cases": 2,
+  "case_failures": [
+    {
+      "case": "ecut140-k8-c24",
+      "error": "[Errno 2] No such file or directory: '/private/tmp/kristalyapi-d22b-first-evidence/cases/ecut140-k8-c24/result.json'"
+    }
+  ],
+  "raw_derived_comparisons": [],
+  "cases": [
+    {
+      "id": "ecut100-k8-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58134678,
+        "energy_ev": -2470.5400811486343,
+        "last_scf_accuracy_ry": 1.3e-09,
+        "scf_iterations": 18,
+        "qe_version": "6.7MaX",
+        "input_sha256": "32881fd4a4028cf44f04b32ffa69d938665f3982859b79401c66d8f974baf85e",
+        "output_sha256": "35762f1c96580b0fc90c612f500b081c39b46936f5666ecac39ba281a345d39a",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "992a0d8404cb41cf86afc722a6dd18aa",
+      "electrons": 26.0,
+      "created": "2026-10-28T22:18:16.381222+00:00",
+      "finished": "2026-10-28T22:22:50.167991+00:00",
+      "total_force_ry_bohr": 0.00607
+    },
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58162387,
+        "energy_ev": -2470.543851150142,
+        "last_scf_accuracy_ry": 6.1e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "f5ba872f0dcb69ce31b0d4c754c1e0ad29cc55d5ce28a1a0863570a7d6788f69",
+        "output_sha256": "253f5e03c55055fde872e5cd4b0c7da52900b1d3b3356c3a8bb0532387e4ff20",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "536b8e8ddee6426c97924618612f4e97",
+      "electrons": 26.0,
+      "created": "2026-10-28T22:22:50.416692+00:00",
+      "finished": "2026-10-28T22:35:10.347498+00:00",
+      "total_force_ry_bohr": 0.006
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "source_commit_verified": "7a80999b4c23fa0258326b5d7334a84e4f9a18ca",
+  "recorded_status": "passed",
+  "recorded_error": null,
+  "verified_cases": 3,
+  "case_failures": [],
+  "raw_derived_comparisons": [
+    {
+      "axis": "cutoff",
+      "from": "ecut120-k8-c24",
+      "to": "ecut140-k8-c24",
+      "delta_mev_per_atom": 0.2681228591577553,
+      "limit_mev_per_atom": 1.0,
+      "passed": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "ecut100-k8-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58134678,
+        "energy_ev": -2470.5400811486343,
+        "last_scf_accuracy_ry": 1.3e-09,
+        "scf_iterations": 18,
+        "qe_version": "6.7MaX",
+        "input_sha256": "32881fd4a4028cf44f04b32ffa69d938665f3982859b79401c66d8f974baf85e",
+        "output_sha256": "f567acfe39c1d163e7c509c35f605383792163e7b49795b6c3d47b6d5e6c7333",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "e49aeac1c8894abf9cd60f8b21dd8216",
+      "electrons": 26.0,
+      "created": "2026-10-28T22:54:49.831245+00:00",
+      "finished": "2026-10-28T22:59:16.490371+00:00",
+      "total_force_ry_bohr": 0.00607
+    },
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58162387,
+        "energy_ev": -2470.543851150142,
+        "last_scf_accuracy_ry": 6.1e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "f5ba872f0dcb69ce31b0d4c754c1e0ad29cc55d5ce28a1a0863570a7d6788f69",
+        "output_sha256": "49a60a0bfc42fd0454537230d4829b09b6b1180aa04838e7cc7a7acfd0aea71c",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "909ec00fb0204f8b87f5f08e0fba5c16",
+      "electrons": 26.0,
+      "created": "2026-10-28T22:59:16.853789+00:00",
+      "finished": "2026-10-28T23:04:45.881967+00:00",
+      "total_force_ry_bohr": 0.006
+    },
+    {
+      "id": "ecut140-k8-c24",
+      "ecutwfc_ry": 140,
+      "ecutrho_ry": 1120,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58168299,
+        "energy_ev": -2470.5446555187195,
+        "last_scf_accuracy_ry": 7.2e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "5905a955433fa271d9adc46f5ad92dd2198b94cbb1e37949ccd639cd2f7f4f13",
+        "output_sha256": "5849fe052b84f87aa21a39c764a7e1895564df2a030a63d34e0bd8d979571ec7",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "bfad5d43c1df47a1a7baf5df018b07b5",
+      "electrons": 26.0,
+      "created": "2026-10-28T23:04:47.015390+00:00",
+      "finished": "2026-10-28T23:11:45.886551+00:00",
+      "total_force_ry_bohr": 0.006059
+    }
+  ]
+}

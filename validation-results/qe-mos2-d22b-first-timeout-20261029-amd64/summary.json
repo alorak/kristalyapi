@@ -1,0 +1,79 @@
+{
+  "schema": "kristalyapi.qe-mos2-acceptance.v1",
+  "status": "failed",
+  "started_at": "2026-10-28T22:17:49.422422+00:00",
+  "cases": [
+    {
+      "id": "ecut100-k8-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58134678,
+        "energy_ev": -2470.5400811486343,
+        "last_scf_accuracy_ry": 1.3e-09,
+        "scf_iterations": 18,
+        "qe_version": "6.7MaX",
+        "input_sha256": "32881fd4a4028cf44f04b32ffa69d938665f3982859b79401c66d8f974baf85e",
+        "output_sha256": "35762f1c96580b0fc90c612f500b081c39b46936f5666ecac39ba281a345d39a",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "992a0d8404cb41cf86afc722a6dd18aa"
+    },
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24,
+      "proof": {
+        "energy_ry": -181.58162387,
+        "energy_ev": -2470.543851150142,
+        "last_scf_accuracy_ry": 6.1e-09,
+        "scf_iterations": 16,
+        "qe_version": "6.7MaX",
+        "input_sha256": "f5ba872f0dcb69ce31b0d4c754c1e0ad29cc55d5ce28a1a0863570a7d6788f69",
+        "output_sha256": "253f5e03c55055fde872e5cd4b0c7da52900b1d3b3356c3a8bb0532387e4ff20",
+        "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f"
+      },
+      "job_id": "536b8e8ddee6426c97924618612f4e97"
+    }
+  ],
+  "comparisons": [],
+  "planned_cases": 3,
+  "protocol": "d22b",
+  "scope": "Cutoff sensitivity only at fixed k=8x8x1 and c=24 Angstrom; not D2.2 overall acceptance or relaxation.",
+  "provenance": {
+    "git_commit": "2eb352ac18c00d93d5a0bd4e28db1b8cef4cde9b",
+    "host_machine": "x86_64",
+    "host_platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "docker_arch": "x86_64",
+    "docker_version": "28.0.4",
+    "plan_sha256": "a98c458260b4615c6e2f78ea91600b663e3d3dddeabb7f13e562f79469884985",
+    "source_sha256": {
+      "tools/qe_mos2_acceptance.py": "73580181e207db0392936c157860d2609b7385153611f3f9503058aff2ced376",
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "6c175a2aae7f2d9dc6a5794373c1907630b1adbed2413f87e345adbf4b1ef679",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "server/api.py": "d9f26ba9f292899642878b27796034ba4c082a66e6e811fcd787f6e09a5be815",
+      "server/job_core.py": "5b19e1c33214df246da92d3a6635a4440221bd63d98b19a5d925d7367a0ab2c7",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/worker.py": "e60ee6ec32e1c6c8d4ebbeddc90d8b2fd89cddc1053f32acb46e8854fbfcaefb"
+    },
+    "image_id": "sha256:5b7f387edcc1869460e9ecec0a2c58392d8aeb38aa36ea1703593ef4023f8fca"
+  },
+  "error": "ecut140-k8-c24 SCF not completed",
+  "resources_removed": true,
+  "finished_at": "2026-10-28T22:50:23.105544+00:00"
+}

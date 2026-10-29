@@ -160,13 +160,14 @@ sonraki gerçek sayısal kesme enerjisi başarısızlığı birbirinden ayrıdı
 
 ## Gerekli takip ve sonraki işler
 
-Genel D2.2 kabulü açık kalır. Sonraki deney için daha yüksek kesme
-enerjilerinin (ör. 100/800, 120/960, 140/1120 Ry) sabit k=8, c=24'teki
-taraması koşudan önce ayrı bir planla kaydedilmeli; 1 meV/atom sınırı
-korunmalıdır. Bunlar henüz denenmiş veya kabul edilmiş ayarlar değildir.
-Yeni kesme enerjisi seçilirse k/vakum kontrolleri de o yeni protokol için
-yeniden değerlendirilmelidir; mevcut 100 Ry sonuçları daha yüksek kesme
-enerjisindeki doğrulamanın yerine geçmez.
+Genel D2.2 kabulü açık kalır. Ayrı ön kayıtlı [D2.2b takip deneyi](qe-mos2-cutoff-validation.md)
+100/800, 120/960 ve 140/1120 Ry'de üç yeni gerçek SCF işiyle tamamlandı:
+**120→140 Ry farkı 0.268123 ≤1 meV/atom, kesme enerjisi kapısı geçti**.
+İlk 80→100 Ry başarısız sonucu ve ölçütler değişmez; D2.2b ayrı kayıttır.
+
+Seçilecek yüksek kesme enerjisinde k/vakum kontrolleri hâlâ yeniden
+doğrulanmalıdır; mevcut 100 Ry sonuçları daha yüksek cutoff protokolündeki
+doğrulamanın yerine geçmez. Kuvvet ve relaksasyon ayrıca değerlendirilir.
 
 D2.2'nin gerçek MoS₂ koşusu ve kanıtı geçtikten sonra:
 D3 sabit hücreli relaksasyon ve yeni atom koordinatlarının

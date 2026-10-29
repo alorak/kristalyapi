@@ -75,6 +75,7 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
                 if time.monotonic()>=deadline:
                     _kill_group(process)
                     status="timed_out"
+                    error=f"QE calculation exceeded its {timeout:g} s wall-time limit"
                     break
                 time.sleep(.5)
             process.wait(timeout=10)

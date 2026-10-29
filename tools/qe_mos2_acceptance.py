@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D2.2: real 1H-MoS2 Docker/API SCF acceptance with fail-closed evidence.
+"""D2.2/D2.2b: real 1H-MoS2 Docker/API SCF acceptance with fail-closed evidence.
 
 No pseudopotentials or DFT energies are fabricated. --run is explicit and
 requires two user-reviewed SHA-256 hashes; --verify works without Docker.
@@ -28,6 +28,13 @@ from qe_scf_acceptance import Api, require, write_json, sha, numeric, NUMBER, RY
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "tests/fixtures/qe/mos2-scf-acceptance.json"
+PROTOCOLS = {
+    "d22": (PLAN, "kristalyapi.qe-mos2-acceptance-plan.v1", 7, "D2.2"),
+    "d22b": (ROOT / "tests/fixtures/qe/mos2-cutoff-acceptance.json",
+             "kristalyapi.qe-mos2-cutoff-acceptance-plan.v1", 3, "D2.2b"),
+    "d22b-extended": (ROOT / "tests/fixtures/qe/mos2-cutoff-extended-acceptance.json",
+                      "kristalyapi.qe-mos2-cutoff-acceptance-plan.v2", 3, "D2.2b"),
+}
 HEX = re.compile(r"[a-fA-F0-9]{64}\Z")
 
 
@@ -46,20 +53,25 @@ def validate_upf_metadata(data, element):
             element+" UPF elemental/XC metadata mismatch")
 
 
-def load_plan():
-    plan = json.loads(PLAN.read_text(encoding="utf-8"))
-    require(plan["schema"] == "kristalyapi.qe-mos2-acceptance-plan.v1", "Wrong MoS2 plan")
-    require(len(plan["cases"]) == 7 and len({x["id"] for x in plan["cases"]}) == 7,
+def load_plan(protocol="d22"):
+    require(protocol in PROTOCOLS, "Unknown MoS2 acceptance protocol")
+    path, schema, count, _ = PROTOCOLS[protocol]
+    plan = json.loads(path.read_text(encoding="utf-8"))
+    require(plan["schema"] == schema, "Wrong MoS2 plan")
+    require(len(plan["cases"]) == count and len({x["id"] for x in plan["cases"]}) == count,
             "Acceptance sweep changed unexpectedly")
     return plan
 
 
-def locked_plan(mo_hash, s_hash):
-    plan = load_plan()
+def locked_plan(mo_hash, s_hash, protocol="d22"):
+    plan = load_plan(protocol)
     for element, h in (("Mo", mo_hash), ("S", s_hash)):
         require(isinstance(h, str) and HEX.fullmatch(h) is not None,
                 element + " requires a pre-reviewed 64-character SHA-256")
-        plan["pseudopotentials"][element]["sha256"] = h.lower()
+        meta = plan["pseudopotentials"][element]
+        require("reviewed_sha256" not in meta or h.lower() == meta["reviewed_sha256"],
+                element + " hash differs from the reviewed protocol")
+        meta["sha256"] = h.lower()
     return plan
 
 
@@ -164,6 +176,23 @@ def check_case(plan, case, request, result, raw_input, raw_output, trace):
             "output_sha256": sha(raw_output), "structure_hash": expected_structure}
 
 
+def incomplete_case_diagnostics(case, trace, raw_input, raw_output):
+    """Retain partial solver diagnostics without producing an acceptance energy."""
+    terminal = trace["terminal"]
+    require(terminal["status"] != "completed", "Expected an incomplete API job")
+    text = raw_output.decode("utf-8", errors="replace")
+    accuracy = re.findall(r"estimated scf accuracy\s*<\s*("+NUMBER+r")\s*Ry", text)
+    iterations = re.findall(r"(?m)^\s*iteration #\s*(\d+)", text)
+    return {"case_id": case["id"], "job_id": terminal["job_id"],
+            "terminal_status": terminal["status"], "api_error": terminal.get("error"),
+            "acceptance_eligible": False,
+            "input_sha256": sha(raw_input), "partial_output_sha256": sha(raw_output),
+            "raw_job_done": "JOB DONE." in text,
+            "last_started_scf_iteration": int(iterations[-1]) if iterations else None,
+            "last_estimated_scf_accuracy_ry": numeric(accuracy[-1]) if accuracy else None,
+            "notice": "Partial diagnostics only; no accepted SCF energy or cutoff comparison."}
+
+
 def comparisons(cases, plan):
     energies = {c["id"]: c["proof"]["energy_ry"] for c in cases}
     result = []
@@ -177,12 +206,19 @@ def comparisons(cases, plan):
     return result
 
 
-def verify_evidence(directory):
+def verify_evidence(directory, protocol=None):
     plan = json.loads((directory/"plan.json").read_text(encoding="utf-8"))
-    base = load_plan()
+    if protocol is None:
+        matches = [name for name, spec in PROTOCOLS.items() if spec[1] == plan.get("schema")]
+        require(len(matches) == 1, "Unknown MoS2 evidence schema")
+        protocol = matches[0]
+    base = load_plan(protocol)
     for el in ("Mo", "S"):
         require(HEX.fullmatch(plan["pseudopotentials"][el]["sha256"]) is not None,
                 "Invalid locked pseudopotential hash")
+        expected = base["pseudopotentials"][el].get("reviewed_sha256")
+        require(expected is None or plan["pseudopotentials"][el]["sha256"] == expected,
+                "Evidence UPF hash differs from reviewed protocol")
         del plan["pseudopotentials"][el]["sha256"]
     require(plan == base, "Evidence plan is not the source-fixed MoS2 acceptance protocol")
     plan = json.loads((directory/"plan.json").read_text(encoding="utf-8"))
@@ -199,6 +235,11 @@ def verify_evidence(directory):
     deltas = comparisons(cases, plan)
     require(all(x["passed"] for x in deltas), "At least one material sensitivity gate failed")
     summary = json.loads((directory/"summary.json").read_text())
+    if "docker_worker_memory_bytes" in plan["limits"]:
+        memory = plan["limits"]["docker_worker_memory_bytes"]
+        require(summary["provenance"]["worker_resources"] ==
+                {"memory_bytes": memory, "memory_swap_bytes": memory},
+                "Recorded worker resources differ from acceptance plan")
     require(summary["status"] == "passed" and len(summary["cases"]) == len(cases),
             "Acceptance summary did not report completed suite")
     require(summary["comparisons"] == deltas, "Summary comparison differs from raw QE evidence")
@@ -215,15 +256,25 @@ def command(argv, output, environment, *, timeout=1800):
     return proc.stdout
 
 
-def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
-    plan = locked_plan(mo_hash, s_hash)
+def worker_resource_override(plan):
+    memory = plan["limits"].get("docker_worker_memory_bytes")
+    if memory is None:
+        return None
+    # Equal memory/swap limits disable swap in this acceptance-only profile.
+    return {"services": {"qe-worker": {"mem_limit": memory, "memswap_limit": memory}}}
+
+
+def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None, protocol="d22"):
+    plan = locked_plan(mo_hash, s_hash, protocol)
+    label = PROTOCOLS[protocol][3]
     require(not output.exists(), "Output directory must be new")
     output.mkdir(parents=True)
     write_json(output/"plan.json", plan)
     report = {"schema": "kristalyapi.qe-mos2-acceptance.v1", "status": "failed",
               "started_at": datetime.now(timezone.utc).isoformat(), "cases": [],
               "comparisons": [], "planned_cases": len(plan["cases"]),
-              "scope": "pristine idealized 1H-MoS2 neutral PBE unpolarized SCF sensitivity only"}
+              "protocol": protocol,
+              "scope": plan.get("scope", "pristine idealized 1H-MoS2 neutral PBE unpolarized SCF sensitivity only")}
     env = {k: v for k, v in os.environ.items() if not k.startswith(("QE_", "COMPOSE_"))}
     with tempfile.TemporaryDirectory(prefix="kristalyapi-mos2-") as folder:
         work = Path(folder)
@@ -232,6 +283,10 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
         project = "kristalyapi-mos2-"+secrets.token_hex(6)
         compose = ["docker","compose","--env-file",str(work/".env"),"-p",project,
                    "-f",str(ROOT/"compose.qe.yml"),"--profile","compute"]
+        override = worker_resource_override(plan)
+        if override is not None:
+            write_json(work/"resources.json", override)
+            compose += ["-f", str(work/"resources.json")]
         started = False
         api = None
         try:
@@ -276,7 +331,7 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
                     *sorted((ROOT/"server").glob("*.py"))]}
             }
             command(compose+["config","--quiet"],output,env)
-            print("D2.2: building QE Docker image",flush=True)
+            print(label+": building QE Docker image",flush=True)
             command(compose+["build"],output,env)
             started = True
             command(compose+["up","-d","--no-build"],output,env)
@@ -297,6 +352,14 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
             api_container = command(compose+["ps","-q","qe-api"],output,env).decode().strip()
             info = json.loads(command(["docker","inspect",api_container],output,env))[0]
             report["provenance"]["image_id"] = info["Image"]
+            if override is not None:
+                worker = command(compose+["ps","-q","qe-worker"],output,env).decode().strip()
+                config = json.loads(command(["docker","inspect",worker],output,env))[0]["HostConfig"]
+                memory = plan["limits"]["docker_worker_memory_bytes"]
+                require(config["Memory"] == config["MemorySwap"] == memory,
+                        "Worker memory/swap limits differ from acceptance plan")
+                report["provenance"]["worker_resources"] = {
+                    "memory_bytes": config["Memory"], "memory_swap_bytes": config["MemorySwap"]}
             for case in plan["cases"]:
                 path = output/"cases"/case["id"]
                 path.mkdir(parents=True)
@@ -306,7 +369,7 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
                 submitted = api.request("/api/v1/calculations","POST",req,expected=202)
                 jid = submitted["job_id"]
                 require(re.fullmatch(r"[a-f0-9]{32}",jid) is not None,"Invalid QE job id")
-                print("D2.2:",case["id"],"submitted",jid,flush=True)
+                print(label+":",case["id"],"submitted",jid,flush=True)
                 deadline = time.monotonic()+plan["limits"]["max_seconds_per_job"]+90
                 while True:
                     final = api.request("/api/v1/calculations/"+jid)
@@ -319,7 +382,14 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
                 for name in ("structure.in","structure.out","structure.stderr"):
                     command(["docker","cp",api_container+":/var/lib/qe/runs/"+jid+"/"+name,
                              str(path/name)],output,env)
-                require(final["status"]=="completed",case["id"]+" SCF not completed")
+                if final["status"] != "completed":
+                    failure = incomplete_case_diagnostics(
+                        case, trace, (path/"structure.in").read_bytes(),
+                        (path/"structure.out").read_bytes())
+                    write_json(path/"failure.json", failure)
+                    report["failed_case"] = failure
+                    raise ValueError(case["id"]+" SCF not completed: "+final["status"]+
+                                     "; inspect cases/"+case["id"]+"/failure.json")
                 trace["staged_upf_sha256"] = {}
                 for element in ("Mo","S"):
                     value = command(["docker","exec",api_container,"python3","-c",
@@ -335,7 +405,7 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
                                    (path/"structure.out").read_bytes(),trace)
                 report["cases"].append({**case,"proof":proof,"job_id":jid})
                 write_json(output/"api-audit.json",api.audit)
-                print("D2.2:",case["id"],proof["energy_ry"],"Ry",flush=True)
+                print(label+":",case["id"],proof["energy_ry"],"Ry",flush=True)
             report["comparisons"] = comparisons(report["cases"],plan)
             require(all(x["passed"] for x in report["comparisons"]),
                     "MoS2 convergence sensitivity threshold exceeded")
@@ -359,14 +429,14 @@ def run_acceptance(output, mo_hash, s_hash, mo_upf=None, s_upf=None):
             report["finished_at"] = datetime.now(timezone.utc).isoformat()
             write_json(output/"summary.json",report)
             (output/"README.md").write_text(
-                "# MoS2 D2.2 SCF acceptance\n\nStatus: **"+report["status"]+"**\n\n"+
-                "This is a non-relaxed primitive 1H-MoS2 SCF sensitivity test only.\n\n"+
+                "# MoS2 "+label+" SCF acceptance\n\nStatus: **"+report["status"]+"**\n\n"+
+                report["scope"]+"\n\n"+
                 "\n".join(f"- {x['axis']}: {x['delta_mev_per_atom']:.6f} meV/atom; "
                           f"limit {x['limit_mev_per_atom']:.6f}; passed {x['passed']}"
                           for x in report["comparisons"])+"\n"+
                 (("\nError: "+report["error"]+"\n") if "error" in report else ""),
                 encoding="utf-8")
-    print("D2.2:",report["status"],output,flush=True)
+    print(label+":",report["status"],output,flush=True)
     return 0 if report["status"]=="passed" else 1
 
 
@@ -380,9 +450,11 @@ def main():
     parser.add_argument("--s-sha256")
     parser.add_argument("--mo-upf",type=Path)
     parser.add_argument("--s-upf",type=Path)
+    parser.add_argument("--protocol",choices=tuple(PROTOCOLS),
+                        help="fixed source protocol; default d22 for runs, infer from recorded plan for verification")
     args = parser.parse_args()
     if args.verify is not None:
-        cases,deltas = verify_evidence(args.verify)
+        cases,deltas = verify_evidence(args.verify,args.protocol)
         print(json.dumps({"verified_cases":len(cases),"comparisons":deltas},indent=2))
         return 0
     if args.output is None:
@@ -390,7 +462,7 @@ def main():
     if args.mo_sha256 is None or args.s_sha256 is None:
         parser.error("--run requires both reviewed --mo-sha256 and --s-sha256 values")
     return run_acceptance(args.output.resolve(),args.mo_sha256,args.s_sha256,
-                          args.mo_upf,args.s_upf)
+                          args.mo_upf,args.s_upf,args.protocol or "d22")
 
 
 if __name__=="__main__":

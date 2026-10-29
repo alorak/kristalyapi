@@ -1,0 +1,30 @@
+{
+  "run_id": 40778844038,
+  "run_url": "https://github.com/alorak/kristalyapi/actions/runs/40778844038",
+  "source_commit": "2eb352ac18c00d93d5a0bd4e28db1b8cef4cde9b",
+  "job_id": 123135059708,
+  "artifact_id": 12858181186,
+  "artifact_sha256": "e2bf656e7f66c0dc47bd2028c9b17af55f30a4f66719678c12ac50d8999789ac",
+  "conclusion": "failure",
+  "failure_type": "140 Ry worker timed_out after 900 seconds; cutoff gate undetermined",
+  "completed_cases": 2,
+  "baseline_100_energy_reproduced_exactly": true,
+  "unfinished_140": {
+    "terminal": {
+      "job_id": "2ae61a77b8144119aaf24d67227ad3cb",
+      "status": "timed_out",
+      "created": "2026-10-28T22:35:10.755838+00:00",
+      "updated": "2026-10-28T22:50:11.815061+00:00",
+      "structure_hash": "feb56cf364cb4a9c0a212df5e88087ed0366c3e3ee361c9c67a4f0cff932299f",
+      "profile_id": "mos2-pbe",
+      "cancel_requested": false,
+      "error": null
+    },
+    "input_sha256": "5905a955433fa271d9adc46f5ad92dd2198b94cbb1e37949ccd639cd2f7f4f13",
+    "partial_output_sha256": "106965e6fcd51ffaf4b48caf61e8abfa65144524aefb558e118078e78998c14c",
+    "job_done": false,
+    "last_estimated_scf_accuracy_ry": 0.0004516,
+    "estimated_max_dynamic_ram_gb": 3.22,
+    "worker_memory_limit_gb": 2
+  }
+}

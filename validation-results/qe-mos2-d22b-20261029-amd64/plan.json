@@ -1,0 +1,105 @@
+{
+  "schema": "kristalyapi.qe-mos2-cutoff-acceptance-plan.v2",
+  "material": "1H-MoS2 pristine monolayer",
+  "geometry": {
+    "a_angstrom": 3.18,
+    "s_plane_distance_angstrom": 1.56,
+    "mo_fractional_xy": [
+      0,
+      0
+    ],
+    "s_fractional_xy": [
+      0.3333333333333333,
+      0.6666666666666666
+    ],
+    "structure_note": "Idealized 1H trigonal-prismatic MoS2 initial geometry; NOT relaxed or independently experimental reference"
+  },
+  "pseudopotentials": {
+    "Mo": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "filename": "Mo.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd",
+      "sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd"
+    },
+    "S": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "S.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4",
+      "sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    }
+  },
+  "cases": [
+    {
+      "id": "ecut100-k8-c24",
+      "ecutwfc_ry": 100,
+      "ecutrho_ry": 800,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    },
+    {
+      "id": "ecut120-k8-c24",
+      "ecutwfc_ry": 120,
+      "ecutrho_ry": 960,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    },
+    {
+      "id": "ecut140-k8-c24",
+      "ecutwfc_ry": 140,
+      "ecutrho_ry": 1120,
+      "kpoints": [
+        8,
+        8,
+        1
+      ],
+      "vacuum_cell_c_angstrom": 24
+    }
+  ],
+  "criteria": {
+    "max_scf_accuracy_ry": 1e-08,
+    "api_energy_tolerance_ry": 1e-08,
+    "energy_sensitivity_mev_per_atom": {
+      "cutoff": 1.0
+    },
+    "comparisons": [
+      {
+        "axis": "cutoff",
+        "from": "ecut120-k8-c24",
+        "to": "ecut140-k8-c24"
+      }
+    ]
+  },
+  "limits": {
+    "max_seconds_per_job": 3600,
+    "protocol": "PBE, fixed occupations, collinear-unpolarized SCF, periodic P1, 3 atoms, gamma-centered even mesh; no SOC, no dipole corrections, no force/geometry optimization",
+    "docker_worker_memory_bytes": 6442450944
+  },
+  "stage": "D2.2b",
+  "scope": "Cutoff sensitivity only at fixed k=8x8x1 and c=24 Angstrom; not D2.2 overall acceptance or relaxation.",
+  "baseline": {
+    "case": "ecut100-k8-c24",
+    "source_result": "validation-results/qe-mos2-d22-20261029-amd64/cases/ecut100-k8-c24/result.json",
+    "source_commit": "588881e8cf37463fd78ec10317a9f2aa9554b146",
+    "energy_ry": -181.58134678,
+    "purpose": "Repeat the existing 100 Ry point and report its difference; primary acceptance uses the new 120 to 140 Ry pair."
+  },
+  "operational_retry": {
+    "previous_run_url": "https://github.com/alorak/kristalyapi/actions/runs/40778844038",
+    "previous_source_commit": "2eb352ac18c00d93d5a0bd4e28db1b8cef4cde9b",
+    "reason": "140 Ry job timed_out at 900 seconds; QE estimated 3.22 GB max RAM against the original 2 GiB worker limit. Retry all three fresh jobs with 6 GiB RAM, no swap and 3600 seconds per job. Physical parameters and primary acceptance criterion unchanged."
+  }
+}

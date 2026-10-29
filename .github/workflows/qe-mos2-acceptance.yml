@@ -1,8 +1,17 @@
-name: QE D2.2 real 1H-MoS2 SCF acceptance (manual)
+name: QE MoS2 SCF acceptance (D2.2 / D2.2b, manual)
 
 on:
   workflow_dispatch:
     inputs:
+      protocol:
+        description: "Fixed acceptance protocol: original seven cases or D2.2b cutoff followup"
+        required: true
+        default: d22
+        type: choice
+        options:
+          - d22
+          - d22b
+          - d22b-extended
       mo_sha256:
         description: "Pre-reviewed SHA-256 of official PSlibrary Mo.pbe-spn-rrkjus_psl.1.0.0.UPF"
         required: true
@@ -26,6 +35,7 @@ jobs:
     env:
       MO_SHA256: ${{ inputs.mo_sha256 }}
       S_SHA256: ${{ inputs.s_sha256 }}
+      MOS2_ACCEPTANCE_PROTOCOL: ${{ inputs.protocol || 'd22' }}
     steps:
       - name: Checkout exact source revision
         uses: actions/checkout@v4
@@ -41,18 +51,19 @@ jobs:
               value = os.environ[element+"_SHA256"]
               assert re.fullmatch(r"[0-9a-fA-F]{64}",value), element+" requires a SHA-256"
           PY
-      - name: Run seven real Docker/API MoS2 SCF jobs with predetermined material sensitivity gates
+      - name: Run real Docker/API MoS2 SCF jobs for the selected fixed protocol
         run: |
           python3 tools/qe_mos2_acceptance.py --run \
+            --protocol "$MOS2_ACCEPTANCE_PROTOCOL" \
             --mo-sha256 "$MO_SHA256" --s-sha256 "$S_SHA256" \
             --output validation-results/qe-mos2-scf
       - name: Independently reverify raw QE/API/hash evidence offline
-        run: python3 tools/qe_mos2_acceptance.py --verify validation-results/qe-mos2-scf
+        run: python3 tools/qe_mos2_acceptance.py --verify validation-results/qe-mos2-scf --protocol "$MOS2_ACCEPTANCE_PROTOCOL"
       - name: Retain evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: qe-mos2-scf-d22-${{ github.run_number }}
+          name: qe-mos2-scf-${{ inputs.protocol || 'd22' }}-${{ github.run_number }}
           path: validation-results/qe-mos2-scf/
           retention-days: 30
           if-no-files-found: warn
