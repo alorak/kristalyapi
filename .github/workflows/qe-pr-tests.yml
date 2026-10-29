@@ -1,0 +1,50 @@
+name: QE pull request regression tests (no DFT)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/qe-pr-tests.yml'
+      - 'server/**'
+      - 'tools/qe_*.py'
+      - 'tests/**'
+      - 'qe-*.js'
+      - 'crystal-app.js'
+      - 'index.html'
+      - 'styles.css'
+      - 'validation-results/qe-*/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qe-pr-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install bounded API test dependencies
+        run: python -m pip install fastapi==0.115.11 httpx==0.28.1
+      - name: Run QE unit and process regression tests with synthetic solvers
+        run: python -m unittest discover -s tests -p 'test_qe_*.py' -v
+      - name: Run frontend and production CIF parser regressions
+        run: node --test tests/*.test.* tests/validation/test_runner.cjs
+      - name: Reverify committed real D3 evidence without running DFT
+        run: python tools/qe_relax_acceptance.py --verify validation-results/qe-mos2-d3-20261029-amd64
+      - name: Rebuild D5 initial candidates when present
+        run: |
+          if [ -f tools/qe_defect_prepare.py ]; then
+            python tools/qe_defect_prepare.py --verify validation-results/qe-mos2-d5-preparation-20261029
+          fi
