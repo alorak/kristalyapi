@@ -34,15 +34,16 @@ try{
  const fullWidth=async pageId=>{
   const bounds=await page.evaluate(id=>{
    const outer=document.getElementById(id),wrap=outer.querySelector('.lesson-wrap');
-   return {viewport:outer.getBoundingClientRect().width,content:wrap.getBoundingClientRect().width};
+   return {viewport:outer.clientWidth,content:wrap.getBoundingClientRect().width};
   },pageId);
   assert.ok(Math.abs(bounds.viewport-bounds.content)<2,
    pageId+' must use full available width instead of a centered 1600px cap');
  };
  await fullWidth('powderPage');
- await page.locator('#pwTabReciprocal').click();
+ await page.locator('#powderPage').evaluate(el=>{el.scrollTop=420;window.location.hash='#toz-kirinimi/karsi-uzay';});
  await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&
   document.getElementById('pwPowderPane').hidden);
+ assert.ok(await page.locator('#powderPage').evaluate(el=>el.scrollTop)===0,'switching the powder subtab resets nested scroll');
  assert.equal(await page.locator('#powderNav').getAttribute('aria-current'),'page');
  assert.equal(await page.locator('#pwTabReciprocal').getAttribute('aria-selected'),'true');
  await page.locator('#pwTabPowder').click();
