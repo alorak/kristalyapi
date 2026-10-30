@@ -269,7 +269,7 @@ def checked_k_path_nodes(source, points, distance):
     weights = [n for _, _, n in points[:-1]]
     if len(distance) != sum(weights) + 1 or points[-1][2] != 1:
         return None
-    match = re.search(r"(?im)^\s*CELL_PARAMETERS\s+(?:\\{)?angstrom(?:\\})?\s*$", source)
+    match = re.search(r"(?im)^\s*CELL_PARAMETERS\s+(?:\{)?angstrom(?:\})?\s*$", source)
     if match is None:
         return None
     rows = source[match.end():].splitlines()[:3]
