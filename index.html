@@ -798,7 +798,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div id="qeExportStatus" class="note dft-pw-only" role="status">Girdi dosyası henüz hazırlanmadı.</div>
     <div class="dft-hpc-only" hidden>
      <strong class="measure-subheading">TRUBA · ARF / Quantum ESPRESSO</strong>
-     <p class="hint">Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi ve SLURM betiği ZIP olarak indirilir. Partition, modül ve erişim haklarını TRUBA'da doğrulayın.</p>
+     <p class="hint">Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi, SLURM betiği ve Python sonuç toplayıcı ZIP olarak indirilir. İşi TRUBA'da çalıştırdıktan sonra summary.json dosyasını Sonuçlar sekmesinde açın. Partition, modül ve erişim haklarını doğrulayın.</p>
      <label class="field"><span>SLURM hesap adı (#SBATCH --account) *</span><input id="qeHpcAccount" type="text" maxlength="64" spellcheck="false" autocomplete="off" placeholder="TRUBA kullanıcı veya proje hesabı"></label>
      <div class="qe-form-grid">
       <label class="field"><span>Partition</span><select id="qeHpcPartition"><option value="orfoz">orfoz · 1 node</option></select></label>
