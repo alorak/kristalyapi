@@ -23,6 +23,7 @@ import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-stud
 import { createTrubaPackage } from './qe-hpc-export.mjs';
 import { createTrubaPipelinePackage } from './qe-hpc-pipeline.mjs';
 import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.mjs';
+import { parseTrubaPipelineSummary,renderTrubaPipelineSummary } from './qe-truba-pipeline-view.mjs';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -6888,9 +6889,12 @@ async function qeOpenTrubaSummary(){
  try{
   const file=$('qeHpcSummaryFile').files?.[0];
   if(!file||file.size<2||file.size>512000)throw Error('512 KB altı geçerli summary.json seçin.');
-  const summary=parseTrubaSummary(JSON.parse(await file.text()));
-  renderTrubaSummary(container,summary);
-  status.textContent='TRUBA özet dosyası okundu: '+summary.status+
+  const data=JSON.parse(await file.text());
+  const isPipeline=data?.schema==='kristalyapi.truba-qe-pipeline-summary.v1';
+  const summary=isPipeline?parseTrubaPipelineSummary(data):parseTrubaSummary(data);
+  if(isPipeline)renderTrubaPipelineSummary(container,summary);
+  else renderTrubaSummary(container,summary);
+  status.textContent='TRUBA '+(isPipeline?'aşamalı ':'')+'özet dosyası okundu: '+summary.status+
    '. Mevcut kristalle yapı eşleşmesi doğrulanmaz; hesap gönderilmez.';
  }catch(error){status.textContent='TRUBA özeti okunamadı: '+error.message;}
 }
