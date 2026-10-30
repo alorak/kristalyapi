@@ -1,0 +1,25 @@
+{
+  "jobs": [
+    {
+      "job_id": "1448b3cb1f17444d89a08100840860ef",
+      "status": "completed",
+      "calculation": "electronic",
+      "spin": "polarized",
+      "created": "2026-10-30T10:54:02.934273+00:00",
+      "updated": "2026-10-30T10:54:10.334213+00:00",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "profile_id": "si-pbe",
+      "name": "Si g\u00fcncel kod do\u011frulamas\u0131",
+      "cancel_requested": false,
+      "error": null,
+      "resume_count": 0,
+      "pause_requested": false,
+      "can_pause": false,
+      "can_resume": false
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
+  "has_more": false
+}

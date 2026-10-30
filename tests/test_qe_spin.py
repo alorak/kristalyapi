@@ -90,6 +90,25 @@ class SpinTests(unittest.TestCase):
   from qe_spin_acceptance import verify
   proof=verify(ROOT/'validation-results/qe-spin-si-20261030-arm64')
   self.assertEqual(proof['status'],'passed');self.assertFalse(proof['calculations_executed_by_verifier'])
+ def test_raw_spin_path_nodes_are_recomputed_and_legacy_receipts_stay_unchanged(self):
+  from qe_spin_acceptance import reparse_spin_bands
+  from qe_pipeline import checked_k_path_nodes,load_band_path
+  folder=ROOT/'validation-results/qe-spin-si-20261030-arm64';raw=folder/'pipeline'
+  electronic=json.loads((raw/'electronic-results.json').read_text());source=(folder/'source.in').read_text()
+  path=load_band_path(folder/'band-path.txt')
+  bands=reparse_spin_bands(raw,source,path,electronic)
+  self.assertNotIn('k_path_nodes',bands['up'])
+  for channel in ('up','down'):
+   electronic['channels'][channel]['bands']['k_path_nodes']=checked_k_path_nodes(source,path,bands[channel]['distance'])
+  parsed=reparse_spin_bands(raw,source,path,electronic)
+  self.assertEqual(parsed['up']['k_path_nodes'],electronic['channels']['up']['bands']['k_path_nodes'])
+  electronic['channels']['down']['bands']['k_path_nodes'][0]['label']='Forged'
+  with self.assertRaisesRegex(ValueError,'path nodes differ'):reparse_spin_bands(raw,source,path,electronic)
+ def test_latest_main_real_spin_with_path_metadata_reverifies(self):
+  from qe_spin_acceptance import verify
+  proof=verify(ROOT/'validation-results/qe-spin-si-20261030-main-7f38e9e')
+  self.assertEqual(proof['source_commit'],'7f38e9e31c018a431863e594301ca6eeec61ee3a')
+  self.assertEqual(proof['status'],'passed');self.assertEqual(proof['stages'],7)
  def binary(self):
   p=self.root/'fake-spin'
   p.write_text('''#!/usr/bin/env python3

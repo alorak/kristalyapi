@@ -1,0 +1,135 @@
+{
+  "schema": "kristalyapi.calculation-summary.v1",
+  "job_id": "1448b3cb1f17444d89a08100840860ef",
+  "name": "",
+  "status": "completed",
+  "created": "2026-10-30T10:54:02.934273+00:00",
+  "updated": "2026-10-30T10:54:10.334213+00:00",
+  "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+  "profile_id": "si-pbe",
+  "resource_profile_sha256": "886202ab24d0b2e25489cd2c0aa2a44c155547354f9db37e794b51a989ade545",
+  "request": {
+    "schema": "kristalyapi.qe-electronic-job.v2",
+    "calculation": "electronic",
+    "functional": "PBE",
+    "spin": "polarized",
+    "ecutwfc_ry": 45.0,
+    "ecutrho_ry": 360.0,
+    "kpoints": [
+      2,
+      2,
+      1
+    ],
+    "atom_count": 2,
+    "cell_angstrom": [
+      [
+        0.0,
+        2.7155,
+        2.7155
+      ],
+      [
+        2.7155,
+        0.0,
+        2.7155
+      ],
+      [
+        2.7155,
+        2.7155,
+        0.0
+      ]
+    ],
+    "electronic": {
+      "nbnd": 8,
+      "nscf_k": 2,
+      "band_path": [
+        {
+          "label": "Gamma",
+          "k": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "segments": 3
+        },
+        {
+          "label": "X",
+          "k": [
+            0.5,
+            0.0,
+            0.0
+          ],
+          "segments": 1
+        }
+      ],
+      "dos": {
+        "delta_e_ev": 0.01,
+        "degauss_ry": 0.005,
+        "energy_min_ev": -4.0,
+        "energy_max_ev": 10.0
+      }
+    }
+  },
+  "evidence_status": "matched",
+  "result": {
+    "schema": "kristalyapi.qe-electronic-job-result.v2",
+    "engine": "quantum-espresso",
+    "engine_version": "6.7MaX",
+    "energy_ev": -305.81012328017715,
+    "energy_ry": -22.47662949,
+    "total_force_ry_bohr": 5e-05,
+    "max_force_component_ry_bohr": null,
+    "job_done": true,
+    "scf_converged": true,
+    "geometry_converged": false,
+    "input_sha256": "4978993c31be37896305cbff560964e026f3fe7527ca66299986b3afcdd4fb0f",
+    "output_sha256": "843b80e36713a58a5b8586450470484a4a765863e5dafa5ac0004f5c677828e0",
+    "final_structure_hash": null,
+    "pseudopotentials": {
+      "Si": {
+        "file": "Si.UPF",
+        "sha256": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a",
+        "functional": "PBE",
+        "license": "GPL-2.0-or-later"
+      }
+    },
+    "artifact_sha256": {
+      "bands.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bands_up.dat": "7b6ba9a6d9338a5e6f9e0145db71d8b4a58e3e53a788c61f45d47e6e4a626a32",
+      "progress.json": "a1347eb4a168e511ae17ec31e31e60b7794d66bc42ab6ce7fec85e85e248f367",
+      "pdos.pdos_atm#2(Si)_wfc#1(s)": "8351ab3acff5566cf41654d014f857305e63a98c9447737b321d68bed16b93d7",
+      "nscf.out": "6887f2fd92d8123f3673fc49dd7c7cc806cff49201c12c75ddaf902157505146",
+      "bands_pp_up.out": "023428322fe388578cc39c79ab5398a60846a51e5a495b53f30ab9dfbd1cb39b",
+      "dos.out": "e7551546e4ae284d83c5a0f9b84b26658703ddbf40b7b7253101386da354bd38",
+      "bands_down.dat": "89b5545b89cc0462706aa37904d42a6dfe734c11fc3371e3ff35caae1897c35a",
+      "pdos.pdos_atm#1(Si)_wfc#1(s)": "21a369089e85ee00e0f3a0ba5e863a67decb2e9dff2d65bb93ee811a340a1535",
+      "dos.in": "b717e63cd9de47bff2dc2360469a79937fcdf749b79e76731d937ec0506807fa",
+      "bands_pp_down.in": "e7837d06ff2277b205c0ca5d0bf4a30e4441b6fef36e5709a04453f24ef66866",
+      "bands.in": "e5ba65e917c8ba2445d3959c3b50b04896f04c13e5b9151b0b39a8cd794f3186",
+      "bands_pp_up.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bands.out": "c77c14e318d7c4a19aea985b5f100a065724967ff6c73f92deaa120b71800595",
+      "bands_pp_up.in": "e9296766e5788a1bef1202a82675dba8086c559f0e2bbb81987555467fc1f39d",
+      "bands_pp_down.out": "463ef846195b0eccd86e7f92a2d5fb17e55a2cb931f352c62d6d0c5f71a9a8a1",
+      "bands_down.dat.gnu": "11cdf766580d21406ba243bb0e05e939e5df0b58d07d7cf68ffca25c5bda8c22",
+      "nscf.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dos.dat": "94225b3e063e1ed36366748d020c7bea9e98f9d57057f3669358bcbf841c3980",
+      "dos.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "projwfc.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "projwfc.in": "671f1b799b67e87cc978a733d106eed304735a30c7ec62b1f7645563828c1d2f",
+      "scf.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pdos.pdos_atm#2(Si)_wfc#2(p)": "9611d3947139d3aced5b5f373ddafe9238e0ae60829d04737748daaeb1c131d0",
+      "structure.in": "4978993c31be37896305cbff560964e026f3fe7527ca66299986b3afcdd4fb0f",
+      "nscf.in": "9442e68ca15f67dd79d48dee5e37aa5c08b3047d75e0ee566333890dd11b3d6a",
+      "pdos.pdos_tot": "597f2549bf7f2686edf05d009bef952b2c699bbc64f0272fc062421c7a2bbab2",
+      "scf.in": "2d7f33c217abd8cf6af4a561608a8b97ff06a458d47f4ddd59f62680fbc73650",
+      "projwfc.out": "66c5b93dcf60a2fd83101124abe88a6fc0f40582f7c06f421cf30314dc39c64a",
+      "bands_pp_down.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "electronic-results.json": "8c98d2486ee87fd6588aee804ee08d1bd8637bcdd91678950522456c33e9f4c9",
+      "pdos.pdos_atm#1(Si)_wfc#2(p)": "7536dc09e46390866fb9e738b991de560d5c705dc8e6f2e4ef2e0a9c07d2d3d5",
+      "pipeline.json": "214ef74a7fb9d0d2a3e764ae8c7ef835ddcd6a40a5b3f519d875f81ed5fc2c1c",
+      "scf.out": "843b80e36713a58a5b8586450470484a4a765863e5dafa5ac0004f5c677828e0",
+      "bands_up.dat.gnu": "134f98d69c431fd1d032780f71b939acc5ece9c6d38b43b62b9315c130a9a8b8"
+    },
+    "scientific_convergence_study_completed": false
+  },
+  "scientific_acceptance": "Not established by a completed job alone"
+}
