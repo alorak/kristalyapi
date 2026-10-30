@@ -941,6 +941,35 @@ işi olarak açma.
 
 [Kapsam ve gerçek VESTA kabul kriterleri](tests/validation/PACKAGE_17_4_STATUS.md).
 
+### V17.5 — Gerçek VESTA 3.5.8 desktop kabul altyapısı
+
+- [x] Üç SHA-pimli CIF (NaCl, rutil, IUCr K/Na/Ca/Si/O)
+  ve kısmi gerçek 5i55 CCP4 için kullanıcı odaklı
+  kanıt hazırlama, SHA-256 mühürleme ve raporlama.
+- [x] V17.4 app-export .vesta + ayrı kayıp raporu SHA
+  doğrulaması; gerçek VESTA Save As .vesta dosyasıyla
+  P1 hücre, atom türü, site etiketi, occupancy ve
+  periyodik Kartezyen konum farkları.
+- [x] V15 kaynak pinleri / kamera / 1024×768
+  PNG CRC/SHA/ROI + IoU ve RGB MAE kıyası;
+  üç panelli somut karşılaştırma görselleri.
+- [x] IUCr ADP kayıp raporu zorunluluğu;
+  operatörün gerçekten seçtiği 5i55 CCP4 binary
+  SHA-256 eşleşmesi, kaynak biriminin UNKNOWN
+  olduğunun korunması; uydurma external grid ret.
+- [x] Sentetik kötü durum testleri; mevcut merge-only
+  CI içinde ayrıca çalıştırma adımı eklendi.
+- [ ] **V17.5 gerçek GUI kabulü:** Operatör VESTA 3.5.8
+  çalıştırmalı, dört senaryonun görüntü/Save As
+  artefaktlarını doldurmalı ve insan tarafından
+  fark matrisi onaylanmalı; halen NOT_RUN ve
+  scientificParity NOT_ESTABLISHED.
+- [ ] VESTA ileri scientific parity: ADP/tensor,
+  aktif non-P1 setting, vektör ve polygon topology,
+  gerçek grid dışa aktarma. Sonra V18 CIF2/simetri.
+
+[V17.5 operatör protokolü](tests/validation/PACKAGE_17_5_STATUS.md).
+
 ### V17 — P1 · VESTA proje içe/dışa aktarımı
 
 - [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,
