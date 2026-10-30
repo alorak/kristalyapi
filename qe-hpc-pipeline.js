@@ -89,7 +89,7 @@ export function stageSlurm(step,resource,withElectronic=false){
   '#!/bin/bash','#SBATCH --job-name='+resource.jobName+'-'+step,
   '#SBATCH --account='+resource.account,'#SBATCH --partition='+resource.partition,
   '#SBATCH --nodes=1','#SBATCH --ntasks='+(isPw?resource.ntasks:1),
-  '#SBATCH --cpus-per-task='+(isPw?1:56),'#SBATCH --time='+time(resource.hours),
+  '#SBATCH --cpus-per-task='+(isPw?1:56),'#SBATCH --time='+time(isPw?resource.hours:(resource.postprocess_hours??resource.hours)),
   '#SBATCH --output=logs/'+step+'-%j.out','#SBATCH --error=logs/'+step+'-%j.err',
   'set -euo pipefail','umask 077','cd "$SLURM_SUBMIT_DIR"',
   "trap 'code=$?; if [ \"$code\" -ne 0 ]; then python3 pipeline.py fail "+step+" \"$code\" || true; fi' EXIT",
@@ -170,6 +170,12 @@ export async function createTrubaPipelinePackage(args){
  const {calculation,pseudos,electronic}=validatePipelineInput(inputText,args);
  const resources=validateResources({account:args.account,partition:args.partition||'orfoz',
   ntasks:args.ntasks,hours:args.hours,jobName:args.jobName||'qe-pipeline'});
+ // Explicit per-postprocessor shorter queue walltime; default preserves old packages.
+ const postHours=args.postHours===undefined||args.postHours===null||args.postHours===''?
+  resources.hours:Number(args.postHours);
+ if(!Number.isInteger(postHours)||postHours<1||postHours>72)
+  throw Error('TRUBA seri son işlem süresi 1–72 saat olmalı.');
+ resources.postprocess_hours=postHours;
  if(typeof pipelineScript!=='string'||pipelineScript.length>128000||!pipelineScript.includes(SCHEMA))
   throw Error('Uyumlu pipeline.py dosyası gerekli.');
  const withConverter=Boolean(converterScript||pdosHelperScript);
@@ -211,8 +217,14 @@ export async function createTrubaPipelinePackage(args){
   file_sha256['qe_pdos.py']=await sha(encoder.encode(pdosHelperScript));
  }
  const missing=pseudos.filter(p=>!included.has(p.file)).map(p=>p.file);
+ const resource_estimate=stages.map(stage=>{
+  const isPw=['relax','scf','bands','nscf'].includes(stage);
+  return {stage,allocated_cpus:isPw?resources.ntasks:56,requested_walltime_hours:isPw?resources.hours:postHours};
+ });
+ const max_reserved_core_hours=resource_estimate.reduce((sum,stage)=>sum+stage.allocated_cpus*stage.requested_walltime_hours,0);
  const manifest={schema:SCHEMA,status:missing.length?'upf-required':'prepared-not-submitted',
   calculation,execution_performed:false,stages,resources,file_sha256,
+  resource_estimate,max_reserved_core_hours,
   electronic_converter_included:withConverter,
   pseudopotentials:pseudos.map(p=>({element:p.element,file:p.file,
    included:included.has(p.file),sha256:hashes[p.file]||null})),
@@ -222,6 +234,7 @@ export async function createTrubaPipelinePackage(args){
   'Stages: '+stages.join(' -> '),
   '1. Extract into NEW persistent shared scratch directory; confirm account/module.',
   '2. Place correct real UPFs in pseudo/ and validate k-path, nbnd and DOS settings.',
+  'Resource planning: serial postprocessors request '+postHours+' h each, PW stages '+resources.hours+' h. Total reserved core-hours upper bound (not actual use): '+max_reserved_core_hours+'.',
   '3. Submit explicitly: bash submit.sh',
   '4. Inspect submissions.txt, squeue, sacct, logs/, reports/ and the raw outputs.',
   '5. After the last stage: pipeline-summary.json (or python3 pipeline.py summary).',
