@@ -56,14 +56,16 @@ class CameraFrameReferenceTests(unittest.TestCase):
         self.assertEqual(result["scientificParity"], "NOT_ESTABLISHED")
         self.assertEqual(len(result["cases"]), 5)
         computed = [x for x in result["cases"] if x["status"] == "REFERENCE_COMPUTED_GUI_NOT_RUN"]
-        self.assertEqual(len(computed), 4)
-        self.assertEqual(len([x for x in result["cases"] if x["status"] == "NOT_COMPUTED_NON_CIF"]), 1)
+        self.assertEqual(len(computed), 5)
+        self.assertEqual(len([x for x in result["cases"] if x["nativeMapAudit"] is not None]), 1)
         for item in computed:
             self.assertEqual(len(item["sourceSha256"]), 64)
             self.assertAlmostEqual(item["frame"]["handednessDeterminant"], 1, places=10)
         self.assertAlmostEqual(computed[0]["frame"]["cellVolumeA3"], 5.62 ** 3, places=7)
         self.assertAlmostEqual(computed[1]["frame"]["cellVolumeA3"],
                                4.59373 ** 2 * 2.95812, places=6)
+        self.assertEqual(computed[-1]["nativeMapAudit"]["physicalUnits"], "UNKNOWN")
+        self.assertEqual(computed[-1]["nativeMapAudit"]["thresholdGridEdgeCrossings"], 188)
 
     def test_invalid_cell(self):
         for cell in [
