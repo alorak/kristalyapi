@@ -77,6 +77,9 @@ function readVectors(lines,byIndex,warnings){
   warnings.push('VECTR/VECTT count mismatch or missing VECTT terminator; no arrows imported.');return [];
  }
  const vectors=[...vectorIndex.values()].map(v=>({...v,style:styles.get(v.id)}));
+ if(new Set(vectors.map(v=>v.siteLabel)).size!==vectors.length){
+  warnings.push('Multiple VECTR arrows on one site are unsupported; no preview arrows imported.');return [];
+ }
  const scaleIndex=find(lines,'VECTS');
  let scale=1;
  if(scaleIndex>=0){
