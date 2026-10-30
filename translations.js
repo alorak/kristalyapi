@@ -1460,6 +1460,12 @@
  ];
  const dictionary=new Map(entries);
  const parts=[
+  [" aşama tamamlandı. Bu oran kalan süre tahmini değildir.", " stages completed. This ratio is not an estimate of remaining time."],
+  [" · Tamamlandı", " · Completed"],
+  [" · Çalışıyor", " · Running"],
+  [" · Bekliyor", " · Pending"],
+  [" · Başarısız", " · Failed"],
+
   [" Bant, DOS ve atom/orbital PDOS sonuçları aşağıda gösteriliyor.", " Bands, DOS and atom/orbital PDOS results are shown below."],
   ["Kaynak: ", "Source: "],
   [" · son yapı ", " · final structure "],
