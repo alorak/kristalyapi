@@ -4065,7 +4065,7 @@ function build(){
  }
  /* VESTA VECTR are untyped VISUAL arrows, never magneticMoment / mu_B. */
  if(!state.symmetryEnabled){
-  const vestaArrows=validatedVestaDisplayVectors(state.vestaDisplayVectors,state.sites.map(site=>site.label));
+  const vestaArrows=applicableVestaVectors(state);
   const perSite=new Map(vestaArrows.map(v=>[v.siteLabel,v]));let drawn=0;
   for(let i=0;i<entry.length&&drawn<200;i++){
    const atom=entry[i],arrow=perSite.get(atom.site.label);
@@ -8012,6 +8012,13 @@ function historyShortcut(event){
  return true;
 }
 
+/* When a user deletes or renames a source site, its imported display-only
+ * VECTR annotation becomes orphaned. Drop it instead of crashing build,
+ * history, or exports; no physical/magnetic meaning is reinterpreted. */
+function applicableVestaVectors(current){
+ const labels=current.sites.map(site=>site.label);
+ return validatedVestaDisplayVectors((current.vestaDisplayVectors||[]).filter(vector=>labels.includes(vector.siteLabel)),labels);
+}
 function lastCrystalPayload(current){
  return {
   format:'kristalyapi-last-v2',name:current.name,detail:current.detail,
@@ -8025,7 +8032,7 @@ function lastCrystalPayload(current){
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
   atomScale:current.atomScale,poly:current.poly,polyCenters:current.polyCenters,polyColor:current.polyColor,polyOpacity:current.polyOpacity,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors,
-  vestaDisplayVectors:validatedVestaDisplayVectors(current.vestaDisplayVectors,current.sites.map(site=>site.label)),
+  vestaDisplayVectors:applicableVestaVectors(current),
   layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder)
  };
 }
@@ -9528,7 +9535,7 @@ function exportVrml(){
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,bondMode:state.bondMode||'auto',nonPeriodic:!!state.nonPeriodic,nonPeriodicOrigin:state.nonPeriodicOrigin||[0,0,0],sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCenters:state.polyCenters,polyColor:state.polyColor,polyOpacity:state.polyOpacity,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
- vestaDisplayVectors:validatedVestaDisplayVectors(state.vestaDisplayVectors,state.sites.map(site=>site.label)),
+ vestaDisplayVectors:applicableVestaVectors(state),
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
