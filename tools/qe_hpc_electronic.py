@@ -20,6 +20,8 @@ import pipeline as hpc
 MAX_TABLE = 8_000_000
 MAX_ROWS = 20_000
 MAX_PLOT_POINTS = 120_000
+MAX_BAND_FILE_BYTES = 96 * 1024 * 1024
+MAX_RAW_BAND_SAMPLES = 4_000_000
 MAX_JSON = 16_000_000
 SCHEMA = "kristalyapi.qe-electronic.v1"
 
@@ -123,31 +125,101 @@ def checked_k_nodes(source: str, path: list, distances: list[float]):
 
 
 def parse_bands(path: Path, config: dict):
-    blocks = numeric_rows(path, 2, blocks=True)
-    count = len(blocks)
-    if count != config["electronic"]["nbnd"]:
+    """Scan EVERY QE band, but retain only an explicitly selected display window.
+
+    Band indices are 1-based, inclusive. No changes to QE nbnd, eigenvalues,
+    raw output, reciprocal distance or energy reference. The file is streamed
+    so 1000+ calculated bands do not require 1000+ retained Python arrays.
+    """
+    options = config["electronic"]
+    count = options["nbnd"]
+    path_nodes = options["path"]
+    expected_k = 1 + sum(node["segments"] for node in path_nodes[:-1])
+    window = options.get("band_window")
+    if window is None:
+        if count > 300:
+            raise ValueError("P1.4 requires explicit band window above 300 total bands")
+        first, last = 1, count
+    else:
+        if (not isinstance(window, list) or len(window) != 2 or
+                any(type(x) is not int for x in window) or
+                not 1 <= window[0] <= window[1] <= count or
+                window[1]-window[0]+1 > 300):
+            raise ValueError("P1.4 invalid band window")
+        first, last = window
+    if count * expected_k > MAX_RAW_BAND_SAMPLES:
+        raise ValueError("P1.4 QE raw band scan exceeds 4 million points")
+    if (last - first + 1) * expected_k > MAX_PLOT_POINTS:
+        raise ValueError("P1.4 selected band window exceeds frontend plot budget")
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_BAND_FILE_BYTES:
+        raise ValueError("Missing, symlinked or oversized bands.dat.gnu")
+
+    distances = []
+    curves = []
+    band_index = 0
+    samples_in_band = 0
+    current_curve = []
+
+    def finish_band():
+        nonlocal band_index, samples_in_band, current_curve
+        if samples_in_band == 0:
+            return
+        if samples_in_band != expected_k:
+            raise ValueError("QE band k-point count differs from declared crystal_b path")
+        band_index += 1
+        if band_index > count:
+            raise ValueError("QE bands.dat.gnu contains more bands than nbnd")
+        if first <= band_index <= last:
+            curves.append(current_curve)
+        current_curve = []
+        samples_in_band = 0
+
+    with path.open("r", encoding="utf-8", errors="strict") as stream:
+        for line in stream:
+            if len(line) > 8192:
+                raise ValueError("QE band output line exceeds size limit")
+            if not line.strip():
+                finish_band()
+                continue
+            if line.lstrip().startswith("#"):
+                continue
+            fields = line.split()
+            if len(fields) != 2:
+                raise ValueError("Unexpected QE bands.x columns")
+            try:
+                kx, energy = (float(x.replace("D", "E").replace("d", "e"))
+                              for x in fields)
+            except ValueError as exc:
+                raise ValueError("Nonnumeric QE band output") from exc
+            if not math.isfinite(kx) or not math.isfinite(energy):
+                raise ValueError("Nonfinite QE band output")
+            if samples_in_band >= expected_k:
+                raise ValueError("Too many QE k-points in a band block")
+            if band_index == 0:
+                if distances and kx < distances[-1]:
+                    raise ValueError("Band distance must not decrease")
+                distances.append(kx)
+            elif abs(kx - distances[samples_in_band]) > 1e-5:
+                raise ValueError("Inconsistent QE bands.x reciprocal-distance axis")
+            if first <= band_index + 1 <= last:
+                current_curve.append(energy)
+            samples_in_band += 1
+        finish_band()
+
+    if band_index != count or len(curves) != last-first+1:
         raise ValueError("QE band count differs from explicitly requested nbnd")
-    if count > 300:
-        raise ValueError("Viewer supports 300 bands; use an explicitly selected window in a later revision")
-    distance = [row[0] for row in blocks[0]]
-    if len(distance) < 2 or count * len(distance) > MAX_PLOT_POINTS:
-        raise ValueError("Band grid exceeds frontend limits")
-    # QE may repeat a sampled distance at a k-path junction. The frontend
-    # explicitly accepts non-decreasing band axes; DOS remains strict.
-    if any(b < a for a, b in zip(distance, distance[1:])):
-        raise ValueError("Band distance must not decrease")
-    for block in blocks:
-        if len(block) != len(distance) or any(abs(row[0] - x) > 1e-5 for row, x in zip(block, distance)):
-            raise ValueError("Inconsistent bands.x reciprocal-distance axis")
-    points = config["electronic"]["path"]
-    if len(distance) != 1 + sum(row["segments"] for row in points[:-1]):
-        raise ValueError("bands.x samples disagree with declared crystal_b segment counts")
-    scf_source = config.get("_final_scf_source", "")
-    nodes = checked_k_nodes(scf_source, points, distance)
-    return {"distance": distance, "energies_ev": [[row[1] for row in block] for block in blocks],
-            "band_index_start": 1, "total_bands": count,
-            **({"k_path_nodes": nodes} if nodes else {}),
-            "reference": "Raw QE Kohn-Sham energies; no Fermi/vacuum alignment"}
+    if len(distances) != expected_k or len(distances) < 2:
+        raise ValueError("QE band distance grid differs from crystal_b path")
+
+    nodes = checked_k_nodes(config.get("_final_scf_source", ""), path_nodes, distances)
+    return {
+        "distance": distances, "energies_ev": curves,
+        "band_index_start": first, "total_bands": count,
+        "selection_policy": ("explicit-one-based-inclusive" if window is not None
+                             else "all-calculated-bands"),
+        **({"k_path_nodes": nodes} if nodes else {}),
+        "reference": "Raw QE Kohn-Sham energies; no Fermi/vacuum alignment"
+    }
 
 
 def parse_dos(path: Path):
@@ -206,12 +278,12 @@ def collect(root: Path) -> dict:
             if name != "tmp/kristalyapi.save/data-file-schema.xml":
                 hpc.require_hash(root, name, digest)
     for name in ("bands.dat.gnu", "dos.dat", "pdos.pdos_tot", "scf.in", "projwfc.out"):
-        hpc.file_at(root, name, MAX_TABLE)
+        hpc.file_at(root, name, MAX_BAND_FILE_BYTES if name == "bands.dat.gnu" else MAX_TABLE)
     hpc.scan_output(hpc.file_at(root, "projwfc.out", MAX_TABLE), "projwfc")
     # Pass SCF geometry only in memory; never write inferred symmetry labels.
     config = dict(config)
     config["_final_scf_source"] = hpc.file_at(root, "scf.in", 4_000_000).read_text("utf-8")
-    bands = parse_bands(hpc.file_at(root, "bands.dat.gnu", MAX_TABLE), config)
+    bands = parse_bands(hpc.file_at(root, "bands.dat.gnu", MAX_BAND_FILE_BYTES), config)
     dos = parse_dos(hpc.file_at(root, "dos.dat", MAX_TABLE))
     projected = parse_pdos(hpc.file_at(root, "pdos.pdos_tot", MAX_TABLE), dos["energy_ev"])
     atoms = parse_atom_symbols(hpc.file_at(root, "scf.in", 4_000_000).read_text("utf-8"))
@@ -223,7 +295,7 @@ def collect(root: Path) -> dict:
     paths += [item["filename"] for item in pdos["source_files"]]
     paths += ["reports/" + stage + ".json" for stage in plan[:-1]]
     provenance = {"pipeline_manifest_sha256": hpc.sha256(hpc.file_at(root, "pipeline.json", hpc.MAX_MANIFEST)),
-                  "source_sha256": {path: hpc.sha256(hpc.file_at(root, path, MAX_TABLE))
+                  "source_sha256": {path: hpc.sha256(hpc.file_at(root, path, MAX_BAND_FILE_BYTES if path == "bands.dat.gnu" else MAX_TABLE))
                                     for path in paths},
                   "all_upfs_pinned": all(p.get("sha256") for p in config["pseudopotentials"]),
                   "scientific_convergence_verified": False}
