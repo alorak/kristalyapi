@@ -162,6 +162,41 @@ class TestStagedTruba(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid or unsorted"):
             pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(stdout=""))
 
+    def test_science_preflight_requires_enough_bands_for_real_upf_v2_valence(self):
+        raw = (b'<UPF version="2"><PP_HEADER element="Si" z_valence="4.0" '
+               b'functional="PBE" has_so="F"/></UPF>')
+        (self.root / "pseudo/Si.UPF").write_bytes(raw)
+        self.manifest["pseudopotentials"][0]["sha256"] = sha(raw)
+        self.manifest["electronic"]["nbnd"] = 3
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "requires at least 4"):
+            pipeline.science_check(self.root)
+        with self.assertRaisesRegex(ValueError, "requires at least 4"):
+            pipeline.preflight(self.root)
+        self.manifest["electronic"]["nbnd"] = 16
+        self.write_manifest()
+        report = pipeline.science_check(self.root)
+        self.assertEqual(report["status"], "necessary-capacity-checked")
+        self.assertEqual(report["neutral_valence_electrons"], 8)
+        self.assertEqual(report["minimum_occupied_nbnd"], 4)
+        self.assertEqual(report["k_mesh"], [4, 4, 4])
+        self.assertFalse(report["scientific_convergence_verified"])
+
+    def test_science_preflight_legacy_upf_is_not_falsely_verified(self):
+        report = pipeline.science_check(self.root)
+        self.assertEqual(report["status"], "valence-unverified")
+        self.assertIsNone(report["minimum_occupied_nbnd"])
+        self.assertTrue(report["review_notes"])
+        self.assertEqual(pipeline.preflight(self.root)["science"]["status"], "valence-unverified")
+
+    def test_science_preflight_rejects_upf_element_mismatch(self):
+        raw = b'<UPF><PP_HEADER element="Mo" z_valence="4.0"/></UPF>'
+        (self.root / "pseudo/Si.UPF").write_bytes(raw)
+        self.manifest["pseudopotentials"][0]["sha256"] = sha(raw)
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Invalid UPF v2 element"):
+            pipeline.science_check(self.root)
+
     def test_electronic_chain_preserves_order_and_artifacts(self):
         for stage in self.plan:
             self.complete(stage)
