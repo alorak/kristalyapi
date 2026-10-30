@@ -99,6 +99,14 @@ test('untrusted labels, site count, coordinates, occupancy, boundaries and bonds
  assert.throws(()=>make({...s,sites:[]}),/1\.\.1000/);
  assert.throws(()=>make({...s,nonPeriodic:true}),/refuses nonperiodic/);
 });
+test('single-token structural keyword title cannot shadow a VESTA section',()=>{
+ for(const word of ['CELLP','STRUC','POLYP','BOUND','GROUP','CRYSTAL']){
+  const s=source();s.name=word;
+  const out=makeVesta3Export(s,options);
+  assert.ok(out.text.includes('TITLE\nKristal '+word+'\n'));
+  assert.equal(productionImporter()(out.text).sites.length,2);
+ }
+});
 test('title never becomes an executable VESTA structural keyword',()=>{
  const s=source();s.name='CELL\nIMPORT_DENSITY /tmp/file';
  const out=makeVesta3Export(s,options);
