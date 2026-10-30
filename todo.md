@@ -818,6 +818,35 @@ işi olarak açma.
   pass/fail/inconclusive/not-run kararı. Gerçek VESTA GUI görülmeden
   parite veya PASS iddiası yok.
 
+### V16.2 — Sayısal referans ve güvenli VESTA fark matrisi (30 Ekim 2026)
+
+- [x] **Kod / kaynak:** Beş gerçek SHA-sabitli V15 sahnesinde bağımsız
+  hücre hacmi; Gemmi ile CIF asimetrik site sayısı, koordinat, occupancy
+  ve Ueq; NaCl/rutil için seçili periyodik en kısa bağlar;
+  grafit (001) için metric d-aralığı ve yönlü normal; CCP4'nin
+  kaynak biriminde mutlak isoeşik/voksel/kenar denetimi.
+- [x] **Kanıt yazılımı:** Boş (asla GUI uygulanmış gibi görünmeyen)
+  operatör JSON şablonu; V15 gerçek PNG SHA/CRC/ROI/ayar/operator/commit
+  eşleştirmesi olmadan VESTA sayısal gözlemlerini kabul etmeme.
+  JSON+CSV fark matrisi; mutlak tolerans ve PBC Kartezyen metrik
+  farkları; geçersiz/çelişkili/tekrarlanan ölçümleri reddetme.
+- [x] **Sentetik test kapsamı:** Gerçek CIF/CCP4 kaynak referansları,
+  farklı yön işareti, koordinat sarımı, tolerans geçme/kalma,
+  kaynak/kanıt tutarsızlığı ve null/NOT_RUN kontrolü için unittest eklendi.
+- [ ] **Test yürütümü:** Merge-only CI ve Gemmi'li gerçek çalışma
+  ortamında yeni unittest'lerin tamamı koşulup kanıtlanmalı;
+  kodun yazılmış olması testlerin geçtiği anlamına gelmez.
+- [ ] **V16.2 gerçek GUI kabulü:** VESTA 3.5.8 operatör sahneleri,
+  bağımsız P14'ün sekiz BVS/Text Area merkezi, ADP ana eksenleri,
+  tüm bağ/çokyüzlü hacimleri ve CCP4 fiziksel birim/topoloji için
+  gerçek gözlem ve insan onaylı fark raporları. Bu kanıt yokken
+  scientificParity=NOT_ESTABLISHED, VESTA=NOT_RUN.
+- [ ] **Sıradaki:** V16.3 için gerçek GUI ölçümü mevcutsa bu eksikleri
+  kapat; yoksa V16 bilimsel kabulü açık tutarak V17 proje
+  import/export uygulamasına geç.
+
+[Yöntem, örnek komutlar ve bilimsel sınırlar](tests/validation/PACKAGE_16_2_STATUS.md).
+
 ### V17 — P1 · VESTA proje içe/dışa aktarımı
 
 - [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,
