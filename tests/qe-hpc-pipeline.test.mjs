@@ -73,6 +73,12 @@ test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files'
  assert.equal(result.manifest.execution_performed,false);
  const file=await entries(result.blob),decode=name=>new TextDecoder().decode(file.get(name));
  assert.equal(decode('pipeline.py'),pipelineScript);
+ assert.ok(file.has('resume.sh'));
+ assert.equal(result.manifest.file_sha256['resume.sh'],sha(decode('resume.sh')));
+ assert.match(decode('resume.sh'),/pipeline\.py resume-check/);
+ assert.match(decode('resume.sh'),/squeue -h -j/);
+ assert.match(decode('resume.sh'),/sbatch --test-only/);
+ assert.match(decode('resume.sh'),/resubmissions\.txt/);
  assert.equal(decode('structure.in'),input);
  assert.equal(result.manifest.file_sha256['pipeline.py'],sha(pipelineScript));
  assert.equal(result.manifest.file_sha256['submit.sh'],sha(decode('submit.sh')));
