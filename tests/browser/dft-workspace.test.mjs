@@ -334,6 +334,39 @@ try{
  assert.equal(await page.locator('#qeHpcBandFirst').isDisabled(),false,'reset re-enables the default converter window');
  assert.match(await page.locator('#dftSettingsResetStatus').textContent(),/varsayılanlar yüklendi/);
  assert.deepEqual(errors,[]);
+ // Tabs follow the WAI-ARIA pattern; arrows skip the locked jobs tab.
+ const setupTab=page.locator('[data-dft-section="hazirlik"]');
+ await setupTab.click();await page.waitForFunction(()=>!document.getElementById('dft-hazirlik').hidden);
+ assert.equal(await setupTab.getAttribute('aria-selected'),'true');
+ assert.equal(await page.locator('.dft-tabs').getAttribute('role'),'tablist');
+ await setupTab.focus();await page.keyboard.press('ArrowRight');
+ await page.waitForFunction(()=>!document.getElementById('dft-sonuclar').hidden);
+ assert.equal(await page.locator('[data-dft-section="sonuclar"]').evaluate(el=>el===document.activeElement),true);
+ // Translatable file pickers, fixed-size chart labels and no Turkish left in English mode.
+ await page.locator('#languageEnglish').click();
+ await page.locator('#qeElectronicFile').setInputFiles(path.join(root,'validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/pipeline/electronic-results.json'));
+ assert.equal(await page.locator('#qeElectronicFile').evaluate(el=>el.closest('.dft-file-picker').querySelector('.dft-file-name').textContent),'electronic-results.json');
+ assert.equal(await page.locator('#qeElectronicFile').evaluate(el=>el.closest('.dft-file-picker').querySelector('.dft-file-button').textContent),'Choose file');
+ assert.equal(await page.locator('#dftPage label label').count(),0,'file pickers never nest labels');
+ await page.locator('#qeElectronicOpen').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#qeElectronicCharts svg').length===3);
+ await page.waitForTimeout(200);
+ const labelPx=await page.locator('#qeElectronicCharts svg').evaluateAll(svgs=>svgs.map(svg=>{
+  const box=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal,text=svg.querySelector('text[data-font="11"]');
+  return Number(text.getAttribute('font-size'))*Math.min(box.width/vb.width,box.height/vb.height);}));
+ for(const px of labelPx)assert.ok(px>10.5&&px<11.5,'tick labels stay 11 px whatever the chart width: '+labelPx);
+ await page.locator('[data-dft-section="yakinsama"]').click();
+ await page.locator('#qeConvergenceFile').setInputFiles(path.join(root,'validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json'));
+ await page.locator('#qeConvergenceOpen').click();
+ await page.waitForFunction(()=>document.querySelector('.qe-convergence-summary tbody'));
+ const turkish=await page.evaluate(()=>{const left=[];
+  for(const id of ['dft-sonuclar','dft-yakinsama','dft-hazirlik','dft-ayarlar','dft-kusurlar']){
+   const walker=document.createTreeWalker(document.getElementById(id),NodeFilter.SHOW_TEXT);let node;
+   while((node=walker.nextNode()))if(/[çğıöşüÇĞİÖŞÜ]/.test(node.textContent))left.push(id+': '+node.textContent.trim().slice(0,80));}
+  return left;});
+ assert.deepEqual(turkish,[],'English mode leaves no Turkish text in DFT panels');
+ await page.locator('#languageTurkish').click();
+ assert.deepEqual(errors,[]);
  console.log('DFT workspace: desktop/mobile routes, form/file persistence, graphics and no automatic server calls passed.');
 }catch(error){if(page)await page.screenshot({path:path.join(artifacts,'dft-workspace-failure.png')}).catch(()=>{});throw error;}
 finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

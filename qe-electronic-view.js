@@ -186,6 +186,22 @@ export function niceTicks(min,max,target=5){
  }
  return ticks;
 }
+// Text sizes are in viewBox units, so a stretched or shrunk chart would scale
+// its labels too. Track the drawn scale and keep labels near their CSS size;
+// growth on narrow screens is capped so tick labels stay inside the margins.
+const MAX_TEXT_GROWTH=1.6;
+export function keepChartTextSize(svg,width,height){
+ if(typeof ResizeObserver==='undefined')return;
+ const observer=new ResizeObserver(()=>{
+  if(!svg.isConnected){observer.disconnect();return;}
+  const box=svg.getBoundingClientRect();
+  if(!box.width||!box.height)return;
+  const scale=Math.max(Math.min(box.width/width,box.height/height),1/MAX_TEXT_GROWTH);
+  for(const text of svg.querySelectorAll('text[data-font]'))
+   text.setAttribute('font-size',(Number(text.getAttribute('data-font'))/scale).toFixed(2));
+ });
+ observer.observe(svg);
+}
 export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  const svg=el('svg',{viewBox:'0 0 '+width+' '+height,role:'img','aria-label':title});
  svg.style.cssText='width:100%;height:auto;display:block;max-height:360px';
@@ -207,24 +223,24 @@ export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  if(!kNodes)for(const tick of niceTicks(xMin,xMax)){
   const x=xVal(tick.value);
   svg.append(el('line',{x1:x,y1:top,x2:x,y2:top+plotH,stroke:axis,'stroke-opacity':0.12}));
-  svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},tick.label));
+  svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,'data-font':11,fill:axis},tick.label));
  }
  for(const tick of niceTicks(yMin,yMax)){
   const y=yVal(tick.value);
   svg.append(el('line',{x1:left,y1:y,x2:left+plotW,y2:y,stroke:axis,'stroke-opacity':0.12}));
-  svg.append(el('text',{x:left-8,y:y+3,'text-anchor':'end','font-size':11,fill:axis},tick.label));
+  svg.append(el('text',{x:left-8,y:y+3,'text-anchor':'end','font-size':11,'data-font':11,fill:axis},tick.label));
  }
  if(kNodes){
   svg.setAttribute('data-k-node-count',kNodes.length);
   for(const item of kNodes){
    const x=xVal(item.distance),label=item.label==='Gamma'?'Γ':item.label;
    svg.append(el('line',{x1:x,y1:top,x2:x,y2:top+plotH,stroke:'#64748b','stroke-width':1,'stroke-dasharray':'4 4'}));
-   svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},label));
+   svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,'data-font':11,fill:axis},label));
   }
  }
- svg.append(el('text',{x:width/2,y:height-4,'text-anchor':'middle','font-size':12,fill:axis},xName));
+ svg.append(el('text',{x:width/2,y:height-4,'text-anchor':'middle','font-size':12,'data-font':12,fill:axis},xName));
  svg.append(el('text',{x:9,y:height/2,transform:'rotate(-90 9 '+height/2+')',
-  'text-anchor':'middle','font-size':12,fill:axis},yName));
+  'text-anchor':'middle','font-size':12,'data-font':12,fill:axis},yName));
  const clip='qe-chart-clip-'+(++chartSerial);
  const defs=el('defs'),pathClip=el('clipPath',{id:clip});pathClip.append(el('rect',{x:left,y:top,width:plotW,height:plotH}));defs.append(pathClip);svg.append(defs);
  const paths=el('g',{'clip-path':'url(#'+clip+')'});svg.append(paths);
@@ -234,6 +250,7 @@ export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
   paths.append(el('path',{d,fill:'none',stroke:color,'stroke-width':curves.length>20?'0.7':1.8,
    'vector-effect':'non-scaling-stroke'}));
  });
+ keepChartTextSize(svg,width,height);
  return svg;
 }
 function renderElectronicContent(container,data,energyWindow,linked,selection=null){
@@ -402,7 +419,9 @@ export function serializeElectronicPlots(host,data,energyWindow){
   const beside=row&&i<2,x=beside&&i===1?600:0,w=beside?(i===0?600:300):width,h=beside?360:275;
   const titleY=beside?85:y;
   root.append(el('text',{x:x+15,y:titleY,'font-size':11,fill:'#334155'},plot.getAttribute('aria-label')||''));
-  const copy=plot.cloneNode(true);copy.removeAttribute('style');copy.setAttribute('x',x);copy.setAttribute('y',titleY+10);copy.setAttribute('width',w);copy.setAttribute('height',h);root.append(copy);
+  const copy=plot.cloneNode(true);copy.removeAttribute('style');
+  for(const text of copy.querySelectorAll('text[data-font]'))text.setAttribute('font-size',text.getAttribute('data-font'));
+ copy.setAttribute('x',x);copy.setAttribute('y',titleY+10);copy.setAttribute('width',w);copy.setAttribute('height',h);root.append(copy);
   if(beside&&i===1)y=485;else if(!beside)y+=310;
  }
  return {text:new XMLSerializer().serializeToString(root),width,height};

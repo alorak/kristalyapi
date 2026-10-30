@@ -14,6 +14,7 @@ import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electron
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {createJobPoller,renderJobProgress,renderCalculationSummary} from './qe-job-tracking.js';
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
+import {createDftSettings,enhanceFilePickers,initTabKeys,syncTabState} from './dft-ui.js';
 import {MIN_SLAB_VACUUM_ANGSTROM,slabAnalysis,suggestBandPath,bandCapacityAdvice,bandCapacityFrom} from './qe-electronic-setup.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
@@ -6873,7 +6874,7 @@ function qeSyncHpcBandWindow(){
    'P1.4: '+total+' bant hesaplanacak. Grafik için ilk ve son bant zorunlu; nbnd değiştirilmeyecek.':
    total+' bant hesaplanacak ve tamamı çizilecek; isterseniz daha dar bant aralığı seçebilirsiniz.';
  }else{
-  hint.textContent='QE '+total+' bandı hesaplayacak. Grafik penceresi: '+
+  hint.textContent='Hesaplanacak bant: '+total+' · grafik penceresi: '+
    (first.value||'?')+'–'+(last.value||'?')+
    ' (1 tabanlı, en fazla 300 bant ve 120.000 çizim noktası).';
  }
@@ -6970,48 +6971,11 @@ function qeInvalidatePreflight(force=false){
  qePreflightSnapshot=null;
  qeSetPreflightState('stale','Yapı, bağlantı veya hesap parametreleri değişti. Yeniden ön kontrol yapın.');
 }
-// DFT form settings survive reloads in this browser. The API key, chosen files
-// and workspace-bound protocol selections are deliberately never stored.
-const DFT_SETTINGS_KEY='kristalyapi.dft-settings.v1';
-const DFT_SETTINGS_IDS=['qeApiAddress','qeJobProfile','qeJobWorkflow','qeElectronicSpin','qeSpinSeeds','qeSpinSmearing',
- 'qeElectronicNbnd','qeElectronicMesh','qeBandFirst','qeBandLast','qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma',
- 'qeElectronicPath','qeJobMaxSteps','qeJobEnergyThreshold','qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
- 'qeForceThreshold','qeFreezeBottom','qePseudoFiles','qeHpcAccount','qeHpcPartition','qeHpcTasks','qeHpcHours','qeHpcNbnd',
- 'qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz','qeHpcBandPath','qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss',
- 'qeHpcBandFirst','qeHpcBandLast','qeHpcConvertElectronic'];
-// Controls in Setup/Settings that are intentionally not saved.
-const DFT_UNSAVED_IDS=['qeApiToken','qeProtocolSelect','qeHpcUpfFiles'];
-const DFT_PREPARATION_MODES=['server','file','truba'];
-let dftSettingDefaults=null;
-function readDftSettings(){
- const values={};
- for(const id of DFT_SETTINGS_IDS){const el=$(id);values[id]=el.type==='checkbox'?el.checked:el.value;}
- values.preparationMode=document.querySelector('input[name="dftPreparationMode"]:checked')?.value||'server';
- return values;
-}
-function applyDftSettings(values){
- for(const id of DFT_SETTINGS_IDS){
-  const el=$(id),value=values?.[id];
-  if(el.type==='checkbox'){if(typeof value==='boolean')el.checked=value;continue;}
-  if(typeof value!=='string'||value.length>10000)continue;
-  if(el.tagName==='SELECT'&&![...el.options].some(option=>option.value===value))continue;
-  el.value=value;
- }
- const mode=DFT_PREPARATION_MODES.includes(values?.preparationMode)?values.preparationMode:'server';
- document.querySelector('input[name="dftPreparationMode"][value="'+mode+'"]').checked=true;
-}
-function saveDftSettings(){
- if(!dftSettingDefaults)return;
- try{localStorage.setItem(DFT_SETTINGS_KEY,JSON.stringify(readDftSettings()));}catch{/* Private browsing or full storage. */}
-}
-function restoreDftSettings(){
- dftSettingDefaults=readDftSettings();
- try{const saved=JSON.parse(localStorage.getItem(DFT_SETTINGS_KEY)||'null');if(saved&&typeof saved==='object')applyDftSettings(saved);}
- catch{/* Ignore unreadable or foreign values; defaults stay. */}
-}
+// Created on first use: headless CIF/unit loaders evaluate this file without browser modules.
+let dftSettingsStore=null;
+const dftSettings=()=>dftSettingsStore||=createDftSettings();
 function resetDftSettings(){
- try{localStorage.removeItem(DFT_SETTINGS_KEY);}catch{}
- applyDftSettings(dftSettingDefaults);
+ dftSettings().reset();
  qeResourceProfile=null;dftServerConnected=false;dftConnectionState='Bağlantı kontrol edilmedi';
  syncDftPreparation();syncDftSummary();qeSyncHpcBandWindow();
  $('dftSettingsResetStatus').textContent='Kaydedilen DFT ayarları silindi; varsayılanlar yüklendi.';
@@ -7032,13 +6996,13 @@ function syncDftPreparation(){
  $('qeElectronicSettings').hidden=mode!=='server'||workflow!=='electronic';
  syncDftElectronicChecks();
  $('qeSpinSettings').hidden=mode!=='server'||workflow!=='electronic'||$('qeElectronicSpin').value!=='polarized';
- saveDftSettings();
+ dftSettings().save();
  $('dftPreparationSummary').textContent=mode==='truba'?
   'TRUBA orfoz için çevrimdışı SCF/relax ZIP hazırlanacak. SLURM hesabınızı ve pseudopotansiyelleri kontrol edin; otomatik gönderim yapılmaz.':
   mode==='file'?
   'Yerel QE girdi dosyası oluşturulacak. Bu işlem hesap çalıştırmaz; gerçek UPF dosyaları ve pw.x kurulumu gerekir.':
-  'Sunucuda '+({scf:'SCF','relax-scf':'relaksasyon → SCF',electronic:'SCF → bant → DOS/PDOS'}[workflow]||'DFT')+
-  ' işi hazırlanıyor. Göndermeden önce UPF profili ve API erişimi doğrulanır.';
+  'Sunucu işi: '+({scf:'SCF','relax-scf':'relaksasyon → SCF',electronic:'SCF → bant → DOS/PDOS'}[workflow]||'DFT')+
+  '. Göndermeden önce UPF profili ve API erişimi doğrulanır.';
 }
 
 function qeUpdateProtocolState(){
@@ -9643,13 +9607,15 @@ function syncDftWorkspace(){
  if(redirected){section='ayarlar';history.replaceState(null,'','#dft/ayarlar');}
  $('dftSettingsNotice').hidden=!redirected;
  const changed=dftActiveSection!==section;
- const focusHeading=changed&&dftActiveSection!==null&&$('dftPage').contains(document.activeElement);
+ // Tabs keep focus (WAI-ARIA tabs); other in-page links move it to the new panel heading.
+ const focusHeading=changed&&dftActiveSection!==null&&$('dftPage').contains(document.activeElement)&&!document.activeElement.matches('[role=tab]');
  for(const key of DFT_SECTIONS){
   $('dft-'+key).hidden=key!==section;
   const link=document.querySelector('[data-dft-section="'+key+'"]');
   link.classList.toggle('active',key===section);
   if(key===section)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
  }
+ syncTabState(document.querySelector('.dft-tabs'),section);
  dftActiveSection=section;syncDftSummary();
  if(changed)$('dftPage').scrollTop=0;
  if(focusHeading)$('dft-title-'+section).focus({preventScroll:true});
@@ -10325,10 +10291,11 @@ function bind(){
  $('qeElectronicApplyNbnd').onclick=event=>{const input=$('qeElectronicNbnd');input.value=event.currentTarget.dataset.nbnd;
   input.dispatchEvent(new Event('input',{bubbles:true}));event.currentTarget.hidden=true;};
  for(const choice of document.querySelectorAll('input[name="dftPreparationMode"]'))choice.addEventListener('change',syncDftPreparation);
- restoreDftSettings();qeSyncHpcBandWindow();
+ dftSettings().restore();qeSyncHpcBandWindow();
+ enhanceFilePickers($('dftPage'));initTabKeys(document.querySelector('.dft-tabs'));
  syncDftPreparation();
  for(const type of ['input','change'])$('dftPage').addEventListener(type,event=>{
-  if(DFT_SETTINGS_IDS.includes(event.target.id)||event.target.name==='dftPreparationMode')saveDftSettings();
+  if(dftSettings().isSetting(event.target))dftSettings().save();
  });
  $('dftSettingsReset').onclick=resetDftSettings;
  $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';syncDftElectronicChecks();};

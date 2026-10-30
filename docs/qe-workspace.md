@@ -108,3 +108,13 @@ DFT form settings (API address, UPF profile, preparation mode, server/electronic
 The convergence tab opens with a decision summary: pass counts per role (decision, diagnostic, broadening consistency) and one row per pair with its verdict and the check closest to, or furthest past, its limit. Diagnostic or consistency exceedances are flagged without changing the reported finite acceptance. The full per-check table stays available in a folded section.
 
 In preparation, the evidence-backed protocol card appears only for server calculations and follows the preparation-mode choice; its detail strip stays hidden until a protocol is selected. TRUBA cluster settings form their own card beside the shared physical parameters.
+
+## Chart labels, file pickers, tabs and English coverage
+
+Chart text is defined in viewBox units, so stretching a chart used to scale its labels with it (≈22 px PDOS ticks on wide screens, ≈6 px on phones). `keepChartTextSize` now tracks the drawn scale and keeps tick and axis labels at their CSS size. Growth on narrow screens is capped at 1.6× so labels stay inside the plot margins. Exported SVG/PNG files use the base sizes.
+
+DFT file inputs are wrapped by `enhanceFilePickers` (`dft-ui.js`): a translatable "Dosya seç / Choose file" button and the chosen file name replace the browser's native button text. The native input stays in place, focusable and keyboard-operable.
+
+The DFT navigation is a WAI-ARIA tablist. The active tab has `aria-selected="true"` and is the only tab in the Tab order. Arrow keys, Home and End move between tabs, skip the locked jobs tab and keep focus on the tab. Panels are `role="tabpanel"`.
+
+Saved-settings logic lives in `dft-ui.js` (`createDftSettings`, `DFT_SETTINGS_IDS`, `DFT_UNSAVED_IDS`); `crystal-app.js` only wires it in. The DFT browser regression scans the Results, Convergence, Setup, Settings and Defect panels in English mode and fails if any Turkish text remains.
