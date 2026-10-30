@@ -7,6 +7,8 @@
 (() => {
  'use strict';
  const entries=[
+  ["Relaksasyon → SCF","Relaxation → SCF"],
+  ["Bant / DOS","Bands / DOS"],
   ["İş adı / ID / profil ara","Search name / ID / profile"],
   ["İş adı veya SHA-256","Job name or SHA-256"],
   ["Önceki sayfa","Previous page"],
