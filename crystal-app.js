@@ -7176,8 +7176,12 @@ async function qeJobHistoryLoad(reset=false){
     expected!==JSON.stringify({limit:page,offset:qeHistoryOffset,
      q:$('qeJobHistoryQuery').value.trim(),status:$('qeJobHistoryStatus').value,
      calculation:$('qeJobHistoryCalculation').value}))return;
-  if(!Array.isArray(data.jobs)||!Number.isInteger(data.total)||data.total<0)
-   throw Error('Sunucu sayfalı iş geçmişini döndürmedi.');
+  if(!Array.isArray(data.jobs))
+   throw Error('Sunucu iş geçmişini döndürmedi.');
+  // Older single-operator APIs expose only {jobs:[...]}. Keep their 20-row
+  // history readable; newer servers supply authoritative pagination totals.
+  const total=Number.isInteger(data.total)&&data.total>=0?data.total:data.jobs.length;
+  const hasMore=data.has_more===true;
   const selected=dropdown.value;
   dropdown.replaceChildren();
   const empty=document.createElement('option');empty.value='';empty.textContent='İş seçin';dropdown.append(empty);
@@ -7190,11 +7194,11 @@ async function qeJobHistoryLoad(reset=false){
   }
   if([...dropdown.options].some(o=>o.value===selected))dropdown.value=selected;
   $('qeJobHistoryPrev').disabled=qeHistoryOffset===0;
-  $('qeJobHistoryNext').disabled=!data.has_more;
-  $('qeJobHistoryPage').textContent=data.total?
-   (qeHistoryOffset+1)+'–'+(qeHistoryOffset+data.jobs.length)+' / '+data.total+' iş':
+  $('qeJobHistoryNext').disabled=!hasMore;
+  $('qeJobHistoryPage').textContent=total?
+   (qeHistoryOffset+1)+'–'+(qeHistoryOffset+data.jobs.length)+' / '+total+' iş':
    'Eşleşen iş bulunamadı';
-  status.textContent=data.total+' kayıt bulundu; bir iş seçip İncele düğmesine basın.';
+  status.textContent=total+' kayıt bulundu; bir iş seçip İncele düğmesine basın.';
  }catch(error){status.textContent='İş geçmişi: '+error.message;}
 }
 async function qeJobHistoryOpen(){
