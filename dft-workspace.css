@@ -180,3 +180,13 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 .qe-truba-summary-view th,.qe-truba-summary-view td{padding:7px 10px;text-align:left;border-bottom:1px solid #e3eaf1;vertical-align:top}
 .qe-truba-summary-view th{width:43%;font-weight:600;color:#47677e;background:#f7faff}
 .qe-truba-summary-view td{color:#284966;overflow-wrap:anywhere}
+
+/* TRUBA P1.2: compact, keyboard-accessible disclosure with explicit electronic settings. */
+#dftPage .qe-hpc-pipeline{min-width:0;border:1px solid #d7e4f0;border-radius:10px;background:var(--surface,#fff);padding:0}
+#dftPage .qe-hpc-pipeline summary{cursor:pointer;padding:13px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:#274f70}
+#dftPage .qe-hpc-pipeline summary small{font-size:11px;font-weight:400;color:#58758c}
+#dftPage .qe-hpc-pipeline[open]{padding-bottom:16px}
+#dftPage .qe-hpc-pipeline[open] > :not(summary){margin-left:16px;margin-right:16px}
+#dftPage .qe-hpc-pipeline textarea{width:100%;min-height:112px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55}
+#dftPage .qe-hpc-pipeline :focus-visible{outline:2px solid #2868a0;outline-offset:2px}
+@media(max-width:700px){#dftPage .qe-hpc-pipeline summary{flex-direction:column;align-items:flex-start}}
