@@ -29,6 +29,15 @@ python3 tools/qe_defect_prepare.py --output /tmp/mos2-d5-candidates
 python3 tools/qe_defect_prepare.py --verify /tmp/mos2-d5-candidates
 ```
 
+## D5.2 çevrimdışı kaynak kanıtı incelemesi
+
+[Kaynak bütçesi ve ham OOM kanıtı denetimi](qe-defect-resource-review.md):
+`python3 tools/qe_defect_resource_review.py --output /tmp/d5-review.json`.
+Araç daha önce kaydedilmiş dört başarısız denemenin ham dosya hash'lerini,
+süreç başına QE bellek tahminlerini ve Docker OOM/izolasyon kayıtlarını
+kontrol eder. 6/32/64/96/128 GiB karşılaştırmaları **hipotetik**tir;
+yeni koşum, güvenli kapasite garantisi veya bilimsel kabul değildir.
+
 ## Gerçek hesap açılmadan çözülmesi gereken kararlar
 
 1. **Kaynak profili:** 416 bantlık `nstep=0` pilotu dört adayda da 6 GiB

@@ -104,3 +104,10 @@ QE üst bellek tahmini 71.76–80.49 GB bastı; bu ölçülmüş tepe bellek de�
 Özgün başarısız ham girdiler/çıktılar korunur. Sonraki kod başarısızlıkta da
 ham sayı/bellek tahminlerini metadata'ya taşır; bu tanı düzeltmesi nedeniyle
 aynı yetersiz kaynakta hesap tekrar edilmedi.
+
+## D5.2 — Sonraki kaynak kararı için çalıştırmasız inceleme
+
+Önceki dört gerçek OOM denemesi [kaynak denetimi](qe-defect-resource-review.md)
+ile hash / sayı / OOM durumundan yeniden kontrol edilebilir. Bu adım
+Docker veya QE çalıştırmaz, API limitlerini değiştirmez ve tek başına
+büyük hücreye yeterli RAM miktarı belirlemez.
