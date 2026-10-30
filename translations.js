@@ -7,6 +7,8 @@
 (() => {
  'use strict';
  const entries=[
+  ["Sunucu hesabı seçildi. Hesaplama türünü ve ortak parametreleri belirleyin.","Server calculation selected. Choose the calculation type and shared parameters."],
+  ["Sunucuda PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin yalnız elektronik akışta kullanılabilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.","Choose server-side PBE SCF, fixed-cell relaxation → SCF, or the electronic bands/DOS workflow. Collinear spin is available only for electronic jobs. All atoms are free during relaxation. The UPF profile must be configured on the server; the API key stays in page memory. Authenticated LAN jobs require HTTPS."],
   ["Hesap hazırlama yöntemi","Calculation preparation method"],
   ["Hesabı nasıl hazırlamak istiyorsunuz?","How do you want to prepare the calculation?"],
   ["Sunucuda hesapla","Run on compute server"],
