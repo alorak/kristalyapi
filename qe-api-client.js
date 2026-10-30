@@ -140,3 +140,12 @@ export async function getQeJobDiagnostics(address,token,jobId,opts={}){
  if(typeof jobId!=='string'||!(/^[a-f0-9]{32}$/.test(jobId)))throw Error('Geçerli iş kimliği gerekli.');
  return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/diagnostics',opts);
 }
+
+export async function pauseQeElectronicJob(address,token,jobId,opts={}){
+ if(!(/^[a-f0-9]{32}$/.test(jobId)))throw Error('Geçerli iş kimliği gerekli.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/pause',{method:'POST',...opts});
+}
+export async function resumeQeElectronicJob(address,token,jobId,opts={}){
+ if(!(/^[a-f0-9]{32}$/.test(jobId)))throw Error('Geçerli iş kimliği gerekli.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/resume',{method:'POST',...opts});
+}

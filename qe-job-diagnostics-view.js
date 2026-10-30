@@ -1,5 +1,5 @@
 /* Operational telemetry is separate from scientific acceptance. */
-const reasons={completed:'Hesap tamamlandı',in_progress:'İş sürüyor',cancelled:'Kullanıcı iptal etti',wall_time_limit:'Süre sınırı aşıldı',
+const reasons={paused_at_stage_boundary:'Tamamlanan aşama sınırında duraklatıldı',completed:'Hesap tamamlandı',in_progress:'İş sürüyor',cancelled:'Kullanıcı iptal etti',wall_time_limit:'Süre sınırı aşıldı',
  cgroup_oom_kill:'Bellek sınırında sonlandırıldı (cgroup OOM kanıtı)',worker_interrupted:'Worker yeniden başladı; iş kesildi',
  scf_not_converged:'SCF yakınsaması sağlanmadı',dos_grid_mismatch:'DOS / PDOS enerji gridleri uyuşmuyor',disk_full:'Disk alanı veya kota yetersiz',
  memory_allocation_failed:'Bellek ayırma hatası',process_killed_unconfirmed:'İşlem sinyalle sonlandı; OOM teyit edilmedi',
@@ -22,7 +22,8 @@ export function renderJobDiagnostics(host,raw){
  const p=text=>{const n=document.createElement('p');n.textContent=text;return n;};
  host.append(p('İş tanısı: '+reasons[data.reason_code]));
  if(data.availability==='unavailable'){host.append(p('Bu iş için ölçülmüş kaynak kaydı yok.'));return;}
- host.append(p('Geçen süre: '+data.elapsed_seconds.toFixed(1)+' s'+(data.active_stage?' · Aşama: '+data.active_stage:'')));
+ host.append(p('Geçen süre (bu çalıştırma): '+data.elapsed_seconds.toFixed(1)+' s'+(data.active_stage?' · Aşama: '+data.active_stage:'')));
+ if(data.execution_attempt)host.append(p('Çalıştırma denemesi: '+data.execution_attempt));
  const r=data.resources;
  if(r){
   const gib=x=>x===null?'ölçülemedi':(x/1024**3).toFixed(3)+' GiB';

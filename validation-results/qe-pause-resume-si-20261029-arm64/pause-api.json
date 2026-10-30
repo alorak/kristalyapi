@@ -1,0 +1,48 @@
+{
+  "pause_request": {
+    "job_id": "18081a90975740d7af4c10982cfc74b7",
+    "status": "running",
+    "created": "2026-10-29T19:10:45.573177+00:00",
+    "updated": "2026-10-29T19:10:46.634392+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null,
+    "resume_count": 0,
+    "pause_requested": true,
+    "can_pause": true,
+    "can_resume": false
+  },
+  "paused": {
+    "job_id": "18081a90975740d7af4c10982cfc74b7",
+    "status": "paused",
+    "created": "2026-10-29T19:10:45.573177+00:00",
+    "updated": "2026-10-29T19:10:53.387413+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": "Electronic pipeline paused at a completed stage boundary",
+    "resume_count": 0,
+    "pause_requested": true,
+    "can_pause": false,
+    "can_resume": true
+  },
+  "result_while_paused": {
+    "detail": "No converged result for this job"
+  },
+  "scf_stdout_sha256_before_resume": "9a32a6be6f483b2b7f6050b4581f252818e6844a5afec0991ed2c3ee29c928b2",
+  "resume_request": {
+    "job_id": "18081a90975740d7af4c10982cfc74b7",
+    "status": "queued",
+    "created": "2026-10-29T19:10:45.573177+00:00",
+    "updated": "2026-10-29T19:10:53.844252+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null,
+    "resume_count": 1,
+    "pause_requested": false,
+    "can_pause": false,
+    "can_resume": false
+  }
+}

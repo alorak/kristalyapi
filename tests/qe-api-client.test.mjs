@@ -4,7 +4,7 @@ import {parseQeBandPath} from '../qe-api-client.js';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../qe-api-client.js',import.meta.url),'utf8');
-const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeJobDiagnostics}=await import(
+const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(source).toString('base64')
 );
 
@@ -144,4 +144,11 @@ test('diagnostics use the authenticated job path and reject invalid identities b
  assert.equal(seen[0].options.headers.Authorization,'Bearer '+'a'.repeat(48));
  await assert.rejects(getQeJobDiagnostics('http://127.0.0.1:8000','a'.repeat(48),'../escape',{fetcher}));
  assert.equal(seen.length,1);
+});
+
+test('pause and resume are explicit authenticated POST actions on the same job',async()=>{
+ const seen=[];const fetcher=async(url,options)=>{seen.push({url,options});return response(200,{job_id:'b'.repeat(32),status:'paused'});};
+ for(const action of [pauseQeElectronicJob,resumeQeElectronicJob])await action('http://127.0.0.1:8000','a'.repeat(48),'b'.repeat(32),{fetcher});
+ assert.match(seen[0].url,/\/pause$/);assert.match(seen[1].url,/\/resume$/);
+ assert.ok(seen.every(x=>x.options.method==='POST'&&x.options.headers.Authorization==='Bearer '+'a'.repeat(48)));
 });

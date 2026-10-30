@@ -14,7 +14,7 @@ WORKDIR /app
 COPY --chown=10001:10001 server/api.py server/qe_probe.py server/job_core.py \
      server/job_store.py server/job_diagnostics.py server/worker.py server/relax_core.py server/relax_worker.py \
      server/electronic_core.py server/electronic_worker.py server/qe_post_settings.py ./
-COPY --chown=10001:10001 tools/qe_run.py tools/qe_pipeline.py tools/qe_pdos.py ./
+COPY --chown=10001:10001 tools/qe_run.py tools/qe_pipeline.py tools/qe_pdos.py tools/qe_checkpoint.py ./
 USER 10001:10001
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 QE_PROBE_TIMEOUT=8 \
     QE_JOBS_ROOT=/var/lib/qe QE_PROFILES_DIR=/profiles QE_PSEUDOS_DIR=/pseudos

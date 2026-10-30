@@ -15,7 +15,7 @@ import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
-import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath,getQeJobDiagnostics } from './qe-api-client.js';
+import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6888,6 +6888,7 @@ async function qeJobStart(){
    throw Error('Gönderilen ve doğrulanan yapı özetleri uyuşmuyor.');
   qeActiveJob={id:created.job_id,address,token,hash:created.structure_hash,
    workspaceId,snapshot};
+  $('qeJobPause').disabled=true;$('qeJobResume').disabled=true;
   qeClearRelaxationComparison();$('qeJobDiagnostics').replaceChildren();
   $('qeApiElectronicResults').replaceChildren();$('qeApiElectronicResults').hidden=true;
   status.textContent='QE işi kuyruğa alındı: '+created.job_id+
@@ -6900,6 +6901,8 @@ async function qeJobRefresh(){
  try{
   const job=qeActiveJob,record=await getQeScfJob(job.address,job.token,job.id);
   if(qeActiveJob!==job)return;
+  $('qeJobPause').disabled=!record.can_pause||record.pause_requested;
+  $('qeJobResume').disabled=!record.can_resume;
   let message='İş '+job.id+' · '+record.status+' · yapı özeti '+record.structure_hash.slice(0,12)+'.';
   let stale=true;
   if(job.snapshot!==null){try{stale=activeWorkspaceId!==job.workspaceId||JSON.stringify(qeJobPayload())!==job.snapshot;}catch{stale=true;}}
@@ -6930,7 +6933,9 @@ async function qeJobRefresh(){
     box.hidden=false;renderQeElectronicResults(box,parsed);
     message+=' Bant, DOS ve atom/orbital PDOS sonuçları aşağıda gösteriliyor.';
    }
-  }else if(record.error)message+=' Hata: '+record.error;
+  }else if(record.status==='paused')message+=' Tamamlanan aşama sınırında duraklatıldı; kayıtlar denetlenerek devam edilebilir.';
+  else if(record.pause_requested&&record.status==='running')message+=' Duraklatma istendi; çalışan aşamanın tamamlanması bekleniyor.';
+  else if(record.error)message+=' Hata: '+record.error;
   status.textContent=message;
   const diagnosticHost=$('qeJobDiagnostics');diagnosticHost.replaceChildren();
   try{const data=await getQeJobDiagnostics(job.address,job.token,job.id);
@@ -6965,12 +6970,22 @@ async function qeJobHistoryOpen(){
   await qeJobRefresh();
  }catch(error){status.textContent='Önceki iş: '+error.message;}
 }
+async function qeJobPauseResume(resume){
+ if(!qeActiveJob)return;
+ const job=qeActiveJob;
+ if(resume&&!window.confirm('Aynı ayarlarla gerçek QE işine devam edilsin mi?'))return;
+ try{
+  await (resume?resumeQeElectronicJob:pauseQeElectronicJob)(job.address,job.token,job.id);
+  if(qeActiveJob===job)await qeJobRefresh();
+ }catch(error){$('qeJobStatus').textContent='Duraklatma/devam: '+error.message;}
+}
 async function qeJobCancel(){
  if(!qeActiveJob){$('qeJobStatus').textContent='İptal edilecek aktif iş bulunamadı.';return;}
  if(!window.confirm('Gerçek QE işini iptal etmek istiyor musunuz?'))return;
  try{
   const job=qeActiveJob;
   const result=await cancelQeScfJob(job.address,job.token,job.id);
+  $('qeJobPause').disabled=true;$('qeJobResume').disabled=true;
   $('qeJobStatus').textContent='İptal isteği: '+result.status+'. Çalışan işlem worker tarafından sonlandırılacaktır.';
  }catch(error){$('qeJobStatus').textContent='İptal isteği: '+error.message;}
 }
@@ -9768,6 +9783,8 @@ function bind(){
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
  $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';};
  $('qeJobRefresh').onclick=qeJobRefresh;
+ $('qeJobPause').onclick=()=>qeJobPauseResume(false);
+ $('qeJobResume').onclick=()=>qeJobPauseResume(true);
  $('qeJobCancel').onclick=qeJobCancel;
  $('qeJobHistoryLoad').onclick=qeJobHistoryLoad;
  $('qeJobHistoryOpen').onclick=qeJobHistoryOpen;
