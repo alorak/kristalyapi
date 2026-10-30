@@ -75,6 +75,8 @@ def parse_output(path: Path) -> dict:
                 raise ValueError("Unexpected oversized QE line")
             if "JOB DONE." in line:
                 result["job_done"] = True
+            if re.search(r"^\s*iteration\s*#", line, re.I):
+                scf_converged = False
             if re.search(r"convergence\s+NOT\s+achieved", line, re.I):
                 scf_converged = False
             elif re.search(r"convergence\s+has\s+been\s+achieved", line, re.I):
@@ -94,8 +96,6 @@ def parse_output(path: Path) -> dict:
                 tail.append(val)
                 if len(tail) > 128:
                     tail.pop(0)
-                # A new ionic SCF iteration must independently converge.
-                scf_converged = False if result["energy_observation_count"] > 1 else scf_converged
             total_force = FORCE_RE.search(line)
             if total_force:
                 val = float(total_force.group(1).replace("D", "E").replace("d", "e"))
