@@ -219,8 +219,8 @@ def relaxed_positions(source: str, relax_output: str) -> str:
     if [r.split()[0] for r in new_rows] != originals:
         raise ValueError("Relax changed atom order/number; rejecting chained SCF")
     return (source[:source_positions.start()] + "ATOMIC_POSITIONS crystal\n"
-            + "\n".join(new_rows) + "\nK_POINTS automatic"
-            + source[source_positions.end():])
+            + "\n".join(new_rows) + "\nK_POINTS automatic\n"
+            + source[source_positions.end():].lstrip("\r\n"))
 
 
 def generate_input(root: Path, stage: str, config: dict) -> tuple[str, str]:
@@ -309,6 +309,8 @@ def scan_output(path: Path, stage: str) -> None:
                 raise ValueError("QE output line exceeds limit")
             if re.search(r"\bJOB\s+DONE\.", line, re.I):
                 done = True
+            if re.search(r"^\s*iteration\s*#", line, re.I):
+                scf = False
             if re.search(r"convergence\s+NOT\s+achieved", line, re.I):
                 scf = False
             elif re.search(r"convergence\s+has\s+been\s+achieved", line, re.I):
@@ -350,6 +352,8 @@ def finish(root: Path, stage: str) -> None:
               "hashes": hashes, "previous_stage": (
                   plan[plan.index(stage) - 1] if plan.index(stage) else None),
               "validated_not_physically_converged": True}
+    if (root / "reports").is_symlink():
+        raise ValueError("Unsafe reports directory")
     (root / "reports").mkdir(exist_ok=True)
     atomic_json(root / "reports" / (stage + ".json"), report)
     print("Stage completed:", stage, "hashes:", len(hashes))
@@ -358,6 +362,8 @@ def finish(root: Path, stage: str) -> None:
 def fail(root: Path, stage: str, exit_code: int) -> None:
     if stage not in STAGES:
         raise ValueError("Unknown stage")
+    if (root / "reports").is_symlink():
+        raise ValueError("Unsafe reports directory")
     (root / "reports").mkdir(exist_ok=True)
     target = root / "reports" / (stage + ".failure.json")
     if target.exists():
