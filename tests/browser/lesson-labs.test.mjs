@@ -34,7 +34,7 @@ try{
  const fullWidth=async pageId=>{
   const bounds=await page.evaluate(id=>{
    const outer=document.getElementById(id),wrap=outer.querySelector('.lesson-wrap');
-   return {viewport:outer.getBoundingClientRect().width,content:wrap.getBoundingClientRect().width};
+   return {viewport:outer.clientWidth,content:wrap.getBoundingClientRect().width};
   },pageId);
   assert.ok(Math.abs(bounds.viewport-bounds.content)<2,
    pageId+' must use full available width instead of a centered 1600px cap');
