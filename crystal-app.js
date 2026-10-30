@@ -7021,6 +7021,7 @@ async function qeExportTrubaPipeline(){
    account:$('qeHpcAccount').value,partition:$('qeHpcPartition').value,
    ntasks:$('qeHpcTasks').value,hours:$('qeHpcHours').value,
    postHours:$('qeHpcPostHours').value,
+   sharedAllocation:$('qeHpcSharedAllocation').checked,
    jobName:safeName(state.name)+'-electronic',
    upfFiles:Array.from($('qeHpcUpfFiles').files||[]),pipelineScript,
    converterScript,pdosHelperScript,
