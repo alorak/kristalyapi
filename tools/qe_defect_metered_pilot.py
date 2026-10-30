@@ -194,6 +194,20 @@ def make_docker_create(settings, evidence, inputs, pseudos, name):
 def check_container_config(info, settings):
     config=info.get("HostConfig") or {}
     state=info.get("State") or {}
+    mounts={x.get("Destination"):x for x in info.get("Mounts",[]) if isinstance(x,dict)}
+    security=config.get("SecurityOpt") or []
+    caps=config.get("CapDrop") or []
+    scratch=config.get("Tmpfs") or {}
+    if (info.get("Image")!=settings["image_id"] or
+        (info.get("Config") or {}).get("User")!=str(os.getuid())+":"+str(os.getgid()) or
+        not any(x.startswith("no-new-privileges") for x in security) or
+        "ALL" not in caps or
+        not all(key in scratch for key in ("/work","/tmp")) or
+        "size="+str(settings["scratch_tmpfs_bytes"]) not in scratch["/work"] or
+        set(mounts)!={"/inputs","/pseudos","/evidence"} or
+        any(mounts[k].get("Type")!="bind" or mounts[k].get("RW") is not rw for k,rw in
+            (("/inputs",False),("/pseudos",False),("/evidence",True)))):
+        raise ValueError("Docker security, mount or image attestation differs from requested configuration")
     if (config.get("Memory")!=settings["memory_bytes"] or
         config.get("MemorySwap")!=settings["memory_bytes"] or
         config.get("NanoCpus")!=settings["cpus"]*10**9 or
@@ -233,7 +247,7 @@ def evaluated_status(report, output, metrics, prepared_case):
         type(metrics.get("elapsed_seconds")) not in (int,float) or
         not 0<=metrics["elapsed_seconds"]<=report["timeout_seconds"]+5 or
         metrics.get("qe_returncode")!=0 or
-        metrics.get("oom_kill_delta") not in (None,0)):
+        metrics.get("oom_kill_delta")!=0):
         return "incomplete_resource_evidence"
     return "initialized_only_metered"
 
