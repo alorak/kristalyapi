@@ -785,11 +785,11 @@ işi olarak açma.
 | Voronoi yük entegrasyonu | Kısmi | Seyrek örneklem ve gerçek yakınsama/hata bütçesi → V20 |
 | Çokyüzlü kimyası / BVS | Kısmi | Parametre çiftleri, occupancy ve hacim/bozulma referansı → V21 |
 | PNG/SVG/TIFF/PDF/EPS ve 3B export | Mevcut / doğrulanmadı | #174 + #178 ile mm/DPI, derinliği doğru vektör, fontsuz metin, punto etiket, lejant, Å ölçeği, köken bilgisi; bağımsız VESTA görsel kabulü → V19 |
-| Kristalografik bakış yönü (a/b/c, a*/b*/c*, [uvw], (hkl) normali) | Eksik (editörde) | Yalnız V16.1 doğrulama betiğinde; arayüz ve sabit açılı döndürme yok → V24 |
-| Arka plan, derinlik sisi, ışık ve hücre çizgi stili | Eksik | Sabit beyaz zemin ve sabit ışık; proje/export durumu yok → V24 |
-| Atom yarıçap setleri ve element renk şemaları | Eksik | Tek boyut kaydırıcısı; iyonik (Shannon) / van der Waals seti yok → V24 |
+| Kristalografik bakış yönü (a/b/c, a*/b*/c*, [uvw], (hkl) normali) | Mevcut / doğrulanmadı | V24: Görünüm paneli, sabit açılı döndürme, köken bilgisi; gerçek VESTA kıyası → V16 |
+| Arka plan, derinlik sisi, ışık ve hücre çizgi stili | Mevcut / doğrulanmadı | V24: proje, geri al ve tüm export biçimlerinde; çizgi kalınlığı yok |
+| Atom yarıçap setleri ve element renk şemaları | Kısmi | V24: Alvarez vdW, Shannon iyonik, Jmol/CPK; VESTA'nın kendi tablosu (elements.ini) kaynağıyla yok |
 | Bağ stilleri ve hidrojen bağı | Eksik | Tek renk silindir; iki renk, çizgi, kesikli stil ve D–H···A araması yok → V24 |
-| Geometri tablosu, simetri kodu, s.u. | Eksik | Ölçüm var; simetri kodu, CIF e.s.d. yayılımı ve `_geom_*` dışa aktarımı yok → V24 |
+| Geometri tablosu, simetri kodu, s.u. | Mevcut / doğrulanmadı | V24: n_klm kodu, kovaryanssız s.u., CSV ve CIF `_geom_*`; yayınlanmış CIF ile kıyas açık |
 | Yapı dışa aktarma formatları | Kısmi | CIF/POSCAR/XYZ/PDB/JSON var; SHELX, CASTEP, QE, XSF yapı, mCIF yok (VESTA biçimi → V17) → V24 |
 | Harici RIETAN/MADEL ekosistemi / ek formatlar | Kısmi | Harici araç sınırı, format talep önceliği → V22 |
 | Çok büyük sahneler / çok pencere | Kısmi | 10 workspace, nesne/volume limitleri, gerçek cihaz ölçümü → V22 |
@@ -991,33 +991,48 @@ geliştirmeden önce [kılavuz](https://jp-minerals.org/vesta/archives/VESTA_Man
 ve gerçek VESTA 3.5.8 ile (V16 protokolü) doğrulanmalı. Doğrulanmayan
 madde "VESTA'da var" diye raporlanmaz.
 
-- [ ] **P1 · Kristalografik bakış yönü:** editörde a, b, c, a*, b*, c*
+- [x] **P1 · Kristalografik bakış yönü:** editörde a, b, c, a*, b*, c*
   boyunca bakış; [uvw] doğrultusu ve (hkl) normali girişi; ekran
   eksenleri etrafında sabit açılı (ör. 5°/15°/90°) döndürme ve yukarı
   vektörü seçimi. Eğik hücrede doğrudan/karşıt örgü ayrımı (V16.1
   `vesta_16_orientation.py` matematiği yeniden kullanılır), proje ve
   Undo/Redo'da saklanır, dışa aktarılan figürün köken bilgisine yazılır.
-- [ ] **P1 · Görünüm ve aydınlatma:** arka plan rengi (beyaz/siyah/
+  **Yapıldı:** Görünüm panelinde a/b/c/a*/b*/c*, [uvw] ve (hkl) normali;
+  5–90° adımlı yuvarlanma/sapma/yunuslama; kamera kıpırdamadıkça figür
+  köken bilgisine "view along …" yazılır. Kamera konumu projeye yazılmaz
+  (mevcut proje biçimi kamerayı saklamaz).
+- [x] **P1 · Görünüm ve aydınlatma:** arka plan rengi (beyaz/siyah/
   özel), derinlik sisi (depth cueing) başlangıç/bitiş, ortam/yaygın/
   parlak ışık şiddeti ve ışık yönü, hücre çizgi rengi/kalınlığı/kesikli
   stili. Ayarlar proje, çalışma alanı ve tüm export biçimlerinde aynı;
   "element renklerini koru" seçeneğiyle çelişmez; vektörde sis ya
   uygulanır ya da açıkça yok sayıldığı bildirilir.
-- [ ] **P1 · Atom yarıçap setleri ve renk şemaları:** atomik, iyonik
+  **Yapıldı:** varsayılanlar eski sahneyi birebir verir; sis vektörde
+  doğrusal renk karışımı, kesikli hücre çizgisi raster/SVG/PDF/EPS'te
+  kesikli. Açık: hücre çizgisi kalınlığı.
+- [x] **P1 · Atom yarıçap setleri ve renk şemaları:** atomik, iyonik
   (Shannon 1976; yükseltgenme durumu ve koordinasyon sayısına göre)
   ve van der Waals yarıçap tabloları; space-filling'de vdW. VESTA /
   Jmol / CPK renk şemaları. Her tablo için kaynak ve sürüm; eksik
   iyon/KS değerini tahmin etmeden uyar ve atomik değere düş.
+  **Yapıldı:** `tools/build_element_data.py` ile mendeleev'den kaynaklı
+  Alvarez 2013 vdW, Shannon 1976 iyonik (yük/KS/spin seçimi), Jmol ve CPK;
+  seçilmeyen iyonlar varsayılan yarıçapta kalır ve listelenir. Bağ araması
+  değişmez. Açık: VESTA renk/yarıçap tablosu (kaynaklı elements.ini yok).
 - [ ] **P2 · Bağ stilleri ve hidrojen bağı:** tek renk / iki renk
   (yarım bağ atom rengi) silindir, çizgi ve kesikli/noktalı stil;
   element çifti bazlı bağ yarıçapı. D–H···A hidrojen bağı araması
   (H···A ve D···A mesafesi + D–H···A açısı ölçütü, kaynaklı varsayılan)
   kesikli çizimle; vektör export'ta kesikli çizgi, ölçüm tablosunda ayrı tür.
-- [ ] **P1 · Geometri tablosu:** bağ, açı ve dihedral listesi
+- [x] **P1 · Geometri tablosu:** bağ, açı ve dihedral listesi
   simetri koduyla (ör. `x, y, z+1` / `1_556`); CIF e.s.d.'lerinden
   hücre + koordinat belirsizliğinin yayılımıyla s.u.; CSV ve CIF
   `_geom_bond_*`, `_geom_angle_*`, `_geom_torsion_*` döngüleri.
   s.u. kaynağı yoksa alan boş kalır, sıfır yazılmaz.
+  **Yapıldı:** `geometry-table.js`; CIF e.s.d.leri değerleriyle birlikte
+  saklanır, hücre/koordinat değişince kullanılmaz; aynı sitenin
+  görüntüleri arasındaki korelasyon korunur; CIF çıktısı kodların
+  başvurduğu simetri işlem listesini içerir. s.u. kovaryanssızdır.
 - [ ] **P2 · Yapı dışa aktarma formatları:** SHELX `.res`, CASTEP
   `.cell`, editörden QE `pw.x` girdisi, XSF yapı ve mCIF. Her biri için
   içe→dışa round-trip testi ve kayıp metadata tablosu (occupancy,

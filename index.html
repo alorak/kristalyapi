@@ -373,6 +373,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Geometrik noktasal kusur modelidir. Yük durumu, kusur oluşum enerjisi, atom relaksasyonu ve DFT hesabı yapılmaz.</p>
   </div>
 
+  <div class="section view-section" data-right-section="view"><h2>Bakış yönü</h2>
+   <p class="hint">Eksen ekrandan dışarı, izleyiciye doğru gösterilir; yukarı yön c (c bakışa paraleldeyse b) eksenidir.</p>
+   <div class="view-axis-buttons" role="group" aria-label="Örgü eksenleri boyunca bak"><button type="button" data-view-axis="a" aria-label="a boyunca bak">a</button><button type="button" data-view-axis="b" aria-label="b boyunca bak">b</button><button type="button" data-view-axis="c" aria-label="c boyunca bak">c</button><button type="button" data-view-axis="a*" aria-label="a* boyunca bak">a*</button><button type="button" data-view-axis="b*" aria-label="b* boyunca bak">b*</button><button type="button" data-view-axis="c*" aria-label="c* boyunca bak">c*</button></div>
+   <div class="view-index-row"><span>[u v w]</span><input id="viewU" type="number" step="1" value="0" aria-label="u"><input id="viewV" type="number" step="1" value="0" aria-label="v"><input id="viewW" type="number" step="1" value="1" aria-label="w"><button type="button" id="viewAlongUvw">Doğrultu boyunca bak</button></div>
+   <div class="view-index-row"><span>(h k l)</span><input id="viewH" type="number" step="1" value="0" aria-label="h"><input id="viewK" type="number" step="1" value="0" aria-label="k"><input id="viewL" type="number" step="1" value="1" aria-label="l"><button type="button" id="viewAlongHkl">Düzlem normali boyunca bak</button></div>
+   <div class="view-index-row"><span>Döndür</span><select id="viewStep" aria-label="Döndürme adımı"><option value="5">5°</option><option value="15" selected>15°</option><option value="30">30°</option><option value="45">45°</option><option value="90">90°</option></select><span class="view-rotate-buttons" role="group" aria-label="Ekran eksenleri etrafında döndür"><button type="button" data-view-rotate="roll:-1" aria-label="Bakış ekseni etrafında sola döndür" title="Bakış ekseni etrafında sola döndür">↺</button><button type="button" data-view-rotate="roll:1" aria-label="Bakış ekseni etrafında sağa döndür" title="Bakış ekseni etrafında sağa döndür">↻</button><button type="button" data-view-rotate="yaw:-1" aria-label="Dikey eksen etrafında sola döndür" title="Dikey eksen etrafında sola döndür">←</button><button type="button" data-view-rotate="yaw:1" aria-label="Dikey eksen etrafında sağa döndür" title="Dikey eksen etrafında sağa döndür">→</button><button type="button" data-view-rotate="pitch:-1" aria-label="Yatay eksen etrafında yukarı döndür" title="Yatay eksen etrafında yukarı döndür">↑</button><button type="button" data-view-rotate="pitch:1" aria-label="Yatay eksen etrafında aşağı döndür" title="Yatay eksen etrafında aşağı döndür">↓</button></span></div>
+   <p class="hint" id="viewDirectionStatus" role="status"></p>
+  </div>
+  <div class="section view-section" data-right-section="view"><h2>Arka plan ve aydınlatma</h2>
+   <div class="view-index-row"><label>Arka plan <input id="viewBackground" type="color" value="#ffffff"></label><button type="button" data-view-background="#ffffff">Beyaz</button><button type="button" data-view-background="#000000">Siyah</button><button type="button" data-view-background="#d9dee4">Gri</button></div>
+   <label class="check"><input id="viewDepthCue" type="checkbox"> Derinlik sisi (depth cueing)</label>
+   <div class="view-range-grid"><label>Sis başlangıcı <input id="viewDepthStart" type="range" min="0" max="0.95" step="0.05" value="0.35"></label><label>Sis sonu <input id="viewDepthEnd" type="range" min="0.05" max="1" step="0.05" value="1"></label><label>Ortam ışığı <input id="viewAmbient" type="range" min="0" max="3" step="0.05" value="1.15"></label><label>Ana ışık <input id="viewKey" type="range" min="0" max="5" step="0.05" value="2.15"></label><label>Işık yönü (azimut) <input id="viewAzimuth" type="range" min="-180" max="180" step="1" value="-58"></label><label>Işık yüksekliği <input id="viewElevation" type="range" min="-90" max="90" step="1" value="50"></label></div>
+   <div class="view-index-row"><label>Hücre çizgisi <input id="viewCellColor" type="color" value="#546a7c"></label><label class="check"><input id="viewCellDashed" type="checkbox"> Kesikli</label></div>
+   <button type="button" id="viewAppearanceReset">Görünümü varsayılana döndür</button>
+   <p class="hint">Ayarlar projede saklanır ve PNG/TIFF/PDF ile SVG/PDF/EPS çıktılarına uygulanır; vektör çıktıda derinlik sisi renk karışımı olarak çizilir.</p>
+  </div>
+  <div class="section view-section" data-right-section="view"><h2>Atom yarıçapı ve renk şeması</h2>
+   <label class="field"><span>Yarıçap seti</span><select id="radiusSet"><option value="default" selected>Varsayılan (kovalent · bağ aramasıyla aynı)</option><option value="vdw">van der Waals (Alvarez 2013)</option><option value="ionic">İyonik (Shannon 1976)</option></select></label>
+   <div id="ionicChoices" class="ionic-choices" hidden></div>
+   <label class="field"><span>Renk şeması</span><select id="colorScheme"><option value="app" selected>Uygulama</option><option value="jmol">Jmol</option><option value="cpk">CPK</option></select></label>
+   <p class="hint">Yarıçap seti yalnız görünümü değiştirir; bağ araması kendi eşiklerini kullanır. Siteye özel renk ve boyutlar korunur.</p>
+   <p class="hint" id="radiusNote" role="status"></p>
+  </div>
   <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>
    <div id="layerManager" class="layer-manager" aria-label="Kristal görünüm katmanları"></div>
@@ -416,6 +439,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button id="openMeasurementHistory" type="button">Ölçüm geçmişi →</button>
    </div>
    <p class="hint">2 atom: doğrudan ve en kısa periyodik uzaklık · 3 atom: B merkezli açı · 4 atom: A–B–C–D dihedral açısı. Kimyasal bağ yorumu geometrik eşiklere bağlıdır.</p></div>
+  <div class="section" data-right-section="measurement"><h2>Geometri tablosu</h2>
+   <p class="hint">Bağ, açı ve isteğe bağlı burulma açıları geçerli bağ eşikleriyle, CIF simetri koduyla (n_klm; 1_555 = .) listelenir. s.u. değerleri CIF e.s.d.lerinden kovaryanssız yayılımla hesaplanır; e.s.d. yoksa boş kalır.</p>
+   <label class="check"><input id="geometryTorsions" type="checkbox"> Burulma açılarını ekle</label>
+   <div class="view-index-row"><button type="button" id="geometryRun">Tabloyu hesapla</button><button type="button" id="geometryCsv" disabled>CSV indir</button><button type="button" id="geometryCif" disabled>CIF _geom indir</button></div>
+   <p class="hint" id="geometrySummary" role="status">Tablo henüz hesaplanmadı.</p>
+   <div class="geometry-preview" id="geometryPreview"></div>
+  </div>
   <div class="section" data-right-section="history"><h2>Ölçüm geçmişi</h2>
    <div id="measurementHistory" class="bond-rule-list" aria-live="polite"></div>
    <div class="actionrow" style="margin-top:10px"><button id="exportMeasurements" type="button">CSV dışa aktar</button><button id="clearHistory" type="button">Geçmişi temizle</button></div>
@@ -698,6 +728,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button type="button" class="right-tool" data-right-tool="xrd" aria-label="Yapı faktörü / toz XRD (öğretici)" title="Yapı faktörü / toz XRD (öğretici)" aria-controls="rightDrawerPane-xrd" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M6 18v-3m3 3V7m3 11v-6m3 6V4m3 14v-8"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="volume" aria-label="Hacimsel fizik verileri" title="Hacimsel fizik verileri" aria-controls="rightDrawerPane-volume" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm0 10 9-5m-9 5L3 7m9 5v10"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="layers" aria-label="Nesneler ve katmanlar" title="Nesneler ve katmanlar" aria-controls="rightDrawerPane-layers" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="view" aria-label="Görünüm, bakış yönü ve renk" title="Görünüm · bakış yönü · ışık · yarıçap" aria-controls="rightDrawerPane-view" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="bonds" aria-label="Atom türlerine göre bağlar" title="Atom türlerine göre bağlar" aria-controls="rightDrawerPane-bonds" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="7" r="3"/><path d="m8 15 8-6M8 18l9-8"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="lattice" aria-label="Örgü dönüşümü" title="Örgü dönüşümü" aria-controls="rightDrawerPane-lattice" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zm5 0v16m6-16v16M4 9h16M4 15h16m-5-8 2 2-2 2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="miller" aria-label="Miller düzlemleri ve morfoloji" title="Miller düzlemleri · kesit · slab · morfoloji" aria-controls="rightDrawerPane-miller" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 7-10h11l-7 10zM5 20h14m-8-9 6-3"/><path d="M10 6 5 16" stroke-dasharray="2 2"/></svg></button>

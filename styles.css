@@ -1187,3 +1187,23 @@ body.lesson-open #app{display:none!important}
 .qe-convergence-table{overflow-x:auto;margin:12px 0}.qe-convergence-table table{border-collapse:collapse;width:100%;min-width:680px;font-size:12px}.qe-convergence-table th,.qe-convergence-table td{padding:6px;text-align:left;border-bottom:1px solid var(--border,#6b728055);overflow-wrap:anywhere}.qe-electronic-charts details{overflow-wrap:anywhere;margin-top:12px}
 
 .qe-workflow{grid-template-columns:minmax(0,1fr);min-width:0}.qe-electronic-charts{min-width:0;max-width:100%;overflow-wrap:anywhere}
+
+/* Görünüm paneli: bakış yönü, ışık ve yarıçap/renk; ölçüm panelinde geometri tablosu. */
+.view-axis-buttons,.view-rotate-buttons{display:flex;flex-wrap:wrap;gap:6px}
+.view-axis-buttons button{min-width:40px;font-style:italic;font-weight:650}
+.view-index-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}
+.view-index-row>span:first-child{min-width:62px;font-size:12px;color:#55718b}
+.view-index-row input[type=number]{width:52px;padding:4px 5px}
+.view-index-row label{display:flex;align-items:center;gap:6px;font-size:12px}
+.view-rotate-buttons button{min-width:32px}
+.view-range-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 12px;margin:8px 0;font-size:12px}
+.view-range-grid label{display:flex;flex-direction:column;gap:3px}
+.ionic-choices{display:grid;gap:6px;margin:6px 0}
+.ionic-choices label{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:6px;font-size:12px}
+.ionic-choices[hidden]{display:none!important}
+.geometry-preview{max-height:260px;overflow:auto;font-size:12px}
+.geometry-preview table{border-collapse:collapse;width:100%}
+.geometry-preview th,.geometry-preview td{padding:3px 6px;border-bottom:1px solid #e4ebf3;text-align:left;white-space:nowrap}
+.geometry-preview td.num{text-align:right;font-variant-numeric:tabular-nums}
+.view-section button,.view-index-row button{padding:5px 9px;font-size:12px;width:auto}
+.view-index-row select{width:auto;min-width:64px;padding:4px 6px;font-size:12px}

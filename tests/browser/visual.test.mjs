@@ -54,6 +54,8 @@ window.__visualTest={
   };
  },
  bounds:()=>state.bounds.map(a=>[...a]),
+ // Cosine between the camera's view-out direction and the c lattice vector.
+ cameraAlongCell:()=>{const c=basis(state.cell)[2].clone().normalize(),out=camera.position.clone().sub(orbit.target).normalize();return out.dot(c);},
  morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
  moleculeBonds:()=>{const water=xyzData('3\\nH2O\\nO 0 0 0\\nH .9584 0 0\\nH -.239 0 .927');
   const graph=bondNetwork(water.sites,water.cell,{periodic:bondIsPeriodic('auto',water.nonPeriodic),cut:1.5,auto:true});
@@ -388,6 +390,43 @@ try{
  await page.locator('#exportLegend').uncheck();await page.locator('#exportScaleBar').uncheck();
  await page.locator('#exportModalClose').click();
  if(wasPerspective)await page.locator('#projectionBtn').click();
+ // V24: crystallographic view direction, appearance, radius sets and geometry table.
+ if(!await page.locator('#rightDrawerPane-view').isVisible())await page.locator('[data-right-tool="view"]').click();
+ await page.locator('[data-view-axis="c"]').click();
+ assert.match(await page.locator('#viewDirectionStatus').textContent(),/c .*b|c · (up|yukarı): b/,'view along c keeps b up');
+ const viewDot=await page.evaluate(()=>window.__visualTest.cameraAlongCell());
+ assert.ok(viewDot>0.9999,'camera looks down c: '+viewDot);
+ await page.locator('[data-view-background="#000000"]').click();
+ await page.locator('#viewCellDashed').check();
+ await page.locator('#radiusSet').selectOption('vdw');
+ assert.match(await page.locator('#radiusNote').textContent(),/Alvarez/);
+ await page.locator('#saveBtn').click();
+ const [darkPng]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="png"]').click()]);
+ const darkCorner=await page.evaluate(async base64=>{
+  const image=new Image();image.src='data:image/png;base64,'+base64;await image.decode();
+  const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+  const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);return Array.from(ctx.getImageData(2,2,1,1).data);
+ },(await fs.readFile(await darkPng.path())).toString('base64'));
+ assert.deepEqual(darkCorner,[0,0,0,255],'the chosen background fills the exported PNG');
+ await page.locator('#saveBtn').click();
+ const [viewSvg]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="svg"]').click()]);
+ const viewSvgText=await fs.readFile(await viewSvg.path(),'utf8');
+ assert.match(viewSvgText,/<rect width="100%" height="100%" fill="#000000"\/>/);
+ assert.match(viewSvgText,/stroke-dasharray="/,'dashed cell edges stay dashed in SVG');
+ assert.match(viewSvgText,/view along c/,'provenance names the view direction');
+ // Geometry table with the current bond cutoffs.
+ await page.locator('[data-right-tool="measurement"]').click();
+ await page.locator('#geometryRun').click();
+ assert.match(await page.locator('#geometrySummary').textContent(),/^\d+ (bağ|bonds)/);
+ assert.ok(await page.locator('#geometryPreview tr').count()>1);
+ const [geomCif]=await Promise.all([page.waitForEvent('download'),page.locator('#geometryCif').click()]);
+ assert.match(await fs.readFile(await geomCif.path(),'utf8'),/_geom_bond_distance/);
+ // Undo restores the previous appearance; reset returns to the original scene.
+ await page.locator('[data-right-tool="view"]').click();
+ await page.locator('#viewAppearanceReset').click();
+ await page.locator('#radiusSet').selectOption('default');
+ assert.equal(await page.evaluate(()=>getComputedStyle(document.getElementById('stage')).backgroundColor),'rgb(255, 255, 255)');
+ await page.locator('[data-right-tool="view"]').click();
  await page.locator('#saveBtn').click();
  const [figurePdf]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="pdf-vector"]').click()]);
  assert.match((await fs.readFile(await figurePdf.path())).toString('latin1'),/\/MediaBox \[0 0 240\.945 /,'vector page is 85 mm wide');
@@ -573,7 +612,7 @@ try{
  assert.ok(Math.abs(restoredView.ink-originalView.ink)<originalView.ink*.22,
   'repeated projection switching must not gradually zoom the structure');
  const tools=page.locator('[data-right-tool]');
- assert.equal(await tools.count(),14,'measurement history, Miller and defects must retain independent analysis icons');
+ assert.equal(await tools.count(),15,'measurement history, Miller, defects and view must retain independent analysis icons');
   for(const tool of ['measurement','history','miller','defects']){
     assert.equal(await page.locator('[data-right-tool="'+tool+'"]').count(),1,
       tool+' must have exactly one right-toolbar icon');

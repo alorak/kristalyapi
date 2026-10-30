@@ -49,9 +49,13 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, TextEncoder, document: {getElementById(){return null;}} };
 vm.createContext(context);
-// Export helpers are ES modules; load them as plain scripts for the editor code.
-for(const file of ['export-glyphs.js','export-graphics.js'])
- vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8').replace(/^import .*?;\s*$/gm,'').replace(/^export /gm,''),context);
+// Helper ES modules run in their own function scope (as in the browser) and
+// only their exports become globals for the editor code.
+for(const file of ['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js']){
+ const source=fs.readFileSync(path.join(__dirname,'..',file),'utf8').replace(/^import .*?;\s*$/gm,'');
+ const names=[...source.matchAll(/^export (?:async )?(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]);
+ vm.runInContext('Object.assign(globalThis,(function(){'+source.replace(/^export /gm,'')+'\nreturn {'+names.join(',')+'};})());',context);
+}
 const {tiffLzwDecode}=require('./tiff-lzw-decode.cjs');
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,readCcp4Map,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,volumeSignedIsoPair,volumeSurfaceStyleSpec,sliceContourStroke,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
@@ -62,6 +66,7 @@ vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorE
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
+vm.runInContext('Object.assign(this.api,{numberSu});',context);
 vm.runInContext('Object.assign(this.api,{disorderTag,sitesAreAlternatives,partialOccupancyOpacity,coordinationGeometry});',context);
 vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives,vesta3ManualBvsProjection});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
@@ -277,6 +282,27 @@ test('every image format records ASCII provenance: structure, cell and software'
  assert.match(eps,/%%Title: Si\n%%Creator: Kristal Yapi\n%%Pages: 1\n%%EndComments\n% Description: cell\n/,'the description follows the DSC header');
  const raster=Buffer.from(api.pdfImageBytes(1,1,Uint8Array.from([120,156,3,0,0,0,0,1]),{title:'Si',description:'cell'}).bytes).toString('latin1');
  assert.match(raster,/\/Title \(Si\) \/Subject \(cell\)/);
+});
+test('CIF e.s.d.s are kept with the values they belong to; projects validate appearance fields',()=>{
+ assert.equal(api.numberSu('5.4310(2)'),.0002);assert.equal(api.numberSu('0.1234(15)'),.0015);
+ assert.equal(api.numberSu('90'),0);assert.equal(api.numberSu('1.5e-2(3)'),.003,'last digit of 1.5e-2 is 1e-3');assert.equal(api.numberSu('?'),0);
+ const cif=['data_t','_cell_length_a 5.4310(2)','_cell_length_b 5.4310(2)','_cell_length_c 5.4310(2)',
+  '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',"_symmetry_space_group_name_H-M 'P 1'",
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+  'Si1 Si 0.1250(3) 0.125 0.12500(15)','Si2 Si 0.5 0.5 0.5'].join('\n');
+ const parsed=api.cifData(cif);
+ assert.deepEqual(JSON.parse(JSON.stringify(parsed.cell.su)),{a:.0002,b:.0002,c:.0002,alpha:0,beta:0,gamma:0,ref:[5.431,5.431,5.431,90,90,90]});
+ const si1=parsed.sites.find(s=>s.label==='Si1'),si2=parsed.sites.find(s=>s.label==='Si2');
+ assert.deepEqual(JSON.parse(JSON.stringify(si1.coordSu)),{x:.0003,y:0,z:.00015,ref:[.125,.125,.125]});
+ assert.equal(si2.coordSu,undefined,'no e.s.d.s, no coordSu');
+ const project=JSON.stringify({cell:{...parsed.cell},sites:[{...si1},{symbol:'Si',x:.5,y:.5,z:.5,coordSu:{x:-1,y:0,z:0,ref:[0,0,0]}}],
+  view:{background:'#000000'},radiusSet:'vdw',colorScheme:'jmol',ionicRadii:{Si:{charge:4,coordination:'IV',spin:''}}});
+ const loaded=api.loadProject(project);
+ assert.equal(loaded.sites[0].coordSu.x,.0003);assert.equal(loaded.sites[1].coordSu,undefined,'invalid e.s.d.s are dropped');
+ assert.deepEqual(JSON.parse(JSON.stringify(loaded.cell.su.ref)),[5.431,5.431,5.431,90,90,90]);
+ assert.equal(loaded.radiusSet,'vdw');assert.equal(loaded.colorScheme,'jmol');assert.equal(loaded.view.background,'#000000');
+ const bad=api.loadProject(JSON.stringify({cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90,su:{a:'x'}},sites:[{symbol:'Si',x:0,y:0,z:0}],radiusSet:'metallic',colorScheme:'vesta'}));
+ assert.equal(bad.cell.su,undefined);assert.equal(bad.radiusSet,'default');assert.equal(bad.colorScheme,'app');
 });
 test('raster PDF is lossless Flate on A4 or on a page cut to the figure size',()=>{
  const zlib=require('node:zlib'),pixels=new Uint8Array(1200*800*3).fill(200);
@@ -1148,7 +1174,7 @@ test('English dictionary covers the existing static editor, library and analysis
  const fragment=html.slice(html.indexOf('<header>'),html.indexOf('<script type="module" src="./crystal-app.js">'));
  const labels=[...new Set([...fragment.matchAll(/>([^<>]+)</g)]
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
- const languageNeutral=new Set(['GitHub ↗','Element A','Element B','FCC conventional → primitive',
+ const languageNeutral=new Set(['GitHub ↗','[u v w]','(h k l)','Jmol','CPK','Element A','Element B','FCC conventional → primitive',
   'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
   'Cloudflare Worker · COD API','Quantum ESPRESSO','DFT / QUANTUM ESPRESSO','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
   'Cu Kα1 · 1.5406 Å','Co Kα1 · 1.7890 Å','Mo Kα1 · 0.7093 Å','Ag Kα1 · 0.5594 Å',
@@ -1491,9 +1517,9 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,14);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,15);
  assert.match(rail,/data-right-tool="measurement"[\s\S]*?data-right-tool="history"/);
  assert.match(html,/\.right-drawer-pane>\.section\[data-right-section\]>h2:first-child\{display:none\}/);
  assert.ok(!html.includes('Bilimsel kapsam</h2>'),'redundant scientific scope block should be removed');
