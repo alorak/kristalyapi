@@ -28,6 +28,7 @@ def numeric_rows(path: Path, cols: int, *, blocks=False):
     if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_TABLE:
         raise ValueError("Missing/oversized or unsafe QE numeric output: " + path.name)
     tables, rows = [], []
+    total = 0
     with path.open("r", encoding="utf-8", errors="strict") as stream:
         for line in stream:
             if len(line) > 100_000:
@@ -35,6 +36,8 @@ def numeric_rows(path: Path, cols: int, *, blocks=False):
             if not line.strip():
                 if blocks and rows:
                     tables.append(rows)
+                    if len(tables)>300:
+                        raise ValueError('Too many bands for frontend')
                     rows = []
                 continue
             if line.lstrip().startswith("#"):
@@ -49,11 +52,16 @@ def numeric_rows(path: Path, cols: int, *, blocks=False):
             if not all(math.isfinite(v) for v in values):
                 raise ValueError("Nonfinite QE output: " + path.name)
             rows.append(values)
+            total += 1
+            if blocks and total > MAX_PLOT_POINTS:
+                raise ValueError('Band sample budget exceeded')
             if len(rows) > MAX_ROWS:
                 raise ValueError("Too many samples: " + path.name)
     if blocks:
         if rows:
             tables.append(rows)
+        if len(tables)>300:
+            raise ValueError('Too many bands for frontend')
         if not tables:
             raise ValueError("No bands in QE bands.x output")
         return tables
