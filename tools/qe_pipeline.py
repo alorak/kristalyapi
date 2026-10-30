@@ -257,6 +257,66 @@ def parse_bands_gnu(path,band_window=None):
             "reference": "raw QE eigenvalue energy zero (not vacuum/experimental PL)",**metadata}
 
 
+def checked_k_path_nodes(source, points, distance):
+    """Map user-provided crystal_b nodes onto *sampled* bands.x x coordinates.
+
+    Fail closed: QE point count and fractional reciprocal-space segment-length
+    ratios must agree with the lattice geometry and the crystal_b weights.
+    Labels are supplied by the operator and are not symmetry classifications.
+    """
+    if not points or not distance:
+        return None
+    weights = [n for _, _, n in points[:-1]]
+    if len(distance) != sum(weights) + 1 or points[-1][2] != 1:
+        return None
+    match = re.search(r"(?im)^\s*CELL_PARAMETERS\s+(?:\\{)?angstrom(?:\\})?\s*$", source)
+    if match is None:
+        return None
+    rows = source[match.end():].splitlines()[:3]
+    if len(rows) != 3:
+        return None
+    try:
+        cell = [[float(x.replace('D', 'E').replace('d', 'e')) for x in line.split()] for line in rows]
+    except ValueError:
+        return None
+    if any(len(row) != 3 or any(not math.isfinite(x) for x in row) for row in cell):
+        return None
+    a, b, c = cell
+    cross = lambda u, v: [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]]
+    dot = lambda u, v: sum(x*y for x, y in zip(u, v))
+    volume = dot(a, cross(b, c))
+    if not math.isfinite(volume) or abs(volume) < 1e-8:
+        return None
+    reciprocal = [[v / volume for v in cross(u, w)] for u, w in ((b, c), (c, a), (a, b))]
+    mapped = [[sum(k[i]*reciprocal[i][j] for i in range(3)) for j in range(3)]
+              for _, k, _ in points]
+    lengths = [math.dist(left, right) for left, right in zip(mapped, mapped[1:])]
+    expected = sum(lengths)
+    actual = distance[-1]-distance[0]
+    if not all(math.isfinite(x) and x > 1e-9 for x in lengths) or expected <= 0 or actual <= 0:
+        return None
+    indices = [0]
+    for n in weights:
+        indices.append(indices[-1]+n)
+    scale = actual / expected
+    tolerance = max(1e-4, actual*0.002)
+    nodes = []
+    for i, (label, _, _) in enumerate(points):
+        index = indices[i]
+        value = distance[index]
+        if i:
+            predicted = distance[0] + scale*sum(lengths[:i])
+            if abs(value-predicted) > tolerance or value <= nodes[-1]["distance"]:
+                return None
+            start, count = indices[i-1], weights[i-1]
+            for step in range(count+1):
+                expected_x = distance[start]+(value-distance[start])*step/count
+                if abs(distance[start+step]-expected_x)>tolerance:
+                    return None
+        nodes.append({"label": label, "distance": value})
+    return nodes
+
+
 def parse_dos(path):
     rows = read_numeric_columns(path, 3)
     if any(len(row) != 3 for row in rows):
@@ -423,6 +483,13 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
             if execute:
                 if spin_polarized:result['spin_bands']={c:parse_bands_gnu(workdir/('bands_'+c+'.dat.gnu'),band_window) for c in ('up','down')}
                 else:result["bands"] = parse_bands_gnu(workdir / "bands.dat.gnu",band_window)
+                # Only use the actual bands.x sampled distance grid; reject
+                # inferred symmetry ticks when the geometry/count fails.
+                candidates = result['spin_bands'].values() if spin_polarized else [result['bands']]
+                for bands in candidates:
+                    nodes = checked_k_path_nodes(scf_source, path, bands['distance'])
+                    if nodes is not None:
+                        bands['k_path_nodes'] = nodes
                 persist()
         if pdos:
             step_run("nscf", nscf_input(scf_source, nbnd, nscf_k))

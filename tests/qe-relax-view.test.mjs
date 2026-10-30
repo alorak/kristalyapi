@@ -25,6 +25,34 @@ test('D3 comparison preserves source data and wraps a boundary crossing',()=>{
  assert.equal(result.after.atoms[0].fractional[0],.01);
  assert.ok(Math.abs(result.rows[0].alignedAfterFractional[0]-1.01)<1e-12);
 });
+test('ionic history preserves raw paired steps and excludes independent SCF energy',()=>{
+ const raw=fixture(),hash='c'.repeat(64);
+ raw.stages.relax.energy_ry=-8;
+ raw.stages.relax.total_force_ry_bohr=.00002;
+ raw.relaxation_settings.max_steps=20;
+ raw.artifact_sha256={'relax.out':hash};
+ raw.ionic_history={schema:'kristalyapi.qe-ionic-history.v1',source:'relax.out',
+  stdout_sha256:hash,steps:[
+   {step:1,energy_ry:-7.99,total_force_ry_bohr:.00005},
+   {step:2,energy_ry:-8,total_force_ry_bohr:.00002}
+  ]};
+ const before=JSON.stringify(raw),parsed=parseRelaxationResult(raw,'a'.repeat(64));
+ assert.equal(parsed.ionicHistory.steps.length,2);
+ assert.equal(parsed.ionicHistory.steps[0].energy_ry,-7.99);
+ assert.equal(JSON.stringify(raw),before);
+ for(const change of [
+  x=>x.ionic_history.stdout_sha256='d'.repeat(64),
+  x=>x.ionic_history.steps[1].energy_ry=-7.9,
+  x=>x.ionic_history.steps[1].total_force_ry_bohr=3,
+  x=>x.ionic_history.steps[1].step=3,
+  x=>x.ionic_history.steps[0].total_force_ry_bohr=-1,
+  x=>x.ionic_history.steps.push({...x.ionic_history.steps[1],step:3})
+ ]){
+  const broken=structuredClone(raw);change(broken);
+  assert.throws(()=>parseRelaxationResult(broken,'a'.repeat(64)),/İyonik adım/);
+ }
+ assert.equal(parseRelaxationResult(fixture(),'a'.repeat(64)).ionicHistory,null);
+});
 test('D3 rejects stale source, changed cell/order and nonfinite positions',()=>{
  assert.throws(()=>parseRelaxationResult(fixture(),'c'.repeat(64)),/kaynak/);
  for(const edit of [d=>d.final_structure.cell_angstrom[0][0]=6,

@@ -53,6 +53,9 @@ Relaxation comparison keeps the existing two synchronized 3D views and adds an o
 
 A browser regression uses a **synthetic** 5 Å periodic wrap case solely to test UI behavior; it does not constitute an additional real Quantum ESPRESSO calculation or acceptance result.
 
+## Measured ionic-step traces (optional)
+The completed D3 relax→SCF API result may include a `kristalyapi.qe-ionic-history.v1` object with the actual ionic `relax.out` stdout SHA-256 and a bounded ordered list of **paired** final-SCF ionic-step energy (Ry) and total force (Ry/Bohr). The parser omits the whole history if a step lacks either value. The JSON viewer cross-checks the stdout hash against existing artifact evidence and matches final ionic numbers to the accepted relax stage. Plots use separate axes/units and do not include the later independent final SCF energy or invent missing points. Legacy results without history render their original side-by-side geometry comparison.
+
 ## Evidence-backed protocol templates
 
 Preparation includes **Si functional smoke** and **MoS₂ D4.1 finite band/mesh acceptance** templates. Both embed the exact recorded request, request-file SHA-256, source/evidence commits, engine version, structure hash and UPF identities. Si is only an operational test, and MoS₂ scope is limited to the fixed D3 geometry/PBE/scalar/unpolarized protocol; DOS broadening remains sensitivity only.
