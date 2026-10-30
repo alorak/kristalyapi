@@ -8,6 +8,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 > Bu proje bilimsel görselleştirme ve eğitim amaçlıdır; VESTA'nın veya deneysel/yüksek doğruluklu hesaplama yazılımlarının tüm işlevlerine eşdeğer değildir. [Bilimsel kapsam ve sınırlar](#bilimsel-kapsam-ve-sınırlar) bölümüne bakın.
 
+**TRUBA sonuç toplama (P1.1):** İndirilen SLURM ZIP paketinde artık Python 3 ile çalışan `collect.py` bulunur. İş bitiminde (başarılı veya başarısız) mümkünse küçük bir `summary.json` oluşturur. DFT → Sonuçları incele ekranında son enerji, kuvvet, yakınsama işaretleri ve yerel dosya hash eşleşmeleri incelenebilir; ham QE çıktısını tarayıcıya yüklemek veya geometriyi otomatik değiştirmek gerekmez. Bu bilimsel yakınsama onayı değildir. [TRUBA P1 kılavuzu](docs/qe-truba-slurm.md).
+
 **TRUBA / SLURM dışa aktarma (P0):** DFT → Hesap hazırlığı → TRUBA / SLURM paketi yoluyla tek bir Quantum ESPRESSO SCF/relax girdisi, SLURM betiği, manifest ve isteğe bağlı gerçek UPF dosyalarından çevrimdışı ZIP hazırlanabilir. İş gönderilmez veya bilimsel yakınsama onaylanmaz. [TRUBA kullanımı ve sınırlamalar](docs/qe-truba-slurm.md).
 
 ## Hızlı başlangıç

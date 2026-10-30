@@ -798,7 +798,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div id="qeExportStatus" class="note dft-pw-only" role="status">Girdi dosyası henüz hazırlanmadı.</div>
     <div class="dft-hpc-only" hidden>
      <strong class="measure-subheading">TRUBA · ARF / Quantum ESPRESSO</strong>
-     <p class="hint">Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi ve SLURM betiği ZIP olarak indirilir. Partition, modül ve erişim haklarını TRUBA'da doğrulayın.</p>
+     <p class="hint">Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi, SLURM betiği ve Python sonuç toplayıcı ZIP olarak indirilir. İşi TRUBA'da çalıştırdıktan sonra summary.json dosyasını Sonuçlar sekmesinde açın. Partition, modül ve erişim haklarını doğrulayın.</p>
      <label class="field"><span>SLURM hesap adı (#SBATCH --account) *</span><input id="qeHpcAccount" type="text" maxlength="64" spellcheck="false" autocomplete="off" placeholder="TRUBA kullanıcı veya proje hesabı"></label>
      <div class="qe-form-grid">
       <label class="field"><span>Partition</span><select id="qeHpcPartition"><option value="orfoz">orfoz · 1 node</option></select></label>
@@ -847,6 +847,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div><aside class="dft-guide"><span class="dft-eyebrow">HESAP AKIŞI</span><ol><li><strong>Ön kontrol</strong><p>Yapı ve sunucu UPF profilinin uyumunu denetleyin.</p></li><li><strong>Hesabı gönder</strong><p>Gerçek hesap yalnız gönderme onayınızla başlar.</p></li><li><strong>Durumu yenile</strong><p>Aşamaları, süreyi ve bellek kaydını inceleyin.</p></li></ol><a class="dft-next" href="#dft/sonuclar">Sonuçları incele <span aria-hidden="true">→</span></a><p class="hint">Duraklatma, çalışan elektronik aşama tamamlandığında uygulanır.</p></aside></div></section>
 <section id="dft-sonuclar" class="dft-panel" aria-labelledby="dft-title-sonuclar" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-sonuclar" tabindex="-1">Sonuçları incele</h2><p>Sunucu sonuçları, başlangıç/son atom konumları ve yerel elektronik dosyaları.</p></div><div class="dft-card dft-live-results"><h3>Sunucudan alınan sonuçlar</h3><p id="qeApiScfResult" class="note" hidden></p><p class="hint">Tamamlanan işi İşler sayfasında yenileyin. Relaksasyon karşılaştırması ve elektronik grafikler burada açılır.</p><div id="qeRelaxComparison" class="qe-workflow" hidden></div>
 <div id="qeApiElectronicResults" class="qe-workflow" hidden></div>
+</div><div class="qe-workflow qe-truba-summary-panel">
+ <strong class="measure-subheading">TRUBA / SLURM sonuç özeti (P1)</strong>
+ <p class="hint">SLURM paketi içindeki <code>collect.py</code>, iş sonunda <code>summary.json</code> üretir; eksik veya başarısız işlerde de durum kaydeder. 1 GiB'a kadar ham çıktıyı aktarmaz, yalnız özeti açın. İçe alma sunucuya veri göndermez ve mevcut kristali değiştirmez.</p>
+ <div class="qe-form-grid">
+  <label class="field"><span>TRUBA sonuç özeti (.json)</span><input id="qeHpcSummaryFile" type="file" accept=".json,application/json"></label>
+  <button id="qeHpcSummaryOpen" type="button">SLURM özetini incele</button>
+ </div>
+ <div id="qeHpcSummaryStatus" class="note" role="status" aria-live="polite">Henüz TRUBA sonuç özeti açılmadı.</div>
+ <div id="qeHpcSummaryView" class="qe-truba-summary-view" aria-live="polite"></div>
 </div><div class="dft-results-grid"><div class="qe-workflow">
     <strong class="measure-subheading">Relaksasyon çıktısı</strong>
     <label class="field"><span>pw.x çıktı dosyası (.out)</span><input id="qeOutputFile" type="file" accept=".out,.log,.txt"></label>

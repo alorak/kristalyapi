@@ -579,3 +579,29 @@ yönetimi, `D-P3` sonuç/3B, `D-P4` bilimsel doğrulama, `D-P5`
 kusur karşılaştırması; ihtiyaç halinde `D-P6` çoklu kaynak ve
 yeterli güvenilir veri oluşunca `D-P7` vekil model.
 
+
+### TRUBA / SLURM P1 sonuç toplama ve sonraki iş akışı (30 Ekim 2026)
+
+- [x] **P0:** Mevcut DFT P1 yapı girdisinden çevrimdışı `structure.in`,
+  `run.slurm`, `manifest.json` ve isteğe bağlı UPF ZIP hazırlığı.
+- [x] **P1.1:** Bağımsız Python 3 `collect.py` ile SLURM iş sonunda
+  başarı/başarısızlık durumunda `summary.json` üretme. Büyük QE çıktısını
+  satır satır tarayarak son enerji, kuvvet ve `JOB DONE`/yakınsama
+  işaretlerini, SLURM iş ID'sini ve çıkış kodunu kaydetme.
+- [x] **P1.1:** Girdi, varsa sabitlenmiş UPF ve `run.slurm` SHA-256
+  kontrolü; hash eksikliği ile hash uyuşmazlığını farklı statülerle gösterme.
+- [x] **P1.1:** DFT Sonuçları içinde salt-okunur yerel özet JSON
+  doğrulama/görüntüleme; hiçbir geometri uygulaması veya SSH erişimi yok.
+- [x] **P1.1:** Sentetik doğrulama testleri, Pages/PWA dosya grafiği,
+  CI testi ve kılavuz.
+- [ ] **P1.2:** `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x`
+  aşamaları için kontrollü SLURM koşum paketi, zorunlu açık k-yolu,
+  bant sayısı, spin/pseudopotansiyel ve ortak prefix/outdir kuralları.
+- [ ] **P1.2:** Aşama bazlı `afterok` bağımlılıkları, devam/tekrar koşma,
+  başarısız aşamada sonraki hesapları başlatmama ve ara eserlerin hash kanıtı.
+- [ ] **P1.2:** TRUBA üzerinde gerçek QE küçük örnek ve Linux/MPI
+  sürüm eşdeğerliliği; dosya/sonuç formatı ve fiziksel referans kabul testleri.
+- [ ] **P2:** Cutoff/k-point parametre taraması ve SLURM job array;
+  geçerli bilimsel yakınsama ölçütleri olmadan otomatik kabul yok.
+
+Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
