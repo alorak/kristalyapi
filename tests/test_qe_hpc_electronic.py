@@ -92,6 +92,8 @@ class TestHpcElectronic(unittest.TestCase):
         self.assertEqual(output["schema"], "kristalyapi.qe-electronic.v1")
         self.assertEqual(output["bands"]["total_bands"], 2)
         self.assertEqual(output["bands"]["distance"], [0.0, .2, .4])
+        self.assertEqual(output["bands"]["k_path_nodes"], [
+            {"label": "G", "distance": 0.0}, {"label": "X", "distance": .4}])
         self.assertEqual(output["bands"]["energies_ev"][1], [1, 2, 3])
         self.assertEqual(output["dos"]["energy_ev"], [-1, 0, 1])
         self.assertEqual(output["pdos_atoms"]["atoms"][0]["orbitals"]["s"], [.1, .2, .2])
@@ -103,6 +105,16 @@ class TestHpcElectronic(unittest.TestCase):
         result = json.loads((self.root / "electronic-results.json").read_text())
         self.assertEqual(result["pdos_total"]["sum_projected_states_per_ev"], [.2, .4, .5])
         self.assertEqual(electronic.main(["--bundle", str(self.root)]), 2)
+
+    def test_real_qe_spin_dos_fixture_is_not_treated_as_unpolarized(self):
+        # Real QE 6.7MaX output committed independently by the spin acceptance
+        # cohort; this parser deliberately fails on four numeric DOS columns.
+        fixture = (TOOLS.parent /
+                   "validation-results/qe-spin-si-20261030-main-7f38e9e" /
+                   "pipeline/dos.dat")
+        self.assertTrue(fixture.is_file())
+        with self.assertRaisesRegex(ValueError, "spin/noncollinear"):
+            electronic.parse_dos(fixture)
 
     def test_reject_spin_and_nonfinite_columns(self):
         self.write("dos.dat", "# DOS up down integral\n-1 .1 .2 .3\n0 .3 .4 .5\n")
