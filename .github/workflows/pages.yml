@@ -36,6 +36,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Test TRUBA P1.3 electronic converter with synthetic fixtures
+        run: python -m unittest discover -s tests -p 'test_qe_hpc_electronic.py' -v
       - name: Test TRUBA P1.2 stage runner with synthetic fixtures
         run: python -m unittest discover -s tests -p 'test_qe_hpc_pipeline.py' -v
       - name: Test TRUBA offline collector with synthetic fixtures
@@ -190,6 +192,8 @@ jobs:
           cp qe-truba-summary-view.js public/qe-truba-summary-view.js
           cp tools/qe_hpc_collect.py public/tools/qe_hpc_collect.py
           cp tools/qe_hpc_pipeline.py public/tools/qe_hpc_pipeline.py
+          cp tools/qe_hpc_electronic.py public/tools/qe_hpc_electronic.py
+          cp tools/qe_pdos.py public/tools/qe_pdos.py
           cp qe-electronic-view.js public/qe-electronic-view.js
           cp qe-convergence-view.js public/qe-convergence-view.js
           cp qe-job-diagnostics-view.js public/qe-job-diagnostics-view.js
@@ -233,6 +237,8 @@ jobs:
           test -s public/qe-truba-summary-view.js
           test -s public/tools/qe_hpc_collect.py
           test -s public/tools/qe_hpc_pipeline.py
+          test -s public/tools/qe_hpc_electronic.py
+          test -s public/tools/qe_pdos.py
           test -s public/qe-electronic-view.js
           test -s public/qe-convergence-view.js
           test -s public/qe-job-diagnostics-view.js
