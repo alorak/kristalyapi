@@ -102,7 +102,11 @@ def seal(root: Path, cases: list[dict] | None = None) -> dict:
             item = record.get(product)
             if not isinstance(item, dict):
                 raise ValueError("Missing VESTA/Kristal Yapı image slot")
-            path = root.resolve() / item.get("path", "")
+            name = item.get("path")
+            if (not isinstance(name, str) or not name or Path(name).is_absolute()
+                    or ".." in Path(name).parts or "\\\\" in name):
+                raise ValueError("Image path outside permitted evidence folder")
+            path = root.resolve() / name
             if path.exists():
                 # Reject pre-existing directory links and accidental out-of-root captures.
                 file_path = safe_file(root.resolve(), item["path"])
@@ -132,11 +136,21 @@ def status(root: Path, cases: list[dict] | None = None) -> dict:
     payload = json.loads(file.read_text(encoding="utf-8"))
     by_id = {case["id"]: case for case in cases}
     rows = []
+    for label in ("operator", "platform"):
+        value = payload.get(label)
+        if not isinstance(value, str) or len(value.strip()) < 4 or value.startswith("REPLACE"):
+            # The input has insufficient provenance even when both PNGs are pinned.
+            global_blocker = "operator/platform provenance incomplete"
+            break
+    else:
+        global_blocker = None
+    if payload.get("vestaVersion") != "3.5.8" or not COMMIT.fullmatch(payload.get("kristalyapiCommit", "")):
+        global_blocker = "VESTA version or commit identity invalid"
     for record in payload.get("cases", []):
         scene = by_id.get(record.get("id"))
         if not scene:
             raise ValueError("Unknown scene in capture manifest")
-        blockers = []
+        blockers = [global_blocker] if global_blocker else []
         if record.get("sourceSha256") != scene["sourceSha256"] or record.get("settings") != scene["settings"]:
             blockers.append("source/camera settings do not match pinned scene")
         if scene["kind"] == "volume" and scene["settings"].get("isoLevel") is None:
@@ -153,8 +167,13 @@ def status(root: Path, cases: list[dict] | None = None) -> dict:
                         blockers.append(product + " canvas size mismatch")
             except (KeyError, ValueError, OSError, TypeError):
                 blockers.append(product + " PNG missing or invalid")
-            if not isinstance(item.get("captureDate"), str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", item["captureDate"]):
+            captured = item.get("captureDate")
+            if not isinstance(captured, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", captured):
                 blockers.append(product + " capture date missing")
+            if not isinstance(item.get("captureMethod"), str) or len(item["captureMethod"].strip()) < 5:
+                blockers.append(product + " capture method missing")
+            if item.get("roi") != [0, 0, *scene["settings"]["outputPixels"]]:
+                blockers.append(product + " capture ROI does not match whole exported canvas")
         if payload.get("vestaGuiExecuted") is not True:
             blockers.append("real VESTA GUI execution not operator-attested")
         rows.append({"id": record["id"], "readyForAudit": not blockers, "blockers": blockers})
