@@ -194,12 +194,71 @@ devam etme yoktur. Eski `submissions.txt` veya kilit varsa
 tekrarlama önlenir; yeni hesap için yeni dizin/paket gerekir.
 Gerçek TRUBA SLURM, MPI ve QE bilimsel kabul koşuları henüz yapılmadı.
 
+## P1.3 — QE ham bant/DOS/PDOS çıktısından grafik JSON'una dönüşüm
+
+**P1.3 dönüştürücüsünü dahil et** varsayılan olarak seçilidir. P1.2
+aşamalı ZIP'ine ayrıca SHA-256 ile sabitlenmiş, yerel çalışan
+\`electronic.py\` ve \`qe_pdos.py\` eklenir. \`projwfc.x\` çalışmasından
+sonra, **projwfc aşaması başarılı sayılmadan önce**, şu komut çağrılır:
+
+\`\`\`bash
+python3 electronic.py --bundle .
+\`\`\`
+
+Başarılı dönüşümde \`electronic-results.json\` yazılır; bundan sonra
+\`pipeline.py finish projwfc\` bu JSON'u eser olarak hash'ler ve
+\`pipeline-summary.json\` üretilir. Tarayıcıda **DFT → Sonuçları incele
+→ Bant, DOS ve PDOS** bölümünden \`electronic-results.json\` dosyasını
+yükleyerek mevcut bant çizgilerini, DOS'u ve atom/element/orbital PDOS
+katkılarını görüntüleyebilirsiniz. Dönüştürme yerel TRUBA Python'unda
+olur, istemci sunucuya hesaplama veya UPF içeriği göndermez.
+
+Dönüştürücü için girdiler: \`bands.dat.gnu\` (ayrı bant blokları, her
+satırda k-uzaklığı ve enerji), \`dos.dat\` (enerji, DOS, integral),
+\`pdos.pdos_tot\` (enerji, toplam DOS, projeksiyon toplamı) ve
+\`pdos.pdos_atm#N(X)_wfc#M(s|p|d|f)\` (LDOS ve manyetik olmayan
+m-projeksiyonları). \`scf.in\` nihai atom sırası ve periyodik hücre
+metriğini verir. Önceki aşamaların tamamlanma raporlarının hash'leri,
+girdi ve betik hash'leri ve atom/orbital PDOS toplam tutarlılığı denetlenir.
+
+**Kabul edilme koşulları:** Kollineer spin-polarize olmayan veri; 3
+sütunlu DOS/PDOS toplamı, 2 sütunlu GNU bant blokları, tüm atom/WFC
+projeksiyon dosyaları ve kaynak ile tutarlı tek enerji ekseni.
+\(nbnd\) ile gerçek bant sayısı eşleşmeli. \`crystal_b\` segment
+noktası sayıları bant veri uzunluğuyla uyuşmalı. Yüksek simetri
+düğüm çizgileri, ancak kullanıcının verdiği etikete karşılık gelen
+örneklenmiş uzaklıklar **gerçek hücre metrikleriyle tutarlıysa**
+çizilir; otomatik simetri tanısı yapılmaz. Fermi/vakum enerji kaydırması,
+interpolasyon veya otomatik bant aralığı yorumu yapılmaz.
+
+Grafik sınırları: **en fazla 300 bant ve 120.000 bant örneği**,
+**20.000 DOS örneği**, atomik PDOS kaynaklarında dosya/örnek bellek
+limitleri ve en fazla 16 MB JSON. Çok büyük hesaplarda P1.3 seçeneğini
+kapatıp normal P1.2 ham çıktı zincirini çalıştırın; bu kaynak
+sınırlarının bilimsel nbnd seçimi olarak yorumlanmaması gerekir.
+
+**Kanıt:** \`truba_provenance\` altında giriş ve manifest SHA-256,
+kaynak dosya SHA-256'ları, UPF hash bütünlüğü durumu ve
+\`scientific_convergence_verified=false\` korunur. Hash kayıtları
+şifreli imza değildir ve fiziksel doğruluk/bağımsız yakınsama
+testlerinin yerini tutmaz. Kullanıcının seçtiği \`crystal_b\` yolu,
+öngörülen yüksek simetri sınıflandırmasının fiziksel uygunluğunu
+ayrıca kontrol etmelidir. Dönüştürücü eksik/bozuk/spinli veriyle
+başarılı rapor üretmez.
+
+**Test sınırı:** Sentetik SCF/bands/DOS/atomik PDOS dosyaları ve
+deponun gerçek spin-polarize Si QE DOS dosyası için hata kabul
+testleri eklendi. Gerçek TRUBA modülünde uçtan uca P1.3 koşumu,
+malzemeye özgü veri seti ve bağımsız fiziksel yakınsama **henüz
+ölçülmedi**.
+
 ## Sonraki adımlar
 
 - **P1.2 (uygulandı; TRUBA kabul testi bekleniyor):** Açık k-yolu,
   `nbnd`, NSCF k-örgüsü ve DOS genişliği/penceresiyle aşamalı SLURM
   ZIP; seri `afterok` bağımlılıkları ve yeniden kullanılan ortak
   `prefix='kristalyapi'` / `outdir='./tmp'`.
+- **P1.3 (kodlandı; gerçek TRUBA kabulü bekleniyor):** Ham bant/DOS/PDOS çıktısını atomik projeksiyonlarla birlikte mevcut elektronik grafik JSON'una dönüştürme.
 - **P1.2 gerçek TRUBA smoke ve bilimsel kabul (beklemede):**
   `sbatch`/MPI/QE modüllerinin doğrulanması, Si ve MoS₂ örneklerinde
   SCF/relax/bands/NSCF/DOS/PDOS dosya semantiği, bant yolu ve
