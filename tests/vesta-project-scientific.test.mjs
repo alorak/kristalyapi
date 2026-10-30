@@ -116,7 +116,8 @@ test('editor renders imported arrows with their own layer and preserves JSON dat
  assert.match(app,/\['vestaVectors','VESTA çizim okları/);
  assert.match(app,/addLayerObject\(mesh,'vestaVectors'\)/);
  assert.match(app,/vestaDisplayVectors:validatedVestaDisplayVectors\(obj.vestaDisplayVectors/);
- assert.match(app,/vestaDisplayVectors:validatedVestaDisplayVectors\(state.vestaDisplayVectors/);
+ assert.match(app,/vestaDisplayVectors:applicableVestaVectors\(state\)/);
+ assert.match(app,/function applicableVestaVectors\(current\)/);
  assert.match(app,/polyColor:scientific.polyhedron.status==='COLOR_ONLY'/);
  assert.match(app,/if\(!state.symmetryEnabled\)/);
 });
