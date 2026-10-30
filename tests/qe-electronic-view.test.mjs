@@ -59,9 +59,9 @@ test('P1.4 keeps physical band indices for a selected large-ndbn TRUBA window',(
  assert.equal(displayed.bands.firstBand,301);
  assert.equal(displayed.bands.totalBands,800);
  assert.equal(displayed.bands.curves.length,2);
- output.bands.band_index_start=9999;
+ output.bands.band_index_start=10000;
  output.bands.total_bands=10000;
- assert.throws(()=>parseQeElectronicResult(output),/Bant penceresi/);
+ assert.throws(()=>parseQeElectronicResult(output),/Bant penceresi/,'bands 10000–10001 exceed 10000 calculated bands');
  output.bands.band_index_start=9998;
  assert.equal(parseQeElectronicResult(output).bands.totalBands,10000);
  const noProvenance=structuredClone(output);
