@@ -1172,6 +1172,31 @@ try{
   if(format==='eps')assert.doesNotMatch(vectorText,/colorimage/,
    'EPS must not rasterize the orientation marker');
  }
+ // Select crystallographic a/b/c. No camera movement is needed to refresh the live compass.
+ await page.locator('#axisCompassMode').selectOption('lattice');
+ await page.waitForFunction(()=>[...document.querySelectorAll('#axisGizmoSvg g text')]
+  .map(el=>el.textContent).join('')==='abc');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.axis-compass.v1')),'lattice');
+ assert.match(await page.locator('#axisGizmoSvg').getAttribute('aria-label'),/Kristalografik/);
+ for(const format of ['png','svg','pdf-vector','eps']){
+  await page.locator('#saveBtn').click();
+  const [downloadAbc]=await Promise.all([page.waitForEvent('download'),
+   page.locator('[data-export="'+format+'"]').click()]);
+  const source=(await fs.readFile(await downloadAbc.path())).toString('latin1');
+  if(format==='png'){
+   assert.equal(source.slice(1,4),'PNG','lattice compass PNG must be exported');
+  }else for(const axis of ['a','b','c']){
+   if(format==='svg')assert.match(source,new RegExp('<text[^>]*>'+axis+'</text>'),
+    'SVG export must show crystallographic '+axis);
+   if(format==='pdf-vector')assert.match(source,new RegExp('\\('+axis+'\\) Tj ET'),
+    'vector PDF must show crystallographic '+axis);
+   if(format==='eps')assert.match(source,new RegExp('\\('+axis+'\\) true charpath stroke'),
+    'EPS must show crystallographic '+axis);
+  }
+ }
+ await page.locator('#axisCompassMode').selectOption('cartesian');
+ await page.waitForFunction(()=>[...document.querySelectorAll('#axisGizmoSvg g text')]
+  .map(el=>el.textContent).join('')==='XYZ');
  await page.setViewportSize({width:1024,height:768});
  await page.locator('#saveBtn').click();
  await page.locator('#pngScale').selectOption('4');
