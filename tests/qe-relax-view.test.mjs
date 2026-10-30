@@ -46,7 +46,7 @@ test('ionic history preserves raw paired steps and excludes independent SCF ener
   x=>x.ionic_history.steps[1].total_force_ry_bohr=3,
   x=>x.ionic_history.steps[1].step=3,
   x=>x.ionic_history.steps[0].total_force_ry_bohr=-1,
-  x=>x.ionic_history.steps.push({...x.ionic_history.steps[1],step:3})
+  x=>{x.relaxation_settings.max_steps=2;x.ionic_history.steps.push({...x.ionic_history.steps[1],step:3});}
  ]){
   const broken=structuredClone(raw);change(broken);
   assert.throws(()=>parseRelaxationResult(broken,'a'.repeat(64)),/İyonik adım/);
