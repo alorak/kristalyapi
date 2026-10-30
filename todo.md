@@ -893,6 +893,27 @@ işi olarak açma.
 
 [Protokol ve sınırlamalar](tests/validation/PACKAGE_17_2_STATUS.md).
 
+### V17.3 — VECTR/THERI/POLYP güvenli bilimsel altküme
+
+- [x] VECTR/VECTT/VECTS sınırlı ok verisi (max 200, atom ID/etiket,
+  RGB/ölçek), **UNSPECIFIED_DISPLAY_ARROW** semantiği ile ayrı katmanda;
+  manyetik moment/kuvvet/yer değiştirme olarak yorumlamama.
+- [x] P1/etkin simetri genişlemesi yokken ok görselleştirme,
+  simetri altında doğrulanmamış vektör dönüşümü için görselleştirmeyi
+  kapatma; proje JSON, Undo/Redo ve workspace'te koruma.
+- [x] THERI site faktörlerini metadata olarak okuma, sahte Uiso/Uij
+  elipsoidi oluşturmama; POLYP global RGB rengini yaklaşık
+  polyColor olarak aktarma, facet/topoloji uydurmama.
+- [x] Bozuk VECTR/VECTT/THERI/POLYP kayıtları için negatif testler;
+  Pages staging ve PWA modül önbellek, merge-only CI testi.
+- [ ] V17.3 gerçek VESTA 3.5.8 GUI ölçümleri, ADP Uij/betaij
+  dosya semantiği, vektör fiziksel birimleri ve polyhedron facet
+  topolojisi kabulü. Bu kanıtlar hâlâ NOT_RUN/NOT_ESTABLISHED.
+- [ ] Sonraki V17.4 — kontrollü VESTA 3.x export, açık kayıp manifesti
+  ve gerçek VESTA masaüstünde round-trip.
+
+[V17.3 bilimsel sınırlar ve testler](tests/validation/PACKAGE_17_3_STATUS.md).
+
 ### V17 — P1 · VESTA proje içe/dışa aktarımı
 
 - [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,
