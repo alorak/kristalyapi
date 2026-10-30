@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash,webcrypto} from 'node:crypto';
-import {createTrubaPackage} from '../qe-hpc-export.mjs';
-import {parseTrubaSummary,renderTrubaSummary} from '../qe-truba-summary-view.mjs';
+import {createTrubaPackage} from '../qe-hpc-export.js';
+import {parseTrubaSummary,renderTrubaSummary} from '../qe-truba-summary-view.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const sha=data=>createHash('sha256').update(data).digest('hex');
@@ -94,6 +94,6 @@ test('DFT HTML and offline PWA stage summary module and collector',()=>{
  for(const id of ['qeHpcSummaryFile','qeHpcSummaryOpen','qeHpcSummaryStatus','qeHpcSummaryView'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(app,/qeOpenTrubaSummary/);
- assert.match(sw,/qe-truba-summary-view\.mjs/);
+ assert.match(sw,/qe-truba-summary-view\.js/);
  assert.match(sw,/qe_hpc_collect\.py/);
 });

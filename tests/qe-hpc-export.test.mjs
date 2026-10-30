@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash,webcrypto} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {parsePwInput,validateResources,createTrubaPackage,createSlurm,zipStored} from '../qe-hpc-export.mjs';
+import {parsePwInput,validateResources,createTrubaPackage,createSlurm,zipStored} from '../qe-hpc-export.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const INPUT=[
@@ -116,5 +116,5 @@ test('offline app includes all P0 dependencies and route bindings',()=>{
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(app,/createTrubaPackage/);
  assert.match(app,/\$\('qeExportHpc'\)\.onclick=qeExportTrubaPackage/);
- assert.match(sw,/qe-hpc-export\.mjs/);
+ assert.match(sw,/qe-hpc-export\.js/);
 });

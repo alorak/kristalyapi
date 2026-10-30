@@ -174,7 +174,7 @@ jobs:
           cmp validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json /tmp/qe-convergence-view.json
       - name: Stage local scientific engine and site
         run: |
-          mkdir -p public/vendor
+          mkdir -p public/vendor public/tools
           cp index.html public/index.html
           cp styles.css public/styles.css
           cp dft-workspace.css public/dft-workspace.css
@@ -182,9 +182,9 @@ jobs:
           cp sw.js public/sw.js
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
-          cp qe-hpc-export.mjs public/qe-hpc-export.mjs
-          cp qe-truba-summary-view.mjs public/qe-truba-summary-view.mjs
-          cp tools/qe_hpc_collect.py public/qe_hpc_collect.py
+          cp qe-hpc-export.js public/qe-hpc-export.js
+          cp qe-truba-summary-view.js public/qe-truba-summary-view.js
+          cp tools/qe_hpc_collect.py public/tools/qe_hpc_collect.py
           cp qe-electronic-view.js public/qe-electronic-view.js
           cp qe-convergence-view.js public/qe-convergence-view.js
           cp qe-job-diagnostics-view.js public/qe-job-diagnostics-view.js
@@ -222,9 +222,9 @@ jobs:
           test -s public/lesson-pages.js
           test -s public/semiconductor-p0.js
           test -s public/semiconductor-physics-p0-core.js
-          test -s public/qe-hpc-export.mjs
-          test -s public/qe-truba-summary-view.mjs
-          test -s public/qe_hpc_collect.py
+          test -s public/qe-hpc-export.js
+          test -s public/qe-truba-summary-view.js
+          test -s public/tools/qe_hpc_collect.py
           test -s public/qe-electronic-view.js
           test -s public/qe-convergence-view.js
           test -s public/qe-job-diagnostics-view.js
