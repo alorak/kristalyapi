@@ -197,6 +197,42 @@ class TestStagedTruba(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid UPF v2 element"):
             pipeline.science_check(self.root)
 
+    def test_science_review_reports_upf_suggestions_and_2d_gap_without_claiming_convergence(self):
+        raw = (b'<UPF version="2"><PP_HEADER element="Si" z_valence="4.0" '
+               b'functional="PBE" wfc_cutoff="55.0" rho_cutoff="450.0"/></UPF>')
+        (self.root / "pseudo/Si.UPF").write_bytes(raw)
+        self.manifest["pseudopotentials"][0]["sha256"] = sha(raw)
+        source = self.input_text.replace("4 4 4 0 0 0", "4 4 1 0 0 0")
+        (self.root / "structure.in").write_text(source)
+        self.manifest["file_sha256"]["structure.in"] = sha(source.encode())
+        self.write_manifest()
+        result = pipeline.science_check(self.root)
+        self.assertEqual(result["status"], "necessary-capacity-checked")
+        self.assertEqual(result["upf_suggested_cutoffs_ry"]["Si"]["wfc_cutoff"], 55.0)
+        self.assertEqual(result["possible_2d_vacuum_geometry"]["kz_mesh"], 1)
+        self.assertLess(result["possible_2d_vacuum_geometry"]["largest_fractional_z_empty_gap_angstrom_upper_bound"], 10)
+        self.assertTrue(any("wfc_cutoff" in w for w in result["scientific_review_warnings"]))
+        self.assertTrue(any("vacuum" in w for w in result["scientific_review_warnings"]))
+        self.assertFalse(result["scientific_convergence_verified"])
+        self.assertEqual(pipeline.preflight(self.root)["science"]["scientific_review_warnings"],
+                         result["scientific_review_warnings"])
+
+    def test_science_review_warns_on_explicit_xc_mismatch_and_rejects_nonfinite_sites(self):
+        raw = b'<UPF><PP_HEADER element="Si" z_valence="4.0" functional="PBE"/></UPF>'
+        (self.root / "pseudo/Si.UPF").write_bytes(raw)
+        self.manifest["pseudopotentials"][0]["sha256"] = sha(raw)
+        source = self.input_text.replace("&SYSTEM", "&SYSTEM\n input_dft = 'LDA',")
+        (self.root / "structure.in").write_text(source)
+        self.manifest["file_sha256"]["structure.in"] = sha(source.encode())
+        self.write_manifest()
+        self.assertTrue(any("input_dft" in w for w in pipeline.science_check(self.root)["scientific_review_warnings"]))
+        bad = source.replace("Si 0.25 0.25 0.25", "Si NaN 0.25 0.25")
+        (self.root / "structure.in").write_text(bad)
+        self.manifest["file_sha256"]["structure.in"] = sha(bad.encode())
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Nonfinite fractional"):
+            pipeline.science_check(self.root)
+
     def test_electronic_chain_preserves_order_and_artifacts(self):
         for stage in self.plan:
             self.complete(stage)
