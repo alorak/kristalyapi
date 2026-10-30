@@ -70,6 +70,58 @@ def numeric_rows(path: Path, cols: int, *, blocks=False):
     return rows
 
 
+def checked_k_nodes(source: str, path: list, distances: list[float]):
+    """Only label measured sampled positions when reciprocal metric supports them."""
+    cell = re.search(r"(?im)^[ \t]*CELL_PARAMETERS[ \t]+angstrom[ \t]*$", source)
+    if not cell:
+        return None
+    lines = source[cell.end():].lstrip("\r\n").splitlines()[:3]
+    if len(lines) != 3:
+        return None
+    try:
+        A = [[float(v.replace("D", "E").replace("d", "e")) for v in line.split()]
+             for line in lines]
+    except ValueError:
+        return None
+    if any(len(v) != 3 or not all(math.isfinite(t) for t in v) for v in A):
+        return None
+    cross = lambda a,b: [a[1]*b[2]-a[2]*b[1],
+                         a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+    dot = lambda a,b: sum(x*y for x,y in zip(a,b))
+    a,b,c = A
+    volume = dot(a,cross(b,c))
+    if abs(volume) < 1e-8:
+        return None
+    B = [[v/volume for v in cross(x,y)] for x,y in ((b,c),(c,a),(a,b))]
+    mapped = [[sum(point["k"][i]*B[i][j] for i in range(3)) for j in range(3)]
+              for point in path]
+    lengths = [math.dist(p,q) for p,q in zip(mapped,mapped[1:])]
+    total = sum(lengths)
+    actual = distances[-1] - distances[0]
+    if total < 1e-9 or actual <= 0 or any(x<=1e-9 for x in lengths):
+        return None
+    count = [0]
+    for point in path[:-1]:
+        count.append(count[-1]+point["segments"])
+    if count[-1] != len(distances)-1:
+        return None
+    tolerance = max(0.0001, actual * 0.002)
+    nodes = []
+    for i,point in enumerate(path):
+        d = distances[count[i]]
+        if i:
+            predicted = distances[0] + actual * sum(lengths[:i]) / total
+            if abs(d-predicted)>tolerance or d<=nodes[-1]["distance"]:
+                return None
+            start, stop = count[i-1],count[i]
+            for j in range(start,stop+1):
+                ideal = distances[start] + (d-distances[start])*(j-start)/(stop-start)
+                if abs(distances[j]-ideal)>tolerance:
+                    return None
+        nodes.append({"label":point["label"],"distance":d})
+    return nodes
+
+
 def parse_bands(path: Path, config: dict):
     blocks = numeric_rows(path, 2, blocks=True)
     count = len(blocks)
@@ -88,8 +140,11 @@ def parse_bands(path: Path, config: dict):
     points = config["electronic"]["path"]
     if len(distance) != 1 + sum(row["segments"] for row in points[:-1]):
         raise ValueError("bands.x samples disagree with declared crystal_b segment counts")
+    scf_source = config.get("_final_scf_source", "")
+    nodes = checked_k_nodes(scf_source, points, distance)
     return {"distance": distance, "energies_ev": [[row[1] for row in block] for block in blocks],
             "band_index_start": 1, "total_bands": count,
+            **({"k_path_nodes": nodes} if nodes else {}),
             "reference": "Raw QE Kohn-Sham energies; no Fermi/vacuum alignment"}
 
 
@@ -149,6 +204,9 @@ def collect(root: Path) -> dict:
     for name in ("bands.dat.gnu", "dos.dat", "pdos.pdos_tot", "scf.in", "projwfc.out"):
         hpc.file_at(root, name, MAX_TABLE)
     hpc.scan_output(hpc.file_at(root, "projwfc.out", MAX_TABLE), "projwfc")
+    # Pass SCF geometry only in memory; never write inferred symmetry labels.
+    config = dict(config)
+    config["_final_scf_source"] = hpc.file_at(root, "scf.in", 4_000_000).read_text("utf-8")
     bands = parse_bands(hpc.file_at(root, "bands.dat.gnu", MAX_TABLE), config)
     dos = parse_dos(hpc.file_at(root, "dos.dat", MAX_TABLE))
     projected = parse_pdos(hpc.file_at(root, "pdos.pdos_tot", MAX_TABLE), dos["energy_ev"])
