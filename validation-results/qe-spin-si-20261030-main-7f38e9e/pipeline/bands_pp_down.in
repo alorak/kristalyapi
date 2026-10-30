@@ -1,0 +1,7 @@
+&BANDS
+ prefix='kristalyapi',
+ outdir='./tmp',
+ filband='bands_down.dat',
+ spin_component=2,
+ lsym=.false.,
+/

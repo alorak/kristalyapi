@@ -1,0 +1,20 @@
+{
+  "valid": true,
+  "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+  "atoms": 2,
+  "profile_id": "si-pbe",
+  "upf_sha256": {
+    "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+  },
+  "calculation": "electronic",
+  "notice": "Validation is not a DFT convergence study",
+  "electronic_preflight": {
+    "neutral_valence_electrons": 8,
+    "minimum_nbnd": 8,
+    "requested_nbnd": 8,
+    "upf_valence_electrons": {
+      "Si": 4.0
+    },
+    "scope": "Necessary capacity only; empty-band, spin and physical convergence acceptance are separate"
+  }
+}

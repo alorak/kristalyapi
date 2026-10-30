@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'server'),str(ROOT/'tools')]
 from job_core import canonical_request,make_pw_input
 from electronic_core import scf_request
-from qe_pipeline import parse_bands_gnu,post_input,bands_input,nscf_input,insert_nbnd,load_band_path
+from qe_pipeline import parse_bands_gnu,post_input,bands_input,nscf_input,insert_nbnd,load_band_path,checked_k_path_nodes
 from qe_spin import spin_electronic_result
 from qe_run import summarize_output
 
@@ -19,6 +19,20 @@ from qe_run import summarize_output
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def check(value,message):
  if not value:raise ValueError(message)
+
+
+
+def reparse_spin_bands(raw,source,path,electronic):
+    """Recompute optional path labels without adding metadata to older receipts."""
+    bands={c:parse_bands_gnu(raw/('bands_'+c+'.dat.gnu')) for c in ('up','down')}
+    for channel,band in bands.items():
+        stored=electronic['channels'][channel]['bands']
+        if 'k_path_nodes' in stored:
+            nodes=checked_k_path_nodes(source,path,band['distance'])
+            check(nodes is not None and nodes==stored['k_path_nodes'],
+                  'Raw band path nodes differ from stored spin channel: '+channel)
+            band['k_path_nodes']=nodes
+    return bands
 
 
 def verify(folder):
@@ -50,7 +64,7 @@ def verify(folder):
  accuracy=re.findall(r'estimated scf accuracy\s*<\s*([0-9.eEdD+-]+)\s*Ry',scf)
  check(accuracy and 0<=float(accuracy[-1].replace('D','E'))<=1e-8 and 'convergence NOT achieved' not in scf,'SCF accuracy failed')
  check(digest(raw/'scf.out')==result['output_sha256'],'SCF output hash mismatch')
- bands={c:parse_bands_gnu(raw/('bands_'+c+'.dat.gnu')) for c in ('up','down')}
+ bands=reparse_spin_bands(raw,source,path,electronic)
  check(all(len(b['energies_ev'])==8 for b in bands.values()),'Eight bands per spin required')
  parsed=spin_electronic_result(raw,electronic,bands,(raw/'scf.in').read_text(),scf)
  check(parsed==electronic==result['electronic'],'Reparsed spin curves differ from API/raw export')

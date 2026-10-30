@@ -1,0 +1,66 @@
+{
+  "schema": "kristalyapi.qe-job-diagnostics.v1",
+  "job_id": "1448b3cb1f17444d89a08100840860ef",
+  "availability": "recorded",
+  "status": "completed",
+  "execution_attempt": 1,
+  "elapsed_seconds": 7.139,
+  "active_stage": "projwfc",
+  "reason_code": "completed",
+  "process_returncodes": [
+    0
+  ],
+  "stages": [
+    {
+      "name": "scf",
+      "status": "completed",
+      "duration_seconds": 2.847,
+      "returncode": 0
+    },
+    {
+      "name": "bands",
+      "status": "completed",
+      "duration_seconds": 1.146,
+      "returncode": 0
+    },
+    {
+      "name": "bands_pp_up",
+      "status": "completed",
+      "duration_seconds": 0.341,
+      "returncode": 0
+    },
+    {
+      "name": "bands_pp_down",
+      "status": "completed",
+      "duration_seconds": 0.347,
+      "returncode": 0
+    },
+    {
+      "name": "nscf",
+      "status": "completed",
+      "duration_seconds": 1.463,
+      "returncode": 0
+    },
+    {
+      "name": "dos",
+      "status": "completed",
+      "duration_seconds": 0.343,
+      "returncode": 0
+    },
+    {
+      "name": "projwfc",
+      "status": "completed",
+      "duration_seconds": 0.335,
+      "returncode": 0
+    }
+  ],
+  "resources": {
+    "sampled_worker_memory_max_bytes": 182898688,
+    "memory_samples": 9,
+    "memory_limit_bytes": 2147483648,
+    "swap_limit_bytes": 2147483648,
+    "cgroup_oom_kill_delta": 0,
+    "child_cpu_seconds": 6.732
+  },
+  "measurement": "Sampled worker cgroup memory.current includes page cache and worker; not process RSS or a guaranteed peak. One worker/job at a time."
+}

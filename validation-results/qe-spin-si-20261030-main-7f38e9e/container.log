@@ -1,0 +1,31 @@
+qe-api-1  | INFO:     Started server process [1]
+qe-api-1  | INFO:     Waiting for application startup.
+qe-api-1  | INFO:     Application startup complete.
+qe-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1  | INFO:     192.168.128.1:64026 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64042 - "GET /api/capabilities HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64044 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64054 - "POST /api/v1/calculations HTTP/1.1" 202 Accepted
+qe-api-1  | INFO:     192.168.128.1:64066 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64074 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64086 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64100 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64106 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64116 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64132 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64140 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64156 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64172 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     127.0.0.1:37472 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64186 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64196 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64212 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64216 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64218 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:64228 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:60302 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:60312 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:60314 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/results HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:60328 - "GET /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/summary HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:60344 - "POST /api/v1/calculations/1448b3cb1f17444d89a08100840860ef/label HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:60348 - "GET /api/v1/calculations?status=completed&calculation=electronic&q=1448b3cb1f17444d89a08100840860ef HTTP/1.1" 200 OK

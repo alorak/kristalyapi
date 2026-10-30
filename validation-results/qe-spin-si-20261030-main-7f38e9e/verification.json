@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "scope": "Si collinear functional integration only; no physical or magnetic ground-state acceptance",
+  "job_id": "1448b3cb1f17444d89a08100840860ef",
+  "source_commit": "7f38e9e31c018a431863e594301ca6eeec61ee3a",
+  "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+  "scf_accuracy_ry": 1.2e-09,
+  "energy_ry": -22.47662949,
+  "magnetization": {
+    "total_mu_b_per_cell": -0.0,
+    "absolute_mu_b_per_cell": 0.0,
+    "acceptance": "Functional evidence only; not magnetic ground-state or spin-convergence acceptance"
+  },
+  "bands_per_spin": 8,
+  "dos_points_per_spin": 1401,
+  "stages": 7,
+  "calculations_executed_by_verifier": false
+}

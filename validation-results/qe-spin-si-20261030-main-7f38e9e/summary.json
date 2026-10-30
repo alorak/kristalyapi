@@ -1,0 +1,107 @@
+{
+  "status": "passed",
+  "scope": "One real Si collinear spin Docker/API functional smoke; no physical or magnetic ground-state acceptance",
+  "source_commit": "7f38e9e31c018a431863e594301ca6eeec61ee3a",
+  "source_dirty": false,
+  "source_sha256": {
+    "server/api.py": "fb5fbe6c018292984756a54e57dff97120865c91e17fd30c39d86f8b55ff3efe",
+    "server/electronic_core.py": "377f1a813931e0259c3103d24a7720a5202d8262c7d2b01a78960ef9dd0c93c3",
+    "server/electronic_worker.py": "7c937e0de55866547ce7f9715f64cb60f2e39ded44e4793b726ba6b286cc70fa",
+    "server/job_core.py": "eb38483d2385c068934571babb8dfb9db9ddae193975441cdb016924290096f1",
+    "server/job_diagnostics.py": "2b180a6b287bbd54d99baf39a051aaf7ff27a4369f63d26d97c0107576055790",
+    "server/job_store.py": "d8f72d5d762aa1691d6dee74547d91cdd5716425ed2b121e14271a87cbcefb8b",
+    "server/job_summary.py": "1da342024bf1a8dce497ec44b9130c8a369a3d18fd2415a21b0bd27595cd8d8c",
+    "server/qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+    "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+    "server/relax_core.py": "646636efd6f3efd77351cfcc7a595959ba4d7feaac6d0f70f31e5ab655b59c44",
+    "server/relax_worker.py": "1976e2254a1e070f6ced17764f69331380f94b0270b97251b007ff88fd8de31c",
+    "server/resource_policy.py": "a617581f3d41b7c1e3464f2aa36515c6541956dd4ff55132d4b3e185a0f1ff86",
+    "server/worker.py": "141921ae75a2d9608feb4e327b049badc5303f1f13b31f4c66be32c1b43427da",
+    "tools/qe_pipeline.py": "4b624c6c1496f1f2033c03c7411e695a203ab1324e72d249c8183e23d6037d47",
+    "tools/qe_pdos.py": "41046b54b282d32a3686dd88e3a2d5be0f477a4fc3d85abf6ce9ae46b6479e6e",
+    "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+    "tools/qe_checkpoint.py": "822836ac9e7111e1e1f1c28bb0efcdeb248da4086a84ac8e8dffff35c520b9be",
+    "tools/qe_spin.py": "f177d3495b766aeb4d77d6368136ac44a08b8fbd077d83dd45e167bdf1a55fd5",
+    "tools/qe_spin_acceptance.py": "8beb8be22692ebbb207d2c720acfffe3f05f8dfbf205e5768502ec61cdbb7bcb",
+    "server/Dockerfile": "b65ce7583ad9a5b405678e4c0e565df11d8229bf2506cc3c978e6a178e436e68",
+    "compose.qe.yml": "005f9a943fd29af4283c954650db223dff080ce791ef803ad15fdffcc951f2f1"
+  },
+  "started_at": 1793357641.803664,
+  "image_source_verified": true,
+  "image_proof": {
+    "qe-api": {
+      "image_id": "sha256:8d69a9ca10c0dc1fd8ab2945d35e9d5d6816a0c0ff246b987615b127b165c01a",
+      "source_sha256": {
+        "api.py": "fb5fbe6c018292984756a54e57dff97120865c91e17fd30c39d86f8b55ff3efe",
+        "electronic_core.py": "377f1a813931e0259c3103d24a7720a5202d8262c7d2b01a78960ef9dd0c93c3",
+        "electronic_worker.py": "7c937e0de55866547ce7f9715f64cb60f2e39ded44e4793b726ba6b286cc70fa",
+        "job_core.py": "eb38483d2385c068934571babb8dfb9db9ddae193975441cdb016924290096f1",
+        "job_diagnostics.py": "2b180a6b287bbd54d99baf39a051aaf7ff27a4369f63d26d97c0107576055790",
+        "job_store.py": "d8f72d5d762aa1691d6dee74547d91cdd5716425ed2b121e14271a87cbcefb8b",
+        "job_summary.py": "1da342024bf1a8dce497ec44b9130c8a369a3d18fd2415a21b0bd27595cd8d8c",
+        "qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+        "qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+        "relax_core.py": "646636efd6f3efd77351cfcc7a595959ba4d7feaac6d0f70f31e5ab655b59c44",
+        "relax_worker.py": "1976e2254a1e070f6ced17764f69331380f94b0270b97251b007ff88fd8de31c",
+        "resource_policy.py": "a617581f3d41b7c1e3464f2aa36515c6541956dd4ff55132d4b3e185a0f1ff86",
+        "worker.py": "141921ae75a2d9608feb4e327b049badc5303f1f13b31f4c66be32c1b43427da",
+        "qe_pipeline.py": "4b624c6c1496f1f2033c03c7411e695a203ab1324e72d249c8183e23d6037d47",
+        "qe_pdos.py": "41046b54b282d32a3686dd88e3a2d5be0f477a4fc3d85abf6ce9ae46b6479e6e",
+        "qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+        "qe_checkpoint.py": "822836ac9e7111e1e1f1c28bb0efcdeb248da4086a84ac8e8dffff35c520b9be",
+        "qe_spin.py": "f177d3495b766aeb4d77d6368136ac44a08b8fbd077d83dd45e167bdf1a55fd5"
+      },
+      "limits": {
+        "Memory": 2147483648,
+        "MemorySwap": 4294967296,
+        "NanoCpus": 2000000000
+      }
+    },
+    "qe-worker": {
+      "image_id": "sha256:8d69a9ca10c0dc1fd8ab2945d35e9d5d6816a0c0ff246b987615b127b165c01a",
+      "source_sha256": {
+        "api.py": "fb5fbe6c018292984756a54e57dff97120865c91e17fd30c39d86f8b55ff3efe",
+        "electronic_core.py": "377f1a813931e0259c3103d24a7720a5202d8262c7d2b01a78960ef9dd0c93c3",
+        "electronic_worker.py": "7c937e0de55866547ce7f9715f64cb60f2e39ded44e4793b726ba6b286cc70fa",
+        "job_core.py": "eb38483d2385c068934571babb8dfb9db9ddae193975441cdb016924290096f1",
+        "job_diagnostics.py": "2b180a6b287bbd54d99baf39a051aaf7ff27a4369f63d26d97c0107576055790",
+        "job_store.py": "d8f72d5d762aa1691d6dee74547d91cdd5716425ed2b121e14271a87cbcefb8b",
+        "job_summary.py": "1da342024bf1a8dce497ec44b9130c8a369a3d18fd2415a21b0bd27595cd8d8c",
+        "qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+        "qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+        "relax_core.py": "646636efd6f3efd77351cfcc7a595959ba4d7feaac6d0f70f31e5ab655b59c44",
+        "relax_worker.py": "1976e2254a1e070f6ced17764f69331380f94b0270b97251b007ff88fd8de31c",
+        "resource_policy.py": "a617581f3d41b7c1e3464f2aa36515c6541956dd4ff55132d4b3e185a0f1ff86",
+        "worker.py": "141921ae75a2d9608feb4e327b049badc5303f1f13b31f4c66be32c1b43427da",
+        "qe_pipeline.py": "4b624c6c1496f1f2033c03c7411e695a203ab1324e72d249c8183e23d6037d47",
+        "qe_pdos.py": "41046b54b282d32a3686dd88e3a2d5be0f477a4fc3d85abf6ce9ae46b6479e6e",
+        "qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+        "qe_checkpoint.py": "822836ac9e7111e1e1f1c28bb0efcdeb248da4086a84ac8e8dffff35c520b9be",
+        "qe_spin.py": "f177d3495b766aeb4d77d6368136ac44a08b8fbd077d83dd45e167bdf1a55fd5"
+      },
+      "limits": {
+        "Memory": 2147483648,
+        "MemorySwap": 4294967296,
+        "NanoCpus": 2000000000
+      }
+    }
+  },
+  "terminal": {
+    "job_id": "1448b3cb1f17444d89a08100840860ef",
+    "status": "completed",
+    "calculation": "electronic",
+    "spin": "polarized",
+    "created": "2026-10-30T10:54:02.934273+00:00",
+    "updated": "2026-10-30T10:54:10.334213+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "name": "",
+    "cancel_requested": false,
+    "error": null,
+    "resume_count": 0,
+    "pause_requested": false,
+    "can_pause": false,
+    "can_resume": false
+  },
+  "finished_at": 1793357651.7385201
+}
