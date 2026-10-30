@@ -640,9 +640,10 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] `submit.sh`: bütün aşamalarda `sbatch --test-only` başarılı olmadan hiçbir gerçek `sbatch` çağrısı yapmama.
 - [x] Erken hata kaydı ve SLURM/modül çevre logları; sentetik Python/JS testleri.
 - [ ] Gerçek TRUBA orfoz Si smoke, MoS₂ ve 300+ bant kabulü (operatör erişimi gerektirir).
-- [ ] `afterok` zincirinde güvenli yeniden başlatma / kontrollü retry.
-- [ ] Seri postprocessing tahsislerini birleştirerek çekirdek/zaman israfını azaltma.
-- [ ] sacct kaynak telemetrisi, bilimsel input ön kontrolü, sonuç–yapı eşleştirmesi ve parametre taramaları.
+- [x] `afterok` zincirinde yalnız seri postprocessor aşamaları için manuel, tek seferlik kontrollü `resume.sh` (P1.6/P2.0). **Kısmi `pw.x` restart desteklenmiyor; gerçek TRUBA hata senaryosu kabulü açık.**
+- [x] **İsteğe bağlı** P2.2 ortak fiziksel SLURM tahsisi: 56 MPI ile `bands+bands.x`, `nscf+dos.x+projwfc.x`; 6→3 (relax varsa 7→4) iş. **Gerçek CPU-saat tasarrufu kanıtlanmadı; seri işlemlerde 56 CPU ayrılmış kalıyor.**
+- [x] `sacct` telemetrisi (P1.7), gerekli elektron kapasitesi/UPF uyarıları (P1.8/P2.1) ve byte-temelli sonuç–girdi SHA eşleştirmesi (P1.9) kodu.
+- [ ] Otomatik cutoff, k-örgüsü, vakum, `nbnd` parametre yakınsama taramaları ve bağımsız bilimsel kabul (P2.3+).
 
 
 ### TRUBA P1.6 — Kanıtlı ve sınırlı yeniden devam
@@ -693,7 +694,7 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] `k_z=1` için hücre normali boyunca en büyük kesirli-z geometrik boşluk üst sınırını inceleme uyarısı olarak raporla; NaN/sonsuz atom koordinatlarını reddet.
 - [x] Aşamalı SLURM ZIP'de seri postprocessor süre sınırını ayrı isteğe bağlı seçme ve manifestte tahsis CPU-saat *üst sınırını* gösterme; eski varsayılan süre korunur.
 - [x] Mock QE/UPF ve kaynak-süre profili regresyonları.
-- [ ] Seri postprocessor hesaplarının farklı kısa işlere bölünmesini gerçekten ortadan kaldırmak için kanıt/afterok uyumlu birleşik SLURM allocation tasarımı (bu değişiklik yalnız süre sınırını iyileştirir).
+- [x] P2.2'de isteğe bağlı birleşik fiziksel SLURM işi ve `afterok`/SHA kanıtları eklendi; seri postprocessor sırasında ayrılan çekirdeklerin boşa gitmesi ve gerçek tasarrufun ölçülmesi ayrı iş.
 - [ ] Gerçek TRUBA üzerinde cutoff, k-örgüsü, 2B vakum ve projeksiyon/bant sayısı yakınsama kabulü.
 
 ### TRUBA P2.2 — Ortak PW/postprocessing tahsisi
@@ -705,4 +706,21 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Varsayılan eski ayrı-iş akışını ve ayrı aşamalı manuel resume betiklerini koru; kullanıcıya seçim ve İngilizce çeviri ekle.
 - [x] Sentetik JS, Python ve hata tuzağı regresyonları.
 - [ ] Gerçek TRUBA `orfoz` 56-çekirdekli Si/MoS₂ hesaplarında grouped/serial A/B, `sacct` elapsed/CPU, Fermi/DOS/PDOS bilimsel eşdeğerliği ve fail/retry kabulü.
-- [ ] Gerçek çekirdek-saat tasarrufu doğrulanmadı: yalnız aynı tahsiste birden fazla aşama çalışması, seri komutlardaki boş çekirdekleri ortadan kaldırmaz; alternatif küçük kaynaklı kuyruk/parallel postprocessing stratejisini gerçek cluster profilleriyle araştır.
+- [ ] **Ölçülecek:** P2.2 ortak tahsis için gerçek CPU-saat/MaxRSS/Elapsed verimliliği; seri süreçte 56 çekirdek tahsisi sürüyor. Alternatif küçük kaynaklı kuyruk veya paralel postprocessing ancak gerçek `orfoz` profil/ölçümlerine göre seçilmeli.
+
+### TRUBA P2.3 — Gerçek küme kabulü ve tekrarlanabilir performans raporu (önerilen sonraki paket)
+
+- [ ] Orijinal `structure.in`, gerçek UPF hashleri, QE/SLURM sürümü, `module list`, `submissions.txt`, ham raporlar ve `sacct` kayıtlarını tek kanıt manifestinde eşleştiren **operatörce çalıştırılan** A/B kabul komutu.
+- [ ] **Si:** 56-çekirdekli orfoz üzerinde 6 ayrı iş ↔ 3 ortak tahsis karşılaştırması; aynı UPF, cutoff, k-örgüsü, `nbnd`, Eₙ(k), DOS/PDOS ve `sacct` metrikleri.
+- [ ] **MoS₂:** vakum/k-örgüsü/cutoff yakınsama taraması, relaksasyon ve elektron hesapları; aynı ayarlarla ortak/ayrı mod karşılaştırması.
+- [ ] **300+ bant:** sabit `nbnd`, 301–380 gibi bant görünüm penceresi, ham dosya/JSON/CSV ve bellek/çalışma süresi kabulü.
+- [ ] Kesilen `bands.x`/`dos.x`/`projwfc.x` senaryosunda manuel resume, hatalı/kısmi kayıtta güvenli ret ve failover testi.
+- [ ] Kapalı/çalışan job, quota ve bağlantı kesintisi durumlarıyla iş kimliği/kısmi submission güvenliğini doğrulama.
+- [ ] Gerçek referanslar yokken `scientific_convergence_verified` işaretini **asla** true yapmama.
+
+### Arayüz P2.3 — Eğitim sayfaları ve üst menü (30 Ekim 2026)
+
+- [x] Toz Kırınımı ve Yarıiletken Fiziği sayfalarından `max-width:1600px` sınırlamasını kaldırıp kullanılabilir yatay alanı tam doldurma; dar ekran iç boşluğu korunur.
+- [x] Karşı Uzay sayfasını Toz Kırınımı içinde **alt sekme** yapma; navbar bağlantısını kaldırıp eski `#karsi-uzay` URL'sini yeni sekmeye yönlendirme.
+- [x] Kütüphane'yi ana navbar'da DFT'nin **soluna** taşıma; mevcut ayrı Kütüphane sayfasını/arama akışını koruma.
+- [ ] Gerçek masaüstü ve mobil tarayıcıda eğitim görsellerinin yeniden boyutlanmasını, tab klavye odağını ve karşı uzay WebGL canvas görünürlüğünü manuel kabul etme.
