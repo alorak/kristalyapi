@@ -155,7 +155,7 @@ export function coallocatedSlurm(group,resource,withElectronic=false){
    'python3 pipeline.py finish '+stage);
  }
  if(group.at(-1)==='projwfc')lines.push('python3 pipeline.py summary');
- return lines.concat(['']).join('\\n');
+ return lines.concat(['']).join('\n');
 }
 export function submissionScriptForGroup(group){
  if(group.length===1)return 'stages/'+group[0]+'.slurm';
@@ -186,7 +186,7 @@ export function submitScript(stages,groups=stages.map(stage=>[stage])){
    ...group.map(stage=>'printf "%s %s\\n" "'+stage+'" "$id" >> submissions.txt'),
    'previous="$id"','');
  }
- return lines.concat(['echo "Queued afterok physical jobs; logical stage/job IDs in submissions.txt."','']).join('\\n');
+ return lines.concat(['echo "Queued afterok physical jobs; logical stage/job IDs in submissions.txt."','']).join('\n');
 }
 export function resumeScript(stages){
  if(!Array.isArray(stages)||!stages.includes('bands_pp')||!stages.includes('dos')||!stages.includes('projwfc'))
