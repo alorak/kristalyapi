@@ -91,14 +91,35 @@ try{
  assert.deepEqual(apiRequests,[],'route changes and file viewing must not contact the compute server');
  assert.deepEqual(dialogs,[],'navigation must not request calculation confirmation');
  assert.deepEqual(errors,[]);
+
+ // Applying evidence-backed protocols creates a separate reference, never an API job.
+ await page.locator('#languageTurkish').click();
+ await page.locator('#qeProtocolSelect').selectOption('mos2-d41');
+ await page.locator('#qeProtocolReference').click();
+ await page.waitForFunction(()=>document.getElementById('dftStructureDetail').textContent.startsWith('3 atom'));
+ assert.equal(await page.locator('#qeEcutwfc').inputValue(),'120');
+ assert.equal(await page.locator('#qeElectronicNbnd').inputValue(),'40');
+ assert.equal(await page.locator('#qeElectronicMesh').inputValue(),'24');
+ assert.equal(await page.locator('#qeDosExplicit').isChecked(),true);
+ assert.match(await page.locator('#qeProtocolState').textContent(),/ön kontrolü bekleniyor/);
+ await page.locator('#qeEcutwfc').fill('125');
+ assert.match(await page.locator('#qeProtocolState').textContent(),/eşleşmiyor/);
+ await page.locator('#qeEcutwfc').fill('120');
+ assert.match(await page.locator('#qeProtocolState').textContent(),/ön kontrolü bekleniyor/);
+ assert.deepEqual(apiRequests,[],'template inspection/application must not call the compute server');
  // Synthetic read-only server transitions exercise polling without executing QE.
  const result=JSON.parse(await fs.readFile(path.join(root,'validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/result.json'),'utf8'));
- const jid=result.job_id;let serverStatus='running',statusReads=0;
+ const jid=result.job_id;let serverStatus='running',statusReads=0,wrongProtocolHash=true;
+ const {protocolById}=await import('../../qe-protocol-templates.js');const protocol=protocolById('mos2-d41');
  const row=()=>({job_id:jid,status:serverStatus,calculation:'electronic',structure_hash:result.structure_hash,created:'2026-10-29',can_pause:serverStatus==='running',can_resume:false});
  await page.route('http://127.0.0.1:8000/**',async route=>{
   const req=route.request(),pathname=new URL(req.url()).pathname;
   const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, OPTIONS'};
   if(req.method()==='OPTIONS'){await route.fulfill({status:204,headers});return;}
+  if(req.method()==='POST'&&pathname==='/api/v1/calculations/validate'){
+   const upf=Object.fromEntries(Object.entries(protocol.pseudopotentials).map(([el,p])=>[el,p.sha256]));if(wrongProtocolHash)upf.Mo='0'.repeat(64);
+   await route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({valid:true,structure_hash:protocol.structure_hash,atoms:3,profile_id:'mos2-pbe',upf_sha256:upf})});return;
+  }
   assert.equal(req.method(),'GET','tracking must never submit or mutate jobs');
   let data;
   if(pathname==='/api/v1/calculations')data={jobs:[row()]};
@@ -111,6 +132,14 @@ try{
  });
  await page.setViewportSize({width:1280,height:900});
  await page.locator('#qeApiToken').fill('test-only-token-aaaaaaaaaaaaaaaaaaaaaaaa');
+ await page.locator('[data-dft-section="isler"]').click();
+ await page.locator('#qeJobValidate').click();
+ await page.waitForFunction(()=>document.getElementById('qeProtocolState').textContent.includes('eşleşmiyor'));
+ wrongProtocolHash=false;
+ await page.locator('#qeJobValidate').click();
+ await page.waitForFunction(()=>document.getElementById('qeProtocolState').textContent.includes('ön kontrolüyle eşleşti'));
+ await page.locator('[data-dft-section="hazirlik"]').click();
+ await page.locator('.qe-protocol-card').screenshot({path:path.join(artifacts,'dft-workspace-protocol.png')});
  await page.locator('[data-dft-section="isler"]').click();
  await page.locator('#qeJobHistoryLoad').click();
  await page.locator('#qeJobHistorySelect').selectOption(jid);
