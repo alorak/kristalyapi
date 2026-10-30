@@ -149,3 +149,23 @@ test('large band windows and CSV retain original band numbers',()=>{
  assert.match(electronicCsv(parsed,'bands').split('\n')[0],/band_101_ev.*band_102_ev/);
  raw.bands.band_index_start=416;assert.throws(()=>parseQeElectronicResult(raw));
 });
+
+function spinFixture(){
+ const base=atomPdos(),channel=c=>({schema:'kristalyapi.qe-spin-channel.v1',spin_mode:'collinear-polarized',spin_channel:c,bands:structuredClone(base.bands),dos:structuredClone(base.dos),pdos_total:structuredClone(base.pdos_total),pdos_atoms:{...structuredClone(base.pdos_atoms),spin_mode:'collinear-polarized',spin_channel:c}});
+ return {...base,schema:'kristalyapi.qe-electronic.v2',spin_mode:'collinear-polarized',channels:{up:channel('up'),down:channel('down')},magnetization:{total_mu_b_per_cell:0,absolute_mu_b_per_cell:.1},integrated_dos_total:{energy_ev:base.dos.energy_ev,states:[0,1,2]}};
+}
+test('spin v2 keeps up/down channels and shared integral separate in parsing and CSV',()=>{
+ const raw=spinFixture(),before=JSON.stringify(raw),result=parseQeElectronicResult(raw);
+ assert.equal(result.channels.up.spinChannel,'up');assert.equal(result.channels.down.spinChannel,'down');
+ assert.deepEqual(result.integratedDosTotal.states,[0,1,2]);assert.equal(JSON.stringify(raw),before);
+ const csv=electronicCsv(result.channels.down,'dos');assert.match(csv,/spin_channel/);assert.match(csv,/,"down",/);
+ assert.throws(()=>electronicCsv(result,'dos'),/kanal/);
+});
+test('spin v2 rejects mixed identities, missing channels, grids and projection sums',()=>{
+ for(const mutate of [v=>delete v.channels.down,v=>v.channels.down.spin_channel='up',v=>v.channels.down.pdos_atoms.spin_channel='up',
+  v=>v.channels.down.bands.distance[1]=.6,v=>v.channels.up.pdos_atoms.atoms[0].orbitals.d[0]=99,
+  v=>v.integrated_dos_total.states[1]=-1,v=>v.magnetization.total_mu_b_per_cell=10,v=>v.input_sha256='bad',
+  v=>v.channels.up.schema='kristalyapi.qe-electronic.v1']){
+  const raw=spinFixture();mutate(raw);assert.throws(()=>parseQeElectronicResult(raw));
+ }
+});

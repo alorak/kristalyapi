@@ -7,6 +7,19 @@
 (() => {
  'use strict';
  const entries=[
+  ["Elektronik spin modu", "Electronic spin mode"],
+  ["Spinsiz · mevcut referanslar", "Unpolarized · existing references"],
+  ["Kollineer spin ↑ / ↓ · nötr hücre", "Collinear spin ↑ / ↓ · neutral cell"],
+  ["Element başına başlangıç polarizasyonu (−1 … 1)", "Starting polarization per element (−1 … 1)"],
+  ["SCF Gaussian genişliği (Ry)", "SCF Gaussian width (Ry)"],
+  ["Her element için bir satır girin: Mo 0.1, S 0.0. En az bir tohum sıfırdan farklı olmalı. nbnd bu korumacı iş akışında nötr değerlik elektron sayısından az olamaz. Spin hesabı Gaussian SCF doluluğunu kullanır; açık DOS ayarları gereklidir. SOC, yüklü kusurlar ve aynı elementin farklı altörgü spinleri bu akışta desteklenmez.", "Enter one row per element: Mo 0.1, S 0.0. At least one seed must be nonzero. This conservative workflow requires nbnd at least equal to the neutral valence electron count. Spin jobs use Gaussian SCF occupations and require explicit DOS settings. SOC, charged defects and distinct spin sublattices of the same element are outside this workflow."],
+  ["Yukarı spin ↑", "Spin up ↑"],
+  ["Aşağı spin ↓", "Spin down ↓"],
+  [" · toplam manyetizasyon ", " · total magnetization "],
+  [" μB/hücre · mutlak ", " μB/cell · absolute "],
+  ["Kollineer spin · toplam manyetizasyon ", "Collinear spin · total magnetization "],
+  [" μB/hücre. Başlangıç tohumları manyetik temel durum kanıtı değildir. Kanallar pozitif DOS değerleriyle ayrı gösterilir; Fermi hizalaması yapılmaz.", " μB/cell. Starting seeds do not prove a magnetic ground state. Channels show positive DOS values separately, with no Fermi alignment."],
+
   ["HPC kaynak ve Slurm hazırlığı ↗", "HPC resources and Slurm preparation ↗"],
   ["Görüntülenecek ilk bant (isteğe bağlı)", "First displayed band (optional)"],
   ["Görüntülenecek son bant", "Last displayed band"],

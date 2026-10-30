@@ -30,7 +30,7 @@ import qe_checkpoint as checkpoint
 import qe_run,qe_pdos,qe_post_settings
 
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?"
-STEPS = ("relax", "scf", "bands", "bands_pp", "nscf", "dos", "projwfc")
+STEPS = ("relax", "scf", "bands", "bands_pp", "bands_pp_up", "bands_pp_down", "nscf", "dos", "projwfc")
 MAX_TEXT = 8_000_000
 
 
@@ -169,6 +169,9 @@ def nscf_input(scf_source, nbnd, kmesh):
 
 
 def post_input(kind, dos_settings=None):
+    if kind in ('bands_pp_up','bands_pp_down'):
+        channel=1 if kind.endswith('_up') else 2
+        return post_input('bands_pp').replace("filband='bands.dat'",f"filband='bands_{'up' if channel==1 else 'down'}.dat'").replace(" lsym=",f" spin_component={channel},\n lsym=")
     if kind == "bands_pp":
         return "&BANDS\n prefix='kristalyapi',\n outdir='./tmp',\n filband='bands.dat',\n lsym=.false.,\n/\n"
     if dos_settings is not None:
@@ -282,7 +285,7 @@ def parse_pdos_total(path, dos):
 
 def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                  bands_x="bands.x", dos_x="dos.x", projwfc_x="projwfc.x",
-                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None,pause_file=None,resume=False,expected_checkpoint_sha=None,band_window=None):
+                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None,pause_file=None,resume=False,expected_checkpoint_sha=None,band_window=None,spin_polarized=False):
     if (resume or pause_file is not None) and not execute:
         raise ValueError("Checkpoint pause/resume requires actual execution")
     if dos_settings is not None:
@@ -300,16 +303,18 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
     if not (2 <= nscf_k <= 48):
         raise ValueError("Invalid dense k-point mesh")
     commands = {"relax": pw, "scf": pw, "bands": pw, "nscf": pw,
-                "bands_pp": bands_x, "dos": dos_x, "projwfc": projwfc_x}
+                "bands_pp": bands_x, "bands_pp_up":bands_x,"bands_pp_down":bands_x,"dos": dos_x, "projwfc": projwfc_x}
     needed = {"scf"}
     if path:
-        needed.update({"bands", "bands_pp"})
+        needed.update({"bands", "bands_pp_up", "bands_pp_down"} if spin_polarized else {"bands", "bands_pp"})
     if pdos:
         needed.update({"nscf", "dos", "projwfc"})
     source = input_file.read_text(encoding="utf-8")
     model = parse_pw_input(source)
-    if re.search(r"(?i)\bnspin\s*=\s*[2-9]|\bnoncolin\s*=\s*\.true\.|\blspinorb\s*=\s*\.true\.", source):
-        raise ValueError("Spin-polarized / SOC QE inputs are not supported by this pipeline")
+    from qe_spin import validate_spin_input
+    validate_spin_input(source,spin_polarized)
+    if spin_polarized and (not path or not pdos or dos_settings is None or model['calculation']!='scf'):
+        raise ValueError('Collinear spin requires SCF, band path and explicit DOS/PDOS settings')
     if model["calculation"] == "relax":
         needed.add("relax")
     if execute:
@@ -320,11 +325,12 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
     if pause_file is not None or resume:
         identity=checkpoint.contract(input_file,pseudo_dir,model,
             {'nbnd':nbnd,'nscf_k':nscf_k,'dos_settings':dos_settings,'pdos':pdos,
-             'band_path':band_path.read_text() if band_path else None,'band_window':band_window},
+             'band_path':band_path.read_text() if band_path else None,'band_window':band_window,**({'spin_polarized':True} if spin_polarized else {})},
             {name:shutil.which(commands[name]) for name in needed},
-            [Path(__file__),Path(checkpoint.__file__),Path(qe_run.__file__),Path(qe_pdos.__file__),Path(qe_post_settings.__file__)])
+            [Path(__file__),Path(checkpoint.__file__),Path(qe_run.__file__),Path(qe_pdos.__file__),Path(qe_post_settings.__file__),*([Path(__file__).with_name('qe_spin.py')] if spin_polarized else [])])
     result = checkpoint.load(workdir,identity,expected_checkpoint_sha) if resume else stage(input_file, pseudo_dir, workdir)
     if not resume:result["steps"]={}
+    if spin_polarized:result['spin_mode']='collinear-polarized'
     result["schema"] = "kristalyapi.qe-pipeline.v1"
     result["requested"] = list(step for step in STEPS if step in needed)
     result["band_path"] = [name for name, _, _ in path] if path else None
@@ -404,22 +410,25 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
             if execute:
                 working = use_relaxed_positions(source, relax_output, model["nat"])
         scf_source = change_calculation(working, "scf") if model["calculation"] == "relax" else working
-        scf_output = step_run("scf", scf_source)
+        scf_output = step_run("scf", insert_nbnd(scf_source,nbnd) if spin_polarized else scf_source)
         if execute:
             if not (workdir / "tmp" / "kristalyapi.save").is_dir():
                 raise RuntimeError("SCF did not preserve shared tmp/kristalyapi.save data")
         if path:
             band_text = bands_input(scf_source, path, nbnd)
             step_run("bands", band_text)
-            step_run("bands_pp", post_input("bands_pp"), post=True)
+            if spin_polarized:
+                for channel in ('up','down'):step_run('bands_pp_'+channel,post_input('bands_pp_'+channel),post=True)
+            else:step_run("bands_pp", post_input("bands_pp"), post=True)
             if execute:
-                result["bands"] = parse_bands_gnu(workdir / "bands.dat.gnu",band_window)
+                if spin_polarized:result['spin_bands']={c:parse_bands_gnu(workdir/('bands_'+c+'.dat.gnu'),band_window) for c in ('up','down')}
+                else:result["bands"] = parse_bands_gnu(workdir / "bands.dat.gnu",band_window)
                 persist()
         if pdos:
             step_run("nscf", nscf_input(scf_source, nbnd, nscf_k))
             step_run("dos", post_input("dos",dos_settings), post=True)
             step_run("projwfc", post_input("projwfc",dos_settings), post=True)
-            if execute:
+            if execute and not spin_polarized:
                 dos = parse_dos(workdir / "dos.dat")
                 pdos_path = workdir / "pdos.pdos_tot"
                 total = parse_pdos_total(pdos_path, dos)
@@ -455,6 +464,11 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                 "DFT numerical convergence must be established independently."
             ]
         }
+        if spin_polarized:
+            from qe_spin import spin_electronic_result
+            try:electronic=spin_electronic_result(workdir,electronic,result['spin_bands'],scf_source,scf_output)
+            except (OSError,ValueError) as exc:
+                result.update(status='failed',error=str(exc));persist();return result
         (workdir / "electronic-results.json").write_text(
             json.dumps(electronic, ensure_ascii=False, separators=(",", ":")) + "\n",
             encoding="utf-8")
@@ -476,6 +490,7 @@ def main(argv=None):
     parser.add_argument("--band-last",type=int)
     parser.add_argument("--nscf-k", type=int, default=12)
     parser.add_argument("--pdos", action="store_true")
+    parser.add_argument("--spin-polarized",action="store_true")
     parser.add_argument('--pause-file',type=Path)
     parser.add_argument('--resume',action='store_true')
     parser.add_argument('--expected-checkpoint-sha')
@@ -500,7 +515,7 @@ def main(argv=None):
                               projwfc_x=args.projwfc_x, band_path=args.band_path,
                               nbnd=args.nbnd, nscf_k=args.nscf_k, pdos=args.pdos,
                               timeout=args.timeout,dos_settings=settings,pause_file=args.pause_file,
-                              resume=args.resume,expected_checkpoint_sha=args.expected_checkpoint_sha,band_window=band_window)
+                              resume=args.resume,expected_checkpoint_sha=args.expected_checkpoint_sha,band_window=band_window,spin_polarized=args.spin_polarized)
         print(json.dumps({"status": result["status"], "manifest": str(args.workdir / "pipeline.json")},
                          ensure_ascii=False))
         return 75 if result["status"]=="paused" else 0 if result["status"] in ("prepared", "completed") else 1

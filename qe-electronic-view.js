@@ -11,14 +11,36 @@ function checkedArray(values,label,limit){
  return values;
 }
 export function parseQeElectronicResult(data){
- if(!data||data.schema!=='kristalyapi.qe-electronic.v1')
+ if(data?.schema!=='kristalyapi.qe-electronic.v2')return parseSingleChannel(data);
+ if(data.spin_mode!=='collinear-polarized'||!data.channels||Object.keys(data.channels).sort().join(',')!=='down,up'||
+  !/^[a-f0-9]{64}$/.test(data.input_sha256||'')||typeof data.energy_zero!=='string')throw Error('Spin kanal kimliği veya hesap özeti geçersiz.');
+ const channels={};
+ for(const channel of ['up','down']){
+  const raw=data.channels[channel];
+  if(!raw||raw.spin_channel!==channel||raw.spin_mode!=='collinear-polarized')throw Error('Spin kanal kimliği uyuşmuyor.');
+  channels[channel]=parseSingleChannel({...raw,source:data.source,energy_zero:data.energy_zero,input_sha256:data.input_sha256,band_path_labels:data.band_path_labels},channel);
+  if(!channels[channel].bands||!channels[channel].dos||!channels[channel].pdosDetailed)throw Error('Spin bant/DOS/PDOS kanalı eksik.');
+ }
+ const {up,down}=channels,same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if(!same(up.bands.distance,down.bands.distance)||up.bands.curves.length!==down.bands.curves.length||
+  up.bands.firstBand!==down.bands.firstBand||up.bands.totalBands!==down.bands.totalBands||!same(up.dos.energy,down.dos.energy)||
+  !same(up.pdosDetailed.atoms.map(a=>[a.atomIndex,a.element,Object.keys(a.orbitals)]),down.pdosDetailed.atoms.map(a=>[a.atomIndex,a.element,Object.keys(a.orbitals)])))
+  throw Error('Spin kanallarının bant, enerji veya atom kimlikleri farklı.');
+ const m=data.magnetization;
+ if(!m||!finite(m.total_mu_b_per_cell)||!finite(m.absolute_mu_b_per_cell)||m.absolute_mu_b_per_cell<0||Math.abs(m.total_mu_b_per_cell)>m.absolute_mu_b_per_cell+.011)throw Error('Spin manyetizasyonu geçersiz.');
+ const integral=data.integrated_dos_total;
+ if(!integral||!same(integral.energy_ev,up.dos.energy)||!Array.isArray(integral.states)||integral.states.length!==up.dos.energy.length||integral.states.some((v,i)=>!finite(v)||v<0||i>0&&v<integral.states[i-1]-1e-5))throw Error('Toplam spin DOS integrali geçersiz.');
+ return {schema:data.schema,spinMode:data.spin_mode,channels,magnetization:m,integratedDosTotal:integral};
+}
+function parseSingleChannel(data,spinChannel=null){
+ if(!data||data.schema!==(spinChannel?'kristalyapi.qe-spin-channel.v1':'kristalyapi.qe-electronic.v1'))
   throw Error('Beklenen electronic-results.json şeması bulunamadı.');
  if(!data.bands&&!data.dos)throw Error('Bant veya DOS verisi bulunamadı.');
  const output={schema:data.schema,source:String(data.source||'Belirtilmemiş').slice(0,120),
   energyZero:String(data.energy_zero||'Bilinmiyor').slice(0,150),
   bandLabels:Array.isArray(data.band_path_labels)?data.band_path_labels.map(s=>String(s).slice(0,24)).slice(0,32):[],
   inputHash:typeof data.input_sha256==='string'&&/^[a-f0-9]{64}$/i.test(data.input_sha256)?data.input_sha256:null,
-  bands:null,dos:null,pdos:null,pdosDetailed:null};
+  bands:null,dos:null,pdos:null,pdosDetailed:null,...(spinChannel?{spinChannel}: {})};
  if(data.bands){
   const d=checkedArray(data.bands.distance,'Bant k uzaklığı',20000);
   if(d.some((v,i)=>i>0&&v<d[i-1]))throw Error('k uzaklığı sıralı olmalı.');
@@ -57,7 +79,7 @@ export function parseQeElectronicResult(data){
   if(energy.length!==output.dos.energy.length||
     energy.some((v,i)=>Math.abs(v-output.dos.energy[i])>1e-4))
     throw Error('Atomik PDOS enerji ekseni toplam DOS ile uyuşmuyor.');
-  if(raw.spin_mode!=='collinear-unpolarized')
+  if(raw.spin_mode!==(spinChannel?'collinear-polarized':'collinear-unpolarized')||spinChannel&&raw.spin_channel!==spinChannel)
     throw Error('Yalnız spin-polarize olmayan kollineer PDOS destekleniyor.');
   const validateGroups=(items,kind)=>{
    if(!Array.isArray(items)||!items.length||items.length>(kind==='atoms'?1000:118))
@@ -268,6 +290,7 @@ export function checkedEnergyWindow(data,min,max){
 }
 const csvCell=value=>typeof value==='number'?String(value):'"'+String(value??'').replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';
 export function electronicCsv(data,kind){
+ if(data.channels)throw Error('CSV için spin kanalını seçin.');
  let header,columns;
  if(kind==='bands'&&data.bands){
   const start=data.bands.firstBand||1;
@@ -281,8 +304,9 @@ export function electronicCsv(data,kind){
    for(const [orbital,values] of Object.entries(item.orbitals)){header.push(prefix+'_'+orbital+'_states_per_ev');columns.push(values);}
   }
  }else throw Error('İndirilecek veri bulunamadı.');
+ if(data.spinChannel)header.push('spin_channel');
  header.push('energy_zero','input_sha256');const lines=[header.map(csvCell).join(',')];
- for(let i=0;i<columns[0].length;i++)lines.push([...columns.map(c=>c[i]),data.energyZero,data.inputHash].map(csvCell).join(','));
+ for(let i=0;i<columns[0].length;i++)lines.push([...columns.map(c=>c[i]),...(data.spinChannel?[data.spinChannel]:[]),data.energyZero,data.inputHash].map(csvCell).join(','));
  return lines.join('\n')+'\n';
 }
 export function serializeElectronicPlots(host,data,energyWindow){
@@ -292,8 +316,8 @@ export function serializeElectronicPlots(host,data,energyWindow){
  const root=el('svg',{xmlns:NS,width,height,viewBox:`0 0 ${width} ${height}`,color:'#334155'});
  root.append(el('rect',{width,height,fill:'#fff'}));
  root.append(el('style',{},'text{font-family:Arial,sans-serif}'));
- root.append(el('metadata',{},JSON.stringify({schema:'kristalyapi.qe-plot-export.v1',source:data.source,energy_zero:data.energyZero,input_sha256:data.inputHash,display_energy_window_ev:energyWindow})));
- for(const [i,text] of ['Quantum ESPRESSO · '+data.source,'Enerji sıfırı: '+data.energyZero,'SHA-256: '+(data.inputHash||'—')+' · '+energyWindow.join(' … ')+' eV'].entries())
+ root.append(el('metadata',{},JSON.stringify({schema:'kristalyapi.qe-plot-export.v1',...(data.spinChannel?{spin_channel:data.spinChannel}:{}),source:data.source,energy_zero:data.energyZero,input_sha256:data.inputHash,display_energy_window_ev:energyWindow})));
+ for(const [i,text] of ['Quantum ESPRESSO · '+data.source+(data.spinChannel?' · spin '+data.spinChannel:''),'Enerji sıfırı: '+data.energyZero,'SHA-256: '+(data.inputHash||'—')+' · '+energyWindow.join(' … ')+' eV'].entries())
   root.append(el('text',{x:20,y:20+i*20,'font-size':i===0?14:10,fill:'#334155'},text));
  let y=85;
  for(const [i,plot] of plots.entries()){
@@ -310,6 +334,17 @@ function downloadElectronicBlob(blob,filename){
 }
 export function renderQeElectronicResults(container,data){
  container.replaceChildren();
+ if(data.channels){
+  const note=document.createElement('p');note.className='note';
+  note.textContent='Kollineer spin · toplam manyetizasyon '+data.magnetization.total_mu_b_per_cell+' μB/hücre · mutlak '+data.magnetization.absolute_mu_b_per_cell+' μB/hücre. Başlangıç tohumları manyetik temel durum kanıtı değildir. Kanallar pozitif DOS değerleriyle ayrı gösterilir; Fermi hizalaması yapılmaz.';
+  container.append(note);
+  for(const [channel,label] of [['up','Yukarı spin ↑'],['down','Aşağı spin ↓']]){
+   const section=document.createElement('section');section.className='qe-spin-channel';section.dataset.spinChannel=channel;
+   const title=document.createElement('h3');title.textContent=label;const content=document.createElement('div');
+   section.append(title,content);container.append(section);renderQeElectronicResults(content,data.channels[channel]);
+  }
+  return;
+ }
  const controls=document.createElement('div');controls.className='qe-spectrum-controls';
  const min=document.createElement('input'),max=document.createElement('input');
  const full=electronicEnergyRange(data);let window=[...full];
@@ -326,7 +361,7 @@ export function renderQeElectronicResults(container,data){
  linked.onchange=redraw;controls.append(apply,reset);container.append(controls,linkedLabel);
  const actions=document.createElement('div');actions.className='qe-spectrum-downloads';
  const button=(label,callback)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=async()=>{try{b.disabled=true;await callback();}catch(error){message.textContent=error.message;}finally{b.disabled=false;}};actions.append(b);};
- const stem='qe-'+(data.inputHash?.slice(0,12)||'electronic');
+ const stem='qe-'+(data.inputHash?.slice(0,12)||'electronic')+(data.spinChannel?'-spin-'+data.spinChannel:'');
  if(data.bands)button('Bant verisini CSV indir',()=>downloadElectronicBlob(new Blob([electronicCsv(data,'bands')],{type:'text/csv;charset=utf-8'}),stem+'-bands.csv'));
  if(data.dos)button('DOS / PDOS verisini CSV indir',()=>downloadElectronicBlob(new Blob([electronicCsv(data,'dos')],{type:'text/csv;charset=utf-8'}),stem+'-dos-pdos.csv'));
  button('Grafikleri SVG indir',()=>downloadElectronicBlob(new Blob([serializeElectronicPlots(plots,data,window).text],{type:'image/svg+xml;charset=utf-8'}),stem+'.svg'));

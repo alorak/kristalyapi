@@ -734,6 +734,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label class="field"><span>API erişim anahtarı</span><input id="qeApiToken" type="password" autocomplete="off" placeholder="QE_API_TOKEN"></label>
      <label class="field"><span>Sunucu iş akışı</span><select id="qeJobWorkflow"><option value="selected">Seçili SCF / relaksasyon</option><option value="electronic">SCF → bant → DOS / PDOS</option></select></label>
      <div id="qeElectronicSettings" class="qe-workflow" hidden>
+      <label class="field"><span>Elektronik spin modu</span><select id="qeElectronicSpin"><option value="unpolarized">Spinsiz · mevcut referanslar</option><option value="polarized">Kollineer spin ↑ / ↓ · nötr hücre</option></select></label>
+      <div id="qeSpinSettings" hidden>
+       <label class="field"><span>Element başına başlangıç polarizasyonu (−1 … 1)</span><textarea id="qeSpinSeeds" rows="2" maxlength="1000" placeholder="Si 0.1" spellcheck="false"></textarea></label>
+       <label class="field"><span>SCF Gaussian genişliği (Ry)</span><input id="qeSpinSmearing" type="number" min="0.001" max="0.05" step="0.001" value="0.01"></label>
+       <p class="hint">Her element için bir satır girin: Mo 0.1, S 0.0. En az bir tohum sıfırdan farklı olmalı. nbnd bu korumacı iş akışında nötr değerlik elektron sayısından az olamaz. Spin hesabı Gaussian SCF doluluğunu kullanır; açık DOS ayarları gereklidir. SOC, yüklü kusurlar ve aynı elementin farklı altörgü spinleri bu akışta desteklenmez.</p>
+      </div>
       <p id="qeElectronicSourceStatus" class="note">Kaynak: aktif yapı.</p>
       <button id="qeElectronicUseActive" type="button">Elektronik hesapta aktif yapıyı kullan</button>
       <div class="qe-form-grid">
