@@ -155,7 +155,11 @@ function report(s){$('notice').textContent=s;$('notice').classList.toggle('visib
 function download(filename,content,mime){const blob=content instanceof Blob?content:new Blob([content],{type:mime||'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),600);}
 function safeName(s){return String(s).normalize('NFKD').replace(/[^\w-]+/g,'_').slice(0,48)||'kristal';}
 
-/* Small camera-locked XYZ triad rendered as lightweight SVG (not in the 3D scene). */
+/* Camera-aligned compass. Cartesian XYZ and crystallographic a/b/c use separate
+   scientific frames: lattice directions come from the actual validated cell. */
+const AXIS_COMPASS_KEY='kristalyapi.axis-compass.v1';
+let axisGizmoMode='cartesian',axisGizmoLastSignature=null;
+/* Lightweight SVG triad is shared by the live view and all image exports. */
 const GIZMO_AXES = [
  {label:'X',direction:[1,0,0],color:'#e24b4b'},
  {label:'Y',direction:[0,1,0],color:'#23a45b'},
@@ -164,6 +168,14 @@ const GIZMO_AXES = [
 let axisGizmoParts=[],axisGizmoLastRotation=null;
 function initAxisGizmo(){
  const svg=$('axisGizmoSvg'),ns='http://www.w3.org/2000/svg',center=svg.querySelector('circle');
+ try{axisGizmoMode=localStorage.getItem(AXIS_COMPASS_KEY)==='lattice'?'lattice':'cartesian';}catch{}
+ $('axisCompassMode').value=axisGizmoMode;
+ $('axisCompassMode').addEventListener('change',event=>{
+  axisGizmoMode=event.target.value==='lattice'?'lattice':'cartesian';
+  axisGizmoLastSignature=null;
+  try{localStorage.setItem(AXIS_COMPASS_KEY,axisGizmoMode);}catch{}
+  updateAxisGizmo();
+ });
  for(const axis of GIZMO_AXES){
   const group=document.createElementNS(ns,'g');
   const line=document.createElementNS(ns,'line');
@@ -177,22 +189,40 @@ function initAxisGizmo(){
   axisGizmoParts.push({axis,group,line,arrow,text});
  }
 }
-function gizmoProjection(cameraQuaternion){
+function compassAxes(mode='cartesian',cell=state.cell){
+ if(!['cartesian','lattice'].includes(mode))throw Error('Geçersiz yön göstergesi sistemi.');
+ if(mode==='cartesian')return GIZMO_AXES;
+ // Angstrom lattice lengths must not alter screen arrow lengths. Normalize each
+ // direct-space basis vector independently, preserving alpha/beta/gamma angles.
+ const vectors=basis(cell);
+ return GIZMO_AXES.map((axis,i)=>({label:['a','b','c'][i],
+  direction:vectors[i].clone().normalize().toArray(),color:axis.color}));
+}
+function gizmoProjection(cameraQuaternion,cell=state.cell,mode='cartesian'){
  const inverse=cameraQuaternion.clone().invert();
- return GIZMO_AXES.map(a=>{
+ return compassAxes(mode,cell).map(a=>{
   const v=new THREE.Vector3(...a.direction).applyQuaternion(inverse);
   return {label:a.label,x:v.x,y:-v.y,depth:v.z};
  });
 }
 function updateAxisGizmo(){
  if(!camera||!axisGizmoParts.length)return;
- if(axisGizmoLastRotation&&axisGizmoLastRotation.angleTo(camera.quaternion)<0.0002)return;
+ // Updating only on camera rotations would leave a/b/c stale after cell edits.
+ const signature=axisGizmoMode+'|'+(axisGizmoMode==='lattice'?
+  ['a','b','c','alpha','beta','gamma'].map(k=>state.cell[k]).join(','):'');
+ if(axisGizmoLastSignature===signature&&axisGizmoLastRotation&&
+    axisGizmoLastRotation.angleTo(camera.quaternion)<0.0002)return;
+ axisGizmoLastSignature=signature;
  if(!axisGizmoLastRotation)axisGizmoLastRotation=camera.quaternion.clone();
  else axisGizmoLastRotation.copy(camera.quaternion);
  const svg=$('axisGizmoSvg'),center=svg.querySelector('circle');
- const coordinates=gizmoProjection(camera.quaternion);
+ svg.setAttribute('aria-label',axisGizmoMode==='lattice'?
+  'Kristalografik yön göstergesi: a kırmızı, b yeşil, c mavi':
+  'Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi');
+ const coordinates=gizmoProjection(camera.quaternion,state.cell,axisGizmoMode);
  const ordered=axisGizmoParts.map((part,i)=>({part,...coordinates[i]})).sort((a,b)=>a.depth-b.depth);
- for(const {part,x,y,depth} of ordered){
+ for(const {part,label,x,y,depth} of ordered){
+  part.text.textContent=label;
   const length=Math.hypot(x,y),radius=Math.max(6,38*length);
   const dx=length>1e-4?x/length:0,dy=length>1e-4?y/length:-1;
   const tipX=60+dx*radius,tipY=58+dy*radius;
