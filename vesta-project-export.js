@@ -21,7 +21,10 @@ function triplet(hex){
 }
 function title(value){
  const raw=String(value??'Kristal Yapı').trim();
- return (raw.replace(/[\r\n\u0000-\u001f]+/g,' ').slice(0,110)||'Kristal Yapi');
+ const compact=(raw.replace(/[\r\n\u0000-\u001f]+/g,' ').slice(0,110)||'Kristal Yapi');
+ // The current importer also searches bare VESTA section tokens line-wise.
+ // Do not allow a project name such as CELLP, STRUC or POLYP to shadow one.
+ return /^[A-Z][A-Z0-9_]*$/.test(compact)?'Kristal '+compact:compact;
 }
 function safeBounds(source){
  const bounds=source??[[0,1],[0,1],[0,1]];
