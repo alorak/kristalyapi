@@ -1,0 +1,430 @@
+{
+  "schema": "kristalyapi.qe-electronic-convergence.v1",
+  "status": "passed",
+  "scope": "Finite empty-band and NSCF-mesh stability at fixed accepted D3 geometry, PBE/scalar/unpolarized and sigma=0.01 Ry. DOS width is sensitivity only, not a zero-width/optical/SOC acceptance.",
+  "reference": {
+    "evidence_path": "validation-results/qe-mos2-d4-20261029-amd64",
+    "source_commit": "d25e112312acd6f02591c0abe5b03acc5ed3b024",
+    "summary_sha256": "32a36d14d770e3afa819d784ca3e7f1c45c6cda520119ae8c07c5c2e4981fc8e",
+    "result_sha256": "37e06f68cd42190449bd17f5687f91f92b0d9ba2a449b7a4b0146ece3b595a87",
+    "structure_hash": "daeab818c9cee40c63f1fbb58688c2ee3aac0d5ab13363147c07061e32f62063"
+  },
+  "errors": {},
+  "source_commit": "64530c73ae34112a1575c66002f3b1434037c2e5",
+  "cases": {
+    "reference-d4": {
+      "job_id": "a0ddc0be9ddb4aa4a6f342de4179dbcd",
+      "sampled_nscf": {
+        "vbm_ev": -1.8069,
+        "cbm_ev": -0.0458,
+        "gap_ev": 1.7610999999999999,
+        "kpoints": 30,
+        "bands": 26,
+        "occupied_bands": 13
+      }
+    },
+    "nbnd32-k16-s010": {
+      "job_id": "eeff16c318ec4e8db11a50100c000c92",
+      "sampled_nscf": {
+        "vbm_ev": -1.8069,
+        "cbm_ev": -0.0458,
+        "gap_ev": 1.7610999999999999,
+        "kpoints": 30,
+        "bands": 32,
+        "occupied_bands": 13
+      }
+    },
+    "nbnd40-k16-s010": {
+      "job_id": "c9afe82a09d24a8d853604dfba35633c",
+      "sampled_nscf": {
+        "vbm_ev": -1.8069,
+        "cbm_ev": -0.0458,
+        "gap_ev": 1.7610999999999999,
+        "kpoints": 30,
+        "bands": 40,
+        "occupied_bands": 13
+      }
+    },
+    "nbnd40-k18-s010": {
+      "job_id": "2151e314aad84bafb583fdfd35ef110c",
+      "sampled_nscf": {
+        "vbm_ev": -1.7982,
+        "cbm_ev": -0.1019,
+        "gap_ev": 1.6963,
+        "kpoints": 37,
+        "bands": 40,
+        "occupied_bands": 13
+      }
+    },
+    "nbnd40-k24-s010": {
+      "job_id": "fc5a62e66cf7435d92220e5796575074",
+      "sampled_nscf": {
+        "vbm_ev": -1.7982,
+        "cbm_ev": -0.1019,
+        "gap_ev": 1.6963,
+        "kpoints": 61,
+        "bands": 40,
+        "occupied_bands": 13
+      }
+    },
+    "nbnd40-k24-s005": {
+      "job_id": "2d400641a4834cfe8a98dcabb03fc70f",
+      "sampled_nscf": {
+        "vbm_ev": -1.7982,
+        "cbm_ev": -0.1019,
+        "gap_ev": 1.6963,
+        "kpoints": 61,
+        "bands": 40,
+        "occupied_bands": 13
+      }
+    },
+    "nbnd40-k24-s0025": {
+      "job_id": "55d9b8a6812d4c6eaee5f0f6ddbb1ff7",
+      "sampled_nscf": {
+        "vbm_ev": -1.7982,
+        "cbm_ev": -0.1019,
+        "gap_ev": 1.6963,
+        "kpoints": 61,
+        "bands": 40,
+        "occupied_bands": 13
+      }
+    }
+  },
+  "pairs": [
+    {
+      "axis": "nbnd",
+      "from": "nbnd32-k16-s010",
+      "to": "nbnd40-k16-s010",
+      "gated": true,
+      "common_path_band_delta_ev": 0.0,
+      "sampled_nscf_edge_deltas_ev": {
+        "vbm_ev": 0.0,
+        "cbm_ev": 0.0,
+        "gap_ev": 0.0
+      },
+      "dos_relative_l1": 0.0,
+      "pdos_relative_l1": {
+        "Mo-d": 0.0,
+        "S-p": 0.0
+      },
+      "comparison_grid_ev": 0.01,
+      "underlying_nscf_spectrum_delta_ev": null,
+      "sensitivity_only": false,
+      "checks": [
+        {
+          "quantity": "common_lowest_path_bands_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_vbm_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_cbm_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_gap_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "dos_relative_l1",
+          "value": 0.0,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "Mo-d_relative_l1",
+          "value": 0.0,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "S-p_relative_l1",
+          "value": 0.0,
+          "limit": 0.05,
+          "passed": true
+        }
+      ],
+      "convergence_passed": true,
+      "integrity_passed": true
+    },
+    {
+      "axis": "nscf_k",
+      "from": "nbnd40-k18-s010",
+      "to": "nbnd40-k24-s010",
+      "gated": true,
+      "common_path_band_delta_ev": 0.0,
+      "sampled_nscf_edge_deltas_ev": {
+        "vbm_ev": 0.0,
+        "cbm_ev": 0.0,
+        "gap_ev": 0.0
+      },
+      "dos_relative_l1": 0.03979410569488842,
+      "pdos_relative_l1": {
+        "Mo-d": 0.026040724063240386,
+        "S-p": 0.04476878592016315
+      },
+      "comparison_grid_ev": 0.01,
+      "underlying_nscf_spectrum_delta_ev": null,
+      "sensitivity_only": false,
+      "checks": [
+        {
+          "quantity": "common_lowest_path_bands_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_vbm_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_cbm_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_gap_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "dos_relative_l1",
+          "value": 0.03979410569488842,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "Mo-d_relative_l1",
+          "value": 0.026040724063240386,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "S-p_relative_l1",
+          "value": 0.04476878592016315,
+          "limit": 0.05,
+          "passed": true
+        }
+      ],
+      "convergence_passed": true,
+      "integrity_passed": true
+    },
+    {
+      "axis": "dos_width",
+      "from": "nbnd40-k24-s005",
+      "to": "nbnd40-k24-s0025",
+      "gated": false,
+      "common_path_band_delta_ev": 0.0,
+      "sampled_nscf_edge_deltas_ev": {
+        "vbm_ev": 0.0,
+        "cbm_ev": 0.0,
+        "gap_ev": 0.0
+      },
+      "dos_relative_l1": 0.15345036403474213,
+      "pdos_relative_l1": {
+        "Mo-d": 0.158551752350124,
+        "S-p": 0.15888445660779044
+      },
+      "comparison_grid_ev": 0.01,
+      "underlying_nscf_spectrum_delta_ev": 0.0,
+      "sensitivity_only": true,
+      "checks": [
+        {
+          "quantity": "underlying_nscf_spectrum_integrity_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "unchanged_explicit_path_integrity_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        }
+      ],
+      "convergence_passed": null,
+      "integrity_passed": true
+    },
+    {
+      "axis": "nbnd",
+      "from": "reference-d4",
+      "to": "nbnd32-k16-s010",
+      "common_path_band_delta_ev": 0.0,
+      "sampled_nscf_edge_deltas_ev": {
+        "vbm_ev": 0.0,
+        "cbm_ev": 0.0,
+        "gap_ev": 0.0
+      },
+      "dos_relative_l1": 0.0005978145915278247,
+      "pdos_relative_l1": {
+        "Mo-d": 0.0004997680063145881,
+        "S-p": 0.0006782543660272044
+      },
+      "comparison_grid_ev": 0.02,
+      "underlying_nscf_spectrum_delta_ev": null,
+      "sensitivity_only": false,
+      "checks": [
+        {
+          "quantity": "common_lowest_path_bands_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_vbm_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_cbm_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_gap_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "dos_relative_l1",
+          "value": 0.0005978145915278247,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "Mo-d_relative_l1",
+          "value": 0.0004997680063145881,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "S-p_relative_l1",
+          "value": 0.0006782543660272044,
+          "limit": 0.05,
+          "passed": true
+        }
+      ],
+      "convergence_passed": true,
+      "integrity_passed": true
+    },
+    {
+      "axis": "nscf_k",
+      "from": "nbnd40-k16-s010",
+      "to": "nbnd40-k18-s010",
+      "common_path_band_delta_ev": 0.0,
+      "sampled_nscf_edge_deltas_ev": {
+        "vbm_ev": 0.00869999999999993,
+        "cbm_ev": 0.056100000000000004,
+        "gap_ev": 0.06479999999999997
+      },
+      "dos_relative_l1": 0.060004355710809636,
+      "pdos_relative_l1": {
+        "Mo-d": 0.04202582284565156,
+        "S-p": 0.07708312422201789
+      },
+      "comparison_grid_ev": 0.01,
+      "underlying_nscf_spectrum_delta_ev": null,
+      "sensitivity_only": false,
+      "checks": [
+        {
+          "quantity": "common_lowest_path_bands_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_vbm_ev",
+          "value": 0.00869999999999993,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "sampled_nscf_cbm_ev",
+          "value": 0.056100000000000004,
+          "limit": 0.01,
+          "passed": false
+        },
+        {
+          "quantity": "sampled_nscf_gap_ev",
+          "value": 0.06479999999999997,
+          "limit": 0.01,
+          "passed": false
+        },
+        {
+          "quantity": "dos_relative_l1",
+          "value": 0.060004355710809636,
+          "limit": 0.05,
+          "passed": false
+        },
+        {
+          "quantity": "Mo-d_relative_l1",
+          "value": 0.04202582284565156,
+          "limit": 0.05,
+          "passed": true
+        },
+        {
+          "quantity": "S-p_relative_l1",
+          "value": 0.07708312422201789,
+          "limit": 0.05,
+          "passed": false
+        }
+      ],
+      "convergence_passed": false,
+      "integrity_passed": true
+    },
+    {
+      "axis": "dos_width",
+      "from": "nbnd40-k24-s010",
+      "to": "nbnd40-k24-s005",
+      "common_path_band_delta_ev": 0.0,
+      "sampled_nscf_edge_deltas_ev": {
+        "vbm_ev": 0.0,
+        "cbm_ev": 0.0,
+        "gap_ev": 0.0
+      },
+      "dos_relative_l1": 0.11104109437158757,
+      "pdos_relative_l1": {
+        "Mo-d": 0.12244541348978054,
+        "S-p": 0.12100170911700414
+      },
+      "comparison_grid_ev": 0.01,
+      "underlying_nscf_spectrum_delta_ev": 0.0,
+      "sensitivity_only": true,
+      "checks": [
+        {
+          "quantity": "underlying_nscf_spectrum_integrity_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "quantity": "unchanged_explicit_path_integrity_ev",
+          "value": 0.0,
+          "limit": 0.01,
+          "passed": true
+        }
+      ],
+      "convergence_passed": null,
+      "integrity_passed": true
+    }
+  ],
+  "broadening_converged": null,
+  "energy_alignment": "raw fixed-potential QE zero; no shifts, interpolation or rescaling"
+}

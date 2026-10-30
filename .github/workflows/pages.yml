@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -157,6 +158,11 @@ jobs:
         run: npm install --no-save --ignore-scripts @spglib/moyo-wasm@0.21.0
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+      - name: Reverify accepted D4.1 raw cohort and exported view without DFT
+        run: |
+          python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41-20261030-amd64
+          python tools/qe_convergence_view.py validation-results/qe-mos2-d41-20261030-amd64 --output /tmp/qe-convergence-view.json
+          cmp validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json /tmp/qe-convergence-view.json
       - name: Stage local scientific engine and site
         run: |
           mkdir -p public/vendor

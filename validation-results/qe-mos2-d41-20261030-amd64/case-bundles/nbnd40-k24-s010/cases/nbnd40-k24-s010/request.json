@@ -1,0 +1,110 @@
+{
+  "profile_id": "mos2-pbe",
+  "parameters": {
+    "calculation": "electronic",
+    "functional": "PBE",
+    "spin": "unpolarized",
+    "ecutwfc_ry": 120,
+    "ecutrho_ry": 960,
+    "kpoints": [
+      16,
+      16,
+      1
+    ]
+  },
+  "schema": "kristalyapi.qe-electronic-job.v1",
+  "structure": {
+    "periodic": true,
+    "cell_angstrom": [
+      [
+        3.18,
+        0.0,
+        0.0
+      ],
+      [
+        -1.59,
+        2.753960784034515,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        24.0
+      ]
+    ],
+    "atoms": [
+      {
+        "element": "Mo",
+        "fractional": [
+          0.0,
+          0.0,
+          0.5
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333,
+          0.6666666667,
+          0.5652426103
+        ]
+      },
+      {
+        "element": "S",
+        "fractional": [
+          0.3333333333,
+          0.6666666667,
+          0.4347573897
+        ]
+      }
+    ]
+  },
+  "electronic": {
+    "nbnd": 40,
+    "nscf_k": 24,
+    "band_path": [
+      {
+        "label": "Gamma",
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "M",
+        "k": [
+          0.5,
+          0,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "K",
+        "k": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "Gamma",
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "segments": 1
+      }
+    ],
+    "dos": {
+      "delta_e_ev": 0.01,
+      "degauss_ry": 0.01,
+      "energy_min_ev": -8.0,
+      "energy_max_ev": 6.0
+    }
+  }
+}
