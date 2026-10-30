@@ -7,6 +7,13 @@
 (() => {
  'use strict';
  const entries=[
+  ["HPC kaynak ve Slurm hazırlığı ↗", "HPC resources and Slurm preparation ↗"],
+  ["Görüntülenecek ilk bant (isteğe bağlı)", "First displayed band (optional)"],
+  ["Görüntülenecek son bant", "Last displayed band"],
+  ["Kaynak profili: ", "Resource profile: "],
+  ["Kaynak profili ön kontrolü başarısız", "Resource profile preflight failed"],
+  ["Kaynak profili: yalnız hazırlık", "Resource profile: preparation only"],
+
   ["Kaynağı belli hesap protokolleri", "Calculation protocols with recorded provenance"],
   ["Önce protokolün kapsamını inceleyin. Referansı yeni çalışma alanında hazırlamak veya yalnız ayarları aktarmak hesap başlatmaz.", "Review the protocol scope first. Preparing a reference workspace or copying settings does not start a calculation."],
   ["Referans protokol", "Reference protocol"],

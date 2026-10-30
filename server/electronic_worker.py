@@ -17,6 +17,7 @@ from qe_checkpoint import digest as checkpoint_digest
 
 
 from job_diagnostics import record_job,sample_job
+from resource_policy import current as resource_limits
 
 @record_job
 def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,limits,kill,
@@ -60,13 +61,15 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
             for flag,key in [('--dos-delta-e','delta_e_ev'),('--dos-degauss','degauss_ry'),
                              ('--dos-emin','energy_min_ev'),('--dos-emax','energy_max_ev')]:
                 argv.extend([flag,str(p[key])])
+        if 'band_window' in request['electronic']:
+            argv.extend(['--band-first',str(request['electronic']['band_window'][0]),'--band-last',str(request['electronic']['band_window'][1])])
         pause_file=root/'pause.request'
         if resuming and pause_file.exists():pause_file.unlink()
         argv.extend(['--pause-file',str(pause_file)])
         if resuming:argv.extend(['--resume','--expected-checkpoint-sha',job['checkpoint_sha256']])
         with (root/"pipeline.stdout").open("wb") as out,(root/"pipeline.stderr").open("wb") as err:
             process=subprocess.Popen(argv,cwd=root,stdout=out,stderr=err,start_new_session=True,
-                env={**os.environ,"OMP_NUM_THREADS":"2"},preexec_fn=limits)
+                env={**os.environ,"OMP_NUM_THREADS":str(resource_limits()["threads"])},preexec_fn=limits)
             deadline=time.monotonic()+timeout
             while process.poll() is None:
                 sample_job(process)

@@ -32,6 +32,7 @@ services:
       QE_ALLOWED_ORIGINS: "${QE_ALLOWED_ORIGINS:-https://alorak.github.io}"
       QE_ALLOWED_HOSTS: "${QE_ALLOWED_HOSTS:-localhost,127.0.0.1}"
       QE_PROBE_TIMEOUT: "8"
+      QE_RESOURCE_PROFILE_FILE: "${QE_RESOURCE_PROFILE_FILE:-}"
       QE_JOBS_ENABLED: "${QE_JOBS_ENABLED:-0}"
       QE_API_TOKEN: "${QE_API_TOKEN:-}"
       FORWARDED_ALLOW_IPS: "${QE_TRUSTED_PROXY_IPS:-127.0.0.1}"
@@ -45,6 +46,7 @@ services:
     healthcheck:
       disable: true
     environment:
+      QE_RESOURCE_PROFILE_FILE: "${QE_RESOURCE_PROFILE_FILE:-}"
       QE_JOB_TIMEOUT: "${QE_JOB_TIMEOUT:-3600}"
 
 volumes:

@@ -13,7 +13,20 @@ STAGES = ('relax', 'scf', 'bands', 'bands_pp', 'nscf', 'dos', 'projwfc')
 CGROUP = Path('/sys/fs/cgroup')
 
 
-def read_cgroup(root=CGROUP):
+def cgroup_path():
+    try:
+        for line in Path('/proc/self/cgroup').read_text().splitlines():
+            if line.startswith('0::'):
+                parts=Path(line[3:]).parts
+                if '..' not in parts:
+                    candidate=CGROUP/line[3:].lstrip('/')
+                    if candidate.is_dir():return candidate
+    except OSError:pass
+    return CGROUP
+
+
+def read_cgroup(root=None):
+    root=cgroup_path() if root is None else root
     def value(name):
         try:
             text = (root/name).read_text()[:4096].strip()
@@ -46,6 +59,7 @@ def classify(status, error, returncodes, oom_delta):
         return 'memory_allocation_failed'
     if any(x in (-9, 137, -15, 143) for x in returncodes): return 'process_killed_unconfirmed'
     if 'binary unavailable' in text: return 'solver_unavailable'
+    if 'resource profile' in text:return 'resource_policy_rejected'
     if 'checkpoint' in text and ('changed' in text or 'refusing resume' in text): return 'input_evidence_mismatch'
     if 'hash mismatch' in text or 'upf' in text and ('changed' in text or 'mismatch' in text):
         return 'input_evidence_mismatch'
@@ -144,7 +158,13 @@ def record_job(function):
     def wrapped(store, job, *args, **kwargs):
         if _ACTIVE.get() is not None: return function(store, job, *args, **kwargs)
         recorder = Recorder(store, job); token = _ACTIVE.set(recorder)
-        try: return function(store, job, *args, **kwargs)
+        try:
+            from resource_policy import for_job,scope
+            try:profile=for_job(job,store.root)
+            except (OSError,ValueError) as exc:
+                store.set_result(job['id'],'failed',error='Resource profile admission failed: '+str(exc)[:300]);return
+            if 'timeout' in kwargs:kwargs['timeout']=min(kwargs['timeout'],profile['max_wall_seconds'])
+            with scope(profile):return function(store, job, *args, **kwargs)
         finally:
             try: recorder.tick(final=True)
             finally: _ACTIVE.reset(token)

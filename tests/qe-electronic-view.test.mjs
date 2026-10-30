@@ -142,3 +142,10 @@ test('CSV preserves all atom/orbital groups and escapes untrusted energy labels'
  const csv=electronicCsv(data,'dos');assert.match(csv,/Mo_d_states_per_ev/);assert.match(csv,/atom_1_Mo_d_states_per_ev/);assert.ok(csv.includes('"\'=unsafe,""label"""'));
  assert.throws(()=>electronicCsv({bands:null,dos:null},'bands'));
 });
+
+test('large band windows and CSV retain original band numbers',()=>{
+ const raw=valid();raw.bands.band_index_start=101;raw.bands.total_bands=416;
+ const parsed=parseQeElectronicResult(raw);assert.equal(parsed.bands.firstBand,101);assert.equal(parsed.bands.totalBands,416);
+ assert.match(electronicCsv(parsed,'bands').split('\n')[0],/band_101_ev.*band_102_ev/);
+ raw.bands.band_index_start=416;assert.throws(()=>parseQeElectronicResult(raw));
+});

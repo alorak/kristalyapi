@@ -66,7 +66,7 @@ export async function inspectQeApi(address,{fetcher=fetch,timeoutMs=7000}={}){
   const ready=healthResponse.ok&&health.status==='ready'&&caps.engine.available===true;
   return {base,ready,version:String(caps.engine.version||'belirsiz').slice(0,60),
    apiVersion:caps.api_version,binaries:caps.binaries||{},status:health.status,
-   jobsEnabled};
+   jobsEnabled,resourceProfile:parseResourceProfile(caps.resource_profile)};
  }catch(error){
   if(controller.signal.aborted)
    throw Error('Bağlantı zaman aşımına uğradı. IP, port, CORS ve tarayıcı yerel ağ iznini kontrol edin.');
@@ -154,4 +154,15 @@ export async function pauseQeElectronicJob(address,token,jobId,opts={}){
 export async function resumeQeElectronicJob(address,token,jobId,opts={}){
  if(!(/^[a-f0-9]{32}$/.test(jobId)))throw Error('Geçerli iş kimliği gerekli.');
  return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/resume',{method:'POST',...opts});
+}
+
+export function parseResourceProfile(raw){
+ if(raw===undefined)return {id:'local-default',max_atoms:64,max_bands:128,max_nscf_k:24};
+ if(!raw||typeof raw.id!=='string'||!(/^[a-z][a-z0-9-]{1,39}$/.test(raw.id))||
+  !Number.isInteger(raw.max_atoms)||raw.max_atoms<1||raw.max_atoms>512||
+  !Number.isInteger(raw.max_bands)||raw.max_bands<1||raw.max_bands>2048||
+  !Number.isInteger(raw.max_nscf_k)||raw.max_nscf_k<2||raw.max_nscf_k>48)throw Error('Sunucu kaynak sınırları geçersiz.');
+ if(raw.execution_enabled!==undefined&&typeof raw.execution_enabled!=='boolean'||raw.sha256!==undefined&&!/^[a-f0-9]{64}$/.test(raw.sha256))throw Error('Sunucu kaynak profili kimliği geçersiz.');
+ return {id:raw.id,max_atoms:raw.max_atoms,max_bands:raw.max_bands,max_nscf_k:raw.max_nscf_k,
+  executionEnabled:raw.execution_enabled,sha256:raw.sha256};
 }

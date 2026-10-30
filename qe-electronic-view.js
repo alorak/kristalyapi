@@ -26,7 +26,10 @@ export function parseQeElectronicResult(data){
   if(!Array.isArray(curves)||!curves.length||curves.length>300)
    throw Error('Bant sayısı 1–300 arasında olmalı.');
   if(curves.length*d.length>120000)throw Error('Görselleştirme için en fazla 120.000 bant noktası desteklenir.');
-  output.bands={distance:d,curves:curves.map((v,i)=>{
+  const first=data.bands.band_index_start??1,total=data.bands.total_bands??curves.length;
+  if(!Number.isInteger(first)||!Number.isInteger(total)||first<1||total>2048||first+curves.length-1>total)
+   throw Error('Bant penceresi ve özgün bant indeksleri geçersiz.');
+  output.bands={distance:d,firstBand:first,totalBands:total,curves:curves.map((v,i)=>{
    const y=checkedArray(v,'Bant '+(i+1),20000);
    if(y.length!==d.length)throw Error('Bant k noktası sayıları eşleşmiyor.');
    return y;
@@ -179,6 +182,7 @@ function renderElectronicContent(container,data,energyWindow,linked,selection=nu
   heading.style.cssText='display:block;margin:14px 0 6px';
   heading.textContent='Elektronik bantlar · ham QE enerjileri';
   bandBox.append(heading);
+  if(data.bands.totalBands!==data.bands.curves.length){const windowNote=document.createElement('p');windowNote.textContent='Görüntülenen bantlar: '+data.bands.firstBand+'–'+(data.bands.firstBand+data.bands.curves.length-1)+' / '+data.bands.totalBands+'. Tam bant verisi ham dosyada korunur.';bandBox.append(windowNote);}
   const result=chart('QE elektronik bant yapısı','k-yolu uzaklığı','Enerji (eV)',
    data.bands.curves.map(y=>({x:data.bands.distance,y})),linked?480:660,linked?360:260,{yDomain:energyWindow});
   bandBox.append(result);
@@ -266,7 +270,7 @@ const csvCell=value=>typeof value==='number'?String(value):'"'+String(value??'')
 export function electronicCsv(data,kind){
  let header,columns;
  if(kind==='bands'&&data.bands){
-  const start=data.bands.bandIndexStart||1;
+  const start=data.bands.firstBand||1;
   header=['k_distance',...data.bands.curves.map((_,i)=>'band_'+(i+start)+'_ev')];columns=[data.bands.distance,...data.bands.curves];
  }else if(kind==='dos'&&data.dos){
   header=['energy_ev','total_dos_states_per_ev'];columns=[data.dos.energy,data.dos.values];
