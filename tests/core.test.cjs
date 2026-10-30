@@ -268,10 +268,11 @@ test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF
   const label=element({x:String(a.x),y:String(a.y),fill:a.color,stroke:'#ffffff','stroke-width':'3','font-size':'13'},a.label);
   return {getAttribute:key=>key==='opacity'?a.opacity:null,querySelector:key=>({line,polygon:arrow,text:label})[key]};
  });
- const center=element({cx:'60',cy:'58',r:'4',fill:'#69798a',stroke:'#ffffff','stroke-width':'1.5'});
+ const center=element({cx:'60',cy:'58',r:'4',fill:'#69798a',stroke:'#fff','stroke-width':'1.5'});
  const svg={querySelectorAll:()=>groups,querySelector:key=>key==='circle'?center:null};
  const shapes=api.axisGizmoVectorPrimitives(svg,{left:100,top:50},{left:112,top:80,width:120,height:120});
  assert.equal(shapes.length,10);
+ assert.equal(shapes.at(-1).stroke,'#ffffff','live shorthand #fff must be valid in SVG/PDF/EPS');
  assert.deepEqual(Array.from(new Set(shapes.map(s=>s.type))),['line','triangle','label','circle']);
  approx(shapes[0].x1,72);approx(shapes[0].y1,88);
  assert.deepEqual(Array.from(shapes.filter(s=>s.type==='label'),s=>s.text),['X','Y','Z']);
