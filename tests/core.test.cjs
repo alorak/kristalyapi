@@ -51,7 +51,7 @@ const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: 
 vm.createContext(context);
 // Helper ES modules run in their own function scope (as in the browser) and
 // only their exports become globals for the editor code.
-for(const file of ['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js']){
+for(const file of ['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','vesta-project-style.js','vesta-project-view.js']){
  const source=fs.readFileSync(path.join(__dirname,'..',file),'utf8').replace(/^import .*?;\s*$/gm,'');
  const names=[...source.matchAll(/^export (?:async )?(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]);
  vm.runInContext('Object.assign(globalThis,(function(){'+source.replace(/^export /gm,'')+'\nreturn {'+names.join(',')+'};})());',context);
