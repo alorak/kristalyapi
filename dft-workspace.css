@@ -197,3 +197,10 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 #dftPage .qe-convergence-summary tr[data-state=failed] td:nth-child(4){font-weight:700}
 #dftPage details.qe-convergence-all{margin:14px 0}
 #dftPage details.qe-convergence-all>summary{cursor:pointer;font-size:13px;font-weight:600;color:#2f5f8a}
+/* File pickers: a translatable label opens the visually hidden, still focusable native input. */
+#dftPage .dft-file-picker{position:relative;display:flex;align-items:center;gap:10px;min-width:0;padding:6px;border:1px dashed #c6d6e6;border-radius:8px;background:#fbfdff}
+#dftPage .dft-file-input{position:absolute;inset:0;width:1px;height:1px;opacity:0;overflow:hidden}
+#dftPage .dft-file-button{flex:0 0 auto;padding:7px 12px;border:1px solid #cfdde9;border-radius:6px;background:#f2f7fd;color:#2f5f8a;font-size:13px;font-weight:600;cursor:pointer}
+#dftPage .dft-file-button:hover{background:#e7f1fb;border-color:#a9c6df}
+#dftPage .dft-file-picker:focus-within{outline:2px solid #2c7cba;outline-offset:2px}
+#dftPage .dft-file-name{min-width:0;font-size:12px;color:#52697d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
