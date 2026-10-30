@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-from datetime import date
+import itertools
 import json
 import math
 from pathlib import Path
@@ -255,9 +255,15 @@ def compare_structure(first, later):
     for label, a in first["sites"].items():
         b = later["sites"][label]
         delta = [b["frac"][i] - a["frac"][i] for i in range(3)]
-        delta = [n - round(n) for n in delta]
-        cart = [A[i] * delta[0] + B[i] * delta[1] + C[i] * delta[2] for i in range(3)]
-        max_angstrom = max(max_angstrom, math.sqrt(sum(x*x for x in cart)))
+        center = [round(n) for n in delta]
+        # Nearest periodic image in a skew metric is NOT necessarily the
+        # independently rounded fractional vector. Check all 27 neighbors.
+        image_distances = []
+        for shift in itertools.product((-1, 0, 1), repeat=3):
+            d = [delta[i] - center[i] + shift[i] for i in range(3)]
+            cart = [A[i] * d[0] + B[i] * d[1] + C[i] * d[2] for i in range(3)]
+            image_distances.append(math.sqrt(sum(x*x for x in cart)))
+        max_angstrom = max(max_angstrom, min(image_distances))
     errors = {
         "maxCellLengthErrorA": max(abs(first["cell"][k] - later["cell"][k]) for k in ("a", "b", "c")),
         "maxCellAngleErrorDegrees": max(abs(first["cell"][k] - later["cell"][k]) for k in ("alpha", "beta", "gamma")),
