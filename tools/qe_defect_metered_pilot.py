@@ -226,7 +226,8 @@ def check_container_config(info, settings):
 def evaluated_status(report, output, metrics, prepared_case):
     if report.get("timed_out"):
         return "timed_out"
-    if report.get("oom_killed") or (metrics or {}).get("oom_kill_delta",0)>0:
+    oom_counter=(metrics or {}).get("oom_kill_delta") if isinstance(metrics,dict) else None
+    if report.get("oom_killed") or (type(oom_counter) is int and oom_counter>0):
         return "oom_observed"
     if report.get("exit_code")!=0:
         return "failed"
