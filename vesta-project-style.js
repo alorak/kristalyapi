@@ -11,10 +11,10 @@ const KNOWN={
  'ATOMT':'approximated','STYLE':'partial','BONDS':'partial','LABEL':'partial',
  'ISURF':'partial','IMPORT_DENSITY':'external_link_only',
  'IMPORT_STRUCTURE':'not_transferred','IMPORT_TEXTURE':'not_transferred',
- 'IMPORT_ORFFE':'not_transferred','VECTR':'not_transferred','VECTT':'not_transferred',
- 'VECTS':'not_transferred','THERI':'not_transferred','SCENE':'conditional',
+ 'IMPORT_ORFFE':'not_transferred','VECTR':'conditional','VECTT':'conditional',
+ 'VECTS':'conditional','THERI':'partial','SCENE':'conditional',
  'LMATRIX':'not_transferred','PLN2D':'not_transferred','HKLPP':'not_transferred',
- 'POLYP':'not_transferred','POLYS':'not_transferred','BONDP':'not_transferred',
+ 'POLYP':'approximated','POLYS':'not_transferred','BONDP':'not_transferred',
  'FORMP':'not_transferred','UCOLP':'not_transferred','SPLAN':'not_transferred',
  'SURFM':'not_transferred','SURFS':'partial','SECCL':'not_transferred',
  'SECTP':'not_transferred','SECTS':'not_transferred','TEXCL':'not_transferred',
@@ -29,10 +29,10 @@ const SKIPPED_NOTE={
  'PROJT':'Only opt-in projection mode preview; VESTA perspective factor not transferred.',
  'BKGRC':'VESTA background color is recorded but the app theme is preserved.',
  'LMATRIX':'Local/phase orientation matrix is NOT a camera; nonidentity LMATRIX blocks preview.',
- 'VECTR':'Atomic arrows/vectors are not imported as magnetic moments or displacements.',
- 'VECTT':'Vector radius/color styles are not transferred.',
- 'THERI':'Thermal ellipsoid settings/ADP are not inferred from the style block.',
- 'POLYP':'Polyhedron facet/center styles require explicit geometry validation.',
+ 'VECTR':'Untyped display arrows only; NEVER mapped to magnetic moment/velocity/force/displacement.',
+ 'VECTT':'RGB preview uses VECTT color; pen/radius flags not reproduced.',
+ 'THERI':'Site display factors are recorded; never converted to Uiso/Uij/betaij.',
+ 'POLYP':'Global facet RGB only, no topology/centers/opacity/facet parity.',
  'POLYS':'Polyhedron drawing mode is not transferred.',
  'IMPORT_STRUCTURE':'Externally linked structure is never opened automatically.',
  'IMPORT_TEXTURE':'Externally linked texture is never opened automatically.',
@@ -65,7 +65,7 @@ export function vesta3SectionTransferReport(lines){
   // LIGHTn and PROJT are typically inline key+parameters in real VESTA 3.x files.
   // Match only known keys; never interpret arbitrary numeric/title text as code.
   else{
-   const inline=/^\s*(LIGHT[0-3]|PROJT)\s+(?:[-+]?\d|\.)/.exec(line);
+   const inline=/^\s*(LIGHT[0-3]|PROJT|VECTS|THERI)\s+(?:[-+]?\d|\.)/.exec(line);
    if(inline)found.add(inline[1]);
   }
  }

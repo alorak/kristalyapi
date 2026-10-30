@@ -50,12 +50,18 @@ const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/g
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, TextEncoder, document: {getElementById(){return null;}} };
 vm.createContext(context);
 // Helper ES modules run in their own function scope (as in the browser) and
-// only their exports become globals for the editor code.
-for(const file of ['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','vesta-project-style.js','vesta-project-view.js']){
- const source=fs.readFileSync(path.join(__dirname,'..',file),'utf8').replace(/^import .*?;\s*$/gm,'');
- const names=[...source.matchAll(/^export (?:async )?(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]);
- vm.runInContext('Object.assign(globalThis,(function(){'+source.replace(/^export /gm,'')+'\nreturn {'+names.join(',')+'};})());',context);
+// only their exports become globals for the editor code. Isolated contexts
+// below load them too, because loadProject uses the VESTA module helpers.
+const HELPER_MODULES=['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js',
+ 'vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js'];
+function loadHelperModules(target){
+ for(const file of HELPER_MODULES){
+  const source=fs.readFileSync(path.join(__dirname,'..',file),'utf8').replace(/^import .*?;\s*$/gm,'');
+  const names=[...source.matchAll(/^export (?:async )?(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]);
+  vm.runInContext('Object.assign(globalThis,(function(){'+source.replace(/^export /gm,'')+'\nreturn {'+names.join(',')+'};})());',target);
+ }
 }
+loadHelperModules(context);
 const {tiffLzwDecode}=require('./tiff-lzw-decode.cjs');
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,readCcp4Map,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,volumeSignedIsoPair,volumeSurfaceStyleSpec,sliceContourStroke,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
@@ -486,7 +492,7 @@ test('per-site atom/polyhedron styles and fractional bounds survive validated pr
 test('Workspaces: independent crystals persist and active selection restores with ten-item validation',()=>{
  const sandbox={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,URL,
   document:{getElementById(){return null;}},window:{localStorage:{data:{},getItem(key){return this.data[key]??null;},setItem(key,value){this.data[key]=value;}}}};
- vm.createContext(sandbox);vm.runInContext(script,sandbox);
+ vm.createContext(sandbox);loadHelperModules(sandbox);vm.runInContext(script,sandbox);
  const initial=JSON.parse(vm.runInContext('JSON.stringify(lastCrystalPayload(state))',sandbox));
  const another=JSON.parse(JSON.stringify(initial));another.name='Yapı B';another.cell.a=7.25;
  const key='kristalyapi.workspaces.v1';
@@ -1405,7 +1411,7 @@ test('preset favorites store only allowlisted structure keys',()=>{
 test('Save dialog offers offline STL and binary glTF 3D exports alongside existing formats',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','vesta','vesta-loss','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');
@@ -2283,7 +2289,7 @@ test('Undo/Redo: controller restores editor snapshots without recording replay a
   URLSearchParams,
   document:{getElementById(id){return mockButtons[id]??(mockButtons[id]={disabled:true});}}
  };
- vm.createContext(isolated);
+ vm.createContext(isolated);loadHelperModules(isolated);
  const operations=[
   'build=function(){recordHistoryChange();return true;};',
   'syncControls=function(){};',
@@ -2386,7 +2392,7 @@ test('Layer manager: canonical order, visibility, opacity and color are bounded'
  assert.equal(layers.atoms.color,'');
  const order=Array.from(api.normalizedLayerOrder(['volume','atoms','volume','invalid']));
  assert.deepEqual(order.slice(0,2),['volume','atoms']);
- assert.equal(order.length,12);
+ assert.equal(order.length,13,'includes the VESTA display-vector layer');
  assert.match(html,/id="layerManager"/);
  assert.match(html,/id="adpVisible"/);
  assert.match(html,/id="adpLevel"/);
