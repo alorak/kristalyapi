@@ -22,7 +22,7 @@ import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cance
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 import { createTrubaPackage } from './qe-hpc-export.js';
 import { createTrubaPipelinePackage } from './qe-hpc-pipeline.js';
-import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.js';
+import { parseTrubaSummary,renderTrubaSummary,compareTrubaInputDigest } from './qe-truba-summary-view.js';
 import { parseTrubaPipelineSummary,renderTrubaPipelineSummary } from './qe-truba-pipeline-view.js';
 
 const $ = id => document.getElementById(id);
@@ -6928,8 +6928,20 @@ async function qeExportTrubaPipeline(){
  }catch(error){status.textContent='P1.2 paketi oluşturulamadı: '+error.message;inform('TRUBA P1.2: '+error.message);}
  finally{button.disabled=false;}
 }
+async function qeMatchCurrentInput(expectedHash){
+ try{
+  const {result}=qeBuildLocalInput();
+  const comparison=await compareTrubaInputDigest(result.text,expectedHash);
+  return comparison.matches?
+   ' Etkin yapı ve DFT hazırlık ayarlarının ürettiği QE girdi SHA-256 değeri eşleşiyor (bilimsel kabul değildir).':
+   ' Uyarı: Etkin yapı/DFT ayarlarının ürettiği QE girdi SHA-256 değeri farklı; sonucu mevcut kristale uygulamayın.';
+ }catch(error){
+  return ' Etkin yapı/DFT hazırlık girdisi oluşturulamadığından SHA-256 karşılaştırması yapılamadı.';
+ }
+}
 async function qeOpenTrubaSummary(){
  const status=$('qeHpcSummaryStatus'),container=$('qeHpcSummaryView');
+ const workspaceId=activeWorkspaceId;
  container.replaceChildren();
  try{
   const file=$('qeHpcSummaryFile').files?.[0];
@@ -6937,10 +6949,14 @@ async function qeOpenTrubaSummary(){
   const data=JSON.parse(await file.text());
   const isPipeline=data?.schema==='kristalyapi.truba-qe-pipeline-summary.v1';
   const summary=isPipeline?parseTrubaPipelineSummary(data):parseTrubaSummary(data);
+  const expected=isPipeline?summary.structure_in_sha256:summary.integrity.input_sha256_expected;
+  const comparison=await qeMatchCurrentInput(expected);
+  if(activeWorkspaceId!==workspaceId||$('qeHpcSummaryFile').files?.[0]!==file)
+   throw Error('Çalışma alanı veya dosya değişti; sonucu yeniden açın.');
   if(isPipeline)renderTrubaPipelineSummary(container,summary);
   else renderTrubaSummary(container,summary);
   status.textContent='TRUBA '+(isPipeline?'aşamalı ':'')+'özet dosyası okundu: '+summary.status+
-   '. Mevcut kristalle yapı eşleşmesi doğrulanmaz; hesap gönderilmez.';
+   '.'+comparison+' Hesap gönderilmez veya mevcut kristal otomatik değiştirilmez.';
  }catch(error){status.textContent='TRUBA özeti okunamadı: '+error.message;}
 }
 let qeActiveJob=null;
@@ -7493,9 +7509,12 @@ async function qeLoadElectronicResults(){
   if(input.files?.[0]!==file||activeWorkspaceId!==workspaceId)
    throw Error('Dosya veya çalışma alanı değişti; dosyayı yeniden açın.');
   const parsed=parseQeElectronicResult(JSON.parse(raw));
-  renderQeElectronicResults(container,parsed);
   const summary=parsed.channels?.up||parsed;
-  status.textContent=(parsed.channels?'Spin ↑ / ↓. ':'')+(summary.trubaProvenance?'TRUBA P1.3 kaynak SHA kayıtları okunmuştur; bu bilimsel onay değildir. ':'')+'Elektronik sonuç yerel dosyadan yüklendi. Bant sayısı: '+
+  const comparison=summary.trubaProvenance&&summary.inputHash?await qeMatchCurrentInput(summary.inputHash):'';
+  if(input.files?.[0]!==file||activeWorkspaceId!==workspaceId)
+   throw Error('Dosya veya çalışma alanı değişti; dosyayı yeniden açın.');
+  renderQeElectronicResults(container,parsed);
+  status.textContent=(parsed.channels?'Spin ↑ / ↓. ':'')+(summary.trubaProvenance?'TRUBA P1.3 kaynak SHA kayıtları okunmuştur; bu bilimsel onay değildir. ':'')+'Elektronik sonuç yerel dosyadan yüklendi.'+comparison+' Bant sayısı: '+
    (summary.bands?.curves.length||0)+'; DOS noktası: '+(summary.dos?.energy.length||0)+'.';
  }catch(error){
   container.replaceChildren();status.textContent='Elektronik veri: '+error.message;
