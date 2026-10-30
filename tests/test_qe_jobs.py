@@ -245,6 +245,8 @@ class D2Tests(unittest.TestCase):
             headers=self.auth,json={"label":"x"*61}).status_code,422)
         self.assertEqual(self.client.post("/api/v1/calculations/"+ids[0]+"/label",
             json={"label":"outside"}).status_code,401)
+        self.assertEqual(self.client.post("/api/v1/calculations/"+ids[0]+"/label",
+            headers={**self.auth,"Content-Type":"application/json"},content=b"x"*700).status_code,413)
         self.assertEqual(self.store.get(ids[0])["structure_hash"],h)
         # Reopening the SQLite store retains labels and older snapshot rows.
         reloaded=JobStore(self.jobs)
