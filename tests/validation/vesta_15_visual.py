@@ -221,7 +221,7 @@ def metrics(vesta: tuple[int, int, bytes], app: tuple[int, int, bytes],
     }, bytes(triptych)
 
 
-def audited_capture(root: Path, item: dict, bg: tuple[int, int, int]) -> tuple[int, int, bytes]:
+def audited_capture(root: Path, item: dict, bg: tuple[int, int, int], expected_size: list[int]) -> tuple[int, int, bytes]:
     if not isinstance(item.get("captureMethod"), str) or len(item["captureMethod"].strip()) < 5:
         raise ValueError("Document the actual screenshot export method")
     path = safe_file(root, item.get("path"))
@@ -229,7 +229,10 @@ def audited_capture(root: Path, item: dict, bg: tuple[int, int, int]) -> tuple[i
     stated = item.get("sha256")
     if not isinstance(stated, str) or not re.fullmatch(r"[0-9a-f]{64}", stated) or digest(content) != stated:
         raise ValueError("Actual PNG SHA-256 missing/mismatched")
-    return crop(png_rgb(path, bg), item.get("roi"))
+    image = png_rgb(path, bg)
+    if list(image[:2]) != expected_size:
+        raise ValueError("Actual PNG canvas size differs from fixed outputPixels; crop exported viewer content, not browser UI")
+    return crop(image, item.get("roi"))
 
 
 def run(cases: list[dict], evidence_file: Path | None, output_dir: Path,
@@ -267,10 +270,13 @@ def run(cases: list[dict], evidence_file: Path | None, output_dir: Path,
         if row is not None:
             if row.get("sourceSha256") != case["sourceSha256"] or row.get("settings") != case["settings"]:
                 raise ValueError(f"Unmatched source or camera/view/volume settings for {cid}")
+            if case["kind"] == "volume" and case["settings"].get("isoLevel") is None:
+                raise ValueError("Volumetric V15 scene requires a pinned physical scalar isolevel before real capture")
             root = evidence_file.resolve().parent
             bg = tuple(case["settings"]["backgroundRGB"])
-            left = audited_capture(root, row["vesta"], bg)
-            right = audited_capture(root, row["kristalyapi"], bg)
+            expected_size = case["settings"]["outputPixels"]
+            left = audited_capture(root, row["vesta"], bg, expected_size)
+            right = audited_capture(root, row["kristalyapi"], bg, expected_size)
             numerical, triptych = metrics(left, right, bg)
             triptych_path = output_dir / (cid + "-comparison.png")
             png_write(triptych_path, left[0] * 3, left[1], triptych)
