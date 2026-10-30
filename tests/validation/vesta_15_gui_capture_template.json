@@ -1,0 +1,63 @@
+{
+  "vestaGuiExecuted": false,
+  "vestaVersion": "3.5.8",
+  "operator": "REPLACE_AFTER_REAL_CAPTURE",
+  "platform": "REPLACE_AFTER_REAL_CAPTURE",
+  "kristalyapiCommit": "REPLACE_WITH_FULL_COMMIT_SHA",
+  "cases": [
+    {
+      "id": "nacl-001-structure",
+      "sourceSha256": "REPLACE_WITH_COMPUTED_SOURCE_SHA256",
+      "settings": {
+        "projection": "orthographic",
+        "viewDirection": "[001]",
+        "upDirection": "[010]",
+        "displayBoundsFractional": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "backgroundRGB": [
+          255,
+          255,
+          255
+        ],
+        "outputPixels": [
+          1024,
+          768
+        ]
+      },
+      "vesta": {
+        "path": "actual-vesta.png",
+        "sha256": "REPLACE_WITH_PNG_SHA256",
+        "roi": [
+          0,
+          0,
+          1024,
+          768
+        ],
+        "captureMethod": "File > Export Raster Image"
+      },
+      "kristalyapi": {
+        "path": "actual-kristalyapi.png",
+        "sha256": "REPLACE_WITH_PNG_SHA256",
+        "roi": [
+          0,
+          0,
+          1024,
+          768
+        ],
+        "captureMethod": "Save > PNG"
+      }
+    }
+  ]
+}
