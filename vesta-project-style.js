@@ -32,7 +32,7 @@ const SKIPPED_NOTE={
  'VECTR':'Untyped display arrows only; NEVER mapped to magnetic moment/velocity/force/displacement.',
  'VECTT':'RGB preview uses VECTT color; pen/radius flags not reproduced.',
  'THERI':'Site display factors are recorded; never converted to Uiso/Uij/betaij.',
- 'POLYP':'Global facet RGB only, no topology/centers/opacity/facet parity.'
+ 'POLYP':'Global facet RGB only, no topology/centers/opacity/facet parity.',
  'POLYS':'Polyhedron drawing mode is not transferred.',
  'IMPORT_STRUCTURE':'Externally linked structure is never opened automatically.',
  'IMPORT_TEXTURE':'Externally linked texture is never opened automatically.',
