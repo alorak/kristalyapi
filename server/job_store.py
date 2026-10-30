@@ -84,7 +84,7 @@ class JobStore:
             raise ValueError("Invalid calculation filter")
         if not isinstance(query,str) or len(query)>64 or any(ord(c)<32 for c in query):
             raise ValueError("Invalid search term")
-        filters=[],args=[]
+        filters=[];args=[]
         if status:
             filters.append("status=?");args.append(status)
         if calculation:
