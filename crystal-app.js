@@ -9908,6 +9908,7 @@ function pageFromHash(hash){
 }
 let reciprocalPage=null;
 let powderLesson=null,semiconductorLesson=null,semiconductorP0=null;
+let previousPowderSubtab=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
  const powderFamily=page==='powder'||reciprocal;
@@ -9928,6 +9929,9 @@ function syncLibraryNavigation(){
  $('pwPowderPane').hidden=reciprocal;
  $('reciprocalPage').hidden=!reciprocal;
  $('semiconductorPage').hidden=page!=='semiconductor';
+ // A hash switch may retain the old panel's internal scroll position.
+ if(powderFamily&&previousPowderSubtab!==page)$('powderPage').scrollTop=0;
+ previousPowderSubtab=powderFamily?page:null;
  for(const [id,selected] of [['pwTabPowder',!reciprocal],['pwTabReciprocal',reciprocal]]){
   $(id).setAttribute('aria-selected',String(selected));
   $(id).tabIndex=selected?0:-1;
