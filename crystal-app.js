@@ -6863,15 +6863,18 @@ async function qeExportTrubaPipeline(){
   const response=await fetch(new URL('./tools/qe_hpc_pipeline.py',document.baseURI));
   if(!response.ok)throw Error('P1.2 Python aşama hazırlayıcısı alınamadı.');
   const pipelineScript=await response.text();
-  const [converterResponse,pdosResponse]=await Promise.all([
-   fetch(new URL('./tools/qe_hpc_electronic.py',document.baseURI)),
-   fetch(new URL('./tools/qe_pdos.py',document.baseURI))
-  ]);
-  if(!converterResponse.ok||!pdosResponse.ok)
-   throw Error('P1.3 dönüştürücü veya PDOS yardımcı modülü yüklenemedi.');
-  const [converterScript,pdosHelperScript]=await Promise.all([
-   converterResponse.text(),pdosResponse.text()
-  ]);
+  let converterScript='',pdosHelperScript='';
+  if($('qeHpcConvertElectronic').checked){
+   const [converterResponse,pdosResponse]=await Promise.all([
+    fetch(new URL('./tools/qe_hpc_electronic.py',document.baseURI)),
+    fetch(new URL('./tools/qe_pdos.py',document.baseURI))
+   ]);
+   if(!converterResponse.ok||!pdosResponse.ok)
+    throw Error('P1.3 dönüştürücü veya PDOS yardımcı modülü yüklenemedi.');
+   [converterScript,pdosHelperScript]=await Promise.all([
+    converterResponse.text(),pdosResponse.text()
+   ]);
+  }
   const pkg=await createTrubaPipelinePackage({
    inputText:result.text,
    account:$('qeHpcAccount').value,partition:$('qeHpcPartition').value,
@@ -6889,7 +6892,7 @@ async function qeExportTrubaPipeline(){
   status.textContent='P1.2 ZIP hazır: '+pkg.manifest.stages.join(' → ')+
    '. Sırayla çalışma yalnız TRUBA üzerinde bash submit.sh komutuyla başlar. '+
    (pkg.missing.length?'Eksik UPF: '+pkg.missing.join(', '):'UPF dosyaları pakette.')+
-   ' P1.3: Başarılı sonuçta electronic-results.json oluşur; Sonuçları incele → Bant, DOS ve PDOS altında açabilirsiniz. Bant yolu/nbnd ve yakınsama kullanıcı tarafından doğrulanmalı.';
+   (pkg.manifest.electronic_converter_included?' P1.3: Başarılı sonuçta electronic-results.json oluşur; Sonuçları incele → Bant, DOS ve PDOS altında açabilirsiniz.':' P1.3 JSON dönüştürücü seçilmedi; yalnız ham hesap dosyaları üretilecek.')+' Bant yolu/nbnd ve yakınsama kullanıcı tarafından doğrulanmalı.';
  }catch(error){status.textContent='P1.2 paketi oluşturulamadı: '+error.message;inform('TRUBA P1.2: '+error.message);}
  finally{button.disabled=false;}
 }
