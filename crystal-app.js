@@ -4289,12 +4289,22 @@ function fit(){
  }
  currentSpan=span*2.2;
  orbit.target.set(...center);
+ camera.up.set(0,0,1);syncOrbitUp();lastCrystalView=null;
  camera.position.set(center[0]+span*1.3,center[1]-span*1.75,center[2]+span*1.35);
  camera.near=.01;camera.far=Math.max(1000,span*50);camera.updateProjectionMatrix();
  orbit.minDistance=.2;orbit.maxDistance=Math.max(300,span*20);
  resize();orbit.update();updateAtomLod();
 }
-function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);camera.lookAt(orbit.target);orbit.update();updateAtomLod();}
+/* OrbitControls fixes its orbit pole from camera.up when it is created.
+   Whenever up changes (crystallographic views, VESTA scene preview, saved
+   workspaces), move that pole too; otherwise the camera can reach a pose
+   where up is parallel to the view and lookAt degenerates. */
+function syncOrbitUp(){
+ if(!orbit?._quat)return;
+ orbit._quat.setFromUnitVectors(camera.up.clone().normalize(),new THREE.Vector3(0,1,0));
+ orbit._quatInverse.copy(orbit._quat).invert();
+}
+function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);syncOrbitUp();camera.lookAt(orbit.target);orbit.update();updateAtomLod();}
 function projectionVisibleHeight(view,distance){
  if(view.isPerspectiveCamera)return 2*distance*Math.tan(view.getEffectiveFOV()*Math.PI/360);
  if(view.isOrthographicCamera)return (view.top-view.bottom)/view.zoom;
@@ -4316,7 +4326,7 @@ function toggleProjection(){
   currentSpan=height;
   camera=new THREE.OrthographicCamera(-height/2,height/2,height/2,-height/2,old.near,old.far);
  }
- camera.up.copy(old.up);camera.position.copy(p);camera.quaternion.copy(old.quaternion);
+ camera.up.copy(old.up);camera.position.copy(p);camera.quaternion.copy(old.quaternion);syncOrbitUp();
  orbit.object=camera;orbit.target.copy(t);resize();orbit.update();updateAtomLod();
  $('projectionBtn').setAttribute('aria-pressed',String(!perspective));
  $('projectionBtn').setAttribute('aria-label',perspective?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
@@ -8130,7 +8140,7 @@ function restoreWorkspaceCamera(view){
  currentSpan=view.span;
  camera=view.perspective?new THREE.PerspectiveCamera(view.fov,1,view.near,view.far):
   new THREE.OrthographicCamera(-currentSpan/2,currentSpan/2,currentSpan/2,-currentSpan/2,view.near,view.far);
- camera.position.fromArray(view.position);camera.up.fromArray(view.up);camera.quaternion.fromArray(view.quaternion);
+ camera.position.fromArray(view.position);camera.up.fromArray(view.up);camera.quaternion.fromArray(view.quaternion);syncOrbitUp();
  perspective=!!view.perspective;orbit.object=camera;orbit.target.fromArray(view.target);
  resize();orbit.update();updateProjectionButton();return true;
 }
@@ -8538,7 +8548,7 @@ function applyVestaCameraPreview(view){
  if(preview.perspective!==null&&preview.perspective!==camera.isPerspectiveCamera)
   toggleProjection(); // Retains on-screen apparent size, not VESTA zoom.
  camera.position.fromArray(preview.position);
- camera.up.fromArray(preview.up);
+ camera.up.fromArray(preview.up);syncOrbitUp();
  camera.lookAt(orbit.target);orbit.update();
  camera.updateProjectionMatrix();updateAtomLod();updateProjectionButton();
  return true;
@@ -10847,7 +10857,7 @@ function viewAlongCrystal(indices,kind,label){
  const {direction,up,upAxis}=crystallographicView(basis(state.cell).map(v=>v.toArray()),indices,kind);
  const distance=camera.position.distanceTo(orbit.target)||20;
  camera.position.copy(orbit.target).add(new THREE.Vector3(...direction).multiplyScalar(distance));
- camera.up.set(...up);camera.lookAt(orbit.target);orbit.update();updateAtomLod();
+ camera.up.set(...up);syncOrbitUp();camera.lookAt(orbit.target);orbit.update();updateAtomLod();
  lastCrystalView={label,quaternion:camera.quaternion.clone()};
  $('viewDirectionStatus').textContent='Bakış: '+label+' · yukarı: '+upAxis;
 }
@@ -10863,7 +10873,7 @@ function rotateCrystalView(axis,degrees){
  let position=offset.toArray(),screenUp=up.toArray();
  if(axis==='roll')screenUp=rotateVector(screenUp,forward.toArray(),degrees);
  else{const k=(axis==='yaw'?up:right).toArray();position=rotateVector(position,k,degrees);screenUp=rotateVector(screenUp,k,degrees);}
- camera.position.copy(orbit.target).add(new THREE.Vector3(...position));camera.up.set(...screenUp);
+ camera.position.copy(orbit.target).add(new THREE.Vector3(...position));camera.up.set(...screenUp);syncOrbitUp();
  camera.lookAt(orbit.target);orbit.update();updateAtomLod();
 }
 
