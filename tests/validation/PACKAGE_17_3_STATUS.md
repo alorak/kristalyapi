@@ -79,7 +79,10 @@ Workflow tetikleme ve izinleri değiştirilmedi.
       kanıtlamadan otomatik elipsoid üretme.
 - [ ] POLYP/BONDP facet, saydamlık, komşuluk ve
       topoloji karşılaştırmasını bağımsız test et.
-- [ ] V17.4 güvenli VESTA 3.x export altkümesi ve gerçek
-      VESTA desktop round-trip, veri kaybı manifesti.
+- [x] V17.4 sınırlı P1 .vesta export ve SHA-pimli veri kaybı
+      manifesti; [tamamlanan kod kapsamı](PACKAGE_17_4_STATUS.md).
+- [ ] V17.4 gerçek VESTA desktop round-trip ve bilimsel kabul;
+      desktop GUI NOT_RUN, parity NOT_ESTABLISHED.
 
-**Sıradaki öneri:** V17.4 export ve round-trip altyapısı.
+**Sıradaki öneri:** V17.4'ün gerçek VESTA desktop kabulü,
+sonra V18 CIF2 ve simetri setting doğruluğu.
