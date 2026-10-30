@@ -621,5 +621,13 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [ ] **TRUBA P1.3 kabulü:** Gerçek orfoz SLURM/QE koşumu; en az
   Si ve MoS₂ spin-polarize olmayan referansla baştan sona elektronik
   sonuç JSON ve grafik gözlemi, ölçek/UPF/yakınsama denetimi.
-- [ ] **P1.4:** 300 bant üzeri büyük sistemler için açık grafik bant
+- [x] **P1.4 (kod):** 300 bant üzeri büyük sistemler için açık grafik bant
   penceresi; bilimsel niyetle seçilen nbnd'yi düşürmeden güvenli görünüm.
+
+- [x] **TRUBA P1.4 yazılımı:** Tam `nbnd` korunurken kullanıcı seçimiyle
+  1 tabanlı ilk/son bant penceresi; tüm ham bantların düşük bellekle
+  taranması, seçili bantların indeksli JSON/CSV gösterimi ve testler.
+- [ ] **TRUBA P1.4 gerçek kabul:** 300+ bantlı gerçek QE hesabında
+  SLURM/`bands.x` sonucu, 301–380 gibi açık grafik penceresi, eksiksiz
+  hash kanıtı ve DFT grafiği/CSV doğrulaması; bu CI için sentetik
+  veriden bağımsız olarak raporlanmalı.
