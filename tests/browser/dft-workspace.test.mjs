@@ -34,6 +34,24 @@ try{
  assert.equal(await page.locator('#dftNav').getAttribute('aria-current'),'page');
  assert.equal(await page.locator('#qeJobSubmit').count(),1);
  await page.locator('#languageTurkish').click();
+ assert.equal(await page.locator('#qeJobWorkflow').inputValue(),'relax-scf');
+ assert.equal(await page.locator('#qeCalcType').isVisible(),false,'local-only calculation type stays out of server mode');
+ assert.equal(await page.locator('#qeExportPw').isVisible(),false,'local export action is hidden in server mode');
+ await page.locator('input[name="dftPreparationMode"][value="file"]').check();
+ assert.equal(await page.locator('#qeJobWorkflow').isVisible(),false);
+ assert.equal(await page.locator('#qeCalcType').isVisible(),true);
+ assert.equal(await page.locator('#qeExportPw').isVisible(),true);
+ assert.equal(await page.locator('#qeForceThreshold').isVisible(),true,'local relaxation exposes force tolerance');
+ await page.locator('#qeCalcType').selectOption('scf');
+ assert.equal(await page.locator('#qeForceThreshold').isVisible(),false,'local SCF hides irrelevant force tolerance');
+ await page.locator('#qeOccupation').selectOption('smearing');
+ await page.locator('input[name="dftPreparationMode"][value="server"]').check();
+ assert.equal(await page.locator('#qeJobWorkflow').isVisible(),true);
+ assert.equal(await page.locator('#qeCalcType').isVisible(),false);
+ await page.locator('#qeJobWorkflow').selectOption('scf');
+ assert.equal(await page.locator('#qeForceThreshold').isVisible(),false,'server SCF hides relaxation controls');
+ await page.locator('#qeJobWorkflow').selectOption('relax-scf');
+ assert.equal(await page.locator('#qeForceThreshold').isVisible(),true,'server relaxation uses the shared force tolerance');
  await page.locator('#qeEcutwfc').fill('65');
  await page.locator('#qeJobWorkflow').selectOption('electronic');
  assert.equal(await page.locator('#qeElectronicSettings').isVisible(),true);
@@ -46,7 +64,7 @@ try{
  assert.equal(await page.locator('#dftSettingsNotice').isVisible(),true);
  assert.equal(await page.locator('[data-dft-section="ayarlar"]').getAttribute('aria-current'),'page');
  await page.locator('#qeJobProfile').fill('retained-profile');
- assert.match(await page.locator('#dftReadiness').textContent(),/bağlantıyı kontrol edin/);
+ assert.match(await page.locator('#dftReadiness').textContent(),/Hesap gönderimi/);
  assert.equal(await page.locator('#qeJobPause').isDisabled(),true);
  assert.equal(await page.locator('#qeJobResume').isDisabled(),true);
  await page.screenshot({path:path.join(artifacts,'dft-workspace-settings.png')});
@@ -118,7 +136,7 @@ try{
  assert.deepEqual(apiRequests,[],'template inspection/application must not call the compute server');
  // Synthetic read-only server transitions exercise polling without executing QE.
  const result=JSON.parse(await fs.readFile(path.join(root,'validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/result.json'),'utf8'));
- const jid=result.job_id;let serverStatus='running',statusReads=0,wrongProtocolHash=true;
+ const jid=result.job_id;let serverStatus='running',statusReads=0,wrongProtocolHash=true,degraded=false,executionDisabled=false;
  const {protocolById}=await import('../../qe-protocol-templates.js');const protocol=protocolById('mos2-d41');
  const row=()=>({job_id:jid,status:serverStatus,calculation:'electronic',structure_hash:result.structure_hash,created:'2026-10-29',can_pause:serverStatus==='running',can_resume:false});
  await page.route('http://127.0.0.1:8000/**',async route=>{
@@ -131,8 +149,9 @@ try{
   }
   assert.equal(req.method(),'GET','tracking must never submit or mutate jobs');
   let data;
-  if(pathname==='/api/health')data={engine:'quantum-espresso',api_version:'1',status:'ready',read_only:false};
-  else if(pathname==='/api/capabilities')data={engine:{id:'quantum-espresso',available:true,version:'7.2'},api_version:'1',job_submission_enabled:true,binaries:{'pw.x':true}};
+  if(pathname==='/api/health')data={engine:'quantum-espresso',api_version:'1',status:degraded?'degraded':'ready',read_only:false};
+  else if(pathname==='/api/capabilities')data={engine:{id:'quantum-espresso',available:!degraded,version:'7.2'},api_version:'1',
+   job_submission_enabled:true,binaries:{'pw.x':true},resource_profile:{id:'test-execution-profile',max_atoms:64,max_bands:128,max_nscf_k:24,execution_enabled:!executionDisabled}};
   else if(pathname==='/api/v1/calculations')data={jobs:[row()]};
   else if(pathname.endsWith('/diagnostics'))data={schema:'kristalyapi.qe-job-diagnostics.v1',job_id:jid,availability:'recorded',status:serverStatus,
    reason_code:serverStatus==='completed'?'completed':'in_progress',elapsed_seconds:3,active_stage:'nscf',resources:null,
@@ -146,6 +165,9 @@ try{
  await page.locator('#qeApiTest').click();
  await page.waitForFunction(()=>document.getElementById('dftConnectionChip').dataset.state==='token');
  assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),'true','a connection without a key keeps jobs locked');
+ await page.locator('#qeApiToken').fill('short');
+ assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),'true','short tokens cannot unlock jobs');
+ assert.match(await page.locator('#dftReadiness').textContent(),/32–256/);
  await page.locator('#qeApiToken').fill('test-only-token-aaaaaaaaaaaaaaaaaaaaaaaa');
  assert.equal(await page.locator('#dftConnectionChip').getAttribute('data-state'),'ready');
  assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),null);
@@ -159,6 +181,14 @@ try{
  wrongProtocolHash=false;
  await page.locator('#qeJobValidate').click();
  await page.waitForFunction(()=>document.getElementById('qeProtocolState').textContent.includes('ön kontrolüyle eşleşti'));
+ assert.equal(await page.locator('#qeJobPreflightState').getAttribute('data-state'),'passed');
+ await page.locator('[data-dft-section="hazirlik"]').click();
+ await page.locator('#qeEcutwfc').fill('125');
+ assert.equal(await page.locator('#qeJobPreflightState').getAttribute('data-state'),'stale','editing validated parameters must invalidate preflight');
+ await page.locator('#qeEcutwfc').fill('120');
+ await page.locator('[data-dft-section="isler"]').click();
+ await page.locator('#qeJobValidate').click();
+ await page.waitForFunction(()=>document.getElementById('qeJobPreflightState').dataset.state==='passed');
  await page.locator('[data-dft-section="hazirlik"]').click();
  await page.locator('.qe-protocol-card').screenshot({path:path.join(artifacts,'dft-workspace-protocol.png')});
  await page.locator('[data-dft-section="isler"]').click();
@@ -201,6 +231,15 @@ try{
  assert.equal(await page.locator('#qeSpinSeeds').inputValue(),'Mo 0.1\nS 0');
  await page.locator('#qeElectronicSpin').selectOption('unpolarized');
  assert.equal(await page.locator('#qeSpinSettings').isVisible(),false);
+ await page.locator('[data-dft-section="ayarlar"]').click();
+ executionDisabled=true;
+ await page.locator('#qeApiTest').click();
+ await page.waitForFunction(()=>document.getElementById('dftConnectionState').textContent.includes('yalnız hazırlık'));
+ assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),'true','preparation-only resource profile cannot unlock jobs');
+ executionDisabled=false;degraded=true;
+ await page.locator('#qeApiTest').click();
+ await page.waitForFunction(()=>document.getElementById('dftConnectionState').textContent.includes('hazır değil'));
+ assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),'true','degraded QE solver cannot unlock jobs');
  assert.deepEqual(errors,[]);
  console.log('DFT workspace: desktop/mobile routes, form/file persistence, graphics and no automatic server calls passed.');
 }catch(error){if(page)await page.screenshot({path:path.join(artifacts,'dft-workspace-failure.png')}).catch(()=>{});throw error;}
