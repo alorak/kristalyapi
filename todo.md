@@ -608,6 +608,18 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 
 - [x] **P1.2:** P1.1 tek iş ve P1.2 aşamalı sonuç şemalarının DFT ekranında
   ayrı ayrı doğrulanması; otomatik geometri veya sahte bant grafiği üretme.
-- [ ] **P1.3:** Ham bands.gnu, dos.dat ve PDOS çıktılarının gerçek QE format
+- [x] **P1.3:** Ham bands.gnu, dos.dat ve PDOS çıktılarının gerçek QE format
   ayrıntılarıyla denetlenerek existing electronic-results.json grafikleri için
   güvenilir, sınırlı ve bağımsız testli dönüştürücüyle içe alınması.
+
+- [x] **TRUBA P1.3:** P1.2 aşamalı ZIP içine SHA-256 sabitlenmiş
+  `electronic.py` / `qe_pdos.py` ekleme; başarılı son aşama için
+  `electronic-results.json` zorunluluğu, P1.1/P1.2 geriye uyum.
+- [x] **TRUBA P1.3:** Spinli çıktıyı, bozuk k-yolunu ve tutarsız
+  atom/orbital PDOS dosyalarını reddeden sentetik regresyon testleri;
+  depodaki gerçek spinli Si QE DOS çıktısıyla red doğrulaması.
+- [ ] **TRUBA P1.3 kabulü:** Gerçek orfoz SLURM/QE koşumu; en az
+  Si ve MoS₂ spin-polarize olmayan referansla baştan sona elektronik
+  sonuç JSON ve grafik gözlemi, ölçek/UPF/yakınsama denetimi.
+- [ ] **P1.4:** 300 bant üzeri büyük sistemler için açık grafik bant
+  penceresi; bilimsel niyetle seçilen nbnd'yi düşürmeden güvenli görünüm.
