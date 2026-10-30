@@ -152,3 +152,11 @@ test('pause and resume are explicit authenticated POST actions on the same job',
  assert.match(seen[0].url,/\/pause$/);assert.match(seen[1].url,/\/resume$/);
  assert.ok(seen.every(x=>x.options.method==='POST'&&x.options.headers.Authorization==='Bearer '+'a'.repeat(48)));
 });
+
+
+test('authenticated status reads abort on deadline without retrying mutations',async()=>{
+ let calls=0;
+ const fetcher=async(url,options)=>{calls++;return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true}));};
+ await assert.rejects(()=>getQeScfJob('http://127.0.0.1:8000','a'.repeat(32),'b'.repeat(32),{fetcher,timeoutMs:5}),/zaman aşımına/);
+ assert.equal(calls,1);
+});

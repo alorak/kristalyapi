@@ -145,7 +145,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         return {"job_id":job_id,"status":"queued","structure_hash":fingerprint}
 
     def public_job(row):
-        return {"job_id":row["id"],"status":row["status"],"created":row["created"],
+        return {"job_id":row["id"],"status":row["status"],"calculation":json.loads(row["request_json"])["parameters"]["calculation"],"created":row["created"],
                 "updated":row["updated"],"structure_hash":row["structure_hash"],
                 "profile_id":row["profile_id"],"cancel_requested":bool(row["cancel_requested"]),
                 "error":row["error"],"resume_count":row.get("resume_count",0),"pause_requested":bool(row.get('pause_requested')),

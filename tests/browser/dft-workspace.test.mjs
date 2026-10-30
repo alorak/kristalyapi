@@ -76,6 +76,44 @@ try{
  assert.deepEqual(apiRequests,[],'route changes and file viewing must not contact the compute server');
  assert.deepEqual(dialogs,[],'navigation must not request calculation confirmation');
  assert.deepEqual(errors,[]);
+ // Synthetic read-only server transitions exercise polling without executing QE.
+ const result=JSON.parse(await fs.readFile(path.join(root,'validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/result.json'),'utf8'));
+ const jid=result.job_id;let serverStatus='running',statusReads=0;
+ const row=()=>({job_id:jid,status:serverStatus,calculation:'electronic',structure_hash:result.structure_hash,created:'2026-10-29',can_pause:serverStatus==='running',can_resume:false});
+ await page.route('http://127.0.0.1:8000/**',async route=>{
+  const req=route.request(),pathname=new URL(req.url()).pathname;
+  const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, OPTIONS'};
+  if(req.method()==='OPTIONS'){await route.fulfill({status:204,headers});return;}
+  assert.equal(req.method(),'GET','tracking must never submit or mutate jobs');
+  let data;
+  if(pathname==='/api/v1/calculations')data={jobs:[row()]};
+  else if(pathname.endsWith('/diagnostics'))data={schema:'kristalyapi.qe-job-diagnostics.v1',job_id:jid,availability:'recorded',status:serverStatus,
+   reason_code:serverStatus==='completed'?'completed':'in_progress',elapsed_seconds:3,active_stage:'nscf',resources:null,
+   stages:['scf','bands','bands_pp'].map(name=>({name,status:'completed',duration_seconds:1}))};
+  else if(pathname.endsWith('/results'))data=result;
+  else {statusReads++;data=row();}
+  await route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify(data)});
+ });
+ await page.setViewportSize({width:1280,height:900});
+ await page.locator('#qeApiToken').fill('test-only-token-aaaaaaaaaaaaaaaaaaaaaaaa');
+ await page.locator('[data-dft-section="isler"]').click();
+ await page.locator('#qeJobHistoryLoad').click();
+ await page.locator('#qeJobHistorySelect').selectOption(jid);
+ await page.locator('#qeJobHistoryOpen').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#qeJobProgress li[data-state="completed"]').length===3);
+ assert.equal(await page.locator('#qeJobProgress li[data-state="running"]').count(),1);
+ serverStatus='completed';
+ await page.waitForFunction(()=>!document.getElementById('qeJobResultsLink').hidden,null,{timeout:15000});
+ assert.equal(await page.locator('#qeJobProgress li[data-state="completed"]').count(),6);
+ assert.equal(await page.locator('#qeJobResume').isDisabled(),true);
+ const finishedReads=statusReads;
+ await page.waitForTimeout(5500);
+ assert.equal(statusReads,finishedReads,'terminal jobs stop automatic reads');
+ await page.screenshot({path:path.join(artifacts,'dft-workspace-live-tracking.png')});
+ await page.locator('#qeJobResultsLink').click();
+ await page.waitForFunction(()=>!document.getElementById('qeApiElectronicResults').hidden);
+ assert.equal(await page.locator('#qeApiElectronicResults svg').count(),3);
+ assert.deepEqual(errors,[]);
  console.log('DFT workspace: desktop/mobile routes, form/file persistence, graphics and no automatic server calls passed.');
 }catch(error){if(page)await page.screenshot({path:path.join(artifacts,'dft-workspace-failure.png')}).catch(()=>{});throw error;}
 finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

@@ -101,6 +101,19 @@ class JobDiagnosticTests(unittest.TestCase):
         self.assertGreater(actual['resources']['sampled_worker_memory_max_bytes'],0)
         self.assertEqual(actual['resources']['cgroup_oom_kill_delta'],0)
 
+    def test_live_diagnostics_preserve_completed_stage_evidence(self):
+        f=self.fixture();p,h=canonical_request(fixtures.payload());jid=f.store.submit(p,h);job=f.store.claim()
+        folder=f.store.root/'runs'/jid/'pipeline';folder.mkdir(parents=True)
+        (folder/'pipeline.json').write_text(json.dumps({'steps':{'scf':{'status':'completed','duration_seconds':1.25,'returncode':0},'bands':{'status':'running'}}}))
+        (folder/'progress.json').write_text(json.dumps({'active_stage':'bands'}))
+        recorder=diag.Recorder(f.store,job);recorder.tick()
+        value=diag.read_diagnostics(f.store,f.store.get(jid))
+        self.assertEqual(value['active_stage'],'bands')
+        self.assertEqual(value['stages'][0]['status'],'completed')
+        self.assertEqual(value['stages'][0]['duration_seconds'],1.25)
+        response=f.client.get('/api/v1/calculations/'+jid,headers=f.auth).json()
+        self.assertEqual(response['calculation'],'scf')
+
     def test_sidecar_symlinks_cannot_return_arbitrary_operator_files(self):
         f=self.fixture();p,h=canonical_request(fixtures.payload());jid=f.store.submit(p,h)
         path=f.jobs/'diagnostics';path.mkdir();target=f.root/'outside.json'

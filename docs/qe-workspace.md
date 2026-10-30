@@ -17,3 +17,9 @@ The structure summary uses the same symmetry expansion and supercell preparation
 The dedicated stylesheet is staged in the Pages artifact and cached with the versioned offline shell. Turkish/English labels, keyboard focus, browser back/forward, narrow screens, and the existing result readers are supported. Large D5 calculations remain a separate resource/protocol preparation task; opening this page never launches one.
 
 Validation: `node --test tests/*.test.* tests/validation/test_runner.cjs`; real-browser regression `node tests/browser/dft-workspace.test.mjs` (pinned Playwright/Chromium in CI). The latter checks desktop/mobile bounds, route visibility, form/file/plot persistence, and absence of automatic API calls. Its committed real MoS₂ file is used only to test rendering, not as a new scientific acceptance run.
+
+## Live job tracking
+
+After explicit submission or opening a history item, Jobs can refresh the selected job every five seconds while that page and the browser tab are visible. The checkbox disables automatic reads. Completed, paused and terminal jobs stop the timer; resume or an explicit refresh updates the state. A single in-flight reader serializes manual and timer refreshes, and responses for a superseded job cannot publish results. Three failed reads stop automatic refresh with a manual recovery message; retry delays are 5/10/20 seconds. GET requests have a 15-second deadline. No mutation is automatically retried.
+
+The stage list uses the canonical job operation and observed worker stage records. Stage counts are not a time estimate. Completed results are linked only after the result structure hash matches the selected job; the Results page includes the real total energy as well as relaxation or electronic plots. Paused jobs do not expose incomplete results. Operational progress does not grant scientific acceptance.

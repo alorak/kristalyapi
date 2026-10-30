@@ -776,13 +776,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      </div>
      <label class="field"><span>Önceki QE işi</span><select id="qeJobHistorySelect"><option value="">Bu oturumda iş geçmişi yüklenmedi</option></select></label>
      <button type="button" id="qeJobHistoryOpen">Seçili işi incele</button>
+     <label class="check"><input type="checkbox" id="qeJobAutoRefresh" checked>Görünür İşler sayfasında 5 saniyede bir yenile</label>
+     <p id="qeJobTrackingNote" class="hint">Otomatik takip yalnız seçilmiş bir iş için çalışır.</p>
+     <div id="qeJobProgress"></div>
+     <a id="qeJobResultsLink" class="dft-next" href="#dft/sonuclar" hidden>Hesabın sonuçlarını aç ↗</a>
      <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz QE işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
 
      <div id="qeJobDiagnostics" class="qe-electronic-charts" aria-live="polite"></div>
 
      <p class="hint">Sonuç yalnız çalışan Quantum ESPRESSO çıktısından gelir. İş geçmişi sunucudaki SQLite veritabanında tutulur; bu ekranın anahtarı veya hesabı tarayıcı depolamasında tutulmaz. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-jobs.md" target="_blank" rel="noopener noreferrer">SCF işi ve worker kurulumu</a></p>
     </div><aside class="dft-guide"><span class="dft-eyebrow">HESAP AKIŞI</span><ol><li><strong>Ön kontrol</strong><p>Yapı ve sunucu UPF profilinin uyumunu denetleyin.</p></li><li><strong>Hesabı gönder</strong><p>Gerçek hesap yalnız gönderme onayınızla başlar.</p></li><li><strong>Durumu yenile</strong><p>Aşamaları, süreyi ve bellek kaydını inceleyin.</p></li></ol><a class="dft-next" href="#dft/sonuclar">Sonuçları incele <span aria-hidden="true">→</span></a><p class="hint">Duraklatma, çalışan elektronik aşama tamamlandığında uygulanır.</p></aside></div></section>
-<section id="dft-sonuclar" class="dft-panel" aria-labelledby="dft-title-sonuclar" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-sonuclar" tabindex="-1">Sonuçları incele</h2><p>Sunucu sonuçları, başlangıç/son atom konumları ve yerel elektronik dosyaları.</p></div><div class="dft-card dft-live-results"><h3>Sunucudan alınan sonuçlar</h3><p class="hint">Tamamlanan işi İşler sayfasında yenileyin. Relaksasyon karşılaştırması ve elektronik grafikler burada açılır.</p><div id="qeRelaxComparison" class="qe-workflow" hidden></div>
+<section id="dft-sonuclar" class="dft-panel" aria-labelledby="dft-title-sonuclar" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-sonuclar" tabindex="-1">Sonuçları incele</h2><p>Sunucu sonuçları, başlangıç/son atom konumları ve yerel elektronik dosyaları.</p></div><div class="dft-card dft-live-results"><h3>Sunucudan alınan sonuçlar</h3><p id="qeApiScfResult" class="note" hidden></p><p class="hint">Tamamlanan işi İşler sayfasında yenileyin. Relaksasyon karşılaştırması ve elektronik grafikler burada açılır.</p><div id="qeRelaxComparison" class="qe-workflow" hidden></div>
 <div id="qeApiElectronicResults" class="qe-workflow" hidden></div>
 </div><div class="dft-results-grid"><div class="qe-workflow">
     <strong class="measure-subheading">Relaksasyon çıktısı</strong>

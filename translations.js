@@ -7,6 +7,18 @@
 (() => {
  'use strict';
  const entries=[
+  ["Görünür İşler sayfasında 5 saniyede bir yenile", "Refresh every 5 seconds while the Jobs page is visible"],
+  ["Otomatik takip yalnız seçilmiş bir iş için çalışır.", "Automatic tracking runs only for a selected job."],
+  ["Hesabın sonuçlarını aç ↗", "Open calculation results ↗"],
+  ["Üç bağlantı hatasından sonra otomatik yenileme durdu. Yenile düğmesiyle tekrar deneyin.", "Automatic refresh stopped after three connection failures. Use Refresh to try again."],
+  [" aşama tamamlandı. Bu oran kalan süre tahmini değildir.", " stages completed. This ratio is not an estimate of remaining time."],
+  ["Aşama bilgisi henüz yok.", "No stage information yet."],
+  ["Çalışıyor", "Running"],
+  ["Bekliyor", "Pending"],
+  ["Durum güncellendi.", "Status updated."],
+  ["yakınsadı", "converged"],
+  ["yakınsamadı", "did not converge"],
+
   ["PBE · SCF → bant → DOS / PDOS", "PBE · SCF → bands → DOS / PDOS"],
   ["Hesap ayarlarını düzenle ↗", "Edit calculation settings ↗"],
   ["Son relaksasyon yapısı: ", "Final relaxation structure: "],
