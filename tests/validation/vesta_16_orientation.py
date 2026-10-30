@@ -206,7 +206,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.out:
             if args.out.is_symlink():
                 raise ValueError("Refusing symlink output")
-            args.out.write_text(rendered, encoding="utf-8")
+            with args.out.open("x", encoding="utf-8") as handle:
+                handle.write(rendered)
         else:
             print(rendered, end="")
     except (ValueError, KeyError, OSError) as exc:
