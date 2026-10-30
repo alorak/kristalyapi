@@ -179,6 +179,7 @@ jobs:
           cp qe-job-diagnostics-view.js public/qe-job-diagnostics-view.js
           cp qe-job-tracking.js public/qe-job-tracking.js
           cp qe-protocol-templates.js public/qe-protocol-templates.js
+          cp qe-electronic-setup.js public/qe-electronic-setup.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
           cp qe-relax-view.js public/qe-relax-view.js
@@ -215,6 +216,7 @@ jobs:
           test -s public/qe-job-diagnostics-view.js
           test -s public/qe-job-tracking.js
           test -s public/qe-protocol-templates.js
+          test -s public/qe-electronic-setup.js
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js
           test -s public/qe-relax-view.js

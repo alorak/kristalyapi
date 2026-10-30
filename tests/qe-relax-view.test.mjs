@@ -67,13 +67,15 @@ test('D3 rejects unconverged stages, excessive forces and inconsistent energy un
   const d=fixture();edit(d);assert.throws(()=>parseRelaxationResult(d,hash));
  }
 });
+// qeJobPayload shares its server geometry with the electronic setup checks.
+const payloadGeometry=source=>source.match(/function qeJobGeometry\(electronic\)\{[\s\S]+?\n\}\n/)[0];
 test('D3 form sends the selected operation and explicit bounded ionic settings',()=>{
  const source=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
  const func=source.match(/function qeJobPayload\(\)\{[\s\S]+?\n\}\nasync function qeJobPreflight/)[0]
   .replace(/\nasync function qeJobPreflight$/,'');
  const values={qeJobWorkflow:'relax-scf',qeCalcType:'relax',qeOccupation:'fixed',qeJobProfile:'si-pbe',qeKx:2,qeKy:2,qeKz:2,
   qeEcutwfc:45,qeEcutrho:360,qeFreezeBottom:0,qeJobMaxSteps:30,qeForceThreshold:.0001,qeJobEnergyThreshold:.000001};
- const run=()=>Function('$','state','qeCalculationStructure','basis','validateCell','const qeResourceProfile=null,normalizeQeApiUrl=x=>x;return ('+func+')()')(
+ const run=()=>Function('$','state','qeCalculationStructure','basis','validateCell','const qeResourceProfile=null,normalizeQeApiUrl=x=>x;'+payloadGeometry(source)+'return ('+func+')()')(
   id=>({value:values[id]??'',checked:false}),{},()=>({cell:{},sites:[{symbol:'Si',x:0,y:0,z:0}]}),
   ()=>[[5,0,0],[0,5,0],[0,0,5]].map(row=>({toArray:()=>row})),x=>x);
  const relaxed=run();assert.equal(relaxed.schema,'kristalyapi.qe-relax-scf-job.v1');
@@ -90,7 +92,7 @@ test('D4 explicitly selected final geometry is submitted without changing the ac
  const values={qeJobWorkflow:'electronic',qeCalcType:'relax',qeOccupation:'fixed',qeJobProfile:'si-pbe',
   qeKx:2,qeKy:2,qeKz:1,qeEcutwfc:45,qeEcutrho:360,qeElectronicNbnd:8,qeElectronicMesh:2,
   qeElectronicPath:'Gamma 0 0 0 3\nX .5 0 0 1'};
- const run=Function('$','state','qeCalculationStructure','basis','validateCell','qeElectronicSource','parseQeBandPath','const qeResourceProfile=null,normalizeQeApiUrl=x=>x;return ('+func+')()');
+ const run=Function('$','state','qeCalculationStructure','basis','validateCell','qeElectronicSource','parseQeBandPath','const qeResourceProfile=null,normalizeQeApiUrl=x=>x;'+payloadGeometry(source)+'return ('+func+')()');
  const result=run(id=>({value:values[id]??'',checked:false}),{},()=>{throw Error('active geometry must not be used');},null,null,chosen,parseQeBandPath);
  assert.equal(result.schema,'kristalyapi.qe-electronic-job.v1');assert.equal(result.parameters.calculation,'electronic');
  assert.equal(result.electronic.nbnd,8);assert.deepEqual(result.structure,chosen.structure);

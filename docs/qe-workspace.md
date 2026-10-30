@@ -53,6 +53,14 @@ Relaxation comparison keeps the existing two synchronized 3D views and adds an o
 
 A browser regression uses a **synthetic** 5 Å periodic wrap case solely to test UI behavior; it does not constitute an additional real Quantum ESPRESSO calculation or acceptance result.
 
+The first spectrum view hides band manifolds separated from the highest connected manifold by more than 3 eV (for MoS₂: the Mo 4s/4p semicore and S 3s bands) and starts at the next 0.5 eV below it. Data, CSV and the full range are unchanged and one click away. Axis ticks use round 1/2/2.5/5 × 10ⁿ steps.
+
+## Electronic setup checks
+
+The electronic server workflow only supports kz=0 band paths and a kz=1 dense mesh, i.e. layers separated by vacuum along c. Preparation measures the largest periodic empty gap along c, normal to the ab plane, and warns when it is below 8 Å. The warning does not block submission. **Suggest a band path** classifies the ab lattice (hexagonal γ=120°/60°, square, rectangular) and fills the conventional Γ–M–K–Γ, Γ–X–M–Γ or Γ–X–S–Y–Γ path in reciprocal crystal coordinates, with ~60 samples split by reciprocal length. Oblique lattices get no suggestion.
+
+The minimum band count depends on UPF valences, which only the server reads. After an electronic preflight, the `electronic_preflight` capacity (or the server's insufficient-band error) is shown together with a suggestion of `max(minimum + 4, ⌈1.2 × minimum⌉)` bands, capped by the server's band limit. This mirrors `pw.x` defaults for smeared systems and is not a convergence test. The advice is cleared when the structure or UPF profile changes.
+
 ## Measured ionic-step traces (optional)
 The completed D3 relax→SCF API result may include a `kristalyapi.qe-ionic-history.v1` object with the actual ionic `relax.out` stdout SHA-256 and a bounded ordered list of **paired** final-SCF ionic-step energy (Ry) and total force (Ry/Bohr). The parser omits the whole history if a step lacks either value. The JSON viewer cross-checks the stdout hash against existing artifact evidence and matches final ionic numbers to the accepted relax stage. Plots use separate axes/units and do not include the later independent final SCF energy or invent missing points. Legacy results without history render their original side-by-side geometry comparison.
 

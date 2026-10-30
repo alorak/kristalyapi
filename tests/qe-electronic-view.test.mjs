@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../qe-electronic-view.js',import.meta.url),'utf8');
-const {parseQeElectronicResult,electronicEnergyRange,checkedEnergyWindow,electronicCsv}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {parseQeElectronicResult,electronicEnergyRange,defaultEnergyWindow,niceTicks,checkedEnergyWindow,electronicCsv}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
 const valid=()=>({
  schema:'kristalyapi.qe-electronic.v1',
@@ -220,4 +220,19 @@ test('band chart marks only explicit k-nodes, with no invented Fermi line or sin
   const plain=chart('Bant','k','eV',curves,660,260,{bandCurves:true});
   assert.equal(plain.attributes['data-k-node-count'],undefined);
  }finally{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;}
+});
+
+test('initial energy window hides only deep bands separated by a large gap',()=>{
+ const raw=JSON.parse(readFileSync(new URL('../validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/pipeline/electronic-results.json',import.meta.url),'utf8'));
+ const data=parseQeElectronicResult(raw);
+ assert.deepEqual(electronicEnergyRange(data),[-63.08,10.44]);
+ assert.deepEqual(defaultEnergyWindow(data),[-8,10.44],'Mo semicore and S 3s manifolds stay one click away');
+ const contiguous=parseQeElectronicResult(valid());
+ assert.deepEqual(defaultEnergyWindow(contiguous),electronicEnergyRange(contiguous));
+});
+test('axis ticks use round steps inside the plotted range',()=>{
+ assert.deepEqual(niceTicks(-8,10.44).map(t=>t.label),['-5','0','5','10']);
+ assert.deepEqual(niceTicks(0,1.58).map(t=>t.label),['0.0','0.5','1.0','1.5']);
+ assert.deepEqual(niceTicks(-1,1).map(t=>t.value),[-1,-0.5,0,0.5,1]);
+ assert.deepEqual(niceTicks(0,0.0123).map(t=>t.label),['0.0000','0.0025','0.0050','0.0075','0.0100']);
 });

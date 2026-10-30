@@ -739,6 +739,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <div class="dft-prepare-grid" id="dftPreparationGrid"><div class="dft-server-only"><div class="qe-workflow"><strong class="measure-subheading">Sunucu iş akışı</strong>     <p class="hint">Sunucuda PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin yalnız elektronik akışta kullanılabilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.</p>
      <label class="field"><span>Sunucu hesap türü</span><select id="qeJobWorkflow"><option value="scf">SCF · tek nokta enerji</option><option value="relax-scf" selected>Relaksasyon → SCF · sabit hücre</option><option value="electronic">SCF → bant → DOS / PDOS</option></select></label>
      <div id="qeElectronicSettings" class="qe-workflow" hidden>
+      <p id="qeElectronicDimension" class="note qe-dimension-note" role="status" data-state="unknown">Bu iş akışı yalnız c yönünde vakumlu 2B katmanlar içindir.</p>
       <label class="field"><span>Elektronik spin modu</span><select id="qeElectronicSpin"><option value="unpolarized">Spinsiz · mevcut referanslar</option><option value="polarized">Kollineer spin ↑ / ↓ · nötr hücre</option></select></label>
       <div id="qeSpinSettings" hidden>
        <label class="field"><span>Element başına başlangıç polarizasyonu (−1 … 1)</span><textarea id="qeSpinSeeds" rows="2" maxlength="1000" placeholder="Si 0.1" spellcheck="false"></textarea></label>
@@ -751,6 +752,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <label class="field"><span>Toplam bant sayısı (nbnd)</span><input id="qeElectronicNbnd" type="number" min="1" max="128" value="26"></label>
        <label class="field"><span>Yoğun 2B k-örgüsü</span><input id="qeElectronicMesh" type="number" min="2" max="24" value="16"></label>
       </div>
+      <p id="qeElectronicBandHint" class="hint" role="status">Gereken en az bant sayısı, sunucu ön kontrolünde UPF değerlik elektronlarından hesaplanır.</p>
+      <button id="qeElectronicApplyNbnd" type="button" hidden>Önerilen bant sayısını uygula</button>
       <div class="qe-form-grid">
        <label class="field"><span>Görüntülenecek ilk bant (isteğe bağlı)</span><input id="qeBandFirst" type="number" min="1" max="2048" placeholder="1"></label>
        <label class="field"><span>Görüntülenecek son bant</span><input id="qeBandLast" type="number" min="1" max="2048" placeholder="300"></label>
@@ -763,6 +766,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <label class="field"><span>DOS genişliği (Ry)</span><input id="qeDosSigma" type="number" min="0.001" max="0.05" value="0.01" step="0.001"></label>
       </div>
       <label class="field"><span>Açık bant yolu · ETIKET kx ky 0 N</span><textarea id="qeElectronicPath" rows="5" maxlength="10000" spellcheck="false" placeholder="Gamma 0 0 0 20&#10;M 0.5 0 0 20&#10;K 0.333333333333 0.333333333333 0 20&#10;Gamma 0 0 0 1"></textarea></label>
+      <button id="qeElectronicSuggestPath" type="button">Örgüye göre bant yolu öner</button>
+      <p id="qeElectronicPathStatus" class="hint" role="status" hidden></p>
       <p class="hint">Yolu yapınıza göre açıkça girin; son ağırlık 1 olmalı. Sonuçlar ham QE enerji referansındadır.</p>
      </div>
      <div class="qe-form-grid">
