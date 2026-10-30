@@ -31,6 +31,23 @@ try{
  await page.goto(`http://127.0.0.1:${port}/index.html`);
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#powderNav').click();
+ const fullWidth=async pageId=>{
+  const bounds=await page.evaluate(id=>{
+   const outer=document.getElementById(id),wrap=outer.querySelector('.lesson-wrap');
+   return {viewport:outer.getBoundingClientRect().width,content:wrap.getBoundingClientRect().width};
+  },pageId);
+  assert.ok(Math.abs(bounds.viewport-bounds.content)<2,
+   pageId+' must use full available width instead of a centered 1600px cap');
+ };
+ await fullWidth('powderPage');
+ await page.locator('#pwTabReciprocal').click();
+ await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&
+  document.getElementById('pwPowderPane').hidden);
+ assert.equal(await page.locator('#powderNav').getAttribute('aria-current'),'page');
+ assert.equal(await page.locator('#pwTabReciprocal').getAttribute('aria-selected'),'true');
+ await page.locator('#pwTabPowder').click();
+ await page.waitForFunction(()=>document.getElementById('reciprocalPage').hidden&&
+  !document.getElementById('pwPowderPane').hidden);
  await page.waitForFunction(()=>document.querySelectorAll('#pwPeaks button').length>1&&
   document.querySelectorAll('#pwWaveSvg path').length===3);
  const firstIntensity=await page.locator('#pwPhaseReadout .lesson-metric').last().textContent();
@@ -88,6 +105,7 @@ try{
  const peakHkl=selectedPeak.match(/\([^)]+\)/)?.[0];
  assert.ok(peakHkl&&selectedHkl.includes(peakHkl),'selected powder peak and phasor (hkl) must match');
  await page.locator('#semiconductorNav').click();
+ await fullWidth('semiconductorPage');
  await page.waitForFunction(()=>document.querySelectorAll('#scChainChart [data-energy-level]').length===8);
  assert.equal(await page.locator('#scChainChart [data-chain-atom]').count(),8,
   'the atom chain and its spectrum must share the same N');

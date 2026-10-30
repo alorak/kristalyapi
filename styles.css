@@ -823,8 +823,8 @@ header .actions .header-io svg{width:15px;height:15px;stroke:currentColor;stroke
 body.reciprocal-open .workspace-action:not(.workspace-launcher){display:none!important}
 body.reciprocal-open #app{display:none}
 #reciprocalPage[hidden],#reciprocalPage .rs-pane[hidden]{display:none!important}
-#reciprocalPage{display:block;overflow:auto;height:calc(100dvh - 54px);background:#edf2f7;color:#27384c}
-#reciprocalPage .rs-wrap{padding-top:20px;padding-bottom:48px}
+#reciprocalPage{display:block;overflow:visible;height:auto;min-width:0;background:transparent;color:#27384c}
+#reciprocalPage .rs-wrap{width:100%;max-width:none;padding:14px 0 28px}
 #reciprocalPage .library-header{margin-bottom:16px}
 #reciprocalPage .lib-tabs{gap:5px;padding:5px;margin-bottom:17px;background:#fff;border:1px solid #d5e1ec;border-radius:12px;box-shadow:0 2px 10px rgba(28,52,78,.045)}
 #reciprocalPage .lib-tabs button{border:1px solid transparent;border-radius:8px;padding:9px 14px;font-weight:580}
@@ -885,7 +885,14 @@ body.lesson-open .workspace-action:not(.workspace-launcher){display:none!importa
 body.lesson-open #app{display:none!important}
 .lesson-page[hidden]{display:none!important}
 .lesson-page{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f3f7fb;color:#233b55}
-.lesson-wrap{padding-top:23px;padding-bottom:65px;max-width:1600px}
+.lesson-wrap{padding-top:23px;padding-bottom:65px;max-width:none;width:100%;margin:0}
+#pwPowderPane[hidden],#reciprocalPage[hidden]{display:none!important}
+.powder-lesson-tabs{margin:12px 0 18px}
+.powder-lesson-tabs .pw-main-tab{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:11px 19px;border-radius:10px;color:#53667c;font-size:14px;font-weight:650;text-decoration:none;white-space:nowrap}
+.powder-lesson-tabs .pw-main-tab:hover{background:#e6edf5;color:#203a54;text-decoration:none}
+.powder-lesson-tabs .pw-main-tab[aria-selected="true"]{background:#fff;color:#145b9c;box-shadow:0 1px 5px rgba(15,35,70,.12)}
+.powder-lesson-tabs .pw-main-tab:focus-visible{outline:3px solid #368bcc;outline-offset:2px}
+@media(max-width:550px){.powder-lesson-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.powder-lesson-tabs .pw-main-tab{font-size:13px;padding:10px 6px}}
 .lesson-source{display:flex;align-items:center;flex-wrap:wrap;gap:11px;background:#e8f1fa;border:1px solid #d6e5f3;border-radius:11px;padding:11px 15px;margin-bottom:20px;font-size:13px;color:#526980}
 .lesson-source>span:first-child{color:#657f9d;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .lesson-source strong{color:#214c74}
