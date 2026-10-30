@@ -26,23 +26,16 @@ MAX_JSON = 16_000_000
 SCHEMA = "kristalyapi.qe-electronic.v1"
 
 
-def numeric_rows(path: Path, cols: int, *, blocks=False):
+def numeric_rows(path: Path, cols: int):
+    """Bounded DOS/PDOS numeric table reader; band files use parse_bands streaming."""
     if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_TABLE:
         raise ValueError("Missing/oversized or unsafe QE numeric output: " + path.name)
-    tables, rows = [], []
-    total = 0
+    rows = []
     with path.open("r", encoding="utf-8", errors="strict") as stream:
         for line in stream:
-            if len(line) > 100_000:
+            if len(line) > 8192:
                 raise ValueError("Oversized QE numeric row")
-            if not line.strip():
-                if blocks and rows:
-                    tables.append(rows)
-                    if len(tables)>300:
-                        raise ValueError('Too many bands for frontend')
-                    rows = []
-                continue
-            if line.lstrip().startswith("#"):
+            if not line.strip() or line.lstrip().startswith("#"):
                 continue
             fields = line.split()
             if len(fields) != cols:
@@ -54,19 +47,8 @@ def numeric_rows(path: Path, cols: int, *, blocks=False):
             if not all(math.isfinite(v) for v in values):
                 raise ValueError("Nonfinite QE output: " + path.name)
             rows.append(values)
-            total += 1
-            if blocks and total > MAX_PLOT_POINTS:
-                raise ValueError('Band sample budget exceeded')
             if len(rows) > MAX_ROWS:
-                raise ValueError("Too many samples: " + path.name)
-    if blocks:
-        if rows:
-            tables.append(rows)
-        if len(tables)>300:
-            raise ValueError('Too many bands for frontend')
-        if not tables:
-            raise ValueError("No bands in QE bands.x output")
-        return tables
+                raise ValueError("Too many DOS/PDOS samples: " + path.name)
     if len(rows) < 2:
         raise ValueError("Not enough numeric output samples: " + path.name)
     return rows
