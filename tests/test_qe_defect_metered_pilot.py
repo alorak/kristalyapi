@@ -113,13 +113,13 @@ class MeteredPilotTests(unittest.TestCase):
             with self.subTest(change=change):
                 self.assertEqual(d5.evaluated_status(report,raw,broken,case),
                                  "incomplete_resource_evidence")
-        self.assertEqual(d5.evaluated_status({...report,"oom_killed":True},raw,metrics,case),
+        self.assertEqual(d5.evaluated_status({**report,"oom_killed":True},raw,metrics,case),
                          "oom_observed")
-        self.assertEqual(d5.evaluated_status({...report,"timed_out":True},raw,metrics,case),
+        self.assertEqual(d5.evaluated_status({**report,"timed_out":True},raw,metrics,case),
                          "timed_out")
         self.assertEqual(d5.evaluated_status(report,raw+"! total energy = -9 Ry",metrics,case),
                          "invalid_initialization_proof")
-        self.assertEqual(d5.evaluated_status({...report,"exit_code":137},raw,metrics,case),
+        self.assertEqual(d5.evaluated_status({**report,"exit_code":137},raw,metrics,case),
                          "failed")
 
     def test_image_and_pseudopotential_checks_fail_closed(self):
