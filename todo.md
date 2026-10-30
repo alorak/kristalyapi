@@ -740,3 +740,201 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 [V15 yöntem ve durum](tests/validation/PACKAGE_15_STATUS.md).
 
 [V15.1 operatör ve gerçek GUI ölçüm kılavuzu](tests/validation/PACKAGE_15_1_STATUS.md).
+
+
+---
+
+## VESTA özellik farkı envanteri — V16–V23 (30 Ekim 2026)
+
+**Kapsam:** Referans **VESTA 3.5.8 kararlı sürümü**. Ağustos 2026
+**3.90.9a geliştirme sürümü** ve kuasikristal desteği ayrı araştırma
+hedefidir; kararlı sürüm paritesine dahil edilmez. DFT/QE/TRUBA, COD
+kütüphanesi ve öğretici yarıiletken/karşı-uzay modülleri VESTA'nın
+birebir özellik farkları değildir; kendi yol haritalarında kalırlar.
+
+**Resmî dayanaklar:**
+[VESTA genel](https://jp-minerals.org/vesta/en/),
+[özellikler](https://jp-minerals.org/vesta/en/features.html),
+[sürümler](https://jp-minerals.org/vesta/en/download.html),
+[kılavuz](https://jp-minerals.org/vesta/archives/VESTA_Manual.pdf).
+**Depo dayanakları:** [README](README.md),
+[ROADMAP](ROADMAP.md),
+[P14 durum](tests/validation/PACKAGE_14_STATUS.md),
+[V15.1 durum](tests/validation/PACKAGE_15_1_STATUS.md).
+
+**Etiketler:** Mevcut = temel işlev var; Kısmi = var ama kapsam sınırlı;
+Doğrulanmadı = işlev var ancak gerçek VESTA GUI eşdeğerliği ispatlanmadı;
+Eksik = belgelenmiş destek yok. Birim/simetri/bilimsel model ayrımı
+gizlenmez. README'de geçen özellikleri ikinci kez sıfırdan geliştirme
+işi olarak açma.
+
+### VESTA 3.5.8 → KristalYapı fark matrisi
+
+| Özellik | Durum | Gerçek açık ve paket |
+| --- | --- | --- |
+| CIF, simetri ve hücre dönüşümü | Kısmi | Alternatif setting/origin/Hall, CIF2 ve mCIF varyantları → V18 |
+| Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | Per-site/bond/facet stilleri, atom dot-surface, ADP geometri eşlemesi → V19 |
+| Mesafe/açı, koordinasyon/BVS | Kısmi | 8 gerçek merkez ve VESTA Text Area değerleri; kaynak parametre farkı → V16/V21 |
+| Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; otomatik atom/hücre hizalama, RMSD yok → V21 |
+| Sınırlar ve Miller düzlemleri | Kısmi | Genel kırpma düzlemleri ve komşuluk/çokyüzlü bütünlüğü → V19 |
+| Kristal morfolojisi, yüz aileleri | Kısmi | Kapsamlı non-kübik nokta grupları ve kapalı yüz topolojisi → V21 |
+| VESTA proje biçimi | Kısmi | 3.x sınırlı import var; kamera/ışık/vektör/ADP/stil ve export yok → V17 |
+| CUBE/CHGCAR/XSF/CCP4-MRC | Mevcut / kısmi | 24 MB / 2.5M voksel sınırı, birim/orijin, gerçek varyant testi → V20 |
+| Çok seviyeli ± izoyüzey ve 2B kontur | Mevcut / doğrulanmadı | Mutlak izoeşik, mesh/topoloji, alanla renklendirme ve sayısal kıyas → V16/V20 |
+| Fourier/Patterson ve türetilmiş alan | Kısmi | Deneysel faz/ölçek ve model-FCF-MTZ yorum sınırları → V20 |
+| Voronoi yük entegrasyonu | Kısmi | Seyrek örneklem ve gerçek yakınsama/hata bütçesi → V20 |
+| Çokyüzlü kimyası / BVS | Kısmi | Parametre çiftleri, occupancy ve hacim/bozulma referansı → V21 |
+| PNG/SVG/TIFF/PDF/EPS ve 3B export | Mevcut / doğrulanmadı | Vektör/WebGL/volumetrik eşdeğerlik ve eksen/görüş paritesi → V19 |
+| Harici RIETAN/MADEL ekosistemi / ek formatlar | Kısmi | Harici araç sınırı, format talep önceliği → V22 |
+| Çok büyük sahneler / çok pencere | Kısmi | 10 workspace, nesne/volume limitleri, gerçek cihaz ölçümü → V22 |
+| Kuasikristaller (3.90.9a geliştirme) | Eksik / ayrı karar | 3.5.8 kabul hedefinin dışında → V23 |
+
+### V16 — P0 · Gerçek VESTA 3.5.8 GUI ve bilimsel fark kanıtı
+
+- [ ] **Ön koşul:** Var olan V15.1 gerçek GUI kabulünü ve kısmi CCP4
+  haritanın mutlak izoeşik/birim sorununu çöz. O zamana kadar
+  scientificParity=NOT_ESTABLISHED ve gerçek GUI=NOT_RUN kalsın.
+- [ ] VESTA ve KristalYapı için aynı CIF/CCP4, görüntü sınırları,
+  kamera/projeksiyon, ışık, renk, atom/bağ yarıçapı, ADP olasılığı
+  ve 1024×768 çıktı protokolü; eşlenemeyen ayarlar belgelenmeli.
+- [ ] Mevcut beş V15 sahnesinde gerçek VESTA 3.5.8 ekran görüntüsü;
+  8 P14 koordinasyon/BVS merkezinde gerçek VESTA Text Area çıktıları.
+  Her kayıt için kaynak SHA, VESTA sürümü, operatör, tarih ve ROI.
+- [ ] Görsel IoU/MAE yanında atom merkezleri (Å ve piksel), bağ listesi,
+  ADP ana ekseni, çokyüzlü hacmi, Miller normal/d(hkl), izoyüzey
+  eşik/topoloji ve BVS için **bağımsız Gemmi/ASE**, uygulama ve gerçek
+  VESTA değeri ayrı sütunlar; bulunmayan değerler null.
+- [ ] **Kabul:** En az 5 gerçek GUI eş sahnesi ve 8 P14 merkezi,
+  önceden tanımlanmış fiziksel/görsel toleranslar, kanıt bağlantısı,
+  pass/fail/inconclusive/not-run kararı. Gerçek VESTA GUI görülmeden
+  parite veya PASS iddiası yok.
+
+### V17 — P1 · VESTA proje içe/dışa aktarımı
+
+- [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,
+  vektör, ADP, poliedr renk/opacity, ISURF görünümü ve sınır
+  parametreleri için **aktarılan / uyarıyla atlanan / reddedilen**
+  olarak genişlet. Bilinmeyen SYMOP/IMPORT öğesini tahmin etme.
+- [ ] Güvenli bir **VESTA 3.x export alt-kümesi** ve veri kaybı matrisi;
+  harici CUBE/XSF/CHGCAR/CCP4 dosyalarını kendiliğinden indirme veya
+  tarayıcı diskinden okumaya çalışma; kullanıcı kontrollü yan dosya
+  manifesti ve hash kullan.
+- [ ] Hücre, origin, harita yol/uzamsal eksen, isteğe bağlı renk/izodeğer
+  uyumsuzluklarında görünür uyarı veya ret; hacimsel veri proje içine
+  gömülmüş gibi gösterme.
+- [ ] **Kabul:** En az üç gerçek 3.5.x proje + bir hacimsel proje ile
+  VESTA → KristalYapı → VESTA round-trip; atomlar, simetri, kamera ve
+  desteklenen stiller için fark matrisi. Kayıplı alanlar başarılı
+  **kayıpsız** dönüşüm olarak raporlanmaz.
+
+### V18 — P1 · CIF2, simetri/setting ve manyetik doğruluk
+
+- [ ] CIF1/CIF2, çoklu blok, karışık/alternatif occupancy, site ADP,
+  koordinat hataları ve provenance için güvenli kabul/koruma/ret
+  politikası; farklı yapı bloklarını sessizce birleştirme.
+- [ ] Moyo tabanlı SG/primitive-conventional işlemlerinde Hall seçimi,
+  origin shift, R-merkezleme ve kullanıcının alternatif setting seçimi;
+  hacim, atom çokluğu ve periyodik koordinat korunumu.
+- [ ] BNS/mCIF 3B, modüle/superspace ve VASP SAXIS eksenleri için
+  destek sınırlarını netleştir; metadata yoksa dönüştürmeyi uydurma.
+- [ ] **Kabul:** Triklinik, monoklinik, R-merkezli, özel konum ve
+  K/Na disordered gerçek CIF/mCIF korpusu; Gemmi/spglib ile SG,
+  occupancy, hücre metriği, ADP ve koordinat hata/tolerans tablosu.
+
+### V19 — P1 · Sahne kontrolü, kesim ve yayın çıktısı
+
+- [ ] Site/bond/polyhedron facet/label bazlı renk, yarıçap, saydamlık
+  ve görünürlük; katman, proje ve Undo/Redo ile aynı durum modeli.
+- [ ] VESTA benzeri van der Waals **dot surface**, ADP ana eksen
+  bilgi katmanı ve seçilebilir statik yer değiştirme/moment vektörü
+  stilleri; fiziksel yön ve ölçek notu.
+- [ ] Kesirli x/y/z penceresine ek keyfî clipping düzlemleri;
+  bağ/molekül ve poliedr bütünlüğünü koruyan opsiyon; Miller düzlemi
+  sadece görsel katman olduğunda bunu belirt.
+- [ ] Kamera ve XYZ yön göstergesi için PNG/TIFF/SVG/PDF/EPS
+  tutarlılığı; transparan arka plan, etiket, çizgi ve çözünürlük/
+  DPI metaverisi. Volumetrik 3B veya vektör desteklenmiyorsa
+  raster fallback'i açıkça etiketle.
+- [ ] **Kabul:** Si, NaCl, rutil, ADP, Miller ve volume overlay
+  sahnelerinde 1×/4× export; Chromium ve mevcut platformlarda
+  bağımsız görsel fark ölçümü, kullanıcı ayarlarının round-trip testi.
+
+### V20 — P2 · Hacimsel alan bilimsel doğruluğu ve ölçek
+
+- [ ] Gerçek CUBE, CHGCAR, XSF, CCP4/MRC ve QE/VASP örnekleri için
+  fiziksel nicelik/birim, origin, handedness, periyodiklik ve veri
+  sıralaması bağımsız doğrulaması; CCP4 unknown varsayımı korunur.
+- [ ] Çok seviyeli ± izoyüzeylerde mutlak eşik, vertex/normal,
+  topoloji, görünürlük, ikinci alanla renk ve katman opacity'sini
+  VESTA GUI + bağımsız sayısal veri ile kıyasla.
+- [ ] 24 MB / 2.5M voksel sınırını büyütmek gerekiyorsa
+  Worker/chunk/streaming/iptal/aygıt bütçesi; kontrolsüz downsample
+  veya sessiz fazla bellek tüketimi yok.
+- [ ] Model Fourier/Patterson, FCF/MTZ gözlenen veriye bağlı
+  Fo−Fc/2Fo−Fc, ağırlıklı katsayı ve gerektiğinde Laplasyen için
+  faz, sigma/FOM/FREE, ölçek, d_min ve fiziksel model ayrımı.
+  Eksik deneysel fazı üretildi sayma.
+- [ ] Voronoi ≠ Bader; 2B eğik Miller konturları ve subvoxel
+  min/max için grid yakınsaması, sayısal integral ve hata raporu.
+- [ ] **Kabul:** Kaynağı sabitlenmiş birer gerçek CUBE/CHGCAR/XSF/
+  CCP4 + deneysel FCF/MTZ; voxel/Å, izoyüzey, kontur, integral
+  ve tepe sonuçlarında mutlak/bağıl tolerans, hata dosyası testleri.
+
+### V21 — P2 · Kristal morfolojisi, koordinasyon ve faz hizalaması
+
+- [ ] Triklinik–hekzagonal nokta gruplarında eşdeğer {hkl}
+  yüzler, yüz normali/mesafesi, kapalı morfoloji çokyüzlüsü ve
+  eğik hücre geometrisini bağımsız test et. Wulff/enerji
+  hesabı yoksa morfoloji yüz uzaklığını yüzey enerjisi diye sunma.
+- [ ] Koordinasyon hacmi, Baur D, Hoppe ECoN, quadratic elongation,
+  bond-angle variance, kesilme/occupancy ve VESTA gerçek Text Area
+  bağımsız değer karşılaştırması.
+- [ ] BVS iyon-pair parametre setini kaynak+sürümle genişlet;
+  VESTA kılavuzundaki sabit B=0.37 Å ile uygulamadaki örn.
+  Cu(II)-O B=0.36 Å seçiminin model/fizik farkını raporla.
+- [ ] Çoklu fazda otomatik atom/site eşleme, rijit RMSD, hücre ve
+  orijin hizalama, kimyasal/simetri uyumsuzluklarında güvenli ret.
+- [ ] **Kabul:** P14'ün sekiz gerçek iyon merkezi, nonkübik morfoloji
+  örnekleri ve iki fazlı model; Å/RMSD, hacim, BVS ve koordinasyon
+  tolerans tablosu, kaynak/parametre izi.
+
+### V22 — P3 · Büyük sahneler, formatlar ve ekosistem
+
+- [ ] Mevcut atom/bağ/poliedr/volume sınırlarında mobil ve
+  entegre/ayrık GPU gerçek FPS, peak RAM/GPU, context-loss,
+  yükleme/iptal ve instanced ADP/LOD benchmarkları.
+- [ ] Eksik VESTA formatlarını (WIEN2k struct, GSAS/RIETAN,
+  XTL, DL_POLY vb.) **gerçek kullanıcı talebi ve format test
+  fixture'ları** ile sırala; her birinin metadata kaybını belirt.
+- [ ] VESTA'nın **harici** RIETAN-FP/MADEL bağlantılarını
+  yerleşik VESTA hesaplarıymış gibi değerlendirme. KristalYapı
+  öğretici toz XRD/Ewald modeliyle eşdeğerlik iddiası kurma;
+  gerekirse açık input/output adaptörü ve gerçek referans sonuç
+  karşılaştırması tasarla.
+- [ ] Çoklu browser workspace/PWA için offline veri geri yükleme,
+  klavye ve ekran okuyucu erişilebilirliği, export/import
+  dayanıklılığı ve büyük dosya kurtarma.
+- [ ] **Kabul:** Cihaz-yapı bazlı FPS/bellek raporu, gerekçeli
+  dosya formatı öncelikleri, test edilen ve edilmeyenler matrisi;
+  gerçek ölçüm olmadan "VESTA kadar hızlı" iddiası yok.
+
+### V23 — P3 / ayrı karar · VESTA 3.90.9a geliştirme sürümü
+
+- [ ] Resmî 3.90.9a'nın kuasikristal modeli, indeksleme/
+  superspace ve örnek verisini bir araştırma notuyla incele.
+  VESTA 3.5.8 eşdeğerlik skoruna karıştırma.
+- [ ] Gerçek kullanım senaryosu ve bağımsız bilimsel fixture
+  olmadan geliştirme taahhüdü verme; ayrıca karar al.
+
+### Sıra, bağımlılıklar ve yatay kabul
+
+1. **V15.1 gerçek GUI kabulü → V16 gerçek fark kanıtı.**
+2. **V17 proje uyumluluğu → V18 CIF/simetri güvenilirliği.**
+3. **V19 sahne/yayın paritesi → V20 alan bilimi → V21 koordinasyon/morfoloji.**
+4. **V22 ölçülen ihtiyaçlarda; V23 ayrı keşif kararı.**
+
+**Her paket için:** Kaynak SHA/sürümü, sentetik/gerçek fixture ayrımı,
+bağımsız bilimsel karşılaştırma veya gerçek VESTA gözlemi, TR/EN uyarı,
+Undo/Redo/proje regresyonu, negatif test ve nicel kabul toleransı.
+Fiziksel olarak farklı yöntemleri yalnız aynı göründükleri için
+eşdeğer işaretleme. **CI tetikleme ve çalışma politikası değişmez.**
