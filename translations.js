@@ -1248,6 +1248,8 @@
   ['PNG görseli','PNG image'],['3B görünümün beyaz zeminli ekran görüntüsü','White-background screenshot of the 3D view'],
   ['TIFF görseli','TIFF image'],['Kayıpsız RGB · baskı DPI bilgisiyle','Lossless RGB · print DPI metadata'],
   ['PDF baskı sayfası','PDF print page'],['A4 · yüksek çözünürlüklü raster görünüm','A4 · high-resolution raster view'],
+  ['3B görünüm · kamera yönlü X/Y/Z okları','3D view · camera-aligned X/Y/Z arrows'],['Kayıpsız RGB · DPI · X/Y/Z yönleri','Lossless RGB · DPI · X/Y/Z directions'],
+  ['A4 · yüksek çözünürlüklü raster + X/Y/Z','A4 · high-resolution raster + X/Y/Z'],
   ['PDF ve TIFF','PDF and TIFF'],['Baskı çözünürlük çarpanı','Print resolution multiplier'],
   ['Baskı DPI','Print DPI'],['DPI','DPI'],
   ['PDF A4 sayfaya sığdırılır; DPI, TIFF baskı ölçüsünü belirler.','PDF fits an A4 page; DPI sets TIFF print dimensions.'],
