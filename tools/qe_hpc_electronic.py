@@ -188,6 +188,8 @@ def collect(root: Path) -> dict:
     plan = config["stages"]
     if plan[-1] != "projwfc":
         raise ValueError("Unexpected terminal P1.2 stage")
+    # Revalidate the immediately preceding stage including current QE save XML.
+    hpc.previous_report(root, plan, "projwfc")
     # Every preceding stage must have a completed, intact receipt. Earlier
     # QE .save XML digests cannot be rechecked after the later PW steps rewrite it.
     for stage in plan[:-1]:
