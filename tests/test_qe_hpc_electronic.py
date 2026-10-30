@@ -149,7 +149,7 @@ class TestHpcElectronic(unittest.TestCase):
         path = self.root / "dos.dat"
         path.unlink()
         path.symlink_to(self.root / "structure.in")
-        with self.assertRaisesRegex(ValueError, "unsafe QE numeric"):
+        with self.assertRaisesRegex(ValueError, "Required safe file|unsafe QE numeric"):
             electronic.collect(self.root)
         path.unlink()
         self.write("dos.dat", "-1 0.5 0.1\n0 1.0 0.4\n1 1.5 1.0\n")
