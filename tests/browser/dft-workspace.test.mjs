@@ -316,14 +316,22 @@ try{
  // Settings survive a reload in this browser, the API key does not, and reset restores defaults.
  await page.locator('[data-dft-section="hazirlik"]').click();
  await page.locator('#qeEcutwfc').fill('77');
+ await page.locator('input[name="dftPreparationMode"][value="truba"]').check();
+ await page.locator('.dft-hpc-workflow details').evaluate(el=>{el.open=true;});
+ await page.locator('#qeHpcConvertElectronic').uncheck();
+ assert.equal(await page.locator('#qeHpcBandFirst').isDisabled(),true);
  await page.reload();
  await page.waitForFunction(()=>!document.getElementById('dft-hazirlik').hidden);
  assert.equal(await page.locator('#qeEcutwfc').inputValue(),'77');
+ assert.equal(await page.locator('input[name="dftPreparationMode"][value="truba"]').isChecked(),true);
+ assert.equal(await page.locator('#qeHpcConvertElectronic').isChecked(),false);
+ assert.equal(await page.locator('#qeHpcBandFirst').isDisabled(),true,'restored converter state also disables the band window');
  assert.equal(await page.locator('#qeApiToken').inputValue(),'');
  assert.ok(!(await page.evaluate(()=>localStorage.getItem('kristalyapi.dft-settings.v1'))).includes('test-only-token'),'API key is never stored');
  await page.locator('[data-dft-section="ayarlar"]').click();
  await page.locator('#dftSettingsReset').click();
  assert.equal(await page.locator('#qeEcutwfc').inputValue(),'50');
+ assert.equal(await page.locator('#qeHpcBandFirst').isDisabled(),false,'reset re-enables the default converter window');
  assert.match(await page.locator('#dftSettingsResetStatus').textContent(),/varsayılanlar yüklendi/);
  assert.deepEqual(errors,[]);
  console.log('DFT workspace: desktop/mobile routes, form/file persistence, graphics and no automatic server calls passed.');

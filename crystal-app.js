@@ -6977,7 +6977,10 @@ const DFT_SETTINGS_IDS=['qeApiAddress','qeJobProfile','qeJobWorkflow','qeElectro
  'qeElectronicNbnd','qeElectronicMesh','qeBandFirst','qeBandLast','qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma',
  'qeElectronicPath','qeJobMaxSteps','qeJobEnergyThreshold','qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
  'qeForceThreshold','qeFreezeBottom','qePseudoFiles','qeHpcAccount','qeHpcPartition','qeHpcTasks','qeHpcHours','qeHpcNbnd',
- 'qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz','qeHpcBandPath','qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss'];
+ 'qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz','qeHpcBandPath','qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss',
+ 'qeHpcBandFirst','qeHpcBandLast','qeHpcConvertElectronic'];
+// Controls in Setup/Settings that are intentionally not saved.
+const DFT_UNSAVED_IDS=['qeApiToken','qeProtocolSelect','qeHpcUpfFiles'];
 const DFT_PREPARATION_MODES=['server','file','truba'];
 let dftSettingDefaults=null;
 function readDftSettings(){
@@ -7010,7 +7013,7 @@ function resetDftSettings(){
  try{localStorage.removeItem(DFT_SETTINGS_KEY);}catch{}
  applyDftSettings(dftSettingDefaults);
  qeResourceProfile=null;dftServerConnected=false;dftConnectionState='Bağlantı kontrol edilmedi';
- syncDftPreparation();syncDftSummary();
+ syncDftPreparation();syncDftSummary();qeSyncHpcBandWindow();
  $('dftSettingsResetStatus').textContent='Kaydedilen DFT ayarları silindi; varsayılanlar yüklendi.';
 }
 function syncDftPreparation(){
@@ -10322,7 +10325,7 @@ function bind(){
  $('qeElectronicApplyNbnd').onclick=event=>{const input=$('qeElectronicNbnd');input.value=event.currentTarget.dataset.nbnd;
   input.dispatchEvent(new Event('input',{bubbles:true}));event.currentTarget.hidden=true;};
  for(const choice of document.querySelectorAll('input[name="dftPreparationMode"]'))choice.addEventListener('change',syncDftPreparation);
- restoreDftSettings();
+ restoreDftSettings();qeSyncHpcBandWindow();
  syncDftPreparation();
  for(const type of ['input','change'])$('dftPage').addEventListener(type,event=>{
   if(DFT_SETTINGS_IDS.includes(event.target.id)||event.target.name==='dftPreparationMode')saveDftSettings();

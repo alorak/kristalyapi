@@ -206,7 +206,7 @@ class TestHpcElectronic(unittest.TestCase):
                    "0 -2\n.2 -1\n.4 0\n\n0 1\n.2 2\n.4 3\n")
         self.manifest["electronic"]["path"][0]["segments"] = 5
         self.write("pipeline.json", json.dumps(self.manifest))
-        with self.assertRaisesRegex(ValueError, "samples disagree"):
+        with self.assertRaisesRegex(ValueError, "k-point count differs from declared crystal_b path"):
             electronic.collect(self.root)
 
     def test_tampering_and_missing_receipt_fail_closed(self):

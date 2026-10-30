@@ -26,6 +26,18 @@ test('offline shell entries exist at the same path in the repository',()=>{
  const downloaded=new Set(['vendor/moyo_wasm.js','vendor/moyo_wasm_bg.wasm']);
  assert.deepEqual(listed.filter(file=>!downloaded.has(file)&&!existsSync(path.join(root,file))),[]);
 });
+test('every DFT setup and settings control is either saved or explicitly left unsaved',()=>{
+ const list=name=>[...editor.match(new RegExp('const '+name+'=\\[([\\s\\S]*?)\\];'))[1].matchAll(/'([^']+)'/g)].map(match=>match[1]);
+ const saved=new Set(list('DFT_SETTINGS_IDS')),unsaved=new Set(list('DFT_UNSAVED_IDS'));
+ const controls=[];
+ for(const section of ['dft-ayarlar','dft-hazirlik']){
+  const start=html.indexOf('<section id="'+section+'"'),end=html.indexOf('</section>',start);
+  for(const match of html.slice(start,end).matchAll(/<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"/g))controls.push(match[1]);
+ }
+ assert.ok(controls.length>40);
+ assert.deepEqual(controls.filter(id=>!saved.has(id)&&!unsaved.has(id)),[],'new controls must be added to DFT_SETTINGS_IDS or DFT_UNSAVED_IDS');
+ assert.deepEqual([...saved].filter(id=>!controls.includes(id)),[],'saved ids must exist in the page');
+});
 test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
  for(const file of modules){
   assert.ok(existsSync(path.join(root,file)),file+' must exist in the source tree');
@@ -61,7 +73,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-truba-p14-band-window'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-dft-settings-r2'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
