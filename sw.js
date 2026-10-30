@@ -2,7 +2,7 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-30-publication-export';
+const CACHE_NAME=CACHE_PREFIX+'2026-10-30-figure-elements';
 const APP_FILES=[
  './','./index.html','./styles.css','./dft-workspace.css','./semiconductor-p0.css','./crystal-app.js','./qe-hpc-export.js','./qe-hpc-pipeline.js','./qe-truba-pipeline-view.js','./tools/qe_hpc_pipeline.py','./tools/qe_hpc_electronic.py','./tools/qe_pdos.py','./qe-truba-summary-view.js','./tools/qe_hpc_collect.py','./qe-electronic-view.js','./qe-electronic-setup.js','./dft-ui.js','./export-graphics.js','./export-glyphs.js','./qe-convergence-view.js','./qe-job-diagnostics-view.js','./qe-job-tracking.js','./qe-protocol-templates.js','./qe-defect-compare-view.js','./qe-api-client.js','./qe-relax-view.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js',
