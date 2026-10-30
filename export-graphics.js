@@ -6,10 +6,13 @@ import {EXPORT_GLYPHS} from './export-glyphs.js';
 /* ---- Text as vector outlines ------------------------------------------ */
 
 const glyphCache=new Map();
+// Bold italic holds only the a/b/c compass letters; other characters use the
+// upright face of the same weight. All faces share one units-per-em.
 function glyphCommands(style,char){
  const key=style+'\u0000'+char;
  if(glyphCache.has(key))return glyphCache.get(key);
- const font=EXPORT_GLYPHS[style],entry=font.glyphs[char]||font.glyphs['?'];
+ const upright=EXPORT_GLYPHS[style==='boldItalic'?'bold':style];
+ const entry=EXPORT_GLYPHS[style].glyphs[char]||upright.glyphs[char]||upright.glyphs['?'];
  const commands=[],tokens=entry[1].match(/[MLCZ]|-?\d+/g)||[];
  for(let i=0;i<tokens.length;){
   const op=tokens[i++],count={M:2,L:2,C:6,Z:0}[op];
@@ -20,9 +23,9 @@ function glyphCommands(style,char){
 
 /** Outline commands for one line of text in screen coordinates (y down).
  * x is the anchor position and y the baseline, as for SVG text. */
-export function textOutline(text,{x=0,y=0,size=12,bold=false,anchor='middle'}={}){
+export function textOutline(text,{x=0,y=0,size=12,bold=false,italic=false,anchor='middle'}={}){
  if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(size)||size<=0)throw Error('Yazı konumu veya boyutu geçersiz.');
- const style=bold?'bold':'regular',font=EXPORT_GLYPHS[style],scale=size/font.unitsPerEm;
+ const style=bold&&italic?'boldItalic':bold?'bold':'regular',font=EXPORT_GLYPHS[style],scale=size/font.unitsPerEm;
  const glyphs=[...String(text??'')].map(char=>glyphCommands(style,char));
  const width=glyphs.reduce((sum,glyph)=>sum+glyph.advance,0)*scale;
  let pen=x-(anchor==='middle'?width/2:anchor==='end'?width:0);
@@ -96,6 +99,21 @@ export function visibleLineIntervals(a,b,spheres,{perspective=false,samples=24}=
  return intervals.filter(([s0,s1])=>s1-s0>1e-6);
 }
 
+/* ---- Scale bar ------------------------------------------------------- */
+
+const SCALE_STEPS=[0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000];
+/** Longest 1-2-5 length (Å) that fits in maxLength, for a scale bar. */
+export function niceScaleLength(maxLength){
+ if(!Number.isFinite(maxLength)||maxLength<=0)throw Error('Ölçek çubuğu uzunluğu geçersiz.');
+ return SCALE_STEPS.filter(v=>v<=maxLength).at(-1)??SCALE_STEPS[0];
+}
+
+/** Printable ASCII only: PNG tEXt, TIFF ASCII tags and PDF/PS strings. */
+export function asciiText(text,max=2000){
+ return String(text??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/Å/g,'A').replace(/[^\x20-\x7e]/g,'?').slice(0,max);
+}
+
 /* ---- Shaded spheres --------------------------------------------------- */
 
 const channels=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
@@ -116,8 +134,9 @@ const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=
 export function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
 
 /** Copy of a PNG with a pHYs chunk, so layout programs place it at its
- * real print size instead of assuming 72 or 96 DPI. */
-export function pngWithDpi(png,dpi){
+ * real print size instead of assuming 72 or 96 DPI, and optional tEXt
+ * entries (Title, Software, Description) recording where it came from. */
+export function pngWithDpi(png,dpi,{text={}}={}){
  if(!Number.isFinite(dpi)||dpi<1||dpi>10000)throw Error('PNG DPI değeri geçersiz.');
  const signature=[137,80,78,71,13,10,26,10];
  if(!(png instanceof Uint8Array)||png.length<33||signature.some((v,i)=>png[i]!==v))throw Error('Geçerli bir PNG dosyası gerekli.');
@@ -131,12 +150,21 @@ export function pngWithDpi(png,dpi){
   if(end>png.length)throw Error('PNG parçası kesik.');
   const type=String.fromCharCode(...png.subarray(at+4,at+8));
   if(type!=='pHYs')parts.push(png.subarray(at,end));
-  if(type==='IHDR')parts.push(chunk);
+  if(type==='IHDR')parts.push(chunk,...Object.entries(text).map(([key,value])=>pngTextChunk(key,value)));
   at=end;
  }
  const out=new Uint8Array(parts.reduce((s,p)=>s+p.length,0));let at=0;
  for(const part of parts){out.set(part,at);at+=part.length;}
  return out;
+}
+
+function pngTextChunk(key,value){
+ const keyword=asciiText(key,79),body=new TextEncoder().encode(keyword+'\u0000'+asciiText(value));
+ if(!/^[\x21-\x7e](?:[\x20-\x7e]*[\x21-\x7e])?$/.test(keyword))throw Error('PNG metin anahtarı geçersiz.');
+ const chunk=new Uint8Array(12+body.length),view=new DataView(chunk.buffer);
+ view.setUint32(0,body.length);chunk.set([116,69,88,116],4);chunk.set(body,8);
+ view.setUint32(8+body.length,crc32(chunk.subarray(4,8+body.length)));
+ return chunk;
 }
 
 /* ---- TIFF LZW (compression 5) ----------------------------------------- */

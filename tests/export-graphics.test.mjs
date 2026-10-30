@@ -4,7 +4,7 @@ import zlib from 'node:zlib';
 import {createRequire} from 'node:module';
 import {EXPORT_GLYPHS} from '../export-glyphs.js';
 import {textOutline,svgPathData,pdfPathData,postScriptPathData,pointOccluded,visibleLineIntervals,
- sphereShade,mixHex,crc32,pngWithDpi,lzwEncode} from '../export-graphics.js';
+ sphereShade,mixHex,crc32,pngWithDpi,lzwEncode,niceScaleLength,asciiText} from '../export-graphics.js';
 
 const {tiffLzwDecode}=createRequire(import.meta.url)('./tiff-lzw-decode.cjs');
 const close=(actual,expected,tolerance=2e-3)=>assert.ok(Math.abs(actual-expected)<=tolerance,actual+' ≉ '+expected);
@@ -108,4 +108,27 @@ test('TIFF LZW round-trips through an independent decoder, including table reset
  }
  assert.ok(lzwEncode(smooth).length<smooth.length/5,'flat image regions compress well');
  assert.throws(()=>lzwEncode([1,2,3]),/bayt/);
+});
+
+test('crystallographic a/b/c use bold italic outlines; other letters keep the upright face',()=>{
+ const upright=textOutline('a',{size:20,bold:true}),italic=textOutline('a',{size:20,bold:true,italic:true});
+ assert.notDeepEqual(italic.commands,upright.commands,'italic a differs from upright a');
+ assert.deepEqual(textOutline('X',{size:20,bold:true,italic:true}).commands,textOutline('X',{size:20,bold:true}).commands);
+ const start=textOutline('Si',{x:10,size:10,anchor:'start'}),xs=start.commands.flatMap(([,...v])=>v.filter((_,i)=>i%2===0));
+ assert.ok(Math.min(...xs)>=10-0.5,'start-anchored text begins at x');
+});
+
+test('scale bars use the longest 1-2-5 length that fits',()=>{
+ assert.equal(niceScaleLength(7.3),5);assert.equal(niceScaleLength(10),10);assert.equal(niceScaleLength(1.99),1);
+ assert.equal(niceScaleLength(0.05),0.1,'never shorter than 0.1 Å');assert.equal(niceScaleLength(5000),1000);
+ assert.throws(()=>niceScaleLength(0),/uzunluğu/);
+});
+
+test('provenance text is plain ASCII and PNG tEXt chunks are valid',()=>{
+ assert.equal(asciiText('MoS₂ · Å α'),'MoS2 ? A ?');assert.equal(asciiText('x'.repeat(10),4),'xxxx');
+ const out=chunks(pngWithDpi(minimalPng(),300,{text:{Title:'Si (Fd-3m)',Software:'Kristal Yapi',Description:'cell a=5.431 A'}}));
+ assert.deepEqual(out.map(c=>c.type),['IHDR','pHYs','tEXt','tEXt','tEXt','IDAT','IEND']);
+ assert.deepEqual(out.filter(c=>c.type==='tEXt').map(c=>c.data.toString('latin1').split('\u0000')),
+  [['Title','Si (Fd-3m)'],['Software','Kristal Yapi'],['Description','cell a=5.431 A']]);
+ assert.throws(()=>pngWithDpi(minimalPng(),300,{text:{' bad':'x'}}),/anahtarı/);
 });

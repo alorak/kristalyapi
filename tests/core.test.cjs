@@ -257,6 +257,27 @@ test('TIFF export writes LZW-compressed RGB or RGBA pixels and DPI rational tags
  assert.throws(()=>api.tiffRgbBytes(2,1,rgba,72),/TIFF/);
  assert.throws(()=>api.tiffRgbBytes(2,1,rgba.subarray(0,4),300),/TIFF/);
 });
+test('every image format records ASCII provenance: structure, cell and software',()=>{
+ const rgba=Uint8ClampedArray.from([1,2,3,255]),description='Structure: Si; space group F d -3 m (No. 227); cell a=5.4310 A';
+ const tiff=api.tiffRgbBytes(1,1,rgba,300,{description,software:'Kristal Yapi'}),dv=new DataView(tiff.buffer),count=dv.getUint16(8,true);
+ const tags=Array.from({length:count},(_,i)=>({id:dv.getUint16(10+i*12,true),type:dv.getUint16(12+i*12,true),count:dv.getUint32(14+i*12,true),value:dv.getUint32(18+i*12,true)}));
+ assert.deepEqual(tags.map(t=>t.id),[...tags.map(t=>t.id)].sort((a,b)=>a-b));
+ for(const [id,text] of [[270,description],[305,'Kristal Yapi']]){
+  const tag=tags.find(t=>t.id===id);
+  assert.equal(tag.type,2);assert.equal(tag.value%2,0,'TIFF value offsets are word aligned');
+  assert.equal(Buffer.from(tiff.subarray(tag.value,tag.value+tag.count)).toString('latin1'),text+'\u0000');
+ }
+ const strip=tags.find(t=>t.id===273);assert.equal(strip.value%2,0);
+ assert.deepEqual(tiffLzwDecode(tiff.subarray(strip.value,strip.value+tags.find(t=>t.id===279).value)),[1,2,3]);
+ const items=[{type:'circle',x:20,y:20,r:5,fill:'#cc6644',opacity:1,depth:1}];
+ assert.match(api.crystalSvgText(items,40,40,'Si',false,{description:'a<b'}),/<\/title><desc>a&lt;b<\/desc>/);
+ const pdf=Buffer.from(api.vectorPdfBytes(items,40,40,{title:'Si (x)',description:'cell a=1 \\ b'})).toString('latin1');
+ assert.match(pdf,/\/Title \(Si \\\(x\\\)\) \/Subject \(cell a=1 \\\\ b\)/,'PDF strings escape parentheses and backslashes');
+ const eps=api.vectorEpsText(items,40,40,{title:'Si',description:'cell'});
+ assert.match(eps,/%%Title: Si\n%%Creator: Kristal Yapi\n%%Pages: 1\n%%EndComments\n% Description: cell\n/,'the description follows the DSC header');
+ const raster=Buffer.from(api.pdfImageBytes(1,1,Uint8Array.from([120,156,3,0,0,0,0,1]),{title:'Si',description:'cell'}).bytes).toString('latin1');
+ assert.match(raster,/\/Title \(Si\) \/Subject \(cell\)/);
+});
 test('raster PDF is lossless Flate on A4 or on a page cut to the figure size',()=>{
  const zlib=require('node:zlib'),pixels=new Uint8Array(1200*800*3).fill(200);
  const output=api.pdfImageBytes(1200,800,new Uint8Array(zlib.deflateSync(pixels)),{filter:'FlateDecode'});
