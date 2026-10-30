@@ -254,8 +254,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p>Kare aralıkları GPU süresi değildir. Ölçümler cihaz ve tarayıcıya bağlıdır; atom verileri ve bilimsel hesaplar değişmez.</p>
    <button id="performanceDownload" type="button">JSON performans raporunu indir</button>
   </section>
-  <div id="axisGizmo" class="axis-gizmo" role="img" aria-label="Kamera ile birlikte dönen Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi">
-    <svg id="axisGizmoSvg" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="58" r="4" fill="#69798a" stroke="#fff" stroke-width="1.5"/></svg>
+  <div id="axisGizmo" class="axis-gizmo">
+    <select id="axisCompassMode" class="axis-compass-mode" aria-label="Yön göstergesi sistemi" title="Yön göstergesi sistemi">
+      <option value="cartesian">Kartezyen X/Y/Z</option><option value="lattice">Kristalografik a/b/c</option>
+    </select>
+    <svg id="axisGizmoSvg" viewBox="0 0 120 120" role="img" aria-label="Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi"><circle cx="60" cy="58" r="4" fill="#69798a" stroke="#fff" stroke-width="1.5"/></svg>
 
   </div>
 
@@ -1674,22 +1677,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <span class="export-option-icon">⌬</span><span><strong>PDB</strong><small>CRYST1 + ATOM/HETATM · bir hücre, P1</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="png" class="export-option">
-    <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünüm · kamera yönlü X/Y/Z okları</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünüm · seçilen eksen yönleri</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="tiff" class="export-option">
-    <span class="export-option-icon">▦</span><span><strong>TIFF görseli</strong><small>Kayıpsız RGB · DPI · X/Y/Z yönleri</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▦</span><span><strong>TIFF görseli</strong><small>Kayıpsız RGB · DPI · seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="pdf" class="export-option">
-    <span class="export-option-icon">▤</span><span><strong>PDF baskı sayfası</strong><small>A4 · yüksek çözünürlüklü raster + X/Y/Z</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▤</span><span><strong>PDF baskı sayfası</strong><small>A4 · yüksek çözünürlüklü raster + eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="svg" class="export-option">
-    <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · vektörel yapı + X/Y/Z yönleri</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · vektörel yapı + seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="pdf-vector" class="export-option">
-    <span class="export-option-icon">▱</span><span><strong>Vektörel PDF</strong><small>A4 · gerçek vektör yolları + X/Y/Z yönleri</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▱</span><span><strong>Vektörel PDF</strong><small>A4 · gerçek vektör yolları + seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="eps" class="export-option">
-    <span class="export-option-icon">✧</span><span><strong>EPS vektör görseli</strong><small>PostScript eğrileri + X/Y/Z yönleri · saydamlık beyaza karışır</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">✧</span><span><strong>EPS vektör görseli</strong><small>PostScript eğrileri + seçilen eksenler · saydamlık beyaza karışır</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="stl" class="export-option">
     <span class="export-option-icon">⬡</span><span><strong>STL 3B yüzey</strong><small>Atom, bağ ve çokyüzlü üçgenleri · renksiz, Å koordinatları</small></span><span class="export-option-arrow">↓</span>
