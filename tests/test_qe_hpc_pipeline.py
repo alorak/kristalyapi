@@ -130,6 +130,38 @@ class TestStagedTruba(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Resume already submitted"):
             pipeline.resume_check(self.root, "bands_pp")
 
+    def test_operator_accounting_gathers_job_and_step_resources_without_submission(self):
+        from types import SimpleNamespace
+        (self.root / "submissions.txt").write_text(
+            "".join(f"{stage} {i+1000}\n" for i, stage in enumerate(self.plan)))
+        cols = lambda job, step, state, rss: (
+            f"{job}{step}|{state}|0:0|12|56|110G|{rss}|0|0|node01")
+        sacct = "\n".join((cols("1000", "", "COMPLETED", ""),
+                          cols("1000", ".batch", "COMPLETED", "32000K")))
+        observed = []
+        def fake_run(argv, **kwargs):
+            observed.append((argv, kwargs))
+            return SimpleNamespace(stdout=sacct)
+        record = pipeline.accounting(self.root, runner=fake_run)
+        self.assertEqual(record["schema"], "kristalyapi.truba-qe-accounting.v1")
+        self.assertEqual(record["status"], "partial")
+        self.assertEqual(record["jobs"][0]["job"]["state"], "COMPLETED")
+        self.assertEqual(record["jobs"][0]["steps"][0]["max_rss"], "32000K")
+        self.assertIsNone(record["jobs"][1]["job"])
+        self.assertEqual(observed[0][0][0], "sacct")
+        self.assertNotIn("sbatch", observed[0][0])
+        self.assertFalse(observed[0][1].get("shell", False))
+
+    def test_operator_accounting_rejects_invalid_jobs_and_forged_sacct(self):
+        from types import SimpleNamespace
+        (self.root / "submissions.txt").write_text("scf 1000\nbands 1001\n")
+        with self.assertRaisesRegex(ValueError, "Unexpected Slurm"):
+            pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(
+                stdout="9999|FAILED|1:0|12|56|110G|0|0|0|node01"))
+        (self.root / "submissions.txt").write_text("scf 1000;rm\n")
+        with self.assertRaisesRegex(ValueError, "Invalid or unsorted"):
+            pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(stdout=""))
+
     def test_electronic_chain_preserves_order_and_artifacts(self):
         for stage in self.plan:
             self.complete(stage)

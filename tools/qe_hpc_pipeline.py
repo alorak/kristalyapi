@@ -3,7 +3,8 @@
 
 Only the generated fixed workflow is supported: optional fixed-cell relax,
 SCF, bands/bands.x, NSCF, DOS and projected DOS. This tool never submits jobs,
-executes shell commands, downloads pseudopotentials or infers a k-path.
+executes shell commands (except operator-invoked read-only sacct accounting),
+downloads pseudopotentials or infers a k-path.
 Requires Python 3.9+ standard library only.
 """
 from __future__ import annotations
@@ -16,6 +17,7 @@ import math
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -495,6 +497,78 @@ def fail(root: Path, stage: str, exit_code: int) -> None:
                          "utc": datetime.now(timezone.utc).isoformat()})
 
 
+def accounting(root: Path, runner=None) -> dict:
+    """Operator-only, read-only sacct inspection; no sbatch, shell or QE run.
+
+    Slurm job rows and step-level MaxRSS are kept separately; accounting
+    presence is NOT proof of scientific convergence or successful execution.
+    """
+    config = load_manifest(root)
+    plan = config["stages"]
+    jobs = []
+    for filename, attempt in (("submissions.txt", "original"),
+                              ("resubmissions.txt", "manual-resume")):
+        path = root / filename
+        if not path.exists() and not path.is_symlink():
+            if attempt == "original":
+                raise ValueError("Missing original Slurm submissions")
+            continue
+        lines = file_at(root, filename, MAX_MANIFEST).read_text("utf-8").splitlines()
+        records = [line.strip().split() for line in lines if line.strip()]
+        if not records or len(records) > len(plan):
+            raise ValueError("Invalid Slurm submission record count")
+        previous_index = -1
+        for row in records:
+            if (len(row) != 2 or row[0] not in plan or
+                    not re.fullmatch(r"[0-9]{1,18}", row[1]) or
+                    plan.index(row[0]) != previous_index + 1 and
+                    not (previous_index == -1 and attempt == "manual-resume")):
+                raise ValueError("Invalid or unsorted Slurm job receipts")
+            previous_index = plan.index(row[0])
+            jobs.append({"stage": row[0], "job_id": row[1], "attempt": attempt})
+    identifiers = [item["job_id"] for item in jobs]
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("Duplicate Slurm job IDs")
+    args = ["sacct", "--parsable2", "--noheader", "--jobs", ",".join(identifiers),
+            "--format=JobIDRaw,State,ExitCode,ElapsedRaw,AllocCPUS,ReqMem,MaxRSS,MaxDiskRead,MaxDiskWrite,NodeList"]
+    try:
+        if runner is None:
+            runner = subprocess.run
+        result = runner(args, capture_output=True, text=True, timeout=20, check=True)
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise ValueError("sacct unavailable or failed") from exc
+    if not isinstance(result.stdout, str) or len(result.stdout.encode("utf-8")) > 512 * 1024:
+        raise ValueError("Oversized or invalid sacct response")
+    by_id = {item["job_id"]: {"job": None, "steps": []} for item in jobs}
+    fields = ("job_id_raw", "state", "exit_code", "elapsed_raw", "alloc_cpus",
+              "requested_memory", "max_rss", "disk_read", "disk_write", "nodelist")
+    for raw in result.stdout.splitlines():
+        if not raw.strip():
+            continue
+        values = raw.split("|")
+        if len(values) != len(fields) or any(len(v) > 512 for v in values):
+            raise ValueError("Malformed sacct accounting row")
+        raw_id = values[0]
+        root_id = raw_id.split(".", 1)[0]
+        if root_id not in by_id or not re.fullmatch(re.escape(root_id) + r"(?:[.][A-Za-z0-9_-]{1,20})?", raw_id):
+            raise ValueError("Unexpected Slurm job/step ID in accounting")
+        record = dict(zip(fields, values))
+        if root_id == raw_id:
+            if by_id[root_id]["job"] is not None:
+                raise ValueError("Duplicate sacct job row")
+            by_id[root_id]["job"] = record
+        else:
+            if len(by_id[root_id]["steps"]) >= 32:
+                raise ValueError("Excessive Slurm step records")
+            by_id[root_id]["steps"].append(record)
+    return {"schema": "kristalyapi.truba-qe-accounting.v1",
+            "source": "operator-invoked-sacct", "scientific_convergence_verified": False,
+            "status": "collected" if all(x["job"] is not None for x in by_id.values()) else "partial",
+            "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
+            "jobs": [{**item, **by_id[item["job_id"]]} for item in jobs],
+            "notice": "MaxRSS may be missing on job rows; inspect step records. No resource sufficiency or physical convergence is asserted."}
+
+
 def summary(root: Path) -> None:
     config = load_manifest(root)
     records = []
@@ -538,18 +612,20 @@ def summary(root: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("preflight", "resume-check", "prepare", "finish", "fail", "summary"))
+    parser.add_argument("action", choices=("preflight", "resume-check", "prepare", "finish", "fail", "summary", "accounting"))
     parser.add_argument("stage", nargs="?")
     parser.add_argument("code", nargs="?", type=int)
     args = parser.parse_args(argv)
     try:
         root = Path.cwd().resolve()
-        if args.action not in ("summary", "preflight") and args.stage not in STAGES:
+        if args.action not in ("summary", "preflight", "accounting") and args.stage not in STAGES:
             raise ValueError("Stage name required")
         if args.action == "preflight":
             print(json.dumps(preflight(root), indent=2))
         elif args.action == "resume-check":
             print(json.dumps(resume_check(root, args.stage), indent=2))
+        elif args.action == "accounting":
+            print(json.dumps(accounting(root), indent=2))
         elif args.action == "prepare":
             prepare(root, args.stage)
         elif args.action == "finish":
