@@ -8,6 +8,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 > Bu proje bilimsel görselleştirme ve eğitim amaçlıdır; VESTA'nın veya deneysel/yüksek doğruluklu hesaplama yazılımlarının tüm işlevlerine eşdeğer değildir. [Bilimsel kapsam ve sınırlar](#bilimsel-kapsam-ve-sınırlar) bölümüne bakın.
 
+**TRUBA P1.4 (büyük bant sayısı):** QE'nin hesapladığı tüm `nbnd` bantları ve ham dosya korunurken, grafik için 1 tabanlı **ilk–son bant** aralığı seçilebilir (ör. 800 bant içinden 301–380). Dönüştürücü tüm bantları akışla doğrular, yalnız seçili en fazla 300 bandı JSON'a yazar. Otomatik VBM/CBM veya Fermi yorumu yapılmaz. [P1.4 kılavuzu](docs/qe-truba-slurm.md).
+
 **TRUBA bant/DOS grafik sonuçları (P1.3):** Aşamalı SLURM ZIP içinde SHA-256 ile sabitlenmiş Python dönüştürücüsü, gerçek `bands.dat.gnu`, `dos.dat`, `pdos.pdos_tot` ve atom/orbital projeksiyon dosyalarını mevcut `electronic-results.json` biçimine dönüştürebilir. Dosya **DFT → Sonuçları incele → Bant, DOS ve PDOS** panelinde çizilir. Spinli veya enerji ekseni tutarsız çıktılar reddedilir; grafik kapasitesi bilimsel yakınsama kuralı değildir. [P1.3 açıklaması](docs/qe-truba-slurm.md).
 
 **TRUBA aşamalı elektronik iş akışı (P1.2):** DFT → Hesap hazırlığı → TRUBA altında ikinci ZIP seçeneği; isteğe bağlı sabit hücreli relaksasyon → SCF → bands/bands.x → NSCF → DOS/projwfc.x zinciri hazırlar. Gerçek `crystal_b` k-yolu, `nbnd`, NSCF örgüsü ve DOS parametreleri açıkça seçilir. SLURM `afterok` bağımlılığı ile seri koşum, ara dosya hash denetimleri ve çevrimdışı Python aşama kontrolü bulunur. Tarayıcı `pipeline-summary.json` aşama kanıtını gösterir, bant/DOS grafiklerini **henüz otomatik çizmez**. [TRUBA P1.2 kılavuzu](docs/qe-truba-slurm.md).
