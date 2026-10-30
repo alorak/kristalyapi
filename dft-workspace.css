@@ -169,3 +169,14 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 .qe-provenance-details summary{cursor:pointer;font-size:12px;font-weight:700;color:#2a6698}
 .qe-provenance-details pre{overflow:auto;max-height:320px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;background:#edf4fa;padding:12px;border-radius:7px}
 @media(max-width:750px){.qe-history-toolbar{grid-template-columns:1fr}.qe-job-naming{grid-template-columns:1fr}.qe-provenance-grid{grid-template-columns:minmax(90px,.55fr) minmax(0,1fr)}}
+
+/* TRUBA P1: read-only, bounded provenance summary; display never changes crystal state. */
+.qe-truba-summary-panel{display:grid;gap:11px}
+.qe-truba-summary-view{overflow-wrap:anywhere;min-width:0}
+.qe-truba-summary-view h4{font-size:14px;color:#284966;margin:12px 0 6px}
+.qe-truba-summary-view p{font-size:12px;line-height:1.7;margin:6px 0;color:#52697d}
+.qe-truba-summary-view .qe-truba-state{font-weight:700;color:#345e82}
+.qe-truba-summary-view table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.qe-truba-summary-view th,.qe-truba-summary-view td{padding:7px 10px;text-align:left;border-bottom:1px solid #e3eaf1;vertical-align:top}
+.qe-truba-summary-view th{width:43%;font-weight:600;color:#47677e;background:#f7faff}
+.qe-truba-summary-view td{color:#284966;overflow-wrap:anywhere}
