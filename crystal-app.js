@@ -16,6 +16,8 @@ import {createJobPoller,renderJobProgress,renderCalculationSummary} from './qe-j
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
 import {createDftSettings,enhanceFilePickers,initTabKeys,syncTabState} from './dft-ui.js';
 import {textOutline,svgPathData,pdfPathData,postScriptPathData,visibleLineIntervals,sphereShade,SPHERE_GRADIENT,mixHex,pngWithDpi,lzwEncode,niceScaleLength,asciiText} from './export-graphics.js';
+import {crystallographicView,rotateVector,normalizedViewSettings,DEFAULT_VIEW_SETTINGS,lightDirection,depthCueFactor,contrastingInk,RADIUS_SETS,COLOR_SCHEMES,ELEMENT_DATA_SOURCE,shannonOptions,displayRadius,schemeColor,normalizedIonicChoices} from './view-settings.js';
+import {symmetryOperations,geometryTable,geometryCsv,geometryCif,formatWithSu} from './geometry-table.js';
 import {MIN_SLAB_VACUUM_ANGSTROM,slabAnalysis,suggestBandPath,bandCapacityAdvice,bandCapacityFrom} from './qe-electronic-setup.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
@@ -49,8 +51,13 @@ const COLORS={
  Bh:'#e0003c',Hs:'#e50034',Mt:'#ea002b',Ds:'#ef0022',Rg:'#f20018',Cn:'#d1d1d1',Nh:'#a5a5a5',Fl:'#7a7a7a',
  Mc:'#bc8498',Lv:'#9baf83',Ts:'#b19b63',Og:'#98b5bd',X:'#a0aeba'
 };
+// Colour scheme chosen in the view panel: a symbol → colour map, or null for COLORS.
+let elementSchemeColors=null;
+const RADIUS_SET_KEYS=['default','vdw','ionic'],COLOR_SCHEME_KEYS=['app','jmol','cpk'];
+let ambientLight=null,keyLight=null,lastCrystalView=null,sceneBoundsCache=null;
 function elementColor(raw){
- const symbol=cleanSymbol(raw);if(COLORS[symbol])return COLORS[symbol];
+ const symbol=cleanSymbol(raw);if(elementSchemeColors?.[symbol])return elementSchemeColors[symbol];
+ if(COLORS[symbol])return COLORS[symbol];
  const n=PERIODIC_SYMBOLS.indexOf(symbol);return n<0?'#95a5b6':'hsl('+((n*137.508)%360).toFixed(1)+' 58% 52%)';
 }
 const RADII = {H:.31,He:.28,Li:1.28,Be:.96,B:.84,C:.76,N:.71,O:.66,F:.57,Ne:.58,Na:1.66,Mg:1.41,Al:1.21,Si:1.11,P:1.07,S:1.05,Cl:1.02,Ar:1.06,K:2.03,Ca:1.76,Sc:1.7,Ti:1.36,V:1.34,Cr:1.22,Mn:1.19,Fe:1.24,Co:1.18,Ni:1.17,Cu:1.32,Zn:1.22,Ga:1.22,Ge:1.20,As:1.19,Se:1.20,Br:1.20,Kr:1.16,Rb:2.2,Sr:1.95,Y:1.9,Zr:1.75,Nb:1.64,Mo:1.54,Ru:1.46,Rh:1.42,Pd:1.39,Ag:1.45,Cd:1.44,In:1.42,Sn:1.39,Sb:1.39,Te:1.38,I:1.39,Xe:1.4,Cs:2.44,Ba:2.15,La:2.07,Ce:2.04,Nd:2.01,W:1.62,Pt:1.36,Au:1.36,Hg:1.32,Tl:1.45,Pb:1.46,Bi:1.48,U:1.96,X:1.1};
@@ -58,6 +65,14 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const frac=n=>((n%1)+1)%1;
 const cleanSymbol=s=>{ const x=String(s||'X').match(/[A-Za-z]{1,2}/); if(!x)return 'X'; return x[0][0].toUpperCase()+x[0].slice(1).toLowerCase(); };
 const number=s=>{ const v=parseFloat(String(s).replace(/\([0-9]+\)$/,''));return Number.isFinite(v)?v:NaN; };
+/* CIF value and its e.s.d.: "5.4310(2)" → 0.0002, "0.25" → 0 (no e.s.d.). */
+function numberSu(s){
+ const m=/^\s*[+-]?(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?\((\d+)\)\s*$/.exec(String(s??''));
+ if(!m)return 0;
+ // Dividing keeps decimal e.s.d.s exact (2/10000 = 0.0002, not 1.99…e-4).
+ const scale=(m[2]||'').length-Number(m[3]||0);
+ return scale>=0?Number(m[4])/10**scale:Number(m[4])*10**-scale;
+}
 const near=(x,y,t=1e-5)=>Math.abs(x-y)<t;
 const atoms=(symbol,coords)=>coords.map((p,i)=>({symbol,label:symbol+(i+1),x:p[0],y:p[1],z:p[2],occupancy:1}));
 const fcc=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]];
@@ -2127,8 +2142,8 @@ function initScene(){
  scene=new THREE.Scene();
  perspective=true;camera=new THREE.PerspectiveCamera(44,1,.01,10000);camera.up.set(0,0,1);
  renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.06;$('stage').appendChild(renderer.domElement);initGpuTimer();
- scene.add(new THREE.HemisphereLight(0xffffff,0xf0f2f5,1.15));
- const l=new THREE.DirectionalLight(0xffffff,2.15);l.position.set(8,-13,18);scene.add(l);
+ ambientLight=new THREE.HemisphereLight(0xffffff,0xf0f2f5,1.15);scene.add(ambientLight);
+ keyLight=new THREE.DirectionalLight(0xffffff,2.15);keyLight.position.set(8,-13,18);scene.add(keyLight);
  const l2=new THREE.DirectionalLight(0xffffff,.55);l2.position.set(-10,12,-4);scene.add(l2);
  root=new THREE.Group();scene.add(root);
  initAxisGizmo();
@@ -2305,6 +2320,7 @@ function loop(timestamp){
  requestAnimationFrame(loop);
  if(document.visibilityState==='hidden'||$('app').hidden){previousFrameTimestamp=0;return;}
  orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();
+ updateDepthCue();
  if(++performanceFrameCounter%15===0){updateAtomLod();updatePolyhedronLod();}
  pollGpuTimer();
  updateAxisGizmo();
@@ -2325,14 +2341,26 @@ function loop(timestamp){
 }
 function clearRoot(){const freed=new Set(),shared=new Set(atomMaterials.values());for(const obj of root.children.slice()){root.remove(obj);obj.traverse(x=>{if(x.geometry&&x.geometry!==sphereGeometry&&x.geometry!==sphereLowGeometry&&x.geometry!==sphereTinyGeometry&&x.geometry!==bondGeometry&&!freed.has(x.geometry)){freed.add(x.geometry);x.geometry.dispose();}if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{if(!shared.has(m)&&!freed.has(m)){freed.add(m);if(m.map)m.map.dispose();m.dispose();}});}});}atomMesh=[];atomRender=[];atomData=[];bondPairs=[];selected=[];highlights=[];}
 function line(points,color,opacity=1){return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false}));}
+/* Cell edges in the chosen colour; dashes are sized from the cell so they stay
+   readable from small primitive cells to large supercells. */
+function cellLine(points,major){
+ const view=sceneView(),color=major?view.cell.color:mixHex(view.cell.color,'#ffffff',.45),opacity=major?.83:.55;
+ if(!view.cell.dashed)return line(points,color,opacity);
+ const dash=cellDashLength();
+ const object=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),
+  new THREE.LineDashedMaterial({color,transparent:true,opacity,depthWrite:false,dashSize:dash,gapSize:dash*.7}));
+ object.computeLineDistances();
+ return object;
+}
+function cellDashLength(){return Math.max(.08,Math.max(...basis(state.cell).map(v=>v.length()))/24);}
 function addCellLines(B,r){
  const pts=[],OUT=[];
  const corners=(i,j,k)=>{const arr=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)arr.push([i+x,j+y,k+z]);return arr;};
  const edges=(i,j,k,dest)=>{const ps=corners(i,j,k);for(let x=0;x<8;x++)for(let y=x+1;y<8;y++){const a=ps[x],b=ps[y];const d=Number(a[0]!==b[0])+Number(a[1]!==b[1])+Number(a[2]!==b[2]);if(d===1)dest.push(toCart(a,B),toCart(b,B));}};
- if(state.cellVisible){for(let i=0;i<r[0];i++)for(let j=0;j<r[1];j++)for(let k=0;k<r[2];k++)edges(i,j,k,pts);addLayerObject(line(pts,0x9cabb9,.55),'cell');edges(0,0,0,OUT); /* major boundary drawn separately below */}
+ if(state.cellVisible){for(let i=0;i<r[0];i++)for(let j=0;j<r[1];j++)for(let k=0;k<r[2];k++)edges(i,j,k,pts);addLayerObject(cellLine(pts,false),'cell');edges(0,0,0,OUT); /* major boundary drawn separately below */}
  const cornersAll=[];for(let x=0;x<=1;x++)for(let y=0;y<=1;y++)for(let z=0;z<=1;z++)cornersAll.push([x*r[0],y*r[1],z*r[2]]);
  const segments=[];for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){if(cornersAll[i].filter((v,n)=>v!==cornersAll[j][n]).length===1)segments.push(toCart(cornersAll[i],B),toCart(cornersAll[j],B));}
- if(state.cellVisible)addLayerObject(line(segments,0x546a7c,.83),'cell');
+ if(state.cellVisible)addLayerObject(cellLine(segments,true),'cell');
 }
 function makeCylinder(a,b,radius,mat){const d=new THREE.Vector3().subVectors(b,a),m=new THREE.Mesh(bondGeometry,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());m.scale.set(radius,d.length(),radius);return m;}
 function addInstancedCylinders(segments,radius,material,layer){
@@ -3973,7 +4001,20 @@ function renderLayerManager(){
  });
 }
 
+/* Display radius from the chosen set; bond search keeps RADII. Elements the
+   set has no value for keep the default radius and are listed in the panel. */
+let radiusFallbacks=new Set();
+function atomDisplayRadius(symbol){
+ const fallback=RADII[symbol]||1.1,set=RADIUS_SET_KEYS.includes(state.radiusSet)?state.radiusSet:'default';
+ if(set==='default')return fallback;
+ const value=displayRadius(symbol,set,fallback,normalizedIonicChoices(state.ionicRadii));
+ if(value.fallback)radiusFallbacks.add(symbol);
+ return value.radius;
+}
 function build(){
+ radiusFallbacks=new Set();sceneBoundsCache=null;
+ // Runs once this synchronous build has finished and radius fallbacks are known.
+ if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();});
  const buildStarted=performance.now();
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
@@ -4018,7 +4059,7 @@ function build(){
  let adpInvalid=0;
  const instanceGroups=new Map();
  for(let i=0;i<entry.length;i++){
-  const item=entry[i],baseR=RADII[item.site.symbol]||1.1;
+  const item=entry[i],baseR=atomDisplayRadius(item.site.symbol);
   const size=(state.style==='space'?baseR:Math.min(baseR,1.6))*state.atomScale*radiusScale*(item.site.visualScale||1);
   const shown=visibleAtom(item);
   atomRender[i]={size,visible:shown};
@@ -4266,12 +4307,22 @@ function fit(){
  }
  currentSpan=span*2.2;
  orbit.target.set(...center);
+ camera.up.set(0,0,1);syncOrbitUp();lastCrystalView=null;
  camera.position.set(center[0]+span*1.3,center[1]-span*1.75,center[2]+span*1.35);
  camera.near=.01;camera.far=Math.max(1000,span*50);camera.updateProjectionMatrix();
  orbit.minDistance=.2;orbit.maxDistance=Math.max(300,span*20);
  resize();orbit.update();updateAtomLod();
 }
-function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);camera.lookAt(orbit.target);orbit.update();updateAtomLod();}
+/* OrbitControls fixes its orbit pole from camera.up when it is created.
+   Whenever up changes (crystallographic views, VESTA scene preview, saved
+   workspaces), move that pole too; otherwise the camera can reach a pose
+   where up is parallel to the view and lookAt degenerates. */
+function syncOrbitUp(){
+ if(!orbit?._quat)return;
+ orbit._quat.setFromUnitVectors(camera.up.clone().normalize(),new THREE.Vector3(0,1,0));
+ orbit._quatInverse.copy(orbit._quat).invert();
+}
+function reframe(dir){const d=camera.position.distanceTo(orbit.target)||20;const p=new THREE.Vector3(...dir).normalize().multiplyScalar(d);camera.position.copy(orbit.target).add(p);camera.up.set(0,0,1);syncOrbitUp();camera.lookAt(orbit.target);orbit.update();updateAtomLod();}
 function projectionVisibleHeight(view,distance){
  if(view.isPerspectiveCamera)return 2*distance*Math.tan(view.getEffectiveFOV()*Math.PI/360);
  if(view.isOrthographicCamera)return (view.top-view.bottom)/view.zoom;
@@ -4293,7 +4344,7 @@ function toggleProjection(){
   currentSpan=height;
   camera=new THREE.OrthographicCamera(-height/2,height/2,height/2,-height/2,old.near,old.far);
  }
- camera.up.copy(old.up);camera.position.copy(p);camera.quaternion.copy(old.quaternion);
+ camera.up.copy(old.up);camera.position.copy(p);camera.quaternion.copy(old.quaternion);syncOrbitUp();
  orbit.object=camera;orbit.target.copy(t);resize();orbit.update();updateAtomLod();
  $('projectionBtn').setAttribute('aria-pressed',String(!perspective));
  $('projectionBtn').setAttribute('aria-label',perspective?'Perspektif görünümü; ortografiye geç':'Ortografik görünümü; perspektife geç');
@@ -5879,6 +5930,7 @@ function initRepeatSteppers(){
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncRepeatSteppers();syncSgControls();$('bondRules').value=state.bondRules;
+ syncViewPanel();
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
  for(let axis=0;axis<3;axis++)for(let side=0;side<2;side++)$('bound'+['X','Y','Z'][axis]+(side?'Max':'Min')).value=state.bounds[axis][side];
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
@@ -6399,7 +6451,10 @@ function cifData(src){
   else if(k.startsWith('_')&&i<t.length)tags[k.toLowerCase()]=t[i++];
  }
  const get=(...ks)=>{for(const k of ks)if(tags[k]!==undefined)return tags[k];return undefined;};
- const c={a:number(get('_cell_length_a')),b:number(get('_cell_length_b')),c:number(get('_cell_length_c')),alpha:number(get('_cell_angle_alpha')),beta:number(get('_cell_angle_beta')),gamma:number(get('_cell_angle_gamma'))};validateCell(c);
+ const c={a:number(get('_cell_length_a')),b:number(get('_cell_length_b')),c:number(get('_cell_length_c')),alpha:number(get('_cell_angle_alpha')),beta:number(get('_cell_angle_beta')),gamma:number(get('_cell_angle_gamma'))};
+ // e.s.d.s are kept with the values they belong to; an edited or transformed cell no longer matches them.
+ const cellSu={a:numberSu(get('_cell_length_a')),b:numberSu(get('_cell_length_b')),c:numberSu(get('_cell_length_c')),alpha:numberSu(get('_cell_angle_alpha')),beta:numberSu(get('_cell_angle_beta')),gamma:numberSu(get('_cell_angle_gamma'))};
+ if(Object.values(cellSu).some(v=>v>0))c.su={...cellSu,ref:[c.a,c.b,c.c,c.alpha,c.beta,c.gamma]};validateCell(c);
  const sites=[];let sym=['x,y,z'];let explicitSymmetry=false;const adpByLabel=new Map();
  const moments=new Map(),magOps=[],magCenter=[];let hasMagnetism=false;
  for(const lp of loops){
@@ -6442,6 +6497,8 @@ function cifData(src){
     if(!Number.isFinite(occupancy)||occupancy<0||occupancy>1)
      throw Error('CIF atom doluluğu eksik, bilinmiyor veya 0–1 dışında: '+(label>=0?row[label]:'atom '+(sites.length+1)));
     const atom={symbol:cleanSymbol(raw),label:label>=0?row[label]:'Atom '+(sites.length+1),x,y,z,occupancy};
+    const su=[numberSu(row[f]),numberSu(row[fy]),numberSu(row[fz])];
+    if(su.some(v=>v>0))atom.coordSu={x:su[0],y:su[1],z:su[2],ref:[x,y,z]};
     const group=disorderGroup>=0?disorderTag(row[disorderGroup]):'';
     if(group){atom.disorderGroup=group;const a=assembly>=0?disorderTag(row[assembly]):'';if(a)atom.disorderAssembly=a;}
     const uv=iso>=0?number(row[iso]):biso>=0?number(row[biso])/(8*Math.PI*Math.PI):NaN;
@@ -7863,6 +7920,11 @@ function loadProject(json){
  const obj=JSON.parse(json);
  if(!obj||!obj.cell||!Array.isArray(obj.sites))throw Error('Geçersiz proje JSON.');
  validateCell(obj.cell);
+ if(obj.cell.su!==undefined){
+  const su=obj.cell.su,keys=['a','b','c','alpha','beta','gamma'];
+  const valid=su&&keys.every(k=>Number.isFinite(su[k])&&su[k]>=0&&su[k]<10)&&Array.isArray(su.ref)&&su.ref.length===6&&su.ref.every(Number.isFinite);
+  obj.cell={...obj.cell};if(valid)obj.cell.su={...Object.fromEntries(keys.map(k=>[k,su[k]])),ref:su.ref.slice()};else delete obj.cell.su;
+ }
  if(!obj.sites.length||obj.sites.length>1000)throw Error('Proje atom sayısı 1–1000 aralığında olmalıdır.');
  const n=Number(obj.sgNumber||1);if(!Number.isInteger(n)||n<1||n>230)throw Error('Projedeki uzay grubu geçersiz.');
  const setting=sgKeys(n).includes(String(obj.sgSetting))?String(obj.sgSetting):preferredSetting(n);
@@ -7877,6 +7939,9 @@ function loadProject(json){
    if(Number.isInteger(v.disorderCopy)&&v.disorderCopy>=0&&v.disorderCopy<1000)s.disorderCopy=v.disorderCopy;
   }
   if(v.adp!==undefined){adpMatrix(v.adp);s.adp=v.adp.slice();}
+  const su=v.coordSu;
+  if(su&&['x','y','z'].every(k=>Number.isFinite(su[k])&&su[k]>=0&&su[k]<1)&&Array.isArray(su.ref)&&su.ref.length===3&&su.ref.every(Number.isFinite))
+   s.coordSu={x:su.x,y:su.y,z:su.z,ref:su.ref.slice()};
   if(v.uIso!==undefined){s.uIso=Number(v.uIso);if(!Number.isFinite(s.uIso)||s.uIso<=0)throw Error('Geçersiz izotropik ADP.');}
   if(v.magneticMoment!==undefined){
    if(!Array.isArray(v.magneticMoment)||v.magneticMoment.length!==3||
@@ -7916,6 +7981,11 @@ function loadProject(json){
   adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
   vestaDisplayVectors:validatedVestaDisplayVectors(obj.vestaDisplayVectors,sites.map(site=>site.label)),
   layers:normalizedLayerState(obj.layers),layerOrder:normalizedLayerOrder(obj.layerOrder),
+  // Appearance is validated again where it is used (sceneView, normalizedIonicChoices).
+  view:obj.view&&typeof obj.view==='object'&&JSON.stringify(obj.view).length<2000?obj.view:undefined,
+  radiusSet:RADIUS_SET_KEYS.includes(obj.radiusSet)?obj.radiusSet:'default',
+  ionicRadii:obj.ionicRadii&&typeof obj.ionicRadii==='object'&&Object.keys(obj.ionicRadii).length<=120?obj.ionicRadii:{},
+  colorScheme:COLOR_SCHEME_KEYS.includes(obj.colorScheme)?obj.colorScheme:'app',
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
 
@@ -8034,7 +8104,8 @@ function lastCrystalPayload(current){
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
   atomScale:current.atomScale,poly:current.poly,polyCenters:current.polyCenters,polyColor:current.polyColor,polyOpacity:current.polyOpacity,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors,
   vestaDisplayVectors:applicableVestaVectors(current),
-  layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder)
+  layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder),
+  view:current.view,radiusSet:current.radiusSet||'default',ionicRadii:current.ionicRadii||{},colorScheme:current.colorScheme||'app'
  };
 }
 function storeLastCrystal(storage,current){
@@ -8096,7 +8167,7 @@ function restoreWorkspaceCamera(view){
  currentSpan=view.span;
  camera=view.perspective?new THREE.PerspectiveCamera(view.fov,1,view.near,view.far):
   new THREE.OrthographicCamera(-currentSpan/2,currentSpan/2,currentSpan/2,-currentSpan/2,view.near,view.far);
- camera.position.fromArray(view.position);camera.up.fromArray(view.up);camera.quaternion.fromArray(view.quaternion);
+ camera.position.fromArray(view.position);camera.up.fromArray(view.up);camera.quaternion.fromArray(view.quaternion);syncOrbitUp();
  perspective=!!view.perspective;orbit.object=camera;orbit.target.fromArray(view.target);
  resize();orbit.update();updateProjectionButton();return true;
 }
@@ -8508,7 +8579,7 @@ function applyVestaCameraPreview(view){
  if(preview.perspective!==null&&preview.perspective!==camera.isPerspectiveCamera)
   toggleProjection(); // Retains on-screen apparent size, not VESTA zoom.
  camera.position.fromArray(preview.position);
- camera.up.fromArray(preview.up);
+ camera.up.fromArray(preview.up);syncOrbitUp();
  camera.lookAt(orbit.target);orbit.update();
  camera.updateProjectionMatrix();updateAtomLod();updateProjectionButton();
  return true;
@@ -8690,8 +8761,13 @@ function pngCellStrokeMeshes(cssHeight){
  const radius=Math.max(.003,frame/Math.max(cssHeight,1)*.65),temporary=[];
  for(const item of root.children.filter(obj=>obj.userData.layer==='cell'&&obj.isLineSegments&&obj.visible)){
   const vertices=item.geometry.getAttribute('position'),segments=[];
-  for(let i=0;i+1<vertices.count;i+=2)segments.push([
-   new THREE.Vector3().fromBufferAttribute(vertices,i),new THREE.Vector3().fromBufferAttribute(vertices,i+1)]);
+  const dashed=item.material.isLineDashedMaterial,dash=item.material.dashSize,gap=item.material.gapSize;
+  for(let i=0;i+1<vertices.count;i+=2){
+   const a=new THREE.Vector3().fromBufferAttribute(vertices,i),b=new THREE.Vector3().fromBufferAttribute(vertices,i+1);
+   if(!dashed){segments.push([a,b]);continue;}
+   const length=a.distanceTo(b);
+   for(let s=0;s<length;s+=dash+gap)segments.push([a.clone().lerp(b,s/length),a.clone().lerp(b,Math.min(length,s+dash)/length)]);
+  }
   if(!segments.length)continue;
   const material=new THREE.MeshBasicMaterial({color:item.material.color,transparent:true,
    opacity:item.material.opacity,depthWrite:false});
@@ -8742,7 +8818,7 @@ function renderExportCanvas(factor,opaque=true){
   for(const sprite of labelSprites)sprite.visible=false;
   renderer.render(scene,camera);
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Görsel çizim yüzeyi oluşturulamadı.');
-  if(opaque){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
+  if(opaque){ctx.fillStyle=sceneView().background;ctx.fillRect(0,0,width,height);}
   ctx.drawImage(renderer.domElement,0,0);
   drawCanvasPrimitives(ctx,overlay.items,factor);
   canvas.exportNotes=overlay.notes;
@@ -8882,7 +8958,7 @@ function svgEscape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp
 function vectorLabelOutline(p){
  return textOutline(p.text,{x:p.x,y:p.y,size:p.fontSize??12,bold:!!p.bold,italic:!!p.italic,anchor:p.anchor||'middle'});
 }
-function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false,{widthMm=null,description=''}={}){
+function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false,{widthMm=null,description='',background='#ffffff'}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>8192||height>8192||
   !Array.isArray(items)||items.length>60000)throw Error('SVG boyutu veya geometrik öğe sayısı geçersiz.');
  const f=n=>{if(!Number.isFinite(n))throw Error('SVG koordinatı sonlu olmalı.');return Number(n.toFixed(3));};
@@ -8903,7 +8979,8 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
   if(p.type==='ellipse')return '<ellipse cx="'+f(p.x)+'" cy="'+f(p.y)+'" rx="'+f(p.rx)+'" ry="'+f(p.ry)+
    '" transform="rotate('+f(p.angle)+' '+f(p.x)+' '+f(p.y)+')" fill="'+col(p.fill)+'" opacity="'+opacity+'"/>';
   if(p.type==='line')return '<path d="M '+f(p.x1)+' '+f(p.y1)+' L '+f(p.x2)+' '+f(p.y2)+'" fill="none" stroke="'+
-   col(p.stroke)+'" stroke-width="'+f(p.width)+'" stroke-linecap="'+(p.cap==='round'?'round':'butt')+'" opacity="'+opacity+'"/>';
+   col(p.stroke)+'" stroke-width="'+f(p.width)+'" stroke-linecap="'+(p.cap==='round'?'round':'butt')+'"'+
+   (p.dash?' stroke-dasharray="'+p.dash.map(f).join(' ')+'" stroke-dashoffset="'+f(p.dashOffset||0)+'"':'')+' opacity="'+opacity+'"/>';
   if(p.type==='triangle')return '<path d="M '+f(p.points[0][0])+' '+f(p.points[0][1])+' L '+
    f(p.points[1][0])+' '+f(p.points[1][1])+' L '+f(p.points[2][0])+' '+f(p.points[2][1])+
    ' Z" fill="'+col(p.fill)+'" opacity="'+opacity+'"/>';
@@ -8918,7 +8995,7 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
  const size=widthMm===null?[String(width),String(height)]:[f(widthMm)+'mm',f(widthMm*height/width)+'mm'];
  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+size[0]+'" height="'+size[1]+
   '" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+svgEscape(title)+'">\n<title>'+svgEscape(title)+
-  '</title>'+(description?'<desc>'+svgEscape(description)+'</desc>':'')+'<defs>'+defs+'</defs>'+(transparent?'':'<rect width="100%" height="100%" fill="#ffffff"/>')+
+  '</title>'+(description?'<desc>'+svgEscape(description)+'</desc>':'')+'<defs>'+defs+'</defs>'+(transparent?'':'<rect width="100%" height="100%" fill="'+col(background)+'"/>')+
   '<g stroke-linejoin="round">'+markup+'</g></svg>\n';
 }
 /* World point → stage CSS pixels and camera distance, or null off camera. */
@@ -8937,7 +9014,7 @@ function crystalSvgPrimitives(width,height){
  const colorHex=color=>'#'+(color?.getHexString?.(THREE.SRGBColorSpace)||'607080');
  // Lines are clipped against atom spheres after traversal (see below).
  const lines=[],spheres=[];
- const line=(a,b,stroke,widthWorld,opacity,pixelWidth=0)=>{lines.push({a,b,stroke,widthWorld,opacity,pixelWidth});};
+ const line=(a,b,stroke,widthWorld,opacity,pixelWidth=0,dash=null)=>{lines.push({a,b,stroke,widthWorld,opacity,pixelWidth,dash});};
  const radiusCircle=(centre,radius,fill,opacity)=>{
   const p=screen(centre),edge=screen(centre.clone().addScaledVector(right,radius));if(!p||!edge)return;
   const r=Math.hypot(edge.x-p.x,edge.y-p.y);
@@ -8974,7 +9051,8 @@ function crystalSvgPrimitives(width,height){
     const segment=(i,j)=>{
      const va=index?index.getX(i):i,vb=index?index.getX(j):j;
      line(asWorld(new THREE.Vector3().fromBufferAttribute(attr,va),obj),
-      asWorld(new THREE.Vector3().fromBufferAttribute(attr,vb),obj),color,0,opacity,kind==='cell'?1:1.4);
+      asWorld(new THREE.Vector3().fromBufferAttribute(attr,vb),obj),color,0,opacity,kind==='cell'?1:1.4,
+      material?.isLineDashedMaterial?[material.dashSize,material.gapSize]:null);
     };
     if(obj.isLineSegments)for(let i=0;i+1<count;i+=2)segment(i,i+1);
     else{for(let i=0;i+1<count;i++)segment(i,i+1);if(obj.isLineLoop&&count>2)segment(count-1,0);}
@@ -9011,6 +9089,7 @@ function crystalSvgPrimitives(width,height){
  for(const child of root.children)traverse(child,child.userData.layer);
  occludedVectorLines(lines,spheres,objects,screen);
  if(objects.length>60000)throw Error('SVG için çok fazla vektör öğesi var; süperhücreyi küçültün.');
+ applyVectorDepthCue(objects);
  objects.notes=notes;
  return objects;
 }
@@ -9050,6 +9129,18 @@ function volumeVectorTriangles(group,objects,notes,screen){
  else objects.push(...triangles);
  if(slice)notes.push('Hacimsel kesit dokusu vektör çıktıya girmez; PNG/TIFF kullanın.');
  if(wire)notes.push('Tel kafes izoyüzeyler vektör çıktıya girmez; dolu yüzey seçin.');
+}
+/* WebGL fog mixes towards the background with view depth; vector colours get
+   the same linear mix so the files match the screen. */
+function applyVectorDepthCue(objects){
+ const view=sceneView();
+ if(!view.depthCue.enabled)return;
+ const {near,far}=sceneDepthRange(),mix=(color,depth)=>mixHex(color,view.background,depthCueFactor(depth,near,far,view.depthCue));
+ for(const o of objects){
+  if(o.depth<0)continue;
+  if(o.type==='line')o.stroke=mix(o.stroke,o.depth);
+  else if(o.fill)o.fill=mix(o.fill,o.depth);
+ }
 }
 function informExportNotes(notes){if(notes?.length)inform([...new Set(notes)].join(' '));}
 
@@ -9093,7 +9184,8 @@ function exportCssPxPerPt(rect){
 function exportOverlayPrimitives(rect){
  const options=exportOverlaySettings(),width=Math.round(rect.width),height=Math.round(rect.height);
  const px=options.labelPt*exportCssPxPerPt(rect),margin=.8*px,items=[],notes=[],used=new Set();
- const label=(text,x,y,extra={})=>items.push({type:'label',x,y,text,fontSize:px,fill:'#203047',textStroke:'#ffffff',
+ const background=sceneView().background,ink=contrastingInk(background);
+ const label=(text,x,y,extra={})=>items.push({type:'label',x,y,text,fontSize:px,fill:ink,textStroke:background,
   strokeWidth:Math.max(.5,.18*px),opacity:1,depth:-1e5,...extra});
  const corner=(x,y)=>(y<height/2?'top-':'bottom-')+(x<width/2?'left':'right');
  const discs=exportAtomDiscs(width,height);
@@ -9144,7 +9236,7 @@ function exportOverlayPrimitives(rect){
    const pxPerAngstrom=height/projectionVisibleHeight(camera,camera.position.distanceTo(orbit.target));
    const length=niceScaleLength(.22*width/pxPerAngstrom),bar=length*pxPerAngstrom,thickness=Math.max(1,px/5);
    const place=free('bottom-right','bottom-left'),x1=place.endsWith('right')?width-margin-bar:margin,y=height-margin;
-   items.push({type:'line',x1,y1:y,x2:x1+bar,y2:y,width:thickness,stroke:'#203047',opacity:1,depth:-1e5,cap:'butt'});
+   items.push({type:'line',x1,y1:y,x2:x1+bar,y2:y,width:thickness,stroke:ink,opacity:1,depth:-1e5,cap:'butt'});
    label(length+' Å',x1+bar/2,y-thickness-.35*px);
   }
  }
@@ -9186,8 +9278,10 @@ function figureProvenance(){
  const c=state.cell,f=v=>Number(v).toFixed(4),sg=String(SPACE_NAMES[state.sgNumber]||'SG '+state.sgNumber).split(' = ')[0];
  const structure=state.nonPeriodic?'non-periodic molecule':'space group '+sg+' (No. '+state.sgNumber+'); cell a='+f(c.a)+' b='+f(c.b)+' c='+f(c.c)+
   ' A, alpha='+f(c.alpha)+' beta='+f(c.beta)+' gamma='+f(c.gamma)+' deg; supercell '+state.rep.join('x');
+ const along=activeCrystalView();
  return {title:asciiText(state.name,200),software:'Kristal Yapi',
   description:asciiText('Structure: '+state.name+'; '+structure+'; projection: '+(camera.isPerspectiveCamera?'perspective':'orthographic')+
+   (along?'; view along '+along:'')+
    '; exported '+new Date().toISOString().slice(0,10),1000)};
 }
 /* Painter's order alone draws a bond over the atom it enters and a cell edge
@@ -9226,7 +9320,13 @@ function occludedVectorLines(lines,spheres,objects,screen){
     if(!qa||!qb)continue;
     let depth=(qa.depth+qb.depth)/2;
     for(const s of near)if(distance(s,qa,qb)<s.r-Math.max(.5,.02*s.r))depth=Math.min(depth,s.depth*(1-1e-7)-1e-7);
-    objects.push({type:'line',x1:qa.x,y1:qa.y,x2:qb.x,y2:qb.y,depth,stroke:l.stroke,width,opacity:l.opacity,cap:'butt'});
+    const piece={type:'line',x1:qa.x,y1:qa.y,x2:qb.x,y2:qb.y,depth,stroke:l.stroke,width,opacity:l.opacity,cap:'butt'};
+    if(l.dash){
+     // World dash lengths in screen pixels; the phase keeps clipped pieces on one pattern.
+     const scale=lengthPx/l.a.distanceTo(l.b);
+     piece.dash=l.dash.map(v=>v*scale);piece.dashOffset=(s0+(s1-s0)*k/pieces)*lengthPx;
+    }
+    objects.push(piece);
    }
   }
  }
@@ -9238,7 +9338,7 @@ function exportSvg(){
  const overlay=exportOverlayPrimitives(rect),notes=[...primitives.notes,...overlay.notes];
  primitives.push(...overlay.items);
  const {widthMm}=exportFigureSettings(),{description}=figureProvenance();
- const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked,{widthMm,description});
+ const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked,{widthMm,description,background:sceneView().background});
  download(safeName(state.name)+'.svg',svg,'image/svg+xml;charset=utf-8');
  informExportNotes(notes);
 }
@@ -9286,7 +9386,7 @@ function vectorPagePrimitives(items,width,height){
 const vectorComment=text=>String(text??'').replace(/[^\x20-\x7e]/g,'?');
 // Sphere outline: SVG strokes #1f3040 at 18 % opacity over the dark rim.
 const sphereRim=color=>mixHex(sphereShade(color).dark,'#1f3040',.18);
-function vectorPdfBytes(items,width,height,{widthMm=null,title='Vector crystal structure',description=''}={}){
+function vectorPdfBytes(items,width,height,{widthMm=null,title='Vector crystal structure',description='',background='#ffffff'}={}){
  const layout=vectorPageLayout(width,height,widthMm),shapes=vectorPagePrimitives(items,width,height);
  const n=value=>Number(value.toFixed(4)),rgb=color=>[1,3,5].map(i=>n(parseInt(color.slice(i,i+2),16)/255)).join(' ');
  const path=ellipse=>{
@@ -9298,11 +9398,11 @@ function vectorPdfBytes(items,width,height,{widthMm=null,title='Vector crystal s
  // One radial shading per atom colour, in the unit square of the circle's box.
  const shaded=[...new Set(shapes.filter(p=>p.type==='circle'&&!p.flat).map(p=>p.fill.toLowerCase()))],shadeId=new Map(shaded.map((c,i)=>[c,'Sh'+i]));
  const rows=['q',n(layout.scale)+' 0 0 '+n(-layout.scale)+' '+n(layout.x)+' '+n(layout.pageHeight-layout.y)+' cm',
-  '0 0 '+width+' '+height+' re W n','1 j'];
+  '0 0 '+width+' '+height+' re W n','1 j',...(background!=='#ffffff'?[rgb(background)+' rg','0 0 '+width+' '+height+' re f']:[])];
  for(const p of shapes){
   const fill=p.fill||'#203047',alpha=alphaId.get(Math.round((p.opacity??1)*100));
   rows.push('q /'+alpha+' gs');
-  if(p.type==='line')rows.push((p.cap==='round'?1:0)+' J',rgb(p.stroke)+' RG',n(p.width)+' w',n(p.x1)+' '+n(p.y1)+' m '+n(p.x2)+' '+n(p.y2)+' l S');
+  if(p.type==='line')rows.push((p.cap==='round'?1:0)+' J',(p.dash?'['+p.dash.map(n).join(' ')+'] '+n(p.dashOffset||0)+' d':'[] 0 d'),rgb(p.stroke)+' RG',n(p.width)+' w',n(p.x1)+' '+n(p.y1)+' m '+n(p.x2)+' '+n(p.y2)+' l S');
   else if(p.type==='triangle')rows.push(rgb(fill)+' rg',p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'l':'m')).join(' ')+' h f');
   else if(p.type==='label'){
    const outline=pdfPathData(vectorLabelOutline(p).commands);
@@ -9348,7 +9448,7 @@ function vectorPdfBytes(items,width,height,{widthMm=null,title='Vector crystal s
 }
 /* EPS has no transparency: colours are blended with white. Spheres use a
    LanguageLevel 3 radial shading (shfill), as in the PDF. */
-function vectorEpsText(items,width,height,{widthMm=null,title='Vector crystal structure',description=''}={}){
+function vectorEpsText(items,width,height,{widthMm=null,title='Vector crystal structure',description='',background='#ffffff'}={}){
  const layout=vectorPageLayout(width,height,widthMm),shapes=vectorPagePrimitives(items,width,height);
  const n=value=>Number(value.toFixed(4)),mix=(color,alpha)=>mixHex('#ffffff',color,alpha);
  const rgb=(color,alpha=1)=>[1,3,5].map(i=>n(parseInt(mix(color,alpha).slice(i,i+2),16)/255)).join(' ');
@@ -9361,10 +9461,11 @@ function vectorEpsText(items,width,height,{widthMm=null,title='Vector crystal st
  const rows=['%!PS-Adobe-3.0 EPSF-3.0','%%BoundingBox: 0 0 '+Math.ceil(layout.pageWidth)+' '+Math.ceil(layout.pageHeight),
   '%%HiResBoundingBox: 0 0 '+layout.pageWidth+' '+layout.pageHeight,'%%LanguageLevel: 3',
   '%%Title: '+asciiText(title,200),'%%Creator: Kristal Yapi','%%Pages: 1','%%EndComments',...(description?['% Description: '+asciiText(description)]:[]),'gsave',n(layout.x)+' '+n(layout.pageHeight-layout.y)+' translate',
-  n(layout.scale)+' '+n(-layout.scale)+' scale','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath clip','1 setlinejoin'];
+  n(layout.scale)+' '+n(-layout.scale)+' scale','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath clip','1 setlinejoin',
+  ...(background!=='#ffffff'?[rgb(background)+' setrgbcolor','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath fill']:[])];
  for(const p of shapes){
   const alpha=p.opacity??1,fill=p.fill||'#203047';rows.push('gsave');
-  if(p.type==='line')rows.push((p.cap==='round'?1:0)+' setlinecap',rgb(p.stroke,alpha)+' setrgbcolor',n(p.width)+' setlinewidth','newpath '+n(p.x1)+' '+n(p.y1)+' moveto '+n(p.x2)+' '+n(p.y2)+' lineto stroke');
+  if(p.type==='line')rows.push((p.cap==='round'?1:0)+' setlinecap',(p.dash?'['+p.dash.map(n).join(' ')+'] '+n(p.dashOffset||0)+' setdash':'[] 0 setdash'),rgb(p.stroke,alpha)+' setrgbcolor',n(p.width)+' setlinewidth','newpath '+n(p.x1)+' '+n(p.y1)+' moveto '+n(p.x2)+' '+n(p.y2)+' lineto stroke');
   else if(p.type==='triangle')rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'lineto':'moveto')).join(' ')+' closepath fill');
   else if(p.type==='label'){
    const outline=postScriptPathData(vectorLabelOutline(p).commands);
@@ -9395,8 +9496,9 @@ function exportVectorPrint(format){
  const overlay=exportOverlayPrimitives(rect),notes=[...primitives.notes,...overlay.notes];
  primitives.push(...overlay.items);
  const {widthMm}=exportFigureSettings(),{title,description}=figureProvenance();
- if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height,{widthMm,title,description}),'application/pdf');
- else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height,{widthMm,title,description}),'application/postscript');
+ const background=sceneView().background;
+ if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height,{widthMm,title,description,background}),'application/pdf');
+ else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height,{widthMm,title,description,background}),'application/postscript');
  informExportNotes(notes);
 }
 const MAX_STL_TRIANGLES=1000000;
@@ -9564,7 +9666,8 @@ function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.string
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCenters:state.polyCenters,polyColor:state.polyColor,polyOpacity:state.polyOpacity,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
  vestaDisplayVectors:applicableVestaVectors(state),
- layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
+ layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale,
+ view:state.view,radiusSet:state.radiusSet||'default',ionicRadii:state.ionicRadii||{},colorScheme:state.colorScheme||'app'},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
@@ -10713,8 +10816,8 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Görünüm · bakış yönü · ışık · yarıçap','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -10775,9 +10878,203 @@ function initRightSidebarTabs(){
  setRightSidebarTab(null);
 }
 
+/* ---- Scene appearance (view panel) ------------------------------------ */
+const sceneView=()=>normalizedViewSettings(state.view);
+/* Scene centre and radius from atom positions (instanced meshes have no
+   reliable bounding box), cached per build, as camera depths near/far. */
+function sceneDepthRange(){
+ if(!sceneBoundsCache){
+  const points=atomData.map(item=>root.localToWorld(item.pos.clone()));
+  const center=points.length?points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).multiplyScalar(1/points.length):orbit.target.clone();
+  const radius=Math.max(1,...points.map(p=>p.distanceTo(center)))+2;
+  sceneBoundsCache={center,radius};
+ }
+ const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+ const depth=sceneBoundsCache.center.clone().sub(camera.position).dot(forward);
+ return {near:Math.max(0,depth-sceneBoundsCache.radius),far:depth+sceneBoundsCache.radius};
+}
+function updateDepthCue(){
+ if(!scene||!camera)return;
+ const view=sceneView();
+ if(!view.depthCue.enabled){if(scene.fog)scene.fog=null;return;}
+ const {near,far}=sceneDepthRange(),start=near+(far-near)*view.depthCue.start,end=near+(far-near)*view.depthCue.end;
+ if(!scene.fog)scene.fog=new THREE.Fog(view.background,start,end);
+ scene.fog.color.set(view.background);scene.fog.near=start;scene.fog.far=Math.max(end,start+1e-3);
+}
+function applySceneAppearance(){
+ const view=sceneView(),scheme=COLOR_SCHEME_KEYS.includes(state.colorScheme)?state.colorScheme:'app';
+ if($('stage'))$('stage').style.background=view.background;
+ if(ambientLight)ambientLight.intensity=view.light.ambient;
+ // Same distance as the original key light at (8, -13, 18); only its direction matters.
+ if(keyLight){keyLight.intensity=view.light.key;keyLight.position.set(...lightDirection(view.light).map(v=>v*Math.hypot(8,13,18)));}
+ elementSchemeColors=scheme==='app'?null:Object.fromEntries(PERIODIC_SYMBOLS.map(symbol=>[symbol,schemeColor(symbol,scheme)]).filter(([,color])=>color));
+ updateDepthCue();
+}
+
+/* ---- Crystallographic view directions -------------------------------- */
+function viewAlongCrystal(indices,kind,label){
+ const {direction,up,upAxis}=crystallographicView(basis(state.cell).map(v=>v.toArray()),indices,kind);
+ const distance=camera.position.distanceTo(orbit.target)||20;
+ camera.position.copy(orbit.target).add(new THREE.Vector3(...direction).multiplyScalar(distance));
+ camera.up.set(...up);syncOrbitUp();camera.lookAt(orbit.target);orbit.update();updateAtomLod();
+ lastCrystalView={label,quaternion:camera.quaternion.clone()};
+ $('viewDirectionStatus').textContent='Bakış: '+label+' · yukarı: '+upAxis;
+}
+// The named direction stays in figure provenance only while the camera has not moved.
+function activeCrystalView(){
+ return lastCrystalView&&camera&&camera.quaternion.angleTo(lastCrystalView.quaternion)<1e-3?lastCrystalView.label:'';
+}
+/* Rotation about the screen axes: roll about the view direction, yaw about
+   the screen vertical and pitch about the screen horizontal. */
+function rotateCrystalView(axis,degrees){
+ const offset=camera.position.clone().sub(orbit.target),forward=offset.clone().normalize().negate();
+ const right=new THREE.Vector3().crossVectors(forward,camera.up).normalize(),up=new THREE.Vector3().crossVectors(right,forward).normalize();
+ let position=offset.toArray(),screenUp=up.toArray();
+ if(axis==='roll')screenUp=rotateVector(screenUp,forward.toArray(),degrees);
+ else{const k=(axis==='yaw'?up:right).toArray();position=rotateVector(position,k,degrees);screenUp=rotateVector(screenUp,k,degrees);}
+ camera.position.copy(orbit.target).add(new THREE.Vector3(...position));camera.up.set(...screenUp);syncOrbitUp();
+ camera.lookAt(orbit.target);orbit.update();updateAtomLod();
+}
+
+/* ---- View panel --------------------------------------------------------- */
+function runViewAction(action){try{action();}catch(error){inform(error.message);}}
+function updateRadiusNote(){
+ const set=RADIUS_SET_KEYS.includes(state.radiusSet)?state.radiusSet:'default';
+ const source=set==='vdw'?ELEMENT_DATA_SOURCE.vdw:set==='ionic'?ELEMENT_DATA_SOURCE.ionic:'';
+ const missing=[...radiusFallbacks].sort();
+ $('radiusNote').textContent=(source?'Kaynak: '+source+' (mendeleev). ':'')+
+  (missing.length?'Varsayılan yarıçap kullanılan elementler: '+missing.join(', ')+'.':'');
+}
+function renderIonicChoices(){
+ const box=$('ionicChoices'),ionic=state.radiusSet==='ionic';
+ box.hidden=!ionic;
+ if(!ionic){box.replaceChildren();return;}
+ const choices=normalizedIonicChoices(state.ionicRadii);
+ const symbols=[...new Set(state.sites.map(site=>cleanSymbol(site.symbol)))].sort((a,b)=>PERIODIC_SYMBOLS.indexOf(a)-PERIODIC_SYMBOLS.indexOf(b));
+ box.replaceChildren(...symbols.map(symbol=>{
+  const label=document.createElement('label'),name=document.createElement('span'),select=document.createElement('select');
+  name.textContent=symbol;select.setAttribute('aria-label',symbol+' iyonik yarıçapı');
+  select.append(new Option('Seçilmedi (varsayılan yarıçap)',''));
+  for(const o of shannonOptions(symbol)){
+   const charge=Math.abs(o.charge)+(o.charge<0?'−':'+');
+   select.append(new Option([charge,o.coordination,o.spin,o.radius.toFixed(3)+' Å'].filter(Boolean).join(' · '),
+    JSON.stringify({charge:o.charge,coordination:o.coordination,spin:o.spin})));
+  }
+  if(choices[symbol])select.value=JSON.stringify(choices[symbol]);
+  select.onchange=()=>runViewAction(()=>{
+   const next={...normalizedIonicChoices(state.ionicRadii)};
+   if(select.value)next[symbol]=JSON.parse(select.value);else delete next[symbol];
+   state.ionicRadii=next;build();recordHistoryChange();
+  });
+  label.append(name,select);return label;
+ }));
+}
+function syncViewPanel(){
+ if(!$('viewBackground'))return;
+ const view=sceneView();
+ $('viewBackground').value=view.background;$('viewDepthCue').checked=view.depthCue.enabled;
+ $('viewDepthStart').value=view.depthCue.start;$('viewDepthEnd').value=view.depthCue.end;
+ $('viewAmbient').value=view.light.ambient;$('viewKey').value=view.light.key;
+ $('viewAzimuth').value=view.light.azimuth;$('viewElevation').value=view.light.elevation;
+ $('viewCellColor').value=view.cell.color;$('viewCellDashed').checked=view.cell.dashed;
+ $('radiusSet').value=RADIUS_SET_KEYS.includes(state.radiusSet)?state.radiusSet:'default';
+ $('colorScheme').value=COLOR_SCHEME_KEYS.includes(state.colorScheme)?state.colorScheme:'app';
+ renderIonicChoices();applySceneAppearance();
+}
+function initViewPanel(){
+ for(const button of document.querySelectorAll('[data-view-axis]'))button.addEventListener('click',()=>runViewAction(()=>{
+  const axis=button.dataset.viewAxis,indices=[0,0,0];indices['abc'.indexOf(axis[0])]=1;
+  viewAlongCrystal(indices,axis.endsWith('*')?'reciprocal':'direct',axis);
+ }));
+ const indices=ids=>ids.map(id=>{const v=Number($(id).value);if(!Number.isInteger(v)||Math.abs(v)>99)throw Error('Doğrultu indisleri −99…99 aralığında tam sayı olmalı.');return v;});
+ $('viewAlongUvw').onclick=()=>runViewAction(()=>{const v=indices(['viewU','viewV','viewW']);viewAlongCrystal(v,'direct','['+v.join(' ')+']');});
+ $('viewAlongHkl').onclick=()=>runViewAction(()=>{const v=indices(['viewH','viewK','viewL']);viewAlongCrystal(v,'reciprocal','('+v.join(' ')+') normal');});
+ for(const button of document.querySelectorAll('[data-view-rotate]'))button.addEventListener('click',()=>runViewAction(()=>{
+  const [axis,sign]=button.dataset.viewRotate.split(':');rotateCrystalView(axis,Number(sign)*Number($('viewStep').value));
+ }));
+ // Live preview on input; one history entry when the change is committed.
+ const update=(mutate,{rebuild=false,record=false}={})=>runViewAction(()=>{
+  const view=sceneView();mutate(view);state.view=normalizedViewSettings(view);applySceneAppearance();
+  if(rebuild)build();if(record)recordHistoryChange();
+ });
+ const live=(id,mutate)=>{$(id).addEventListener('input',()=>update(mutate));$(id).addEventListener('change',()=>update(mutate,{record:true}));};
+ live('viewBackground',v=>{v.background=$('viewBackground').value;});
+ live('viewDepthStart',v=>{v.depthCue.start=Number($('viewDepthStart').value);});
+ live('viewDepthEnd',v=>{v.depthCue.end=Number($('viewDepthEnd').value);});
+ live('viewAmbient',v=>{v.light.ambient=Number($('viewAmbient').value);});
+ live('viewKey',v=>{v.light.key=Number($('viewKey').value);});
+ live('viewAzimuth',v=>{v.light.azimuth=Number($('viewAzimuth').value);});
+ live('viewElevation',v=>{v.light.elevation=Number($('viewElevation').value);});
+ for(const button of document.querySelectorAll('[data-view-background]'))button.addEventListener('click',()=>{
+  $('viewBackground').value=button.dataset.viewBackground;update(v=>{v.background=button.dataset.viewBackground;},{record:true});
+ });
+ $('viewDepthCue').addEventListener('change',()=>update(v=>{v.depthCue.enabled=$('viewDepthCue').checked;},{record:true}));
+ $('viewCellColor').addEventListener('change',()=>update(v=>{v.cell.color=$('viewCellColor').value;},{rebuild:true,record:true}));
+ $('viewCellDashed').addEventListener('change',()=>update(v=>{v.cell.dashed=$('viewCellDashed').checked;},{rebuild:true,record:true}));
+ $('viewAppearanceReset').onclick=()=>runViewAction(()=>{state.view=undefined;syncViewPanel();build();recordHistoryChange();});
+ $('radiusSet').addEventListener('change',()=>runViewAction(()=>{state.radiusSet=$('radiusSet').value;renderIonicChoices();build();recordHistoryChange();}));
+ $('colorScheme').addEventListener('change',()=>runViewAction(()=>{state.colorScheme=$('colorScheme').value;applySceneAppearance();build();recordHistoryChange();}));
+}
+
+/* ---- Geometry table (measurement panel) --------------------------------- */
+let lastGeometry=null;
+function geometryInputs(){
+ if(state.sites.length>300)throw Error('Geometri tablosu en çok 300 bağımsız atom içindir.');
+ const matches=(values,ref)=>Array.isArray(ref)&&values.every((v,i)=>Math.abs(v-ref[i])<1e-9);
+ const sites=state.sites.map(site=>{
+  const out={label:String(site.label||site.symbol),symbol:cleanSymbol(site.symbol),x:+site.x,y:+site.y,z:+site.z},su=site.coordSu;
+  // e.s.d.s only belong to the coordinates they were read with.
+  if(su&&matches([out.x,out.y,out.z],su.ref))out.su={x:su.x,y:su.y,z:su.z};
+  return out;
+ });
+ const c=state.cell,keys=['a','b','c','alpha','beta','gamma'];
+ const cellSu=c.su&&matches(keys.map(k=>c[k]),c.su.ref)?c.su:null;
+ const ops=symmetryOperations(state.symmetryEnabled&&!state.nonPeriodic?settingOps(state.sgSetting):[['x,y,z','0,0,0']]);
+ const rules=parseBondRules(state.bondRules);
+ return {sites,cellSu,ops,range:(a,b)=>bondRange(a,b,rules,state.cut,state.autoBond),
+  skip:(i,j,d)=>sitesAreAlternatives(state.sites[i],state.sites[j],d)};
+}
+function renderGeometryPreview(rows){
+ const table=document.createElement('table'),head=document.createElement('tr');
+ for(const title of ['Tür','Atomlar','Simetri kodları','Değer'])head.append(Object.assign(document.createElement('th'),{textContent:title}));
+ table.append(head);
+ const kinds=[['Bağ',rows.bonds,4],['Açı',rows.angles,2],['Burulma',rows.torsions,2]];
+ let shown=0;
+ for(const [kind,list,decimals] of kinds)for(const r of list){
+  if(++shown>60)break;
+  const tr=document.createElement('tr');
+  for(const [text,cls] of [[kind],[r.labels.join('–')],[r.codes.join(' ')],[formatWithSu(r.value,r.su,{decimals})+(decimals===4?' Å':'°'),'num']]){
+   const td=document.createElement('td');td.textContent=text;if(cls)td.className=cls;tr.append(td);
+  }
+  table.append(tr);
+ }
+ $('geometryPreview').replaceChildren(table);
+}
+function initGeometryTable(){
+ $('geometryRun').onclick=()=>runViewAction(()=>{
+  const input=geometryInputs();
+  const rows=geometryTable(input.sites,state.cell,input.ops,input.range,{cellSu:input.cellSu,skip:input.skip,
+   torsions:$('geometryTorsions').checked,periodic:!state.nonPeriodic});
+  lastGeometry={rows,ops:input.ops};
+  const withSu=[...rows.bonds,...rows.angles,...rows.torsions].some(r=>r.su!=null);
+  $('geometrySummary').textContent=rows.bonds.length+' bağ · '+rows.angles.length+' açı · '+rows.torsions.length+' burulma'+
+   (withSu?' · s.u. CIF e.s.d.lerinden':' · e.s.d. yok, s.u. boş')+(rows.truncated?' · satır sınırına ulaşıldı':'');
+  renderGeometryPreview(rows);
+  $('geometryCsv').disabled=$('geometryCif').disabled=false;
+ });
+ $('geometryCsv').onclick=()=>{if(lastGeometry)download(safeName(state.name)+'_geometry.csv',geometryCsv(lastGeometry.rows),'text/csv;charset=utf-8');};
+ $('geometryCif').onclick=()=>{
+  if(!lastGeometry)return;
+  const sg=state.symmetryEnabled?String(SPACE_NAMES[state.sgNumber]||'').split(' = ')[0]:'P 1';
+  download(safeName(state.name)+'_geom.cif',geometryCif(lastGeometry.rows,lastGeometry.ops,{name:safeName(state.name),spaceGroup:sg,
+   note:'Symmetry codes refer to the operation list in this block. s.u. values neglect parameter covariances.'}),'chemical/x-cif;charset=utf-8');
+ };
+}
+
 function bind(){
  initWorkspaceUi();
  initRightSidebarTabs();
+ initViewPanel();initGeometryTable();
  initDftTracking();
  initQeProtocols();
  initLibrary();

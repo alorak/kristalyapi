@@ -207,6 +207,9 @@ jobs:
           cp dft-ui.js public/dft-ui.js
           cp export-graphics.js public/export-graphics.js
           cp export-glyphs.js public/export-glyphs.js
+          cp element-data.js public/element-data.js
+          cp view-settings.js public/view-settings.js
+          cp geometry-table.js public/geometry-table.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
           cp qe-relax-view.js public/qe-relax-view.js
@@ -260,6 +263,9 @@ jobs:
           test -s public/vesta-project-scientific.js
           test -s public/vesta-project-export.js
           test -s public/export-glyphs.js
+          test -s public/element-data.js
+          test -s public/view-settings.js
+          test -s public/geometry-table.js
           test -s public/vendor/LICENSE-OFL-1.1.txt
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js
