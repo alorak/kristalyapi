@@ -222,7 +222,7 @@ class D2Tests(unittest.TestCase):
 
     def test_job_history_names_paging_filters_and_access_control(self):
         p,h=canonical_request(payload())
-        ids=[self.store.submit(p,h) for _ in range(24)]
+        ids=[self.store.submit(p,h,max_pending=30) for _ in range(24)]
         self.assertEqual(self.client.get("/api/v1/calculations",headers=self.auth).json()["total"],24)
         self.assertEqual(len(self.client.get("/api/v1/calculations",headers=self.auth).json()["jobs"]),20)
         page=self.client.get("/api/v1/calculations?limit=10&offset=20",headers=self.auth).json()
