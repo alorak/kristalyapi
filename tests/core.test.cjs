@@ -4073,7 +4073,7 @@ test('P2 COD 1561664 display filtering preserves occupancy and unresolved formul
 
 test('DFT deep links select bounded sections with a preparation fallback',()=>{
  const {pageFromHash,dftSectionFromHash}=context.pageApi;
- for(const section of ['hazirlik','isler','sonuclar','yakinsama','kusurlar']){
+ for(const section of ['hazirlik','isler','sonuclar','yakinsama','kusurlar','ayarlar']){
   assert.equal(pageFromHash('#dft/'+section),'dft');
   assert.equal(dftSectionFromHash('#dft/'+section),section);
  }

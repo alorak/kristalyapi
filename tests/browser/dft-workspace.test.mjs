@@ -35,16 +35,25 @@ try{
  assert.equal(await page.locator('#qeJobSubmit').count(),1);
  await page.locator('#languageTurkish').click();
  await page.locator('#qeEcutwfc').fill('65');
- await page.locator('#qeJobProfile').fill('retained-profile');
  await page.locator('#qeJobWorkflow').selectOption('electronic');
  assert.equal(await page.locator('#qeElectronicSettings').isVisible(),true);
- await page.locator('[data-dft-section="isler"]').click();
- await page.waitForFunction(()=>!document.getElementById('dft-isler').hidden);
+ // Without a checked server and key, the jobs tab is greyed out and leads to settings.
+ const jobsTab=page.locator('[data-dft-section="isler"]');
+ assert.equal(await jobsTab.getAttribute('aria-disabled'),'true');
+ await jobsTab.click({force:true});
+ await page.waitForFunction(()=>!document.getElementById('dft-ayarlar').hidden&&location.hash==='#dft/ayarlar');
+ assert.equal(await page.locator('#dft-isler').isHidden(),true);
+ assert.equal(await page.locator('#dftSettingsNotice').isVisible(),true);
+ assert.equal(await page.locator('[data-dft-section="ayarlar"]').getAttribute('aria-current'),'page');
+ await page.locator('#qeJobProfile').fill('retained-profile');
+ assert.match(await page.locator('#dftReadiness').textContent(),/bağlantıyı kontrol edin/);
  assert.equal(await page.locator('#qeJobPause').isDisabled(),true);
  assert.equal(await page.locator('#qeJobResume').isDisabled(),true);
+ await page.screenshot({path:path.join(artifacts,'dft-workspace-settings.png')});
+ await page.locator('[data-dft-section="hazirlik"]').click();
+ await page.waitForFunction(()=>!document.getElementById('dft-hazirlik').hidden);
+ assert.equal(await page.locator('#dftSettingsNotice').isHidden(),true);
  assert.match(await page.locator('#dftJobSettings').textContent(),/65 Ry.*retained-profile/);
- await page.locator('#qeJobRefresh').click();
- assert.match(await page.locator('#qeJobStatus').textContent(),/Bu sekmede takip edilen bir iş yok/);
  await page.locator('[data-dft-section="sonuclar"]').click();
  await page.locator('#qeElectronicFile').setInputFiles(path.join(root,'validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/pipeline/electronic-results.json'));
  await page.locator('#qeElectronicOpen').click();
@@ -122,7 +131,9 @@ try{
   }
   assert.equal(req.method(),'GET','tracking must never submit or mutate jobs');
   let data;
-  if(pathname==='/api/v1/calculations')data={jobs:[row()]};
+  if(pathname==='/api/health')data={engine:'quantum-espresso',api_version:'1',status:'ready',read_only:false};
+  else if(pathname==='/api/capabilities')data={engine:{id:'quantum-espresso',available:true,version:'7.2'},api_version:'1',job_submission_enabled:true,binaries:{'pw.x':true}};
+  else if(pathname==='/api/v1/calculations')data={jobs:[row()]};
   else if(pathname.endsWith('/diagnostics'))data={schema:'kristalyapi.qe-job-diagnostics.v1',job_id:jid,availability:'recorded',status:serverStatus,
    reason_code:serverStatus==='completed'?'completed':'in_progress',elapsed_seconds:3,active_stage:'nscf',resources:null,
    stages:['scf','bands','bands_pp'].map(name=>({name,status:'completed',duration_seconds:1}))};
@@ -131,8 +142,18 @@ try{
   await route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify(data)});
  });
  await page.setViewportSize({width:1280,height:900});
+ await page.locator('[data-dft-section="ayarlar"]').click();
+ await page.locator('#qeApiTest').click();
+ await page.waitForFunction(()=>document.getElementById('dftConnectionChip').dataset.state==='token');
+ assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),'true','a connection without a key keeps jobs locked');
  await page.locator('#qeApiToken').fill('test-only-token-aaaaaaaaaaaaaaaaaaaaaaaa');
+ assert.equal(await page.locator('#dftConnectionChip').getAttribute('data-state'),'ready');
+ assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),null);
  await page.locator('[data-dft-section="isler"]').click();
+ await page.waitForFunction(()=>!document.getElementById('dft-isler').hidden);
+ assert.equal(await page.locator('#dftSettingsNotice').isHidden(),true);
+ await page.locator('#qeJobRefresh').click();
+ assert.match(await page.locator('#qeJobStatus').textContent(),/Bu sekmede takip edilen bir iş yok/);
  await page.locator('#qeJobValidate').click();
  await page.waitForFunction(()=>document.getElementById('qeProtocolState').textContent.includes('eşleşmiyor'));
  wrongProtocolHash=false;
