@@ -319,20 +319,23 @@ def run_pilot(settings, target, pseudos_dir, rendered, pseudo_hashes, selected, 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case",choices=CASE_IDS,default="pristine")
-    parser.add_argument("--memory-gib",type=int,default=96,
+    parser.add_argument("--memory-gib",type=int,
                         help="Hypothetical unless --execute is given; NOT proven sufficient")
     parser.add_argument("--scratch-gib",type=int,default=4)
     parser.add_argument("--cpus",type=int,default=2)
     parser.add_argument("--timeout-seconds",type=int,default=180)
-    parser.add_argument("--image",default=review.IMAGE_ID)
-    parser.add_argument("--architecture",choices=("arm64","amd64"),default="arm64")
+    parser.add_argument("--image")
+    parser.add_argument("--architecture",choices=("arm64","amd64"))
     parser.add_argument("--pseudo-dir",type=Path)
     parser.add_argument("--output",type=Path)
     parser.add_argument("--execute",action="store_true")
     parser.add_argument("--acknowledge-resource-risk",action="store_true")
     args=parser.parse_args(argv)
     try:
-        settings=checked_settings(args.case,args.image,args.architecture,args.memory_gib,
+        settings=checked_settings(args.case,
+                                  args.image if args.image is not None else review.IMAGE_ID,
+                                  args.architecture if args.architecture is not None else "arm64",
+                                  args.memory_gib if args.memory_gib is not None else 96,
                                   args.scratch_gib,args.cpus,args.timeout_seconds)
         rendered,profile,candidate,old_review=pinned_input(args.case)
         planned={"schema":SCHEMA,"status":"plan_only","settings":settings,
@@ -347,8 +350,10 @@ def main(argv=None):
                 raise ValueError("Acknowledgement without --execute is invalid")
             print(json.dumps(planned,indent=2))
             return 0
-        if not args.acknowledge_resource_risk or args.output is None or args.pseudo_dir is None:
-            raise ValueError("--execute requires --acknowledge-resource-risk, --output and --pseudo-dir")
+        if (not args.acknowledge_resource_risk or args.output is None or
+            args.pseudo_dir is None or args.memory_gib is None or
+            args.image is None or args.architecture is None):
+            raise ValueError("--execute requires explicit risk acknowledgement, output, UPFs, memory GiB, image SHA and architecture")
         pseudo_dir=args.pseudo_dir.resolve()
         verified=checked_pseudos(pseudo_dir,profile)
         if args.output.exists() or args.output.is_symlink():
