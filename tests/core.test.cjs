@@ -54,7 +54,7 @@ const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJpegBytes});',context);
-vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
+vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,axisGizmoVectorPrimitives,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
@@ -257,6 +257,43 @@ test('A4 PDF export includes JPEG XObject, stream offsets and fitting page dimen
  assert.match(Buffer.from(portrait.bytes).toString('latin1'),/\/MediaBox \[0 0 595 842\]/);
  assert.throws(()=>api.pdfJpegBytes(1200,800,new Uint8Array(6)),/JPEG/);
 });
+test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF/EPS',()=>{
+ const element=(attributes={},textContent='')=>({getAttribute:key=>attributes[key]??null,textContent});
+ const axes=[{label:'X',color:'#e24b4b',x:99,y:58,opacity:'1'},
+  {label:'Y',color:'#23a45b',x:60,y:19,opacity:'.74'},
+  {label:'Z',color:'#286de0',x:90,y:80,opacity:'1'}];
+ const groups=axes.map(a=>{
+  const line=element({x1:'60',y1:'58',x2:String(a.x-7),y2:String(a.y),stroke:a.color,'stroke-width':'4'});
+  const arrow=element({points:a.x+','+a.y+' '+(a.x-7)+','+(a.y-4)+' '+(a.x-7)+','+(a.y+4),fill:a.color});
+  const label=element({x:String(a.x),y:String(a.y),fill:a.color,stroke:'#ffffff','stroke-width':'3','font-size':'13'},a.label);
+  return {getAttribute:key=>key==='opacity'?a.opacity:null,querySelector:key=>({line,polygon:arrow,text:label})[key]};
+ });
+ const center=element({cx:'60',cy:'58',r:'4',fill:'#69798a',stroke:'#ffffff','stroke-width':'1.5'});
+ const svg={querySelectorAll:()=>groups,querySelector:key=>key==='circle'?center:null};
+ const shapes=api.axisGizmoVectorPrimitives(svg,{left:100,top:50},{left:112,top:80,width:120,height:120});
+ assert.equal(shapes.length,10);
+ assert.deepEqual(Array.from(new Set(shapes.map(s=>s.type))),['line','triangle','label','circle']);
+ approx(shapes[0].x1,72);approx(shapes[0].y1,88);
+ assert.deepEqual(shapes.filter(s=>s.type==='label').map(s=>s.text),['X','Y','Z']);
+ assert.deepEqual(shapes.filter(s=>s.type==='label').map(s=>s.fill),axes.map(a=>a.color));
+ assert.equal(shapes.filter(s=>s.type==='label')[1].opacity,.74);
+ assert.ok(shapes.every(s=>s.depth<0),'HUD should be rendered after structure geometry');
+ const xml=api.crystalSvgText(shapes,600,400,'XYZ axes',true);
+ const pdf=Buffer.from(api.vectorPdfBytes(shapes,600,400)).toString('latin1');
+ const eps=api.vectorEpsText(shapes,600,400);
+ for(const a of axes){
+  assert.match(xml,new RegExp('<text[^>]*fill="'+a.color+'"[^>]*>'+a.label+'</text>'));
+  assert.match(pdf,new RegExp('\\('+a.label+'\\) Tj ET'));
+  assert.match(eps,new RegExp('\\('+a.label+'\\) true charpath stroke'));
+ }
+ assert.match(xml,/paint-order="stroke fill"/);
+ assert.match(pdf,/ 1 Tr \(/,'PDF must outline text as vectors');
+ assert.doesNotMatch(pdf,/\/DCTDecode|\/Subtype \/Image|\/XObject/);
+ assert.doesNotMatch(eps,/colorimage/);
+ assert.match(xml,/fill="#69798a"/);
+ assert.throws(()=>api.vectorPdfBytes([{...shapes[2],fill:'url(javascript:1)'}],600,400),/etiket stili/);
+});
+
 test('vector PDF/EPS draws real Bezier geometry, no JPEG/image XObjects',()=>{
  const items=[
   {type:'circle',x:200,y:120,r:20,fill:'#cc6644',opacity:1,depth:2},
