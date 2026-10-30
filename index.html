@@ -811,6 +811,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <label class="field"><span>Partition</span><select id="qeHpcPartition"><option value="orfoz">orfoz · 1 node</option></select></label>
       <label class="field"><span>MPI görev sayısı</span><select id="qeHpcTasks"><option value="56">56</option><option value="112" selected>112</option></select></label>
       <label class="field"><span>Zaman sınırı (saat, en fazla 72)</span><input id="qeHpcHours" type="number" min="1" max="72" step="1" value="12"></label>
+       <label class="field"><span>Seri son işlemler için süre sınırı · yalnız aşamalı ZIP</span><select id="qeHpcPostHours"><option value="" selected>Yukarıdaki süreyle aynı</option><option value="1">1 saat</option><option value="2">2 saat</option><option value="4">4 saat</option><option value="8">8 saat</option><option value="12">12 saat</option><option value="24">24 saat</option><option value="48">48 saat</option><option value="72">72 saat</option></select></label>
      </div>
      <label class="field"><span>UPF dosyaları (isteğe bağlı, yerel dosya)</span><input id="qeHpcUpfFiles" type="file" accept=".upf,.UPF" multiple></label>
      <p class="hint">UPF yüklemezseniz dosyaları TRUBA üzerindeki <code>pseudo/</code> dizinine yerleştirmelisiniz. Yüklenen UPF'ler ZIP içinde SHA-256 ile kaydedilir; hiçbir dosya ağa gönderilmez. Dosya adları yukarıdaki Element=dosya.UPF satırlarıyla birebir eşleşmelidir.</p>

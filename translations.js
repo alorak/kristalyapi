@@ -7,6 +7,16 @@
 (() => {
  'use strict';
  const entries=[
+  ["Seri son işlemler için süre sınırı · yalnız aşamalı ZIP","Serial postprocessing walltime · staged ZIP only"],
+  ["Yukarıdaki süreyle aynı","Same as main walltime"],
+  ["1 saat","1 hour"],
+  ["2 saat","2 hours"],
+  ["4 saat","4 hours"],
+  ["8 saat","8 hours"],
+  ["12 saat","12 hours"],
+  ["24 saat","24 hours"],
+  ["48 saat","48 hours"],
+  ["72 saat","72 hours"],
   ["Grafikte ilk bant (1 tabanlı)","First displayed band (1-based)"],
   ["Grafikte son bant (dahil)","Last displayed band (inclusive)"],
   ["300 veya daha az bantta boş bırakabilirsiniz. Daha büyük nbnd için grafik aralığını açıkça seçin. QE yine tüm nbnd bantlarını hesaplar.","For up to 300 bands, leave both blank. For larger nbnd, explicitly choose a display window. QE still computes all nbnd bands."],

@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash,webcrypto} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,existsSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {parseBandPath,validatePipelineInput,pipelineStages,stageSlurm,
- createTrubaPipelinePackage} from '../qe-hpc-pipeline.js';
+ createTrubaPipelinePackage,resumeScript} from '../qe-hpc-pipeline.js';
 import {parseTrubaPipelineSummary,renderTrubaPipelineSummary} from '../qe-truba-pipeline-view.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
@@ -65,6 +68,29 @@ test('stages are serialized, no parallel QE writes and postprocessors use one ra
  assert.match(script,/dos\.x -in dos\.in > dos\.out/);
  assert.match(script,/python3 pipeline\.py finish dos/);
 });
+test('manual resume refuses failed squeue queries and active jobs without calling sbatch',()=>{
+ const root=mkdtempSync(join(tmpdir(),'truba-squeue-'));
+ const bin=join(root,'mock-bin'),log=join(root,'sbatch.log');
+ try{
+  mkdirSync(bin);
+  writeFileSync(join(root,'resume.sh'),resumeScript(pipelineStages('scf')));
+  writeFileSync(join(root,'submissions.txt'),'scf 1042\n');
+  writeFileSync(join(bin,'python3'),'#!/bin/sh\nexit 0\n',{mode:0o755});
+  writeFileSync(join(bin,'sbatch'),'#!/bin/sh\nprintf "called\\n" >> "$TEST_SBATCH_LOG"\necho 2000\n',{mode:0o755});
+  const env={...process.env,PATH:bin+':'+process.env.PATH,TEST_SBATCH_LOG:log};
+  writeFileSync(join(bin,'squeue'),'#!/bin/sh\necho "controller unavailable" >&2\nexit 47\n',{mode:0o755});
+  const error=spawnSync('bash',['resume.sh','bands_pp'],{cwd:root,env,encoding:'utf8'});
+  assert.equal(error.status,3);
+  assert.match(error.stderr,/Cannot verify original Slurm job 1042/);
+  assert.equal(existsSync(log),false,'squeue error must not permit sbatch');
+  assert.equal(existsSync(join(root,'.resume-lock')),false);
+  writeFileSync(join(bin,'squeue'),'#!/bin/sh\necho 1042\n',{mode:0o755});
+  const busy=spawnSync('bash',['resume.sh','bands_pp'],{cwd:root,env,encoding:'utf8'});
+  assert.equal(busy.status,3);
+  assert.match(busy.stderr,/remains active/);
+  assert.equal(existsSync(log),false,'active Slurm job must not permit sbatch');
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
 test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files',async()=>{
  const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
  const result=await createTrubaPipelinePackage({...opts,pipelineScript});
@@ -93,6 +119,27 @@ test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files'
  assert.match(decode('stages/scf.slurm'),/mpirun pw\.x/);
  const relax=await createTrubaPipelinePackage({...opts,inputText:input.replace("'scf'","'relax'"),pipelineScript});
  assert.equal((await entries(relax.blob)).has('stages/relax.slurm'),true);
+});
+test('serial postprocessor walltime can be shorter without changing pw allocation or stage ordering',async()=>{
+ const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
+ const generated=await createTrubaPipelinePackage({...opts,pipelineScript,postHours:'2'});
+ const file=await entries(generated.blob),read=name=>new TextDecoder().decode(file.get(name));
+ assert.match(read('stages/scf.slurm'),/#SBATCH --time=12:00:00/);
+ assert.match(read('stages/dos.slurm'),/#SBATCH --time=02:00:00/);
+ assert.match(read('stages/projwfc.slurm'),/#SBATCH --cpus-per-task=56/);
+ assert.equal(generated.manifest.resources.postprocess_hours,2);
+ assert.equal(generated.manifest.resource_estimate.length,6);
+ assert.equal(generated.manifest.max_reserved_core_hours,2352);
+ assert.deepEqual(generated.manifest.stages,pipelineStages('scf'));
+ assert.match(read('README.md'),/upper bound \(not actual use\)/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,postHours:'0'}),/1–72/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,postHours:'2.5'}),/1–72/);
+ const previous=await createTrubaPipelinePackage({...opts,pipelineScript});
+ assert.match(new TextDecoder().decode((await entries(previous.blob)).get('stages/dos.slurm')),/#SBATCH --time=12:00:00/);
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
+ assert.match(html,/id="qeHpcPostHours"/);
+ assert.match(app,/postHours:\$\('qeHpcPostHours'\)/);
 });
 test('P1.3 converter is pinned, embedded and must succeed before final receipt',async()=>{
  const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');

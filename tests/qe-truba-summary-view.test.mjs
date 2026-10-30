@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash,webcrypto} from 'node:crypto';
 import {createTrubaPackage} from '../qe-hpc-export.js';
-import {parseTrubaSummary,renderTrubaSummary} from '../qe-truba-summary-view.js';
+import {parseTrubaSummary,renderTrubaSummary,compareTrubaInputDigest} from '../qe-truba-summary-view.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const sha=data=>createHash('sha256').update(data).digest('hex');
@@ -25,6 +25,16 @@ function verifiedFixture(){
   output_sha256:sha('output'),output_error:null
  };
 }
+test('current QE source SHA-256 comparison distinguishes exact match from other input',async()=>{
+ const expected=sha(input);
+ const matched=await compareTrubaInputDigest(input,expected);
+ assert.equal(matched.matches,true);
+ assert.equal(matched.actual_sha256,expected);
+ const changed=await compareTrubaInputDigest(input+'changed',expected);
+ assert.equal(changed.matches,false);
+ assert.notEqual(changed.actual_sha256,expected);
+ await assert.rejects(compareTrubaInputDigest(input,'invalid'),/Invalid TRUBA/);
+});
 test('strict offline summary schema validates complete provenance',()=>{
  const s=verifiedFixture();
  assert.equal(parseTrubaSummary(s),s);
@@ -94,6 +104,8 @@ test('DFT HTML and offline PWA stage summary module and collector',()=>{
  for(const id of ['qeHpcSummaryFile','qeHpcSummaryOpen','qeHpcSummaryStatus','qeHpcSummaryView'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(app,/qeOpenTrubaSummary/);
+ assert.match(app,/qeMatchCurrentInput/);
+ assert.match(app,/compareTrubaInputDigest/);
  assert.match(sw,/qe-truba-summary-view\.js/);
  assert.match(sw,/qe_hpc_collect\.py/);
 });
