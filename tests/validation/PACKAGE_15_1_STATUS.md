@@ -126,12 +126,16 @@ otomatik olarak görüldüğü anlamına gelmez.
 - [ ] P14'te gerçek VESTA Text Area ve ölçülen bağ/BVS kayıtlarının
   referans 0.03 Å toleransı içinde doğrulanması.
 - [ ] CCP4 kısmi haritanın fiziksel mutlak izoeşik seviyesinin
-  ayrı sabit commit ile seçilmesi: `isoLevel: null` olduğu sürece
-  isoyüzey karşılaştırması **bloklanır**.
+  kaynak biriminin fiziksel ölçekte doğrulanması: V15.2 gerçek voxel
+  değerlerinden **+1,0 source-map-units** sayısal eşiğini sabitledi;
+  fiziksel birim **UNKNOWN** ve fiziksel izoyüzey paritesi hâlâ **bloklu**.
 - [ ] İki uygulamanın kamera/ışık/doluluk/atom/bağ/
   ADP/izoyüzey ayarlarının insan tarafından eşlenmesi.
 - [ ] Sayısal yoğunluk/koordinat karşılaştırmasının tek başına
   görüntü metriklerine değil Gemmi/ASE sonuçlarına bağlanması.
+
+**V15.2 veri eşiği ve V16.1 kamera referansı eklendi:** [durum](PACKAGE_16_1_STATUS.md).
+Gerçek GUI/P14 sayısal kanıtları henüz bulunmuyor.
 
 **V15.1'de yapılan iş operatör kanıtı toplama otomasyonu ve kaynak
 eşleştirmesidir; GUI'yi gerçekten çalıştırmak veya parite

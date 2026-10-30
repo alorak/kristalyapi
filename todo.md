@@ -791,6 +791,15 @@ işi olarak açma.
 
 ### V16 — P0 · Gerçek VESTA 3.5.8 GUI ve bilimsel fark kanıtı
 
+- [x] **V15.2/V16.1 yazılımı:** Gerçek SHA-pimli 5i55 CCP4 başlık/480
+  voksel denetimi, mutlak **+1,0 kaynak birimi** izoeşik (fiziksel
+  birim UNKNOWN); 5 gerçek kaynak hücresinde [uvw]/[hkl]* doğrudan–karşıt
+  örgü kamera çerçevesi ve matematik/bozuk dosya unittest'leri.
+  Ayrıntılar: [V15.2 + V16.1](tests/validation/PACKAGE_16_1_STATUS.md).
+- [ ] **V16.1 bilimsel kabul:** Gerçek VESTA 3.5.8 kamera bakış işareti,
+  fotoğraf çiftleri, P14 Text Area ve CCP4 fiziksel birimi doğrulaması.
+  Kodlanmış sayısal referans = GUI/deneysel eşdeğerlik değildir.
+
 - [ ] **Ön koşul:** Var olan V15.1 gerçek GUI kabulünü ve kısmi CCP4
   haritanın mutlak izoeşik/birim sorununu çöz. O zamana kadar
   scientificParity=NOT_ESTABLISHED ve gerçek GUI=NOT_RUN kalsın.

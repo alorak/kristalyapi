@@ -171,7 +171,7 @@
         "CCP4 volume map",
         "signed isosurface"
       ],
-      "notes": "Partial density map: capture matched map origin/grid, non-null scalar isolevel and sample resolution. Does not certify full-cell density.",
+      "notes": "Partial 5i55 CCP4 map. Native-map absolute isovalue +1.0 validated from actual voxels; physical units UNKNOWN. Match map origin, CRS→XYZ permutation, iso value and clipping; not a periodic full-cell density or physical e/Angstrom^3 comparison.",
       "settings": {
         "projection": "orthographic",
         "viewDirection": "[001]",
@@ -199,8 +199,14 @@
           1024,
           768
         ],
-        "isoLevel": null,
+        "isoLevel": 1,
         "isoLevelUnits": "source-map-units"
+      },
+      "isoLevelEvidence": {
+        "type": "native-map-absolute-scalar",
+        "physicalUnits": "UNKNOWN",
+        "provenance": "tests/validation/vesta_15_ccp4_reference.py",
+        "explanation": "SHA-pinned Gemmi 5i55 partial CCP4 MODE 2: min=-0.53103828, max=2.39882803, mean=0.34712049, RMS=0.69122291. At level +1.0 exactly 103/480 voxels are above and 188 grid edges cross the level. This is a reproducible absolute threshold in unknown source-map units, not e/Angstrom^3 and not a VESTA GUI parity claim."
       }
     }
   ]
