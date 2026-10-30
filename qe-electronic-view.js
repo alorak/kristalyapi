@@ -154,7 +154,20 @@ function el(tag,attrs={},text=''){
  if(text)node.textContent=text;
  return node;
 }
+const QE_INTERNAL_ZERO='QE internal; no Fermi/vacuum alignment performed';
 let chartSerial=0;
+// Round 1/2/2.5/5 × 10ⁿ steps inside the plotted range; data are never rescaled.
+export function niceTicks(min,max,target=5){
+ const span=max-min;if(!finite(span)||span<=0)return [{value:min,label:String(min)}];
+ const raw=span/target,power=10**Math.floor(Math.log10(raw));
+ const step=[1,2,2.5,5,10].map(f=>f*power).find(v=>v>=raw)||10*power;
+ const digits=Math.max(0,-Math.floor(Math.log10(step)+1e-9)+(step/power===2.5?1:0));
+ const ticks=[];
+ for(let v=Math.ceil(min/step-1e-9)*step;v<=max+step*1e-9;v+=step){
+  const value=Math.abs(v)<step*1e-9?0:Number(v.toFixed(12));ticks.push({value,label:value.toFixed(digits)});
+ }
+ return ticks;
+}
 export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  const svg=el('svg',{viewBox:'0 0 '+width+' '+height,role:'img','aria-label':title});
  svg.style.cssText='width:100%;height:auto;display:block;max-height:360px';
@@ -173,14 +186,15 @@ export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  const xVal=x=>left+(x-xMin)/(xMax-xMin)*plotW;
  const yVal=y=>top+plotH-(y-yMin)/(yMax-yMin)*plotH;
  const axis='currentColor',kNodes=domains.kNodes||null;
- for(let i=0;i<=4;i++){
-  const x=left+i*plotW/4,y=top+i*plotH/4;
+ if(!kNodes)for(const tick of niceTicks(xMin,xMax)){
+  const x=xVal(tick.value);
   svg.append(el('line',{x1:x,y1:top,x2:x,y2:top+plotH,stroke:axis,'stroke-opacity':0.12}));
+  svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},tick.label));
+ }
+ for(const tick of niceTicks(yMin,yMax)){
+  const y=yVal(tick.value);
   svg.append(el('line',{x1:left,y1:y,x2:left+plotW,y2:y,stroke:axis,'stroke-opacity':0.12}));
-  if(!kNodes)svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},
-   (xMin+(xMax-xMin)*i/4).toFixed(2)));
-  svg.append(el('text',{x:left-8,y:y+3,'text-anchor':'end','font-size':11,fill:axis},
-   (yMax-(yMax-yMin)*i/4).toFixed(2)));
+  svg.append(el('text',{x:left-8,y:y+3,'text-anchor':'end','font-size':11,fill:axis},tick.label));
  }
  if(kNodes){
   svg.setAttribute('data-k-node-count',kNodes.length);
@@ -208,7 +222,9 @@ function renderElectronicContent(container,data,energyWindow,linked,selection=nu
  container.replaceChildren();
  const heading=document.createElement('div');heading.className='qe-spectrum-source';
  const source=document.createElement('strong');source.textContent='Kaynak: '+data.source;
- const energy=document.createElement('span');energy.textContent='Enerji referansı: '+data.energyZero+' · Fermi/vakum hizalaması yapılmadı';
+ const energy=document.createElement('span');
+ // The pipeline's fixed English reference note already states the missing alignment.
+ energy.textContent='Enerji referansı: '+(data.energyZero===QE_INTERNAL_ZERO?'QE iç enerji sıfırı':data.energyZero)+' · Fermi/vakum hizalaması yapılmadı';
  heading.append(source,energy);container.append(heading);
  const note=document.createElement('p');
  note.textContent='Dosyanın bilimsel doğruluğu uygulama tarafından teyit edilmez. Bu grafikler optik geçiş/PL veya tek foton emisyonu değildir. Açık kristal yapısıyla otomatik eşleştirme yapılmaz.';
@@ -312,6 +328,20 @@ export function electronicEnergyRange(data){
  if(!finite(lo)||!finite(hi))throw Error('Enerji aralığı bulunamadı.');
  return lo===hi?[lo-.5,hi+.5]:[lo,hi];
 }
+// Initial view: the highest connected band manifold, leaving out deeper bands
+// separated by more than SEMICORE_GAP_EV. Raw values stay untouched; the full
+// range remains one click away.
+const SEMICORE_GAP_EV=3;
+export function defaultEnergyWindow(data){
+ const full=electronicEnergyRange(data);
+ const intervals=(data.bands?.curves||[]).map(c=>[Math.min(...c),Math.max(...c)]).sort((a,b)=>a[0]-b[0]);
+ if(!intervals.length)return full;
+ const groups=[];
+ for(const [lo,hi] of intervals){const last=groups.at(-1);if(last&&lo-last[1]<=SEMICORE_GAP_EV)last[1]=Math.max(last[1],hi);else groups.push([lo,hi]);}
+ if(groups.length<2)return full;
+ const lower=Math.max(full[0],Math.floor((groups.at(-1)[0]-.25)*2)/2);
+ return lower<full[1]?[lower,full[1]]:full;
+}
 export function checkedEnergyWindow(data,min,max){
  if(!finite(min)||!finite(max)||min>=max||Math.max(Math.abs(min),Math.abs(max))>1e6)throw Error('Enerji penceresi sonlu ve artan olmalı.');
  const [lo,hi]=electronicEnergyRange(data);
@@ -377,12 +407,13 @@ export function renderQeElectronicResults(container,data){
  }
  const controls=document.createElement('div');controls.className='qe-spectrum-controls';
  const min=document.createElement('input'),max=document.createElement('input');
- const full=electronicEnergyRange(data);let window=[...full];
+ const full=electronicEnergyRange(data),initial=defaultEnergyWindow(data);let window=[...initial];
  const field=(text,input,value)=>{const label=document.createElement('label');label.className='field';const span=document.createElement('span');span.textContent=text;input.type='number';input.step='any';input.value=String(value);label.append(span,input);return label;};
- controls.append(field('En düşük enerji (eV)',min,full[0]),field('En yüksek enerji (eV)',max,full[1]));
+ controls.append(field('En düşük enerji (eV)',min,initial[0]),field('En yüksek enerji (eV)',max,initial[1]));
  const linked=document.createElement('input');linked.type='checkbox';linked.checked=!!(data.bands&&data.dos);linked.disabled=!(data.bands&&data.dos);
  const linkedLabel=document.createElement('label');linkedLabel.className='check';const linkedText=document.createElement('span');linkedText.textContent='Bant ve DOS’u yan yana göster';linkedLabel.append(linked,linkedText);
  const message=document.createElement('p');message.className='hint';message.setAttribute('role','status');
+ if(initial[0]>full[0])message.textContent='İlk görünüm, üst bant grubundan '+SEMICORE_GAP_EV+' eV’den büyük boşlukla ayrılan derin bantları gizler. Hepsi için “Tam enerji aralığı”nı seçin.';
  const plots=document.createElement('div');plots.className='qe-electronic-plot-area';
  const apply=document.createElement('button');apply.type='button';apply.textContent='Enerji penceresini uygula';
  const redraw=()=>{const selection=plots.querySelector?.('select')?.value;renderElectronicContent(plots,data,window,linked.checked,selection);};

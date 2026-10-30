@@ -14,6 +14,7 @@ import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electron
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {createJobPoller,renderJobProgress} from './qe-job-tracking.js';
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
+import {MIN_SLAB_VACUUM_ANGSTROM,slabAnalysis,suggestBandPath,bandCapacityAdvice,bandCapacityFrom} from './qe-electronic-setup.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
@@ -6853,6 +6854,7 @@ function syncDftPreparation(){
  for(const node of host.querySelectorAll('.dft-relax-only'))node.hidden=mode!=='server'||!isRelax;
  for(const node of host.querySelectorAll('.dft-force-only'))node.hidden=!isRelax;
  $('qeElectronicSettings').hidden=mode!=='server'||workflow!=='electronic';
+ syncDftElectronicChecks();
  $('qeSpinSettings').hidden=mode!=='server'||workflow!=='electronic'||$('qeElectronicSpin').value!=='polarized';
  $('dftPreparationSummary').textContent=mode==='file'?
   'Yerel QE girdi dosyası oluşturulacak. Bu işlem hesap çalıştırmaz; gerçek UPF dosyaları ve pw.x kurulumu gerekir.':
@@ -6933,6 +6935,54 @@ function qeClearRelaxationComparison(){
  qeComparisonDispose?.();qeComparisonDispose=null;
  const box=$('qeRelaxComparison');box.replaceChildren();box.hidden=true;
 }
+// Server jobs use the active structure, except electronic jobs started from a
+// chosen relaxed/protocol source.
+function qeJobGeometry(electronic){
+ if(electronic&&qeElectronicSource)return {cell:structuredClone(qeElectronicSource.structure.cell_angstrom),atoms:structuredClone(qeElectronicSource.structure.atoms)};
+ const model=qeCalculationStructure(state);
+ return {cell:basis(validateCell(model.cell)).map(vector=>vector.toArray()),
+  atoms:model.sites.map(site=>({element:site.symbol,fractional:[Number(site.x),Number(site.y),Number(site.z)]}))};
+}
+// Path and band advice describe one path text and one structure/UPF profile.
+let qeSuggestedPath=null,qeBandCapacityKey=null;
+function qeBandCapacityGeometryKey(){try{return JSON.stringify([qeJobGeometry(true),$('qeJobProfile').value.trim()]);}catch{return null;}}
+function syncDftElectronicChecks(){
+ const note=$('qeElectronicDimension');
+ if(!note||$('qeElectronicSettings').hidden)return;
+ if(qeSuggestedPath!==null&&$('qeElectronicPath').value!==qeSuggestedPath){qeSuggestedPath=null;$('qeElectronicPathStatus').hidden=true;}
+ if(qeBandCapacityKey!==null&&qeBandCapacityGeometryKey()!==qeBandCapacityKey){
+  qeBandCapacityKey=null;$('qeElectronicApplyNbnd').hidden=true;
+  $('qeElectronicBandHint').textContent='Gereken en az bant sayısı, sunucu ön kontrolünde UPF değerlik elektronlarından hesaplanır.';
+ }
+ try{
+  const {cell,atoms}=qeJobGeometry(true),slab=slabAnalysis(cell,atoms),gap=slab.vacuumAngstrom.toFixed(1)+' Å';
+  note.dataset.state=slab.isSlab?'ok':'warn';
+  note.textContent=slab.isSlab?'2B katman: c yönünde ≈ '+gap+' vakum. Bant yolu kz=0 düzleminde, yoğun örgü kz=1 olarak hesaplanır.':
+   'Bu yapı 2B bir katman gibi görünmüyor: c yönündeki en büyük boşluk ≈ '+gap+'; 2B katman için en az '+MIN_SLAB_VACUUM_ANGSTROM+
+   ' Å vakum beklenir. Bu iş akışı yalnız kz=0 yollarını ve kz=1 örgüsünü kullanır; 3B kristallerde bant ve DOS sonuçları eksik ve yanıltıcı olur.';
+ }catch(error){note.dataset.state='warn';note.textContent='2B katman denetimi yapılamadı: '+error.message;}
+}
+function qeSuggestElectronicPath(){
+ const status=$('qeElectronicPathStatus');status.hidden=false;
+ try{
+  const suggestion=suggestBandPath(qeJobGeometry(true).cell);
+  if(!suggestion.path){status.textContent='Eğik 2B örgü için standart yol önerilmez; yolu elle girin.';return;}
+  const input=$('qeElectronicPath');input.value=suggestion.path;qeSuggestedPath=suggestion.path;input.dispatchEvent(new Event('input',{bubbles:true}));
+  status.textContent={hexagonal:'Altıgen örgü: Γ–M–K–Γ yolu önerildi.',square:'Kare örgü: Γ–X–M–Γ yolu önerildi.',
+   rectangular:'Dikdörtgen örgü: Γ–X–S–Y–Γ yolu önerildi.'}[suggestion.lattice]+' Örnek sayıları ters uzay uzunluğuyla orantılıdır.';
+ }catch(error){status.textContent='Bant yolu önerilemedi: '+error.message;}
+}
+// Band counts depend on UPF valences that only the server preflight knows.
+function qeShowBandCapacity(source){
+ const info=bandCapacityFrom(source),hint=$('qeElectronicBandHint'),button=$('qeElectronicApplyNbnd');
+ if(!info){button.hidden=true;return;}
+ qeBandCapacityKey=qeBandCapacityGeometryKey();
+ const advice=bandCapacityAdvice(info,Number($('qeElectronicNbnd').max)||128),current=Number($('qeElectronicNbnd').value);
+ hint.textContent='Sunucu UPF dosyalarına göre '+advice.electrons+' değerlik elektronu; en az '+advice.minimum+' bant gerekir. '+
+  (advice.fits?'Boş iletim bantları için önerilen: '+advice.suggested+'.':'Bu sayı sunucu kaynak sınırını aşıyor; daha küçük bir hücre seçin.');
+ button.hidden=!advice.fits||current>=advice.suggested;
+ button.textContent='Önerilen nbnd değerini kullan: '+advice.suggested;button.dataset.nbnd=String(advice.suggested);
+}
 function qeJobPayload(){
  const workflow=$('qeJobWorkflow').value;
  if(!['scf','relax-scf','electronic'].includes(workflow))throw Error('Desteklenen bir sunucu hesap türü seçin.');
@@ -6940,12 +6990,7 @@ function qeJobPayload(){
  const polarized=electronic&&$('qeElectronicSpin').value==='polarized';
  // Local .in occupations do not affect fixed-occupation server jobs.
  if(electronic&&qeElectronicSource?.protocolId&&qeElectronicSource.workspaceId!==activeWorkspaceId)throw Error('Protokol referansının çalışma alanı değişti; kaynağı yeniden seçin.');
- const model=electronic&&qeElectronicSource?null:qeCalculationStructure(state);
- const cell=model?basis(validateCell(model.cell)).map(vector=>vector.toArray()):structuredClone(qeElectronicSource.structure.cell_angstrom);
- const atoms=model?model.sites.map(site=>({
-  element:site.symbol,
-  fractional:[Number(site.x),Number(site.y),Number(site.z)]
- })):structuredClone(qeElectronicSource.structure.atoms);
+ const {cell,atoms}=qeJobGeometry(electronic);
  const caps=qeResourceProfile?.base===normalizeQeApiUrl($('qeApiAddress').value)?qeResourceProfile.limits:{max_atoms:64};
  if(!atoms.length||atoms.length>caps.max_atoms)throw Error('QE API atom sınırı: '+caps.max_atoms+'.');
  const kpoints=[$('qeKx'),$('qeKy'),$('qeKz')].map(el=>Number(el.value));
@@ -6998,11 +7043,11 @@ async function qeJobPreflight(){
   if(address!==$('qeApiAddress').value||token!==$('qeApiToken').value||workspaceId!==activeWorkspaceId||snapshot!==JSON.stringify(qeJobPayload()))throw Error('Ön kontrol sırasında yapı veya ayarlar değişti; yeniden denetleyin.');
   qeProtocolPreflight={address,response:result};qeUpdateProtocolState();
   if(qeProtocolApplied&&protocolRequestMatches(qeProtocolApplied.protocol,payload)&&!protocolPreflightMatches(qeProtocolApplied.protocol,payload,result))throw Error('Seçilen protokolün yapı/UPF hash’leri eşleşmiyor.');
-  qePreflightSnapshot={address,workspaceId,snapshot};
+  qePreflightSnapshot={address,workspaceId,snapshot};qeShowBandCapacity(result);
   qeSetPreflightState('passed','Sunucu ön kontrolü geçti: '+result.atoms+' atom · UPF: '+
    result.profile_id+' · yapı SHA-256 '+result.structure_hash.slice(0,12)+
    '… Bu işlem fiziksel yakınsama kanıtı değildir.');
- }catch(error){qePreflightSnapshot=null;qeSetPreflightState('failed','QE ön kontrol başarısız: '+error.message);}
+ }catch(error){qePreflightSnapshot=null;qeShowBandCapacity(error.message);qeSetPreflightState('failed','QE ön kontrol başarısız: '+error.message);}
  finally{btn.disabled=false;}
 }
 async function qeJobStart(){
@@ -9332,6 +9377,7 @@ function syncDftSummary(){
   $('dftStructureCell').textContent=error.message;
  }
  $('dftConnectionState').textContent=dftConnectionState;
+ syncDftElectronicChecks();
  const ready=dftServerReady(),token=$('qeApiToken').value.trim()!=='';
  $('dftConnectionChip').dataset.state=dftServerConnected?(ready?'ready':'token'):dftConnectionState==='Sunucuya bağlanılamadı'?'failed':'unchecked';
  $('dftReadiness').textContent=ready?'Sunucu işleri kullanılabilir.':dftServerConnected?
@@ -10032,9 +10078,13 @@ function bind(){
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
  $('qeElectronicSpin').onchange=qeElectronicModeChanged;
  $('qeCalcType').addEventListener('change',syncDftPreparation);
+ $('qeElectronicSuggestPath').onclick=qeSuggestElectronicPath;
+ for(const id of ['qeElectronicPath','qeJobProfile'])$(id).addEventListener('input',syncDftElectronicChecks);
+ $('qeElectronicApplyNbnd').onclick=event=>{const input=$('qeElectronicNbnd');input.value=event.currentTarget.dataset.nbnd;
+  input.dispatchEvent(new Event('input',{bubbles:true}));event.currentTarget.hidden=true;};
  for(const choice of document.querySelectorAll('input[name="dftPreparationMode"]'))choice.addEventListener('change',syncDftPreparation);
  syncDftPreparation();
- $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';};
+ $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';syncDftElectronicChecks();};
  $('qeJobRefresh').onclick=qeJobRefresh;
  $('qeJobPause').onclick=()=>qeJobPauseResume(false);
  $('qeJobResume').onclick=()=>qeJobPauseResume(true);

@@ -55,6 +55,14 @@ try{
  await page.locator('#qeEcutwfc').fill('65');
  await page.locator('#qeJobWorkflow').selectOption('electronic');
  assert.equal(await page.locator('#qeElectronicSettings').isVisible(),true);
+ // Bulk Si is flagged for the kz=0/kz=1 workflow; the cubic ab plane suggests Γ–X–M–Γ.
+ assert.equal(await page.locator('#qeElectronicDimension').getAttribute('data-state'),'warn');
+ assert.match(await page.locator('#qeElectronicDimension').textContent(),/2B bir katman gibi görünmüyor/);
+ await page.locator('#qeElectronicSuggestPath').click();
+ assert.deepEqual((await page.locator('#qeElectronicPath').inputValue()).split('\n').map(line=>line.split(' ')[0]),['Gamma','X','M','Gamma']);
+ assert.match(await page.locator('#qeElectronicPathStatus').textContent(),/Kare örgü/);
+ await page.locator('#qeElectronicPath').fill('');
+ assert.equal(await page.locator('#qeElectronicPathStatus').isHidden(),true,'an edited path no longer claims to be the suggestion');
  // Without a checked server and key, the jobs tab is greyed out and leads to settings.
  const jobsTab=page.locator('[data-dft-section="isler"]');
  assert.equal(await jobsTab.getAttribute('aria-disabled'),'true');
@@ -77,6 +85,8 @@ try{
  await page.locator('#qeElectronicOpen').click();
  await page.waitForFunction(()=>document.querySelectorAll('#qeElectronicCharts svg').length===3);
  assert.match(await page.locator('#qeElectronicStatus').textContent(),/26.*3677/);
+ assert.equal(await page.locator('#qeElectronicCharts').getByLabel('En düşük enerji (eV)',{exact:true}).inputValue(),'-8','deep Mo/S manifolds start hidden');
+ assert.match(await page.locator('#qeElectronicCharts').textContent(),/derin bantları gizler/);
  const fileName=await page.locator('#qeElectronicFile').evaluate(el=>el.files[0].name);
  const spectra=page.locator('#qeElectronicCharts');
  await spectra.getByLabel('En düşük enerji (eV)',{exact:true}).fill('-8');
@@ -185,7 +195,7 @@ try{
   if(req.method()==='OPTIONS'){await route.fulfill({status:204,headers});return;}
   if(req.method()==='POST'&&pathname==='/api/v1/calculations/validate'){
    const upf=Object.fromEntries(Object.entries(protocol.pseudopotentials).map(([el,p])=>[el,p.sha256]));if(wrongProtocolHash)upf.Mo='0'.repeat(64);
-   await route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({valid:true,structure_hash:protocol.structure_hash,atoms:3,profile_id:'mos2-pbe',upf_sha256:upf})});return;
+   await route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({valid:true,structure_hash:protocol.structure_hash,atoms:3,profile_id:'mos2-pbe',upf_sha256:upf,electronic_preflight:{neutral_valence_electrons:26,minimum_nbnd:13,requested_nbnd:40}})});return;
   }
   assert.equal(req.method(),'GET','tracking must never submit or mutate jobs');
   let data;
@@ -222,6 +232,9 @@ try{
  await page.locator('#qeJobValidate').click();
  await page.waitForFunction(()=>document.getElementById('qeProtocolState').textContent.includes('ön kontrolüyle eşleşti'));
  assert.equal(await page.locator('#qeJobPreflightState').getAttribute('data-state'),'passed');
+ assert.match(await page.locator('#qeElectronicBandHint').textContent(),/26 değerlik elektronu; en az 13 bant.*önerilen: 17/);
+ assert.equal(await page.locator('#qeElectronicApplyNbnd').isHidden(),true,'nbnd=40 already exceeds the suggestion');
+ assert.equal(await page.locator('#qeElectronicDimension').getAttribute('data-state'),'ok','MoS₂ reference has vacuum along c');
  await page.locator('[data-dft-section="hazirlik"]').click();
  await page.locator('input[name="dftPreparationMode"][value="file"]').check();
  await page.locator('#qeOccupation').selectOption('smearing');

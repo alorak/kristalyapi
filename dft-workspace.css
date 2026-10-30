@@ -112,6 +112,10 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 #dftPreparationGrid[data-mode=file]{grid-template-columns:minmax(0,1fr)}
 #dftPreparationGrid[data-mode=file]>.dft-parameter-workflow{max-width:900px}
 #qeJobPreflightState{margin:8px 0 12px}
+#dftPage .qe-dimension-note{margin:0 0 12px}
+#dftPage .qe-dimension-note[data-state=ok]{border-color:#c9e4da;background:#f2faf6;color:#2c6a50}
+#dftPage .qe-dimension-note[data-state=warn]{border-color:#f0dcb0;background:#fff8e8;color:#7f5f1d}
+#qeElectronicApplyNbnd,#qeElectronicSuggestPath{margin:4px 0 8px}
 #qeJobPreflightState[data-state=passed]{border-color:#b6d9c7;background:#f0faf4;color:#226347}
 #qeJobPreflightState[data-state=stale],#qeJobPreflightState[data-state=failed]{border-color:#e9c9cd;background:#fff7f6;color:#93454d}
 @media(max-width:760px){.dft-mode-switch{grid-template-columns:minmax(0,1fr);gap:8px}.dft-mode-switch label{padding:12px 13px}}
