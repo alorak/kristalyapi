@@ -89,6 +89,8 @@ Merge-only CI Node test koşumuna yeni dosya eklendi;
 vesta-project-export.js, Pages dağıtımında ve
 offline/PWA shell içinde. CI trigger/yetki değişmedi.
 
+**V17.5 operatör kanıt/kabul altyapısı eklendi:** [üç CIF + bir gerçek CCP4 için hazırlama, SHA mühürleme ve gerçek GUI fark protokolü](PACKAGE_17_5_STATUS.md). Bu bir gerçek desktop VESTA testinin tamamlandığı anlamına gelmez; GUI NOT_RUN, scientificParity NOT_ESTABLISHED.
+
 ## Gereken gerçek bilimsel kabul
 
 - [ ] En az üç VESTA 3.5.x gerçek yapıda export edilen
