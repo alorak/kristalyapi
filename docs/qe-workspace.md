@@ -29,3 +29,11 @@ The stage list uses the canonical job operation and observed worker stage record
 Electronic results provide a display-only energy window. Bands and DOS can share the same vertical raw-energy range side by side; individual orbital plots use the same selected energy interval. Curves are clipped geometrically without shifting, interpolation, resampling or changing stored samples. The raw full range can be restored. The selected PDOS contribution survives redraws.
 
 Band and DOS/PDOS CSV downloads include every loaded sample, original band indices, element/atom totals and orbitals, energy-reference text and input hash. A selected display window does not truncate CSV. A later explicitly bounded server band window is labelled by its original indices. SVG and PNG exports capture the displayed range and contain source/energy/input metadata; PNG uses a bounded local canvas. Exporting does not contact the API or modify the crystal.
+
+## Evidence-backed protocol templates
+
+Preparation includes **Si functional smoke** and **MoS₂ D4.1 finite band/mesh acceptance** templates. Both embed the exact recorded request, request-file SHA-256, source/evidence commits, engine version, structure hash and UPF identities. Si is only an operational test, and MoS₂ scope is limited to the fixed D3 geometry/PBE/scalar/unpolarized protocol; DOS broadening remains sensitivity only.
+
+Selecting a template only displays its provenance. Applying settings preserves the current structure. Preparing a reference creates a separate workspace and keeps the exact reference cell vectors for submission, independent of display orientation. Neither action contacts the server, downloads UPFs or starts jobs. The UPF profile is still operator-managed.
+
+Changing settings removes a template match. A matching request remains pending until explicit server preflight confirms the structure and exact UPF hashes. An unchanged selected template cannot be submitted with mismatched UPFs. The server address, credentials, workspace and request must remain unchanged while preflight is in progress. Matching a template is not acceptance of a new calculation's result.

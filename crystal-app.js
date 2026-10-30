@@ -13,6 +13,7 @@ import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {createJobPoller,renderJobProgress} from './qe-job-tracking.js';
+import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
@@ -5793,7 +5794,7 @@ function syncControls(){
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
  syncQuickbar();
  try{previewPlane();}catch(e){}fillPoly();syncAnalysisAvailability();renderSites();renderBondRuleEditor();renderMillerLayerList();renderMorphList();renderOverlayList();renderLayerManager();
- if($('dftPage')&&!$('dftPage').hidden)syncDftSummary();
+ if($('dftPage')&&!$('dftPage').hidden){syncDftSummary();qeUpdateProtocolState();}
 }
 function fillPoly(){
  const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];
@@ -6828,6 +6829,58 @@ function initDftTracking(){
 function qeJobRefresh({fresh=false}={}){if(!qeActiveJob)return qeFetchJobState(null);return qeJobPoller?qeJobPoller.refresh({fresh}):qeFetchJobState(qeActiveJob);}
 
 let qeElectronicSource=null;
+let qeProtocolApplied=null,qeProtocolPreflight=null;
+function qeUpdateProtocolState(){
+ if(!$('qeProtocolState')||!qeProtocolApplied)return;
+ let matches=false,payload;try{payload=qeJobPayload();matches=qeProtocolApplied.workspaceId===activeWorkspaceId&&protocolRequestMatches(qeProtocolApplied.protocol,payload);}catch{}
+ const verified=matches&&qeProtocolPreflight?.address===$('qeApiAddress').value&&protocolPreflightMatches(qeProtocolApplied.protocol,payload,qeProtocolPreflight.response);
+ $('qeProtocolState').textContent=!matches?'Referans yapı/ayarlar eşleşmiyor; protokolün kabul kapsamı aktarılmaz.':verified?
+  'Referans istek, yapı ve UPF hash’leri sunucu ön kontrolüyle eşleşti. Yeni hesabın sonucu ayrıca doğrulanmalı.':
+  qeProtocolPreflight?'Sunucu yapı/UPF hash’leri seçilen protokolle eşleşmiyor.':'Referans istek eşleşiyor. Sunucu yapı/UPF ön kontrolü bekleniyor.';
+}
+function qeApplyProtocol(reference){
+ try{
+  const protocol=protocolById($('qeProtocolSelect').value),request=protocol.request;
+  if(reference){
+   if(workspaces.length>=MAX_WORKSPACES)throw Error('Yeni referans için çalışma alanı sınırına ulaşıldı.');
+   const elements=Object.keys(protocol.pseudopotentials);
+   const text='&SYSTEM ibrav=0, nat='+request.structure.atoms.length+', ntyp='+elements.length+' /\nCELL_PARAMETERS angstrom\n'+
+    request.structure.cell_angstrom.map(v=>v.join(' ')).join('\n')+'\nATOMIC_SPECIES\n'+elements.map(el=>el+' 1 '+protocol.pseudopotentials[el].file).join('\n')+
+    '\nATOMIC_POSITIONS crystal\n'+request.structure.atoms.map(atom=>atom.element+' '+atom.fractional.join(' ')).join('\n');
+   const model=qeData(text),crystal={...blankWorkspaceCrystal(),...model,name:protocol.label,rep:[1,1,1],symmetryEnabled:false,sgNumber:1,sgSetting:preferredSetting(1)};
+   captureWorkspace();const id='ws-'+(++workspaceSequence);workspaces.push(workspaceRecord(crystal,protocol.label,id));switchWorkspace(id,{saveCurrent:false});
+  }
+  const settings=request.parameters,electronic=request.electronic;
+  $('qeJobProfile').value=request.profile_id;$('qeJobWorkflow').value='electronic';$('qeCalcType').value='scf';$('qeOccupation').value='fixed';$('qeFreezeBottom').value='0';
+  $('qeEcutwfc').value=settings.ecutwfc_ry;$('qeEcutrho').value=settings.ecutrho_ry;
+  ['qeKx','qeKy','qeKz'].forEach((id,i)=>$(id).value=settings.kpoints[i]);
+  $('qeElectronicNbnd').value=electronic.nbnd;$('qeElectronicMesh').value=electronic.nscf_k;
+  $('qeElectronicPath').value=electronic.band_path.map(p=>[p.label,...p.k,p.segments].join(' ')).join('\n');
+  $('qeDosExplicit').checked=true;$('qeDosMin').value=electronic.dos.energy_min_ev;$('qeDosMax').value=electronic.dos.energy_max_ev;
+  $('qeDosStep').value=electronic.dos.delta_e_ev;$('qeDosSigma').value=electronic.dos.degauss_ry;
+  $('qePseudoFiles').value=Object.entries(protocol.pseudopotentials).map(([el,p])=>el+'='+p.file).join('\n');
+  qeElectronicSource=reference?{structure:structuredClone(request.structure),hash:protocol.structure_hash,protocolId:protocol.id,workspaceId:activeWorkspaceId}:null;
+  $('qeElectronicSourceStatus').textContent=reference?'Kaynak: protokol referansı · '+protocol.label+' · '+protocol.structure_hash.slice(0,12):'Kaynak: aktif yapı.';
+  qeProtocolApplied={protocol,workspaceId:activeWorkspaceId};qeProtocolPreflight=null;
+  qeElectronicModeChanged();qeUpdateProtocolState();syncDftSummary();window.location.hash='dft/hazirlik';
+ }catch(error){$('qeProtocolState').textContent=error.message;}
+}
+function initQeProtocols(){
+ const select=$('qeProtocolSelect');
+ for(const p of protocolTemplates){const option=document.createElement('option');option.value=p.id;option.textContent=p.label;select.append(option);}
+ select.onchange=()=>{
+  const detail=$('qeProtocolDetail');detail.replaceChildren();$('qeProtocolReference').disabled=$('qeProtocolSettings').disabled=!select.value;if(!select.value)return;
+  const p=protocolById(select.value);
+  const text=document.createElement('p');text.textContent=p.scope;detail.append(text);
+  const link=document.createElement('a');link.href='https://github.com/alorak/kristalyapi/blob/'+p.evidence_commit+'/'+p.request_path;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Kaynak istek ve kanıt ↗';detail.append(link);
+  const identity=document.createElement('p');identity.textContent='QE '+p.engine_version+' · commit '+p.source_commit.slice(0,12)+' · yapı SHA-256 '+p.structure_hash;detail.append(identity);
+  for(const [el,upf] of Object.entries(p.pseudopotentials)){const line=document.createElement('p');line.textContent=el+' · '+upf.file+' · SHA-256 '+upf.sha256+' · '+upf.license;detail.append(line);}
+ };
+ $('qeProtocolReference').onclick=()=>qeApplyProtocol(true);$('qeProtocolSettings').onclick=()=>qeApplyProtocol(false);
+ $('dftPage').addEventListener('input',event=>{if(/^qe/.test(event.target.id)){qeProtocolPreflight=null;qeUpdateProtocolState();}});
+ $('dftPage').addEventListener('change',event=>{if(/^qe/.test(event.target.id)){qeProtocolPreflight=null;qeUpdateProtocolState();}});
+}
+
 function qeElectronicModeChanged(){
  $('qeElectronicSettings').hidden=$('qeJobWorkflow').value!=='electronic';
 }
@@ -6842,6 +6895,7 @@ function qeJobPayload(){
  if(!electronic&&!relax&&$('qeCalcType').value!=='scf')throw Error('SCF veya sabit hücreli relaksasyon seçin.');
  if($('qeOccupation').value!=='fixed')
   throw Error('Sunucu işleri sabit doluluklu ve spinsiz olmalı.');
+ if(electronic&&qeElectronicSource?.protocolId&&qeElectronicSource.workspaceId!==activeWorkspaceId)throw Error('Protokol referansının çalışma alanı değişti; kaynağı yeniden seçin.');
  const model=electronic&&qeElectronicSource?null:qeCalculationStructure(state);
  const cell=model?basis(validateCell(model.cell)).map(vector=>vector.toArray()):structuredClone(qeElectronicSource.structure.cell_angstrom);
  const atoms=model?model.sites.map(site=>({
@@ -6870,6 +6924,7 @@ function qeJobPayload(){
   payload.schema='kristalyapi.qe-electronic-job.v1';payload.parameters.calculation='electronic';
   payload.electronic={nbnd:Number($('qeElectronicNbnd').value),nscf_k:Number($('qeElectronicMesh').value),
    band_path:parseQeBandPath($('qeElectronicPath').value)};
+  if($('qeDosExplicit').checked)payload.electronic.dos={delta_e_ev:Number($('qeDosStep').value),degauss_ry:Number($('qeDosSigma').value),energy_min_ev:Number($('qeDosMin').value),energy_max_ev:Number($('qeDosMax').value)};
  }
  return payload;
 }
@@ -6878,7 +6933,11 @@ async function qeJobPreflight(){
  btn.disabled=true;
  try{
   const payload=qeJobPayload();
-  const result=await validateQeScf($('qeApiAddress').value,$('qeApiToken').value,payload);
+  const address=$('qeApiAddress').value,token=$('qeApiToken').value,snapshot=JSON.stringify(payload),workspaceId=activeWorkspaceId;
+  const result=await validateQeScf(address,token,payload);
+  if(address!==$('qeApiAddress').value||token!==$('qeApiToken').value||workspaceId!==activeWorkspaceId||snapshot!==JSON.stringify(qeJobPayload()))throw Error('Ön kontrol sırasında yapı veya ayarlar değişti; yeniden denetleyin.');
+  qeProtocolPreflight={address,response:result};qeUpdateProtocolState();
+  if(qeProtocolApplied&&protocolRequestMatches(qeProtocolApplied.protocol,payload)&&!protocolPreflightMatches(qeProtocolApplied.protocol,payload,result))throw Error('Seçilen protokolün yapı/UPF hash’leri eşleşmiyor.');
   status.textContent='Sunucu ön kontrolü geçti: '+result.atoms+' atom, UPF profili '+
    result.profile_id+', yapı özeti '+result.structure_hash.slice(0,12)+
    '… Bu doğrulama hesaplamanın yakınsadığı anlamına gelmez.';
@@ -6891,6 +6950,8 @@ async function qeJobStart(){
   const address=$('qeApiAddress').value,token=$('qeApiToken').value;
   const payload=qeJobPayload(),snapshot=JSON.stringify(payload),workspaceId=activeWorkspaceId;
   const validated=await validateQeScf(address,token,payload);
+  if(address!==$('qeApiAddress').value||token!==$('qeApiToken').value)throw Error('Sunucu veya erişim anahtarı değişti; yeniden ön kontrol yapın.');
+  if(qeProtocolApplied&&protocolRequestMatches(qeProtocolApplied.protocol,payload)&&!protocolPreflightMatches(qeProtocolApplied.protocol,payload,validated))throw Error('Seçilen protokolün yapı/UPF hash’leri eşleşmiyor.');
   if(payload.parameters.calculation==='electronic'&&qeElectronicSource&&validated.structure_hash!==qeElectronicSource.hash)
    throw Error('Seçilen son yapının kaynak özeti değişmiş.');
   if(activeWorkspaceId!==workspaceId||JSON.stringify(qeJobPayload())!==snapshot)
@@ -9198,7 +9259,7 @@ function syncDftSummary(){
  $('dftCurrentJob').textContent=qeActiveJob?qeActiveJob.id+' · '+(qeActiveJob.status||''):'Henüz iş yok';
  const electronic=$('qeJobWorkflow').value==='electronic';
  const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
- const source=electronic&&qeElectronicSource?'Son relaksasyon yapısı: '+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
+ const source=electronic&&qeElectronicSource?(qeElectronicSource.protocolId?'Protokol referansı: ':'Son relaksasyon yapısı: ')+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
  $('dftJobSource').textContent=source;
  $('dftJobOperation').textContent='PBE · '+operation;
  $('dftJobParameters').textContent='ecutwfc '+$('qeEcutwfc').value+' Ry / ecutrho '+$('qeEcutrho').value+
@@ -9837,6 +9898,7 @@ function bind(){
  initWorkspaceUi();
  initRightSidebarTabs();
  initDftTracking();
+ initQeProtocols();
  initLibrary();
  initVolumeControls();
  initStage3Analyses();
@@ -9874,7 +9936,7 @@ function bind(){
  $('qeJobValidate').onclick=qeJobPreflight;
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
- $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';};
+ $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';};
  $('qeJobRefresh').onclick=qeJobRefresh;
  $('qeJobPause').onclick=()=>qeJobPauseResume(false);
  $('qeJobResume').onclick=()=>qeJobPauseResume(true);
