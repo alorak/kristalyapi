@@ -97,5 +97,5 @@ export function renderTrubaSummary(host,summary){
   const tr=document.createElement('tr');tr.append(node('th',label),node('td',value));body.append(tr);
  }
  table.append(body);host.append(table);
- host.append(node('p','Bu özet geometriyi otomatik değiştirmez, SCF/relax doğruluğunu veya fiziksel yakınsamayı kanıtlamaz. Ham .out dosyasını ve deneysel/nümerik yakınsama testlerini ayrıca saklayın.','hint'));
+ host.append(node('p','Bu özet geometriyi otomatik değiştirmez, SCF/relax doğruluğunu veya bilimsel yakınsamayı kanıtlamaz. Ham .out dosyasını ve deneysel/nümerik yakınsama testlerini ayrıca saklayın.','hint'));
 }

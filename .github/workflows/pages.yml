@@ -82,6 +82,10 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_qe_defect_init.py' -v
       - name: D5 resource evidence review (offline, no QE/Docker execution)
         run: python -m unittest discover -s tests -p 'test_qe_defect_resource_review.py' -v
+      - name: D5.3 operator-controlled resource pilot contract (synthetic, no Docker)
+        run: python -m unittest discover -s tests -p 'test_qe_defect_metered_pilot.py' -v
+      - name: D5.3 measured pilot offline artifact verifier (synthetic)
+        run: python -m unittest discover -s tests -p 'test_qe_defect_metered_verify.py' -v
       - name: Rebuild and verify initial defect candidates
         run: python tools/qe_defect_prepare.py --verify validation-results/qe-mos2-d5-preparation-20261029
       - name: Validate Docker Compose configuration without building the heavy QE image

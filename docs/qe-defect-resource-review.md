@@ -74,3 +74,11 @@ Sonraki fizik aşamasında spin/doluluk alternatifleri, boş bant sayısı,
 cutoff/k-örgüsü/süperhücre yakınsaması, BFGS relaksasyonu ve bağımsız
 SCF kabul kapıları önceden tanımlanmalıdır. Bu pakette gerçek
 DFT kusur enerjisi, PDOS, oluşum enerjisi veya bandgap üretilmemiştir.
+
+## D5.3 — Kontrollü gerçek kaynak ölçümüne hazırlık
+
+[Ölçümlü tek-vaka başlangıç pilotu](qe-defect-metered-pilot.md) Docker/QE
+çalıştırmayı varsayılanda **kapalı** tutar. Yalnız operatörün açık `--execute`
+ve `--acknowledge-resource-risk` tercihiyle ve host/UPF/image ön
+kontrollerinden sonra tek `nstep=0` adayını ölçebilir. Gerçek ölçüm
+raporlanmadan bu dosyadaki hipotetik RAM tabloları kabul edilmez.
