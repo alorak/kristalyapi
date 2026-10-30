@@ -109,10 +109,10 @@ export async function createTrubaPipelinePackage(args){
   ntasks:args.ntasks,hours:args.hours,jobName:args.jobName||'qe-pipeline'});
  if(typeof pipelineScript!=='string'||pipelineScript.length>128000||!pipelineScript.includes(SCHEMA))
   throw Error('Uyumlu pipeline.py dosyası gerekli.');
- const electronic=Boolean(converterScript||pdosHelperScript);
- if(electronic&&validated.electronic.nbnd>300)
+ const withConverter=Boolean(converterScript||pdosHelperScript);
+ if(withConverter&&validated.electronic.nbnd>300)
   throw Error('P1.3 en fazla 300 bant destekler. Daha büyük hesap için P1.3 seçimini kaldırın.');
- if(electronic&&(typeof converterScript!=='string'||typeof pdosHelperScript!=='string'||
+ if(withConverter&&(typeof converterScript!=='string'||typeof pdosHelperScript!=='string'||
    converterScript.length>128000||pdosHelperScript.length>128000||
    !converterScript.includes('kristalyapi.qe-electronic.v1')||
    !pdosHelperScript.includes('parse_atom_orbital_pdos')))
@@ -133,20 +133,20 @@ export async function createTrubaPipelinePackage(args){
   included.set(name,bytes);hashes[name]=await sha(bytes);
  }
  const stages=pipelineStages(calculation);
- const scripts=stages.map(step=>({name:'stages/'+step+'.slurm',text:stageSlurm(step,resources,electronic)}));
+ const scripts=stages.map(step=>({name:'stages/'+step+'.slurm',text:stageSlurm(step,resources,withConverter)}));
  const submit=submitScript(stages);
  const file_sha256={'structure.in':await sha(encoder.encode(inputText)),
   'pipeline.py':await sha(encoder.encode(pipelineScript)),
   'submit.sh':await sha(encoder.encode(submit))};
  for(const script of scripts)file_sha256[script.name]=await sha(encoder.encode(script.text));
- if(electronic){
+ if(withConverter){
   file_sha256['electronic.py']=await sha(encoder.encode(converterScript));
   file_sha256['qe_pdos.py']=await sha(encoder.encode(pdosHelperScript));
  }
  const missing=pseudos.filter(p=>!included.has(p.file)).map(p=>p.file);
  const manifest={schema:SCHEMA,status:missing.length?'upf-required':'prepared-not-submitted',
   calculation,execution_performed:false,stages,resources,file_sha256,
-  electronic_converter_included:electronic,
+  electronic_converter_included:withConverter,
   pseudopotentials:pseudos.map(p=>({element:p.element,file:p.file,
    included:included.has(p.file),sha256:hashes[p.file]||null})),
   missing_upfs:missing,electronic,
@@ -158,7 +158,7 @@ export async function createTrubaPipelinePackage(args){
   '3. Submit explicitly: bash submit.sh',
   '4. Inspect submissions.txt, squeue, sacct, logs/, reports/ and the raw outputs.',
   '5. After the last stage: pipeline-summary.json (or python3 pipeline.py summary).',
-  ...(electronic?['6. P1.3 generates electronic-results.json before projwfc completion; open it in DFT > Results > Bands/DOS.']:[]),
+  ...(withConverter?['6. P1.3 generates electronic-results.json before projwfc completion; open it in DFT > Results > Bands/DOS.']:[]),
   'Do NOT delete ./tmp/kristalyapi.save or run stages concurrently.',
   'A failed stage prevents successors via afterok; no automatic restart/resume.',
   'No inferred high-symmetry path, magnetic/SOC/variable-cell workflow or certified scientific convergence.',
@@ -171,7 +171,7 @@ export async function createTrubaPipelinePackage(args){
   {name:'README.md',bytes:encoder.encode(readme.join('\n'))},
   {name:'pseudo/README.txt',bytes:encoder.encode('Place real UPFs from pipeline.json here.\n')}
  ];
- if(electronic){
+ if(withConverter){
   files.push({name:'electronic.py',bytes:encoder.encode(converterScript)});
   files.push({name:'qe_pdos.py',bytes:encoder.encode(pdosHelperScript)});
  }
