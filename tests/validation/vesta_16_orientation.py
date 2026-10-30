@@ -169,16 +169,25 @@ def run() -> dict:
     from vesta_15_visual import ROOT
     output = []
     for case in pinned_cases():
-        if not case["source"].lower().endswith(".cif"):
-            output.append({"id": case["id"], "status": "NOT_COMPUTED_NON_CIF",
-                           "reason": "Volume header/cell and absolute iso-level require separate CCP4 audit"})
-            continue
-        cell = read_cif_cell(ROOT / case["source"])
         settings = case["settings"]
+        native_map_audit = None
+        if case["source"].lower().endswith(".cif"):
+            cell = read_cif_cell(ROOT / case["source"])
+        elif case["source"].lower().endswith(".ccp4"):
+            from vesta_15_ccp4_reference import inspect_ccp4
+            native_map_audit = inspect_ccp4(ROOT / case["source"], settings["isoLevel"])
+            if native_map_audit["sourceSha256"] != case["sourceSha256"]:
+                raise ValueError("Pinned CCP4 map differs from camera source")
+            cell = native_map_audit["cell"]
+        else:
+            output.append({"id": case["id"], "status": "NOT_COMPUTED_UNSUPPORTED_FORMAT"})
+            continue
         frame = camera_frame(cell, direction(settings["viewDirection"]),
                              direction(settings["upDirection"]))
         output.append({"id": case["id"], "sourceSha256": case["sourceSha256"],
-                       "cellParameters": cell, "frame": frame, "status": "REFERENCE_COMPUTED_GUI_NOT_RUN"})
+                       "cellParameters": cell, "frame": frame,
+                       "nativeMapAudit": native_map_audit,
+                       "status": "REFERENCE_COMPUTED_GUI_NOT_RUN"})
     return {
         "schema": "kristalyapi.vesta16.camera-reference.v1", "referenceVestaVersion": "3.5.8",
         "scientificParity": "NOT_ESTABLISHED", "vestaGuiStatus": "NOT_RUN",
