@@ -39,6 +39,8 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 **Docker QE discovery (D0–D1):** [Setup, local IP/port and security guide](docs/qe-docker-api.md). `compose.qe.yml` packages a pinned Debian QE 6.7 baseline and read-only FastAPI `/api/health` and `/api/capabilities`; the DFT panel tests connection only when clicked. Docker publishes on loopback by default, with explicit opt-in LAN address/host CORS settings. **This does not submit or run DFT calculations over HTTP.**
 
+**DFT workspace:** Use **DFT** in the top navigation (`#dft`) for calculation setup, jobs/resources, results, convergence evidence and defect studies. [Workspace guide](docs/qe-workspace.md).
+
 **Local QE execution (P1 starter):** [Run Quantum ESPRESSO locally or on a Linux VM](docs/qe-runner.md) using the exported `.in` file and actual UPF files. The Python standard-library runner stages and optionally executes the real `pw.x`, captures outputs and provenance, and marks incomplete/unconverged runs as non-success. It is not a hosted DFT service, a replacement for convergence studies, or evidence of MoS₂ single-photon emission.
 
 The **Crystal Defects** tool (right toolbar) materializes display-only repetitions as explicit P1 atoms, then creates one **vacancy**, **substitution**, or **interstitial** at a time. It supports Undo and CIF/POSCAR export. The model is geometric only: no charge states, atomic relaxation, or defect formation energies are calculated. Loaded volumetric maps/comparison phases are protected from being silently discarded.

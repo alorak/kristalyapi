@@ -26,7 +26,7 @@ bire bir taşıyarak makaleyi yeniden üretmiş sayılmayız.
 1. [KristalYapı](https://alorak.github.io/kristalyapi/) içinde kristali
    hazırlayın. MoS₂ için tek S–Mo–S tabakası, gerçek açık P1 süperhücresi ve
    uygun hesaplama vakumu seçildiğini **ayrı ayrı** doğrulayın.
-2. DFT / Quantum ESPRESSO panelinde `relax` veya `scf` seçin;
+2. Üst menüde **DFT → Hesap hazırlığı** bölümünde `relax` veya `scf` seçin;
    pseudopotansiyel dosya adlarını, k-ağını ve kesme enerjilerini ayarlayıp
    `.in` dosyasını indirin. Bu parametreler için yakınsama testi şarttır.
 3. Yerel kopyanızda veya VM üzerinde aşağıdaki komutları kullanın.
@@ -67,7 +67,7 @@ SCF yakınsama göstergesi ve `relax` için iyonik yakınsama ile nihai koordina
 birlikte görülürse raporlanır. Bu kontrollere rağmen sonuç **bilimsel olarak
 yakınsamış/doğru olduğu kanıtlanmış** sayılmaz.
 
-`structure.out` dosyasını KristalYapı'daki **DFT / Quantum ESPRESSO →
+`structure.out` dosyasını KristalYapı'daki **DFT → Sonuçları incele →
 Tamamlanan hesabın sonucunu oku** alanında açabilirsiniz. Sadece görüntülenen
 enerji ile farklı atom sayılı yapıların oluşum enerjisi karşılaştırılamaz:
 kimyasal potansiyeller, kusur yükleri ve hücre düzeltmeleri de gerekir.

@@ -162,6 +162,7 @@ jobs:
           mkdir -p public/vendor
           cp index.html public/index.html
           cp styles.css public/styles.css
+          cp dft-workspace.css public/dft-workspace.css
           cp semiconductor-p0.css public/semiconductor-p0.css
           cp sw.js public/sw.js
           cp manifest.webmanifest public/manifest.webmanifest
@@ -192,6 +193,7 @@ jobs:
           test -s public/vendor/moyo_wasm_bg.wasm
           test -s public/vendor/three/build/three.module.js
           test -s public/vendor/three/examples/jsm/geometries/ConvexGeometry.js
+          test -s public/dft-workspace.css
           test -s public/sw.js
           test -s public/manifest.webmanifest
           test -s public/lesson-core.js
