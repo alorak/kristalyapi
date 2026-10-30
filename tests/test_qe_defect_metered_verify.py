@@ -46,6 +46,7 @@ class MeteredEvidenceTests(unittest.TestCase):
               "resource_measurements":metrics,
               "cgroup_memory_peak_bytes":metrics["memory_peak_bytes"],
               "memory_bytes":settings["memory_bytes"],
+              "timeout_seconds":settings["timeout_seconds"],
               "status":"initialized_only_metered"}
         data["artifact_sha256"]={
             p.relative_to(path).as_posix():pilot.sha(p.read_bytes())
