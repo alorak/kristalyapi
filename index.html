@@ -868,10 +868,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <section id="dft-sonuclar" class="dft-panel" aria-labelledby="dft-title-sonuclar" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-sonuclar" tabindex="-1">Sonuçları incele</h2><p>Sunucu sonuçları, başlangıç/son atom konumları ve yerel elektronik dosyaları.</p></div><div class="dft-card dft-live-results"><h3>Sunucudan alınan sonuçlar</h3><p id="qeApiScfResult" class="note" hidden></p><p class="hint">Tamamlanan işi İşler sayfasında yenileyin. Relaksasyon karşılaştırması ve elektronik grafikler burada açılır.</p><div id="qeRelaxComparison" class="qe-workflow" hidden></div>
 <div id="qeApiElectronicResults" class="qe-workflow" hidden></div>
 </div><div class="qe-workflow qe-truba-summary-panel">
- <strong class="measure-subheading">TRUBA / SLURM sonuç özeti (P1)</strong>
- <p class="hint">SLURM paketi içindeki <code>collect.py</code>, iş sonunda <code>summary.json</code> üretir; eksik veya başarısız işlerde de durum kaydeder. 1 GiB'a kadar ham çıktıyı aktarmaz, yalnız özeti açın. İçe alma sunucuya veri göndermez ve mevcut kristali değiştirmez.</p>
+ <strong class="measure-subheading">TRUBA / SLURM sonuç özeti (P1.1 / P1.2)</strong>
+ <p class="hint">Tek işlerde <code>collect.py</code> dosyasının ürettiği <code>summary.json</code>, aşamalı işlerde <code>pipeline.py</code> dosyasının ürettiği <code>pipeline-summary.json</code> açılabilir. İçe alma sunucuya veri göndermez ve mevcut kristali değiştirmez.</p>
  <div class="qe-form-grid">
-  <label class="field"><span>TRUBA sonuç özeti (.json)</span><input id="qeHpcSummaryFile" type="file" accept=".json,application/json"></label>
+  <label class="field"><span>TRUBA summary.json / pipeline-summary.json (.json)</span><input id="qeHpcSummaryFile" type="file" accept=".json,application/json"></label>
   <button id="qeHpcSummaryOpen" type="button">SLURM özetini incele</button>
  </div>
  <div id="qeHpcSummaryStatus" class="note" role="status" aria-live="polite">Henüz TRUBA sonuç özeti açılmadı.</div>
