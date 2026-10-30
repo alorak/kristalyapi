@@ -9,7 +9,7 @@ export const DFT_SETTINGS_IDS=['qeApiAddress','qeJobProfile','qeJobWorkflow','qe
  'qeElectronicPath','qeJobMaxSteps','qeJobEnergyThreshold','qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
  'qeForceThreshold','qeFreezeBottom','qePseudoFiles','qeHpcAccount','qeHpcPartition','qeHpcTasks','qeHpcHours','qeHpcPostHours','qeHpcNbnd',
  'qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz','qeHpcBandPath','qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss',
- 'qeHpcBandFirst','qeHpcBandLast','qeHpcConvertElectronic'];
+ 'qeHpcBandFirst','qeHpcBandLast','qeHpcConvertElectronic','qeHpcSharedAllocation'];
 // Controls in Setup/Settings that are intentionally not saved.
 export const DFT_UNSAVED_IDS=['qeApiToken','qeProtocolSelect','qeHpcUpfFiles'];
 export const DFT_PREPARATION_MODES=['server','file','truba'];

@@ -6976,6 +6976,7 @@ async function qeExportTrubaPipeline(){
    account:$('qeHpcAccount').value,partition:$('qeHpcPartition').value,
    ntasks:$('qeHpcTasks').value,hours:$('qeHpcHours').value,
    postHours:$('qeHpcPostHours').value,
+   sharedAllocation:$('qeHpcSharedAllocation').checked,
    jobName:safeName(state.name)+'-electronic',
    upfFiles:Array.from($('qeHpcUpfFiles').files||[]),pipelineScript,
    converterScript,pdosHelperScript,
@@ -9975,7 +9976,7 @@ function setLibraryPane(mode){
  if(mode==='bookmarks')renderCodBookmarks();
 }
 function isLibraryHash(hash){return hash==='#kutuphane';}
-function isReciprocalHash(hash){return hash==='#karsi-uzay';}
+function isReciprocalHash(hash){return hash==='#karsi-uzay'||hash==='#toz-kirinimi/karsi-uzay';}
 // Dedicated hash routes keep one mounted set of QE forms, jobs and result hosts.
 const DFT_SECTIONS=['hazirlik','isler','sonuclar','yakinsama','kusurlar','ayarlar'];
 let dftActiveSection=null;
@@ -10060,8 +10061,10 @@ function pageFromHash(hash){
 }
 let reciprocalPage=null;
 let powderLesson=null,semiconductorLesson=null,semiconductorP0=null;
+let previousPowderSubtab=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
+ const powderFamily=page==='powder'||reciprocal;
  document.body.classList.toggle('dft-open',page==='dft');
  $('dftPage').hidden=page!=='dft';
  $('dftNav').classList.toggle('active',page==='dft');
@@ -10070,20 +10073,28 @@ function syncLibraryNavigation(){
  qeJobPoller?.sync();
  document.body.classList.toggle('library-open',library);
  document.body.classList.toggle('reciprocal-open',reciprocal);
- document.body.classList.toggle('lesson-open',page==='powder'||page==='semiconductor');
+ document.body.classList.toggle('lesson-open',powderFamily||page==='semiconductor');
  $('app').hidden=page!=='editor';
  $('libraryPage').hidden=!library;
+ // The reciprocal laboratory is now a nested tab of Powder Diffraction.
+ // Parent visibility must be set BEFORE the Three.js subpage is refreshed.
+ $('powderPage').hidden=!powderFamily;
+ $('pwPowderPane').hidden=reciprocal;
  $('reciprocalPage').hidden=!reciprocal;
- $('powderPage').hidden=page!=='powder';
  $('semiconductorPage').hidden=page!=='semiconductor';
+ // A hash switch may retain the old panel's internal scroll position.
+ if(powderFamily&&previousPowderSubtab!==page)$('powderPage').scrollTop=0;
+ previousPowderSubtab=powderFamily?page:null;
+ for(const [id,selected] of [['pwTabPowder',!reciprocal],['pwTabReciprocal',reciprocal]]){
+  $(id).setAttribute('aria-selected',String(selected));
+  $(id).tabIndex=selected?0:-1;
+ }
  $('libraryNav').classList.toggle('active',library);
- $('reciprocalNav').classList.toggle('active',reciprocal);
- $('powderNav').classList.toggle('active',page==='powder');
+ $('powderNav').classList.toggle('active',powderFamily);
  $('semiconductorNav').classList.toggle('active',page==='semiconductor');
  $('homeLink').setAttribute('aria-current',page==='editor'?'page':'false');
  $('libraryNav').setAttribute('aria-current',library?'page':'false');
- $('reciprocalNav').setAttribute('aria-current',reciprocal?'page':'false');
- $('powderNav').setAttribute('aria-current',page==='powder'?'page':'false');
+ $('powderNav').setAttribute('aria-current',powderFamily?'page':'false');
  $('semiconductorNav').setAttribute('aria-current',page==='semiconductor'?'page':'false');
  if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
  else {window.scrollTo?.(0,0);}
@@ -10374,6 +10385,14 @@ function initLibrary(){
   }catch(error){$('codImportHelpText').textContent='Dosya açılamadı: '+error.message+'. Doğru CIF dosyasını yeniden seçebilirsin.';}
   finally{e.target.value='';}
  };
+ const powderTabs=$('powderLessonTabs');
+ powderTabs.addEventListener('keydown',event=>{
+  if(!event.target?.matches?.('[role="tab"]'))return;
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  event.preventDefault();
+  const next=event.key==='ArrowLeft'||event.key==='Home'?'pwTabPowder':'pwTabReciprocal';
+  const tab=$(next);tab.focus();tab.click();
+ });
  window.addEventListener('hashchange',syncLibraryNavigation);
  syncLibraryNavigation();
 }

@@ -91,6 +91,59 @@ def atomic_json(path: Path, value: dict) -> None:
         temp.unlink(missing_ok=True)
 
 
+def submission_groups(config: dict) -> list[list[str]]:
+    """Return the exact, independently checked logical-to-physical Slurm map."""
+    plan = config["stages"]
+    mode = config.get("submission_mode")
+    if mode is None:
+        if "submission_groups" in config:
+            raise ValueError("Unexpected submission groups in serial package")
+        return [[stage] for stage in plan]
+    if mode != "shared-allocation-v1":
+        raise ValueError("Unsupported physical Slurm submission mode")
+    expected = ([["relax"]] if config["calculation"] == "relax" else []) + [
+        ["scf"], ["bands", "bands_pp"], ["nscf", "dos", "projwfc"]]
+    if config.get("submission_groups") != expected:
+        raise ValueError("Invalid shared allocation groups")
+    resource = config.get("resources", {})
+    if (not isinstance(resource, dict) or type(resource.get("ntasks")) is not int
+            or resource["ntasks"] != 56):
+        raise ValueError("Shared allocation needs exactly 56 Slurm tasks")
+    pw_hours, post_hours = resource.get("hours"), resource.get("postprocess_hours")
+    if (type(pw_hours) is not int or type(post_hours) is not int or
+            not 1 <= pw_hours <= 72 or not 1 <= post_hours <= 72 or
+            pw_hours + 2 * post_hours > 72):
+        raise ValueError("Shared allocation exceeds 72-hour limit")
+    return expected
+
+
+def validate_group_receipts(config: dict, rows: list[list[str]]) -> None:
+    """A shared Slurm job may own several consecutive science stages, but
+    no physical job ID may be reused for another group or a partial split.
+    """
+    plan = config["stages"]
+    groups = submission_groups(config)
+    offsets = {}
+    for group_no, group in enumerate(groups):
+        for stage in group:
+            offsets[stage] = group_no
+    seen = {}
+    by_group = {}
+    for i, row in enumerate(rows):
+        if len(row) != 2 or i >= len(plan) or row[0] != plan[i] or not re.fullmatch(r"[0-9]{1,18}", row[1]):
+            raise ValueError("Untrusted or inconsistent original Slurm submission records")
+        group_no, job_id = offsets[row[0]], row[1]
+        if group_no in by_group and by_group[group_no] != job_id:
+            raise ValueError("Shared job group has mismatched Slurm job IDs")
+        if job_id in seen and seen[job_id] != group_no:
+            raise ValueError("Slurm job ID reused across physical allocations")
+        by_group[group_no] = job_id
+        seen[job_id] = group_no
+    # Crash between group receipt lines must never be mistaken for a complete submission.
+    if rows and rows[-1][0] != groups[offsets[rows[-1][0]]][-1]:
+        raise ValueError("Incomplete physical Slurm job receipt group")
+
+
 def load_manifest(root: Path) -> dict:
     value = json.loads(file_at(root, "pipeline.json", MAX_MANIFEST).read_text("utf-8"))
     if not isinstance(value, dict) or value.get("schema") != SCHEMA:
@@ -106,6 +159,10 @@ def load_manifest(root: Path) -> dict:
     for rel in ("structure.in", "pipeline.py", "submit.sh",
                 *("stages/" + step + ".slurm" for step in plan)):
         require_hash(root, rel, pins.get(rel), MAX_MANIFEST if rel != "structure.in" else 4 * 1024 * 1024)
+    for group in submission_groups(value):
+        if len(group) > 1:
+            rel = "stages/" + group[0] + "-coallocated.slurm"
+            require_hash(root, rel, pins.get(rel), MAX_MANIFEST)
     if "resume.sh" in pins:
         require_hash(root, "resume.sh", pins["resume.sh"], MAX_MANIFEST)
     # Legacy P1.2 packages remain valid; new P1.3 ZIPs must pin BOTH
@@ -499,11 +556,9 @@ def resume_check(root: Path, stage: str) -> dict:
         raise ValueError("Resume already submitted; only one manual retry is allowed")
     original = file_at(root, "submissions.txt", MAX_MANIFEST)
     submissions = [line.strip().split() for line in original.read_text("utf-8").splitlines() if line.strip()]
-    if not submissions or len(submissions) > len(plan) or any(
-            len(row) != 2 or row[0] != plan[i] or
-            not re.fullmatch(r"[0-9]{1,18}", row[1])
-            for i, row in enumerate(submissions)):
+    if not submissions or len(submissions) > len(plan):
         raise ValueError("Untrusted or inconsistent original Slurm submission records")
+    validate_group_receipts(config, submissions)
     index = plan.index(stage)
     if index == 0:
         raise ValueError("Resume stage requires a verified parent")
@@ -668,9 +723,15 @@ def accounting(root: Path, runner=None) -> dict:
                 raise ValueError("Invalid or unsorted Slurm job receipts")
             previous_index = plan.index(row[0])
             jobs.append({"stage": row[0], "job_id": row[1], "attempt": attempt})
-    identifiers = [item["job_id"] for item in jobs]
-    if len(set(identifiers)) != len(identifiers):
-        raise ValueError("Duplicate Slurm job IDs")
+    original_rows = [[item["stage"], item["job_id"]] for item in jobs if item["attempt"] == "original"]
+    validate_group_receipts(config, original_rows)
+    original_ids = {row[1] for row in original_rows}
+    resumed_ids = [item["job_id"] for item in jobs if item["attempt"] == "manual-resume"]
+    if len(set(resumed_ids)) != len(resumed_ids) or any(job_id in original_ids for job_id in resumed_ids):
+        raise ValueError("Duplicate Slurm job IDs across physical submissions")
+    # sacct measures physical allocations. Deduplicate shared job IDs before query;
+    # the returned per-stage views intentionally refer to the same job record.
+    identifiers = list(dict.fromkeys(item["job_id"] for item in jobs))
     args = ["sacct", "--parsable2", "--noheader", "--jobs", ",".join(identifiers),
             "--format=JobIDRaw,State,ExitCode,ElapsedRaw,AllocCPUS,ReqMem,MaxRSS,MaxDiskRead,MaxDiskWrite,NodeList"]
     try:
@@ -707,8 +768,9 @@ def accounting(root: Path, runner=None) -> dict:
             "source": "operator-invoked-sacct", "scientific_convergence_verified": False,
             "status": "collected" if all(x["job"] is not None for x in by_id.values()) else "partial",
             "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
+            "physical_job_count": len(identifiers),
             "jobs": [{**item, **by_id[item["job_id"]]} for item in jobs],
-            "notice": "MaxRSS may be missing on job rows; inspect step records. No resource sufficiency or physical convergence is asserted."}
+            "notice": "Shared groups repeat one physical sacct record across logical stages. Never sum per-stage allocation rows as distinct CPU time. MaxRSS may be missing on job rows; no physical convergence is asserted."}
 
 
 def summary(root: Path) -> None:

@@ -1064,9 +1064,12 @@ test('light theme and axis widget are present in single HTML', () => {
   assert.ok(!html.includes('Kristalografi ve yapı görselleştirme laboratuvarı'));
 });
 
-test('new library header has exactly the two navigation entries',()=>{
+test('main navigation places Library before DFT and keeps reciprocal space inside powder tabs',()=>{
  assert.match(html,/id="homeLink"[^>]*>Kristal Yapı<\/a>/);
  assert.match(html,/id="libraryNav"[^>]*>Kütüphane<\/a>/);
+ assert.ok(html.indexOf('id="libraryNav"')<html.indexOf('id="dftNav"'),'Library appears before DFT');
+ assert.equal((html.match(/id="libraryNav"/g)||[]).length,1,'Library is still one top-level navigation destination');
+ assert.doesNotMatch(html,/<a id="reciprocalNav"/,'Reciprocal space no longer occupies the navbar');
  assert.ok(!html.includes('3B Studio</span>'));
  assert.match(html,/id="libraryPage"/);
  assert.match(html,/id="codSearchForm"/);
@@ -3238,13 +3241,22 @@ test('reciprocal-space page is routed, wired to the editor and deployed with its
  const pages=context.pageApi;
  assert.equal(pages.pageFromHash('#kutuphane'),'library');
  assert.equal(pages.pageFromHash('#karsi-uzay'),'reciprocal');
+ assert.equal(pages.pageFromHash('#toz-kirinimi/karsi-uzay'),'reciprocal');
+ assert.equal(pages.pageFromHash('#toz-kirinimi'),'powder');
  assert.equal(pages.pageFromHash('#dft'),'dft');
  assert.equal(pages.pageFromHash('#dft/yakinsama'),'dft');
  assert.equal(pages.pageFromHash('#dft-other'),'editor');
  assert.equal(pages.pageFromHash('#kristal'),'editor');
  assert.equal(pages.pageFromHash(''),'editor');
- assert.match(html,/<a id="reciprocalNav" href="#karsi-uzay">Karşı Uzay<\/a>/);
- assert.match(html,/<main id="reciprocalPage" hidden/);
+ assert.doesNotMatch(html,/<a id="reciprocalNav"/);
+ assert.match(html,/<a id="pwTabReciprocal"[^>]*href="#toz-kirinimi\/karsi-uzay"[^>]*role="tab"/);
+ assert.match(html,/<section id="reciprocalPage"[^>]*role="tabpanel"/);
+ assert.ok(html.indexOf('id="reciprocalPage"')>html.indexOf('id="powderPage"'),
+  'reciprocal panel must be nested inside the powder page');
+ assert.match(html,/<div id="pwPowderPane"[^>]*role="tabpanel"/);
+ const layoutCss=fs.readFileSync(path.join(__dirname,'..','styles.css'),'utf8');
+ assert.match(layoutCss,/\.lesson-wrap\{[^}]*max-width:none/);
+ assert.match(layoutCss,/#reciprocalPage\{[^}]*height:auto/);
  for(const id of ['rsPaneLattice','rsPaneEwald','rsPaneZone','rsPaneBz','rsRealView','rsRecipView','rsPhasor',
   'rsEwaldSvg','rsRingsSvg','rsStickSvg','rsZoneSvg','rsBzView','rsBandSvg'])assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(moduleScript,/import \{ initReciprocalPage \} from '\.\/reciprocal-page\.js';/);

@@ -1446,7 +1446,8 @@ try{
  assert.match(await page.locator('#scFermiSummary').textContent(),/0[.,]500/,'f(EF)=1/2');
  await page.screenshot({path:path.join(artifacts,'lesson-02-semiconductor-mvp.png'),timeout:60000});
 
- await page.locator('#reciprocalNav').click();
+ await page.locator('#powderNav').click();
+ await page.locator('#pwTabReciprocal').click();
  await page.waitForFunction(()=>!document.getElementById('reciprocalPage').hidden&&document.getElementById('app').hidden);
  const reciprocalPalette=await page.evaluate(()=>{
   const color=selector=>getComputedStyle(document.querySelector(selector)).backgroundColor;
@@ -1457,7 +1458,9 @@ try{
  assert.notEqual(reciprocalPalette.page,reciprocalPalette.viewerCard,'viewers must be distinct cards on the page');
  assert.notEqual(reciprocalPalette.concept,reciprocalPalette.readout,'concept and numeric panels need different surfaces');
  await page.waitForFunction(()=>document.querySelectorAll('#rsLatticeReadout dd').length>5);
- assert.equal(await page.locator('#reciprocalNav').getAttribute('aria-current'),'page');
+ assert.equal(await page.locator('#powderNav').getAttribute('aria-current'),'page');
+ assert.equal(await page.locator('#pwTabReciprocal').getAttribute('aria-selected'),'true');
+ assert.equal(await page.locator('#pwPowderPane').isVisible(),false,'powder content hidden in reciprocal subtab');
  assert.match(await page.locator('#rsLatticeReadout').textContent(),/3\.13559 Å/,'d(111) of silicon');
  assert.match(await page.locator('#rsSourceDetail').textContent(),/8 atom/);
  await page.waitForTimeout(250);
@@ -1518,7 +1521,8 @@ try{
   await offlineContext.setOffline(true);
   await offlinePage.reload({waitUntil:'domcontentloaded'});
   await offlinePage.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
-  await offlinePage.locator('#reciprocalNav').click();
+  await offlinePage.locator('#powderNav').click();
+  await offlinePage.locator('#pwTabReciprocal').click();
   await offlinePage.waitForFunction(()=>document.querySelectorAll('#rsLatticeReadout dd').length>5);
   assert.ok(await canvasInk(offlinePage,'#rsRealView canvas')>20,'offline reciprocal-space view must render');
   const offlineWorker=await offlinePage.evaluate(()=>new Promise((resolve,reject)=>{

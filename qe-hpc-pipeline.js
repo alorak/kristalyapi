@@ -108,27 +108,85 @@ export function stageSlurm(step,resource,withElectronic=false){
   ...(step==='projwfc'?['python3 pipeline.py summary']:[]),''
  ].join('\n');
 }
-export function submitScript(stages){
+/** A deliberately opt-in P2.2 physical job plan: the scientific stages remain
+ * individually prepared, finished, hashed and reported in the original order.
+ * We never bundle across an intervening pw.x stage.
+ */
+export function sharedAllocationGroups(stages){
+ const expected=stages[0]==='relax'?pipelineStages('relax'):pipelineStages('scf');
+ if(!Array.isArray(stages)||stages.join(',')!==expected.join(','))
+  throw Error('Unsupported TRUBA stage ordering.');
+ return [...(stages[0]==='relax'?[['relax']]:[]),
+  ['scf'],['bands','bands_pp'],['nscf','dos','projwfc']];
+}
+export function coallocatedSlurm(group,resource,withElectronic=false){
+ const joined=Array.isArray(group)?group.join(','):'';
+ if(joined!=='bands,bands_pp'&&joined!=='nscf,dos,projwfc')
+  throw Error('Only the pinned PW + postprocessing allocations may be combined.');
+ if(resource.ntasks!==56)throw Error('Shared allocation profile needs 56 MPI tasks.');
+ const groupName=group[0]+'-coallocated',postCount=group.length-1;
+ const hours=resource.hours+postCount*(resource.postprocess_hours??resource.hours);
+ if(!Number.isInteger(hours)||hours>72||hours<1)
+  throw Error('Shared allocation exceeds the TRUBA 72-hour walltime cap.');
+ const lines=['#!/bin/bash','#SBATCH --job-name='+resource.jobName+'-'+groupName,
+  '#SBATCH --account='+resource.account,'#SBATCH --partition='+resource.partition,
+  '#SBATCH --nodes=1','#SBATCH --ntasks=56','#SBATCH --cpus-per-task=1',
+  '#SBATCH --time='+time(hours),
+  '#SBATCH --output=logs/'+groupName+'-%j.out',
+  '#SBATCH --error=logs/'+groupName+'-%j.err',
+  'set -euo pipefail','umask 077','cd "$SLURM_SUBMIT_DIR"',
+  'current_stage='+group[0],
+  "trap 'code=$?; if [ \"$code\" -ne 0 ]; then python3 pipeline.py fail \"$current_stage\" \"$code\" || true; fi' EXIT",
+  'module purge','module load '+resource.qe_module,
+  'export OMP_NUM_THREADS=1',
+  'printf "SLURM shared job=%s node=%s tasks=%s cpus_per_task=%s\\n" "${SLURM_JOB_ID:-unknown}" "${SLURM_JOB_NODELIST:-unknown}" "${SLURM_NTASKS:-unknown}" "${SLURM_CPUS_PER_TASK:-unknown}"',
+  'module list 2>&1 || true',
+  'command -v python3 >/dev/null || { echo "python3 unavailable" >&2; exit 10; }',
+  'python3 -c "import sys; sys.exit(0 if sys.version_info >= (3,9) else 1)" || { echo "Python >=3.9 required" >&2; exit 10; }',
+  'command -v mpirun >/dev/null || { echo "mpirun unavailable" >&2; exit 12; }'];
+ for(const stage of group){
+  const entry=tools[stage];
+  const isPw=stage==='bands'||stage==='nscf';
+  lines.push('current_stage='+stage,
+   'command -v '+entry[2]+' >/dev/null || { echo "QE binary unavailable: '+entry[2]+'" >&2; exit 11; }',
+   'python3 pipeline.py prepare '+stage,
+   (isPw?'mpirun ':'')+entry[2]+' -in '+entry[0]+' > '+entry[1],
+   ...(stage==='projwfc'&&withElectronic?['python3 electronic.py --bundle .']:[]),
+   'python3 pipeline.py finish '+stage);
+ }
+ if(group.at(-1)==='projwfc')lines.push('python3 pipeline.py summary');
+ return lines.concat(['']).join('\n');
+}
+export function submissionScriptForGroup(group){
+ if(group.length===1)return 'stages/'+group[0]+'.slurm';
+ if(group.join(',')==='bands,bands_pp'||group.join(',')==='nscf,dos,projwfc')
+  return 'stages/'+group[0]+'-coallocated.slurm';
+ throw Error('Unsupported SLURM submission group.');
+}
+export function submitScript(stages,groups=stages.map(stage=>[stage])){
+ if(groups.flat().join(',')!==stages.join(','))
+  throw Error('Submission groups must follow the exact science stage plan.');
  const lines=['#!/bin/bash','set -euo pipefail','umask 077','cd "$(dirname "$0")"',
   'command -v sbatch >/dev/null || { echo "sbatch required" >&2; exit 2; }',
   'command -v python3 >/dev/null || { echo "python3 required for preflight" >&2; exit 2; }',
   'if test -e submissions.txt || test -e .submission-lock; then echo "Already submitted" >&2; exit 3; fi',
-  'mkdir -p logs reports tmp',
-  'python3 pipeline.py preflight',
-  // Slurm admission must pass for ALL stages before the FIRST real sbatch.
-  ...stages.map(step=>'sbatch --test-only stages/'+step+'.slurm >/dev/null'),
+  'mkdir -p logs reports tmp','python3 pipeline.py preflight',
+  // Admission test ALL physical jobs, not logical stages, BEFORE first sbatch.
+  ...groups.map(group=>'sbatch --test-only '+submissionScriptForGroup(group)+' >/dev/null'),
   'mkdir .submission-lock','previous=""',
-  '# afterok serializes shared QE prefix.save, preventing concurrent writes.'
+  '# afterok serializes shared QE prefix.save; same job ID can own multiple logical stages.'
  ];
- for(const step of stages){
+ for(const group of groups){
+  const script=submissionScriptForGroup(group);
   lines.push('if test -n "$previous"; then',
-   ' response=$(sbatch --parsable --dependency=afterok:"$previous" stages/'+step+'.slurm)',
-   'else',' response=$(sbatch --parsable stages/'+step+'.slurm)','fi',
-   'id="$'+'{response%%;*}"',
+   ' response=$(sbatch --parsable --dependency=afterok:"$previous" '+script+')',
+   'else',' response=$(sbatch --parsable '+script+')','fi',
+   'id="${response%%;*}"',
    'case "$id" in ""|*[!0-9]*) echo "Invalid SLURM job id" >&2; exit 4 ;; esac',
-   'printf "%s %s\\n" "'+step+'" "$id" >> submissions.txt','previous="$id"','');
+   ...group.map(stage=>'printf "%s %s\\n" "'+stage+'" "$id" >> submissions.txt'),
+   'previous="$id"','');
  }
- return lines.concat(['echo "Queued afterok stages; inspect submissions.txt, squeue and sacct."','']).join('\n');
+ return lines.concat(['echo "Queued afterok physical jobs; logical stage/job IDs in submissions.txt."','']).join('\n');
 }
 export function resumeScript(stages){
  if(!Array.isArray(stages)||!stages.includes('bands_pp')||!stages.includes('dos')||!stages.includes('projwfc'))
@@ -176,6 +234,9 @@ export async function createTrubaPipelinePackage(args){
  if(!Number.isInteger(postHours)||postHours<1||postHours>72)
   throw Error('TRUBA seri son işlem süresi 1–72 saat olmalı.');
  resources.postprocess_hours=postHours;
+ const sharedAllocation=args.sharedAllocation===true;
+ if(sharedAllocation&&(resources.ntasks!==56||resources.hours+2*postHours>72))
+  throw Error('Ortak tahsis için 56 MPI görevi ve PW süresi + 2 × son işlem süresi ≤ 72 saat gerekli. Seri modu seçin veya süreleri azaltın.');
  if(typeof pipelineScript!=='string'||pipelineScript.length>128000||!pipelineScript.includes(SCHEMA))
   throw Error('Uyumlu pipeline.py dosyası gerekli.');
  const withConverter=Boolean(converterScript||pdosHelperScript);
@@ -204,8 +265,12 @@ export async function createTrubaPipelinePackage(args){
   included.set(name,bytes);hashes[name]=await sha(bytes);
  }
  const stages=pipelineStages(calculation);
+ const submission_groups=sharedAllocation?sharedAllocationGroups(stages):stages.map(s=>[s]);
  const scripts=stages.map(step=>({name:'stages/'+step+'.slurm',text:stageSlurm(step,resources,withConverter)}));
- const submit=submitScript(stages);
+ if(sharedAllocation)for(const group of submission_groups){
+  if(group.length>1)scripts.push({name:submissionScriptForGroup(group),text:coallocatedSlurm(group,resources,withConverter)});
+ }
+ const submit=submitScript(stages,submission_groups);
  const resume=resumeScript(stages);
  const file_sha256={'structure.in':await sha(encoder.encode(inputText)),
   'pipeline.py':await sha(encoder.encode(pipelineScript)),
@@ -217,14 +282,17 @@ export async function createTrubaPipelinePackage(args){
   file_sha256['qe_pdos.py']=await sha(encoder.encode(pdosHelperScript));
  }
  const missing=pseudos.filter(p=>!included.has(p.file)).map(p=>p.file);
- const resource_estimate=stages.map(stage=>{
-  const isPw=['relax','scf','bands','nscf'].includes(stage);
-  return {stage,allocated_cpus:isPw?resources.ntasks:56,requested_walltime_hours:isPw?resources.hours:postHours};
+ const resource_estimate=submission_groups.map(group=>{
+  const isPw=group.some(stage=>['relax','scf','bands','nscf'].includes(stage));
+  const groupHours=group.reduce((sum,stage)=>sum+(['relax','scf','bands','nscf'].includes(stage)?resources.hours:postHours),0);
+  return {stages:group,stage:group[0],script:submissionScriptForGroup(group),
+   allocated_cpus:isPw?resources.ntasks:56,requested_walltime_hours:groupHours};
  });
  const max_reserved_core_hours=resource_estimate.reduce((sum,stage)=>sum+stage.allocated_cpus*stage.requested_walltime_hours,0);
  const manifest={schema:SCHEMA,status:missing.length?'upf-required':'prepared-not-submitted',
   calculation,execution_performed:false,stages,resources,file_sha256,
   resource_estimate,max_reserved_core_hours,
+  ...(sharedAllocation?{submission_mode:'shared-allocation-v1',submission_groups}:{}),
   electronic_converter_included:withConverter,
   pseudopotentials:pseudos.map(p=>({element:p.element,file:p.file,
    included:included.has(p.file),sha256:hashes[p.file]||null})),
@@ -232,6 +300,8 @@ export async function createTrubaPipelinePackage(args){
   note:'No calculation submitted or physical convergence proven.'};
  const readme=['# TRUBA QE: P1.2 offline afterok pipeline','','NOT SUBMITTED.',
   'Stages: '+stages.join(' -> '),
+  ...(sharedAllocation?['Physical allocation groups: '+submission_groups.map(group=>group.join('+')).join(' -> '),
+   'Shared allocation requires 56 MPI tasks, and keeps those 56 allocated during serial postprocessing. It reduces queued jobs, NOT proven CPU-core-hours.']:[]),
   '1. Extract into NEW persistent shared scratch directory; confirm account/module.',
   '2. Place correct real UPFs in pseudo/ and validate k-path, nbnd and DOS settings.',
   'Resource planning: serial postprocessors request '+postHours+' h each, PW stages '+resources.hours+' h. Total reserved core-hours upper bound (not actual use): '+max_reserved_core_hours+'.',
@@ -240,7 +310,7 @@ export async function createTrubaPipelinePackage(args){
   '5. After the last stage: pipeline-summary.json (or python3 pipeline.py summary).',
   ...(withConverter?['6. P1.3 converts QE outputs into electronic-results.json (P1.4 plots only '+(bandWindow?bandWindow[0]+'-'+bandWindow[1]:'all '+electronic.nbnd)+' bands, but QE calculates all '+electronic.nbnd+').']:[]),
   'Do NOT delete ./tmp/kristalyapi.save or run stages concurrently.',
-  'Failed postprocessor: archive its old outputs, cancel pending original jobs, then bash resume.sh bands_pp|dos|projwfc (one manual retry).',
+  'Failed postprocessor: archive its old outputs, cancel pending original jobs, then bash resume.sh bands_pp|dos|projwfc (one manual retry using standalone stage scripts).',
   'Partial pw.x restart is intentionally unsupported; create a NEW package. No automatic restart/resume.',
   'No inferred high-symmetry path, magnetic/SOC/variable-cell workflow or certified scientific convergence.',
   'Missing UPF files: '+(missing.join(', ')||'none'), '',''];
