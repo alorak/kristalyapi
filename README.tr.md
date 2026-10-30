@@ -72,6 +72,10 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.html) arayüz iskeleti, [styles.css](styles.css) tasarım, [crystal-app.js](crystal-app.js) uygulama/hesaplama giriş modülü, [translations.js](translations.js) yerel dil paketi ve [favicon.svg](favicon.svg) simgedir. Bu **ilk modülerleştirme adımıdır**; geniş uygulama modülünün kristal veri, render, analiz ve UI alt modüllerine ayrılması sonraki refaktör aşamasıdır. GitHub Pages tüm dosyaları yayımlar. Genel kullanım için uygulama sunucusu, hesap, veritabanı veya API anahtarı gerekmez. **Three.js 0.186.1**, OrbitControls ve ConvexGeometry artık [yerel `vendor/three`](vendor/three/README.md) modülleridir; otomatik simetri analizi için Moyo WASM dosyaları da dağıtımın `vendor/` dizininden yüklenir. 3B motorunun açılışı artık üçüncü taraf CDN'e bağımlı değildir. **Service Worker**, ilk başarılı çevrimiçi kurulumdan sonra uygulama kabuğunu ve 3B/WASM dosyalarını çevrimdışı açılış için önbelleğe alır. Yerel yapı dosyaları COD araması açıkça yapılmadıkça uzak bir uygulama sunucusuna yüklenmez.
 
+## Paket V15 — Gerçek VESTA görsel karşılaştırma hazırlığı
+
+VESTA 3.5.8 ile aynı sabit CIF/CCP4 kaynakları kullanıldığında operatörün iki gerçek PNG'sini denetleyen [V15 protokolü](tests/validation/PACKAGE_15_STATUS.md), SHA-256 ve görünür siluet/RGB farklarını raporlayabilir. **Gerçek VESTA GUI ekranları henüz yok:** varsayılan rapor `NOT_RUN` ve bilimsel parite `NOT_ESTABLISHED`. Sentetik testler gerçek GUI karşılaştırması sayılmaz; VESTA ikilisi dağıtılmaz.
+
 ## VESTA 3 kılavuz denklemiyle doğrulama ve GUI kanıtı (Paket 14)
 
 BVS paneli artık **gerçek VESTA GUI sonucu olmadığını açıkça belirten** bir
@@ -333,7 +337,7 @@ Sağdaki dikey ikon şeridinden aşağıdaki araçlar açılır. İkinci bir alt
 
 ## Karşı Uzay ve Kırınım
 
-Üst menüdeki **Karşı Uzay** (`#karsi-uzay`) tam genişlikli bir kavram laboratuvarıdır; etkin çalışma alanındaki yapıyı (simetriyle genişletilmiş P1 listesi) salt okunur kullanır ve editördeki IT92 `f₀(s)`, ADP ve `F(hkl)` hesaplarını paylaşır. Dört sekmesi vardır:
+**Toz Kırınımı → Karşı Uzay** (`#toz-kirinimi/karsi-uzay`; eski `#karsi-uzay` de çalışır) tam genişlikli bir kavram laboratuvarıdır; etkin çalışma alanındaki yapıyı (simetriyle genişletilmiş P1 listesi) salt okunur kullanır ve editördeki IT92 `f₀(s)`, ADP ve `F(hkl)` hesaplarını paylaşır. Dört sekmesi vardır:
 
 | Sekme | İçerik | Kapsam ve sınır |
 | --- | --- | --- |

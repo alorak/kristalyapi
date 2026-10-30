@@ -1,5 +1,14 @@
 # Kristal Yapı — VESTA farkları ve geliştirme sırası
 
+## Paket V15 — VESTA görsel karşılaştırma altyapısı (30 Ekim 2026)
+
+- **V15.0 kodlandı:** gerçek kaynaklara sabitlenmiş 5 görsel sahne, kaynak Git blob SHA-1/Png SHA-256 doğrulaması, saf Python görüntü fark raporu, sentetik kanıt regresyonları.
+- **Bilimsel sınır:** siluet IoU, RGB MAE ve üçlü görsel yalnız görsel fark metriğidir; gerçek VESTA 3.5.8 GUI henüz yürütülmedi. `scientificParity=NOT_ESTABLISHED` kalır.
+- **V15.1–V15.2:** operatör ekranları, P14 bağ/BVS GUI değerleri, kamera/ışık eşitleme ve geometri/yoğunluk karşılaştırmasının bilimsel kabulü.
+
+[V15 protokolü](tests/validation/PACKAGE_15_STATUS.md).
+
+
 ## Paket 14 — VESTA 3 resmî denklemleriyle 8 deneysel ortam ve açık fark matrisi
 
 - **Paket 13 eksik kontrolü:** PR #85'in birleşmiş `main` ağacıyla dosya farkı
