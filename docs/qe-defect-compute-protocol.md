@@ -38,6 +38,16 @@ süreç başına QE bellek tahminlerini ve Docker OOM/izolasyon kayıtlarını
 kontrol eder. 6/32/64/96/128 GiB karşılaştırmaları **hipotetik**tir;
 yeni koşum, güvenli kapasite garantisi veya bilimsel kabul değildir.
 
+## D5.3 operatör kontrollü ölçümlü başlangıç pilotu
+
+[D5.3 araç ve kabul sınırları](qe-defect-metered-pilot.md) yalnız tek
+`nstep=0` adayı için kaydedilebilir, izole bir kaynak pilotu sağlar.
+Varsayılan plan modunda yeni hesap çalışmaz. Gerçek koşum, açık
+`--execute --acknowledge-resource-risk`, sabit image/UPF ve gerçek
+Docker kapasitesinde yapılacak ayrı bir operatör işlemi gerektirir.
+Böyle bir pilotun başarıyla **başlatılmış olması** da SCF yakınsama veya
+kusur hesapları kabulü değildir.
+
 ## Gerçek hesap açılmadan çözülmesi gereken kararlar
 
 1. **Kaynak profili:** 416 bantlık `nstep=0` pilotu dört adayda da 6 GiB
