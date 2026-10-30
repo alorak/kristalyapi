@@ -14,7 +14,7 @@ const server=http.createServer(async(req,res)=>{
  const filename=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
  if(!filename.startsWith(root+path.sep)){res.writeHead(403).end();return;}
  try{const content=await fs.readFile(filename);
-  const type=filename.endsWith('.js')?'text/javascript':filename.endsWith('.css')?'text/css':filename.endsWith('.wasm')?'application/wasm':'text/html';
+  const type=(filename.endsWith('.js')||filename.endsWith('.mjs'))?'text/javascript':filename.endsWith('.css')?'text/css':filename.endsWith('.wasm')?'application/wasm':'text/html';
   res.writeHead(200,{'Content-Type':type}).end(content);
  }catch{res.writeHead(404).end();}
 });
