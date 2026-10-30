@@ -784,7 +784,13 @@ işi olarak açma.
 | Fourier/Patterson ve türetilmiş alan | Kısmi | Deneysel faz/ölçek ve model-FCF-MTZ yorum sınırları → V20 |
 | Voronoi yük entegrasyonu | Kısmi | Seyrek örneklem ve gerçek yakınsama/hata bütçesi → V20 |
 | Çokyüzlü kimyası / BVS | Kısmi | Parametre çiftleri, occupancy ve hacim/bozulma referansı → V21 |
-| PNG/SVG/TIFF/PDF/EPS ve 3B export | Mevcut / doğrulanmadı | Vektör/WebGL/volumetrik eşdeğerlik ve eksen/görüş paritesi → V19 |
+| PNG/SVG/TIFF/PDF/EPS ve 3B export | Mevcut / doğrulanmadı | #174 + #178 ile mm/DPI, derinliği doğru vektör, fontsuz metin, punto etiket, lejant, Å ölçeği, köken bilgisi; bağımsız VESTA görsel kabulü → V19 |
+| Kristalografik bakış yönü (a/b/c, a*/b*/c*, [uvw], (hkl) normali) | Eksik (editörde) | Yalnız V16.1 doğrulama betiğinde; arayüz ve sabit açılı döndürme yok → V24 |
+| Arka plan, derinlik sisi, ışık ve hücre çizgi stili | Eksik | Sabit beyaz zemin ve sabit ışık; proje/export durumu yok → V24 |
+| Atom yarıçap setleri ve element renk şemaları | Eksik | Tek boyut kaydırıcısı; iyonik (Shannon) / van der Waals seti yok → V24 |
+| Bağ stilleri ve hidrojen bağı | Eksik | Tek renk silindir; iki renk, çizgi, kesikli stil ve D–H···A araması yok → V24 |
+| Geometri tablosu, simetri kodu, s.u. | Eksik | Ölçüm var; simetri kodu, CIF e.s.d. yayılımı ve `_geom_*` dışa aktarımı yok → V24 |
+| Yapı dışa aktarma formatları | Kısmi | CIF/POSCAR/XYZ/PDB/JSON var; SHELX, CASTEP, QE, XSF yapı, mCIF yok (VESTA biçimi → V17) → V24 |
 | Harici RIETAN/MADEL ekosistemi / ek formatlar | Kısmi | Harici araç sınırı, format talep önceliği → V22 |
 | Çok büyük sahneler / çok pencere | Kısmi | 10 workspace, nesne/volume limitleri, gerçek cihaz ölçümü → V22 |
 | Kuasikristaller (3.90.9a geliştirme) | Eksik / ayrı karar | 3.5.8 kabul hedefinin dışında → V23 |
@@ -889,10 +895,22 @@ işi olarak açma.
 - [ ] Kesirli x/y/z penceresine ek keyfî clipping düzlemleri;
   bağ/molekül ve poliedr bütünlüğünü koruyan opsiyon; Miller düzlemi
   sadece görsel katman olduğunda bunu belirt.
-- [ ] Kamera ve XYZ yön göstergesi için PNG/TIFF/SVG/PDF/EPS
+- [x] Kamera ve XYZ/abc yön göstergesi için PNG/TIFF/SVG/PDF/EPS
   tutarlılığı; transparan arka plan, etiket, çizgi ve çözünürlük/
   DPI metaverisi. Volumetrik 3B veya vektör desteklenmiyorsa
-  raster fallback'i açıkça etiketle.
+  raster fallback'i açıkça etiketle. **#174:** 85/120/175 mm + DPI,
+  atomlara göre kırpılan bağ/hücre çizgileri, ortak küre gradyanı,
+  font gerektirmeyen glif konturları, PNG pHYs, LZW TIFF, kayıpsız PDF.
+  **#178:** punto cinsinden etiket ve pusula, italik a/b/c, konum
+  etiketi, element lejantı, Å ölçek çubuğu, PNG/TIFF/SVG/PDF/EPS köken
+  metaverisi, vektörde dolu izoyüzey; kesit/tel kafes için uyarı.
+- [ ] Etiket çakışma önleme; site bazlı özel etiket metni, ofseti ve
+  görünürlüğü (yukarıdaki per-site durum modeliyle).
+- [ ] Vektör çıktıda kesişen kürelerin tam görünürlüğü (yay kırpma);
+  yarı saydam atomların arkasındaki çizgileri soluklaştırma.
+- [ ] Vektör izoyüzeyde komşu yarı saydam üçgenler arasındaki
+  kenar yumuşatma dikişleri: parça bazlı birleşik yol veya opak
+  dolgu + ayrı saydamlık grubu; PDF/EPS/SVG görüntüleyici testi.
 - [ ] **Kabul:** Si, NaCl, rutil, ADP, Miller ve volume overlay
   sahnelerinde 1×/4× export; Chromium ve mevcut platformlarda
   bağımsız görsel fark ölçümü, kullanıcı ayarlarının round-trip testi.
@@ -964,11 +982,59 @@ işi olarak açma.
 - [ ] Gerçek kullanım senaryosu ve bağımsız bilimsel fixture
   olmadan geliştirme taahhüdü verme; ayrıca karar al.
 
+### V24 — P1/P2 · V16–V23 envanterinde olmayan VESTA farkları (30 Ekim 2026)
+
+**Dayanak:** VESTA 3 kılavuzundaki görünüm (View/Style/Properties),
+bağ, Utilities ve Export Data bölümleri. jp-minerals.org bu ortamdan
+erişilemediği için madde adları kılavuz bilgisinden alındı; her madde
+geliştirmeden önce [kılavuz](https://jp-minerals.org/vesta/archives/VESTA_Manual.pdf)
+ve gerçek VESTA 3.5.8 ile (V16 protokolü) doğrulanmalı. Doğrulanmayan
+madde "VESTA'da var" diye raporlanmaz.
+
+- [ ] **P1 · Kristalografik bakış yönü:** editörde a, b, c, a*, b*, c*
+  boyunca bakış; [uvw] doğrultusu ve (hkl) normali girişi; ekran
+  eksenleri etrafında sabit açılı (ör. 5°/15°/90°) döndürme ve yukarı
+  vektörü seçimi. Eğik hücrede doğrudan/karşıt örgü ayrımı (V16.1
+  `vesta_16_orientation.py` matematiği yeniden kullanılır), proje ve
+  Undo/Redo'da saklanır, dışa aktarılan figürün köken bilgisine yazılır.
+- [ ] **P1 · Görünüm ve aydınlatma:** arka plan rengi (beyaz/siyah/
+  özel), derinlik sisi (depth cueing) başlangıç/bitiş, ortam/yaygın/
+  parlak ışık şiddeti ve ışık yönü, hücre çizgi rengi/kalınlığı/kesikli
+  stili. Ayarlar proje, çalışma alanı ve tüm export biçimlerinde aynı;
+  "element renklerini koru" seçeneğiyle çelişmez; vektörde sis ya
+  uygulanır ya da açıkça yok sayıldığı bildirilir.
+- [ ] **P1 · Atom yarıçap setleri ve renk şemaları:** atomik, iyonik
+  (Shannon 1976; yükseltgenme durumu ve koordinasyon sayısına göre)
+  ve van der Waals yarıçap tabloları; space-filling'de vdW. VESTA /
+  Jmol / CPK renk şemaları. Her tablo için kaynak ve sürüm; eksik
+  iyon/KS değerini tahmin etmeden uyar ve atomik değere düş.
+- [ ] **P2 · Bağ stilleri ve hidrojen bağı:** tek renk / iki renk
+  (yarım bağ atom rengi) silindir, çizgi ve kesikli/noktalı stil;
+  element çifti bazlı bağ yarıçapı. D–H···A hidrojen bağı araması
+  (H···A ve D···A mesafesi + D–H···A açısı ölçütü, kaynaklı varsayılan)
+  kesikli çizimle; vektör export'ta kesikli çizgi, ölçüm tablosunda ayrı tür.
+- [ ] **P1 · Geometri tablosu:** bağ, açı ve dihedral listesi
+  simetri koduyla (ör. `x, y, z+1` / `1_556`); CIF e.s.d.'lerinden
+  hücre + koordinat belirsizliğinin yayılımıyla s.u.; CSV ve CIF
+  `_geom_bond_*`, `_geom_angle_*`, `_geom_torsion_*` döngüleri.
+  s.u. kaynağı yoksa alan boş kalır, sıfır yazılmaz.
+- [ ] **P2 · Yapı dışa aktarma formatları:** SHELX `.res`, CASTEP
+  `.cell`, editörden QE `pw.x` girdisi, XSF yapı ve mCIF. Her biri için
+  içe→dışa round-trip testi ve kayıp metadata tablosu (occupancy,
+  ADP, simetri, manyetik moment). VESTA proje export'u V17'de kalır.
+- [ ] **Kabul:** Si, NaCl, rutil, triklinik ve H-bağlı (ör. buz Ih
+  veya bir hidrat) gerçek CIF'lerde: [uvw]/(hkl) bakışının bağımsız
+  vektör hesabıyla açısal hatası, yarıçap tablolarının kaynak değerleriyle
+  birebirliği, H-bağı listesinin Gemmi/PLATON benzeri bağımsız
+  referansla karşılaştırması, geometri s.u. değerlerinin yayınlanmış
+  CIF `_geom_*` değerleriyle farkı; TR/EN arayüz ve proje regresyonu.
+
 ### Sıra, bağımlılıklar ve yatay kabul
 
 1. **V15.1 gerçek GUI kabulü → V16 gerçek fark kanıtı.**
 2. **V17 proje uyumluluğu → V18 CIF/simetri güvenilirliği.**
-3. **V19 sahne/yayın paritesi → V20 alan bilimi → V21 koordinasyon/morfoloji.**
+3. **V19 sahne/yayın paritesi + V24 bakış yönü, görünüm, yarıçap setleri → V20 alan bilimi → V21 koordinasyon/morfoloji.**
+   V24 geometri tablosu V21 koordinasyon karşılaştırmasından önce; V24 bağ stilleri ve formatlar V22 ile birlikte.
 4. **V22 ölçülen ihtiyaçlarda; V23 ayrı keşif kararı.**
 
 **Her paket için:** Kaynak SHA/sürümü, sentetik/gerçek fixture ayrımı,
