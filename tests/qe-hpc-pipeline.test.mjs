@@ -59,6 +59,9 @@ test('stages are serialized, no parallel QE writes and postprocessors use one ra
   qe_module:'apps/espresso/7.4-epw-5.9-oneapi-2024'
  });
  assert.match(script,/#SBATCH --ntasks=1/);
+ assert.match(script,/#SBATCH --cpus-per-task=56/);
+ assert.ok(script.indexOf("trap '")<script.indexOf('module purge'));
+ assert.match(script,/module list 2>&1/);
  assert.match(script,/dos\.x -in dos\.in > dos\.out/);
  assert.match(script,/python3 pipeline\.py finish dos/);
 });
@@ -74,6 +77,10 @@ test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files'
  assert.equal(result.manifest.file_sha256['pipeline.py'],sha(pipelineScript));
  assert.equal(result.manifest.file_sha256['submit.sh'],sha(decode('submit.sh')));
  assert.match(decode('submit.sh'),/--dependency=afterok:/);
+ assert.match(decode('submit.sh'),/python3 pipeline\.py preflight/);
+ assert.equal((decode('submit.sh').match(/sbatch --test-only stages\//g)||[]).length,6);
+ assert.ok(decode('submit.sh').indexOf('sbatch --test-only stages/projwfc.slurm')<decode('submit.sh').indexOf('mkdir .submission-lock'));
+ assert.match(decode('stages/bands_pp.slurm'),/#SBATCH --cpus-per-task=56/);
  assert.match(decode('submit.sh'),/\.submission-lock/);
  assert.equal(file.has('stages/relax.slurm'),false);
  assert.equal(file.has('stages/projwfc.slurm'),true);
