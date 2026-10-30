@@ -336,6 +336,13 @@ def science_check(root: Path) -> dict:
     sites = [row.split() for row in pos.group(1).splitlines() if row.strip()]
     if len(sites) != int(nat_match.group(1)) or any(len(row) not in (4, 7) for row in sites):
         raise ValueError("Source atomic sites do not match nat")
+    try:
+        fractional_sites = [[float(coord.replace('d', 'e').replace('D', 'E')) for coord in row[1:4]]
+                            for row in sites]
+    except ValueError as exc:
+        raise ValueError('Invalid fractional atom coordinates') from exc
+    if any(not math.isfinite(v) for row in fractional_sites for v in row):
+        raise ValueError('Nonfinite fractional atom coordinates')
     counts = Counter(row[0] for row in sites)
     pseudos = config["pseudopotentials"]
     if set(counts) != {p.get("element") for p in pseudos}:
@@ -413,7 +420,7 @@ def science_check(root: Path) -> dict:
                 normal = [ay*bz-az*by, az*bx-ax*bz, ax*by-ay*bx]
                 norm = math.sqrt(sum(v*v for v in normal))
                 height = abs(normal[0]*cx + normal[1]*cy + normal[2]*cz)/norm if norm > 1e-10 else 0
-                zs = sorted(float(row[3]) % 1.0 for row in sites)
+                zs = sorted(row[2] % 1.0 for row in fractional_sites)
                 gaps = [b-a for a, b in zip(zs, zs[1:])] + [1+zs[0]-zs[-1]]
                 gap = height * max(gaps)
                 slab_geometry = {'cell_normal_height_angstrom': round(height, 4),
