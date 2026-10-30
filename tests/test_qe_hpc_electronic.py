@@ -77,10 +77,13 @@ class TestHpcElectronic(unittest.TestCase):
                    "-1 .1 .05 .03 .02\n0 .2 .1 .05 .05\n"
                    "1 .3 .1 .1 .1\n")
         self.write("projwfc.out", "PROJWFC completed\n")
+        self.write("tmp/kristalyapi.save/data-file-schema.xml", "<qe>synthetic</qe>")
         for stage in self.plan[:-1]:
             receipt = {"schema": pipeline.REPORT_SCHEMA,
                        "stage": stage, "status": "completed",
-                       "hashes": {"structure.in": file_hashes["structure.in"]}}
+                       "hashes": {"structure.in": file_hashes["structure.in"],
+                                  "tmp/kristalyapi.save/data-file-schema.xml":
+                                  digest((self.root / "tmp/kristalyapi.save/data-file-schema.xml").read_bytes())}}
             self.write("reports/" + stage + ".json", json.dumps(receipt))
 
     def write(self, name, value):
