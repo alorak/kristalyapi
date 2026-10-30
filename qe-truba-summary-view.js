@@ -1,5 +1,16 @@
 /* Strict offline TRUBA collector summary view. No remote requests or HTML injection. */
 const SHA=/^[a-f0-9]{64}$/;
+/** Exact-input provenance comparison, not a scientific or crystallographic acceptance. */
+export async function compareTrubaInputDigest(inputText,expectedSha256){
+ if(typeof inputText!=='string'||new TextEncoder().encode(inputText).byteLength>4*1024*1024||
+    typeof expectedSha256!=='string'||!SHA.test(expectedSha256))
+  throw Error('Invalid TRUBA input hash comparison');
+ if(!globalThis.crypto?.subtle)throw Error('HTTPS/SHA-256 gerekli.');
+ const raw=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(inputText));
+ const actual=Array.from(new Uint8Array(raw),x=>x.toString(16).padStart(2,'0')).join('');
+ return {matches:actual===expectedSha256,actual_sha256:actual,expected_sha256:expectedSha256};
+}
+
 const STATUSES=new Set(['completed','unverified','not_converged','invalid','failed','incomplete']);
 const VALID_CALCS=new Set(['scf','relax']);
 const finiteOrNull=(value,name)=>{
