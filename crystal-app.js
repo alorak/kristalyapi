@@ -210,6 +210,46 @@ function updateAxisGizmo(){
 }
 
 
+/* The camera-locked XYZ widget is SVG, outside WebGL. Repaint its live SVG
+   geometry onto publication raster canvases so labels and arrow directions
+   match the on-screen quaternion even at 1–4× export resolution. */
+function drawExportAxisGizmo(ctx,stageRect,factor){
+ const svg=$('axisGizmoSvg'),bounds=svg?.getBoundingClientRect();
+ if(!bounds||bounds.width<=0||bounds.height<=0||!axisGizmoParts.length)return;
+ updateAxisGizmo();
+ const num=(element,name)=>Number(element.getAttribute(name));
+ ctx.save();
+ try{
+  ctx.translate((bounds.left-stageRect.left)*factor,(bounds.top-stageRect.top)*factor);
+  ctx.scale(bounds.width*factor/120,bounds.height*factor/120);
+  for(const group of svg.querySelectorAll('g')){
+   const line=group.querySelector('line'),arrow=group.querySelector('polygon'),label=group.querySelector('text');
+   if(!line||!arrow||!label)continue;
+   ctx.globalAlpha=Number(group.getAttribute('opacity')??1);
+   ctx.beginPath();ctx.moveTo(num(line,'x1'),num(line,'y1'));
+   ctx.lineTo(num(line,'x2'),num(line,'y2'));
+   ctx.lineWidth=num(line,'stroke-width');ctx.lineCap=line.getAttribute('stroke-linecap')||'round';
+   ctx.strokeStyle=line.getAttribute('stroke');ctx.stroke();
+   const points=arrow.getAttribute('points').trim().split(/\s+/).map(pair=>pair.split(',').map(Number));
+   ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
+   for(const point of points.slice(1))ctx.lineTo(point[0],point[1]);
+   ctx.closePath();ctx.fillStyle=arrow.getAttribute('fill');ctx.fill();
+   ctx.font=label.getAttribute('font-weight')+' '+label.getAttribute('font-size')+'px '+label.getAttribute('font-family');
+   ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
+   ctx.lineWidth=num(label,'stroke-width');ctx.strokeStyle=label.getAttribute('stroke');
+   ctx.strokeText(label.textContent,num(label,'x'),num(label,'y'));
+   ctx.fillStyle=label.getAttribute('fill');
+   ctx.fillText(label.textContent,num(label,'x'),num(label,'y'));
+  }
+  const center=svg.querySelector('circle');
+  if(center){
+   ctx.globalAlpha=1;ctx.beginPath();ctx.arc(num(center,'cx'),num(center,'cy'),num(center,'r'),0,2*Math.PI);
+   ctx.fillStyle=center.getAttribute('fill');ctx.fill();
+   ctx.lineWidth=num(center,'stroke-width');ctx.strokeStyle=center.getAttribute('stroke');ctx.stroke();
+  }
+ }finally{ctx.restore();}
+}
+
 /* Volumetric files use Cartesian Å: axes are per-voxel step vectors.
    The input grid is NOT rescaled to match the currently displayed crystal. */
 const VOLUME_MAX_VOXELS=2500000;
@@ -8614,6 +8654,7 @@ function renderExportCanvas(factor,opaque=true){
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Görsel çizim yüzeyi oluşturulamadı.');
   if(opaque){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
   ctx.drawImage(renderer.domElement,0,0);
+  drawExportAxisGizmo(ctx,rect,factor);
  }finally{
   for(const mesh of temporary){root.remove(mesh);mesh.material.dispose();}
   atomMesh.forEach((mesh,i)=>{mesh.geometry=previousAtomGeometries[i];});
