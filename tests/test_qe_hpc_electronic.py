@@ -109,6 +109,64 @@ class TestHpcElectronic(unittest.TestCase):
         self.assertEqual(result["pdos_total"]["sum_projected_states_per_ev"], [.2, .4, .5])
         self.assertEqual(electronic.main(["--bundle", str(self.root)]), 2)
 
+    def test_p14_800_calculated_bands_keep_only_requested_301_to_380(self):
+        self.manifest["electronic"]["nbnd"] = 800
+        self.manifest["electronic"]["band_window"] = [301, 380]
+        self.write("pipeline.json", json.dumps(self.manifest))
+        self.write("bands.dat.gnu", "".join(
+            f"0 {band}\n0.2 {band + 0.1}\n0.4 {band + 0.2}\n\n"
+            for band in range(1, 801)))
+        result = electronic.collect(self.root)
+        bands = result["bands"]
+        self.assertEqual(bands["band_index_start"], 301)
+        self.assertEqual(bands["total_bands"], 800)
+        self.assertEqual(len(bands["energies_ev"]), 80)
+        self.assertEqual(bands["energies_ev"][0], [301.0, 301.1, 301.2])
+        self.assertEqual(bands["energies_ev"][-1], [380.0, 380.1, 380.2])
+        self.assertEqual(bands["distance"], [0.0, 0.2, 0.4])
+        self.assertEqual(bands["selection_policy"], "explicit-one-based-inclusive")
+        self.assertEqual(result["truba_provenance"]["source_sha256"]["structure.in"],
+                         self.manifest["file_sha256"]["structure.in"])
+        self.assertEqual(electronic.main(["--bundle", str(self.root)]), 0)
+        stored = json.loads((self.root / "electronic-results.json").read_text())
+        self.assertEqual(stored["bands"]["total_bands"], 800)
+        self.assertEqual(len(stored["bands"]["energies_ev"]), 80)
+
+    def test_p14_reject_hidden_corrupt_band_and_wrong_total(self):
+        self.manifest["electronic"]["nbnd"] = 330
+        self.manifest["electronic"]["band_window"] = [301, 320]
+        self.write("pipeline.json", json.dumps(self.manifest))
+        blocks = [f"0 {band}\n0.2 {band+.1}\n0.4 {band+.2}\n\n"
+                  for band in range(1, 331)]
+        blocks[99] = "0 100\n0.3 100.1\n0.4 100.2\n\n"
+        self.write("bands.dat.gnu", "".join(blocks))
+        with self.assertRaisesRegex(ValueError, "Inconsistent"):
+            electronic.collect(self.root)
+        blocks[99] = "0 100\n0.2 100.1\n0.4 100.2\n\n"
+        self.write("bands.dat.gnu", "".join(blocks[:-1]))
+        with self.assertRaisesRegex(ValueError, "band count differs"):
+            electronic.collect(self.root)
+
+    def test_p14_invalid_windows_and_unbounded_raw_scan_rejected(self):
+        settings = self.manifest["electronic"]
+        settings["nbnd"] = 800
+        self.write("pipeline.json", json.dumps(self.manifest))
+        with self.assertRaisesRegex(ValueError, "window required"):
+            pipeline.load_manifest(self.root)
+        for window in ([0, 20], [301, 300], [201, 501], [701, 801],
+                       [True, 20], ["301", 380], [301]):
+            with self.subTest(window=window):
+                settings["band_window"] = window
+                self.write("pipeline.json", json.dumps(self.manifest))
+                with self.assertRaisesRegex(ValueError, "invalid one-based band window"):
+                    pipeline.load_manifest(self.root)
+        settings["band_window"] = [1, 30]
+        settings["nbnd"] = 8001
+        settings["path"][0]["segments"] = 500
+        self.write("pipeline.json", json.dumps(self.manifest))
+        with self.assertRaisesRegex(ValueError, "4 million"):
+            pipeline.load_manifest(self.root)
+
     def test_real_qe_spin_dos_fixture_is_not_treated_as_unpolarized(self):
         # Real QE 6.7MaX output committed independently by the spin acceptance
         # cohort; this parser deliberately fails on four numeric DOS columns.
