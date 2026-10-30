@@ -286,6 +286,10 @@ function drawExportAxisGizmo(ctx,stageRect,factor){
    no 3D lattice a/b/c vectors are implied by these Cartesian directions. */
 function axisGizmoVectorPrimitives(svg,stageRect,bounds){
  const n=(el,attr)=>Number(el.getAttribute(attr));
+ // The live SVG uses shorthand #fff on the center dot; exporters require
+ // canonical six-digit colors for SVG/PDF/EPS serialization.
+ const color=value=>/^#[0-9a-f]{3}$/i.test(value||'')?
+  '#'+[...value.slice(1)].map(c=>c+c).join(''):value;
  const sx=bounds.width/120,sy=bounds.height/120,scale=Math.min(sx,sy);
  const xy=(x,y)=>[(bounds.left-stageRect.left)+x*sx,(bounds.top-stageRect.top)+y*sy];
  const depth=-1000000,shapes=[];
@@ -310,7 +314,7 @@ function axisGizmoVectorPrimitives(svg,stageRect,bounds){
  if(center){
   const [x,y]=xy(n(center,'cx'),n(center,'cy'));
   shapes.push({type:'circle',x,y,r:n(center,'r')*scale,fill:center.getAttribute('fill'),
-   stroke:center.getAttribute('stroke'),strokeWidth:n(center,'stroke-width')*scale,
+   stroke:color(center.getAttribute('stroke')),strokeWidth:n(center,'stroke-width')*scale,
    flat:true,opacity:1,depth});
  }
  return shapes;
