@@ -1,0 +1,92 @@
+{
+  "schema": "kristalyapi.qe-mos2-electronic-acceptance-plan.v1",
+  "stage": "D4",
+  "scope": "Real band/DOS/atomic-orbital PDOS pipeline on the accepted D3 MoS2 geometry. Finite execution/data consistency only; band/DOS convergence, SOC and optical accuracy remain separate.",
+  "pseudopotentials": {
+    "Mo": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/Mo.pbe-spn-rrkjus_psl.1.0.0.UPF",
+      "filename": "Mo.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "0d7c57996e624698242e6428a34d5f13a1e52b4cddac2ce215be4dce429073dd"
+    },
+    "S": {
+      "url": "https://pseudopotentials.quantum-espresso.org/upf_files/S.pbe-n-rrkjus_psl.1.0.0.UPF",
+      "filename": "S.UPF",
+      "library": "PSlibrary 1.0.0, A. Dal Corso, scalar-relativistic PBE USPP",
+      "license": "GPL-2.0-or-later",
+      "license_url": "https://github.com/dalcorso/pslibrary#license",
+      "reviewed_sha256": "90fb585e830674f2de7b4cbace28d5dd0c05ca1a919d1f92a59b54d6b95cbfc4"
+    }
+  },
+  "reference": {
+    "evidence_path": "validation-results/qe-mos2-d3-20261029-amd64"
+  },
+  "electronic": {
+    "nbnd": 40,
+    "nscf_k": 24,
+    "band_path": [
+      {
+        "label": "Gamma",
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "M",
+        "k": [
+          0.5,
+          0,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "K",
+        "k": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0
+        ],
+        "segments": 20
+      },
+      {
+        "label": "Gamma",
+        "k": [
+          0,
+          0,
+          0
+        ],
+        "segments": 1
+      }
+    ],
+    "dos": {
+      "delta_e_ev": 0.01,
+      "degauss_ry": 0.01,
+      "energy_min_ev": -8.0,
+      "energy_max_ev": 6.0
+    }
+  },
+  "criteria": {
+    "max_scf_accuracy_ry": 1e-08,
+    "max_reference_energy_difference_ry": 1e-06,
+    "max_final_force_component_ry_bohr": 0.0001,
+    "max_integrated_state_count_error": 0.2,
+    "dos_step_ev": 0.01,
+    "max_common_band_delta_ev": 0.01,
+    "max_edge_delta_ev": 0.01,
+    "max_dos_relative_l1": 0.05,
+    "max_pdos_relative_l1": 0.05,
+    "min_curve_area": 1e-10
+  },
+  "limits": {
+    "max_seconds_per_job": 14400,
+    "docker_worker_memory_bytes": 6442450944,
+    "workflow_max_parallel": 2,
+    "docker_worker_nano_cpus": 2000000000
+  }
+}

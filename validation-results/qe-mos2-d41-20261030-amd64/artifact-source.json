@@ -1,0 +1,12 @@
+{
+  "repository": "alorak/kristalyapi",
+  "workflow_run_id": 40928974130,
+  "artifact_id": 12935331722,
+  "artifact_name": "qe-mos2-d41-7",
+  "archive_sha256": "aa2a79b33db6d03e4e2f7cc356fe6244387de41efbb564eea1f795481464ad98",
+  "source_commit": "64530c73ae34112a1575c66002f3b1434037c2e5",
+  "new_case_count": 6,
+  "baseline_case_count": 1,
+  "downloaded_archive_bytes": 4495877,
+  "archive_path_symlink_size_guards_passed": true
+}

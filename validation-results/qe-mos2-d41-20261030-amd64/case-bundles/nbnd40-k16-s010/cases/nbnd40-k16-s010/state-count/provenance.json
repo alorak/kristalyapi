@@ -1,0 +1,15 @@
+{
+  "job_id": "c9afe82a09d24a8d853604dfba35633c",
+  "command": [
+    "dos.x",
+    "-in",
+    "state-count.in"
+  ],
+  "source_nscf_stdout_sha256": "b8b2dcc0b64c33fbdeec8064a01b577016d169621c7007bea9faff029cf017b5",
+  "sha256": {
+    "state-count.in": "c35379e9e720273708c913f1f7d048f6550dcdb76c7dd288421193487b9a2137",
+    "state-count.dat": "19d937b8d48b5c4ff931abda26b1f1331f5be8b65b82bb3fb1fd0a379d1738b7",
+    "state-count.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state-count.out": "24e04e9a1f723b4a8ecb78d0666fc82908e849be90602a985d4b14dc8d1a020d"
+  }
+}

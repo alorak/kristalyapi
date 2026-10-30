@@ -1,12 +1,13 @@
 # D4.1 — Ön kayıtlı elektronik yakınsama protokolü
 
-Durum: protokol ve otomatik karşılaştırma geliştirmesi; **yeni MoS₂
-karşılaştırma koşuları henüz yapılmadı**. D4'ün tek ayardaki işleyiş/veri
-kabulü bu yakınsama taramasının yerine geçmez.
+Durum: altı gerçek MoS₂ vakası tamamlandı ve ham kanıtlardan bağımsız
+olarak yeniden doğrulandı. Ön kayıtlı **sonlu bant sayısı ve NSCF örgüsü kabulü geçti**.
+[Kanıt paketi ve sınırlar](../validation-results/qe-mos2-d41-20261030-amd64/INCELEME.md).
+DOS genişliği yalnız duyarlılık olarak raporlanır; `broadening_converged=null`.
 
 Kaynak, tam doğrulanmış D4 kanıt paketi ve D3 son geometrisidir. Yeni
 SCF'lerde aynı 120/960 Ry, 16×16×1, c=24 Å, nötr 26 elektron, PBE/skaler/
-spinsiz protokol ve SHA-256 eşleşmeli Mo/S UPF'leri kullanılacak.
+spinsiz protokol ve SHA-256 eşleşmeli Mo/S UPF'leri kullanıldı.
 
 | Yeni vaka | Bant | NSCF örgüsü | DOS genişliği (Ry) |
 | --- | --- | --- | --- |
@@ -66,8 +67,8 @@ kalır kararı verilmez. Alttaki bağımsız NSCF spektrumunun değişmemesi ve
 ham veri tutarlılığı ayrıca denetlenir. Genel D4.1 kabulü bant/örgü
 hedeflerini kapsar; genişlik duyarlılığının raporlanması ayrıca belirtilir.
 
-Her vaka en fazla 4 saat, 6 GiB/no-swap ve 2 CPU kullanacak; manuel CI
-aynı anda en fazla iki vaka çalıştıracak. Bunlar yalnız üç atomlu referans
+Her vaka için en fazla 4 saat, 6 GiB/no-swap ve 2 CPU sınırı kullanıldı; manuel CI
+aynı anda en fazla iki vaka çalıştırdı. Bunlar yalnız üç atomlu referans
 içindir; D5 büyük hücre kapasitesi bu protokolden çıkarılmaz.
 
 ## Çalıştırma ve bağımsız doğrulama

@@ -1,0 +1,10 @@
+&DOS
+ prefix='kristalyapi',
+ outdir='./tmp',
+ fildos='state-count.dat',
+ DeltaE=0.01,
+ ngauss=0,
+ degauss=0.01,
+ Emin=-65,
+ Emax=30,
+/

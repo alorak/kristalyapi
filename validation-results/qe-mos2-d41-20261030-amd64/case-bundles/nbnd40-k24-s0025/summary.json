@@ -1,0 +1,106 @@
+{
+  "schema": "kristalyapi.qe-electronic-convergence-case.v1",
+  "status": "completed",
+  "started_at": "2026-10-29T20:41:01.281478+00:00",
+  "case_id": "nbnd40-k24-s0025",
+  "derived": {
+    "source_scf": {
+      "energy_ry": -181.58168684,
+      "last_scf_accuracy_ry": 1.2e-09,
+      "electrons": 26,
+      "qe_version": "6.7MaX",
+      "forces_ry_bohr": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.29e-05
+        ],
+        [
+          0.0,
+          0.0,
+          -1.29e-05
+        ]
+      ],
+      "max_force_component_ry_bohr": 1.29e-05,
+      "input_sha256": "f735cffb5b188acebc4ff1c5f049efb624bd825744054aebbde37245fbf61e2b",
+      "output_sha256": "d9c8fa35399369ea451ec2a27c2c5c6bec3e6999919a5b54c0244ef7cd6a210e"
+    },
+    "band_count": 40,
+    "kpath_points": 61,
+    "dos_points": 1401,
+    "pdos_atoms": 3,
+    "grid_selection": {
+      "policy": "exact DOS window; no interpolation or energy shift",
+      "source_points": 1402,
+      "selected_points": 1401,
+      "discarded_outside_window": 1
+    },
+    "max_projection_reconciliation_error": 0.018600000000000172,
+    "gates": [
+      {
+        "axis": "reference_energy_difference_ry",
+        "value": 0.0,
+        "limit": 1e-06,
+        "passed": true
+      },
+      {
+        "axis": "max_final_force_component_ry_bohr",
+        "value": 1.29e-05,
+        "limit": 0.0001,
+        "passed": true
+      },
+      {
+        "axis": "integrated_state_count_error",
+        "value": 0.0,
+        "limit": 0.2,
+        "passed": true
+      }
+    ]
+  },
+  "cleanup_errors": [],
+  "provenance": {
+    "git_commit": "64530c73ae34112a1575c66002f3b1434037c2e5",
+    "host_machine": "x86_64",
+    "docker_arch": "x86_64",
+    "source_sha256": {
+      "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+      "server/Dockerfile": "e86ba28d1818e21177f53a653aa28128ab96ad33ef03eab2de131cf4eff69929",
+      "tools/qe_acceptance_runtime.py": "d826ed28e68378e2c213d2479bdba9927e71d9e95af163536aaf2387cefb83f9",
+      "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+      "tools/qe_mos2_acceptance.py": "b93948fb37fa69d3782b769b4557fcb91f4ce17eed405bf66b360a10356b8fd6",
+      "tools/qe_scf_acceptance.py": "916a9c886050bf8aae123f8396b268b554764a7cbe99f94eff54d18052d25f70",
+      "server/api.py": "35b8919c557d1f4c5376b09df8870bf8d820815af64cc7b63e1977422a8d517c",
+      "server/electronic_core.py": "857f1209e64158b36fd6aa54bfbc1d1769f5d77f10e832c97ce7feb8a71136d5",
+      "server/electronic_worker.py": "f277e2e75361db084dfab917bb1ef75a1ea6154be3e20faf6ca3b29d3cab24a0",
+      "server/job_core.py": "5299f4bdfda45088f21cafdc123c2f89e61d99ad2111b1513a31309b857a00e3",
+      "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+      "server/qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+      "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+      "server/relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+      "server/relax_worker.py": "cdcee24a9e6bef19ae761a2fbde9af297e805c1f39d49820fed4d1c07e9a04ee",
+      "server/worker.py": "60aed8d03734692cd8230852020de59103cccb74995f07dc07290f4d1f0037e2",
+      "tools/qe_defect_compare.py": "e61fef2854a7e543f0f42628c2ebce74f5fdc54739129b6cf21022fd6dcb2430",
+      "tools/qe_defect_init.py": "abbf1aa176d1d03ada3336cf120c7b85adeba0c472a294bd918611f6a0d59b2b",
+      "tools/qe_defect_prepare.py": "d345c929ce29285b619a8073017d78d7b7870667cded8aa483c2bd8fb5668639",
+      "tools/qe_electronic_acceptance.py": "f91f22cfc0ab4536d5599ca98a86d8e93669530fc3426e65c75582a9291e2778",
+      "tools/qe_electronic_convergence.py": "7bbfde8498a45ceb3d23ab6373e81aa65c8e23d441d0976cdf1c1b133ea2fd95",
+      "tools/qe_pdos.py": "dcd429d6b72a0c2702d084b860b348c46d49b281e8e79eced17905131b5b731e",
+      "tools/qe_pipeline.py": "23daa52cac18f79884941f827617cc84329aff54a7e4de6fc43da22074e3f575",
+      "tools/qe_relax_acceptance.py": "185533183c836644a1ec64437afeda79ff46cab23a6d47d0884174fb71654945",
+      "tests/fixtures/qe/mos2-electronic-convergence.json": "3803077fe974181811b3658e2027ab18f23e35f4c3a2f904726db9724420abc1"
+    },
+    "image_id": "sha256:1a2a674f437ace207987a5f2c73eec6423aef4fc1cc89592b6b0fed958064eaf",
+    "worker_resources": {
+      "memory_bytes": 6442450944,
+      "memory_swap_bytes": 6442450944
+    },
+    "worker_nano_cpus": 2000000000
+  },
+  "resources_removed": true,
+  "finished_at": "2026-10-29T21:42:01.944920+00:00"
+}

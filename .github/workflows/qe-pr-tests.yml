@@ -30,6 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -54,6 +55,11 @@ jobs:
           if [ -f tools/qe_defect_prepare.py ]; then
             python tools/qe_defect_prepare.py --verify validation-results/qe-mos2-d5-preparation-20261029
           fi
+      - name: Reverify accepted D4.1 raw cohort and exported view without DFT
+        run: |
+          python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41-20261030-amd64
+          python tools/qe_convergence_view.py validation-results/qe-mos2-d41-20261030-amd64 --output /tmp/qe-convergence-view.json
+          cmp validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json /tmp/qe-convergence-view.json
       - name: Validate D4.1 preregistered plan and pinned raw reference without DFT
         run: python tools/qe_electronic_convergence.py --preflight
 
