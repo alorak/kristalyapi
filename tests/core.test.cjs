@@ -969,10 +969,39 @@ test('XYZ orientation gizmo projects world axes into the camera plane', () => {
   approx(axes[1].x,0);approx(axes[1].y,-1);
   approx(axes[2].depth,1);
 });
+test('compass derives direct lattice a/b/c vectors, not orthogonal XYZ or reciprocal basis',()=>{
+ const q={x:0,y:0,z:0,w:1,clone(){return {...this,invert(){this.x=-this.x;this.y=-this.y;this.z=-this.z;return this}}}};
+ const monoclinic={a:3,b:5,c:9,alpha:90,beta:107,gamma:90};
+ const lattice=api.gizmoProjection(q,monoclinic,'lattice');
+ const xyz=api.gizmoProjection(q,monoclinic,'cartesian');
+ assert.deepEqual(Array.from(lattice,v=>v.label),['a','b','c']);
+ assert.deepEqual(Array.from(xyz,v=>v.label),['X','Y','Z']);
+ approx(lattice[0].x,1);approx(lattice[1].y,-1);
+ approx(lattice[2].x,Math.cos(107*Math.PI/180));
+ approx(lattice[2].depth,Math.sin(107*Math.PI/180));
+ assert.ok(lattice[2].x<-.29,'monoclinic c must tilt toward -X');
+ approx(xyz[2].x,0);
+ const triclinic={a:4,b:6,c:8,alpha:78,beta:101,gamma:68};
+ const projected=api.gizmoProjection(q,triclinic,'lattice');
+ const vectors=api.basis(triclinic).map(v=>v.normalize());
+ for(let i=0;i<3;i++){
+  approx(projected[i].x,vectors[i].x);
+  approx(projected[i].y,-vectors[i].y);
+  approx(projected[i].depth,vectors[i].z);
+  approx(Math.hypot(projected[i].x,projected[i].y,projected[i].depth),1);
+ }
+ // Non-right lattice angles must remain visible in the compass.
+ approx(projected[1].x,Math.cos(68*Math.PI/180));
+ approx(vectors[1].dot(vectors[2]),Math.cos(78*Math.PI/180));
+ approx(vectors[0].dot(vectors[2]),Math.cos(101*Math.PI/180));
+ assert.throws(()=>api.gizmoProjection(q,triclinic,'reciprocal'),/Geçersiz yön göstergesi/);
+});
 test('light theme and axis widget are present in single HTML', () => {
   assert.match(html,/#viewport\{background:#fff\}/);
   assert.match(html,/<div id="axisGizmo"/);
   assert.match(html,/id="axisGizmoSvg"/);
+  assert.match(html,/id="axisCompassMode"[^>]*aria-label="Yön göstergesi sistemi"/);
+  assert.match(html,/<option value="lattice">Kristalografik a\/b\/c<\/option>/);
   assert.match(html,/id="autoBond"/);
   assert.ok(!html.includes('Kristalografi ve yapı görselleştirme laboratuvarı'));
 });
