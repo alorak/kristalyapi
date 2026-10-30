@@ -261,8 +261,16 @@ tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 - [x] **Ön kontrol durumu:** İş durumundan ayrı ön kontrol göstergesi; yapı, adres veya ilgili parametre değişiminde eskimiş ön kontrolün durumunu yenile. Gerçek gönderimde sunucu ön kontrolünü tekrar koş.
 - [x] **Görsel iyileştirme:** Form etiketleri, yardımcı metinler ve eylemlerin okunabilirliği; dar ekranlarda hazırlık yöntemi seçeneklerini tek sütuna indir.
 - [x] Tarayıcı regresyonunda yöntem geçişi, sunucu/yerel alan ayrımı, kısa anahtar, bozulmuş çözücü, yalnız hazırlık kaynak profili ve eskimiş ön kontrol durumunu kapsa.
-- [ ] **Takip P1:** İş listesini proje/iş adı, filtreleme ve sayfalama ile geliştirme; ayrı bir iş snapshot/provenance özeti ve hesaplanan bant/DOS görünümü.
+- [x] **Takip P1:** Tek operatörlü iş adı, sunucu tarafında filtre/arama/sayfalama, kalıcı geçmiş ve sürümlü hesap snapshot/provenance özeti; bant/DOS sonuç görünümü mevcut D4 ile korunuyor. Çok kullanıcılı proje izolasyonu sonraki aşama.
 - [ ] **Takip P1:** Kullanıcı etkileşimli hesap türü ve preflight durumları için daha kapsamlı TR/EN metin bütünlüğü; gerçek Chromium + API CI koşularını merge öncesi doğrula.
+
+### D-UX P3 — İş geçmişi ve CalculationSummary kanıt özeti
+- [x] SQLite iş kayıtlarını kaybetmeden görünen iş adı / hesap türü alanlarını migrate et.
+- [x] Sunucu tarafında sınırlı durum/hesap türü/isim-ID-hash arama ve sayfalama; eski 20 kayıtlı uç nokta davranışını koru.
+- [x] Sürümlü salt okunur `kristalyapi.calculation-summary.v1`: kaydedilen girdi, yapı/profil kimliği, UPF/çıktı hash'leri ve yalnız eşleşmiş tamamlanmış sonucun fiziksel ölçümleri.
+- [x] Frontend iş filtreleri, sayfa gezinimi, isteğe bağlı adlandırma ve kimlikli kanıt özeti; eski işler için geriye uyumluluk.
+- [ ] **P1 sonrası:** Tek operatör modu dışına çıkılacaksa kullanıcı/proje sahipliği, kotası ve iş izolasyonunu ayrıca tasarla; mevcut token modeli çok kullanıcılı değildir.
+- [ ] **P1 sonrası:** Bağımsız ham eser/JSON kanıt doğrulaması ve dışa aktarılabilir imzalı manifest; özet ekranı tek başına bilimsel kabul değildir.
 
 ### D-UX P2 — Gerçek hesap kanıtlarından eksen ve iyonik geçmiş
 
@@ -281,9 +289,9 @@ tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 - [x] Kaynak/ham QE enerji referansını öne çıkar, indirilen ham CSV/plot verisini değiştirme.
 - [x] Son relaksasyon görünümünde minimum-görüntü Å vektörlerini aç/kapat, maksimum/ortalama hareket özetini ve Δr sıralı atom tablosunu ekle.
 - [x] Geriye uyumlu parser, spin verisi, masaüstü/mobil ve sentetik periyodik sınır UI testleri ekle.
-- [ ] **Sonraki paket:** K-yolu düğümlerini gerçek QE üreticisinin kanıtlanmış k-örneklemesinden otomatik belgelemek; keyfî etiket/tahmini interpolasyon yapmamak.
+- [x] **D-UX P2:** Gerçek QE örneklenmiş k-ekseni ve hücre metriğiyle doğrulanan düğümler (PR #145).
 - [ ] **Sonraki paket:** Enerji referansları (Fermi/vakum) ve bant kenarı gibi analizleri yalnız bilimsel protokol ve ham kanıtla doğrulanmış durumda eklemek.
-- [ ] **Sonraki paket:** Relaksasyonun iyonik adım enerji/kuvvet seyri yalnız gerçek `pw.x` adım verisi sağlandığında çizilsin.
+- [x] **D-UX P2:** Ham `relax.out` hash'iyle bağlı tam enerji–kuvvet adımları varsa çizilir (PR #145).
 
 ### D0–D1 — Docker QE kurulumu ve read-only bağlantı (ilk altyapı)
 

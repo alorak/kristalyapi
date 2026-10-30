@@ -43,9 +43,16 @@ class JobStore:
             )""")
             columns={row[1] for row in db.execute('PRAGMA table_info(jobs)')}
             for name,definition in [('pause_requested','INTEGER NOT NULL DEFAULT 0'),
-                                    ('resume_requested','INTEGER NOT NULL DEFAULT 0'),('resume_count','INTEGER NOT NULL DEFAULT 0'),('checkpoint_sha256','TEXT'),('resource_profile_sha256','TEXT')]:
+                                    ('resume_requested','INTEGER NOT NULL DEFAULT 0'),('resume_count','INTEGER NOT NULL DEFAULT 0'),('checkpoint_sha256','TEXT'),('resource_profile_sha256','TEXT'),('label','TEXT NOT NULL DEFAULT \'\''),('calculation','TEXT')]:
                 if name not in columns:db.execute('ALTER TABLE jobs ADD COLUMN '+name+' '+definition)
+            # Historical databases predate the calculation column. Do not
+            # requeue or rewrite request snapshots during migration.
+            for row in db.execute("SELECT id,request_json FROM jobs WHERE calculation IS NULL"):
+                calculation=json.loads(row["request_json"])["parameters"]["calculation"]
+                db.execute("UPDATE jobs SET calculation=? WHERE id=?",(calculation,row["id"]))
             db.execute("CREATE INDEX IF NOT EXISTS jobs_by_status ON jobs(status,created)")
+            db.execute("CREATE INDEX IF NOT EXISTS jobs_by_recent ON jobs(created DESC,id DESC)")
+            db.execute("CREATE INDEX IF NOT EXISTS jobs_by_calculation ON jobs(calculation,created DESC)")
 
     def submit(self,payload,structure_hash,max_pending=10,resource_profile_sha=None):
         job_id=uuid4().hex
@@ -56,10 +63,10 @@ class JobStore:
             if pending>=max_pending:
                 raise ValueError("QE job queue is full")
             t=now()
-            db.execute("INSERT INTO jobs (id,created,updated,status,request_json,structure_hash,profile_id,resource_profile_sha256) "
-                       "VALUES (?,?,?,?,?,?,?,?)",
+            db.execute("INSERT INTO jobs (id,created,updated,status,request_json,structure_hash,profile_id,resource_profile_sha256,calculation) "
+                       "VALUES (?,?,?,?,?,?,?,?,?)",
                        (job_id,t,t,"queued",json.dumps(payload,separators=(",",":")),
-                        structure_hash,payload["profile_id"],resource_profile_sha))
+                        structure_hash,payload["profile_id"],resource_profile_sha,payload["parameters"]["calculation"]))
         return job_id
 
     def get(self,job_id):
@@ -67,10 +74,46 @@ class JobStore:
             row=db.execute("SELECT * FROM jobs WHERE id=?",(job_id,)).fetchone()
             return dict(row) if row else None
 
-    def list_recent(self,limit=20):
+    def list_page(self,limit=20,offset=0,*,status=None,calculation=None,query=""):
+        if type(limit) is not int or not 1<=limit<=50 or type(offset) is not int or not 0<=offset<=10000:
+            raise ValueError("Invalid history page")
+        allowed_status={"queued","running","paused","completed","failed","timed_out","cancelled","not_converged"}
+        if status is not None and status not in allowed_status:
+            raise ValueError("Invalid job status filter")
+        if calculation is not None and calculation not in {"scf","relax-scf","electronic"}:
+            raise ValueError("Invalid calculation filter")
+        if not isinstance(query,str) or len(query)>64 or any(ord(c)<32 for c in query):
+            raise ValueError("Invalid search term")
+        filters=[];args=[]
+        if status:
+            filters.append("status=?");args.append(status)
+        if calculation:
+            filters.append("calculation=?");args.append(calculation)
+        if query:
+            # Treat LIKE metacharacters literally, not as wildcard search.
+            escaped=query.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")
+            filters.append("(id LIKE ? ESCAPE '\\' OR label LIKE ? ESCAPE '\\' OR profile_id LIKE ? ESCAPE '\\' OR structure_hash LIKE ? ESCAPE '\\')")
+            args.extend(["%"+escaped+"%"]*4)
+        where=" WHERE "+" AND ".join(filters) if filters else ""
         with self.conn() as db:
-            return [dict(x) for x in db.execute(
-                "SELECT * FROM jobs ORDER BY created DESC LIMIT ?",(limit,)).fetchall()]
+            total=db.execute("SELECT COUNT(*) FROM jobs"+where,args).fetchone()[0]
+            rows=[dict(x) for x in db.execute(
+                "SELECT * FROM jobs"+where+" ORDER BY created DESC,id DESC LIMIT ? OFFSET ?",
+                [*args,limit,offset]).fetchall()]
+            return rows,total
+
+    def list_recent(self,limit=20):
+        return self.list_page(limit)[0]
+
+    def set_label(self,job_id,label):
+        if not isinstance(label,str) or len(label)>60 or any(ord(ch)<32 or ord(ch)==127 for ch in label):
+            raise ValueError("Job name must be at most 60 printable characters")
+        clean=label.strip()
+        with self.conn() as db:
+            result=db.execute("UPDATE jobs SET label=? WHERE id=?",(clean,job_id))
+            if result.rowcount!=1:
+                raise ValueError("No such job")
+        return self.get(job_id)
 
     def claim(self):
         with self.conn() as db:

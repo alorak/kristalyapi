@@ -71,3 +71,32 @@ Preparation includes **Si functional smoke** and **MoS₂ D4.1 finite band/mesh 
 Selecting a template only displays its provenance. Applying settings preserves the current structure. Preparing a reference creates a separate workspace and keeps the exact reference cell vectors for submission, independent of display orientation. Neither action contacts the server, downloads UPFs or starts jobs. The UPF profile is still operator-managed.
 
 Changing settings removes a template match. A matching request remains pending until explicit server preflight confirms the structure and exact UPF hashes. An unchanged selected template cannot be submitted with mismatched UPFs. The server address, credentials, workspace and request must remain unchanged while preflight is in progress. Matching a template is not acceptance of a new calculation's result.
+
+## Job history and versioned calculation summary (D-UX P3)
+
+The authenticated `GET /api/v1/calculations` endpoint now supports server-side
+`limit` (1–50), `offset` (0–10000), `status`, `calculation` and
+`q` (literal name/ID/profile/structure hash substring) filters and returns
+`total` and `has_more` alongside the backward-compatible `jobs` list.
+Only the configured operator token can access job data. The default unfiltered
+response still includes the latest 20 items. Saved jobs retain their original
+identifiers and request JSON during SQLite migration.
+
+An authenticated `POST /api/v1/calculations/{id}/label` with a bounded
+`{"label":"..."}` body updates a display name, not the scientific request,
+its original hash or an execution parameter. Old unlabeled jobs remain
+accessible. No token, job, name or evidence is saved in browser storage.
+
+`GET /api/v1/calculations/{id}/summary` returns a read-only
+`kristalyapi.calculation-summary.v1` object. The result includes immutable
+input parameters and source hash, resource-profile SHA (when recorded), timestamps,
+and **only if source identities and completion flags match** result energy,
+force, QE version, UPF identifiers and artifact hashes. Missing or conflicting
+evidence is explicitly flagged, not reconstructed or called a physical
+convergence study. A job error or cancellation has no fabricated result.
+This is an operator-local single-owner interface, **not** multi-user tenancy
+or independent scientific evidence attestation.
+
+The frontend offers filters, pagination, job naming, and a source-safe detail
+panel with bounded JSON. These are read-only except for the explicit naming
+action; they neither start computations nor replay jobs.

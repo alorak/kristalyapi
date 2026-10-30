@@ -18,11 +18,12 @@ from fastapi.responses import JSONResponse
 
 from job_core import canonical_request,load_profile
 from job_store import JobStore
+from job_summary import calculation_summary
 from qe_probe import inspect_qe
 from job_diagnostics import read_diagnostics
 from resource_policy import load_operator_profile,scope,digest as resource_digest
 
-API_VERSION="0.5.0"
+API_VERSION="0.6.0"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -154,7 +155,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     def public_job(row):
         return {"job_id":row["id"],"status":row["status"],"calculation":json.loads(row["request_json"])["parameters"]["calculation"],"spin":json.loads(row["request_json"])["parameters"]["spin"],"created":row["created"],
                 "updated":row["updated"],"structure_hash":row["structure_hash"],
-                "profile_id":row["profile_id"],"cancel_requested":bool(row["cancel_requested"]),
+                "profile_id":row["profile_id"],"name":row.get("label") or "", "cancel_requested":bool(row["cancel_requested"]),
                 "error":row["error"],"resume_count":row.get("resume_count",0),"pause_requested":bool(row.get('pause_requested')),
                 "can_pause":row['status']=='running' and not row['cancel_requested'] and json.loads(row['request_json'])['schema'] in ('kristalyapi.qe-electronic-job.v1','kristalyapi.qe-electronic-job.v2'),
                 "can_resume":row['status']=='paused' and bool(row.get('checkpoint_sha256')) and row.get('resume_count',0)<20}
@@ -171,11 +172,46 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     @app.get("/api/v1/calculations")
     async def listing(request:Request):
         await authorized(request)
-        return {"jobs":[public_job(r) for r in store.list_recent()]}
+        raw=request.query_params
+        if len(raw)>5 or any(key not in {"limit","offset","status","calculation","q"} for key in raw):
+            raise HTTPException(status_code=422,detail="Unsupported history filter")
+        try:
+            limit=int(raw.get("limit","20"));offset=int(raw.get("offset","0"))
+            if str(limit)!=raw.get("limit",str(limit)) or str(offset)!=raw.get("offset",str(offset)):
+                raise ValueError("Invalid numeric paging")
+            rows,total=store.list_page(limit,offset,status=raw.get("status"),
+                calculation=raw.get("calculation"),query=raw.get("q",""))
+        except ValueError as exc:
+            raise HTTPException(status_code=422,detail=str(exc)) from exc
+        return {"jobs":[public_job(r) for r in rows],"total":total,"limit":limit,
+                "offset":offset,"has_more":offset+len(rows)<total}
 
     @app.get("/api/v1/calculations/{job_id}")
     async def get_job(request:Request,job_id:str):
         return public_job(await lookup(request,job_id))
+
+    @app.get("/api/v1/calculations/{job_id}/summary")
+    async def get_summary(request:Request,job_id:str):
+        row=await lookup(request,job_id)
+        return calculation_summary(row)
+
+    @app.post("/api/v1/calculations/{job_id}/label")
+    async def set_job_label(request:Request,job_id:str):
+        await lookup(request,job_id)
+        if "application/json" not in request.headers.get("Content-Type","").lower():
+            raise HTTPException(status_code=415,detail="JSON Content-Type required")
+        data=bytearray()
+        async for chunk in request.stream():
+            data.extend(chunk)
+            if len(data)>512:
+                raise HTTPException(status_code=413,detail="Job label exceeds size limit")
+        try:
+            value=json.loads(data.decode('utf-8'))
+            if not isinstance(value,dict) or set(value)!={"label"}:
+                raise ValueError("Only label is supported")
+            return public_job(store.set_label(job_id,value["label"]))
+        except (ValueError,UnicodeError,TypeError) as exc:
+            raise HTTPException(status_code=422,detail=str(exc)[:120]) from exc
 
     @app.get("/api/v1/calculations/{job_id}/results")
     async def get_result(request:Request,job_id:str):

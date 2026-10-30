@@ -220,6 +220,94 @@ class D2Tests(unittest.TestCase):
         missing=self.client.get("/api/v1/calculations/"+("a"*32),headers=self.auth)
         self.assertEqual(missing.status_code,404)
 
+    def test_job_history_names_paging_filters_and_access_control(self):
+        p,h=canonical_request(payload())
+        ids=[self.store.submit(p,h,max_pending=30) for _ in range(24)]
+        self.assertEqual(self.client.get("/api/v1/calculations",headers=self.auth).json()["total"],24)
+        self.assertEqual(len(self.client.get("/api/v1/calculations",headers=self.auth).json()["jobs"]),20)
+        page=self.client.get("/api/v1/calculations?limit=10&offset=20",headers=self.auth).json()
+        self.assertEqual(len(page["jobs"]),4)
+        self.assertFalse(page["has_more"])
+        self.assertEqual(self.client.get("/api/v1/calculations?limit=10&offset=20").status_code,401)
+        saved=self.client.post("/api/v1/calculations/"+ids[0]+"/label",
+            headers=self.auth,json={"label":"MoS2 pristine Δ • <unsafe>"})
+        self.assertEqual(saved.status_code,200,saved.text)
+        self.assertEqual(saved.json()["name"],"MoS2 pristine Δ • <unsafe>")
+        results=self.client.get("/api/v1/calculations?q=pristine",headers=self.auth).json()
+        self.assertEqual(results["total"],1)
+        self.assertEqual(results["jobs"][0]["job_id"],ids[0])
+        for query in ("?limit=1000","?offset=-1","?status=garbage","?calculation=vc-relax",
+                      "?q="+("x"*65),"?limit=1&unexpected=1"):
+            self.assertEqual(self.client.get("/api/v1/calculations"+query,headers=self.auth).status_code,422,query)
+        self.assertEqual(self.client.post("/api/v1/calculations/"+ids[0]+"/label",
+            headers=self.auth,json={"label":"bad\nname"}).status_code,422)
+        self.assertEqual(self.client.post("/api/v1/calculations/"+ids[0]+"/label",
+            headers=self.auth,json={"label":"x"*61}).status_code,422)
+        self.assertEqual(self.client.post("/api/v1/calculations/"+ids[0]+"/label",
+            json={"label":"outside"}).status_code,401)
+        self.assertEqual(self.client.post("/api/v1/calculations/"+ids[0]+"/label",
+            headers={**self.auth,"Content-Type":"application/json"},content=b"x"*700).status_code,413)
+        self.assertEqual(self.store.get(ids[0])["structure_hash"],h)
+        # Reopening the SQLite store retains labels and older snapshot rows.
+        reloaded=JobStore(self.jobs)
+        self.assertEqual(reloaded.get(ids[0])["label"],"MoS2 pristine Δ • <unsafe>")
+
+    def test_versioned_summary_has_no_fabricated_unfinished_result(self):
+        p,h=canonical_request(payload());jid=self.store.submit(p,h)
+        url="/api/v1/calculations/"+jid+"/summary"
+        self.assertEqual(self.client.get(url).status_code,401)
+        pending=self.client.get(url,headers=self.auth).json()
+        self.assertEqual(pending["schema"],"kristalyapi.calculation-summary.v1")
+        self.assertEqual(pending["structure_hash"],h)
+        self.assertEqual(pending["request"]["kpoints"],[2,2,2])
+        self.assertEqual(pending["evidence_status"],"unavailable")
+        self.assertIsNone(pending["result"])
+        self.assertNotIn("pseudopotentials",pending["request"])
+        # Synthetic evidence tests serialization ONLY, not physics acceptance.
+        proof={"schema":"kristalyapi.qe-scf-result.v1","structure_hash":h,
+            "engine":"quantum-espresso","engine_version":"6.7",
+            "job_done":True,"scf_converged":True,"energy_ry":-1.,
+            "energy_ev":-13.605693122994,
+            "input_sha256":"a"*64,"output_sha256":"b"*64,
+            "pseudopotentials":{"Si":{"file":"Si.UPF","sha256":"c"*64,
+             "functional":"PBE","license":"test"}}}
+        with self.store.conn() as db:
+            db.execute("UPDATE jobs SET status='completed',result_json=? WHERE id=?",(json.dumps(proof),jid))
+        done=self.client.get(url,headers=self.auth).json()
+        self.assertEqual(done["evidence_status"],"matched")
+        self.assertEqual(done["result"]["energy_ev"],-13.605693122994)
+        self.assertEqual(done["result"]["pseudopotentials"]["Si"]["sha256"],"c"*64)
+        self.assertFalse(done["result"]["scientific_convergence_study_completed"])
+        proof["structure_hash"]="d"*64
+        with self.store.conn() as db:
+            db.execute("UPDATE jobs SET result_json=? WHERE id=?",(json.dumps(proof),jid))
+        mismatch=self.client.get(url,headers=self.auth).json()
+        self.assertEqual(mismatch["evidence_status"],"mismatch")
+        self.assertIsNone(mismatch["result"])
+
+    def test_legacy_sqlite_migration_preserves_request_snapshot(self):
+        import sqlite3
+        p,h=canonical_request(payload())
+        # Database shape prior to pagination and naming.
+        old_root=self.root/"legacy";old_root.mkdir()
+        conn=sqlite3.connect(old_root/"jobs.sqlite3")
+        conn.execute("""CREATE TABLE jobs (
+            id TEXT PRIMARY KEY,created TEXT NOT NULL,updated TEXT NOT NULL,
+            status TEXT NOT NULL,request_json TEXT NOT NULL,
+            structure_hash TEXT NOT NULL,profile_id TEXT NOT NULL,
+            cancel_requested INTEGER NOT NULL DEFAULT 0,result_json TEXT,error TEXT,
+            input_sha256 TEXT,output_sha256 TEXT
+        )""")
+        conn.execute("INSERT INTO jobs(id,created,updated,status,request_json,structure_hash,profile_id) VALUES(?,?,?,?,?,?,?)",
+            ("a"*32,"2026-10-01","2026-10-01","completed",json.dumps(p),h,p["profile_id"]))
+        conn.commit();conn.close()
+        migrated=JobStore(old_root)
+        row=migrated.get("a"*32)
+        self.assertEqual(row["calculation"],"scf")
+        self.assertEqual(row["label"],"")
+        self.assertEqual(json.loads(row["request_json"]),p)
+        self.assertEqual(migrated.list_page(calculation="scf")[1],1)
+
     def test_expected_compiler_has_no_user_paths_and_fixed_header(self):
         p,_=canonical_request(payload())
         parsed=load_profile(p,self.profiles,self.pseudo)

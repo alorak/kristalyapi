@@ -4,7 +4,7 @@ import {parseQeBandPath} from '../qe-api-client.js';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../qe-api-client.js',import.meta.url),'utf8');
-const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob}=await import(
+const {normalizeQeApiUrl,inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(source).toString('base64')
 );
 
@@ -167,4 +167,24 @@ test('operator resource caps are bounded and execution-disabled identity is pres
  const profile={id:'hpc-preparation',max_atoms:128,max_bands:512,max_nscf_k:24,execution_enabled:false,sha256:'a'.repeat(64)};
  assert.equal(parseResourceProfile(profile).executionEnabled,false);
  for(const change of [{max_bands:2049},{max_atoms:true},{execution_enabled:1},{sha256:'invalid'}])assert.throws(()=>parseResourceProfile({...profile,...change}));
+});
+
+test('filtered history, summary read and naming use bounded authenticated API paths',async()=>{
+ const job='a'.repeat(32),calls=[];
+ const fetcher=async(url,options)=>{calls.push({url,options});return response(200,{jobs:[],total:0,name:'MoS2'});};
+ await listQeScfJobs('http://localhost:8000',secret,{fetcher,filters:{limit:20,offset:20,status:'completed',calculation:'scf',q:'Si_0%'}});
+ const url=new URL(calls[0].url);
+ assert.equal(url.searchParams.get('q'),'Si_0%');
+ assert.equal(url.searchParams.get('limit'),'20');
+ assert.equal(calls[0].options.method,'GET');
+ await getQeCalculationSummary('http://localhost:8000',secret,job,{fetcher});
+ assert.ok(calls[1].url.endsWith('/summary'));
+ await setQeJobLabel('http://localhost:8000',secret,job,'MoS2 <unsafe>',{fetcher});
+ assert.ok(calls[2].url.endsWith('/label'));
+ assert.equal(calls[2].options.method,'POST');
+ assert.deepEqual(JSON.parse(calls[2].options.body),{label:'MoS2 <unsafe>'});
+ assert.ok(calls.every(c=>c.options.headers.Authorization==='Bearer '+secret));
+ await assert.rejects(setQeJobLabel('http://localhost:8000',secret,job,'bad'+String.fromCharCode(10)+'label',{fetcher}));
+ await assert.rejects(getQeCalculationSummary('http://localhost:8000',secret,'../escape',{fetcher}));
+ assert.equal(calls.length,3);
 });
