@@ -62,7 +62,7 @@ export function validateResources(options){
   .replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,45)||'qe-job';
  return {account,partition,nodes:1,ntasks,cpus_per_task:1,hours,jobName,qe_module:MODULE};
 }
-export function createSlurm(resources,pseudos,upfHashes={}){
+export function createSlurm(resources,pseudos,upfHashes={},withCollector=false){
  const t=resources.hours>=24?Math.floor(resources.hours/24)+'-'+String(resources.hours%24).padStart(2,'0')+':00:00':
   String(resources.hours).padStart(2,'0')+':00:00';
  const lines=['#!/bin/bash',
@@ -79,6 +79,7 @@ export function createSlurm(resources,pseudos,upfHashes={}){
   'set -euo pipefail',
   'umask 077',
   'cd "$SLURM_SUBMIT_DIR"',
+  ...(withCollector?["trap 'status=$?; if command -v python3 >/dev/null 2>&1; then python3 collect.py --bundle . --exit-code \"$status\" || true; else echo \"python3 unavailable: run collector later\" >&2; fi' EXIT"]:[]),
   'module purge',
   'module load '+resources.qe_module,
   'command -v pw.x >/dev/null || { echo "pw.x not available" >&2; exit 2; }',
@@ -132,7 +133,7 @@ export function zipStored(files){
  v.setUint32(16,offset,true);
  return new Blob([...all,...central,end],{type:'application/zip'});
 }
-export async function createTrubaPackage({inputText,account,partition='orfoz',ntasks=112,hours=12,jobName='qe-job',upfFiles=[]}){
+export async function createTrubaPackage({inputText,account,partition='orfoz',ntasks=112,hours=12,jobName='qe-job',upfFiles=[],collectorScript=''}){
  const {calculation,pseudos}=parsePwInput(inputText);
  const resources=validateResources({account,partition,ntasks,hours,jobName});
  if(!Array.isArray(upfFiles)||upfFiles.length>118)throw Error('UPF dosya listesi geçersiz.');
@@ -154,13 +155,20 @@ export async function createTrubaPackage({inputText,account,partition='orfoz',nt
    throw Error('UPF başlığı bulunamadı; gerçek pseudopotansiyel seçin: '+name);
   included.set(name,bytes);hashes[name]=await hexSha256(bytes);
  }
+ if(typeof collectorScript!=='string'||UTF8.encode(collectorScript).length>128*1024)
+  throw Error('Collector script must be a text file smaller than 128 KiB.');
+ if(collectorScript&&!collectorScript.includes('kristalyapi.truba-qe-summary.v1'))
+  throw Error('Collector script does not declare the supported P1 schema.');
  const missing=pseudos.filter(p=>!included.has(p.file)).map(p=>p.file);
+ const slurmText=createSlurm(resources,pseudos,hashes,Boolean(collectorScript));
  const manifest={
   schema:'kristalyapi.truba-qe-slurm-package.v1',
   status:missing.length?'upf-required':'prepared-not-submitted',
   calculation,
   execution_performed:false,
   structure_in_sha256:await hexSha256(UTF8.encode(inputText)),
+  run_slurm_sha256:await hexSha256(UTF8.encode(slurmText)),
+  collector_included:Boolean(collectorScript),
   resources,
   pseudopotentials:pseudos.map(p=>({element:p.element,file:p.file,
    included:included.has(p.file),sha256:hashes[p.file]||null})),
@@ -190,11 +198,12 @@ export async function createTrubaPackage({inputText,account,partition='orfoz',nt
   '',''];
  const files=[
   {name:'structure.in',bytes:UTF8.encode(inputText)},
-  {name:'run.slurm',bytes:UTF8.encode(createSlurm(resources,pseudos,hashes))},
+  {name:'run.slurm',bytes:UTF8.encode(slurmText)},
   {name:'manifest.json',bytes:UTF8.encode(JSON.stringify(manifest,null,2)+'\n')},
   {name:'README.md',bytes:UTF8.encode(readme.join('\n'))},
   {name:'pseudo/README.txt',bytes:UTF8.encode('Place the exact UPF files referenced by structure.in here. No UPFs fetched automatically.\n')}
  ];
+ if(collectorScript)files.push({name:'collect.py',bytes:UTF8.encode(collectorScript)});
  for(const [name,bytes] of included)files.push({name:'pseudo/'+name,bytes});
  return {blob:zipStored(files),manifest,missing};
 }
