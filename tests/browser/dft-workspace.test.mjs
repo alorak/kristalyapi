@@ -124,7 +124,7 @@ try{
  const finishedReads=statusReads;
  await page.waitForTimeout(5500);
  assert.equal(statusReads,finishedReads,'terminal jobs stop automatic reads');
- await page.screenshot({path:path.join(artifacts,'dft-workspace-live-tracking.png')});
+ await page.locator('#dft-isler').screenshot({path:path.join(artifacts,'dft-workspace-live-tracking.png')});
  await page.locator('#qeJobResultsLink').click();
  await page.waitForFunction(()=>!document.getElementById('qeApiElectronicResults').hidden);
  assert.equal(await page.locator('#qeApiElectronicResults svg').count(),3);
