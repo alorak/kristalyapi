@@ -815,6 +815,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <div id="qeHpcExportStatus" class="note" role="status" aria-live="polite">ZIP paketi henüz hazırlanmadı.</div>
      <details class="qe-hpc-pipeline">
       <summary><strong>P1.2 · Çok aşamalı bant / DOS paketi</strong><small>Relax (isteğe bağlı) → SCF → bands.x → NSCF → DOS / PDOS</small></summary>
+      <p class="hint">P1.3: ZIP paketindeki doğrulanan <code>electronic.py</code>, başarılı <code>projwfc.x</code> sonrasında <code>electronic-results.json</code> üretir. Bu dosyayı <strong>DFT → Sonuçları incele → Bant, DOS ve PDOS</strong> alanından açın. İşlem enerji sıfırını Fermi/vakuma taşımaz; bilimsel yakınsama kanıtlamaz.</p>
       <p class="hint">Bu akış ayrı SLURM işleri ve <code>afterok</code> bağımlılıkları üretir. K-yolunu kristalinizin karşılıklı uzayına göre kendiniz tanımlayın. Bant sayısı, NSCF k-örgüsü ve enerji penceresi fiziksel yakınsama testinin yerine geçmez. Spin/SOC/vc-relax desteklenmez.</p>
       <div class="qe-form-grid">
        <label class="field"><span>Bant sayısı (nbnd) *</span><input id="qeHpcNbnd" type="number" min="1" max="10000" step="1" value="32"></label>
@@ -830,6 +831,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <label class="field"><span>DOS ΔE (eV)</span><input id="qeHpcDeltaE" type="number" min="0.005" max="0.5" step="0.005" value="0.02"></label>
        <label class="field"><span>Gauss degauss (Ry)</span><input id="qeHpcDegauss" type="number" min="0.0001" max="0.1" step="0.001" value="0.01"></label>
       </div>
+      <label class="field qe-hpc-converter-option"><span><input id="qeHpcConvertElectronic" type="checkbox" checked> P1.3 bant/DOS/atomik PDOS JSON dönüştürücüsünü dahil et</span><small>Görselleştirme sınırları: en fazla 300 bant, 120.000 bant noktası, 20.000 DOS noktası. Daha büyük hesaplar için işareti kaldırıp P1.2 ham çıktı paketini kullanın.</small></label>
       <button type="button" id="qeHpcPipelineExport" class="primary">P1.2 · Aşamalı SLURM ZIP indir</button>
       <div id="qeHpcPipelineStatus" class="note" role="status" aria-live="polite">P1.2 paketi henüz hazırlanmadı; tarayıcı SLURM işi göndermez.</div>
      </details>
@@ -889,6 +891,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <p class="hint">Geometri yalnız tamamlanmış relaksasyondan ve mevcut kristalle atom sayısı/türleri eşleştiğinde aktarılır. SCF çıktısı enerji olarak görüntülenir. İçe aktarılan yapı Geri Al ile eski haline döndürülebilir.</p>
    </div><div class="qe-workflow">
     <strong class="measure-subheading">Bant, DOS ve PDOS</strong>
+    <p class="hint">TRUBA P1.3 paketinin ürettiği <code>electronic-results.json</code> dosyası da burada açılır. Bant, DOS ve atom/orbital PDOS sonuçları, kayıtlı kaynak SHA-256 bilgileriyle gösterilir; mevcut yapı otomatik değiştirilmez.</p>
     <p class="hint">Harici Quantum ESPRESSO hesaplamasından gelen electronic-results.json dosyasını yerel olarak açın. Bu görüntüleme DFT, optik geçiş veya foton emisyonu hesabı yapmaz.</p>
     <label class="field"><span>Elektronik sonuç (.json)</span><input type="file" id="qeElectronicFile" accept=".json,application/json"></label>
     <button type="button" id="qeElectronicOpen">Bant / DOS grafiklerini göster</button>

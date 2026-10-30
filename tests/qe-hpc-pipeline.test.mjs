@@ -81,6 +81,34 @@ test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files'
  const relax=await createTrubaPipelinePackage({...opts,inputText:input.replace("'scf'","'relax'"),pipelineScript});
  assert.equal((await entries(relax.blob)).has('stages/relax.slurm'),true);
 });
+test('P1.3 converter is pinned, embedded and must succeed before final receipt',async()=>{
+ const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
+ const converterScript=readFileSync(new URL('../tools/qe_hpc_electronic.py',import.meta.url),'utf8');
+ const pdosHelperScript=readFileSync(new URL('../tools/qe_pdos.py',import.meta.url),'utf8');
+ const result=await createTrubaPipelinePackage({...opts,pipelineScript,converterScript,pdosHelperScript});
+ const files=await entries(result.blob);
+ const decode=name=>new TextDecoder().decode(files.get(name));
+ assert.equal(decode('electronic.py'),converterScript);
+ assert.equal(decode('qe_pdos.py'),pdosHelperScript);
+ assert.equal(result.manifest.file_sha256['electronic.py'],sha(converterScript));
+ assert.equal(result.manifest.file_sha256['qe_pdos.py'],sha(pdosHelperScript));
+ assert.equal(result.manifest.electronic_converter_included,true);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:301}),/en fazla 300 bant/);
+ const largeRaw=await createTrubaPipelinePackage({...opts,pipelineScript,nbnd:301});
+ assert.equal(largeRaw.manifest.electronic_converter_included,false);
+ const slurm=decode('stages/projwfc.slurm');
+ assert.match(slurm,/python3 electronic\.py --bundle \./);
+ assert.ok(slurm.indexOf('python3 electronic.py --bundle .')<
+  slurm.indexOf('python3 pipeline.py finish projwfc'));
+ assert.ok(slurm.indexOf('python3 pipeline.py finish projwfc')<
+  slurm.indexOf('python3 pipeline.py summary'));
+ const legacy=await createTrubaPipelinePackage({...opts,pipelineScript});
+ assert.equal(legacy.manifest.electronic_converter_included,false);
+ assert.equal((await entries(legacy.blob)).has('electronic.py'),false);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript}),
+  /dönüştürücü/);
+});
 test('P1.2 uploaded UPF is pinned; unknown and untrusted files rejected',async()=>{
  const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
  const data=new TextEncoder().encode('<UPF version="2.0">Si</UPF>');
@@ -128,7 +156,7 @@ test('pipeline report rendering is readonly text and UI contains bindings',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
- for(const id of ['qeHpcPipelineExport','qeHpcPipelineStatus','qeHpcBandPath',
+ for(const id of ['qeHpcConvertElectronic','qeHpcPipelineExport','qeHpcPipelineStatus','qeHpcBandPath',
   'qeHpcNbnd','qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz',
   'qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss'])
   assert.match(html,new RegExp('id="'+id+'"'));

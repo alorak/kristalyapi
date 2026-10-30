@@ -36,10 +36,28 @@ function parseSingleChannel(data,spinChannel=null){
  if(!data||data.schema!==(spinChannel?'kristalyapi.qe-spin-channel.v1':'kristalyapi.qe-electronic.v1'))
   throw Error('Beklenen electronic-results.json şeması bulunamadı.');
  if(!data.bands&&!data.dos)throw Error('Bant veya DOS verisi bulunamadı.');
+ let trubaProvenance=null;
+ if(data.truba_provenance!==undefined){
+  const p=data.truba_provenance,H=/^[a-f0-9]{64}$/;
+  if(spinChannel||!p||typeof p!=='object'||Array.isArray(p)||
+     !H.test(p.pipeline_manifest_sha256||'')||
+     typeof p.all_upfs_pinned!=='boolean'||p.scientific_convergence_verified!==false||
+     !p.source_sha256||typeof p.source_sha256!=='object'||Array.isArray(p.source_sha256)||
+     !H.test(data.input_sha256||'')||p.source_sha256['structure.in']!==data.input_sha256)
+   throw Error('TRUBA P1.3 kaynak hash/kanıt özeti geçersiz.');
+  const items=Object.entries(p.source_sha256);
+  if(items.length<6||items.length>1520||items.some(([name,digest])=>
+   typeof name!=='string'||name.length>180||name.startsWith('/')||
+   name.split('/').some(part=>!part||part==='.'||part==='..')||!H.test(digest)))
+   throw Error('TRUBA P1.3 kaynak dosyalarının SHA-256 kayıtları geçersiz.');
+  trubaProvenance={manifestHash:p.pipeline_manifest_sha256,sourceFileCount:items.length,
+   allUpfsPinned:p.all_upfs_pinned};
+ }
  const output={schema:data.schema,source:String(data.source||'Belirtilmemiş').slice(0,120),
   energyZero:String(data.energy_zero||'Bilinmiyor').slice(0,150),
   bandLabels:Array.isArray(data.band_path_labels)?data.band_path_labels.map(s=>String(s).slice(0,24)).slice(0,32):[],
   inputHash:typeof data.input_sha256==='string'&&/^[a-f0-9]{64}$/i.test(data.input_sha256)?data.input_sha256:null,
+  ...(trubaProvenance?{trubaProvenance}:{}),
   bands:null,dos:null,pdos:null,pdosDetailed:null,...(spinChannel?{spinChannel}: {})};
  if(data.bands){
   const d=checkedArray(data.bands.distance,'Bant k uzaklığı',20000);

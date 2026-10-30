@@ -21,6 +21,28 @@ test('strict schema parses real calculation shaped bands and DOS without Fermi a
  assert.match(x.energyZero,/QE internal/);
  assert.equal(x.inputHash,'a'.repeat(64));
 });
+test('P1.3 TRUBA summary provenance is bound to input and manifest hashes',()=>{
+ const output=valid(),h='b'.repeat(64);
+ output.truba_provenance={
+  pipeline_manifest_sha256:h,
+  source_sha256:{'structure.in':output.input_sha256,'scf.in':h,
+   'bands.dat.gnu':h,'dos.dat':h,'pdos.pdos_tot':h,
+   'reports/scf.json':h},
+  all_upfs_pinned:true,scientific_convergence_verified:false
+ };
+ const parsed=parseQeElectronicResult(output);
+ assert.equal(parsed.trubaProvenance.manifestHash,h);
+ assert.equal(parsed.trubaProvenance.sourceFileCount,6);
+ const forged=structuredClone(output);
+ forged.truba_provenance.source_sha256['structure.in']=h;
+ assert.throws(()=>parseQeElectronicResult(forged),/TRUBA P1.3/);
+ const claimed=structuredClone(output);
+ claimed.truba_provenance.scientific_convergence_verified=true;
+ assert.throws(()=>parseQeElectronicResult(claimed),/TRUBA P1.3/);
+ const path=structuredClone(output);
+ path.truba_provenance.source_sha256['../passwd']=h;
+ assert.throws(()=>parseQeElectronicResult(path),/TRUBA P1.3/);
+});
 test('wrong schema or empty payload is not accepted as DFT output',()=>{
  assert.throws(()=>parseQeElectronicResult({schema:'kristalyapi.qe-pipeline.v1'}),/şema/);
  assert.throws(()=>parseQeElectronicResult({schema:'kristalyapi.qe-electronic.v1'}),/Bant veya DOS/);
