@@ -566,6 +566,8 @@ A **service worker and PWA manifest** are included. After the first successful H
 
 ## Local development and tests
 
+For Docker API/worker setup and a first real Si calculation, see the [step-by-step server guide (Turkish)](docs/dft-sunucu-kurulumu.md). It distinguishes the UI from the compute service and covers verified UPFs, credentials, results and shutdown.
+
 Use **Node.js 22+** and Python 3 to run a local static server. The GitHub Pages workflow automatically bundles Moyo WASM; for local use install and copy it manually:
 
 ```sh

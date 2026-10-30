@@ -1,5 +1,7 @@
 # KristalYapı D0–D1: Docker Quantum ESPRESSO ve salt-okunur API
 
+> Güncel arayüzden gerçek bir küçük hesaba kadar kurulum için [DFT sunucusu adım adım kılavuzunu](dft-sunucu-kurulumu.md) kullanın. Bu belge ilk D0/D2 aşamasının kapsamını da içerir; sonraki relaksasyon, elektronik ve spin akışları güncel kılavuzda bağlantılıdır.
+
 **Durum:** D0 = QE kurulu Docker imajı + ikili başlangıç smoke;
 D1 = FastAPI **salt-okunur** sunucu keşfi ve KristalYapı'da IP:port
 bağlantı kontrolü. **Varsayılanda yalnız keşif açıktır.** D2'nin isteğe bağlı,
