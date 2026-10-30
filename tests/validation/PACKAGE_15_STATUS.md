@@ -36,12 +36,13 @@ kullanılır. VESTA / Kristal Yapı'da atom yarıçapları, bağ koşulları,
 **operatör** eşitler. Bunlar otomatik atanmadığı için yalnız eşit
 dosya ve aynı `[uvw]` yönü, aynı görüntüyü garanti etmez.
 
-**Önemli harita sınırı:** CCP4 sahnesinde `isoLevel: null` kasten
-seçilmemiştir. Önce gerçek kaynağın skaler birimi/değer aralığı
-incelenip sabit bir **mutlak** seviye yeni manifest commit'inde
-belirlenmelidir. Araç `null` ile "gerçek izoyüzey kıyası"nı reddeder.
-Bu kısmi CCP4 haritası tam hücre/periyodik yoğunluk gibi
-yorumlanamaz.
+**Önemli harita sınırı (V15.2):** Kısmi CCP4 sahnesinde gerçek dosyanın
+8×6×10 MODE-2 voksel değerleri incelendi ve **+1,0 kaynak harita
+biriminde mutlak izoeşik** seçildi. 103/480 voksel eşik üstünde,
+188 komşu örnek kenarı eşiği kesiyor. Kaynak haritanın **fiziksel
+niceliği/birimi hâlâ bilinmiyor**; bu değer 1 e/Å³, 1σ veya
+VESTA eşdeğerliği sayılamaz. Tam hücre/periyodik harita değildir.
+[V15.2 + V16.1 hesap protokolü](PACKAGE_16_1_STATUS.md).
 
 ## Gerçek VESTA GUI kayıt prosedürü
 
