@@ -53,7 +53,11 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
  container.replaceChildren();
  const heading=node('strong','Başlangıç / son yapı · 3B karşılaştırma');container.append(heading);
  container.append(node('p','Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Son atomlar başlangıçla periyodik olarak eşlenir. Konumlar Å birimindedir; aktif yapı değiştirilmez.'));
- const grid=node('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px';
+ const controls=node('div');controls.className='qe-relax-controls';
+ const displacementToggle=node('input');displacementToggle.type='checkbox';displacementToggle.setAttribute('aria-label','Yer değiştirme vektörlerini göster');
+ const overlayLabel=node('label');overlayLabel.append(displacementToggle,node('span','Son yapıda hareket vektörlerini göster'));
+ controls.append(overlayLabel);container.append(controls);
+ const grid=node('div');grid.className='qe-relax-grid';
  container.append(grid);
  const positions=[result.before.atoms.map(a=>a.fractional),result.rows.map(r=>r.alignedAfterFractional)];
  const points=positions.flatMap(rows=>rows.map(f=>new THREE.Vector3(...cart(f,result.before.cell_angstrom))));
@@ -62,6 +66,7 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
  const distance=Math.max(radius/Math.sin(35*Math.PI/360)*1.1,4);
  const colors={H:0xe7edf5,C:0x8993a4,N:0x5289ff,O:0xef6358,Si:0xe4af80,S:0xf3d353,Mo:0x9c87e9};
  const views=[];
+ let displacementOverlay=null;
  for(const [index,s] of [result.before,result.after].entries()){
   const panel=node('div');panel.append(node('h4',index?'Son SCF yapısı':'Başlangıç'));
   const scene=new THREE.Scene();scene.background=new THREE.Color(0x101827);
@@ -71,6 +76,21 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
    const mesh=new THREE.Mesh(new THREE.SphereGeometry(atom.element==='Mo' ? .3 : .23,24,16),
     new THREE.MeshStandardMaterial({color:colors[atom.element],roughness:.5}));
    mesh.position.set(...cart(positions[index][atomIndex],s.cell_angstrom)).sub(center);scene.add(mesh);
+  }
+  if(index===1){
+   // True-scale periodic minimum-image displacements; never exaggerate or interpolate.
+   displacementOverlay=new THREE.Group();displacementOverlay.visible=false;
+   for(const row of result.rows){
+    if(row.deltaAngstrom<=1e-8)continue;
+    const start=new THREE.Vector3(...cart(row.before,result.before.cell_angstrom)).sub(center);
+    const end=new THREE.Vector3(...cart(row.alignedAfterFractional,result.before.cell_angstrom)).sub(center);
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([start,end]),
+     new THREE.LineBasicMaterial({color:0x38cbd9,depthTest:false}));
+    const startPoint=new THREE.Mesh(new THREE.SphereGeometry(.095,10,8),
+     new THREE.MeshBasicMaterial({color:0xcad6e1,transparent:true,opacity:.65}));
+    startPoint.position.copy(start);displacementOverlay.add(line,startPoint);
+   }
+   scene.add(displacementOverlay);
   }
   const axes=new THREE.AxesHelper(1);axes.position.copy(box.min.clone().sub(center).addScalar(-.5));scene.add(axes);
   const camera=new THREE.PerspectiveCamera(35,1,.01,1000);camera.up.set(0,0,1);
@@ -84,6 +104,10 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
  }
  let syncing=false,disposed=false;
  const draw=()=>{if(!disposed)for(const v of views)v.renderer.render(v.scene,v.camera);};
+ displacementToggle.addEventListener('change',()=>{
+  if(displacementOverlay)displacementOverlay.visible=displacementToggle.checked;
+  draw();
+ });
  for(const v of views)v.controls.addEventListener('change',()=>{
   if(syncing||disposed)return;syncing=true;
   for(const other of views)if(other!==v){
@@ -97,17 +121,32 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
   v.camera.position.sub(v.controls.target).multiplyScalar(fit/v.fitDistance).add(v.controls.target);v.fitDistance=fit;
   v.camera.aspect=w/220;v.camera.updateProjectionMatrix();v.renderer.setSize(w,220,false);}draw();};
  const observer=new ResizeObserver(resize);observer.observe(grid);resize();
- const summary=node('p','Son en büyük kuvvet bileşeni: '+result.maxForceComponent.toExponential(3)+
-  ' Ry/Bohr · sınır '+result.threshold.toExponential(3)+' Ry/Bohr.');container.append(summary);
- const table=node('table');table.style.cssText='width:100%;font-size:11px';
- const head=node('tr');for(const label of ['Atom','Başlangıç (kesirli)','Son (kesirli)','Sarılmış fark (Å)'])head.append(node('th',label));
- table.append(head);
- for(const row of result.rows){const tr=node('tr');
-  for(const text of [row.index+' · '+row.element,row.before.map(x=>x.toFixed(6)).join(', '),
-   row.after.map(x=>x.toFixed(6)).join(', '),row.deltaAngstrom.toFixed(6)])tr.append(node('td',text));
-  table.append(tr);
- }
- const scroll=node('div');scroll.style.overflowX='auto';scroll.append(table);container.append(scroll);
+ const maxMove=Math.max(...result.rows.map(row=>row.deltaAngstrom));
+ const averageMove=result.rows.reduce((sum,row)=>sum+row.deltaAngstrom,0)/result.rows.length;
+ const summary=node('p','En büyük atom hareketi: '+maxMove.toFixed(6)+' Å · ortalama: '+
+  averageMove.toFixed(6)+' Å · son en büyük kuvvet bileşeni: '+
+  result.maxForceComponent.toExponential(3)+' Ry/Bohr (eşik '+result.threshold.toExponential(3)+' Ry/Bohr).');
+ summary.className='qe-relax-summary';container.append(summary);
+ container.append(node('p','Vektörler gerçek ölçekte ve minimum-görüntü eşlemesiyle çizilir; başlangıç konumu gri, hareket çizgisi turkuazdır. Çok küçük hareketler için tabloyu inceleyin.'));
+ const sortLabel=node('label');sortLabel.className='qe-relax-sort';
+ const sort=node('input');sort.type='checkbox';sort.setAttribute('aria-label','Atomları en büyük harekete göre sırala');
+ sortLabel.append(sort,node('span','En büyük harekete göre sırala'));container.append(sortLabel);
+ const table=node('table');table.className='qe-relax-table';
+ const head=node('tr');for(const label of ['Atom','Başlangıç (kesirli)','Son (kesirli)','Minimum-görüntü Δr (Å)'])head.append(node('th',label));
+ const thead=node('thead');thead.append(head);table.append(thead);
+ const tbody=node('tbody');table.append(tbody);
+ const renderRows=()=>{
+  tbody.replaceChildren();
+  const rows=sort.checked?[...result.rows].sort((a,b)=>b.deltaAngstrom-a.deltaAngstrom||a.index-b.index):result.rows;
+  for(const row of rows){
+   const tr=node('tr');if(row.deltaAngstrom===maxMove)tr.className='qe-relax-max';
+   for(const text of [row.index+' · '+row.element,row.before.map(x=>x.toFixed(6)).join(', '),
+    row.after.map(x=>x.toFixed(6)).join(', '),row.deltaAngstrom.toFixed(6)])tr.append(node('td',text));
+   tbody.append(tr);
+  }
+ };
+ sort.addEventListener('change',renderRows);renderRows();
+ const scroll=node('div');scroll.className='qe-relax-table-scroll';scroll.append(table);container.append(scroll);
  return ()=>{disposed=true;observer.disconnect();for(const v of views){v.controls.dispose();
   v.scene.traverse(obj=>{obj.geometry?.dispose();if(Array.isArray(obj.material))obj.material.forEach(m=>m.dispose());else obj.material?.dispose();});
   v.renderer.dispose();v.renderer.forceContextLoss();v.renderer.domElement.remove();}};

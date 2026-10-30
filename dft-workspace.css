@@ -115,3 +115,20 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 #qeJobPreflightState[data-state=passed]{border-color:#b6d9c7;background:#f0faf4;color:#226347}
 #qeJobPreflightState[data-state=stale],#qeJobPreflightState[data-state=failed]{border-color:#e9c9cd;background:#fff7f6;color:#93454d}
 @media(max-width:760px){.dft-mode-switch{grid-template-columns:minmax(0,1fr);gap:8px}.dft-mode-switch label{padding:12px 13px}}
+
+/* DFT results: provenance-first spectra and minimum-image relaxation comparison. */
+.qe-spectrum-source{display:grid;gap:4px;margin:9px 0 12px;padding:11px 13px;background:#f1f7fd;border:1px solid #d8e7f5;border-radius:8px;color:#385c79;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.qe-spectrum-source strong{font-size:13px;color:#244e72}
+.qe-plot-legend{display:block;font-size:12px;color:#4f6478;line-height:1.6;margin:7px 0 9px}
+.qe-relax-controls{display:flex;flex-wrap:wrap;gap:12px;margin:9px 0 12px}
+.qe-relax-controls label,.qe-relax-sort{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:#355b79;cursor:pointer}
+.qe-relax-controls input,.qe-relax-sort input{width:16px;height:16px;accent-color:#2b75b5}
+.qe-relax-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;min-width:0}
+.qe-relax-summary{padding:10px 12px;border:1px solid #d9e7f4;background:#f3f8fd;border-radius:8px;color:#365b78;font-size:12px;line-height:1.65}
+.qe-relax-sort{margin:8px 0}
+.qe-relax-table-scroll{overflow-x:auto;max-width:100%}
+.qe-relax-table{border-collapse:collapse;width:100%;font-size:12px;min-width:570px;font-variant-numeric:tabular-nums}
+.qe-relax-table th,.qe-relax-table td{padding:9px 11px;text-align:left;border-bottom:1px solid #e4ebf2;white-space:nowrap}
+.qe-relax-table th{font-weight:700;color:#3b607d;background:#f3f7fb}
+.qe-relax-table .qe-relax-max{background:#eff8fb}
+@media(max-width:760px){.qe-relax-grid{grid-template-columns:minmax(0,1fr)}.qe-relax-table{font-size:11px}}

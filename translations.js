@@ -7,6 +7,19 @@
 (() => {
  'use strict';
  const entries=[
+  ["En büyük atom hareketi: ","Largest atomic displacement: "],
+  [" · ortalama: "," · mean: "],
+  [" · son en büyük kuvvet bileşeni: "," · final maximum force component: "],
+  ["Yer değiştirme vektörlerini göster","Show displacement vectors"],
+  ["Son yapıda hareket vektörlerini göster","Show displacement vectors on final structure"],
+  ["En büyük harekete göre sırala","Sort by largest displacement"],
+  ["Minimum-görüntü Δr (Å)","Minimum-image Δr (Å)"],
+  ["Vektörler gerçek ölçekte ve minimum-görüntü eşlemesiyle çizilir; başlangıç konumu gri, hareket çizgisi turkuazdır. Çok küçük hareketler için tabloyu inceleyin.","Vectors use real scale and minimum-image matching; initial positions are gray and displacement lines are turquoise. Use the table to inspect small movements."],
+  ["Mavi eğriler: hesaplanan Kohn–Sham bantları · Enerji: ham QE referansı.","Blue curves: calculated Kohn–Sham bands · Energy: raw QE reference."],
+  ["Enerji referansı: ","Energy reference: "],
+  [" · Fermi/vakum hizalaması yapılmadı"," · No Fermi/vacuum alignment"],
+  ["K-yolu sırası: ","k-path order: "],
+  ["Yalnız etiketlerden eksen konumları çıkarılamaz; bu nedenle yüksek simetri çizgileri gösterilmiyor.","Axis positions cannot be derived from labels alone; high-symmetry lines are therefore omitted."],
   ["Sunucu hesabı seçildi. Hesaplama türünü ve ortak parametreleri belirleyin.","Server calculation selected. Choose the calculation type and shared parameters."],
   ["Sunucuda PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin yalnız elektronik akışta kullanılabilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.","Choose server-side PBE SCF, fixed-cell relaxation → SCF, or the electronic bands/DOS workflow. Collinear spin is available only for electronic jobs. All atoms are free during relaxation. The UPF profile must be configured on the server; the API key stays in page memory. Authenticated LAN jobs require HTTPS."],
   ["Hesap hazırlama yöntemi","Calculation preparation method"],

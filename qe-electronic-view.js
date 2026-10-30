@@ -51,7 +51,24 @@ function parseSingleChannel(data,spinChannel=null){
   const first=data.bands.band_index_start??1,total=data.bands.total_bands??curves.length;
   if(!Number.isInteger(first)||!Number.isInteger(total)||first<1||total>2048||first+curves.length-1>total)
    throw Error('Bant penceresi ve özgün bant indeksleri geçersiz.');
-  output.bands={distance:d,firstBand:first,totalBands:total,curves:curves.map((v,i)=>{
+  // High-symmetry markers are shown only with explicit sampled k-distances.
+  // An ordered label list alone cannot locate markers on the QE distance axis.
+  let kNodes=null;
+  if(data.bands.k_path_nodes!==undefined){
+   const raw=data.bands.k_path_nodes,labels=output.bandLabels;
+   if(!Array.isArray(raw)||!raw.length||raw.length>24||raw.length!==labels.length)
+    throw Error('k-yolu düğümleri ve etiket sayıları eşleşmiyor.');
+   kNodes=raw.map((node,i)=>{
+    const value=node?.distance;
+    if(!node||node.label!==labels[i]||!finite(value)||
+      value<d[0]-1e-5||value>d.at(-1)+1e-5||
+      !d.some(x=>Math.abs(x-value)<=1e-5)||
+      i>0&&value<=raw[i-1].distance)
+      throw Error('k-yolu düğümü örneklenmiş uzaklık/etiketle uyuşmuyor.');
+    return {label:labels[i],distance:value};
+   });
+  }
+  output.bands={distance:d,firstBand:first,totalBands:total,kNodes,curves:curves.map((v,i)=>{
    const y=checkedArray(v,'Bant '+(i+1),20000);
    if(y.length!==d.length)throw Error('Bant k noktası sayıları eşleşmiyor.');
    return y;
@@ -155,15 +172,23 @@ export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  if(yMin===yMax){yMin-=.5;yMax+=.5;}
  const xVal=x=>left+(x-xMin)/(xMax-xMin)*plotW;
  const yVal=y=>top+plotH-(y-yMin)/(yMax-yMin)*plotH;
- const axis='currentColor';
+ const axis='currentColor',kNodes=domains.kNodes||null;
  for(let i=0;i<=4;i++){
   const x=left+i*plotW/4,y=top+i*plotH/4;
   svg.append(el('line',{x1:x,y1:top,x2:x,y2:top+plotH,stroke:axis,'stroke-opacity':0.12}));
   svg.append(el('line',{x1:left,y1:y,x2:left+plotW,y2:y,stroke:axis,'stroke-opacity':0.12}));
-  svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},
+  if(!kNodes)svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},
    (xMin+(xMax-xMin)*i/4).toFixed(2)));
   svg.append(el('text',{x:left-8,y:y+3,'text-anchor':'end','font-size':11,fill:axis},
    (yMax-(yMax-yMin)*i/4).toFixed(2)));
+ }
+ if(kNodes){
+  svg.setAttribute('data-k-node-count',kNodes.length);
+  for(const item of kNodes){
+   const x=xVal(item.distance),label=item.label==='Gamma'?'Γ':item.label;
+   svg.append(el('line',{x1:x,y1:top,x2:x,y2:top+plotH,stroke:'#64748b','stroke-width':1,'stroke-dasharray':'4 4'}));
+   svg.append(el('text',{x,y:height-24,'text-anchor':'middle','font-size':11,fill:axis},label));
+  }
  }
  svg.append(el('text',{x:width/2,y:height-4,'text-anchor':'middle','font-size':12,fill:axis},xName));
  svg.append(el('text',{x:9,y:height/2,transform:'rotate(-90 9 '+height/2+')',
@@ -173,7 +198,7 @@ export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  const paths=el('g',{'clip-path':'url(#'+clip+')'});svg.append(paths);
  curves.forEach((c,i)=>{
   const d=c.x.map((x,j)=>(j?'L':'M')+xVal(x).toFixed(2)+','+yVal(c.y[j]).toFixed(2)).join(' ');
-  const color=i===0?'#2877c6':'#d48922';
+  const color=domains.bandCurves?'#286eaa':i===0?'#2877c6':'#d48922';
   paths.append(el('path',{d,fill:'none',stroke:color,'stroke-width':curves.length>20?'0.7':1.8,
    'vector-effect':'non-scaling-stroke'}));
  });
@@ -181,9 +206,10 @@ export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
 }
 function renderElectronicContent(container,data,energyWindow,linked,selection=null){
  container.replaceChildren();
- const heading=document.createElement('p');
- heading.textContent='Kaynak: '+data.source+' · Enerji sıfırı: '+data.energyZero;
- container.append(heading);
+ const heading=document.createElement('div');heading.className='qe-spectrum-source';
+ const source=document.createElement('strong');source.textContent='Kaynak: '+data.source;
+ const energy=document.createElement('span');energy.textContent='Enerji referansı: '+data.energyZero+' · Fermi/vakum hizalaması yapılmadı';
+ heading.append(source,energy);container.append(heading);
  const note=document.createElement('p');
  note.textContent='Dosyanın bilimsel doğruluğu uygulama tarafından teyit edilmez. Bu grafikler optik geçiş/PL veya tek foton emisyonu değildir. Açık kristal yapısıyla otomatik eşleştirme yapılmaz.';
  container.append(note);
@@ -206,12 +232,16 @@ function renderElectronicContent(container,data,energyWindow,linked,selection=nu
   bandBox.append(heading);
   if(data.bands.totalBands!==data.bands.curves.length){const windowNote=document.createElement('p');windowNote.textContent='Görüntülenen bantlar: '+data.bands.firstBand+'–'+(data.bands.firstBand+data.bands.curves.length-1)+' / '+data.bands.totalBands+'. Tam bant verisi ham dosyada korunur.';bandBox.append(windowNote);}
   const result=chart('QE elektronik bant yapısı','k-yolu uzaklığı','Enerji (eV)',
-   data.bands.curves.map(y=>({x:data.bands.distance,y})),linked?480:660,linked?360:260,{yDomain:energyWindow});
+   data.bands.curves.map(y=>({x:data.bands.distance,y})),linked?480:660,linked?360:260,
+   {yDomain:energyWindow,bandCurves:true,kNodes:data.bands.kNodes});
   bandBox.append(result);
-  if(data.bandLabels.length){
+  const bandLegend=document.createElement('small');bandLegend.className='qe-plot-legend';
+  bandLegend.textContent='Mavi eğriler: hesaplanan Kohn–Sham bantları · Enerji: ham QE referansı.';
+  bandBox.append(bandLegend);
+  if(data.bandLabels.length&&!data.bands.kNodes){
    const caption=document.createElement('small');
    caption.style.cssText='display:block;margin:6px 0';
-   caption.textContent='K-yolu etiket sırası: '+data.bandLabels.join(' → ')+'. Uzaklık eksenindeki etiket konumları otomatik çıkarılmaz.';
+   caption.textContent='K-yolu sırası: '+data.bandLabels.join(' → ')+'. Yalnız etiketlerden eksen konumları çıkarılamaz; bu nedenle yüksek simetri çizgileri gösterilmiyor.';
    bandBox.append(caption);
   }
  }
@@ -221,7 +251,7 @@ function renderElectronicContent(container,data,energyWindow,linked,selection=nu
   if(data.pdos)curves.push({x:data.dos.energy,y:data.pdos});
   dosBox.append(chart('QE toplam DOS ve PDOS',linked?'Durum/(eV hücre)':'Enerji (eV)',linked?'Enerji (eV)':'Durum/(eV hücre)',linked?curves.map(c=>({x:c.y,y:c.x})):curves,linked?280:660,linked?360:260,linked?{yDomain:energyWindow}:{xDomain:energyWindow}));
   const leg=document.createElement('small');
-  leg.style.cssText='display:block;margin:6px 0';
+  leg.className='qe-plot-legend';
   leg.textContent='Mavi: toplam DOS'+(data.pdos?' · Turuncu: atomik orbitallerin toplam PDOS katkısı':'')+'. Enerjiler Fermi seviyesine hizalanmamıştır.';
   dosBox.append(leg);
  }
