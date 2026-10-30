@@ -402,3 +402,7 @@ DFT → Sonuçları incele ekranındaki `summary.json`, `pipeline-summary.json` 
 Bu, **byte düzeyinde girdi + ayar eşleşmesidir**; sadece atom düzeninin geometrik kimliği veya bağımsız bilimsel geçerlilik garantisi değildir. Aynı kristalde farklı cutoff, k-örgüsü, atom sabitleme veya UPF dosya adları **farklı hash** oluşturabilir; bu beklenen davranıştır. İçe aktarılan belge üzerinde SHA değeri kullanıcı tarafından değiştirilebilir; JSON bağımsız imzalı değildir. Sonuçlar ve relaksasyon koordinatları mevcut kristale otomatik uygulanmaz.
 
 Dosya seçimi/çalışma alanı SHA hesaplaması sırasında değişirse önceki sonuç görünümü kabul edilmez.
+
+## P2.0 — Güvenli `squeue` sorgusu
+
+`resume.sh` artık her orijinal işin durumunu sorgularken yalnızca boş çıktıyı değil, **`squeue` komutunun başarılı çıkış kodunu** da zorunlu tutar. SLURM kontrolcüsüne erişim reddi, zaman aşımı veya diğer `squeue` hatalarında `resume` **hiçbir `sbatch` çağrısı yapmadan** durur; geçici sorgu başarısızlığı işin tamamlandığı anlamına gelmez. Devam edilmeden önce küme bağlantısı düzeltilmeli, orijinal iş kimlikleri ve `sacct` kayıtları elle incelenmelidir.
