@@ -1025,7 +1025,7 @@ test('English dictionary covers the existing static editor, library and analysis
   'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
   'Cloudflare Worker · COD API','Quantum ESPRESSO','DFT / QUANTUM ESPRESSO','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
   'Cu Kα1 · 1.5406 Å','Co Kα1 · 1.7890 Å','Mo Kα1 · 0.7093 Å','Ag Kα1 · 0.5594 Å',
-  "kristalyapi-cod-api.aoakkirman.workers.dev","pseudo/","10¹⁵ cm⁻³","10¹⁶ cm⁻³","0,00 V","+0,45 V","1,0 mm²","+0,450 V","1 − f(Ev)","= 25, D","= 10 cm²/s, L","P3 · ideal"]);
+  "kristalyapi-cod-api.aoakkirman.workers.dev","pseudo/","collect.py","summary.json","10¹⁵ cm⁻³","10¹⁶ cm⁻³","0,00 V","+0,45 V","1,0 mm²","+0,450 V","1 − f(Ev)","= 25, D","= 10 cm²/s, L","P3 · ideal"]);
  assert.deepEqual(labels.filter(label=>!languageNeutral.has(label)&&
   uiContext.window.CrystalI18n.t(label)===label),[]);
 });
