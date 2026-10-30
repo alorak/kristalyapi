@@ -65,7 +65,7 @@ export function vesta3SectionTransferReport(lines){
   // LIGHTn and PROJT are typically inline key+parameters in real VESTA 3.x files.
   // Match only known keys; never interpret arbitrary numeric/title text as code.
   else{
-   const inline=/^\s*(LIGHT[0-3]|PROJT|VECTS)\s+(?:[-+]?\d|\.)/.exec(line);
+   const inline=/^\s*(LIGHT[0-3]|PROJT|VECTS|THERI)\s+(?:[-+]?\d|\.)/.exec(line);
    if(inline)found.add(inline[1]);
   }
  }
