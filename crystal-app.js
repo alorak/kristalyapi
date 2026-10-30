@@ -6830,6 +6830,33 @@ function qeJobRefresh({fresh=false}={}){if(!qeActiveJob)return qeFetchJobState(n
 
 let qeElectronicSource=null;
 let qeProtocolApplied=null,qeProtocolPreflight=null;
+let qePreflightSnapshot=null;
+function qeSetPreflightState(state,message){
+ const element=$('qeJobPreflightState');element.dataset.state=state;element.textContent=message;
+}
+function qeInvalidatePreflight(){
+ if(!qePreflightSnapshot)return;
+ qePreflightSnapshot=null;
+ qeSetPreflightState('stale','Yapı, bağlantı veya hesap parametreleri değişti. Yeniden ön kontrol yapın.');
+}
+function syncDftPreparation(){
+ const mode=document.querySelector('input[name="dftPreparationMode"]:checked')?.value==='file'?'file':'server';
+ const workflow=$('qeJobWorkflow').value;
+ $('dftPreparationGrid').dataset.mode=mode;
+ const host=$('dft-hazirlik');
+ for(const node of host.querySelectorAll('.dft-server-only'))node.hidden=mode!=='server';
+ for(const node of host.querySelectorAll('.dft-file-only'))node.hidden=mode!=='file';
+ const isRelax=mode==='server'?workflow==='relax-scf':$('qeCalcType').value==='relax';
+ for(const node of host.querySelectorAll('.dft-relax-only'))node.hidden=mode!=='server'||!isRelax;
+ for(const node of host.querySelectorAll('.dft-force-only'))node.hidden=!isRelax;
+ $('qeElectronicSettings').hidden=mode!=='server'||workflow!=='electronic';
+ $('qeSpinSettings').hidden=mode!=='server'||workflow!=='electronic'||$('qeElectronicSpin').value!=='polarized';
+ $('dftPreparationSummary').textContent=mode==='file'?
+  'Yerel QE girdi dosyası oluşturulacak. Bu işlem hesap çalıştırmaz; gerçek UPF dosyaları ve pw.x kurulumu gerekir.':
+  'Sunucuda '+({scf:'SCF','relax-scf':'relaksasyon → SCF',electronic:'SCF → bant → DOS/PDOS'}[workflow]||'DFT')+
+  ' işi hazırlanıyor. Göndermeden önce UPF profili ve API erişimi doğrulanır.';
+}
+
 function qeUpdateProtocolState(){
  if(!$('qeProtocolState')||!qeProtocolApplied)return;
  let matches=false,payload;try{payload=qeJobPayload();matches=qeProtocolApplied.workspaceId===activeWorkspaceId&&protocolRequestMatches(qeProtocolApplied.protocol,payload);}catch{}
@@ -6851,6 +6878,7 @@ function qeApplyProtocol(reference){
    captureWorkspace();const id='ws-'+(++workspaceSequence);workspaces.push(workspaceRecord(crystal,protocol.label,id));switchWorkspace(id,{saveCurrent:false});
   }
   const settings=request.parameters,electronic=request.electronic;
+  document.querySelector('input[name="dftPreparationMode"][value="server"]').checked=true;
   $('qeJobProfile').value=request.profile_id;$('qeJobWorkflow').value='electronic';$('qeCalcType').value='scf';$('qeOccupation').value='fixed';$('qeFreezeBottom').value='0';
   $('qeEcutwfc').value=settings.ecutwfc_ry;$('qeEcutrho').value=settings.ecutrho_ry;
   ['qeKx','qeKy','qeKz'].forEach((id,i)=>$(id).value=settings.kpoints[i]);
@@ -6879,27 +6907,32 @@ function initQeProtocols(){
   for(const [el,upf] of Object.entries(p.pseudopotentials)){const line=document.createElement('p');line.textContent=el+' · '+upf.file+' · SHA-256 '+upf.sha256+' · '+upf.license;detail.append(line);}
  };
  $('qeProtocolReference').onclick=()=>qeApplyProtocol(true);$('qeProtocolSettings').onclick=()=>qeApplyProtocol(false);
- $('dftPage').addEventListener('input',event=>{if(/^qe/.test(event.target.id)){qeProtocolPreflight=null;qeUpdateProtocolState();}});
- $('dftPage').addEventListener('change',event=>{if(/^qe/.test(event.target.id)){qeProtocolPreflight=null;qeUpdateProtocolState();}});
+ const changed=event=>{
+  if(!/^qe/.test(event.target.id))return;
+  qeProtocolPreflight=null;qeUpdateProtocolState();
+  if(['qeJobProfile','qeApiAddress','qeApiToken','qeJobWorkflow','qeCalcType','qeOccupation',
+   'qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz','qeForceThreshold','qeFreezeBottom',
+   'qeJobMaxSteps','qeJobEnergyThreshold','qeElectronicSpin','qeSpinSeeds','qeSpinSmearing',
+   'qeElectronicNbnd','qeElectronicMesh','qeElectronicPath','qeBandFirst','qeBandLast',
+   'qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma'].includes(event.target.id))qeInvalidatePreflight();
+ };
+ $('dftPage').addEventListener('input',changed);
+ $('dftPage').addEventListener('change',changed);
 }
 
 let qeResourceProfile=null;
-function qeElectronicModeChanged(){
- $('qeElectronicSettings').hidden=$('qeJobWorkflow').value!=='electronic';
- $('qeSpinSettings').hidden=$('qeElectronicSpin').value!=='polarized';
-}
+function qeElectronicModeChanged(){syncDftPreparation();}
 let qeComparisonDispose=null;
 function qeClearRelaxationComparison(){
  qeComparisonDispose?.();qeComparisonDispose=null;
  const box=$('qeRelaxComparison');box.replaceChildren();box.hidden=true;
 }
 function qeJobPayload(){
- const electronic=$('qeJobWorkflow').value==='electronic';
- const relax=!electronic&&$('qeCalcType').value==='relax';
- if(!electronic&&!relax&&$('qeCalcType').value!=='scf')throw Error('SCF veya sabit hücreli relaksasyon seçin.');
+ const workflow=$('qeJobWorkflow').value;
+ if(!['scf','relax-scf','electronic'].includes(workflow))throw Error('Desteklenen bir sunucu hesap türü seçin.');
+ const electronic=workflow==='electronic',relax=workflow==='relax-scf';
  const polarized=electronic&&$('qeElectronicSpin').value==='polarized';
- if(!polarized&&$('qeOccupation').value!=='fixed')
-  throw Error('Sunucu işleri sabit doluluklu ve spinsiz olmalı.');
+ // Local .in occupations do not affect fixed-occupation server jobs.
  if(electronic&&qeElectronicSource?.protocolId&&qeElectronicSource.workspaceId!==activeWorkspaceId)throw Error('Protokol referansının çalışma alanı değişti; kaynağı yeniden seçin.');
  const model=electronic&&qeElectronicSource?null:qeCalculationStructure(state);
  const cell=model?basis(validateCell(model.cell)).map(vector=>vector.toArray()):structuredClone(qeElectronicSource.structure.cell_angstrom);
@@ -6959,10 +6992,11 @@ async function qeJobPreflight(){
   if(address!==$('qeApiAddress').value||token!==$('qeApiToken').value||workspaceId!==activeWorkspaceId||snapshot!==JSON.stringify(qeJobPayload()))throw Error('Ön kontrol sırasında yapı veya ayarlar değişti; yeniden denetleyin.');
   qeProtocolPreflight={address,response:result};qeUpdateProtocolState();
   if(qeProtocolApplied&&protocolRequestMatches(qeProtocolApplied.protocol,payload)&&!protocolPreflightMatches(qeProtocolApplied.protocol,payload,result))throw Error('Seçilen protokolün yapı/UPF hash’leri eşleşmiyor.');
-  status.textContent='Sunucu ön kontrolü geçti: '+result.atoms+' atom, UPF profili '+
-   result.profile_id+', yapı özeti '+result.structure_hash.slice(0,12)+
-   '… Bu doğrulama hesaplamanın yakınsadığı anlamına gelmez.';
- }catch(error){status.textContent='QE ön kontrol: '+error.message;}
+  qePreflightSnapshot={address,workspaceId,snapshot};
+  qeSetPreflightState('passed','Sunucu ön kontrolü geçti: '+result.atoms+' atom · UPF: '+
+   result.profile_id+' · yapı SHA-256 '+result.structure_hash.slice(0,12)+
+   '… Bu işlem fiziksel yakınsama kanıtı değildir.');
+ }catch(error){qePreflightSnapshot=null;qeSetPreflightState('failed','QE ön kontrol başarısız: '+error.message);}
  finally{btn.disabled=false;}
 }
 async function qeJobStart(){
@@ -6977,6 +7011,8 @@ async function qeJobStart(){
    throw Error('Seçilen son yapının kaynak özeti değişmiş.');
   if(activeWorkspaceId!==workspaceId||JSON.stringify(qeJobPayload())!==snapshot)
    throw Error('Hesaplama sırasında yapı veya ayarlar değişti; yeniden ön kontrol yapın.');
+  qePreflightSnapshot={address,workspaceId,snapshot};
+  qeSetPreflightState('passed','Gönderim öncesi sunucu doğrulaması geçti. Bu, bilimsel yakınsama kanıtı değildir.');
   const operation={scf:'SCF','relax-scf':'relaksasyon → SCF',electronic:'SCF → bant → DOS/PDOS'}[payload.parameters.calculation];
   if(!window.confirm(validated.atoms+' atomlu PBE/'+operation+
    ' işi gerçek Docker/Quantum ESPRESSO üzerinde başlatılsın mı?'))return;
@@ -7115,12 +7151,14 @@ async function qeTestApiConnection(){
    dftServerConnected=false;dftConnectionState='Adres değişti; tekrar denetleyin';
    status.textContent='Adres değişti; yeniden bağlantı testi yapın.';return;
   }
-  dftServerConnected=probe.jobsEnabled;
-  dftConnectionState=probe.resourceProfile.executionEnabled===false?'Kaynak profili: yalnız hazırlık':probe.ready?'QE sunucusu hazır':'API erişilebilir; çözücü hazır değil';
+  dftServerConnected=probe.ready&&probe.jobsEnabled&&probe.resourceProfile.executionEnabled!==false;
+  dftConnectionState=!probe.ready?'API erişilebilir; QE çözücüsü hazır değil':
+   probe.resourceProfile.executionEnabled===false?'Kaynak profili: yalnız hazırlık':
+   !probe.jobsEnabled?'API hazır; hesap gönderimi kapalı':'QE sunucusu hazır';
   qeResourceProfile={base:probe.base,limits:probe.resourceProfile};
   $('qeElectronicNbnd').max=String(probe.resourceProfile.max_bands);$('qeElectronicMesh').max=String(probe.resourceProfile.max_nscf_k);
   const list=Object.entries(probe.binaries).map(([key,ok])=>key+': '+(ok?'var':'eksik')).join(' · ');
-  status.textContent=(probe.ready?'QE sunucusu hazır.':'QE API erişilebilir; çözücü henüz hazır değil.')+
+  status.textContent=(dftServerConnected?'QE sunucusu hesaplamaya hazır.':dftConnectionState+'.')+
    ' Kaynak profili: '+probe.resourceProfile.id+' · atom/bant sınırı: '+probe.resourceProfile.max_atoms+'/'+probe.resourceProfile.max_bands+'. QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
    (probe.jobsEnabled?' · QE işi alımı açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
  }catch(error){
@@ -9265,7 +9303,11 @@ let dftActiveSection=null;
 let dftConnectionState='Bağlantı kontrol edilmedi';
 // Server-backed tabs stay locked until a job-capable server answered for the current address.
 let dftServerConnected=false;
-function dftServerReady(){return dftServerConnected&&$('qeApiToken').value.trim()!=='';}
+function dftValidToken(){
+ const value=$('qeApiToken').value;
+ return value.length>=32&&value.length<=256&&!/\s/.test(value);
+}
+function dftServerReady(){return dftServerConnected&&dftValidToken();}
 function dftSectionFromHash(hash){
  const section=String(hash).split('/')[1];
  return DFT_SECTIONS.includes(section)?section:'hazirlik';
@@ -9286,14 +9328,21 @@ function syncDftSummary(){
  $('dftConnectionState').textContent=dftConnectionState;
  const ready=dftServerReady(),token=$('qeApiToken').value.trim()!=='';
  $('dftConnectionChip').dataset.state=dftServerConnected?(ready?'ready':'token'):dftConnectionState==='Sunucuya bağlanılamadı'?'failed':'unchecked';
- $('dftReadiness').textContent=ready?'Sunucu işleri kullanılabilir.':dftServerConnected?'Sunucu işleri için API anahtarını girin.':
-  token?'Sunucu işleri için bağlantıyı kontrol edin.':'Sunucu işleri için bağlantıyı kontrol edin ve API anahtarını girin.';
+ $('dftReadiness').textContent=ready?'Sunucu işleri kullanılabilir.':dftServerConnected?
+  (token?'API anahtarı 32–256 karakter olmalı ve boşluk içermemeli.':'Sunucu işleri için API anahtarını girin.'):
+  'Hesap gönderimi için önce çalışan ve yürütmeye izin veren QE sunucusunu denetleyin.';
+ if(qePreflightSnapshot){
+  let current=null;try{current=JSON.stringify(qeJobPayload());}catch{}
+  if(qePreflightSnapshot.workspaceId!==activeWorkspaceId||
+    qePreflightSnapshot.address!==$('qeApiAddress').value||current!==qePreflightSnapshot.snapshot)
+   qeInvalidatePreflight();
+ }
  const jobs=document.querySelector('[data-dft-section="isler"]');
  jobs.classList.toggle('locked',!ready);
  if(ready){jobs.removeAttribute('aria-disabled');jobs.removeAttribute('title');}
  else{jobs.setAttribute('aria-disabled','true');jobs.title='Önce Ayarlar sekmesinde sunucu bağlantısını kurun';}
  const electronic=$('qeJobWorkflow').value==='electronic';
- const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
+ const operation=electronic?'SCF → bant → DOS / PDOS':$('qeJobWorkflow').value==='relax-scf'?'relax → SCF':'SCF';
  const source=electronic&&qeElectronicSource?(qeElectronicSource.protocolId?'Protokol referansı: ':'Son relaksasyon yapısı: ')+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
  $('dftJobSource').textContent=source;
  $('dftJobOperation').textContent='PBE · '+operation+(electronic&&$('qeElectronicSpin').value==='polarized'?' · spin ↑ / ↓':'');
@@ -9976,6 +10025,9 @@ function bind(){
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
  $('qeElectronicSpin').onchange=qeElectronicModeChanged;
+ $('qeCalcType').addEventListener('change',syncDftPreparation);
+ for(const choice of document.querySelectorAll('input[name="dftPreparationMode"]'))choice.addEventListener('change',syncDftPreparation);
+ syncDftPreparation();
  $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';};
  $('qeJobRefresh').onclick=qeJobRefresh;
  $('qeJobPause').onclick=()=>qeJobPauseResume(false);
