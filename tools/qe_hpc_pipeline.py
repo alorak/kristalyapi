@@ -102,6 +102,8 @@ def load_manifest(root: Path) -> dict:
     for rel in ("structure.in", "pipeline.py", "submit.sh",
                 *("stages/" + step + ".slurm" for step in plan)):
         require_hash(root, rel, pins.get(rel), MAX_MANIFEST if rel != "structure.in" else 4 * 1024 * 1024)
+    if "resume.sh" in pins:
+        require_hash(root, "resume.sh", pins["resume.sh"], MAX_MANIFEST)
     # Legacy P1.2 packages remain valid; new P1.3 ZIPs must pin BOTH
     # converter and PDOS parser before any stage starts.
     pinned_converter = "electronic.py" in pins
@@ -338,6 +340,63 @@ def preflight(root: Path) -> dict:
             'slurm_submission_performed': False, 'scientific_convergence_verified': False}
 
 
+def resume_check(root: Path, stage: str) -> dict:
+    """Permit only unstarted/clean serial postprocessors after verified parents.
+
+    Never automatically rerun a pw.x stage after partial writes to prefix.save.
+    Original Slurm jobs must be inactive, checked separately by resume.sh.
+    No outputs or evidence are overwritten; operator archives failures first.
+    """
+    config = load_manifest(root)
+    plan = config["stages"]
+    if stage not in ("bands_pp", "dos", "projwfc") or stage not in plan:
+        raise ValueError("Only safe serial postprocessor stages can be resumed")
+    if (root / ".resume-lock").exists() or (root / "resubmissions.txt").exists():
+        raise ValueError("Resume already submitted; only one manual retry is allowed")
+    original = file_at(root, "submissions.txt", MAX_MANIFEST)
+    submissions = [line.strip().split() for line in original.read_text("utf-8").splitlines() if line.strip()]
+    if not submissions or len(submissions) > len(plan) or any(
+            len(row) != 2 or row[0] != plan[i] or
+            not re.fullmatch(r"[0-9]{1,18}", row[1])
+            for i, row in enumerate(submissions)):
+        raise ValueError("Untrusted or inconsistent original Slurm submission records")
+    index = plan.index(stage)
+    if index == 0:
+        raise ValueError("Resume stage requires a verified parent")
+    # Ensure all previous reports and immutable artifacts still match.
+    for prior in plan[:index]:
+        report = json.loads(file_at(root, "reports/" + prior + ".json", MAX_MANIFEST).read_text("utf-8"))
+        if (not isinstance(report, dict) or report.get("schema") != REPORT_SCHEMA
+                or report.get("stage") != prior or report.get("status") != "completed"):
+            raise ValueError("Unverified prior stage: " + prior)
+        hashes = report.get("hashes")
+        if not isinstance(hashes, dict) or not hashes:
+            raise ValueError("Missing prior stage hashes: " + prior)
+        for rel, expected in hashes.items():
+            # Subsequent PW stages may rewrite the shared XML.
+            if rel == "tmp/kristalyapi.save/data-file-schema.xml" and prior != plan[index - 1]:
+                continue
+            require_hash(root, rel, expected)
+    # Refuse reports and partial output files from the restart stage onward.
+    # A failed postprocessor's outputs must be archived manually, not discarded.
+    for current in plan[index:]:
+        if (root / "reports" / (current + ".json")).exists():
+            raise ValueError("Stage already has completion evidence: " + current)
+        if current != stage and (root / "reports" / (current + ".failure.json")).exists():
+            raise ValueError("Later stage unexpectedly ran: " + current)
+        output_name, artifacts = STAGE_OUTPUTS[current]
+        for name in (output_name, *artifacts):
+            if (root / name).exists() or (root / name).is_symlink():
+                raise ValueError("Archive existing failed output before resuming: " + name)
+        if current == "projwfc" and any(root.glob("pdos.pdos_atm*")):
+            raise ValueError("Archive existing partial atom PDOS before resuming")
+        if current == "projwfc" and (root / "electronic-results.json").exists():
+            raise ValueError("Archive existing electronic JSON before resuming")
+    return {"status": "resume-ready", "resume_from": stage, "stages_to_submit": plan[index:],
+            "previous_completed": plan[:index], "scientific_convergence_verified": False,
+            "slurm_submission_performed": False}
+
+
 def prepare(root: Path, stage: str) -> None:
     config = load_manifest(root)
     plan = config["stages"]
@@ -479,7 +538,7 @@ def summary(root: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("preflight", "prepare", "finish", "fail", "summary"))
+    parser.add_argument("action", choices=("preflight", "resume-check", "prepare", "finish", "fail", "summary"))
     parser.add_argument("stage", nargs="?")
     parser.add_argument("code", nargs="?", type=int)
     args = parser.parse_args(argv)
@@ -489,6 +548,8 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("Stage name required")
         if args.action == "preflight":
             print(json.dumps(preflight(root), indent=2))
+        elif args.action == "resume-check":
+            print(json.dumps(resume_check(root, args.stage), indent=2))
         elif args.action == "prepare":
             prepare(root, args.stage)
         elif args.action == "finish":

@@ -102,6 +102,34 @@ class TestStagedTruba(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Existing stage evidence'):
             pipeline.preflight(self.root)
 
+    def test_resume_check_accepts_clean_postprocessor_after_verified_parent(self):
+        self.complete("scf")
+        self.complete("bands")
+        (self.root / "submissions.txt").write_text(
+            "".join(f"{stage} {i + 1000}\n" for i, stage in enumerate(self.plan)))
+        ready = pipeline.resume_check(self.root, "bands_pp")
+        self.assertEqual(ready["status"], "resume-ready")
+        self.assertEqual(ready["resume_from"], "bands_pp")
+        self.assertEqual(ready["stages_to_submit"][0], "bands_pp")
+        with self.assertRaisesRegex(ValueError, "Only safe serial"):
+            pipeline.resume_check(self.root, "nscf")
+        (self.root / "bands.dat.gnu").write_text("partial")
+        with self.assertRaisesRegex(ValueError, "Archive existing failed output"):
+            pipeline.resume_check(self.root, "bands_pp")
+
+    def test_resume_check_blocks_mutated_parent_and_second_attempt(self):
+        self.complete("scf")
+        self.complete("bands")
+        (self.root / "submissions.txt").write_text(
+            "".join(f"{stage} {i + 1000}\n" for i, stage in enumerate(self.plan)))
+        (self.root / "tmp/kristalyapi.save/data-file-schema.xml").write_text("corrupted")
+        with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+            pipeline.resume_check(self.root, "bands_pp")
+        self.xml.write_text("xml now bands")
+        (self.root / ".resume-lock").mkdir()
+        with self.assertRaisesRegex(ValueError, "Resume already submitted"):
+            pipeline.resume_check(self.root, "bands_pp")
+
     def test_electronic_chain_preserves_order_and_artifacts(self):
         for stage in self.plan:
             self.complete(stage)

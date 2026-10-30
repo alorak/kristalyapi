@@ -643,3 +643,13 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [ ] `afterok` zincirinde güvenli yeniden başlatma / kontrollü retry.
 - [ ] Seri postprocessing tahsislerini birleştirerek çekirdek/zaman israfını azaltma.
 - [ ] sacct kaynak telemetrisi, bilimsel input ön kontrolü, sonuç–yapı eşleştirmesi ve parametre taramaları.
+
+
+### TRUBA P1.6 — Kanıtlı ve sınırlı yeniden devam
+
+- [x] ZIP'e SHA-256 ile sabitlenmiş `resume.sh` ekleme ve eski paketlerle geriye uyumluluk.
+- [x] Önceki aşama ve `prefix.save` XML hashleri, orijinal iş kimlikleri ve kısmi çıktılar için `pipeline.py resume-check`.
+- [x] `squeue` ile eski işlerin tamamının bitmiş/iptal olduğunu şart koşma; kalan aşamalar için `sbatch --test-only` ve yeni `afterok` zinciri; en çok bir manuel devam denemesi.
+- [x] Tekrar denenen `pw.x` aşamalarını ve kısmi `bands.x/dos.x/projwfc.x` çıktılarının üstüne yazılmasını reddetme; sentetik testler.
+- [ ] Gerçek TRUBA'da kesilmiş postprocessor zincirinde smoke test.
+- [ ] Güvenilir `pw.x` resume için tüm QE restart veri dosyalarının ayrı snapshot/hash yönetimi ve operatör kabulü (şimdilik desteklenmiyor).
