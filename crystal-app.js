@@ -21,6 +21,7 @@ import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-vie
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 import { createTrubaPackage } from './qe-hpc-export.mjs';
+import { createTrubaPipelinePackage } from './qe-hpc-pipeline.mjs';
 import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.mjs';
 
 const $ = id => document.getElementById(id);
@@ -6851,6 +6852,36 @@ async function qeExportTrubaPackage(){
  }catch(error){status.textContent='Paket oluşturulamadı: '+error.message;inform('TRUBA export: '+error.message);}
  finally{button.disabled=false;}
 }
+async function qeExportTrubaPipeline(){
+ const button=$('qeHpcPipelineExport'),status=$('qeHpcPipelineStatus');
+ if(button.disabled)return;
+ button.disabled=true;
+ status.textContent='Çevrimdışı SLURM aşama paketi hazırlanıyor; iş gönderilmiyor.';
+ try{
+  const {result}=qeBuildLocalInput();
+  const response=await fetch(new URL('./qe_hpc_pipeline.py',document.baseURI));
+  if(!response.ok)throw Error('P1.2 Python aşama hazırlayıcısı alınamadı.');
+  const pipelineScript=await response.text();
+  const pkg=await createTrubaPipelinePackage({
+   inputText:result.text,
+   account:$('qeHpcAccount').value,partition:$('qeHpcPartition').value,
+   ntasks:$('qeHpcTasks').value,hours:$('qeHpcHours').value,
+   jobName:safeName(state.name)+'-electronic',
+   upfFiles:Array.from($('qeHpcUpfFiles').files||[]),pipelineScript,
+   nbnd:$('qeHpcNbnd').value,kx:$('qeHpcNscfKx').value,
+   ky:$('qeHpcNscfKy').value,kz:$('qeHpcNscfKz').value,
+   bandPath:$('qeHpcBandPath').value,
+   emin:$('qeHpcEmin').value,emax:$('qeHpcEmax').value,
+   deltaE:$('qeHpcDeltaE').value,degauss:$('qeHpcDegauss').value
+  });
+  download(safeName(state.name)+'_truba_pipeline.zip',pkg.blob,'application/zip');
+  status.textContent='P1.2 ZIP hazır: '+pkg.manifest.stages.join(' → ')+
+   '. Sırayla çalışma yalnız TRUBA üzerinde bash submit.sh komutuyla başlar. '+
+   (pkg.missing.length?'Eksik UPF: '+pkg.missing.join(', '):'UPF dosyaları pakette.')+
+   ' Bant yolu/nbnd ve yakınsama koşulları kullanıcı tarafından doğrulanmalı.';
+ }catch(error){status.textContent='P1.2 paketi oluşturulamadı: '+error.message;inform('TRUBA P1.2: '+error.message);}
+ finally{button.disabled=false;}
+}
 async function qeOpenTrubaSummary(){
  const status=$('qeHpcSummaryStatus'),container=$('qeHpcSummaryView');
  container.replaceChildren();
@@ -10174,6 +10205,7 @@ function bind(){
  $('qePseudoAuto').onclick=()=>{ $('qePseudoFiles').value='';qeEnsurePseudoNames();};
  $('qeExportPw').onclick=qeExportPwInput;
  $('qeExportHpc').onclick=qeExportTrubaPackage;
+ $('qeHpcPipelineExport').onclick=qeExportTrubaPipeline;
  $('qeHpcSummaryOpen').onclick=qeOpenTrubaSummary;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
