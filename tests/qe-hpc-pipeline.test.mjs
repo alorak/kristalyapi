@@ -120,6 +120,27 @@ test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files'
  const relax=await createTrubaPipelinePackage({...opts,inputText:input.replace("'scf'","'relax'"),pipelineScript});
  assert.equal((await entries(relax.blob)).has('stages/relax.slurm'),true);
 });
+test('serial postprocessor walltime can be shorter without changing pw allocation or stage ordering',async()=>{
+ const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
+ const generated=await createTrubaPipelinePackage({...opts,pipelineScript,postHours:'2'});
+ const file=await entries(generated.blob),read=name=>new TextDecoder().decode(file.get(name));
+ assert.match(read('stages/scf.slurm'),/#SBATCH --time=12:00:00/);
+ assert.match(read('stages/dos.slurm'),/#SBATCH --time=02:00:00/);
+ assert.match(read('stages/projwfc.slurm'),/#SBATCH --cpus-per-task=56/);
+ assert.equal(generated.manifest.resources.postprocess_hours,2);
+ assert.equal(generated.manifest.resource_estimate.length,6);
+ assert.equal(generated.manifest.max_reserved_core_hours,2352);
+ assert.deepEqual(generated.manifest.stages,pipelineStages('scf'));
+ assert.match(read('README.md'),/upper bound \(not actual use\)/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,postHours:'0'}),/1–72/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,postHours:'2.5'}),/1–72/);
+ const previous=await createTrubaPipelinePackage({...opts,pipelineScript});
+ assert.match(new TextDecoder().decode((await entries(previous.blob)).get('stages/dos.slurm')),/#SBATCH --time=12:00:00/);
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
+ assert.match(html,/id="qeHpcPostHours"/);
+ assert.match(app,/postHours:\$\('qeHpcPostHours'\)/);
+});
 test('P1.3 converter is pinned, embedded and must succeed before final receipt',async()=>{
  const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
  const converterScript=readFileSync(new URL('../tools/qe_hpc_electronic.py',import.meta.url),'utf8');
