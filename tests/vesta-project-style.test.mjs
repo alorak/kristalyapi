@@ -53,9 +53,12 @@ test('invalid style records warn; missing section terminator fails closed',()=>{
 test('section transfer report flags unsupported camera, vector, ADP, polyhedron',()=>{
  const source2=source+'\nSCENE\n 1 2 3\nLMATRIX\n 1 0 0\nVECTR\n 1 0 0 1\nTHERI\n 1 2\nPOLYP\n 1 2\nIMPORT_STRUCTURE\n test.cif\n';
  const report=vesta3SectionTransferReport(source2.split(/\r?\n/));
- for(const k of ['LMATRIX','VECTR','THERI','POLYP','IMPORT_STRUCTURE'])
+ for(const k of ['LMATRIX','IMPORT_STRUCTURE'])
   assert.ok(report.skipped.includes(k),k);
  assert.equal(report.sections.find(item=>item.section==='SCENE')?.status,'conditional');
+ assert.equal(report.sections.find(item=>item.section==='VECTR')?.status,'conditional');
+ assert.equal(report.sections.find(item=>item.section==='THERI')?.status,'partial');
+ assert.equal(report.sections.find(item=>item.section==='POLYP')?.status,'approximated');
  assert.ok(report.sections.some(x=>x.section==='SITET'&&x.status==='approximated'));
  assert.ok(report.sections.some(x=>x.section==='ISURF'&&x.status==='partial'));
  assert.match(report.note,/NOT lossless/);
