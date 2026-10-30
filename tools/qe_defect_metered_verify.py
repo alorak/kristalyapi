@@ -80,6 +80,9 @@ def verify(folder):
         raise ValueError("cgroup evidence differs from report")
     status=report.get("status")
     if status=="initialized_only_metered":
+        if (report.get("memory_bytes")!=settings["memory_bytes"] or
+            report.get("timeout_seconds")!=settings["timeout_seconds"]):
+            raise ValueError("Inspected resource settings mismatch")
         if report.get("container_removed") is not True or (
             report.get("oom_killed") is not False) or (
             report.get("exit_code")!=0):
