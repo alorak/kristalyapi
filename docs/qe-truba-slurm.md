@@ -1,4 +1,4 @@
-# TRUBA / SLURM: çevrimdışı QE paketi (P0)
+# TRUBA / SLURM: çevrimdışı QE paketi (P0–P1 sonuç toplama)
 
 Kristal Yapı **DFT → Hesap hazırlığı → TRUBA / SLURM paketi** seçeneği, açık periyodik
 kristal için **tek bir** Quantum ESPRESSO pw.x `scf` veya sabit hücreli `relax`
@@ -31,9 +31,17 @@ indirme veya DFT hesabı yapılmaz. Uygulama GitHub Pages üzerinde statik kalı
    sacct -j JOB_ID --format=JobID,State,Elapsed,MaxRSS,ExitCode
    ```
 
-5. `structure.out` ve gerekirse `slurm-JOB_ID.err` dosyasını yerel
-   bilgisayarınıza alın. DFT → Sonuçları incele alanından tamamlanmış
-   `structure.out` içe alınabilir (mevcut arayüzde 16 MB dosya sınırı vardır).
+5. P1'de, `run.slurm` çalışması başarılı ya da başarısız biçimde sona
+   ererken (Python 3 mevcutsa) `collect.py` otomatik çalışır. Çalışmazsa
+   paket kökünde `python3 collect.py --bundle .` komutunu manuel kullanın.
+6. `summary.json` dosyasını indirip **DFT → Sonuçları incele →
+   TRUBA / SLURM sonuç özeti** alanında görüntüleyin.
+   Küçük (≤512 KB) özet dosyası için ham 1 GiB çıktı aktarımı gerekmez.
+   `structure.out` dosyasını bilimsel arşivde ayrıca koruyun; 16 MB altındaki
+   ham çıktılar eski geometri önizleme alanında da açılabilir.
+7. Kullanılan dosyalar veya `run.slurm` değiştiyse hash doğrulaması uyarı
+   verir. `summary.json` veri kaynağının imzalı kanıtı değildir; aynı
+   dizindeki dosyaları karşılaştıran yerel bir rapordur.
 
 ## Paketin içeriği
 
@@ -45,6 +53,12 @@ indirme veya DFT hesabı yapılmaz. Uygulama GitHub Pages üzerinde statik kalı
   varsa UPF SHA-256'ları, kaynak ayarları; `execution_performed=false`.
 - `pseudo/`: seçilmiş gerçek UPF dosyaları ve eksik dosya talimatı.
 - `README.md`: pakete özgü komutlar ve bilimsel sınırlamalar.
+- `collect.py` (**P1**): Python standart kütüphanesiyle çalışan sonuç
+  toplayıcı. `structure.out` akışını satır satır tarar (en fazla 1 GiB),
+  toplam enerji (Ry/eV), kuvvet (Ry/Bohr), son SCF/relax yakınsama
+  işaretleri, `JOB DONE.`, SLURM iş kimliği ve varsa çıkış kodunu
+  `summary.json` dosyasına kaydeder. Girdi, UPF ve SLURM dosyasının
+  SHA-256'larını yeniden hesaplar. Tam bir hesap dökümünü JSON'a gömmez.
 
 ZIP standart "store" yöntemiyle üretilir (harici CDN/JavaScript kütüphanesi
 yoktur); dosyalar sıkıştırılmadığından UPF boyutuna yakın ZIP beklenir.
@@ -70,12 +84,31 @@ Paket boyutu en fazla 96 MiB, tek UPF en fazla 24 MiB'dir.
   TRUBA bağlantısı bulunmaz. Kullanıcının girdi olarak yazdığı SLURM hesap
   adı manifestte yer alır.
 
+## P1 sonuç toplama kabul kapsamı
+
+- **Uygulandı:** Python standart kütüphanesiyle çevrimdışı
+  `summary.json` oluşturma, girdi / mevcut UPF / `run.slurm`
+  dosyalarında hash denetimi, başarı ve hata durumlarının ayrımı,
+  dosya boyutu sınırlamaları, tarayıcıda şema doğrulaması ve salt okunur
+  özet görünümü. Başarısız işlerde de mümkünse özet üretilir.
+- **Doğrulama düzeyi:** sentetik QE çıktı birim testleri. TRUBA'da
+  gerçek zamanlı `sbatch` veya yüksek atomlu üretim koşumu yapılmadı.
+- **Bilimsel sınır:** `completed` statüsü, son QE yakınsama işaretleri ve
+  dosya hashlerinin eşleşmesini ifade eder. Kesme enerjisi, k-örgüsü,
+  vakum, fonksiyonel, pseudopotansiyel veya fiziksel referansa göre
+  **bilimsel yakınsamayı kanıtlamaz**. Hash yalnızca kaydedilen
+  dosyalar arasındaki tutarlılığı gösterir, bağımsız bir dijital imza
+  değildir. Elle konulan ve hash'i başta sabitlenmeyen UPF'ler için
+  `unverified` statüsü kullanılır.
+
 ## Sonraki adımlar
 
-- **P1:** Python tabanlı sonuç toplama (`summary.json`, SCF/relax ölçüleri),
-  girdi/UPF hash yeniden doğrulaması ve büyük çıktı için daha güçlü import.
-- **P1:** Relax → SCF → NSCF → bant/DOS zinciri için çok aşamalı `sbatch`
-  ve QE ara dosyalarının doğru korunması; eşdeğer Docker/QE sürümleriyle kabul testleri.
+- **P1.2 (henüz uygulanmadı):** Relax → SCF → NSCF → bant/DOS için açık
+  kaynak/k-yolu/bant sayısı seçimleri, kontrol edilen aşama sınırları,
+  `sbatch` aşama bağımlılıkları, ortak `prefix/outdir` yönetimi ve
+  bağımsız QE kabul testleri. `tools/qe_pipeline.py` yerel çok aşamalı
+  uygulama referansı olabilir fakat mevcut bağımlılıklarıyla
+  TRUBA ZIP'inin içine otomatik kopyalanması doğru değildir.
 - **P2:** SLURM job array ile cutoff/k-point yakınsama ve MoS₂ kusur serileri,
   kaynak ve yöntem bazında bilimsel kabul raporları.
 - **P3:** Kullanıcı onaylı VPN/SSH üzerinden iş gönderme/durum izleme; ayrı
