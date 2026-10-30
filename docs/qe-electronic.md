@@ -10,6 +10,23 @@ Makalede SIESTA kullanıldığı için bu QE iş akışı birebir yeniden üreti
 olarak kabul edilmemelidir; sayısal yakınsama ve fiziksel protokol
 doğrulanmalıdır.
 
+## TRUBA P1.3: ham QE çıktılarını doğrudan grafiklere aktarma
+
+[TRUBA / SLURM P1.3 kılavuzu](qe-truba-slurm.md) kapsamında DFT → Hesap hazırlığı
+altındaki çok aşamalı ZIP, isteğe bağlı olarak `electronic.py` ve `qe_pdos.py`
+içerir. Başarılı `bands.x`, `dos.x` ve `projwfc.x` dosyalarını
+`kristalyapi.qe-electronic.v1` biçiminde `electronic-results.json` içine
+dönüştürür. Bu JSON, **DFT → Sonuçları incele → Bant, DOS ve PDOS** alanında,
+aynı mevcut grafik motoruyla görüntülenir; ayrı bir grafik motoru kurulmaz.
+
+Dönüştürücü veri kaynağını, girdiyi ve SLURM aşamalarını SHA-256 üzerinden
+izler; eksik/spinli/uyuşmayan veriyi kabul etmez. Doğru bant yolu,
+UPF/method seçimi, spin durumu ve numerik yakınsama yine bilimsel
+doğrulama gerektirir. Enerjiler **ham QE referansındadır**: otomatik
+Fermi sıfırlaması, optik emisyon ya da deneysel bant aralığı sonucu yoktur.
+Grafik sınırları aşılıyorsa dönüştürücü seçimini kapatarak ham P1.2
+çıktılarını koruyun. Gerçek TRUBA üretim koşumuyla kabul henüz beklemededir.
+
 ## Hesaplama aşamaları
 
 | Aşama | Motor | Amaç |
