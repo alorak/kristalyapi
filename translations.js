@@ -7,6 +7,21 @@
 (() => {
  'use strict';
  const entries=[
+  ["TRUBA / SLURM paketi","TRUBA / SLURM package"],
+  ["SCF veya relax için çevrimdışı ZIP oluştur","Create an offline ZIP for SCF or relaxation"],
+  ["TRUBA · ARF / Quantum ESPRESSO","TRUBA · ARF / Quantum ESPRESSO cluster"],
+  ["Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi ve SLURM betiği ZIP olarak indirilir. Partition, modül ve erişim haklarını TRUBA'da doğrulayın.","Single-node, CPU-based orfoz profile. No job is submitted; the input and SLURM script are downloaded as a ZIP. Verify the partition, modules, and permissions on TRUBA."],
+  ["SLURM hesap adı (#SBATCH --account) *","SLURM account (#SBATCH --account) *"],
+  ["Partition","Queue partition"],
+  ["orfoz · 1 node","orfoz · one node"],
+  ["MPI görev sayısı","MPI task count"],
+  ["Zaman sınırı (saat, en fazla 72)","Time limit (hours, max 72)"],
+  ["UPF dosyaları (isteğe bağlı, yerel dosya)","UPF files (optional, local files)"],
+  ["UPF yüklemezseniz dosyaları TRUBA üzerindeki","If no UPF files are uploaded, place them in TRUBA's"],
+  ["dizinine yerleştirmelisiniz. Yüklenen UPF'ler ZIP içinde SHA-256 ile kaydedilir; hiçbir dosya ağa gönderilmez. Dosya adları yukarıdaki Element=dosya.UPF satırlarıyla birebir eşleşmelidir.","directory. Uploaded UPFs are stored in the ZIP with SHA-256 hashes; no files are sent over the network. Filenames must exactly match the Element=file.UPF entries above."],
+  ["TRUBA / SLURM ZIP indir","Download TRUBA / SLURM ZIP"],
+  ["ZIP paketi henüz hazırlanmadı.","ZIP package has not been generated yet."],
+  ["TRUBA kullanım ve sınırlamalar kılavuzu ↗","TRUBA usage and limitations guide ↗"],
   ["Relaksasyon → SCF","Relaxation → SCF"],
   ["Bant / DOS","Bands / DOS"],
   ["İş adı / ID / profil ara","Search name / ID / profile"],
