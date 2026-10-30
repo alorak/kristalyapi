@@ -101,14 +101,109 @@ Paket boyutu en fazla 96 MiB, tek UPF en fazla 24 MiB'dir.
   değildir. Elle konulan ve hash'i başta sabitlenmeyen UPF'ler için
   `unverified` statüsü kullanılır.
 
+## P1.2 — Bant / DOS için aşamalı SLURM paketi
+
+DFT → Hesap hazırlığı → TRUBA / SLURM paketi içindeki **P1.2 · Çok aşamalı
+bant / DOS paketi** ayrıntılarını açın. Önceki P0/P1.1 `run.slurm`
+tek iş ZIP'i aynen kullanılabilir; P1.2 bağımsız bir paket üretir.
+
+P1.2 şu parametreleri **açıkça** alır: `nbnd` (1–10000), NSCF için
+`kx ky kz` (1–48), `crystal_b` k-yolu (2–32 satır,
+`etiket kx ky kz segment`, son satırda `segment=1`),
+`Emin/Emax/DeltaE` (eV), Gaussian `degauss` (Ry). K-yolu
+kristalin gerçek **karşılıklı örgü bazında** kullanıcı tarafından
+belirlenmelidir; arayüzdeki örnek satırlar ilgili kristal için
+otomatik yüksek simetri noktası değildir.
+
+```text
+G 0 0 0 20
+X 0.5 0 0 20
+L 0.5 0.5 0.5 1
+```
+
+Örnek yalnız **biçim göstermek içindir**. Doğru bant yolu, `nbnd`,
+k-örgüsü, enerji referansı, doluluk/smearing, UPF XC-valans
+uyumu ve fonon/optik yorumları için ayrıca bilimsel kontrol gerekir.
+
+Paket yapısı:
+
+- `structure.in`: ilk `scf` veya sabit hücreli `relax` QE girdisi.
+- `pipeline.json`: sıra, kaynak profili, kullanıcı tarafından verilen
+  elektronik parametreler, giriş ve betik SHA-256'ları, bilinen UPF
+  hashleri.
+- `pipeline.py`: yalnız standart Python 3 kütüphanesiyle çalışan
+  yerel hazırlanma/kanıt/sonuç aracı; harici sunucuya istek atmaz.
+- `submit.sh` ve `stages/*.slurm`: yalnız TRUBA üstünde, açık
+  `bash submit.sh` komutuyla başlatılır. `sbatch --dependency=afterok`
+  ile aşama başarılarına seri bağımlıdır; ortak QE `tmp/` dizinine
+  paralel yazımı önler. Her aşamanın betiği, ayrılmış MPI görevlerini
+  ve QE 7.4 modülünü açıkça seçer.
+- `pseudo/`: istenirse ZIP'e eklenmiş gerçek UPF dosyaları. Eksikler
+  yüklenmeden ilk hesap başlayamaz.
+- Başarılı koşum sonrası `reports/<stage>.json`, `scf.out`,
+  `bands.out`, `bands.dat.gnu`, `nscf.out`, `dos.dat`,
+  `pdos.pdos_tot`, `pipeline-summary.json`.
+
+İş akışı sırası:
+
+```text
+[relax] → SCF → bands (pw.x) → bands_pp (bands.x)
+        → NSCF (pw.x) → DOS (dos.x) → PDOS (projwfc.x)
+```
+
+`relax` seçildiğinde `pipeline.py` yalnız tamamlanmış, BFGS
+yakınsamış ve *crystal* son koordinatlarını içeren sabit hücreli QE
+çıktısından yeni `scf.in` türetir. Atom sırası ve sayısı eşleşmezse
+veya değişken hücre bilgisi tespit edilirse sonraki işi reddeder.
+Bant ve NSCF aşamaları **SCF** girdisinden türetilir; ortak
+`tmp/kristalyapi.save` QE ara verileri **silinmez**. Aşama başlangıcında
+önceki rapordaki girdi/çıktı ve en güncel QE XML SHA-256'ları
+yeniden kontrol edilir. Sonraki PW aşaması XML'i değiştirebileceği
+için geçmiş hashler aşamaya ait kanıt olarak saklanır.
+
+Örnek çalıştırma (VPN/SSH ile bağlandıktan sonra):
+
+```bash
+unzip si_truba_pipeline.zip -d si-pipeline
+cd si-pipeline
+# Eksik UPF'leri pseudo/ içine yerleştirip modül/kuyruk uygunluğunu kontrol edin.
+bash submit.sh
+cat submissions.txt
+squeue -u "$USER"
+sacct -j JOB_ID --format=JobID,State,Elapsed,MaxRSS,ExitCode
+# Zincir bittikten sonra veya manuel kontrol için:
+python3 pipeline.py summary
+```
+
+`pipeline-summary.json` dosyası **DFT → Sonuçları incele** ekranındaki
+TRUBA özet alanına yerel olarak yüklenebilir. **Bu görünüm aşama
+durumu ve kayıt sayılarını gösterir; bant/DOS grafiğini otomatik
+oluşturmaz.** Ham `bands.dat.gnu`, `dos.dat` ve `pdos*` dosyaları
+ayrıca saklanmalıdır; mevcut yerel `tools/qe_pipeline.py` aracı
+farklı bağımlılıklarla elektronik sonuç dönüştürme özelliklerine
+sahiptir ve bu bağımsız TRUBA ZIP'ine aktarılmamıştır.
+
+Sınırlamalar: P1.2 yalnız kollineer olmayan spin/SOC içermeyen,
+sabit hücreli, P1 açık atomlu frontend `scf/relax` girdileri içindir.
+Kullanıcı UPF'lerinde SHA olmayan dosyalar özet içinde
+`all_upfs_pinned=false` olarak işaretlenir. `afterok`, QE'nin
+rapor edilen çıktı/tamamlanma işaretleri ve dosya hashleri
+**bağımsız bilimsel doğruluk veya fiziksel yakınsama kanıtı değildir**.
+İşleri otomatik yeniden deneme veya kalan kısımda otomatik
+devam etme yoktur. Eski `submissions.txt` veya kilit varsa
+tekrarlama önlenir; yeni hesap için yeni dizin/paket gerekir.
+Gerçek TRUBA SLURM, MPI ve QE bilimsel kabul koşuları henüz yapılmadı.
+
 ## Sonraki adımlar
 
-- **P1.2 (henüz uygulanmadı):** Relax → SCF → NSCF → bant/DOS için açık
-  kaynak/k-yolu/bant sayısı seçimleri, kontrol edilen aşama sınırları,
-  `sbatch` aşama bağımlılıkları, ortak `prefix/outdir` yönetimi ve
-  bağımsız QE kabul testleri. `tools/qe_pipeline.py` yerel çok aşamalı
-  uygulama referansı olabilir fakat mevcut bağımlılıklarıyla
-  TRUBA ZIP'inin içine otomatik kopyalanması doğru değildir.
+- **P1.2 (uygulandı; TRUBA kabul testi bekleniyor):** Açık k-yolu,
+  `nbnd`, NSCF k-örgüsü ve DOS genişliği/penceresiyle aşamalı SLURM
+  ZIP; seri `afterok` bağımlılıkları ve yeniden kullanılan ortak
+  `prefix='kristalyapi'` / `outdir='./tmp'`.
+- **P1.2 gerçek TRUBA smoke ve bilimsel kabul (beklemede):**
+  `sbatch`/MPI/QE modüllerinin doğrulanması, Si ve MoS₂ örneklerinde
+  SCF/relax/bands/NSCF/DOS/PDOS dosya semantiği, bant yolu ve
+  yöntem parametrelerinin bağımsız yakınsama testleri.
 - **P2:** SLURM job array ile cutoff/k-point yakınsama ve MoS₂ kusur serileri,
   kaynak ve yöntem bazında bilimsel kabul raporları.
 - **P3:** Kullanıcı onaylı VPN/SSH üzerinden iş gönderme/durum izleme; ayrı

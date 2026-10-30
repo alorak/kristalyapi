@@ -21,7 +21,9 @@ import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-vie
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 import { createTrubaPackage } from './qe-hpc-export.js';
+import { createTrubaPipelinePackage } from './qe-hpc-pipeline.js';
 import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.js';
+import { parseTrubaPipelineSummary,renderTrubaPipelineSummary } from './qe-truba-pipeline-view.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -6851,15 +6853,48 @@ async function qeExportTrubaPackage(){
  }catch(error){status.textContent='Paket oluşturulamadı: '+error.message;inform('TRUBA export: '+error.message);}
  finally{button.disabled=false;}
 }
+async function qeExportTrubaPipeline(){
+ const button=$('qeHpcPipelineExport'),status=$('qeHpcPipelineStatus');
+ if(button.disabled)return;
+ button.disabled=true;
+ status.textContent='Çevrimdışı SLURM aşama paketi hazırlanıyor; iş gönderilmiyor.';
+ try{
+  const {result}=qeBuildLocalInput();
+  const response=await fetch(new URL('./tools/qe_hpc_pipeline.py',document.baseURI));
+  if(!response.ok)throw Error('P1.2 Python aşama hazırlayıcısı alınamadı.');
+  const pipelineScript=await response.text();
+  const pkg=await createTrubaPipelinePackage({
+   inputText:result.text,
+   account:$('qeHpcAccount').value,partition:$('qeHpcPartition').value,
+   ntasks:$('qeHpcTasks').value,hours:$('qeHpcHours').value,
+   jobName:safeName(state.name)+'-electronic',
+   upfFiles:Array.from($('qeHpcUpfFiles').files||[]),pipelineScript,
+   nbnd:$('qeHpcNbnd').value,kx:$('qeHpcNscfKx').value,
+   ky:$('qeHpcNscfKy').value,kz:$('qeHpcNscfKz').value,
+   bandPath:$('qeHpcBandPath').value,
+   emin:$('qeHpcEmin').value,emax:$('qeHpcEmax').value,
+   deltaE:$('qeHpcDeltaE').value,degauss:$('qeHpcDegauss').value
+  });
+  download(safeName(state.name)+'_truba_pipeline.zip',pkg.blob,'application/zip');
+  status.textContent='P1.2 ZIP hazır: '+pkg.manifest.stages.join(' → ')+
+   '. Sırayla çalışma yalnız TRUBA üzerinde bash submit.sh komutuyla başlar. '+
+   (pkg.missing.length?'Eksik UPF: '+pkg.missing.join(', '):'UPF dosyaları pakette.')+
+   ' Bant yolu/nbnd ve yakınsama koşulları kullanıcı tarafından doğrulanmalı.';
+ }catch(error){status.textContent='P1.2 paketi oluşturulamadı: '+error.message;inform('TRUBA P1.2: '+error.message);}
+ finally{button.disabled=false;}
+}
 async function qeOpenTrubaSummary(){
  const status=$('qeHpcSummaryStatus'),container=$('qeHpcSummaryView');
  container.replaceChildren();
  try{
   const file=$('qeHpcSummaryFile').files?.[0];
   if(!file||file.size<2||file.size>512000)throw Error('512 KB altı geçerli summary.json seçin.');
-  const summary=parseTrubaSummary(JSON.parse(await file.text()));
-  renderTrubaSummary(container,summary);
-  status.textContent='TRUBA özet dosyası okundu: '+summary.status+
+  const data=JSON.parse(await file.text());
+  const isPipeline=data?.schema==='kristalyapi.truba-qe-pipeline-summary.v1';
+  const summary=isPipeline?parseTrubaPipelineSummary(data):parseTrubaSummary(data);
+  if(isPipeline)renderTrubaPipelineSummary(container,summary);
+  else renderTrubaSummary(container,summary);
+  status.textContent='TRUBA '+(isPipeline?'aşamalı ':'')+'özet dosyası okundu: '+summary.status+
    '. Mevcut kristalle yapı eşleşmesi doğrulanmaz; hesap gönderilmez.';
  }catch(error){status.textContent='TRUBA özeti okunamadı: '+error.message;}
 }
@@ -10174,6 +10209,7 @@ function bind(){
  $('qePseudoAuto').onclick=()=>{ $('qePseudoFiles').value='';qeEnsurePseudoNames();};
  $('qeExportPw').onclick=qeExportPwInput;
  $('qeExportHpc').onclick=qeExportTrubaPackage;
+ $('qeHpcPipelineExport').onclick=qeExportTrubaPipeline;
  $('qeHpcSummaryOpen').onclick=qeOpenTrubaSummary;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
