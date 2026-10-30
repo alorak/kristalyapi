@@ -175,3 +175,49 @@ test('archived real Si spin spectra parse both eight-band channels without alter
  const parsed=parseQeElectronicResult(data);
  for(const channel of ['up','down']){assert.equal(parsed.channels[channel].bands.curves.length,8);assert.equal(parsed.channels[channel].dos.energy.length,1401);assert.equal(parsed.channels[channel].pdosDetailed.atoms.length,2);}
 });
+
+
+test('k-path nodes require explicit, sampled distances and matching labels',()=>{
+ const raw=valid();raw.band_path_labels=['Gamma','M','K'];
+ raw.bands.k_path_nodes=[{label:'Gamma',distance:0},{label:'M',distance:.5},{label:'K',distance:1}];
+ const before=JSON.stringify(raw),parsed=parseQeElectronicResult(raw);
+ assert.deepEqual(parsed.bands.kNodes,raw.bands.k_path_nodes);
+ assert.equal(JSON.stringify(raw),before);
+ for(const change of [
+  x=>x.bands.k_path_nodes[1].distance=.6,
+  x=>x.bands.k_path_nodes[2].distance=.5,
+  x=>x.bands.k_path_nodes[0].label='X',
+  x=>x.band_path_labels.push('Gamma'),
+  x=>x.bands.k_path_nodes[1].distance=NaN
+ ]){
+  const bad=structuredClone(raw);change(bad);
+  assert.throws(()=>parseQeElectronicResult(bad),/k-yolu/);
+ }
+ const legacy=valid();
+ assert.equal(parseQeElectronicResult(legacy).bands.kNodes,null,
+  'ordered labels alone cannot justify high-symmetry positions');
+});
+
+test('band chart marks only explicit k-nodes, with no invented Fermi line or singled-out band',async()=>{
+ const previous=globalThis.document;
+ class FakeNode{
+  constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.style={};this.textContent='';}
+  setAttribute(k,v){this.attributes[k]=String(v);}
+  append(...nodes){this.children.push(...nodes);}
+ }
+ globalThis.document={createElementNS:(ns,tag)=>new FakeNode(tag)};
+ try{
+  const {chart}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+  const curves=[{x:[0,.5,1],y:[0,1,2]},{x:[0,.5,1],y:[1,2,3]}];
+  const plot=chart('Bant','k','eV',curves,660,260,{bandCurves:true,
+   kNodes:[{label:'Gamma',distance:0},{label:'K',distance:1}]});
+  assert.equal(plot.attributes['data-k-node-count'],'2');
+  const walk=n=>[n,...n.children.flatMap(walk)],all=walk(plot);
+  assert.equal(all.filter(n=>n.tag==='path').length,2);
+  assert.equal(new Set(all.filter(n=>n.tag==='path').map(n=>n.attributes.stroke)).size,1);
+  assert.ok(all.some(n=>n.tag==='text'&&n.textContent==='Γ'));
+  assert.equal(all.some(n=>String(n.textContent).includes('Fermi')),false);
+  const plain=chart('Bant','k','eV',curves,660,260,{bandCurves:true});
+  assert.equal(plain.attributes['data-k-node-count'],undefined);
+ }finally{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;}
+});

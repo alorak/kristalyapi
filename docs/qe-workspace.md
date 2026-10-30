@@ -43,6 +43,16 @@ Electronic results provide a display-only energy window. Bands and DOS can share
 
 Band and DOS/PDOS CSV downloads include every loaded sample, original band indices, element/atom totals and orbitals, energy-reference text and input hash. A selected display window does not truncate CSV. A later explicitly bounded server band window is labelled by its original indices. SVG and PNG exports capture the displayed range and contain source/energy/input metadata; PNG uses a bounded local canvas. Exporting does not contact the API or modify the crystal.
 
+## Result visualization UX (no new solver or scientific claims)
+
+The electronic spectrum viewer now shows all ordinary Kohn–Sham band curves with the same stroke color, while DOS and projected DOS have distinct series colors. The source and unshifted QE energy reference remain prominently visible. The viewer does not estimate a Fermi level, vacuum reference, band gap, optical transition or emission spectrum.
+
+A band-result payload **may optionally** contain `bands.k_path_nodes`, a list of `{label, distance}` objects matching `band_path_labels` in order and lying on the sampled `bands.distance` grid. Only verified explicit nodes produce vertical high-symmetry lines on the graph. Older `electronic-results.json` files still render normally: their ordered labels are shown as text, with **no guessed x-axis locations**. This is a read-only display extension; it does not infer values from counts or filenames or alter the producer schema. Multi-spin channels apply the same constraints per channel.
+
+Relaxation comparison keeps the existing two synchronized 3D views and adds an opt-in overlay on the **final** view. Initial positions appear as faint gray points and true-scale minimum-image displacement segments appear in turquoise, without geometric exaggeration. Summary text reports maximum and mean atomic displacement in Å and the validated maximum force component. The atom table can be ordered by displacement while retaining original atom IDs. These are geometric diagnostics, not convergence extrapolation or physical trajectory reconstruction; the accepted final positions and source hashes are unchanged.
+
+A browser regression uses a **synthetic** 5 Å periodic wrap case solely to test UI behavior; it does not constitute an additional real Quantum ESPRESSO calculation or acceptance result.
+
 ## Evidence-backed protocol templates
 
 Preparation includes **Si functional smoke** and **MoS₂ D4.1 finite band/mesh acceptance** templates. Both embed the exact recorded request, request-file SHA-256, source/evidence commits, engine version, structure hash and UPF identities. Si is only an operational test, and MoS₂ scope is limited to the fixed D3 geometry/PBE/scalar/unpolarized protocol; DOS broadening remains sensitivity only.

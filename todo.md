@@ -264,6 +264,17 @@ tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 - [ ] **Takip P1:** İş listesini proje/iş adı, filtreleme ve sayfalama ile geliştirme; ayrı bir iş snapshot/provenance özeti ve hesaplanan bant/DOS görünümü.
 - [ ] **Takip P1:** Kullanıcı etkileşimli hesap türü ve preflight durumları için daha kapsamlı TR/EN metin bütünlüğü; gerçek Chromium + API CI koşularını merge öncesi doğrula.
 
+### D-UX P1 — Sonuçlar ekranının bilimsel sunumu
+
+- [x] Bant eğrilerini tek fiziksel anlamı olmayan farklı bant renkleri yerine tutarlı renkle çiz; DOS/PDOS serilerini birbirinden ayır.
+- [x] Gerçek örneklenmiş k-uzaklık/etiket eşleşmesi varsa yüksek-simetri çizgilerini göster, yalnız etiket listesinde gösterme; Fermi seviyesi veya bant aralığı üretme.
+- [x] Kaynak/ham QE enerji referansını öne çıkar, indirilen ham CSV/plot verisini değiştirme.
+- [x] Son relaksasyon görünümünde minimum-görüntü Å vektörlerini aç/kapat, maksimum/ortalama hareket özetini ve Δr sıralı atom tablosunu ekle.
+- [x] Geriye uyumlu parser, spin verisi, masaüstü/mobil ve sentetik periyodik sınır UI testleri ekle.
+- [ ] **Sonraki paket:** K-yolu düğümlerini gerçek QE üreticisinin kanıtlanmış k-örneklemesinden otomatik belgelemek; keyfî etiket/tahmini interpolasyon yapmamak.
+- [ ] **Sonraki paket:** Enerji referansları (Fermi/vakum) ve bant kenarı gibi analizleri yalnız bilimsel protokol ve ham kanıtla doğrulanmış durumda eklemek.
+- [ ] **Sonraki paket:** Relaksasyonun iyonik adım enerji/kuvvet seyri yalnız gerçek `pw.x` adım verisi sağlandığında çizilsin.
+
 ### D0–D1 — Docker QE kurulumu ve read-only bağlantı (ilk altyapı)
 
 - [x] İlk konteyner: Debian Trixie QE 6.7-3+b1 sürümünü paket düzeyinde sabitleyen Dockerfile; `pw.x`, `bands.x`, `dos.x`, `projwfc.x` varlık kontrolleri ve `pw.x` banner smoke. **Bu gerçek SCF/relax fizik koşumu değildir.**

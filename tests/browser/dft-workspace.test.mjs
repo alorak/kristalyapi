@@ -93,6 +93,38 @@ try{
  }
  await spectra.screenshot({path:path.join(artifacts,'dft-workspace-spectra.png')});
 
+ // UI-only relaxation regression with a synthetic periodic boundary crossing. No QE job is run.
+ await page.evaluate(async()=>{
+  const THREE=await import('three');
+  const {OrbitControls}=await import('three/addons/controls/OrbitControls.js');
+  const {parseRelaxationResult,renderRelaxationComparison}=await import('./qe-relax-view.js');
+  const sourceHash='a'.repeat(64),finalHash='b'.repeat(64);
+  const structure={
+   periodic:true,cell_angstrom:[[5,0,0],[0,5,0],[0,0,5]],
+   atoms:[{element:'Si',fractional:[.99,.2,.2]},{element:'Si',fractional:[.25,.25,.25]}]
+  };
+  const finalStructure=structuredClone(structure);finalStructure.atoms[0].fractional[0]=.01;
+  const stage={job_done:true,scf_converged:true,last_scf_accuracy_ry:1e-9,max_force_component_ry_bohr:1e-5};
+  const raw={schema:'kristalyapi.qe-relax-scf-result.v1',engine:'quantum-espresso',
+   structure_hash:sourceHash,final_structure_hash:finalHash,scf_converged:true,
+   geometry_converged:true,job_done:true,initial_structure:structure,final_structure:finalStructure,
+   relaxation_settings:{force_threshold_ry_bohr:1e-4},energy_ry:-8,energy_ev:-8*13.605693122994,
+   stages:{relax:{...stage,geometry_converged:true,has_final_coordinates:true},
+    scf:{...stage,structure_hash:finalHash}}};
+  const host=document.createElement('section');host.id='dftRelaxTestHost';
+  document.querySelector('#dft-sonuclar').append(host);
+  window.__dftRelaxTestDispose=renderRelaxationComparison(host,parseRelaxationResult(raw,sourceHash),{THREE,OrbitControls});
+ });
+ const relaxHost=page.locator('#dftRelaxTestHost');
+ assert.equal(await relaxHost.locator('canvas').count(),2);
+ assert.match(await relaxHost.locator('.qe-relax-summary').textContent(),/0\.100000 Å/);
+ await relaxHost.getByLabel('Yer değiştirme vektörlerini göster').check();
+ await relaxHost.getByLabel('Atomları en büyük harekete göre sırala').check();
+ assert.equal(await relaxHost.locator('.qe-relax-table tbody tr').count(),2);
+ assert.match(await relaxHost.locator('.qe-relax-table tbody tr').first().textContent(),/1 · Si/);
+ await page.evaluate(()=>{window.__dftRelaxTestDispose();document.getElementById('dftRelaxTestHost').remove();delete window.__dftRelaxTestDispose;});
+
+
  await page.locator('[data-dft-section="yakinsama"]').click();
  await page.locator('[data-dft-section="kusurlar"]').click();
  await page.locator('#homeLink').click();
