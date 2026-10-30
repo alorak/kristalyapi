@@ -594,10 +594,10 @@ yeterli güvenilir veri oluşunca `D-P7` vekil model.
   doğrulama/görüntüleme; hiçbir geometri uygulaması veya SSH erişimi yok.
 - [x] **P1.1:** Sentetik doğrulama testleri, Pages/PWA dosya grafiği,
   CI testi ve kılavuz.
-- [ ] **P1.2:** `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x`
+- [x] **P1.2:** `relax → scf → bands/bands.x → nscf → dos.x/projwfc.x`
   aşamaları için kontrollü SLURM koşum paketi, zorunlu açık k-yolu,
   bant sayısı, spin/pseudopotansiyel ve ortak prefix/outdir kuralları.
-- [ ] **P1.2:** Aşama bazlı `afterok` bağımlılıkları, devam/tekrar koşma,
+- [x] **P1.2:** Aşama bazlı `afterok` bağımlılıkları, tekrar çalıştırmayı engelleme,
   başarısız aşamada sonraki hesapları başlatmama ve ara eserlerin hash kanıtı.
 - [ ] **P1.2:** TRUBA üzerinde gerçek QE küçük örnek ve Linux/MPI
   sürüm eşdeğerliliği; dosya/sonuç formatı ve fiziksel referans kabul testleri.
@@ -605,3 +605,9 @@ yeterli güvenilir veri oluşunca `D-P7` vekil model.
   geçerli bilimsel yakınsama ölçütleri olmadan otomatik kabul yok.
 
 Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
+
+- [x] **P1.2:** P1.1 tek iş ve P1.2 aşamalı sonuç şemalarının DFT ekranında
+  ayrı ayrı doğrulanması; otomatik geometri veya sahte bant grafiği üretme.
+- [ ] **P1.3:** Ham bands.gnu, dos.dat ve PDOS çıktılarının gerçek QE format
+  ayrıntılarıyla denetlenerek existing electronic-results.json grafikleri için
+  güvenilir, sınırlı ve bağımsız testli dönüştürücüyle içe alınması.
