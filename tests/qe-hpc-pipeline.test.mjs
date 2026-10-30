@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash,webcrypto} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,existsSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {parseBandPath,validatePipelineInput,pipelineStages,stageSlurm,
- createTrubaPipelinePackage} from '../qe-hpc-pipeline.js';
+ createTrubaPipelinePackage,resumeScript} from '../qe-hpc-pipeline.js';
 import {parseTrubaPipelineSummary,renderTrubaPipelineSummary} from '../qe-truba-pipeline-view.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
@@ -64,6 +67,29 @@ test('stages are serialized, no parallel QE writes and postprocessors use one ra
  assert.match(script,/module list 2>&1/);
  assert.match(script,/dos\.x -in dos\.in > dos\.out/);
  assert.match(script,/python3 pipeline\.py finish dos/);
+});
+test('manual resume refuses failed squeue queries and active jobs without calling sbatch',()=>{
+ const root=mkdtempSync(join(tmpdir(),'truba-squeue-'));
+ const bin=join(root,'mock-bin'),log=join(root,'sbatch.log');
+ try{
+  mkdirSync(bin);
+  writeFileSync(join(root,'resume.sh'),resumeScript(pipelineStages('scf')));
+  writeFileSync(join(root,'submissions.txt'),'scf 1042\n');
+  writeFileSync(join(bin,'python3'),'#!/bin/sh\nexit 0\n',{mode:0o755});
+  writeFileSync(join(bin,'sbatch'),'#!/bin/sh\nprintf "called\\n" >> "$TEST_SBATCH_LOG"\necho 2000\n',{mode:0o755});
+  const env={...process.env,PATH:bin+':'+process.env.PATH,TEST_SBATCH_LOG:log};
+  writeFileSync(join(bin,'squeue'),'#!/bin/sh\necho "controller unavailable" >&2\nexit 47\n',{mode:0o755});
+  const error=spawnSync('bash',['resume.sh','bands_pp'],{cwd:root,env,encoding:'utf8'});
+  assert.equal(error.status,3);
+  assert.match(error.stderr,/Cannot verify original Slurm job 1042/);
+  assert.equal(existsSync(log),false,'squeue error must not permit sbatch');
+  assert.equal(existsSync(join(root,'.resume-lock')),false);
+  writeFileSync(join(bin,'squeue'),'#!/bin/sh\necho 1042\n',{mode:0o755});
+  const busy=spawnSync('bash',['resume.sh','bands_pp'],{cwd:root,env,encoding:'utf8'});
+  assert.equal(busy.status,3);
+  assert.match(busy.stderr,/remains active/);
+  assert.equal(existsSync(log),false,'active Slurm job must not permit sbatch');
+ }finally{rmSync(root,{recursive:true,force:true});}
 });
 test('P1.2 ZIP contains ordered afterok scripts, actual Python and pinned files',async()=>{
  const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
