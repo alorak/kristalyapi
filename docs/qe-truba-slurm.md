@@ -406,3 +406,12 @@ Dosya seçimi/çalışma alanı SHA hesaplaması sırasında değişirse önceki
 ## P2.0 — Güvenli `squeue` sorgusu
 
 `resume.sh` artık her orijinal işin durumunu sorgularken yalnızca boş çıktıyı değil, **`squeue` komutunun başarılı çıkış kodunu** da zorunlu tutar. SLURM kontrolcüsüne erişim reddi, zaman aşımı veya diğer `squeue` hatalarında `resume` **hiçbir `sbatch` çağrısı yapmadan** durur; geçici sorgu başarısızlığı işin tamamlandığı anlamına gelmez. Devam edilmeden önce küme bağlantısı düzeltilmeli, orijinal iş kimlikleri ve `sacct` kayıtları elle incelenmelidir.
+
+## P2.1 — Bilimsel ön inceleme uyarıları ve süre profili
+
+- UPF v2 `PP_HEADER` üzerinde bildirilen `functional`, isteğe bağlı `wfc_cutoff` ve `rho_cutoff` değerleri okunur. Aynı pakette fonksiyonel etiketlerinin farklı olması, açık `input_dft` uyuşmazlığı ve seçili kesme enerjilerinin UPF önerisinin altında kalması **uyarı** üretir; bunlar ölçülmüş cutoff yakınsaması değildir. `nbnd` için zorunlu elektron kapasitesi kontrolü eskisi gibi hata verir.
+- Kaynak `K_POINTS` içinde `k_z=1` ve `CELL_PARAMETERS angstrom` varsa, hücre düzlemi normalindeki yüksekliği ve en büyük *kesirli z boş aralığı* hesaplanır. Bu aralık atomların sonlu boyutunu içermediği için **gerçek vakumun iyimser bir üst sınır göstergesidir**; 10 Å altında inceleme uyarısı gösterilir. `k_z=1` tek başına 2B malzemeyi kanıtlamaz.
+- Aşamalı ZIP için yeni **Seri son işlemler süre sınırı** seçeneği `bands.x`, `dos.x`, `projwfc.x` işlerindeki `#SBATCH --time` değerini, ana PW süre sınırından ayrı belirler (1–72 saat). Varsayılan aynı süreyi kullanır; eski davranış korunur. Gereğinden kısa süre PDOS veya 300+ bant için işi sonlandırabilir; önce gerçek `sacct` sürelerini inceleyin.
+- `pipeline.json` içinde `resource_estimate` ve `max_reserved_core_hours` alanları vardır. İkincisi her aşamanın çekirdek sayısıyla **talep edilen üst süre sınırının çarpımlarının toplamıdır**, gerçek CPU-zamanı tüketimi, hesap maliyeti veya kuyruğa girme tahmini değildir. Seri aşamalar hâlâ 56 CPU tahsis edip tek işlem kullanır; birleştirilmiş postprocessing henüz uygulanmadı.
+
+Referanslar: [Quantum ESPRESSO UPF standardı](https://pseudopotentials.quantum-espresso.org/home/unified-pseudopotential-format), [TRUBA orfoz CPU kuralları](https://docs.truba.gov.tr/1-kaynaklar/arf/arf_kuyruk_bilgisi.html).
