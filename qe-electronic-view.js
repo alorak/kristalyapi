@@ -67,7 +67,7 @@ function parseSingleChannel(data,spinChannel=null){
    throw Error('Bant sayısı 1–300 arasında olmalı.');
   if(curves.length*d.length>120000)throw Error('Görselleştirme için en fazla 120.000 bant noktası desteklenir.');
   const first=data.bands.band_index_start??1,total=data.bands.total_bands??curves.length;
-  if(!Number.isInteger(first)||!Number.isInteger(total)||first<1||total>2048||first+curves.length-1>total)
+  if(!Number.isInteger(first)||!Number.isInteger(total)||first<1||total>(trubaProvenance?10000:2048)||first+curves.length-1>total)
    throw Error('Bant penceresi ve özgün bant indeksleri geçersiz.');
   // High-symmetry markers are shown only with explicit sampled k-distances.
   // An ordered label list alone cannot locate markers on the QE distance axis.
