@@ -51,6 +51,21 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('#qeElectronicCharts svg').length===3);
  assert.match(await page.locator('#qeElectronicStatus').textContent(),/26.*3677/);
  const fileName=await page.locator('#qeElectronicFile').evaluate(el=>el.files[0].name);
+ const spectra=page.locator('#qeElectronicCharts');
+ await spectra.getByLabel('En düşük enerji (eV)',{exact:true}).fill('-8');
+ await spectra.getByLabel('En yüksek enerji (eV)',{exact:true}).fill('6');
+ await spectra.getByRole('button',{name:'Enerji penceresini uygula',exact:true}).click();
+ const primary=spectra.locator('.qe-band-dos-layout svg');assert.equal(await primary.count(),2);
+ for(let i=0;i<2;i++){assert.equal(await primary.nth(i).getAttribute('data-y-min'),'-8');assert.equal(await primary.nth(i).getAttribute('data-y-max'),'6');}
+ for(const [name,extension] of [['DOS / PDOS verisini CSV indir','csv'],['Grafikleri SVG indir','svg'],['Grafikleri PNG indir','png']]){
+  const promise=page.waitForEvent('download');await spectra.getByRole('button',{name,exact:true}).click();const download=await promise;
+  const filename=path.join(artifacts,'dft-workspace-spectrum.'+extension);await download.saveAs(filename);const bytes=await fs.readFile(filename);
+  if(extension==='csv'){const lines=bytes.toString().trim().split('\n');assert.equal(lines.length,3678);assert.ok(Number(lines[1].split(',')[0])< -8,'CSV retains out-of-view raw samples');}
+  if(extension==='svg')assert.ok(bytes.toString().includes('"display_energy_window_ev":[-8,6]'));
+  if(extension==='png')assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+ }
+ await spectra.screenshot({path:path.join(artifacts,'dft-workspace-spectra.png')});
+
  await page.locator('[data-dft-section="yakinsama"]').click();
  await page.locator('[data-dft-section="kusurlar"]').click();
  await page.locator('#homeLink').click();
@@ -109,7 +124,7 @@ try{
  const finishedReads=statusReads;
  await page.waitForTimeout(5500);
  assert.equal(statusReads,finishedReads,'terminal jobs stop automatic reads');
- await page.screenshot({path:path.join(artifacts,'dft-workspace-live-tracking.png')});
+ await page.locator('#dft-isler').screenshot({path:path.join(artifacts,'dft-workspace-live-tracking.png')});
  await page.locator('#qeJobResultsLink').click();
  await page.waitForFunction(()=>!document.getElementById('qeApiElectronicResults').hidden);
  assert.equal(await page.locator('#qeApiElectronicResults svg').count(),3);

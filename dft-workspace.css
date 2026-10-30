@@ -98,3 +98,8 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 .qe-stage-list li[data-state=completed]{border-color:#c9e4da;background:#eef8f3;color:#398366}
 .qe-stage-list li[data-state=running]{border-color:#a9cee9;background:#e8f4ff;color:#21699f;font-weight:750}
 .qe-stage-list li[data-state=failed]{border-color:#e9c9cd;background:#fff1f2;color:#a1505d}
+.qe-spectrum-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.qe-spectrum-downloads{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+.qe-band-dos-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:12px}
+.qe-band-dos-layout section{min-width:0}.qe-linked-chart svg{height:360px!important;max-height:360px}
+@media(max-width:700px){.qe-band-dos-layout{grid-template-columns:minmax(0,1fr)}.qe-linked-chart svg{height:auto!important;max-height:360px}.qe-spectrum-controls{grid-template-columns:minmax(0,1fr)}}
