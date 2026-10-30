@@ -1,5 +1,7 @@
 # D2 — Docker Quantum ESPRESSO SCF job API (experimental single-user)
 
+> Güncel arayüzden gerçek bir küçük hesaba kadar kurulum için [DFT sunucusu adım adım kılavuzunu](dft-sunucu-kurulumu.md) kullanın. Bu belge ilk D0/D2 aşamasının kapsamını da içerir; sonraki relaksasyon, elektronik ve spin akışları güncel kılavuzda bağlantılıdır.
+
 This stage extends [D0–D1 discovery](qe-docker-api.md) to a **real, opt-in
 Quantum ESPRESSO `pw.x` single-point SCF worker**. It is not an exposed
 multi-user research cluster. Mock tests cover queue/auth/parser behavior;

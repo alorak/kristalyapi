@@ -589,6 +589,8 @@ Karşılaştırma: [VESTA resmî özellikleri](https://jp-minerals.org/vesta/en/
 
 ## Yerel geliştirme ve test
 
+DFT sunucusunu kurup ilk gerçek Si hesabını çalıştırmak için [adım adım Türkçe kılavuzu](docs/dft-sunucu-kurulumu.md) kullanın. Arayüz, API/worker, doğrulanmış UPF, erişim anahtarı ve sonuçların korunması birlikte anlatılır.
+
 Node.js **22+** ve Python 3 ile yerel statik sunucu çalıştırabilirsiniz. Yayındaki GitHub Pages iş akışı Moyo WASM dosyalarını otomatik ekler; yerel çalıştırmada yükleyin:
 
 ```sh

@@ -1,5 +1,7 @@
 # DFT workspace
 
+For local compute setup, verified Si UPFs, authentication and a first real job, see the [step-by-step server guide (Turkish)](dft-sunucu-kurulumu.md).
+
 Open **DFT** in the top navigation (`#dft`). The editor's DFT rail icon opens the same workspace. All routes work on GitHub Pages without server-side routing:
 
 | Address | Contents |
