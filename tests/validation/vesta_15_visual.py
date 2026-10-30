@@ -234,7 +234,7 @@ def audited_capture(root: Path, item: dict, bg: tuple[int, int, int], expected_s
     if list(image[:2]) != expected_size:
         raise ValueError("Actual PNG canvas size differs from fixed outputPixels; crop exported viewer content, not browser UI")
     capture_date = item.get("captureDate")
-    if not isinstance(capture_date, str) or not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", capture_date):
+    if not isinstance(capture_date, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", capture_date):
         raise ValueError("Capture date missing, expected YYYY-MM-DD")
     try:
         date.fromisoformat(capture_date)
