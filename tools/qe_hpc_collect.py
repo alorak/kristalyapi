@@ -70,8 +70,8 @@ def parse_output(path: Path) -> dict:
     atom_force_max = None
     in_force_block = False
     with path.open("r", encoding="utf-8", errors="replace") as stream:
-        for line in stream:
-            if len(line) > 1024 * 1024:
+        for line in iter(lambda: stream.readline(1024 * 1024 + 1), ""):
+            if len(line) > 1024 * 1024 or (len(line) == 1024 * 1024 and not line.endswith("\n")):
                 raise ValueError("Unexpected oversized QE line")
             if "JOB DONE." in line:
                 result["job_done"] = True
