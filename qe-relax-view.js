@@ -37,6 +37,22 @@ export function parseRelaxationResult(data,expectedSourceHash){
    p.max_force_component_ry_bohr>=0&&p.max_force_component_ry_bohr<=threshold+1e-8)||
   !finite(data.energy_ry)||!finite(data.energy_ev)||Math.abs(data.energy_ry*13.605693122994-data.energy_ev)>1e-7)
   throw Error('İki aşamanın enerji/kuvvet yakınsama kanıtı eksik veya geçersiz.');
+ let ionicHistory=null;
+ if(data.ionic_history!==undefined){
+  const history=data.ionic_history,steps=history?.steps;
+  if(history?.schema!=='kristalyapi.qe-ionic-history.v1'||history.source!=='relax.out'||
+    !HASH.test(history.stdout_sha256)||history.stdout_sha256!==data.artifact_sha256?.['relax.out']||
+    !Array.isArray(steps)||steps.length<1||steps.length>60||
+    !Number.isInteger(data.relaxation_settings?.max_steps)||
+    steps.length>data.relaxation_settings.max_steps||
+    steps.some((p,i)=>p?.step!==i+1||!finite(p.energy_ry)||
+      !finite(p.total_force_ry_bohr)||p.total_force_ry_bohr<0)||
+    !finite(r.energy_ry)||!finite(r.total_force_ry_bohr)||
+    Math.abs(steps.at(-1).energy_ry-r.energy_ry)>1e-8||
+    Math.abs(steps.at(-1).total_force_ry_bohr-r.total_force_ry_bohr)>1e-8)
+    throw Error('İyonik adım geçmişi ham relaksasyon kanıtıyla uyuşmuyor.');
+  ionicHistory={steps:steps.map(p=>({...p})),stdoutHash:history.stdout_sha256};
+ }
  const rows=before.atoms.map((a,i)=>{
   const b=after.atoms[i],wrapped=b.fractional.map((x,j)=>{const d=x-a.fractional[j];return d-Math.round(d);});
   const delta=cart(wrapped,before.cell_angstrom);
@@ -44,10 +60,42 @@ export function parseRelaxationResult(data,expectedSourceHash){
    alignedAfterFractional:a.fractional.map((x,j)=>x+wrapped[j]),deltaAngstrom:Math.hypot(...delta)};
  });
  return {before,after,rows,sourceHash:data.structure_hash,finalHash:data.final_structure_hash,
-  energyEv:data.energy_ev,maxForceComponent:s.max_force_component_ry_bohr,threshold};
+  energyEv:data.energy_ev,maxForceComponent:s.max_force_component_ry_bohr,threshold,ionicHistory};
 }
 
 function node(tag,text){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;return el;}
+const SVG_NS='http://www.w3.org/2000/svg';
+function ionicChart(label,steps,key,unit){
+ const svg=document.createElementNS(SVG_NS,'svg');
+ svg.setAttribute('viewBox','0 0 650 190');svg.setAttribute('role','img');
+ svg.setAttribute('aria-label',label+' · iyonik adım');
+ svg.setAttribute('data-ionic-points',String(steps.length));
+ const add=(tag,attrs={},value)=>{
+  const item=document.createElementNS(SVG_NS,tag);
+  for(const [k,v] of Object.entries(attrs))item.setAttribute(k,String(v));
+  if(value!==undefined)item.textContent=String(value);
+  svg.append(item);return item;
+ };
+ const values=steps.map(p=>p[key]),left=72,right=20,top=16,bottom=43,w=650-left-right,h=190-top-bottom;
+ const low=Math.min(...values),high=Math.max(...values),delta=high-low||Math.max(Math.abs(high)*.01,1e-6);
+ const y0=low-delta*.08,y1=high+delta*.08;
+ const x=i=>left+(steps.length===1?.5:i/(steps.length-1))*w;
+ const y=v=>top+(y1-v)/(y1-y0)*h;
+ for(let j=0;j<=3;j++){
+  const py=top+j*h/3;
+  add('line',{x1:left,y1:py,x2:left+w,y2:py,stroke:'#bdd0df','stroke-width':.75});
+  add('text',{x:left-7,y:py+4,'text-anchor':'end','font-size':11,fill:'#45657f'},(y1-(y1-y0)*j/3).toPrecision(5));
+ }
+ const points=values.map((v,i)=>x(i).toFixed(2)+','+y(v).toFixed(2)).join(' ');
+ add('polyline',{points,fill:'none',stroke:'#2877b4','stroke-width':2,'vector-effect':'non-scaling-stroke'});
+ values.forEach((v,i)=>add('circle',{cx:x(i),cy:y(v),r:3,fill:'#2877b4'}));
+ add('text',{x:left,y:190-24,'font-size':11,fill:'#45657f'},'1');
+ add('text',{x:left+w,y:190-24,'text-anchor':'end','font-size':11,fill:'#45657f'},String(steps.length));
+ add('text',{x:325,y:185,'text-anchor':'middle','font-size':12,fill:'#365873'},'İyonik adım');
+ const title=node('strong',label+' ('+unit+')');
+ const box=node('section');box.className='qe-ionic-plot';box.append(title,svg);
+ return box;
+}
 
 export function renderRelaxationComparison(container,result,{THREE,OrbitControls}){
  container.replaceChildren();
@@ -123,6 +171,19 @@ export function renderRelaxationComparison(container,result,{THREE,OrbitControls
  const observer=new ResizeObserver(resize);observer.observe(grid);resize();
  const maxMove=Math.max(...result.rows.map(row=>row.deltaAngstrom));
  const averageMove=result.rows.reduce((sum,row)=>sum+row.deltaAngstrom,0)/result.rows.length;
+ if(result.ionicHistory){
+  const section=node('section');section.className='qe-ionic-history';
+  section.append(node('h4','İyonik yakınsama · ham QE adımları'));
+  section.append(node('p','Kaynak: relax.out · SHA-256 '+result.ionicHistory.stdoutHash+
+   ' · Yalnız enerji ve toplam kuvvet çiftleri doğrulanmış adımlar. Ayrı SCF aşamasının enerjisi bu seriyle birleştirilmez.'));
+  const plots=node('div');plots.className='qe-ionic-chart-grid';
+  plots.append(ionicChart('Toplam enerji',result.ionicHistory.steps,'energy_ry','Ry'),
+   ionicChart('Toplam kuvvet',result.ionicHistory.steps,'total_force_ry_bohr','Ry/Bohr'));
+  section.append(plots);container.append(section);
+ }else{
+  const info=node('p','İyonik adım enerji/kuvvet geçmişi bu sonuçta bulunmuyor; yalnız başlangıç ve son geometri karşılaştırılabilir.');
+  info.className='qe-ionic-unavailable';container.append(info);
+ }
  const summary=node('p','En büyük atom hareketi: '+maxMove.toFixed(6)+' Å · ortalama: '+
   averageMove.toFixed(6)+' Å · son en büyük kuvvet bileşeni: '+
   result.maxForceComponent.toExponential(3)+' Ry/Bohr (eşik '+result.threshold.toExponential(3)+' Ry/Bohr).');

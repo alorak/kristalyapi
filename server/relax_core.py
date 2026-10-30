@@ -132,6 +132,32 @@ def relaxed_structure(request, raw):
     return result["structure"], fingerprint
 
 
+def parse_ionic_history(raw, output_sha256):
+    """Extract bounded, paired ionic energies and total forces from raw relax.out.
+
+    An incomplete/mixed log has no history; never synthesize a missing force,
+    infer an ionic step from SCF iterations, or invent a trajectory.
+    """
+    if not re.fullmatch(r"[a-f0-9]{64}", output_sha256):
+        raise ValueError("Invalid ionic-history source hash")
+    energies = list(re.finditer(
+        r"(?im)^\s*!\s*total energy\s*=\s*("+NUMBER+r")\s*Ry\b", raw))
+    if not 1 <= len(energies) <= 60:
+        return None
+    steps = []
+    for idx, energy in enumerate(energies):
+        part = raw[energy.end():energies[idx+1].start() if idx+1<len(energies) else len(raw)]
+        forces = re.findall(r"(?im)^\s*Total force\s*=\s*("+NUMBER+r")\b", part)
+        if len(forces) != 1:
+            return None
+        e, f = number(energy.group(1)), number(forces[0])
+        if f < 0:
+            return None
+        steps.append({"step":idx+1,"energy_ry":e,"total_force_ry_bohr":f})
+    return {"schema":"kristalyapi.qe-ionic-history.v1",
+            "source":"relax.out","stdout_sha256":output_sha256,"steps":steps}
+
+
 def checked_relaxation(request, raw, returncode):
     proof = checked_scf(raw, returncode, request, "relax")
     energies = [number(x) for x in re.findall(r"(?m)^\s*!\s*total energy\s*=\s*("+NUMBER+r")\s*Ry", raw)]

@@ -124,6 +124,18 @@ Ayrıca tarayıcıya yüklenen JSON bilimsel olarak doğrulanmış,
 aktif kristalle eşleştirilmiş veya imzalanmış sayılmaz. Dosyayı
 hesabı yaptığınız makineden aldığınızdan emin olun.
 
+### Gerçek k-yolu işaretleri
+
+`--band-path` ile belirtilen `crystal_b` yolundan **isimler** ve
+`bands.x` tarafından oluşturulan `bands.dat.gnu` dosyasından **gerçek
+örneklenmiş k-uzaklıkları** alınır. `k_path_nodes` yalnızca bütün örnek
+sayısı QE yol ağırlıklarıyla uyuştuğunda ve hücrenin karşılıklı örgü
+metriğiyle beklenen segment uzunlukları örneklenmiş uzaklıklarla
+uyuştuğunda yazılır. Aksi durumda iş başarısı korunur ama grafik
+üzerinde kanıtlanamayan Γ/M/K konumları gösterilmez. Etiket isimleri
+kullanıcının belirlediği noktalardır; otomatik simetri sınıflandırması
+değildir. Fermi hizalaması ve fiziksel bant aralığı çıkarımı yapılmaz.
+
 ## Test / tekrar üretilebilirlik
 
 ```bash

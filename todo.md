@@ -264,6 +264,16 @@ tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 - [ ] **Takip P1:** İş listesini proje/iş adı, filtreleme ve sayfalama ile geliştirme; ayrı bir iş snapshot/provenance özeti ve hesaplanan bant/DOS görünümü.
 - [ ] **Takip P1:** Kullanıcı etkileşimli hesap türü ve preflight durumları için daha kapsamlı TR/EN metin bütünlüğü; gerçek Chromium + API CI koşularını merge öncesi doğrula.
 
+### D-UX P2 — Gerçek hesap kanıtlarından eksen ve iyonik geçmiş
+
+- [x] `crystal_b` yol ağırlıklarını gerçek `bands.x` örneklenmiş x-ekseni ve hücreye özgü reciprocal metrikle çapraz doğrulayarak yalnız kanıtlı `k_path_nodes` üret.
+- [x] Spin bantları ve eski elektronik JSON şemasında geriye dönük uyumluluğu koru; doğrulanamayan node için eksen işaretini çizme.
+- [x] Sabit hücreli gerçek relaksasyon stdout'undan enerji/kuvvet çiftleri eksiksizse ham stdout hash'iyle bağlı `ionic_history` üret; eksik veri varsa atla.
+- [x] Relaksasyon Sonuçlar panelinde gerçek adımları ayrı Ry ve Ry/Bohr grafikleriyle göster; final bağımsız SCF değerini iyonik seriye katma.
+- [x] Negatif Python/Node/Chromium testleri ve TR/EN/PWA/doküman güncellemeleri.
+- [ ] İleride adım başına atomik kuvvet/konum arşivini ayrı ham kanıt sözleşmesiyle ele al; yalnız toplam kuvvetten atom başına kuvvet üretme.
+- [ ] K-yolu düğümleri için bağımsız `bands.x` ham k-vektör kanıtını da saklama; deneysel yüksek simetri sınıflandırması yapmama.
+
 ### D-UX P1 — Sonuçlar ekranının bilimsel sunumu
 
 - [x] Bant eğrilerini tek fiziksel anlamı olmayan farklı bant renkleri yerine tutarlı renkle çiz; DOS/PDOS serilerini birbirinden ayır.
