@@ -1152,6 +1152,26 @@ try{
  },output.toString('base64'));
  for(const axis of ['red','green','blue'])
   assert.ok(triadColors[axis]>10,'exported PNG must contain '+axis+' camera axis pixels: '+JSON.stringify(triadColors));
+ // The three camera-oriented arrows must survive as colored vector glyphs.
+ for(const format of ['svg','pdf-vector','eps']){
+  await page.locator('#saveBtn').click();
+  const [vectorDownload]=await Promise.all([
+   page.waitForEvent('download'),page.locator('[data-export="'+format+'"]').click()
+  ]);
+  const vectorText=(await fs.readFile(await vectorDownload.path())).toString('latin1');
+  for(const [axis,color] of [['X','#e24b4b'],['Y','#23a45b'],['Z','#286de0']]){
+   if(format==='svg')assert.match(vectorText,new RegExp('<text[^>]*fill="'+color+'"[^>]*>'+axis+'</text>'),
+    'SVG must preserve '+axis+' orientation label color');
+   if(format==='pdf-vector')assert.match(vectorText,new RegExp('\\('+axis+'\\) Tj ET'),
+    'vector PDF must preserve '+axis+' text glyph');
+   if(format==='eps')assert.match(vectorText,new RegExp('\\('+axis+'\\) true charpath stroke'),
+    'EPS must preserve '+axis+' outlined text glyph');
+  }
+  if(format==='pdf-vector')assert.doesNotMatch(vectorText,/\/DCTDecode|\/Subtype \/Image/,
+   'vector PDF must not rasterize the orientation marker');
+  if(format==='eps')assert.doesNotMatch(vectorText,/colorimage/,
+   'EPS must not rasterize the orientation marker');
+ }
  await page.setViewportSize({width:1024,height:768});
  await page.locator('#saveBtn').click();
  await page.locator('#pngScale').selectOption('4');
