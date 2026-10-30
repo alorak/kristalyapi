@@ -272,7 +272,7 @@ def checked_k_path_nodes(source, points, distance):
     match = re.search(r"(?im)^\s*CELL_PARAMETERS\s+(?:\{)?angstrom(?:\})?\s*$", source)
     if match is None:
         return None
-    rows = source[match.end():].splitlines()[:3]
+    rows = source[match.end():].lstrip("\r\n").splitlines()[:3]
     if len(rows) != 3:
         return None
     try:
