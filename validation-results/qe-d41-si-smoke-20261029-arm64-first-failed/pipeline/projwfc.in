@@ -1,0 +1,10 @@
+&PROJWFC
+ prefix='kristalyapi',
+ outdir='./tmp',
+ filpdos='pdos',
+ DeltaE=0.01,
+ ngauss=0,
+ degauss=0.005,
+ Emin=-65,
+ Emax=30,
+/

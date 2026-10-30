@@ -6,6 +6,7 @@ import re
 import xml.etree.ElementTree as ET
 
 from job_core import ALLOWED_TOP, canonical_request, num
+from qe_post_settings import canonical_dos_settings
 
 SCHEMA="kristalyapi.qe-electronic-job.v1"
 
@@ -23,7 +24,8 @@ def canonical_electronic_request(data):
     if not isinstance(data["parameters"],dict) or data["parameters"].get("calculation")!="electronic":
         raise ValueError("Invalid electronic calculation type")
     settings=data["electronic"]
-    if not isinstance(settings,dict) or set(settings)!={"nbnd","nscf_k","band_path"}:
+    required={"nbnd","nscf_k","band_path"}
+    if not isinstance(settings,dict) or set(settings) not in (required,required|{'dos'}):
         raise ValueError("Expected explicit bands, dense mesh and band path")
     nbnd,mesh=settings["nbnd"],settings["nscf_k"]
     if type(nbnd) is not int or not 1<=nbnd<=128 or type(mesh) is not int or not 2<=mesh<=24:
@@ -51,6 +53,7 @@ def canonical_electronic_request(data):
         raise ValueError("D4 supports 2D slab meshes with kz=1")
     result["schema"]=SCHEMA;result["parameters"]["calculation"]="electronic"
     result["electronic"]={"nbnd":nbnd,"nscf_k":mesh,"band_path":points}
+    if 'dos' in settings:result['electronic']['dos']=canonical_dos_settings(settings['dos'])
     return result,fingerprint
 
 

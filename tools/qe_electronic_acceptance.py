@@ -46,8 +46,9 @@ def make_request(plan,old,result):
     return request
 
 
-def derive(directory,plan,old,reference_result):
-    path=directory/'cases/electronic';folder=path/'pipeline'
+def derive(directory,plan,old,reference_result,case_name='electronic',state_count_dos=None):
+    require(re.fullmatch(r'[a-z0-9-]{1,80}',case_name) is not None,'Invalid evidence case name')
+    path=directory/'cases'/case_name;folder=path/'pipeline'
     request=make_request(plan,old,reference_result)
     require(json.loads((path/'request.json').read_text())==request,'Electronic request differs from fixed D3 reference')
     result=d3.identity(path,request,plan)
@@ -73,7 +74,7 @@ def derive(directory,plan,old,reference_result):
     require((folder/'bands.in').read_text()==bands_input(source,points,settings['nbnd']),'Raw explicit band path differs from plan')
     require((folder/'nscf.in').read_text()==nscf_input(source,settings['nbnd'],settings['nscf_k']),'Raw NSCF input differs from plan')
     for name in ('bands_pp','dos','projwfc'):
-        require((folder/(name+'.in')).read_text()==post_input(name),'Raw postprocessor settings differ from plan')
+        require((folder/(name+'.in')).read_text()==post_input(name,settings.get('dos')),'Raw postprocessor settings differ from plan')
     for name in ('bands','nscf'):
         text=(folder/(name+'.out')).read_text()
         require('convergence NOT achieved' not in text and 'Error in routine' not in text,'Invalid electronic PW stage')
@@ -97,9 +98,10 @@ def derive(directory,plan,old,reference_result):
     require(len(atomic['atoms'])==3 and {p['element'] for p in atomic['elements']}=={'Mo','S'} and
         any(p['element']=='Mo' and 'd' in p['orbitals'] for p in atomic['elements']) and
         any(p['element']=='S' and 'p' in p['orbitals'] for p in atomic['elements']),'Missing Mo-d or S-p atomic projections')
+    counted_dos=dos if state_count_dos is None else state_count_dos
     c=plan['criteria'];values={'reference_energy_difference_ry':abs(proof['energy_ry']-reference_result['energy_ry']),
         'max_final_force_component_ry_bohr':proof['max_force_component_ry_bohr'],
-        'integrated_state_count_error':abs((dos['integrated_states'][-1]-dos['integrated_states'][0])-2*settings['nbnd'])}
+        'integrated_state_count_error':abs((counted_dos['integrated_states'][-1]-counted_dos['integrated_states'][0])-2*settings['nbnd'])}
     limits={'reference_energy_difference_ry':c['max_reference_energy_difference_ry'],
         'max_final_force_component_ry_bohr':c['max_final_force_component_ry_bohr'],
         'integrated_state_count_error':c['max_integrated_state_count_error']}

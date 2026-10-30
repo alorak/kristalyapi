@@ -1,10 +1,10 @@
-name: QE MoS2 acceptance (D2.2 / D2.2b / D2.2c / D3 / D4, manual)
+name: QE MoS2 acceptance (D2.2 / D2.2b / D2.2c / D3 / D4 / D4.1, manual)
 
 on:
   workflow_dispatch:
     inputs:
       protocol:
-        description: "Fixed acceptance protocol: original seven cases or D2.2b cutoff followup"
+        description: "Fixed scientific protocol; d41 runs six independent electronic cases"
         required: true
         default: d22
         type: choice
@@ -15,6 +15,7 @@ on:
           - d22c
           - d3
           - d4
+          - d41
       mo_sha256:
         description: "Pre-reviewed SHA-256 of official PSlibrary Mo.pbe-spn-rrkjus_psl.1.0.0.UPF"
         required: true
@@ -33,6 +34,7 @@ concurrency:
 
 jobs:
   real-mos2-scf:
+    if: ${{ inputs.protocol != 'd41' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ (inputs.protocol == 'd3' || inputs.protocol == 'd4') && 240 || inputs.protocol == 'd22c' && 180 || 100 }}
     env:
@@ -87,5 +89,88 @@ jobs:
         with:
           name: qe-mos2-scf-${{ inputs.protocol || 'd22' }}-${{ github.run_number }}
           path: validation-results/qe-mos2-scf/
+          retention-days: 30
+          if-no-files-found: warn
+
+  electronic-convergence-case:
+    if: ${{ inputs.protocol == 'd41' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 250
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        case_id:
+          - nbnd32-k16-s010
+          - nbnd40-k16-s010
+          - nbnd40-k18-s010
+          - nbnd40-k24-s010
+          - nbnd40-k24-s005
+          - nbnd40-k24-s0025
+    env:
+      MO_SHA256: ${{ inputs.mo_sha256 }}
+      S_SHA256: ${{ inputs.s_sha256 }}
+      D41_CASE_ID: ${{ matrix.case_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate reviewed UPF hashes and frozen D4 reference
+        run: |
+          python - <<'PYTHON'
+          import json, os
+          plan = json.load(open('tests/fixtures/qe/mos2-electronic-convergence.json'))
+          for element in ('Mo', 'S'):
+              assert os.environ[element.upper()+'_SHA256'].lower() == plan['pseudopotentials'][element]['reviewed_sha256']
+          PYTHON
+          python tools/qe_electronic_convergence.py --preflight
+      - name: Run independent Docker/API job with fixed settings
+        run: python tools/qe_electronic_convergence.py --run-case "$D41_CASE_ID" --output validation-results/qe-mos2-d41
+      - name: Retain case raw evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qe-d41-case-${{ matrix.case_id }}
+          path: validation-results/qe-mos2-d41/
+          retention-days: 30
+          if-no-files-found: warn
+
+  electronic-convergence-report:
+    if: ${{ always() && inputs.protocol == 'd41' }}
+    needs: electronic-convergence-case
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: qe-d41-case-*
+          path: validation-results/qe-mos2-d41/
+          merge-multiple: true
+      - name: Compare complete cohort and independently verify the report
+        if: always()
+        run: |
+          mkdir -p validation-results/qe-mos2-d41
+          if [ ! -f validation-results/qe-mos2-d41/plan.json ]; then
+            cp tests/fixtures/qe/mos2-electronic-convergence.json validation-results/qe-mos2-d41/plan.json
+          fi
+          python tools/qe_electronic_convergence.py --report validation-results/qe-mos2-d41
+          python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41
+      - name: Retain cohort, comparisons and all raw failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qe-mos2-d41-${{ github.run_number }}
+          path: validation-results/qe-mos2-d41/
           retention-days: 30
           if-no-files-found: warn

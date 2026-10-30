@@ -20,7 +20,7 @@ from job_core import canonical_request,load_profile
 from job_store import JobStore
 from qe_probe import inspect_qe
 
-API_VERSION="0.4.0"
+API_VERSION="0.4.1"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 

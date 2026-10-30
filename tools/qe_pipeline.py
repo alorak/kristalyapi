@@ -21,6 +21,11 @@ from datetime import datetime, timezone
 
 from qe_run import parse_pw_input, stage, sha256_file, summarize_output
 from qe_pdos import parse_atom_orbital_pdos, parse_atom_symbols, exact_energy_window
+# Local CLI sources keep the pure validator in server/; the Docker image
+# places these modules together in /app. No request-controlled import paths.
+if (Path(__file__).resolve().parents[1]/'server').is_dir():
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'server'))
+from qe_post_settings import canonical_dos_settings
 
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?"
 STEPS = ("relax", "scf", "bands", "bands_pp", "nscf", "dos", "projwfc")
@@ -161,9 +166,17 @@ def nscf_input(scf_source, nbnd, kmesh):
     return source
 
 
-def post_input(kind):
+def post_input(kind, dos_settings=None):
     if kind == "bands_pp":
         return "&BANDS\n prefix='kristalyapi',\n outdir='./tmp',\n filband='bands.dat',\n lsym=.false.,\n/\n"
+    if dos_settings is not None:
+        p=canonical_dos_settings(dos_settings)
+        if kind not in ('dos','projwfc'):raise ValueError('Unknown postprocessor')
+        header="&DOS" if kind=='dos' else "&PROJWFC"
+        filename=" fildos='dos.dat',\n" if kind=='dos' else " filpdos='pdos',\n"
+        return (header+"\n prefix='kristalyapi',\n outdir='./tmp',\n"+filename+
+                f" DeltaE={p['delta_e_ev']:.12g},\n ngauss=0,\n degauss={p['degauss_ry']:.12g},\n"+
+                f" Emin={p['energy_min_ev']:.12g},\n Emax={p['energy_max_ev']:.12g},\n/\n")
     if kind == "dos":
         return ("&DOS\n prefix='kristalyapi',\n outdir='./tmp',\n fildos='dos.dat',\n"
                 " DeltaE=0.02,\n degauss=0.01,\n/\n")
@@ -261,7 +274,10 @@ def parse_pdos_total(path, dos):
 
 def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                  bands_x="bands.x", dos_x="dos.x", projwfc_x="projwfc.x",
-                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400):
+                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None):
+    if dos_settings is not None:
+        dos_settings=canonical_dos_settings(dos_settings)
+        if not pdos:raise ValueError('DOS settings require the DOS/PDOS pipeline')
     path = load_band_path(band_path)
     if not (1 <= timeout <= 604800):
         raise ValueError("Timeout must be 1 second to 7 days")
@@ -291,6 +307,7 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
     result["steps"] = {}
     result["requested"] = list(step for step in STEPS if step in needed)
     result["band_path"] = [name for name, _, _ in path] if path else None
+    if dos_settings is not None:result['dos_settings']=dos_settings
     result["notes"].append("Raw QE eigenvalue energy zeros are NOT experimental emission energies.")
     if not execute:
         result["notes"].append("Prepare-only geometry is provisional: subsequent inputs cannot yet incorporate relaxed positions.")
@@ -371,8 +388,8 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                 persist()
         if pdos:
             step_run("nscf", nscf_input(scf_source, nbnd, nscf_k))
-            step_run("dos", post_input("dos"), post=True)
-            step_run("projwfc", post_input("projwfc"), post=True)
+            step_run("dos", post_input("dos",dos_settings), post=True)
+            step_run("projwfc", post_input("projwfc",dos_settings), post=True)
             if execute:
                 dos = parse_dos(workdir / "dos.dat")
                 pdos_path = workdir / "pdos.pdos_tot"
@@ -426,15 +443,25 @@ def main(argv=None):
     parser.add_argument("--nbnd", type=int)
     parser.add_argument("--nscf-k", type=int, default=12)
     parser.add_argument("--pdos", action="store_true")
+    parser.add_argument('--dos-delta-e',type=float)
+    parser.add_argument('--dos-degauss',type=float)
+    parser.add_argument('--dos-emin',type=float)
+    parser.add_argument('--dos-emax',type=float)
     parser.add_argument("--timeout", type=int, default=14400)
     parser.add_argument("--run", action="store_true", help="Execute actual QE; default is prepare-only")
     args = parser.parse_args(argv)
     try:
+        values=[args.dos_delta_e,args.dos_degauss,args.dos_emin,args.dos_emax]
+        settings=None
+        if any(x is not None for x in values):
+            if any(x is None for x in values):raise ValueError('All four DOS grid/width arguments are required together')
+            settings=canonical_dos_settings(dict(zip(
+                ('delta_e_ev','degauss_ry','energy_min_ev','energy_max_ev'),values)))
         result = run_pipeline(args.input, args.pseudo_dir, args.workdir, execute=args.run,
                               pw=args.pw, bands_x=args.bands_x, dos_x=args.dos_x,
                               projwfc_x=args.projwfc_x, band_path=args.band_path,
                               nbnd=args.nbnd, nscf_k=args.nscf_k, pdos=args.pdos,
-                              timeout=args.timeout)
+                              timeout=args.timeout,dos_settings=settings)
         print(json.dumps({"status": result["status"], "manifest": str(args.workdir / "pipeline.json")},
                          ensure_ascii=False))
         return 0 if result["status"] in ("prepared", "completed") else 1

@@ -13,7 +13,7 @@ RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin qeapi \
 WORKDIR /app
 COPY --chown=10001:10001 server/api.py server/qe_probe.py server/job_core.py \
      server/job_store.py server/worker.py server/relax_core.py server/relax_worker.py \
-     server/electronic_core.py server/electronic_worker.py ./
+     server/electronic_core.py server/electronic_worker.py server/qe_post_settings.py ./
 COPY --chown=10001:10001 tools/qe_run.py tools/qe_pipeline.py tools/qe_pdos.py ./
 USER 10001:10001
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 QE_PROBE_TIMEOUT=8 \
