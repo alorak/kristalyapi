@@ -187,6 +187,7 @@ jobs:
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
           cp vesta-project-style.js public/vesta-project-style.js
+          cp vesta-project-view.js public/vesta-project-view.js
           cp qe-hpc-export.js public/qe-hpc-export.js
           cp qe-hpc-pipeline.js public/qe-hpc-pipeline.js
           cp qe-truba-pipeline-view.js public/qe-truba-pipeline-view.js
@@ -253,6 +254,7 @@ jobs:
           test -s public/dft-ui.js
           test -s public/export-graphics.js
           test -s public/vesta-project-style.js
+          test -s public/vesta-project-view.js
           test -s public/export-glyphs.js
           test -s public/vendor/LICENSE-OFL-1.1.txt
           test -s public/qe-defect-compare-view.js
