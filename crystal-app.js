@@ -15,7 +15,7 @@ import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {createJobPoller,renderJobProgress,renderCalculationSummary} from './qe-job-tracking.js';
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
 import {createDftSettings,enhanceFilePickers,initTabKeys,syncTabState} from './dft-ui.js';
-import {textOutline,svgPathData,pdfPathData,postScriptPathData,visibleLineIntervals,sphereShade,SPHERE_GRADIENT,mixHex,pngWithDpi,lzwEncode} from './export-graphics.js';
+import {textOutline,svgPathData,pdfPathData,postScriptPathData,visibleLineIntervals,sphereShade,SPHERE_GRADIENT,mixHex,pngWithDpi,lzwEncode,niceScaleLength,asciiText} from './export-graphics.js';
 import {MIN_SLAB_VACUUM_ANGSTROM,slabAnalysis,suggestBandPath,bandCapacityAdvice,bandCapacityFrom} from './qe-electronic-setup.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
@@ -224,6 +224,7 @@ function updateAxisGizmo(){
  const ordered=axisGizmoParts.map((part,i)=>({part,...coordinates[i]})).sort((a,b)=>a.depth-b.depth);
  for(const {part,label,x,y,depth} of ordered){
   part.text.textContent=label;
+  part.text.setAttribute('font-style',axisGizmoMode==='lattice'?'italic':'normal');
   const length=Math.hypot(x,y),radius=Math.max(6,38*length);
   const dx=length>1e-4?x/length:0,dy=length>1e-4?y/length:-1;
   const tipX=60+dx*radius,tipY=58+dy*radius;
@@ -241,46 +242,6 @@ function updateAxisGizmo(){
  }
 }
 
-
-/* The camera-locked XYZ widget is SVG, outside WebGL. Repaint its live SVG
-   geometry onto publication raster canvases so labels and arrow directions
-   match the on-screen quaternion even at 1–4× export resolution. */
-function drawExportAxisGizmo(ctx,stageRect,factor){
- const svg=$('axisGizmoSvg'),bounds=svg?.getBoundingClientRect();
- if(!bounds||bounds.width<=0||bounds.height<=0||!axisGizmoParts.length)return;
- updateAxisGizmo();
- const num=(element,name)=>Number(element.getAttribute(name));
- ctx.save();
- try{
-  ctx.translate((bounds.left-stageRect.left)*factor,(bounds.top-stageRect.top)*factor);
-  ctx.scale(bounds.width*factor/120,bounds.height*factor/120);
-  for(const group of svg.querySelectorAll('g')){
-   const line=group.querySelector('line'),arrow=group.querySelector('polygon'),label=group.querySelector('text');
-   if(!line||!arrow||!label)continue;
-   ctx.globalAlpha=Number(group.getAttribute('opacity')??1);
-   ctx.beginPath();ctx.moveTo(num(line,'x1'),num(line,'y1'));
-   ctx.lineTo(num(line,'x2'),num(line,'y2'));
-   ctx.lineWidth=num(line,'stroke-width');ctx.lineCap=line.getAttribute('stroke-linecap')||'round';
-   ctx.strokeStyle=line.getAttribute('stroke');ctx.stroke();
-   const points=arrow.getAttribute('points').trim().split(/\s+/).map(pair=>pair.split(',').map(Number));
-   ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
-   for(const point of points.slice(1))ctx.lineTo(point[0],point[1]);
-   ctx.closePath();ctx.fillStyle=arrow.getAttribute('fill');ctx.fill();
-   ctx.font=label.getAttribute('font-weight')+' '+label.getAttribute('font-size')+'px '+label.getAttribute('font-family');
-   ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
-   ctx.lineWidth=num(label,'stroke-width');ctx.strokeStyle=label.getAttribute('stroke');
-   ctx.strokeText(label.textContent,num(label,'x'),num(label,'y'));
-   ctx.fillStyle=label.getAttribute('fill');
-   ctx.fillText(label.textContent,num(label,'x'),num(label,'y'));
-  }
-  const center=svg.querySelector('circle');
-  if(center){
-   ctx.globalAlpha=1;ctx.beginPath();ctx.arc(num(center,'cx'),num(center,'cy'),num(center,'r'),0,2*Math.PI);
-   ctx.fillStyle=center.getAttribute('fill');ctx.fill();
-   ctx.lineWidth=num(center,'stroke-width');ctx.strokeStyle=center.getAttribute('stroke');ctx.stroke();
-  }
- }finally{ctx.restore();}
-}
 
 /* Camera-locked Cartesian X/Y/Z triad as true vector paths, shared by SVG,
    vector PDF and EPS. Use the live gizmo's depth ordering and viewport position:
@@ -309,7 +270,7 @@ function axisGizmoVectorPrimitives(svg,stageRect,bounds){
   shapes.push({type:'label',x,y,text:label.textContent,fill:label.getAttribute('fill'),
    textStroke:label.getAttribute('stroke')||'#ffffff',
    strokeWidth:n(label,'stroke-width')*scale,fontSize:n(label,'font-size')*scale,
-   bold:Number(label.getAttribute('font-weight'))>=600,opacity,depth});
+   bold:Number(label.getAttribute('font-weight'))>=600,italic:label.getAttribute('font-style')==='italic',opacity,depth});
  }
  const center=svg.querySelector('circle');
  if(center){
@@ -320,13 +281,6 @@ function axisGizmoVectorPrimitives(svg,stageRect,bounds){
  }
  return shapes;
 }
-function exportAxisGizmoPrimitives(stageRect){
- const svg=$('axisGizmoSvg'),bounds=svg?.getBoundingClientRect();
- if(!bounds||bounds.width<=0||bounds.height<=0||!axisGizmoParts.length)return [];
- updateAxisGizmo();
- return axisGizmoVectorPrimitives(svg,stageRect,bounds);
-}
-
 /* Volumetric files use Cartesian Å: axes are per-voxel step vectors.
    The input grid is NOT rescaled to match the currently displayed crystal. */
 const VOLUME_MAX_VOXELS=2500000;
@@ -8718,6 +8672,8 @@ function renderExportCanvas(factor,opaque=true){
  if(width<1||height<1||width>limits.width||height>limits.height||width*height>limits.maxPixels)
   throw Error('Görsel boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; genişliği, DPI değerini veya çarpanı düşürün.');
  const previousRatio=renderer.getPixelRatio(),previousToneMapping=renderer.toneMapping;
+ // Annotations are painted from the same primitives as the vector files.
+ const overlay=exportOverlayPrimitives(rect),labelSprites=root.children.filter(o=>o.userData.layer==='labels'&&o.visible);
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const temporary=[],previousAtomGeometries=atomMesh.map(mesh=>mesh.geometry);
  try{
@@ -8730,12 +8686,15 @@ function renderExportCanvas(factor,opaque=true){
   temporary.push(...pngCellStrokeMeshes(rect.height));
   // Filmic tone mapping desaturates element colours; vector exports use them unchanged.
   if(exportFigureSettings().scientificColor)renderer.toneMapping=THREE.NoToneMapping;
+  for(const sprite of labelSprites)sprite.visible=false;
   renderer.render(scene,camera);
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Görsel çizim yüzeyi oluşturulamadı.');
   if(opaque){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
   ctx.drawImage(renderer.domElement,0,0);
-  drawExportAxisGizmo(ctx,rect,factor);
+  drawCanvasPrimitives(ctx,overlay.items,factor);
+  canvas.exportNotes=overlay.notes;
  }finally{
+  for(const sprite of labelSprites)sprite.visible=true;
   for(const mesh of temporary){root.remove(mesh);mesh.material.dispose();}
   atomMesh.forEach((mesh,i)=>{mesh.geometry=previousAtomGeometries[i];});
   renderer.toneMapping=previousToneMapping;
@@ -8749,13 +8708,15 @@ async function screenshot(){
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
  if(!blob)throw Error('PNG kaydı oluşturulamadı.');
  // pHYs lets layout programs place the image at its real print size.
- const png=pngWithDpi(new Uint8Array(await blob.arrayBuffer()),dpi);
+ const {title,software,description}=figureProvenance();
+ const png=pngWithDpi(new Uint8Array(await blob.arrayBuffer()),dpi,{text:{Title:title,Software:software,Description:description}});
  download(safeName(state.name)+'_'+canvas.width+'x'+canvas.height+'.png',png,'image/png');
+ informExportNotes(canvas.exportNotes);
 }
 /* Baseline little-endian 8-bit RGB or RGBA TIFF in one LZW strip
    (compression 5, read by libtiff, Photoshop and journal tools). The X/Y
    resolution tags give the print size; they do not resample pixels. */
-function tiffRgbBytes(width,height,rgba,dpi=300,{alpha=false}={}){
+function tiffRgbBytes(width,height,rgba,dpi=300,{alpha=false,description='',software=''}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>24000000||
   !EXPORT_DPI.includes(dpi)||!ArrayBuffer.isView(rgba)||rgba.BYTES_PER_ELEMENT!==1||rgba.length!==width*height*4)
   throw Error('TIFF piksel boyutu, çözünürlüğü veya RGB verisi geçersiz.');
@@ -8766,11 +8727,16 @@ function tiffRgbBytes(width,height,rgba,dpi=300,{alpha=false}={}){
  }
  const strip=lzwEncode(raw);
  // ExtraSamples 2: unassociated alpha, as canvas pixels are not premultiplied.
- const tags=[[256,4,1,width],[257,4,1,height],[258,3,samples,'bits'],[259,3,1,5],[262,3,1,2],[273,4,1,'strip'],
+ // ImageDescription (270) and Software (305) record where the figure came from.
+ const ascii=text=>new TextEncoder().encode(asciiText(text)+'\u0000'),describe=ascii(description),made=ascii(software);
+ const tags=[[256,4,1,width],[257,4,1,height],[258,3,samples,'bits'],[259,3,1,5],[262,3,1,2],
+  ...(description?[[270,2,describe.length,'description']]:[]),[273,4,1,'strip'],
   [277,3,1,samples],[278,4,1,height],[279,4,1,strip.length],[282,5,1,'resX'],[283,5,1,'resY'],[284,3,1,1],[296,3,1,2],
-  ...(alpha?[[338,3,1,2]]:[])];
- const ifdSize=2+12*tags.length+4,bits=8+ifdSize,resX=bits+8,resY=resX+8,pixels=resY+8;
- const offsets={bits,resX,resY,strip:pixels};
+  ...(software?[[305,2,made.length,'software']]:[]),...(alpha?[[338,3,1,2]]:[])];
+ // TIFF value offsets must be even (word aligned).
+ const even=n=>n+(n&1),ifdSize=2+12*tags.length+4,bits=8+ifdSize,resX=bits+8,resY=resX+8,descriptionAt=resY+8;
+ const softwareAt=even(descriptionAt+(description?describe.length:0)),pixels=even(softwareAt+(software?made.length:0));
+ const offsets={bits,resX,resY,strip:pixels,description:descriptionAt,software:softwareAt};
  const bytes=new Uint8Array(pixels+strip.length),view=new DataView(bytes.buffer);
  view.setUint16(0,0x4949,true);view.setUint16(2,42,true);view.setUint32(4,8,true);
  view.setUint16(8,tags.length,true);
@@ -8786,13 +8752,16 @@ function tiffRgbBytes(width,height,rgba,dpi=300,{alpha=false}={}){
  for(let j=0;j<samples;j++)view.setUint16(bits+2*j,8,true);
  view.setUint32(resX,dpi,true);view.setUint32(resX+4,1,true);
  view.setUint32(resY,dpi,true);view.setUint32(resY+4,1,true);
+ if(description)bytes.set(describe,descriptionAt);
+ if(software)bytes.set(made,softwareAt);
  bytes.set(strip,pixels);
  return bytes;
 }
 /* Small, self-contained PDF 1.4 writer for one raster image. FlateDecode keeps
    the pixels lossless; DCTDecode (JPEG) is only a fallback for browsers without
    CompressionStream. Without a figure size the image is fitted to an A4 sheet. */
-function pdfImageBytes(width,height,image,{filter='FlateDecode',pageSize=null}={}){
+const pdfString=text=>'('+asciiText(text,1000).replace(/[\\()]/g,'\\$&')+')';
+function pdfImageBytes(width,height,image,{filter='FlateDecode',pageSize=null,title='Crystal structure export',description=''}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>24000000||
   !ArrayBuffer.isView(image)||image.BYTES_PER_ELEMENT!==1||image.length<4||!['FlateDecode','DCTDecode'].includes(filter))
   throw Error('PDF görüntü verisi geçersiz.');
@@ -8815,7 +8784,7 @@ function pdfImageBytes(width,height,image,{filter='FlateDecode',pageSize=null}={
   ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /'+filter+' /Length '+image.length+' >>\nstream\n');
  write(image);write('\nendstream\nendobj\n');
  obj(5,'<< /Length '+utf8.encode(content).length+' >>\nstream\n'+content+'endstream');
- obj(6,'<< /Producer (Kristal Yapi) /Title (Crystal structure export) >>');
+ obj(6,'<< /Producer (Kristal Yapi) /Creator (Kristal Yapi) /Title '+pdfString(title)+(description?' /Subject '+pdfString(description):'')+' >>');
  const xref=length;write('xref\n0 7\n0000000000 65535 f \n');
  for(let id=1;id<=6;id++)write(String(offsets[id]).padStart(10,'0')+' 00000 n \n');
  write('trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
@@ -8827,8 +8796,10 @@ function exportTiff(){
  const {dpi}=exportFigureSettings(),alpha=$('printTransparent').checked;
  const canvas=renderExportCanvas(rasterExportFactor('printScale'),!alpha);
  const pixels=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
- const bytes=tiffRgbBytes(canvas.width,canvas.height,pixels,dpi,{alpha});
+ const {software,description}=figureProvenance();
+ const bytes=tiffRgbBytes(canvas.width,canvas.height,pixels,dpi,{alpha,description,software});
  download(safeName(state.name)+'_'+canvas.width+'x'+canvas.height+'.tiff',bytes,'image/tiff');
+ informExportNotes(canvas.exportNotes);
 }
 async function exportPdf(){
  const {dpi,widthMm}=exportFigureSettings(),canvas=renderExportCanvas(rasterExportFactor('printScale'));
@@ -8839,25 +8810,26 @@ async function exportPdf(){
   const rgba=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data,rgb=new Uint8Array(width*height*3);
   for(let src=0,dst=0;src<rgba.length;src+=4){rgb[dst++]=rgba[src];rgb[dst++]=rgba[src+1];rgb[dst++]=rgba[src+2];}
   const zlib=new Uint8Array(await new Response(new Blob([rgb]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
-  pdf=pdfImageBytes(width,height,zlib,{filter:'FlateDecode',pageSize});
+  pdf=pdfImageBytes(width,height,zlib,{filter:'FlateDecode',pageSize,...figureProvenance()});
  }else{
   const uri=canvas.toDataURL('image/jpeg',.96);
   if(!uri.startsWith('data:image/jpeg;base64,'))throw Error('Tarayıcı JPEG kodlayıcısı kullanılamıyor.');
   const binary=atob(uri.split(',')[1]),jpeg=new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++)jpeg[i]=binary.charCodeAt(i);
-  pdf=pdfImageBytes(width,height,jpeg,{filter:'DCTDecode',pageSize});
+  pdf=pdfImageBytes(width,height,jpeg,{filter:'DCTDecode',pageSize,...figureProvenance()});
   inform('Bu tarayıcı kayıpsız sıkıştırmayı desteklemiyor; PDF görüntüsü JPEG olarak kaydedildi.');
  }
  download(safeName(state.name)+(widthMm===null?'_A4':'_'+widthMm+'mm')+'.pdf',pdf.bytes,'application/pdf');
+ informExportNotes(canvas.exportNotes);
  if(widthMm===null&&pdf.dpi<dpi)inform('PDF görüntüsü A4 üzerinde yaklaşık '+Math.round(pdf.dpi)+' DPI; daha yüksek çözünürlük için çarpanı artırın veya bir genişlik seçin.');
 }
 function svgEscape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
 /* Labels are written as glyph outlines (export-glyphs.js), so no font is
    needed to view, print or preflight a figure. */
 function vectorLabelOutline(p){
- return textOutline(p.text,{x:p.x,y:p.y,size:p.fontSize??12,bold:!!p.bold});
+ return textOutline(p.text,{x:p.x,y:p.y,size:p.fontSize??12,bold:!!p.bold,italic:!!p.italic,anchor:p.anchor||'middle'});
 }
-function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false,{widthMm=null}={}){
+function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false,{widthMm=null,description=''}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>8192||height>8192||
   !Array.isArray(items)||items.length>60000)throw Error('SVG boyutu veya geometrik öğe sayısı geçersiz.');
  const f=n=>{if(!Number.isFinite(n))throw Error('SVG koordinatı sonlu olmalı.');return Number(n.toFixed(3));};
@@ -8893,37 +8865,40 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
  const size=widthMm===null?[String(width),String(height)]:[f(widthMm)+'mm',f(widthMm*height/width)+'mm'];
  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+size[0]+'" height="'+size[1]+
   '" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+svgEscape(title)+'">\n<title>'+svgEscape(title)+
-  '</title><defs>'+defs+'</defs>'+(transparent?'':'<rect width="100%" height="100%" fill="#ffffff"/>')+
+  '</title>'+(description?'<desc>'+svgEscape(description)+'</desc>':'')+'<defs>'+defs+'</defs>'+(transparent?'':'<rect width="100%" height="100%" fill="#ffffff"/>')+
   '<g stroke-linejoin="round">'+markup+'</g></svg>\n';
 }
-function crystalSvgPrimitives(width,height){
+/* World point → stage CSS pixels and camera distance, or null off camera. */
+function exportProjector(width,height){
  camera.updateMatrixWorld(true);root.updateWorldMatrix(true,true);
- const objects=[],right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
- const colorHex=color=>'#'+(color?.getHexString?.(THREE.SRGBColorSpace)||'607080');
- const screen=world=>{
+ return world=>{
   const view=world.clone().applyMatrix4(camera.matrixWorldInverse);
   if(view.z>=-camera.near||view.z<=-camera.far)return null;
   const ndc=world.clone().project(camera);
   if(![ndc.x,ndc.y,ndc.z].every(Number.isFinite))return null;
   return {x:(ndc.x+1)*width/2,y:(1-ndc.y)*height/2,depth:-view.z};
  };
+}
+function crystalSvgPrimitives(width,height){
+ const screen=exportProjector(width,height),objects=[],notes=[],right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+ const colorHex=color=>'#'+(color?.getHexString?.(THREE.SRGBColorSpace)||'607080');
  // Lines are clipped against atom spheres after traversal (see below).
  const lines=[],spheres=[];
  const line=(a,b,stroke,widthWorld,opacity,pixelWidth=0)=>{lines.push({a,b,stroke,widthWorld,opacity,pixelWidth});};
- const radiusCircle=(centre,radius,fill,opacity,label)=>{
+ const radiusCircle=(centre,radius,fill,opacity)=>{
   const p=screen(centre),edge=screen(centre.clone().addScaledVector(right,radius));if(!p||!edge)return;
   const r=Math.hypot(edge.x-p.x,edge.y-p.y);
   if(!(r>.03))return;
   objects.push({type:'circle',x:p.x,y:p.y,r,fill,opacity,depth:p.depth});
   if(opacity>=.999)spheres.push({center:centre.clone().applyMatrix4(camera.matrixWorldInverse).toArray(),radius,x:p.x,y:p.y,r,depth:p.depth});
-  if(label)objects.push({type:'label',x:p.x,y:p.y-r-5,text:label,depth:p.depth-.0001,opacity:1});
- };
+  };
  const asWorld=(p,obj)=>p.clone().applyMatrix4(obj.matrixWorld);
  const matrix=new THREE.Matrix4(),base=new THREE.Vector3(),scale=new THREE.Vector3();
  const traverse=(obj,layer)=>{
   if(!obj.visible)return;
   const kind=obj.userData.layer||layer;
-  if(kind==='volume'||kind==='labels'||kind==='selection')return;
+  if(kind==='labels'||kind==='selection')return;
+  if(kind==='volume'){volumeVectorTriangles(obj,objects,notes,screen);return;}
   const material=Array.isArray(obj.material)?obj.material[0]:obj.material;
   const opacity=material?.opacity??1,color=colorHex(material?.color);
   if(obj.isInstancedMesh&&(kind==='atoms'||kind==='bonds')){
@@ -8933,8 +8908,7 @@ function crystalSvgPrimitives(width,height){
      const center=base.set(0,0,0).applyMatrix4(matrix).applyMatrix4(obj.matrixWorld).clone();
      scale.setFromMatrixScale(matrix);
      const col=new THREE.Color();if(obj.instanceColor)obj.getColorAt(i,col);else col.copy(material.color);
-     const idx=obj.userData.instanceAtomIndices?.[i];
-     radiusCircle(center,scale.x,colorHex(col),opacity,state.labels&&atomData[idx]?atomData[idx].site.symbol:'');
+     radiusCircle(center,scale.x,colorHex(col),opacity);
     }else{
      const a=new THREE.Vector3(0,-.5,0).applyMatrix4(matrix).applyMatrix4(obj.matrixWorld);
      const b=new THREE.Vector3(0,.5,0).applyMatrix4(matrix).applyMatrix4(obj.matrixWorld);
@@ -8984,7 +8958,184 @@ function crystalSvgPrimitives(width,height){
  for(const child of root.children)traverse(child,child.userData.layer);
  occludedVectorLines(lines,spheres,objects,screen);
  if(objects.length>60000)throw Error('SVG için çok fazla vektör öğesi var; süperhücreyi küçültün.');
+ objects.notes=notes;
  return objects;
+}
+/* Isosurfaces become flat-shaded translucent triangles (Lambert term against
+   the view direction), as VESTA's vector output does. Texture slices stay
+   raster-only, and very large surfaces are left out rather than truncated. */
+const VECTOR_VOLUME_TRIANGLES=40000;
+function volumeVectorTriangles(group,objects,notes,screen){
+ const triangles=[],perspective=!!camera.isPerspectiveCamera,forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+ let slice=false,wire=false,count=0;
+ group.traverse(obj=>{
+  if(!obj.isMesh||!obj.visible||!obj.geometry?.getAttribute('position'))return;
+  const material=Array.isArray(obj.material)?obj.material[0]:obj.material;
+  if(material?.map){slice=true;return;}
+  if(material?.wireframe){wire=true;return;}
+  const position=obj.geometry.getAttribute('position'),index=obj.geometry.index,colors=obj.geometry.getAttribute('color');
+  const total=(index?index.count:position.count)/3;count+=total;
+  if(count>VECTOR_VOLUME_TRIANGLES)return;
+  const vertex=k=>new THREE.Vector3().fromBufferAttribute(position,index?index.getX(k):k).applyMatrix4(obj.matrixWorld);
+  for(let i=0;i<total;i++){
+   const a=vertex(3*i),b=vertex(3*i+1),c=vertex(3*i+2),points=[a,b,c].map(screen);
+   if(points.some(q=>!q))continue;
+   const normal=new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).normalize();
+   const centroid=a.clone().add(b).add(c).multiplyScalar(1/3);
+   const view=perspective?camera.position.clone().sub(centroid).normalize():forward.clone().negate();
+   const shade=.35+.65*Math.abs(normal.dot(view));
+   const color=new THREE.Color();
+   if(material.vertexColors&&colors){
+    for(let k=0;k<3;k++){const v=index?index.getX(3*i+k):3*i+k;color.r+=colors.getX(v)/3;color.g+=colors.getY(v)/3;color.b+=colors.getZ(v)/3;}
+   }else color.copy(material.color);
+   color.multiplyScalar(shade);
+   triangles.push({type:'triangle',points:points.map(q=>[q.x,q.y]),depth:points.reduce((sum,q)=>sum+q.depth,0)/3,
+    fill:'#'+color.getHexString(THREE.SRGBColorSpace),opacity:material.opacity??1});
+  }
+ });
+ if(count>VECTOR_VOLUME_TRIANGLES)notes.push('İzoyüzey vektör sınırını ('+VECTOR_VOLUME_TRIANGLES+' üçgen) aşıyor ve çıkarıldı; PNG/TIFF kullanın.');
+ else objects.push(...triangles);
+ if(slice)notes.push('Hacimsel kesit dokusu vektör çıktıya girmez; PNG/TIFF kullanın.');
+ if(wire)notes.push('Tel kafes izoyüzeyler vektör çıktıya girmez; dolu yüzey seçin.');
+}
+function informExportNotes(notes){if(notes?.length)inform([...new Set(notes)].join(' '));}
+
+/* Projected atoms with their element, site label and colour, for labels and
+   the element legend. */
+function exportAtomDiscs(width,height){
+ const screen=exportProjector(width,height),right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+ const matrix=new THREE.Matrix4(),scale=new THREE.Vector3(),color=new THREE.Color(),discs=[];
+ for(const obj of atomMesh){
+  if(!obj.isInstancedMesh||!obj.visible||!obj.parent?.visible)continue;
+  const material=Array.isArray(obj.material)?obj.material[0]:obj.material;
+  for(let i=0;i<obj.count;i++){
+   obj.getMatrixAt(i,matrix);
+   const centre=new THREE.Vector3().applyMatrix4(matrix).applyMatrix4(obj.matrixWorld);
+   scale.setFromMatrixScale(matrix);
+   const p=screen(centre),edge=screen(centre.clone().addScaledVector(right,scale.x));if(!p||!edge)continue;
+   if(obj.instanceColor)obj.getColorAt(i,color);else color.copy(material.color);
+   const site=atomData[obj.userData.instanceAtomIndices?.[i]]?.site;
+   discs.push({x:p.x,y:p.y,r:Math.hypot(edge.x-p.x,edge.y-p.y),depth:p.depth,symbol:site?.symbol||'',
+    label:site?.label||site?.symbol||'',color:'#'+color.getHexString(THREE.SRGBColorSpace)});
+  }
+ }
+ return discs;
+}
+
+/* Publication annotations (atom labels, compass, element legend and Å scale
+   bar) laid out in stage CSS pixels at a font size in points. Raster and
+   vector exports draw these same primitives, so the files match. */
+const EXPORT_LABEL_PT=[6,7,8,9,10,12],EXPORT_COMPASS_PLACES=['screen','bottom-left','bottom-right','top-left','top-right','origin','none'];
+function exportOverlaySettings(){
+ const labelPt=Number($('exportLabelPt').value),labelText=$('exportLabelText').value,compass=$('exportCompass').value;
+ if(!EXPORT_LABEL_PT.includes(labelPt)||!['symbol','site'].includes(labelText)||!EXPORT_COMPASS_PLACES.includes(compass))
+  throw Error('Figür öğesi ayarı geçersiz.');
+ return {labelPt,labelText,compass,legend:$('exportLegend').checked,scaleBar:$('exportScaleBar').checked};
+}
+// CSS pixels per typographic point: the page scale for a chosen width, else 96 DPI.
+function exportCssPxPerPt(rect){
+ const {widthMm}=exportFigureSettings();
+ return widthMm===null?4/3:Math.round(rect.width)/(widthMm/25.4*72);
+}
+function exportOverlayPrimitives(rect){
+ const options=exportOverlaySettings(),width=Math.round(rect.width),height=Math.round(rect.height);
+ const px=options.labelPt*exportCssPxPerPt(rect),margin=.8*px,items=[],notes=[],used=new Set();
+ const label=(text,x,y,extra={})=>items.push({type:'label',x,y,text,fontSize:px,fill:'#203047',textStroke:'#ffffff',
+  strokeWidth:Math.max(.5,.18*px),opacity:1,depth:-1e5,...extra});
+ const corner=(x,y)=>(y<height/2?'top-':'bottom-')+(x<width/2?'left':'right');
+ const discs=exportAtomDiscs(width,height);
+ // Labels sit above their atom and stay readable over neighbouring atoms.
+ if(state.labels&&root.children.some(o=>o.userData.layer==='labels'&&o.visible))
+  for(const d of discs){
+   // Kept inside the figure: an atom at the top edge gets its label just inside.
+   const text=options.labelText==='site'?d.label:d.symbol,half=textOutline(text,{size:px}).width/2;
+   label(text,Math.min(width-half,Math.max(half,d.x)),Math.max(1.05*px,d.y-d.r-.3*px));
+  }
+ if(options.compass!=='none'&&axisGizmoParts.length){
+  // The live gizmo letters are 13 units of a 120-unit box: size the box from the label size.
+  const size=px*120/13;let left,top;
+  if(options.compass==='screen'){
+   const live=$('axisGizmoSvg').getBoundingClientRect();
+   left=live.width>0?live.left-rect.left:margin;top=(live.width>0?live.bottom-rect.top:height-margin)-size;
+  }else if(options.compass==='origin'){
+   const origin=exportProjector(width,height)(root.localToWorld(new THREE.Vector3()));
+   if(origin){left=origin.x-size*60/120;top=origin.y-size*58/120;}
+   else{left=margin;top=height-margin-size;notes.push('Hücre orijini görünmüyor; pusula sol alta yerleştirildi.');}
+  }else{
+   left=options.compass.endsWith('left')?margin:width-margin-size;
+   top=options.compass.startsWith('top')?margin:height-margin-size;
+  }
+  if(options.compass!=='origin')used.add(corner(left+size/2,top+size/2));
+  updateAxisGizmo();
+  items.push(...axisGizmoVectorPrimitives($('axisGizmoSvg'),{left:0,top:0},{left,top,width:size,height:size}));
+ }
+ const free=(preferred,fallback)=>{const place=used.has(preferred)?fallback:preferred;used.add(place);return place;};
+ if(options.legend){
+  const entries=[...new Map(discs.filter(d=>d.symbol).map(d=>[d.symbol,d.color])).entries()]
+   .sort((a,b)=>PERIODIC_SYMBOLS.indexOf(a[0])-PERIODIC_SYMBOLS.indexOf(b[0]));
+  if(entries.length){
+   const place=free('top-right','top-left'),r=.42*px,row=1.45*px;
+   const block=2*r+.45*px+Math.max(...entries.map(([symbol])=>textOutline(symbol,{size:px}).width));
+   const x0=place.endsWith('right')?width-margin-block:margin;
+   entries.forEach(([symbol,color],i)=>{
+    const y=margin+r+i*row;
+    items.push({type:'circle',x:x0+r,y,r,fill:color,opacity:1,depth:-1e5});
+    label(symbol,x0+2*r+.45*px,y+.36*px,{anchor:'start'});
+   });
+  }
+ }
+ if(options.scaleBar){
+  // A length scale is only uniform in a parallel projection.
+  if(camera.isPerspectiveCamera)notes.push('Ölçek çubuğu yalnız ortografik projeksiyonda çizilir.');
+  else{
+   const pxPerAngstrom=height/projectionVisibleHeight(camera,camera.position.distanceTo(orbit.target));
+   const length=niceScaleLength(.22*width/pxPerAngstrom),bar=length*pxPerAngstrom,thickness=Math.max(1,px/5);
+   const place=free('bottom-right','bottom-left'),x1=place.endsWith('right')?width-margin-bar:margin,y=height-margin;
+   items.push({type:'line',x1,y1:y,x2:x1+bar,y2:y,width:thickness,stroke:'#203047',opacity:1,depth:-1e5,cap:'butt'});
+   label(length+' Å',x1+bar/2,y-thickness-.35*px);
+  }
+ }
+ return {items,notes};
+}
+/* Raster counterpart of the vector writers, used for the export overlay. */
+function drawCanvasPrimitives(ctx,items,factor){
+ ctx.save();
+ try{
+  ctx.scale(factor,factor);ctx.lineJoin='round';
+  for(const p of items.slice().sort((a,b)=>b.depth-a.depth)){
+   ctx.globalAlpha=p.opacity??1;
+   if(p.type==='line'){
+    ctx.beginPath();ctx.moveTo(p.x1,p.y1);ctx.lineTo(p.x2,p.y2);
+    ctx.lineWidth=p.width;ctx.lineCap=p.cap==='round'?'round':'butt';ctx.strokeStyle=p.stroke;ctx.stroke();
+   }else if(p.type==='triangle'){
+    ctx.beginPath();ctx.moveTo(...p.points[0]);ctx.lineTo(...p.points[1]);ctx.lineTo(...p.points[2]);ctx.closePath();
+    ctx.fillStyle=p.fill;ctx.fill();
+   }else if(p.type==='circle'){
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,2*Math.PI);
+    if(p.flat)ctx.fillStyle=p.fill;
+    else{
+     const g=SPHERE_GRADIENT,shade=sphereShade(p.fill),cx=p.x-p.r+2*p.r*g.cx,cy=p.y-p.r+2*p.r*g.cy;
+     const gradient=ctx.createRadialGradient(cx,cy,0,cx,cy,2*p.r*g.r);
+     gradient.addColorStop(0,shade.light);gradient.addColorStop(g.baseOffset,shade.base);gradient.addColorStop(1,shade.dark);
+     ctx.fillStyle=gradient;
+    }
+    ctx.fill();ctx.lineWidth=p.strokeWidth??.6;ctx.strokeStyle=p.stroke||sphereRim(p.fill);ctx.stroke();
+   }else if(p.type==='label'){
+    const path=new Path2D(svgPathData(vectorLabelOutline(p).commands));
+    if(p.textStroke){ctx.lineWidth=p.strokeWidth??1;ctx.strokeStyle=p.textStroke;ctx.stroke(path);}
+    ctx.fillStyle=p.fill||'#203047';ctx.fill(path);
+   }
+  }
+ }finally{ctx.restore();}
+}
+/* Plain-ASCII provenance written into PNG, TIFF, SVG, PDF and EPS metadata. */
+function figureProvenance(){
+ const c=state.cell,f=v=>Number(v).toFixed(4),sg=String(SPACE_NAMES[state.sgNumber]||'SG '+state.sgNumber).split(' = ')[0];
+ const structure=state.nonPeriodic?'non-periodic molecule':'space group '+sg+' (No. '+state.sgNumber+'); cell a='+f(c.a)+' b='+f(c.b)+' c='+f(c.c)+
+  ' A, alpha='+f(c.alpha)+' beta='+f(c.beta)+' gamma='+f(c.gamma)+' deg; supercell '+state.rep.join('x');
+ return {title:asciiText(state.name,200),software:'Kristal Yapi',
+  description:asciiText('Structure: '+state.name+'; '+structure+'; projection: '+(camera.isPerspectiveCamera?'perspective':'orthographic')+
+   '; exported '+new Date().toISOString().slice(0,10),1000)};
 }
 /* Painter's order alone draws a bond over the atom it enters and a cell edge
    over the atom it passes behind. Keep only the parts of each line that the
@@ -9031,11 +9182,12 @@ function exportSvg(){
  const rect=$('stage').getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));
  const primitives=crystalSvgPrimitives(width,height);
  if(!primitives.length)throw Error('SVG için görünür yapı öğesi yok.');
- primitives.push(...exportAxisGizmoPrimitives(rect));
- const {widthMm}=exportFigureSettings();
- const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked,{widthMm});
+ const overlay=exportOverlayPrimitives(rect),notes=[...primitives.notes,...overlay.notes];
+ primitives.push(...overlay.items);
+ const {widthMm}=exportFigureSettings(),{description}=figureProvenance();
+ const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked,{widthMm,description});
  download(safeName(state.name)+'.svg',svg,'image/svg+xml;charset=utf-8');
- if(densityGrid&&volumeView.mode!=='off')inform('SVG yalnız vektörel yapı katmanlarını içerir; hacimsel alanlar PNG ile dışa aktarılabilir.');
+ informExportNotes(notes);
 }
 /* PDF and EPS share the same camera-projected vector primitives as SVG. All
    paths (including spherical highlights) remain editable vector geometry. */
@@ -9081,7 +9233,7 @@ function vectorPagePrimitives(items,width,height){
 const vectorComment=text=>String(text??'').replace(/[^\x20-\x7e]/g,'?');
 // Sphere outline: SVG strokes #1f3040 at 18 % opacity over the dark rim.
 const sphereRim=color=>mixHex(sphereShade(color).dark,'#1f3040',.18);
-function vectorPdfBytes(items,width,height,{widthMm=null}={}){
+function vectorPdfBytes(items,width,height,{widthMm=null,title='Vector crystal structure',description=''}={}){
  const layout=vectorPageLayout(width,height,widthMm),shapes=vectorPagePrimitives(items,width,height);
  const n=value=>Number(value.toFixed(4)),rgb=color=>[1,3,5].map(i=>n(parseInt(color.slice(i,i+2),16)/255)).join(' ');
  const path=ellipse=>{
@@ -9133,7 +9285,7 @@ function vectorPdfBytes(items,width,height,{widthMm=null}={}){
   '] /Resources << /ExtGState << '+alphas.map(a=>'/'+alphaId.get(a)+' << /Type /ExtGState /ca '+n(a/100)+' /CA '+n(a/100)+' >>').join(' ')+
   ' >> /Shading << '+shaded.map((c,i)=>'/'+shadeId.get(c)+' '+(6+i)+' 0 R').join(' ')+' >> >> /Contents 4 0 R >>');
  obj(4,'<< /Length '+utf8.encode(stream).length+' >>\nstream\n'+stream+'endstream');
- obj(5,'<< /Producer (Kristal Yapi) /Title (Vector crystal structure) >>');
+ obj(5,'<< /Producer (Kristal Yapi) /Creator (Kristal Yapi) /Title '+pdfString(title)+(description?' /Subject '+pdfString(description):'')+' >>');
  shaded.forEach((c,i)=>obj(6+i,shading(c)));
  const xref=bytesCount;write('xref\n0 '+(count+1)+'\n0000000000 65535 f \n');
  for(let i=1;i<=count;i++)write(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
@@ -9143,7 +9295,7 @@ function vectorPdfBytes(items,width,height,{widthMm=null}={}){
 }
 /* EPS has no transparency: colours are blended with white. Spheres use a
    LanguageLevel 3 radial shading (shfill), as in the PDF. */
-function vectorEpsText(items,width,height,{widthMm=null}={}){
+function vectorEpsText(items,width,height,{widthMm=null,title='Vector crystal structure',description=''}={}){
  const layout=vectorPageLayout(width,height,widthMm),shapes=vectorPagePrimitives(items,width,height);
  const n=value=>Number(value.toFixed(4)),mix=(color,alpha)=>mixHex('#ffffff',color,alpha);
  const rgb=(color,alpha=1)=>[1,3,5].map(i=>n(parseInt(mix(color,alpha).slice(i,i+2),16)/255)).join(' ');
@@ -9155,7 +9307,7 @@ function vectorEpsText(items,width,height,{widthMm=null}={}){
  };
  const rows=['%!PS-Adobe-3.0 EPSF-3.0','%%BoundingBox: 0 0 '+Math.ceil(layout.pageWidth)+' '+Math.ceil(layout.pageHeight),
   '%%HiResBoundingBox: 0 0 '+layout.pageWidth+' '+layout.pageHeight,'%%LanguageLevel: 3',
-  '%%Creator: Kristal Yapi','%%Pages: 1','%%EndComments','gsave',n(layout.x)+' '+n(layout.pageHeight-layout.y)+' translate',
+  '%%Title: '+asciiText(title,200),'%%Creator: Kristal Yapi','%%Pages: 1','%%EndComments',...(description?['% Description: '+asciiText(description)]:[]),'gsave',n(layout.x)+' '+n(layout.pageHeight-layout.y)+' translate',
   n(layout.scale)+' '+n(-layout.scale)+' scale','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath clip','1 setlinejoin'];
  for(const p of shapes){
   const alpha=p.opacity??1,fill=p.fill||'#203047';rows.push('gsave');
@@ -9187,11 +9339,12 @@ function exportVectorPrint(format){
  const rect=$('stage').getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);
  const primitives=crystalSvgPrimitives(width,height);
  if(!primitives.length)throw Error('Vektör çıktı için görünür yapı yok.');
- primitives.push(...exportAxisGizmoPrimitives(rect));
- const {widthMm}=exportFigureSettings();
- if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height,{widthMm}),'application/pdf');
- else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height,{widthMm}),'application/postscript');
- if(densityGrid&&volumeView.mode!=='off')inform('Vektör çıktı hacimsel alan katmanını içermez; PNG/TIFF kullanabilirsiniz.');
+ const overlay=exportOverlayPrimitives(rect),notes=[...primitives.notes,...overlay.notes];
+ primitives.push(...overlay.items);
+ const {widthMm}=exportFigureSettings(),{title,description}=figureProvenance();
+ if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height,{widthMm,title,description}),'application/pdf');
+ else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height,{widthMm,title,description}),'application/postscript');
+ informExportNotes(notes);
 }
 const MAX_STL_TRIANGLES=1000000;
 /* The interactive group is translated to put its visual center at the orbit
