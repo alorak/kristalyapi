@@ -20,6 +20,7 @@ import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
+import { createTrubaPackage } from './qe-hpc-export.mjs';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -6803,19 +6804,47 @@ function qeEnsurePseudoNames(){
   input.value=species.map(sp=>sp+'='+sp+'.UPF').join('\n');
  }catch(error){$('qeExportStatus').textContent=error.message;}
 }
-function qeExportPwInput(){
- try{
-  qeEnsurePseudoNames();
-  const model=qeCalculationStructure(state);
-  const result=qePwInputText(model,{
+function qeBuildLocalInput(){
+ qeEnsurePseudoNames();
+ const model=qeCalculationStructure(state);
+ const result=qePwInputText(model,{
    calculation:$('qeCalcType').value,ecutwfc:$('qeEcutwfc').value,ecutrho:$('qeEcutrho').value,
    kx:$('qeKx').value,ky:$('qeKy').value,kz:$('qeKz').value,
    freezeBottom:$('qeFreezeBottom').value,forceThreshold:$('qeForceThreshold').value,occupations:$('qeOccupation').value,
    pseudoFiles:$('qePseudoFiles').value
   });
+ return {model,result};
+}
+function qeExportPwInput(){
+ try{
+  const {result}=qeBuildLocalInput();
   download(safeName(state.name)+'_'+$('qeCalcType').value+'.in',result.text);
   $('qeExportStatus').textContent=result.atoms+' açık P1 atomu · '+result.species.length+' element · '+result.fixedCount+' sabit atom. UPF dosyalarını kendi bilgisayarınızda ./pseudo içine yerleştirin.';
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
+}
+async function qeExportTrubaPackage(){
+ const button=$('qeExportHpc'),status=$('qeHpcExportStatus');
+ if(button.disabled)return;
+ button.disabled=true;
+ status.textContent='Yerel ZIP hazırlanıyor; hesap gönderilmiyor.';
+ try{
+  const {result}=qeBuildLocalInput();
+  const pkg=await createTrubaPackage({
+   inputText:result.text,
+   account:$('qeHpcAccount').value,
+   partition:$('qeHpcPartition').value,
+   ntasks:$('qeHpcTasks').value,
+   hours:$('qeHpcHours').value,
+   jobName:safeName(state.name)+'-'+$('qeCalcType').value,
+   upfFiles:Array.from($('qeHpcUpfFiles').files||[])
+  });
+  download(safeName(state.name)+'_'+$('qeCalcType').value+'_truba.zip',pkg.blob,'application/zip');
+  status.textContent='Paket indirildi: '+result.atoms+' atom, '+pkg.manifest.resources.ntasks+
+   ' MPI görevi, '+pkg.manifest.resources.hours+' saat. '+(pkg.missing.length?
+    'TRUBA üzerinde pseudo/ klasörüne eklenmesi gereken UPF: '+pkg.missing.join(', '):
+    'Tüm UPF dosyaları SHA-256 kayıtlarıyla pakette.')+' Bu işlem DFT çalıştırmaz.';
+ }catch(error){status.textContent='Paket oluşturulamadı: '+error.message;inform('TRUBA export: '+error.message);}
+ finally{button.disabled=false;}
 }
 let qeActiveJob=null;
 let qeJobPoller=null;
@@ -6845,19 +6874,24 @@ function qeInvalidatePreflight(force=false){
  qeSetPreflightState('stale','Yapı, bağlantı veya hesap parametreleri değişti. Yeniden ön kontrol yapın.');
 }
 function syncDftPreparation(){
- const mode=document.querySelector('input[name="dftPreparationMode"]:checked')?.value==='file'?'file':'server';
+ const selected=document.querySelector('input[name="dftPreparationMode"]:checked')?.value;
+ const mode=selected==='file'||selected==='truba'?selected:'server';
  const workflow=$('qeJobWorkflow').value;
  $('dftPreparationGrid').dataset.mode=mode;
  const host=$('dft-hazirlik');
  for(const node of host.querySelectorAll('.dft-server-only'))node.hidden=mode!=='server';
- for(const node of host.querySelectorAll('.dft-file-only'))node.hidden=mode!=='file';
+ for(const node of host.querySelectorAll('.dft-file-only'))node.hidden=mode==='server';
+ for(const node of host.querySelectorAll('.dft-pw-only'))node.hidden=mode!=='file';
+ for(const node of host.querySelectorAll('.dft-hpc-only'))node.hidden=mode!=='truba';
  const isRelax=mode==='server'?workflow==='relax-scf':$('qeCalcType').value==='relax';
  for(const node of host.querySelectorAll('.dft-relax-only'))node.hidden=mode!=='server'||!isRelax;
  for(const node of host.querySelectorAll('.dft-force-only'))node.hidden=!isRelax;
  $('qeElectronicSettings').hidden=mode!=='server'||workflow!=='electronic';
  syncDftElectronicChecks();
  $('qeSpinSettings').hidden=mode!=='server'||workflow!=='electronic'||$('qeElectronicSpin').value!=='polarized';
- $('dftPreparationSummary').textContent=mode==='file'?
+ $('dftPreparationSummary').textContent=mode==='truba'?
+  'TRUBA orfoz için çevrimdışı SCF/relax ZIP hazırlanacak. SLURM hesabınızı ve pseudopotansiyelleri kontrol edin; otomatik gönderim yapılmaz.':
+  mode==='file'?
   'Yerel QE girdi dosyası oluşturulacak. Bu işlem hesap çalıştırmaz; gerçek UPF dosyaları ve pw.x kurulumu gerekir.':
   'Sunucuda '+({scf:'SCF','relax-scf':'relaksasyon → SCF',electronic:'SCF → bant → DOS/PDOS'}[workflow]||'DFT')+
   ' işi hazırlanıyor. Göndermeden önce UPF profili ve API erişimi doğrulanır.';
@@ -10122,6 +10156,7 @@ function bind(){
  $('mos2StudyExport').onclick=exportMos2Study;
  $('qePseudoAuto').onclick=()=>{ $('qePseudoFiles').value='';qeEnsurePseudoNames();};
  $('qeExportPw').onclick=qeExportPwInput;
+ $('qeExportHpc').onclick=qeExportTrubaPackage;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
  $('qeElectronicOpen').onclick=qeLoadElectronicResults;
