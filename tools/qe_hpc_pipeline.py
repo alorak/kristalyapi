@@ -170,22 +170,10 @@ def change_kpoints(source: str, card: str) -> str:
                           card.rstrip(), re.M | re.I)
 
 
-def add_nbnd(source: str, nbnd: int) -> str:
-    if re.search(r"(?im)^\s*nbnd\s*=", source):
-        raise ValueError("Input already declares nbnd")
-    return unique_replace(source, r"^\s*ntyp\s*=\s*\d+\s*,?\s*$",
-                          lambda_stub_nbnd(nbnd))
-
-
-def lambda_stub_nbnd(nbnd: int) -> str:
-    # Kept separate to make added lines deterministic.
-    return " ntyp = " + str(current_ntyp) + ",\n nbnd = " + str(nbnd) + ","
-
-
 def apply_nbnd(source: str, nbnd: int) -> str:
     if re.search(r"(?im)^\s*nbnd\s*=", source):
         raise ValueError("Input already declares nbnd")
-    match = re.search(r"(?im)^\s*ntyp\s*=\s*(\d+)\s*,?\s*$", source)
+    match = re.search(r"(?im)^[ \t]*ntyp[ \t]*=[ \t]*(\d+)[ \t]*,?[ \t]*$", source)
     if not match:
         raise ValueError("Source ntyp missing")
     return source[:match.end()] + "\n nbnd = " + str(nbnd) + "," + source[match.end():]
@@ -242,7 +230,7 @@ def generate_input(root: Path, stage: str, config: dict) -> tuple[str, str]:
         return "structure.in", source
     if stage == "scf":
         if config["calculation"] == "relax":
-            relax_text = file_at(root, "relax.out").read_text("utf-8", errors="replace")
+            relax_text = file_at(root, "relax.out", 32 * 1024 * 1024).read_text("utf-8", errors="replace")
             source = relaxed_positions(source, relax_text)
         return "scf.in", change_calc(source, "scf")
     if stage in ("bands", "nscf"):
@@ -393,6 +381,10 @@ def summary(root: Path) -> None:
         if valid:
             try:
                 for rel, digest in report["hashes"].items():
+                    # QE rewrites prefix.save XML during later PW stages;
+                    # historical XML digests are evidence, not immutable files.
+                    if rel == "tmp/kristalyapi.save/data-file-schema.xml" and name != config["stages"][-1]:
+                        continue
                     require_hash(root, rel, digest)
             except (ValueError, KeyError):
                 valid = False
