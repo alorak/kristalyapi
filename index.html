@@ -1678,19 +1678,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <span class="export-option-icon">⌬</span><span><strong>PDB</strong><small>CRYST1 + ATOM/HETATM · bir hücre, P1</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="png" class="export-option">
-    <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünüm · seçilen eksen yönleri</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünüm · DPI bilgisi · seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="tiff" class="export-option">
-    <span class="export-option-icon">▦</span><span><strong>TIFF görseli</strong><small>Kayıpsız RGB · DPI · seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▦</span><span><strong>TIFF görseli</strong><small>Kayıpsız LZW · DPI · seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="pdf" class="export-option">
-    <span class="export-option-icon">▤</span><span><strong>PDF baskı sayfası</strong><small>A4 · yüksek çözünürlüklü raster + eksenler</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▤</span><span><strong>PDF baskı sayfası</strong><small>A4 veya figür boyutu · kayıpsız raster + eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="svg" class="export-option">
     <span class="export-option-icon">◇</span><span><strong>SVG vektör görseli</strong><small>Güncel kamera · vektörel yapı + seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="pdf-vector" class="export-option">
-    <span class="export-option-icon">▱</span><span><strong>Vektörel PDF</strong><small>A4 · gerçek vektör yolları + seçilen eksenler</small></span><span class="export-option-arrow">↓</span>
+    <span class="export-option-icon">▱</span><span><strong>Vektörel PDF</strong><small>Figür boyutunda sayfa · yazılar dahil vektör yollar</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="eps" class="export-option">
     <span class="export-option-icon">✧</span><span><strong>EPS vektör görseli</strong><small>PostScript eğrileri + seçilen eksenler · saydamlık beyaza karışır</small></span><span class="export-option-arrow">↓</span>
@@ -1706,7 +1706,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </button>
   </div>
   <div class="export-png-controls"><strong>PNG</strong><label>Çözünürlük <select id="pngScale" aria-label="PNG çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label><input id="pngTransparent" type="checkbox"> Şeffaf arka plan</label></div>
-  <div class="export-png-controls"><strong>PDF ve TIFF</strong><label>Çözünürlük <select id="printScale" aria-label="Baskı çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label>DPI <select id="printDpi" aria-label="Baskı DPI"><option value="150">150</option><option value="300" selected>300</option><option value="600">600</option></select></label><span>PDF A4 sayfaya sığdırılır; DPI, TIFF baskı ölçüsünü belirler.</span></div>
+  <div class="export-png-controls"><strong>PDF ve TIFF</strong><label>Çözünürlük <select id="printScale" aria-label="Baskı çözünürlük çarpanı"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label><input id="printTransparent" type="checkbox"> TIFF şeffaf arka plan</label><span>Genişlik seçilmezse PDF A4 sayfaya sığdırılır.</span></div>
+  <div class="export-png-controls"><strong>Yayın boyutu</strong><label>Genişlik <select id="exportWidthMm" aria-label="Figür genişliği"><option value="" selected>Ekran × çarpan</option><option value="85">85 mm · tek sütun</option><option value="120">120 mm · 1,5 sütun</option><option value="175">175 mm · çift sütun</option></select></label><label>DPI <select id="printDpi" aria-label="Baskı DPI"><option value="150">150</option><option value="300" selected>300</option><option value="600">600</option><option value="1200">1200</option></select></label><span>Genişlik tüm görsellere uygulanır ve çarpanın yerini alır; DPI PNG, TIFF ve PDF dosyasına yazılır.</span></div>
+  <div class="export-png-controls"><strong>Renk</strong><label><input id="exportScientificColor" type="checkbox" checked> Element renklerini koru (ton eşleme kapalı)</label><span>PNG, TIFF ve PDF renkleri SVG, PDF ve EPS ile aynı olur.</span></div>
+  <div class="export-png-controls" id="exportProjectionRow" hidden><strong>Projeksiyon</strong><span>Perspektif görünüm açık; yayın figürlerinde ortografik projeksiyon önerilir.</span><button type="button" id="exportOrthographic">Ortografiğe geç</button></div>
   <div class="export-png-controls"><strong>SVG</strong><label><input id="svgTransparent" type="checkbox"> Şeffaf arka plan</label><span>Vektör · yakınlaştırınca keskin kalır</span></div>
   <div class="export-dialog-foot"><span>Dosyalar tarayıcın üzerinden indirilir.</span><button type="button" id="exportModalCancel">Vazgeç</button></div>
  </div>

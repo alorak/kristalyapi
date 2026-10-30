@@ -49,11 +49,15 @@ assert.ok(bootstrapIndex > 0, 'Browser startup marker must exist');
 const script = moduleScript.slice(0, bootstrapIndex).replace(/^import .*?;\s*$/gm, '');
 const context = { THREE: { Vector3, SphereGeometry: class {}, CylinderGeometry: class {} }, URLSearchParams, URL, TextEncoder, document: {getElementById(){return null;}} };
 vm.createContext(context);
+// Export helpers are ES modules; load them as plain scripts for the editor code.
+for(const file of ['export-glyphs.js','export-graphics.js'])
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8').replace(/^import .*?;\s*$/gm,'').replace(/^export /gm,''),context);
+const {tiffLzwDecode}=require('./tiff-lzw-decode.cjs');
 vm.runInContext(script + '\nthis.api={validateCell,basis,toCart,toFrac,volume,metric,examples,cifData,poscarData,xyzData,applySymmetry,PERIODIC_SYMBOLS,elementColor,bondRange,gizmoProjection,SPACE_GROUPS,sgKeys,settingOps,preferredSetting,expandSites,identifyWyckoff,validateSymmetryMetric,loadProject,surfaceVectors,createSurfaceSlab,planeNormal,planeIntersections,millerPlaneOffsets,minimumPeriodicImage,clipSegmentToCell,periodicBondSegments,parseBondRules,matrixDet,transformCrystal,codCifUrl,codEntryUrl,codCleanSymbol,codSearchParamsFromForm,codSearchUrl,codOptimadeItemUrl,codOptimadeSearchUrl,codSearchUrls,codRequestUrls,codValidateWorkerBase,codWorkerUrlFor,codOptimadeToCif,normalizeCodRecord,normalizeCodResults,codRecordForStorage,loadCodBookmarks,saveCodBookmarks,isLibraryHash,presetMetadata,PRESET_KEYS,LIBRARY_PANES,setLibraryPane,updatePresetPreview,EXPORT_FORMATS,exportFunction,LEFT_SIDEBAR_TABS,setLeftSidebarTab,initLeftSidebarTabs,RIGHT_SIDEBAR_TABS,setRightSidebarTab,volumeNumber,readCube,readChgcar,readXsf,readVolumetric,readCcp4Map,volumeGrid,volumeCubeText,volumeXsfText,interpretVolumeUnits,volumeShape,volumeVoxel,gridIndex,volumeWorld,volumeCoord,volumeSample,volumeAtWorld,volumesSameFrame,volumeGridCompatible,validateVolumeIsoLayer,volumeSignedIsoPair,volumeSurfaceStyleSpec,sliceContourStroke,sliceSampleMatrix,volumeSliceCsv,volumeBounds,isoTriangles,colorFromScalar,sliceWorldCorners,LAST_CRYSTAL_KEY,lastCrystalPayload,storeLastCrystal,restoreLastCrystal,coordinationNeighbors,coordinateBondSuggestion,setPairBondRule,removePairBondRule,dihedralDegrees,measurementCsv,normalizedMillerLayers,millerLayerKey,MAX_MILLER_LAYERS,createEditorHistory,isEditableHistoryTarget,historyShortcut,adpMatrix,adpToCartesian,adpFromCartesian,adpRotateBySymmetry,adpEllipsoid,adpEigen,cifExportText,cifScientificFingerprint,originalCifRecord,cifExportPreservingSource,cifMetaFromTags,cifMetaValid,normalizedLayerState,normalizedLayerOrder,normalizedMorphology,morphologyOrbit,morphologyHalfspaces,morphologyPolyhedron,normalizedOverlays,comparisonMetrics,BVS_PARAMETERS,bondValenceSum,bvsCsv,leastSquaresPlane,stage3FitFromIndices,angleBetweenPlanes,structureFactor,powderPattern,xrdCsv,PRIMITIVE_TRANSFORMS,CENTER_TRANSLATIONS,centeringFromSetting,verifyCenteringTranslations,primitiveFromSetting,shortBasisTransform,niggliReduceCell,moyoInputCell,moyoMatrix,moyoTransformDetails,moyoApplyCell};', context);
 const api = context.api;
 vm.runInContext('Object.assign(this.api,{bestPolyhedronElement,normalizedPolyCenters,pngExportLimits});',context);
 vm.runInContext('Object.assign(this.api,{crystalSvgText,sliceContourLevels,sliceContourSegments,sliceLineProfile,sliceLineProfileCsv});',context);
-vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfJpegBytes});',context);
+vm.runInContext('Object.assign(this.api,{morphologyPointOrbit,tiffRgbBytes,pdfImageBytes});',context);
 vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorEpsText,axisGizmoVectorPrimitives,vrmlEscape,bondIsPeriodic,bondNetwork,bondNetworkCsv});',context);
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
@@ -228,34 +232,51 @@ test('PNG checks actual viewport and renderbuffer limits, not texture size alone
   {width:3000,height:2100,maxPixels:24000000});
  assert.throws(()=>api.pngExportLimits({...gl,getParameter:()=>null},8192),/WebGL PNG/);
 });
-test('TIFF export encodes lossless RGB pixels, dimensions and 300-DPI rational tags',()=>{
- const rgba=Uint8ClampedArray.from([12,34,56,255,200,150,100,255]);
- const tiff=api.tiffRgbBytes(2,1,rgba,300),dv=new DataView(tiff.buffer);
+test('TIFF export writes LZW-compressed RGB or RGBA pixels and DPI rational tags',()=>{
+ const rgba=Uint8ClampedArray.from([12,34,56,255,200,150,100,128]);
+ const read=tiff=>{
+  const dv=new DataView(tiff.buffer),count=dv.getUint16(8,true),ids=[];
+  const tag=id=>{for(let i=0;i<count;i++){const p=10+i*12;if(dv.getUint16(p,true)===id)return {type:dv.getUint16(p+2,true),count:dv.getUint32(p+4,true),value:dv.getUint32(p+8,true)};}};
+  for(let i=0;i<count;i++)ids.push(dv.getUint16(10+i*12,true));
+  return {dv,count,ids,tag};
+ };
+ const rgb=api.tiffRgbBytes(2,1,rgba,600),{dv,count,ids,tag}=read(rgb);
  assert.equal(dv.getUint16(0,true),0x4949);assert.equal(dv.getUint16(2,true),42);
- assert.equal(dv.getUint16(8,true),13);
- const tag=id=>{for(let i=0;i<13;i++){const p=10+i*12;if(dv.getUint16(p,true)===id)return {type:dv.getUint16(p+2,true),count:dv.getUint32(p+4,true),value:dv.getUint32(p+8,true)};}};
+ assert.equal(count,13);assert.deepEqual(ids,[...ids].sort((a,b)=>a-b),'TIFF tags must be in ascending order');
  assert.equal(tag(256).value,2);assert.equal(tag(257).value,1);
  assert.equal(tag(258).count,3);assert.equal(dv.getUint16(tag(258).value,true),8);
- assert.equal(tag(262).value,2);assert.equal(tag(259).value,1);
- assert.equal(tag(279).value,6);
- assert.equal(dv.getUint32(tag(282).value,true),300);assert.equal(dv.getUint32(tag(283).value,true),300);
- assert.deepEqual(Array.from(tiff.subarray(tag(273).value)),[12,34,56,200,150,100]);
+ assert.equal(tag(262).value,2);assert.equal(tag(259).value,5,'compression 5 is LZW');
+ assert.equal(dv.getUint32(tag(282).value,true),600);assert.equal(dv.getUint32(tag(283).value,true),600);
+ const strip=rgb.subarray(tag(273).value,tag(273).value+tag(279).value);
+ assert.deepEqual(tiffLzwDecode(strip),[12,34,56,200,150,100]);
+ const rgbaTiff=api.tiffRgbBytes(2,1,rgba,300,{alpha:true}),alpha=read(rgbaTiff);
+ assert.equal(alpha.count,14);assert.equal(alpha.tag(277).value,4);assert.equal(alpha.tag(258).count,4);
+ assert.equal(alpha.tag(338).value,2,'ExtraSamples 2 marks unassociated alpha');
+ assert.deepEqual(tiffLzwDecode(rgbaTiff.subarray(alpha.tag(273).value,alpha.tag(273).value+alpha.tag(279).value)),[12,34,56,255,200,150,100,128]);
+ assert.ok(api.tiffRgbBytes(2,1,rgba,1200).length>0);
  assert.throws(()=>api.tiffRgbBytes(2,1,rgba,72),/TIFF/);
  assert.throws(()=>api.tiffRgbBytes(2,1,rgba.subarray(0,4),300),/TIFF/);
 });
-test('A4 PDF export includes JPEG XObject, stream offsets and fitting page dimensions',()=>{
- const pseudoJpeg=Uint8Array.from([255,216,255,224,0,2,255,217]);
- const output=api.pdfJpegBytes(1200,800,pseudoJpeg);
+test('raster PDF is lossless Flate on A4 or on a page cut to the figure size',()=>{
+ const zlib=require('node:zlib'),pixels=new Uint8Array(1200*800*3).fill(200);
+ const output=api.pdfImageBytes(1200,800,new Uint8Array(zlib.deflateSync(pixels)),{filter:'FlateDecode'});
  const pdf=Buffer.from(output.bytes).toString('latin1');
  assert.match(pdf,/^%PDF-1\.4/);assert.match(pdf,/\/MediaBox \[0 0 842 595\]/);
- assert.match(pdf,/\/Filter \/DCTDecode/);assert.match(pdf,/\/Width 1200 \/Height 800/);
- assert.match(pdf,/\/Im0 Do/);
+ assert.match(pdf,/\/Filter \/FlateDecode/);assert.match(pdf,/\/Width 1200 \/Height 800/);
+ assert.doesNotMatch(pdf,/DCTDecode/);assert.match(pdf,/\/Im0 Do/);
  assert.ok(output.dpi>100&&output.dpi<200);
  const offset=Number(pdf.match(/startxref\n(\d+)/)[1]);
  assert.equal(pdf.slice(offset,offset+4),'xref');
- const portrait=api.pdfJpegBytes(800,1200,pseudoJpeg);
+ // 85 mm at 600 DPI: 2008 px wide, page exactly 85 mm, image fills it.
+ const figure=api.pdfImageBytes(2008,1004,Uint8Array.from([120,156,3,0,0,0,0,1]),{pageSize:[85/25.4*72,85/25.4*72/2]});
+ const page=Buffer.from(figure.bytes).toString('latin1');
+ assert.match(page,/\/MediaBox \[0 0 240\.945 120\.472\]/);
+ assert.ok(Math.abs(figure.dpi-600)<1,'image must land at the chosen DPI');
+ const pseudoJpeg=Uint8Array.from([255,216,255,224,0,2,255,217]);
+ const portrait=api.pdfImageBytes(800,1200,pseudoJpeg,{filter:'DCTDecode'});
  assert.match(Buffer.from(portrait.bytes).toString('latin1'),/\/MediaBox \[0 0 595 842\]/);
- assert.throws(()=>api.pdfJpegBytes(1200,800,new Uint8Array(6)),/JPEG/);
+ assert.throws(()=>api.pdfImageBytes(1200,800,new Uint8Array(6),{filter:'DCTDecode'}),/JPEG/);
+ assert.throws(()=>api.pdfImageBytes(1200,800,pseudoJpeg,{filter:'LZWDecode'}),/PDF/);
 });
 test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF/EPS',()=>{
  const element=(attributes={},textContent='')=>({getAttribute:key=>attributes[key]??null,textContent});
@@ -283,19 +304,21 @@ test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF
  const pdf=Buffer.from(api.vectorPdfBytes(shapes,600,400)).toString('latin1');
  const eps=api.vectorEpsText(shapes,600,400);
  for(const a of axes){
-  assert.match(xml,new RegExp('<text[^>]*fill="'+a.color+'"[^>]*>'+a.label+'</text>'));
-  assert.match(pdf,new RegExp('\\('+a.label+'\\) Tj ET'));
-  assert.match(eps,new RegExp('\\('+a.label+'\\) true charpath stroke'));
+  assert.match(xml,new RegExp('<path data-text="'+a.label+'"[^>]*d="M[^"]+"[^>]*fill="'+a.color+'"'));
+  assert.match(pdf,new RegExp('% text: '+a.label+'\n'));
+  assert.match(eps,new RegExp('% text: '+a.label+'\n'));
  }
  assert.match(xml,/paint-order="stroke fill"/);
- assert.match(pdf,/ 1 Tr \(/,'PDF must outline text as vectors');
+ assert.doesNotMatch(xml,/<text/,'SVG labels are glyph outlines, independent of installed fonts');
+ assert.doesNotMatch(pdf,/\/Font|Tj|Tf /,'PDF labels are filled outlines: no font to embed');
+ assert.doesNotMatch(eps,/findfont|show\n/,'EPS labels are filled outlines: no font to embed');
  assert.doesNotMatch(pdf,/\/DCTDecode|\/Subtype \/Image|\/XObject/);
  assert.doesNotMatch(eps,/colorimage/);
  assert.match(xml,/fill="#69798a"/);
  assert.throws(()=>api.vectorPdfBytes([{...shapes[2],fill:'url(javascript:1)'}],600,400),/etiket stili/);
 });
 
-test('vector PDF/EPS draws real Bezier geometry, no JPEG/image XObjects',()=>{
+test('vector PDF/EPS draws real Bezier geometry, shaded spheres and outlined text on a figure-sized page',()=>{
  const items=[
   {type:'circle',x:200,y:120,r:20,fill:'#cc6644',opacity:1,depth:2},
   {type:'line',x1:1,y1:2,x2:50,y2:60,width:3,stroke:'#1188aa',opacity:.6,depth:5},
@@ -304,18 +327,27 @@ test('vector PDF/EPS draws real Bezier geometry, no JPEG/image XObjects',()=>{
   {type:'label',x:200,y:80,text:'C(1)',opacity:1,depth:1}
  ];
  const pdf=api.vectorPdfBytes(items,480,330),value=Buffer.from(pdf).toString('latin1');
- assert.match(value,/^%PDF-1\.4/);assert.match(value,/\/MediaBox \[0 0 842 595\]/);
- assert.match(value,/\/ExtGState/);assert.match(value,/\/BaseFont \/Helvetica/);
+ assert.match(value,/^%PDF-1\.4/);assert.match(value,/\/MediaBox \[0 0 360 247\.5\]/,'96 DPI: 0.75 pt per CSS pixel');
+ assert.match(value,/\/ExtGState/);assert.doesNotMatch(value,/\/Font/);
+ assert.match(value,/\/ShadingType 3/);assert.match(value,/\/Sh0 sh/,'spheres use the same radial shading as SVG');
  assert.match(value,/ c\n/,'circles/ellipses must be cubic vector paths');
- assert.match(value,/Tj ET/);assert.doesNotMatch(value,/\/DCTDecode|\/Subtype \/Image|\/XObject/);
+ assert.match(value,/% text: C\(1\)\n/);assert.doesNotMatch(value,/\/DCTDecode|\/Subtype \/Image|\/XObject/);
+ assert.match(value,/0 J\n/,'structure lines use butt caps');
  const xref=Number(value.match(/startxref\n(\d+)/)[1]);assert.equal(value.slice(xref,xref+4),'xref');
+ const shadingObject=value.indexOf('6 0 obj'),declared=Number(value.match(/xref\n0 (\d+)/)[1]);
+ assert.ok(shadingObject>0);assert.equal(declared,7,'xref must list the shading object');
+ const figure=Buffer.from(api.vectorPdfBytes(items,480,330,{widthMm:85})).toString('latin1');
+ assert.match(figure,/\/MediaBox \[0 0 240\.945 165\.65\]/,'85 mm wide page');
  const eps=api.vectorEpsText(items,480,330);
  assert.match(eps,/^%!PS-Adobe-3\.0 EPSF-3\.0/);
- assert.match(eps,/%%BoundingBox: 0 0 842 595/);assert.match(eps,/curveto/);
- assert.match(eps,/setrgbcolor/);assert.match(eps,/stringwidth/);
+ assert.match(eps,/%%BoundingBox: 0 0 360 248/);assert.match(eps,/%%HiResBoundingBox: 0 0 360 247\.5/);
+ assert.match(eps,/%%LanguageLevel: 3/);assert.match(eps,/shfill/);assert.match(eps,/curveto/);
+ assert.match(eps,/setrgbcolor/);assert.match(eps,/% text: C\(1\)\n/);assert.doesNotMatch(eps,/findfont|stringwidth/);
  assert.doesNotMatch(eps,/colorimage|image\s*$/m);
- assert.throws(()=>api.vectorPdfBytes([{...items[0],fill:'javascript:alert(1)'}],480,330),/rengi/);
+ assert.deepEqual(JSON.parse(JSON.stringify(api.vectorPageLayout(1000,500,175))),{pageWidth:496.063,pageHeight:248.031,scale:175/25.4*72/1000,x:0,y:0});
+ assert.throws(()=>api.vectorPdfBytes([{...items[0],fill:'javascript:alert(1)'}],480,330),/rengi|Küre/);
  assert.throws(()=>api.vectorEpsText(items,0,330),/boyutu/);
+ assert.throws(()=>api.vectorPageLayout(480,330,0),/genişliği/);
 });
 test('molecule and periodic crystal bond networks preserve different boundary semantics',()=>{
  const cell={a:10,b:10,c:10,alpha:90,beta:90,gamma:90};
@@ -348,6 +380,10 @@ test('SVG vector export serializes projected atoms, bonds and polygon faces with
   {type:'label',x:50,y:12,text:'C<&"',depth:1,opacity:1}
  ];
  const svg=api.crystalSvgText(shapes,320,200,'Quartz<&"',false);
+ assert.match(svg,/width="320" height="200" viewBox="0 0 320 200"/);
+ assert.match(api.crystalSvgText(shapes,320,200,'Quartz',false,{widthMm:85}),/width="85mm" height="53\.125mm" viewBox="0 0 320 200"/);
+ assert.match(svg,/stroke-linecap="butt"/);
+ assert.match(svg,/<stop offset="0" stop-color="#f1c6b8"\/>/,'the light spot is opaque, so spheres never show what lies behind them');
  assert.match(svg,/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
  assert.match(svg,/<radialGradient/);assert.match(svg,/<circle/);assert.match(svg,/<path/);
  assert.match(svg,/Quartz&lt;&amp;&quot;/);assert.match(svg,/C&lt;&amp;&quot;/);

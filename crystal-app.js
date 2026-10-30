@@ -15,6 +15,7 @@ import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {createJobPoller,renderJobProgress,renderCalculationSummary} from './qe-job-tracking.js';
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
 import {createDftSettings,enhanceFilePickers,initTabKeys,syncTabState} from './dft-ui.js';
+import {textOutline,svgPathData,pdfPathData,postScriptPathData,visibleLineIntervals,sphereShade,SPHERE_GRADIENT,mixHex,pngWithDpi,lzwEncode} from './export-graphics.js';
 import {MIN_SLAB_VACUUM_ANGSTROM,slabAnalysis,suggestBandPath,bandCapacityAdvice,bandCapacityFrom} from './qe-electronic-setup.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
@@ -299,7 +300,7 @@ function axisGizmoVectorPrimitives(svg,stageRect,bounds){
   const opacity=Number(group.getAttribute('opacity')??1);
   const [x1,y1]=xy(n(line,'x1'),n(line,'y1')),[x2,y2]=xy(n(line,'x2'),n(line,'y2'));
   shapes.push({type:'line',x1,y1,x2,y2,width:n(line,'stroke-width')*scale,
-   stroke:line.getAttribute('stroke'),opacity,depth});
+   stroke:line.getAttribute('stroke'),opacity,depth,cap:'round'});
   const points=arrow.getAttribute('points').trim().split(/\s+/).map(pair=>{
    const [x,y]=pair.split(',').map(Number);return xy(x,y);
   });
@@ -308,7 +309,7 @@ function axisGizmoVectorPrimitives(svg,stageRect,bounds){
   shapes.push({type:'label',x,y,text:label.textContent,fill:label.getAttribute('fill'),
    textStroke:label.getAttribute('stroke')||'#ffffff',
    strokeWidth:n(label,'stroke-width')*scale,fontSize:n(label,'font-size')*scale,
-   opacity,depth});
+   bold:Number(label.getAttribute('font-weight'))>=600,opacity,depth});
  }
  const center=svg.querySelector('circle');
  if(center){
@@ -8692,13 +8693,31 @@ function pngCellStrokeMeshes(cssHeight){
  }
  return temporary;
 }
+/* Publication size: a physical width in mm at the chosen DPI replaces the
+   screen multiplier for every image format (85 mm at 600 DPI = 2008 px). */
+const EXPORT_DPI=[150,300,600,1200],EXPORT_WIDTHS_MM=[85,120,175];
+function exportFigureSettings(){
+ const dpi=Number($('printDpi').value),raw=$('exportWidthMm').value,widthMm=raw===''?null:Number(raw);
+ if(!EXPORT_DPI.includes(dpi)||(widthMm!==null&&!EXPORT_WIDTHS_MM.includes(widthMm)))throw Error('Baskı ayarı geçersiz.');
+ return {dpi,widthMm,scientificColor:$('exportScientificColor').checked};
+}
+function rasterExportFactor(multiplierId){
+ const {dpi,widthMm}=exportFigureSettings();
+ if(widthMm===null){
+  const factor=Number($(multiplierId).value);
+  if(![1,2,3,4].includes(factor))throw Error('Baskı ayarı geçersiz.');
+  return factor;
+ }
+ return widthMm/25.4*dpi/$('stage').getBoundingClientRect().width;
+}
 function renderExportCanvas(factor,opaque=true){
  const rect=$('stage').getBoundingClientRect();
+ if(!Number.isFinite(factor)||factor<=0||factor>16)throw Error('Görsel ölçeği geçersiz.');
  const width=Math.round(rect.width*factor),height=Math.round(rect.height*factor);
  const gl=renderer.getContext(),limits=pngExportLimits(gl,renderer.capabilities.maxTextureSize);
- if(![1,2,3,4].includes(factor)||width<1||height<1||width>limits.width||height>limits.height||width*height>limits.maxPixels)
-  throw Error('Görsel boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; çözünürlüğü düşürün.');
- const previousRatio=renderer.getPixelRatio();
+ if(width<1||height<1||width>limits.width||height>limits.height||width*height>limits.maxPixels)
+  throw Error('Görsel boyutu WebGL texture/renderbuffer/viewport veya 24 MP sınırını aşıyor; genişliği, DPI değerini veya çarpanı düşürün.');
+ const previousRatio=renderer.getPixelRatio(),previousToneMapping=renderer.toneMapping;
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
  const temporary=[],previousAtomGeometries=atomMesh.map(mesh=>mesh.geometry);
  try{
@@ -8709,6 +8728,8 @@ function renderExportCanvas(factor,opaque=true){
    gl.drawingBufferWidth!==width||gl.drawingBufferHeight!==height||gl.isContextLost())
    throw Error('WebGL gerçek çizim tamponu istenen boyutu sağlamıyor. Daha düşük çözünürlük seçin.');
   temporary.push(...pngCellStrokeMeshes(rect.height));
+  // Filmic tone mapping desaturates element colours; vector exports use them unchanged.
+  if(exportFigureSettings().scientificColor)renderer.toneMapping=THREE.NoToneMapping;
   renderer.render(scene,camera);
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Görsel çizim yüzeyi oluşturulamadı.');
   if(opaque){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);}
@@ -8717,48 +8738,68 @@ function renderExportCanvas(factor,opaque=true){
  }finally{
   for(const mesh of temporary){root.remove(mesh);mesh.material.dispose();}
   atomMesh.forEach((mesh,i)=>{mesh.geometry=previousAtomGeometries[i];});
+  renderer.toneMapping=previousToneMapping;
   renderer.setPixelRatio(previousRatio);resize();renderer.render(scene,camera);
  }
  return canvas;
 }
-function screenshot(){
- const canvas=renderExportCanvas(Number($('pngScale').value),!$('pngTransparent').checked);
- const {width,height}=canvas;
- canvas.toBlob(blob=>{if(blob)download(safeName(state.name)+'_'+width+'x'+height+'.png',blob,'image/png');else inform('PNG kaydı oluşturulamadı.');},'image/png');
+async function screenshot(){
+ const {dpi}=exportFigureSettings();
+ const canvas=renderExportCanvas(rasterExportFactor('pngScale'),!$('pngTransparent').checked);
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+ if(!blob)throw Error('PNG kaydı oluşturulamadı.');
+ // pHYs lets layout programs place the image at its real print size.
+ const png=pngWithDpi(new Uint8Array(await blob.arrayBuffer()),dpi);
+ download(safeName(state.name)+'_'+canvas.width+'x'+canvas.height+'.png',png,'image/png');
 }
-/* Baseline little-endian, uncompressed 8-bit RGB TIFF, one strip. The X/Y
-   resolution tags specify physical print size; they do not resample pixels. */
-function tiffRgbBytes(width,height,rgba,dpi=300){
+/* Baseline little-endian 8-bit RGB or RGBA TIFF in one LZW strip
+   (compression 5, read by libtiff, Photoshop and journal tools). The X/Y
+   resolution tags give the print size; they do not resample pixels. */
+function tiffRgbBytes(width,height,rgba,dpi=300,{alpha=false}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>24000000||
-  ![150,300,600].includes(dpi)||!ArrayBuffer.isView(rgba)||rgba.BYTES_PER_ELEMENT!==1||rgba.length!==width*height*4)
+  !EXPORT_DPI.includes(dpi)||!ArrayBuffer.isView(rgba)||rgba.BYTES_PER_ELEMENT!==1||rgba.length!==width*height*4)
   throw Error('TIFF piksel boyutu, çözünürlüğü veya RGB verisi geçersiz.');
- const tagCount=13,ifdSize=2+12*tagCount+4,bits=8+ifdSize,resX=bits+6,resY=resX+8,pixels=resY+8;
- const byteCount=width*height*3,bytes=new Uint8Array(pixels+byteCount),view=new DataView(bytes.buffer);
+ const samples=alpha?4:3,raw=new Uint8Array(width*height*samples);
+ for(let src=0,dst=0;src<rgba.length;src+=4){
+  raw[dst++]=rgba[src];raw[dst++]=rgba[src+1];raw[dst++]=rgba[src+2];
+  if(alpha)raw[dst++]=rgba[src+3];
+ }
+ const strip=lzwEncode(raw);
+ // ExtraSamples 2: unassociated alpha, as canvas pixels are not premultiplied.
+ const tags=[[256,4,1,width],[257,4,1,height],[258,3,samples,'bits'],[259,3,1,5],[262,3,1,2],[273,4,1,'strip'],
+  [277,3,1,samples],[278,4,1,height],[279,4,1,strip.length],[282,5,1,'resX'],[283,5,1,'resY'],[284,3,1,1],[296,3,1,2],
+  ...(alpha?[[338,3,1,2]]:[])];
+ const ifdSize=2+12*tags.length+4,bits=8+ifdSize,resX=bits+8,resY=resX+8,pixels=resY+8;
+ const offsets={bits,resX,resY,strip:pixels};
+ const bytes=new Uint8Array(pixels+strip.length),view=new DataView(bytes.buffer);
  view.setUint16(0,0x4949,true);view.setUint16(2,42,true);view.setUint32(4,8,true);
- view.setUint16(8,tagCount,true);
+ view.setUint16(8,tags.length,true);
  let entry=10;
- const tag=(id,type,count,value)=>{view.setUint16(entry,id,true);view.setUint16(entry+2,type,true);
-  view.setUint32(entry+4,count,true);
+ for(const [id,type,count,raw] of tags){
+  const value=typeof raw==='string'?offsets[raw]:raw;
+  view.setUint16(entry,id,true);view.setUint16(entry+2,type,true);view.setUint32(entry+4,count,true);
   if(type===3&&count===1)view.setUint16(entry+8,value,true);
   else view.setUint32(entry+8,value,true);
-  entry+=12;};
- tag(256,4,1,width);tag(257,4,1,height);tag(258,3,3,bits);tag(259,3,1,1);
- tag(262,3,1,2);tag(273,4,1,pixels);tag(277,3,1,3);tag(278,4,1,height);
- tag(279,4,1,byteCount);tag(282,5,1,resX);tag(283,5,1,resY);tag(284,3,1,1);tag(296,3,1,2);
+  entry+=12;
+ }
  view.setUint32(entry,0,true);
- for(let j=0;j<3;j++)view.setUint16(bits+2*j,8,true);
+ for(let j=0;j<samples;j++)view.setUint16(bits+2*j,8,true);
  view.setUint32(resX,dpi,true);view.setUint32(resX+4,1,true);
  view.setUint32(resY,dpi,true);view.setUint32(resY+4,1,true);
- for(let src=0,dst=pixels;src<rgba.length;src+=4){bytes[dst++]=rgba[src];bytes[dst++]=rgba[src+1];bytes[dst++]=rgba[src+2];}
+ bytes.set(strip,pixels);
  return bytes;
 }
-/* Small, self-contained PDF 1.4 writer: a single A4 sheet with an embedded
-   high-quality JPEG. The scene itself remains raster; SVG is the vector option. */
-function pdfJpegBytes(width,height,jpeg){
+/* Small, self-contained PDF 1.4 writer for one raster image. FlateDecode keeps
+   the pixels lossless; DCTDecode (JPEG) is only a fallback for browsers without
+   CompressionStream. Without a figure size the image is fitted to an A4 sheet. */
+function pdfImageBytes(width,height,image,{filter='FlateDecode',pageSize=null}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width*height>24000000||
-  !ArrayBuffer.isView(jpeg)||jpeg.BYTES_PER_ELEMENT!==1||jpeg.length<4||jpeg[0]!==255||jpeg[1]!==216||jpeg.at(-2)!==255||jpeg.at(-1)!==217)
+  !ArrayBuffer.isView(image)||image.BYTES_PER_ELEMENT!==1||image.length<4||!['FlateDecode','DCTDecode'].includes(filter))
+  throw Error('PDF görüntü verisi geçersiz.');
+ if(filter==='DCTDecode'&&(image[0]!==255||image[1]!==216||image.at(-2)!==255||image.at(-1)!==217))
   throw Error('PDF için geçerli bir JPEG görseli gerekli.');
- const [pageW,pageH]=width>=height?[842,595]:[595,842],margin=28;
+ if(pageSize&&!(pageSize.length===2&&pageSize.every(v=>Number.isFinite(v)&&v>0&&v<=14400)))throw Error('PDF sayfa boyutu geçersiz.');
+ const [pageW,pageH]=pageSize?pageSize.map(v=>Number(v.toFixed(3))):width>=height?[842,595]:[595,842],margin=pageSize?0:28;
  const scale=Math.min((pageW-2*margin)/width,(pageH-2*margin)/height),drawW=width*scale,drawH=height*scale;
  const x=(pageW-drawW)/2,y=(pageH-drawH)/2;
  const number=n=>Number(n.toFixed(4));
@@ -8771,8 +8812,8 @@ function pdfJpegBytes(width,height,jpeg){
  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
  offsets[4]=length;write('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+width+' /Height '+height+
-  ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpeg.length+' >>\nstream\n');
- write(jpeg);write('\nendstream\nendobj\n');
+  ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /'+filter+' /Length '+image.length+' >>\nstream\n');
+ write(image);write('\nendstream\nendobj\n');
  obj(5,'<< /Length '+utf8.encode(content).length+' >>\nstream\n'+content+'endstream');
  obj(6,'<< /Producer (Kristal Yapi) /Title (Crystal structure export) >>');
  const xref=length;write('xref\n0 7\n0000000000 65535 f \n');
@@ -8782,29 +8823,41 @@ function pdfJpegBytes(width,height,jpeg){
  for(const chunk of chunks){result.set(chunk,p);p+=chunk.length;}
  return {bytes:result,dpi:Math.min(width/(drawW/72),height/(drawH/72))};
 }
-function printExportSettings(){
- const factor=Number($('printScale').value),dpi=Number($('printDpi').value);
- if(![1,2,3,4].includes(factor)||![150,300,600].includes(dpi))throw Error('Baskı ayarı geçersiz.');
- return {factor,dpi};
-}
 function exportTiff(){
- const {factor,dpi}=printExportSettings(),canvas=renderExportCanvas(factor);
+ const {dpi}=exportFigureSettings(),alpha=$('printTransparent').checked;
+ const canvas=renderExportCanvas(rasterExportFactor('printScale'),!alpha);
  const pixels=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
- const bytes=tiffRgbBytes(canvas.width,canvas.height,pixels,dpi);
+ const bytes=tiffRgbBytes(canvas.width,canvas.height,pixels,dpi,{alpha});
  download(safeName(state.name)+'_'+canvas.width+'x'+canvas.height+'.tiff',bytes,'image/tiff');
 }
-function exportPdf(){
- const {factor,dpi}=printExportSettings(),canvas=renderExportCanvas(factor);
- const uri=canvas.toDataURL('image/jpeg',.96);
- if(!uri.startsWith('data:image/jpeg;base64,'))throw Error('Tarayıcı JPEG kodlayıcısı kullanılamıyor.');
- const binary=atob(uri.split(',')[1]),jpeg=new Uint8Array(binary.length);
- for(let i=0;i<binary.length;i++)jpeg[i]=binary.charCodeAt(i);
- const pdf=pdfJpegBytes(canvas.width,canvas.height,jpeg);
- download(safeName(state.name)+'_A4.pdf',pdf.bytes,'application/pdf');
- if(pdf.dpi<dpi)inform('PDF görüntüsü A4 üzerinde yaklaşık '+Math.round(pdf.dpi)+' DPI; daha yüksek çözünürlük için çarpanı artırın.');
+async function exportPdf(){
+ const {dpi,widthMm}=exportFigureSettings(),canvas=renderExportCanvas(rasterExportFactor('printScale'));
+ const {width,height}=canvas;
+ const pageSize=widthMm===null?null:[widthMm/25.4*72,widthMm/25.4*72*height/width];
+ let pdf;
+ if(typeof CompressionStream==='function'){
+  const rgba=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data,rgb=new Uint8Array(width*height*3);
+  for(let src=0,dst=0;src<rgba.length;src+=4){rgb[dst++]=rgba[src];rgb[dst++]=rgba[src+1];rgb[dst++]=rgba[src+2];}
+  const zlib=new Uint8Array(await new Response(new Blob([rgb]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+  pdf=pdfImageBytes(width,height,zlib,{filter:'FlateDecode',pageSize});
+ }else{
+  const uri=canvas.toDataURL('image/jpeg',.96);
+  if(!uri.startsWith('data:image/jpeg;base64,'))throw Error('Tarayıcı JPEG kodlayıcısı kullanılamıyor.');
+  const binary=atob(uri.split(',')[1]),jpeg=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)jpeg[i]=binary.charCodeAt(i);
+  pdf=pdfImageBytes(width,height,jpeg,{filter:'DCTDecode',pageSize});
+  inform('Bu tarayıcı kayıpsız sıkıştırmayı desteklemiyor; PDF görüntüsü JPEG olarak kaydedildi.');
+ }
+ download(safeName(state.name)+(widthMm===null?'_A4':'_'+widthMm+'mm')+'.pdf',pdf.bytes,'application/pdf');
+ if(widthMm===null&&pdf.dpi<dpi)inform('PDF görüntüsü A4 üzerinde yaklaşık '+Math.round(pdf.dpi)+' DPI; daha yüksek çözünürlük için çarpanı artırın veya bir genişlik seçin.');
 }
 function svgEscape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
-function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false){
+/* Labels are written as glyph outlines (export-glyphs.js), so no font is
+   needed to view, print or preflight a figure. */
+function vectorLabelOutline(p){
+ return textOutline(p.text,{x:p.x,y:p.y,size:p.fontSize??12,bold:!!p.bold});
+}
+function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=false,{widthMm=null}={}){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>8192||height>8192||
   !Array.isArray(items)||items.length>60000)throw Error('SVG boyutu veya geometrik öğe sayısı geçersiz.');
  const f=n=>{if(!Number.isFinite(n))throw Error('SVG koordinatı sonlu olmalı.');return Number(n.toFixed(3));};
@@ -8813,10 +8866,9 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
  const circles=[...new Set(items.filter(p=>p.type==='circle').map(p=>col(p.fill)))];
  const id=c=>'sphere-'+c.slice(1);
  const defs=circles.map(c=>{
-  const rgb=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
-  const dark='#'+rgb.map(v=>Math.round(v*.65).toString(16).padStart(2,'0')).join('');
-  return '<radialGradient id="'+id(c)+'" cx="32%" cy="26%" r="78%"><stop offset="0" stop-color="#ffffff" stop-opacity=".72"/>'+
-   '<stop offset=".36" stop-color="'+c+'"/><stop offset="1" stop-color="'+dark+'"/></radialGradient>';
+  const shade=sphereShade(c),g=SPHERE_GRADIENT,pc=v=>f(v*100)+'%';
+  return '<radialGradient id="'+id(c)+'" cx="'+pc(g.cx)+'" cy="'+pc(g.cy)+'" r="'+pc(g.r)+'"><stop offset="0" stop-color="'+shade.light+'"/>'+
+   '<stop offset="'+g.baseOffset+'" stop-color="'+shade.base+'"/><stop offset="1" stop-color="'+shade.dark+'"/></radialGradient>';
  }).join('');
  const markup=items.slice().sort((a,b)=>b.depth-a.depth).map(p=>{
   const opacity=alpha(p.opacity??1);
@@ -8826,17 +8878,20 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
   if(p.type==='ellipse')return '<ellipse cx="'+f(p.x)+'" cy="'+f(p.y)+'" rx="'+f(p.rx)+'" ry="'+f(p.ry)+
    '" transform="rotate('+f(p.angle)+' '+f(p.x)+' '+f(p.y)+')" fill="'+col(p.fill)+'" opacity="'+opacity+'"/>';
   if(p.type==='line')return '<path d="M '+f(p.x1)+' '+f(p.y1)+' L '+f(p.x2)+' '+f(p.y2)+'" fill="none" stroke="'+
-   col(p.stroke)+'" stroke-width="'+f(p.width)+'" stroke-linecap="round" opacity="'+opacity+'"/>';
+   col(p.stroke)+'" stroke-width="'+f(p.width)+'" stroke-linecap="'+(p.cap==='round'?'round':'butt')+'" opacity="'+opacity+'"/>';
   if(p.type==='triangle')return '<path d="M '+f(p.points[0][0])+' '+f(p.points[0][1])+' L '+
    f(p.points[1][0])+' '+f(p.points[1][1])+' L '+f(p.points[2][0])+' '+f(p.points[2][1])+
    ' Z" fill="'+col(p.fill)+'" opacity="'+opacity+'"/>';
-  if(p.type==='label')return '<text x="'+f(p.x)+'" y="'+f(p.y)+'" fill="'+col(p.fill||'#203047')+
-   '" font-size="'+f(p.fontSize??12)+'" font-family="sans-serif" text-anchor="middle"'+
-   (p.textStroke?' stroke="'+col(p.textStroke)+'" stroke-width="'+f(p.strokeWidth??1)+'" paint-order="stroke fill"':'')+
-   ' opacity="'+opacity+'">'+svgEscape(p.text)+'</text>';
+  if(p.type==='label')return '<path data-text="'+svgEscape(p.text)+'" aria-label="'+svgEscape(p.text)+'" d="'+
+   svgPathData(vectorLabelOutline(p).commands)+'" fill="'+col(p.fill||'#203047')+'"'+
+   (p.textStroke?' stroke="'+col(p.textStroke)+'" stroke-width="'+f(p.strokeWidth??1)+'" stroke-linejoin="round" paint-order="stroke fill"':'')+
+   ' opacity="'+opacity+'"/>';
   throw Error('Bilinmeyen SVG geometri türü.');
  }).join('\n');
- return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+
+ if(widthMm!==null&&!(Number.isFinite(widthMm)&&widthMm>0&&widthMm<=1000))throw Error('SVG figür genişliği geçersiz.');
+ // A physical width keeps the pixel viewBox but tells editors the print size.
+ const size=widthMm===null?[String(width),String(height)]:[f(widthMm)+'mm',f(widthMm*height/width)+'mm'];
+ return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+size[0]+'" height="'+size[1]+
   '" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+svgEscape(title)+'">\n<title>'+svgEscape(title)+
   '</title><defs>'+defs+'</defs>'+(transparent?'':'<rect width="100%" height="100%" fill="#ffffff"/>')+
   '<g stroke-linejoin="round">'+markup+'</g></svg>\n';
@@ -8852,18 +8907,15 @@ function crystalSvgPrimitives(width,height){
   if(![ndc.x,ndc.y,ndc.z].every(Number.isFinite))return null;
   return {x:(ndc.x+1)*width/2,y:(1-ndc.y)*height/2,depth:-view.z};
  };
- const line=(a,b,stroke,widthWorld,opacity,pixelWidth=0)=>{
-  const pa=screen(a),pb=screen(b);if(!pa||!pb)return;
-  const mid=a.clone().add(b).multiplyScalar(.5),p=screen(mid),side=screen(mid.clone().addScaledVector(right,widthWorld));
-  const thickness=pixelWidth||Math.max(.6,p&&side?2*Math.hypot(side.x-p.x,side.y-p.y):1);
-  objects.push({type:'line',x1:pa.x,y1:pa.y,x2:pb.x,y2:pb.y,depth:(pa.depth+pb.depth)/2,
-   stroke,width:Math.min(80,thickness),opacity});
- };
+ // Lines are clipped against atom spheres after traversal (see below).
+ const lines=[],spheres=[];
+ const line=(a,b,stroke,widthWorld,opacity,pixelWidth=0)=>{lines.push({a,b,stroke,widthWorld,opacity,pixelWidth});};
  const radiusCircle=(centre,radius,fill,opacity,label)=>{
   const p=screen(centre),edge=screen(centre.clone().addScaledVector(right,radius));if(!p||!edge)return;
   const r=Math.hypot(edge.x-p.x,edge.y-p.y);
   if(!(r>.03))return;
   objects.push({type:'circle',x:p.x,y:p.y,r,fill,opacity,depth:p.depth});
+  if(opacity>=.999)spheres.push({center:centre.clone().applyMatrix4(camera.matrixWorldInverse).toArray(),radius,x:p.x,y:p.y,r,depth:p.depth});
   if(label)objects.push({type:'label',x:p.x,y:p.y-r-5,text:label,depth:p.depth-.0001,opacity:1});
  };
  const asWorld=(p,obj)=>p.clone().applyMatrix4(obj.matrixWorld);
@@ -8930,26 +8982,71 @@ function crystalSvgPrimitives(width,height){
   for(const child of obj.children)traverse(child,kind);
  };
  for(const child of root.children)traverse(child,child.userData.layer);
+ occludedVectorLines(lines,spheres,objects,screen);
  if(objects.length>60000)throw Error('SVG için çok fazla vektör öğesi var; süperhücreyi küçültün.');
  return objects;
+}
+/* Painter's order alone draws a bond over the atom it enters and a cell edge
+   over the atom it passes behind. Keep only the parts of each line that the
+   camera can see past opaque atom spheres, so vector files match the WebGL
+   depth buffer. A visible part that crosses an atom disc lies in front of
+   that atom, so it is sorted just in front of it. */
+function occludedVectorLines(lines,spheres,objects,screen){
+ const perspective=!!camera.isPerspectiveCamera,splitForFaces=objects.some(o=>o.type==='triangle');
+ const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion),CELL=48,grid=new Map();
+ const cells=(x0,y0,x1,y1,visit)=>{
+  for(let gx=Math.floor(x0/CELL);gx<=Math.floor(x1/CELL);gx++)
+   for(let gy=Math.floor(y0/CELL);gy<=Math.floor(y1/CELL);gy++)visit(gx+','+gy);
+ };
+ spheres.forEach((s,i)=>cells(s.x-s.r,s.y-s.r,s.x+s.r,s.y+s.r,key=>{if(!grid.has(key))grid.set(key,[]);grid.get(key).push(i);}));
+ const distance=(s,a,b)=>{
+  const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((s.x-a.x)*dx+(s.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+  return Math.hypot(a.x+t*dx-s.x,a.y+t*dy-s.y);
+ };
+ for(const l of lines){
+  const pa=screen(l.a),pb=screen(l.b);if(!pa||!pb)continue;
+  const mid=l.a.clone().add(l.b).multiplyScalar(.5),p=screen(mid),side=screen(mid.clone().addScaledVector(right,l.widthWorld));
+  const width=Math.min(80,l.pixelWidth||Math.max(.6,p&&side?2*Math.hypot(side.x-p.x,side.y-p.y):1));
+  const found=new Set();
+  cells(Math.min(pa.x,pb.x),Math.min(pa.y,pb.y),Math.max(pa.x,pb.x),Math.max(pa.y,pb.y),key=>{for(const i of grid.get(key)||[])found.add(i);});
+  const near=[...found].map(i=>spheres[i]).filter(s=>distance(s,pa,pb)<=s.r+width/2);
+  const lengthPx=Math.hypot(pb.x-pa.x,pb.y-pa.y);
+  const intervals=visibleLineIntervals(l.a.clone().applyMatrix4(camera.matrixWorldInverse).toArray(),
+   l.b.clone().applyMatrix4(camera.matrixWorldInverse).toArray(),near,
+   {perspective,samples:Math.min(96,Math.max(4,Math.ceil(lengthPx/3)))});
+  for(const [s0,s1] of intervals){
+   // Short pieces sort correctly against translucent polyhedron faces.
+   const pieces=splitForFaces?Math.max(1,Math.min(16,Math.ceil((s1-s0)*lengthPx/40))):1;
+   for(let k=0;k<pieces;k++){
+    const qa=screen(l.a.clone().lerp(l.b,s0+(s1-s0)*k/pieces)),qb=screen(l.a.clone().lerp(l.b,s0+(s1-s0)*(k+1)/pieces));
+    if(!qa||!qb)continue;
+    let depth=(qa.depth+qb.depth)/2;
+    for(const s of near)if(distance(s,qa,qb)<s.r-Math.max(.5,.02*s.r))depth=Math.min(depth,s.depth*(1-1e-7)-1e-7);
+    objects.push({type:'line',x1:qa.x,y1:qa.y,x2:qb.x,y2:qb.y,depth,stroke:l.stroke,width,opacity:l.opacity,cap:'butt'});
+   }
+  }
+ }
 }
 function exportSvg(){
  const rect=$('stage').getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));
  const primitives=crystalSvgPrimitives(width,height);
  if(!primitives.length)throw Error('SVG için görünür yapı öğesi yok.');
  primitives.push(...exportAxisGizmoPrimitives(rect));
- const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked);
+ const {widthMm}=exportFigureSettings();
+ const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked,{widthMm});
  download(safeName(state.name)+'.svg',svg,'image/svg+xml;charset=utf-8');
  if(densityGrid&&volumeView.mode!=='off')inform('SVG yalnız vektörel yapı katmanlarını içerir; hacimsel alanlar PNG ile dışa aktarılabilir.');
 }
 /* PDF and EPS share the same camera-projected vector primitives as SVG. All
    paths (including spherical highlights) remain editable vector geometry. */
-function vectorPageLayout(width,height){
+/* The page is cut to the figure, so LaTeX and Word place it at its real size:
+   the chosen width in mm, otherwise CSS pixels at 96 DPI (0.75 pt each). */
+function vectorPageLayout(width,height,widthMm=null){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>8192||height>8192)
   throw Error('Vektör sayfa boyutu geçersiz.');
- const [pageWidth,pageHeight]=width>=height?[842,595]:[595,842];
- const scale=Math.min((pageWidth-56)/width,(pageHeight-56)/height);
- return {pageWidth,pageHeight,scale,x:(pageWidth-width*scale)/2,y:(pageHeight-height*scale)/2};
+ if(widthMm!==null&&!(Number.isFinite(widthMm)&&widthMm>0&&widthMm<=1000))throw Error('Vektör figür genişliği geçersiz.');
+ const scale=widthMm===null?.75:widthMm/25.4*72/width,round=v=>Number(v.toFixed(3));
+ return {pageWidth:round(width*scale),pageHeight:round(height*scale),scale,x:0,y:0};
 }
 function vectorEllipse(x,y,rx,ry,angle=0){
  const t=angle*Math.PI/180,c=Math.cos(t),s=Math.sin(t),k=.5522847498307936;
@@ -8960,9 +9057,6 @@ function vectorEllipse(x,y,rx,ry,angle=0){
   [point(-rx,-k*ry),point(-k*rx,-ry),point(0,-ry)],
   [point(k*rx,-ry),point(rx,-k*ry),point(rx,0)]
  ]};
-}
-function vectorHighlightColor(color){
- return '#'+[1,3,5].map(i=>Math.round(parseInt(color.slice(i,i+2),16)*.7+255*.3).toString(16).padStart(2,'0')).join('');
 }
 function vectorPagePrimitives(items,width,height){
  vectorPageLayout(width,height);
@@ -8983,8 +9077,12 @@ function vectorPagePrimitives(items,width,height){
  }
  return items.slice().sort((a,b)=>b.depth-a.depth);
 }
-function vectorPdfBytes(items,width,height){
- const layout=vectorPageLayout(width,height),shapes=vectorPagePrimitives(items,width,height);
+/* Ascii-only text for PDF/PostScript comments that name each label. */
+const vectorComment=text=>String(text??'').replace(/[^\x20-\x7e]/g,'?');
+// Sphere outline: SVG strokes #1f3040 at 18 % opacity over the dark rim.
+const sphereRim=color=>mixHex(sphereShade(color).dark,'#1f3040',.18);
+function vectorPdfBytes(items,width,height,{widthMm=null}={}){
+ const layout=vectorPageLayout(width,height,widthMm),shapes=vectorPagePrimitives(items,width,height);
  const n=value=>Number(value.toFixed(4)),rgb=color=>[1,3,5].map(i=>n(parseInt(color.slice(i,i+2),16)/255)).join(' ');
  const path=ellipse=>{
   const data=[n(ellipse.start[0])+' '+n(ellipse.start[1])+' m'];
@@ -8992,72 +9090,92 @@ function vectorPdfBytes(items,width,height){
   return data.join('\n')+'\nh';
  };
  const alphas=[...new Set(shapes.map(p=>Math.round((p.opacity??1)*100)))].sort((a,b)=>a-b),alphaId=new Map(alphas.map((a,i)=>[a,'GS'+i]));
+ // One radial shading per atom colour, in the unit square of the circle's box.
+ const shaded=[...new Set(shapes.filter(p=>p.type==='circle'&&!p.flat).map(p=>p.fill.toLowerCase()))],shadeId=new Map(shaded.map((c,i)=>[c,'Sh'+i]));
  const rows=['q',n(layout.scale)+' 0 0 '+n(-layout.scale)+' '+n(layout.x)+' '+n(layout.pageHeight-layout.y)+' cm',
-  '0 0 '+width+' '+height+' re W n','1 J 1 j'];
+  '0 0 '+width+' '+height+' re W n','1 j'];
  for(const p of shapes){
   const fill=p.fill||'#203047',alpha=alphaId.get(Math.round((p.opacity??1)*100));
   rows.push('q /'+alpha+' gs');
-  if(p.type==='line')rows.push(rgb(p.stroke)+' RG',n(p.width)+' w',n(p.x1)+' '+n(p.y1)+' m '+n(p.x2)+' '+n(p.y2)+' l S');
+  if(p.type==='line')rows.push((p.cap==='round'?1:0)+' J',rgb(p.stroke)+' RG',n(p.width)+' w',n(p.x1)+' '+n(p.y1)+' m '+n(p.x2)+' '+n(p.y2)+' l S');
   else if(p.type==='triangle')rows.push(rgb(fill)+' rg',p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'l':'m')).join(' ')+' h f');
   else if(p.type==='label'){
-   const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
-   const size=p.fontSize??12,x=n(p.x-size*(p.textStroke ? .333 : .25)*label.length);
-   const position='1 0 0 -1 '+x+' '+n(p.y)+' Tm ';
-   if(p.textStroke)rows.push(rgb(p.textStroke)+' RG',n(p.strokeWidth??1)+' w',
-    'BT /F1 '+n(size)+' Tf '+position+'1 Tr ('+label+') Tj ET');
-   rows.push(rgb(fill)+' rg','BT /F1 '+n(size)+' Tf '+position+'0 Tr ('+label+') Tj ET');
+   const outline=pdfPathData(vectorLabelOutline(p).commands);
+   rows.push('% text: '+vectorComment(p.text));
+   if(!outline){rows.push('Q');continue;}
+   if(p.textStroke)rows.push(rgb(p.textStroke)+' RG',n(p.strokeWidth??1)+' w',outline+' S');
+   rows.push(rgb(fill)+' rg',outline+' f');
+  }else if(p.type==='circle'&&!p.flat){
+   const e=vectorEllipse(p.x,p.y,p.r,p.r);
+   rows.push('q',path(e)+' W n',n(2*p.r)+' 0 0 '+n(2*p.r)+' '+n(p.x-p.r)+' '+n(p.y-p.r)+' cm','/'+shadeId.get(fill.toLowerCase())+' sh','Q',
+    rgb(sphereRim(fill))+' RG','0.6 w',path(e)+' S');
   }else{
    const e=p.type==='circle'?vectorEllipse(p.x,p.y,p.r,p.r):vectorEllipse(p.x,p.y,p.rx,p.ry,p.angle);
    rows.push(rgb(fill)+' rg',path(e)+' f');
    if(p.stroke)rows.push(rgb(p.stroke)+' RG',n(p.strokeWidth??1)+' w',path(e)+' S');
-   if(p.type==='circle'&&p.r>1&&!p.flat){
-    rows.push(rgb(vectorHighlightColor(fill))+' rg',path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' f');
-   }
   }
   rows.push('Q');
  }
  rows.push('Q');
+ const g=SPHERE_GRADIENT,shading=color=>{
+  const {light,base,dark}=sphereShade(color),f=(a,b)=>'<< /FunctionType 2 /Domain [0 1] /C0 ['+rgb(a)+'] /C1 ['+rgb(b)+'] /N 1 >>';
+  return '<< /ShadingType 3 /ColorSpace /DeviceRGB /Coords ['+[g.cx,g.cy,0,g.cx,g.cy,g.r].join(' ')+'] /Extend [true true]'+
+   ' /Function << /FunctionType 3 /Domain [0 1] /Functions ['+f(light,base)+' '+f(base,dark)+'] /Bounds ['+g.baseOffset+'] /Encode [0 1 0 1] >> >>';
+ };
  const stream=rows.join('\n')+'\n',utf8=new TextEncoder(),blocks=[],offsets=[0];let bytesCount=0;
  const write=v=>{const b=typeof v==='string'?utf8.encode(v):v;blocks.push(b);bytesCount+=b.length;};
  const obj=(id,text)=>{offsets[id]=bytesCount;write(id+' 0 obj\n'+text+'\nendobj\n');};
+ const count=5+shaded.length;
  write('%PDF-1.4\n%vector\n');
  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+layout.pageWidth+' '+layout.pageHeight+
-  '] /Resources << /Font << /F1 4 0 R >> /ExtGState << '+alphas.map(a=>'/'+alphaId.get(a)+' << /Type /ExtGState /ca '+n(a/100)+' /CA '+n(a/100)+' >>').join(' ')+
-  ' >> >> /Contents 5 0 R >>');
- obj(4,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
- obj(5,'<< /Length '+utf8.encode(stream).length+' >>\nstream\n'+stream+'endstream');
- obj(6,'<< /Producer (Kristal Yapi) /Title (Vector crystal structure) >>');
- const xref=bytesCount;write('xref\n0 7\n0000000000 65535 f \n');
- for(let i=1;i<=6;i++)write(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
- write('trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
+  '] /Resources << /ExtGState << '+alphas.map(a=>'/'+alphaId.get(a)+' << /Type /ExtGState /ca '+n(a/100)+' /CA '+n(a/100)+' >>').join(' ')+
+  ' >> /Shading << '+shaded.map((c,i)=>'/'+shadeId.get(c)+' '+(6+i)+' 0 R').join(' ')+' >> >> /Contents 4 0 R >>');
+ obj(4,'<< /Length '+utf8.encode(stream).length+' >>\nstream\n'+stream+'endstream');
+ obj(5,'<< /Producer (Kristal Yapi) /Title (Vector crystal structure) >>');
+ shaded.forEach((c,i)=>obj(6+i,shading(c)));
+ const xref=bytesCount;write('xref\n0 '+(count+1)+'\n0000000000 65535 f \n');
+ for(let i=1;i<=count;i++)write(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
+ write('trailer\n<< /Size '+(count+1)+' /Root 1 0 R /Info 5 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
  const output=new Uint8Array(bytesCount);let at=0;for(const b of blocks){output.set(b,at);at+=b.length;}
  return output;
 }
-function vectorEpsText(items,width,height){
- const layout=vectorPageLayout(width,height),shapes=vectorPagePrimitives(items,width,height);
- const n=value=>Number(value.toFixed(4)),rgb=(color,alpha=1)=>[1,3,5].map(i=>n((parseInt(color.slice(i,i+2),16)*alpha+255*(1-alpha))/255)).join(' ');
+/* EPS has no transparency: colours are blended with white. Spheres use a
+   LanguageLevel 3 radial shading (shfill), as in the PDF. */
+function vectorEpsText(items,width,height,{widthMm=null}={}){
+ const layout=vectorPageLayout(width,height,widthMm),shapes=vectorPagePrimitives(items,width,height);
+ const n=value=>Number(value.toFixed(4)),mix=(color,alpha)=>mixHex('#ffffff',color,alpha);
+ const rgb=(color,alpha=1)=>[1,3,5].map(i=>n(parseInt(mix(color,alpha).slice(i,i+2),16)/255)).join(' ');
  const path=e=>[n(e.start[0])+' '+n(e.start[1])+' moveto',...e.curves.map(c=>c.map(p=>n(p[0])+' '+n(p[1])).join(' ')+' curveto'),'closepath'].join('\n');
- const rows=['%!PS-Adobe-3.0 EPSF-3.0','%%BoundingBox: 0 0 '+layout.pageWidth+' '+layout.pageHeight,
+ const g=SPHERE_GRADIENT,shading=(color,alpha)=>{
+  const {light,base,dark}=sphereShade(color),f=(a,b)=>'<< /FunctionType 2 /Domain [0 1] /C0 ['+rgb(a,alpha)+'] /C1 ['+rgb(b,alpha)+'] /N 1 >>';
+  return '<< /ShadingType 3 /ColorSpace /DeviceRGB /Coords ['+[g.cx,g.cy,0,g.cx,g.cy,g.r].join(' ')+'] /Extend [true true]'+
+   ' /Function << /FunctionType 3 /Domain [0 1] /Functions ['+f(light,base)+' '+f(base,dark)+'] /Bounds ['+g.baseOffset+'] /Encode [0 1 0 1] >> >> shfill';
+ };
+ const rows=['%!PS-Adobe-3.0 EPSF-3.0','%%BoundingBox: 0 0 '+Math.ceil(layout.pageWidth)+' '+Math.ceil(layout.pageHeight),
+  '%%HiResBoundingBox: 0 0 '+layout.pageWidth+' '+layout.pageHeight,'%%LanguageLevel: 3',
   '%%Creator: Kristal Yapi','%%Pages: 1','%%EndComments','gsave',n(layout.x)+' '+n(layout.pageHeight-layout.y)+' translate',
-  n(layout.scale)+' '+n(-layout.scale)+' scale','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath clip','1 setlinecap 1 setlinejoin'];
+  n(layout.scale)+' '+n(-layout.scale)+' scale','newpath 0 0 moveto '+width+' 0 lineto '+width+' '+height+' lineto 0 '+height+' lineto closepath clip','1 setlinejoin'];
  for(const p of shapes){
   const alpha=p.opacity??1,fill=p.fill||'#203047';rows.push('gsave');
-  if(p.type==='line')rows.push(rgb(p.stroke,alpha)+' setrgbcolor',n(p.width)+' setlinewidth','newpath '+n(p.x1)+' '+n(p.y1)+' moveto '+n(p.x2)+' '+n(p.y2)+' lineto stroke');
+  if(p.type==='line')rows.push((p.cap==='round'?1:0)+' setlinecap',rgb(p.stroke,alpha)+' setrgbcolor',n(p.width)+' setlinewidth','newpath '+n(p.x1)+' '+n(p.y1)+' moveto '+n(p.x2)+' '+n(p.y2)+' lineto stroke');
   else if(p.type==='triangle')rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'lineto':'moveto')).join(' ')+' closepath fill');
   else if(p.type==='label'){
-   const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
-   rows.push(rgb(fill,alpha)+' setrgbcolor',n(p.x)+' '+n(p.y)+' translate','1 -1 scale',
-    '/Helvetica findfont '+n(p.fontSize??12)+' scalefont setfont','('+label+') dup stringwidth pop -2 div 0 moveto');
-   if(p.textStroke)rows.push('gsave',rgb(p.textStroke,alpha)+' setrgbcolor',n(p.strokeWidth??1)+' setlinewidth',
-    '('+label+') true charpath stroke','grestore');
-   rows.push('('+label+') show');
+   const outline=postScriptPathData(vectorLabelOutline(p).commands);
+   rows.push('% text: '+vectorComment(p.text));
+   if(outline){
+    if(p.textStroke)rows.push('gsave',rgb(p.textStroke,alpha)+' setrgbcolor',n(p.strokeWidth??1)+' setlinewidth','newpath',outline,'stroke','grestore');
+    rows.push(rgb(fill,alpha)+' setrgbcolor','newpath',outline,'fill');
+   }
+  }else if(p.type==='circle'&&!p.flat){
+   const e=vectorEllipse(p.x,p.y,p.r,p.r);
+   rows.push('gsave','newpath '+path(e)+' clip','['+[2*p.r,0,0,2*p.r,p.x-p.r,p.y-p.r].map(n).join(' ')+'] concat',shading(fill,alpha),'grestore',
+    rgb(sphereRim(fill),alpha)+' setrgbcolor','0.6 setlinewidth','newpath '+path(e)+' stroke');
   }else{
    const ellipse=p.type==='circle'?vectorEllipse(p.x,p.y,p.r,p.r):vectorEllipse(p.x,p.y,p.rx,p.ry,p.angle);
    rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+path(ellipse)+' fill');
    if(p.stroke)rows.push(rgb(p.stroke,alpha)+' setrgbcolor',n(p.strokeWidth??1)+' setlinewidth','newpath '+path(ellipse)+' stroke');
-   if(p.type==='circle'&&p.r>1&&!p.flat)rows.push(rgb(vectorHighlightColor(fill),alpha)+' setrgbcolor','newpath '+path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' fill');
   }
   rows.push('grestore');
  }
@@ -9070,8 +9188,9 @@ function exportVectorPrint(format){
  const primitives=crystalSvgPrimitives(width,height);
  if(!primitives.length)throw Error('Vektör çıktı için görünür yapı yok.');
  primitives.push(...exportAxisGizmoPrimitives(rect));
- if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height),'application/pdf');
- else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height),'application/postscript');
+ const {widthMm}=exportFigureSettings();
+ if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height,{widthMm}),'application/pdf');
+ else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height,{widthMm}),'application/postscript');
  if(densityGrid&&volumeView.mode!=='off')inform('Vektör çıktı hacimsel alan katmanını içermez; PNG/TIFF kullanabilirsiniz.');
 }
 const MAX_STL_TRIANGLES=1000000;
@@ -10190,8 +10309,16 @@ function exportFunction(format){
  if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
  return functions[format];
 }
+// A chosen physical width replaces the screen multipliers; perspective
+// projections are flagged because published structure figures are parallel.
+function syncExportFigureControls(){
+ const physical=$('exportWidthMm').value!=='';
+ $('pngScale').disabled=physical;$('printScale').disabled=physical;
+ $('exportProjectionRow').hidden=!camera?.isPerspectiveCamera;
+}
 function openExportModal(){
  const modal=$('exportModal');exportFocusBefore=document.activeElement;
+ syncExportFigureControls();
  modal.hidden=false;
  const first=modal.querySelector('[data-export="project"]');
  if(first)first.focus();
@@ -10212,6 +10339,11 @@ async function selectExportFormat(format){
 }
 function initExportModal(){
  const modal=$('exportModal');
+ $('exportWidthMm').addEventListener('change',syncExportFigureControls);
+ $('exportOrthographic').addEventListener('click',()=>{
+  if(camera?.isPerspectiveCamera)toggleProjection();
+  syncExportFigureControls();
+ });
  $('exportModalClose').onclick=closeExportModal;
  $('exportModalCancel').onclick=closeExportModal;
  modal.querySelector('.export-modal-scrim').addEventListener('click',closeExportModal);

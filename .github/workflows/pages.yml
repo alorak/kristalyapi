@@ -201,6 +201,8 @@ jobs:
           cp qe-protocol-templates.js public/qe-protocol-templates.js
           cp qe-electronic-setup.js public/qe-electronic-setup.js
           cp dft-ui.js public/dft-ui.js
+          cp export-graphics.js public/export-graphics.js
+          cp export-glyphs.js public/export-glyphs.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
           cp qe-relax-view.js public/qe-relax-view.js
@@ -221,6 +223,7 @@ jobs:
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm public/vendor/moyo_wasm_bg.wasm
           cp licenses/LICENSE-MOYO-MIT.txt public/vendor/LICENSE-MIT.txt
           cp licenses/LICENSE-MOYO-APACHE.txt public/vendor/LICENSE-APACHE.txt
+          cp licenses/OFL-1.1.txt public/vendor/LICENSE-OFL-1.1.txt
           test -s public/vendor/moyo_wasm_bg.wasm
           test -s public/vendor/three/build/three.module.js
           test -s public/vendor/three/examples/jsm/geometries/ConvexGeometry.js
@@ -247,6 +250,9 @@ jobs:
           test -s public/qe-protocol-templates.js
           test -s public/qe-electronic-setup.js
           test -s public/dft-ui.js
+          test -s public/export-graphics.js
+          test -s public/export-glyphs.js
+          test -s public/vendor/LICENSE-OFL-1.1.txt
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js
           test -s public/qe-relax-view.js
