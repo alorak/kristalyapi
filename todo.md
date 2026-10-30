@@ -680,3 +680,9 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] WebCrypto SHA-256 yardımcı fonksiyonu ve sentetik regresyonları; kristal koordinatlarını otomatik uygulamama.
 - [ ] Bağımsız kaynak ZIP/ham dosyalarla doğrulanabilir dijital imza veya harici güven kökü; SHA içeren JSON tek başına yetmez.
 - [ ] Yalnız geometriyi esas alan normalleştirilmiş yapı kimliği ve hesap protokol kimliğinin bilimsel karşılaştırılması.
+
+### TRUBA P2.0 — Devam işlemi güvenliği
+
+- [x] `resume.sh`: `squeue` başarılı çıkış kodu ve boş çıktı ayrımını zorunlu tut; SLURM sorgu başarısızken iş göndermeyi reddet.
+- [x] Mock `squeue` hata/aktif-job durumlarında sıfır yeni `sbatch` çağrısını doğrulayan Node regresyonu.
+- [ ] Gerçek TRUBA üzerinde bağlantı kesintisi ve iptal edilen bağımlı işler için operatör kabulü.
