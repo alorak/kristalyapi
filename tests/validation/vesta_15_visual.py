@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import date
 import hashlib
 import json
 import math
@@ -232,11 +233,74 @@ def audited_capture(root: Path, item: dict, bg: tuple[int, int, int], expected_s
     image = png_rgb(path, bg)
     if list(image[:2]) != expected_size:
         raise ValueError("Actual PNG canvas size differs from fixed outputPixels; crop exported viewer content, not browser UI")
+    capture_date = item.get("captureDate")
+    if not isinstance(capture_date, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", capture_date):
+        raise ValueError("Capture date missing, expected YYYY-MM-DD")
+    try:
+        date.fromisoformat(capture_date)
+    except ValueError as exc:
+        raise ValueError("Invalid calendar capture date") from exc
     return crop(image, item.get("roi"))
 
 
+def link_p14_report(file: Path, cases: list[dict]) -> dict:
+    """Cross-reference an external P14 audit snapshot with matching source bytes.
+
+    The report is not cryptographically signed; a user-supplied P14 snapshot
+    still requires independent provenance and human review.
+    """
+    if not file.is_file() or file.stat().st_size > MAX_BYTES:
+        raise ValueError("Missing or oversized P14 audit report")
+    payload = json.loads(file.read_text(encoding="utf-8"))
+    audit = payload.get("vestaGuiEvidenceAudit")
+    if (payload.get("protocol") != "package14-vesta3-manual-equations-real-cif"
+            or payload.get("vestaGuiExecuted") is not True
+            or payload.get("vestaGuiStatus") != "captured-human-evidence"
+            or payload.get("manualScientificGate") != "PASS"
+            or not isinstance(audit, dict) or audit.get("version") != "3.5.8"):
+        raise ValueError("P14 must be a completed, separately GUI-audited source report")
+    observed = audit.get("cases")
+    if not isinstance(observed, list) or not observed:
+        raise ValueError("No genuine P14 GUI measurement entries in report")
+    source_manifest = json.loads((ROOT / "tests/validation/bvs_13_sources.json").read_text())
+    source_index = {src["id"]: src for src in source_manifest["sources"]}
+    report_index = {row["id"]: row for row in payload.get("cases", [])}
+    ids = set()
+    linked = []
+    for row in observed:
+        id_ = row.get("id")
+        if id_ in ids or id_ not in report_index:
+            raise ValueError("Duplicated or unknown P14 case")
+        ids.add(id_)
+        measure = report_index[id_]
+        if (measure.get("vestaGuiStatus") != "captured-human-evidence"
+                or row.get("capturedFromGui") is not True
+                or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("screenshotSha256")))
+                or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("consoleTextSha256")))):
+            raise ValueError("P14 report missing authentic screenshot/transcript digest metadata")
+        error = row.get("maxDistanceErrorA")
+        if not isinstance(error, (int, float)) or not math.isfinite(error) or not 0 <= error <= .03:
+            raise ValueError("P14 geometry error outside independently checked tolerance")
+        source = source_index.get(measure.get("source"))
+        if not source:
+            raise ValueError("Unknown P14 source")
+        for case in cases:
+            if case["source"] == source["path"]:
+                if case["sourceSha256"] != source["sha256"]:
+                    raise ValueError("V15 source differs from P14 source SHA-256")
+                linked.append({"v15Scene": case["id"], "p14Case": id_,
+                               "maxDistanceErrorA": error,
+                               "p14ScreenshotSha256": row["screenshotSha256"],
+                               "p14TextSha256": row["consoleTextSha256"]})
+    if not linked:
+        raise ValueError("No V15 scene uses the submitted P14 reference sources")
+    return {"status": "USER_SUPPLIED_P14_AUDIT_SNAPSHOT_HUMAN_REVIEW_REQUIRED",
+            "p14ReportSha256": digest(file.read_bytes()), "linkedMeasurements": linked,
+            "warning": "Report metadata/digests and known source pin cross-checked; original P14 GUI and its recorded measurements were not re-executed here."}
+
+
 def run(cases: list[dict], evidence_file: Path | None, output_dir: Path,
-        require_all: bool = False) -> dict:
+        require_all: bool = False, p14_report: Path | None = None) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     case_index = {case["id"]: case for case in cases}
     captured = {}
@@ -277,6 +341,8 @@ def run(cases: list[dict], evidence_file: Path | None, output_dir: Path,
             expected_size = case["settings"]["outputPixels"]
             left = audited_capture(root, row["vesta"], bg, expected_size)
             right = audited_capture(root, row["kristalyapi"], bg, expected_size)
+            if row["vesta"].get("roi") != row["kristalyapi"].get("roi"):
+                raise ValueError("Both application exports must use the identical ROI coordinates and dimensions")
             numerical, triptych = metrics(left, right, bg)
             triptych_path = output_dir / (cid + "-comparison.png")
             png_write(triptych_path, left[0] * 3, left[1], triptych)
@@ -294,7 +360,8 @@ def run(cases: list[dict], evidence_file: Path | None, output_dir: Path,
               "capturedCases": len(captured), "requiredCases": len(cases),
               "cases": statuses,
               "interpretation": "Differences in camera registration, AA and lighting are descriptive. No automatic VESTA equivalence/pass.",
-              "realVestaBinaryDistributed": False}
+              "realVestaBinaryDistributed": False,
+              "p14CrossReference": link_p14_report(p14_report, cases) if p14_report else None}
     (output_dir / "report.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n",
                                             encoding="utf-8")
     with (output_dir / "metrics.csv").open("w", newline="", encoding="utf-8") as file:
@@ -314,11 +381,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", type=Path, help="Optional real GUI capture JSON (never bundled)")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "validation-results" / "vesta15")
+    parser.add_argument("--p14-report", type=Path,
+                        help="Optional report from P14's own audited run; metadata cross-reference only")
     parser.add_argument("--require-all", action="store_true",
                         help="Fail until all real VESTA/app capture pairs are audited")
     args = parser.parse_args(argv)
     try:
-        result = run(pinned_cases(), args.evidence, args.out_dir, args.require_all)
+        result = run(pinned_cases(), args.evidence, args.out_dir,
+                     args.require_all, args.p14_report)
     except (ValueError, KeyError, OSError, json.JSONDecodeError, zlib.error) as exc:
         print(f"V15 evidence validation failed: {exc}", file=sys.stderr)
         return 2

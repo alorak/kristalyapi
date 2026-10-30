@@ -45,7 +45,8 @@
           1024,
           768
         ],
-        "captureMethod": "File > Export Raster Image"
+        "captureMethod": "File > Export Raster Image",
+        "captureDate": "REPLACE_WITH_YYYY-MM-DD"
       },
       "kristalyapi": {
         "path": "actual-kristalyapi.png",
@@ -56,7 +57,8 @@
           1024,
           768
         ],
-        "captureMethod": "Save > PNG"
+        "captureMethod": "Save > PNG",
+        "captureDate": "REPLACE_WITH_YYYY-MM-DD"
       }
     }
   ]
