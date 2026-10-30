@@ -132,8 +132,10 @@ def parse_bands(path: Path, config: dict):
     distance = [row[0] for row in blocks[0]]
     if len(distance) < 2 or count * len(distance) > MAX_PLOT_POINTS:
         raise ValueError("Band grid exceeds frontend limits")
-    if any(b <= a for a, b in zip(distance, distance[1:])):
-        raise ValueError("Band distance must strictly increase")
+    # QE may repeat a sampled distance at a k-path junction. The frontend
+    # explicitly accepts non-decreasing band axes; DOS remains strict.
+    if any(b < a for a, b in zip(distance, distance[1:])):
+        raise ValueError("Band distance must not decrease")
     for block in blocks:
         if len(block) != len(distance) or any(abs(row[0] - x) > 1e-5 for row, x in zip(block, distance)):
             raise ValueError("Inconsistent bands.x reciprocal-distance axis")
