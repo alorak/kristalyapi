@@ -6,7 +6,7 @@ import {createHash,webcrypto} from 'node:crypto';
 const uri=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
 const electronic=uri(readFileSync(new URL('../qe-electronic-view.js',import.meta.url),'utf8'));
 const source=readFileSync(new URL('../qe-convergence-view.js',import.meta.url),'utf8').replace("'./qe-electronic-view.js'",JSON.stringify(electronic));
-const {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView,convergenceCsv}=await import(uri(source));
+const {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView,convergenceCsv,convergenceSummary}=await import(uri(source));
 const digest=s=>createHash('sha256').update(s).digest('hex');
 const plan=JSON.parse(readFileSync(new URL('fixtures/qe/mos2-electronic-convergence.json',import.meta.url)));
 function fixture(){
@@ -89,4 +89,15 @@ test('renderer requires file hashes, exposes both selectors and keeps width sens
   selects[1].value='s_p';selects[1].listeners.change();
   assert.ok(host.children.some(n=>n.tag==='div'&&n.children.some(c=>c.tag==='svg')));
  }finally{globalThis.document=old;}
+});
+
+test('decision summary surfaces each pair verdict and its tightest check on the real D4.1 report',()=>{
+ const view=JSON.parse(readFileSync(new URL('../validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json',import.meta.url),'utf8'));
+ const report=JSON.parse(view.comparison_json);
+ const {rows,counts}=convergenceSummary(report);
+ assert.deepEqual(counts,{decision:{total:2,passed:2},diagnostic:{total:2,passed:1},integrity:{total:2,passed:2}});
+ const failed=rows.find(r=>!r.passed);
+ assert.deepEqual([failed.from,failed.to,failed.role,failed.axis],['nbnd40-k16-s010','nbnd40-k18-s010','diagnostic','nscf_k']);
+ assert.ok(failed.critical.ratio>1,'the failing diagnostic check is reported as past its limit');
+ for(const r of rows.filter(r=>r.passed&&r.critical))assert.ok(r.critical.ratio<=1);
 });
