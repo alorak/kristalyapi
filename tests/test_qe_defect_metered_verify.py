@@ -45,6 +45,7 @@ class MeteredEvidenceTests(unittest.TestCase):
               "raw_qe_diagnostics":init.initialization_diagnostics(raw),
               "resource_measurements":metrics,
               "cgroup_memory_peak_bytes":metrics["memory_peak_bytes"],
+              "memory_bytes":settings["memory_bytes"],
               "status":"initialized_only_metered"}
         data["artifact_sha256"]={
             p.relative_to(path).as_posix():pilot.sha(p.read_bytes())
