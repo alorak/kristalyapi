@@ -87,6 +87,8 @@ offline önbelleğe eklendi, cache adı yenilendi.
 Github Actions'ın **merge-only tetikleme**, yetki ve
 iş akışı kuralı değiştirilmedi.
 
+**V17.3 güvenli VECTR/THERI/POLYP altkümesi eklendi:** [durum ve bilimsel sınırlar](PACKAGE_17_3_STATUS.md). Termal ve çokyüzlü GUI paritesi hâlâ doğrulanmadı.
+
 ## Bekleyen bilimsel kabul
 
 - [ ] VESTA 3.5.8 ile en az 3 farklı SCENE
