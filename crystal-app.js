@@ -20,8 +20,8 @@ import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
-import { createTrubaPackage } from './qe-hpc-export.mjs';
-import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.mjs';
+import { createTrubaPackage } from './qe-hpc-export.js';
+import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -6830,7 +6830,7 @@ async function qeExportTrubaPackage(){
  status.textContent='Yerel ZIP hazırlanıyor; hesap gönderilmiyor.';
  try{
   const {result}=qeBuildLocalInput();
-  const collectorResponse=await fetch(new URL('./qe_hpc_collect.py',document.baseURI));
+  const collectorResponse=await fetch(new URL('./tools/qe_hpc_collect.py',document.baseURI));
   if(!collectorResponse.ok)throw Error('Python sonuç toplayıcı dosyası yüklenemedi.');
   const collectorScript=await collectorResponse.text();
   const pkg=await createTrubaPackage({
