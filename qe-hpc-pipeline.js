@@ -110,7 +110,7 @@ export async function createTrubaPipelinePackage(args){
  if(typeof pipelineScript!=='string'||pipelineScript.length>128000||!pipelineScript.includes(SCHEMA))
   throw Error('Uyumlu pipeline.py dosyası gerekli.');
  const withConverter=Boolean(converterScript||pdosHelperScript);
- if(withConverter&&validated.electronic.nbnd>300)
+ if(withConverter&&electronic.nbnd>300)
   throw Error('P1.3 en fazla 300 bant destekler. Daha büyük hesap için P1.3 seçimini kaldırın.');
  if(withConverter&&(typeof converterScript!=='string'||typeof pdosHelperScript!=='string'||
    converterScript.length>128000||pdosHelperScript.length>128000||
