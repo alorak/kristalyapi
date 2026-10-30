@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {parseBandPath,validatePipelineInput,pipelineStages,stageSlurm,
- createTrubaPipelinePackage,resumeScript} from '../qe-hpc-pipeline.js';
+ createTrubaPipelinePackage,resumeScript,sharedAllocationGroups,coallocatedSlurm,submissionScriptForGroup} from '../qe-hpc-pipeline.js';
 import {parseTrubaPipelineSummary,renderTrubaPipelineSummary} from '../qe-truba-pipeline-view.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
@@ -140,6 +140,84 @@ test('serial postprocessor walltime can be shorter without changing pw allocatio
  const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
  assert.match(html,/id="qeHpcPostHours"/);
  assert.match(app,/postHours:\$\('qeHpcPostHours'\)/);
+});
+test('P2.2 coallocated physical jobs retain independent QE stage receipts, pins and rescue scripts',async()=>{
+ const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');
+ const pkg=await createTrubaPipelinePackage({...opts,pipelineScript,ntasks:56,
+  postHours:'2',sharedAllocation:true});
+ const files=await entries(pkg.blob),read=name=>new TextDecoder().decode(files.get(name));
+ assert.deepEqual(pkg.manifest.submission_groups,[
+  ['scf'],['bands','bands_pp'],['nscf','dos','projwfc']]);
+ assert.equal(pkg.manifest.submission_mode,'shared-allocation-v1');
+ assert.deepEqual(sharedAllocationGroups(pkg.manifest.stages),pkg.manifest.submission_groups);
+ assert.equal(pkg.manifest.resource_estimate.length,3);
+ assert.equal(pkg.manifest.resource_estimate[1].requested_walltime_hours,14);
+ assert.equal(pkg.manifest.resource_estimate[2].requested_walltime_hours,16);
+ assert.equal(pkg.manifest.max_reserved_core_hours,56*(12+14+16));
+ for(const stage of pkg.manifest.stages)assert.ok(files.has('stages/'+stage+'.slurm'),'standalone rescue pin: '+stage);
+ const bands=read('stages/bands-coallocated.slurm'),nscf=read('stages/nscf-coallocated.slurm');
+ assert.equal(pkg.manifest.file_sha256['stages/bands-coallocated.slurm'],sha(bands));
+ assert.equal(pkg.manifest.file_sha256['stages/nscf-coallocated.slurm'],sha(nscf));
+ assert.match(bands,/#SBATCH --time=14:00:00/);
+ assert.match(nscf,/#SBATCH --time=16:00:00/);
+ assert.match(nscf,/#SBATCH --ntasks=56/);
+ assert.ok(bands.indexOf('python3 pipeline.py finish bands')<bands.indexOf('current_stage=bands_pp'));
+ assert.ok(nscf.indexOf('python3 pipeline.py finish nscf')<nscf.indexOf('current_stage=dos'));
+ assert.ok(nscf.indexOf('python3 pipeline.py finish dos')<nscf.indexOf('current_stage=projwfc'));
+ assert.match(nscf,/python3 pipeline.py summary/);
+ assert.match(nscf,/pipeline.py fail "\$current_stage"/);
+ const script=read('submit.sh');
+ assert.equal((script.match(/sbatch --test-only/g)||[]).length,3);
+ assert.equal((script.match(/response=\$\(sbatch --parsable/g)||[]).length,6); // two branches per physical job
+ assert.match(script,/printf "%s %s\\n" "bands" "\$id" >> submissions.txt\nprintf "%s %s\\n" "bands_pp" "\$id" >> submissions.txt/);
+ assert.match(script,/sbatch --parsable --dependency=afterok:"\$previous" stages\/nscf-coallocated.slurm/);
+ assert.equal(submissionScriptForGroup(['bands','bands_pp']),'stages/bands-coallocated.slurm');
+ assert.match(read('resume.sh'),/sbatch --test-only "stages\/\$step.slurm"/);
+ assert.match(read('README.md'),/NOT proven CPU-core-hours/);
+ const relax=await createTrubaPipelinePackage({...opts,pipelineScript,ntasks:56,postHours:'2',
+  inputText:input.replace("'scf'","'relax'"),sharedAllocation:true});
+ assert.equal(relax.manifest.submission_groups.length,4);
+ assert.deepEqual(relax.manifest.submission_groups[0],['relax']);
+ const old=await createTrubaPipelinePackage({...opts,pipelineScript,ntasks:56,postHours:'2'});
+ assert.equal(old.manifest.submission_mode,undefined);
+ assert.equal(old.manifest.resource_estimate.length,6);
+ assert.equal((await entries(old.blob)).has('stages/bands-coallocated.slurm'),false);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,ntasks:112,sharedAllocation:true}),/56 MPI/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,ntasks:56,hours:25,postHours:24,sharedAllocation:true}),/72 saat/);
+ assert.throws(()=>coallocatedSlurm(['scf','dos'],{
+  account:'project_1',partition:'orfoz',jobName:'qe-job',ntasks:56,hours:12
+ }),/pinned PW/);
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
+ assert.match(html,/id="qeHpcSharedAllocation"/);
+ assert.match(app,/sharedAllocation:\$\('qeHpcSharedAllocation'\).checked/);
+});
+test('P2.2 coallocated Slurm failure trap records the failing logical stage and stops descendants',()=>{
+ const root=mkdtempSync(join(tmpdir(),'truba-coallocated-')),bin=join(root,'bin'),log=join(root,'events.txt');
+ const resources={jobName:'qe-test',account:'project_1',partition:'orfoz',
+  ntasks:56,hours:12,postprocess_hours:2,qe_module:'apps/espresso/7.4-epw-5.9-oneapi-2024'};
+ try{
+  mkdirSync(bin);
+  writeFileSync(join(root,'stages.slurm'),coallocatedSlurm(['nscf','dos','projwfc'],resources));
+  const stub=body=>'#!/bin/sh\n'+body+'\n';
+  writeFileSync(join(bin,'module'),stub('exit 0'),{mode:0o755});
+  writeFileSync(join(bin,'python3'),stub('echo "python $*" >> "$TEST_EVENTS"\nexit 0'),{mode:0o755});
+  writeFileSync(join(bin,'mpirun'),stub('exec "$@"'),{mode:0o755});
+  for(const name of ['pw.x','dos.x','projwfc.x']){
+   writeFileSync(join(bin,name),stub('echo "binary '+name+'" >> "$TEST_EVENTS"\nif test "$TRUBA_FAIL" = "'+name+'"; then exit 19; fi\necho JOB DONE.'),{mode:0o755});
+  }
+  const env={...process.env,PATH:bin+':'+process.env.PATH,SLURM_SUBMIT_DIR:root,
+   TEST_EVENTS:log,TRUBA_FAIL:'dos.x',SLURM_JOB_ID:'1170'};
+  const result=spawnSync('bash',['stages.slurm'],{cwd:root,env,encoding:'utf8'});
+  assert.equal(result.status,19);
+  const events=readFileSync(log,'utf8');
+  assert.match(events,/python pipeline.py prepare nscf/);
+  assert.match(events,/python pipeline.py finish nscf/);
+  assert.match(events,/python pipeline.py prepare dos/);
+  assert.match(events,/python pipeline.py fail dos 19/);
+  assert.doesNotMatch(events,/projwfc|pipeline.py summary/);
+  assert.ok(events.indexOf('finish nscf')<events.indexOf('prepare dos'));
+ }finally{rmSync(root,{recursive:true,force:true});}
 });
 test('P1.3 converter is pinned, embedded and must succeed before final receipt',async()=>{
  const pipelineScript=readFileSync(new URL('../tools/qe_hpc_pipeline.py',import.meta.url),'utf8');

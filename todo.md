@@ -695,3 +695,14 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Mock QE/UPF ve kaynak-süre profili regresyonları.
 - [ ] Seri postprocessor hesaplarının farklı kısa işlere bölünmesini gerçekten ortadan kaldırmak için kanıt/afterok uyumlu birleşik SLURM allocation tasarımı (bu değişiklik yalnız süre sınırını iyileştirir).
 - [ ] Gerçek TRUBA üzerinde cutoff, k-örgüsü, 2B vakum ve projeksiyon/bant sayısı yakınsama kabulü.
+
+### TRUBA P2.2 — Ortak PW/postprocessing tahsisi
+
+- [x] `main` tabanlı isteğe bağlı 56-MPI profilinde `bands+bands.x` ve `nscf+dos.x+projwfc.x` için SHA-256 sabitlenmiş fiziksel grup betikleri üret; 112 MPI veya 72 saat aşımını reddet.
+- [x] 6/7 mantıksal aşamanın `prepare`, `finish`, ayrı girdi/çıktı ve SHA-256 kanıtlarını; aşama bazlı hata tuzağını koru.
+- [x] Fiziksel grup bazında `afterok` ve `--test-only`; `submissions.txt` aynı fiziksel job ID'yi grup aşamalarında tekrar etsin.
+- [x] Python receipt doğrulaması ve `sacct` kaynaklarını tek fiziksel iş olarak sorgulama; farklı gruplar arasında duplicate job ID reddi.
+- [x] Varsayılan eski ayrı-iş akışını ve ayrı aşamalı manuel resume betiklerini koru; kullanıcıya seçim ve İngilizce çeviri ekle.
+- [x] Sentetik JS, Python ve hata tuzağı regresyonları.
+- [ ] Gerçek TRUBA `orfoz` 56-çekirdekli Si/MoS₂ hesaplarında grouped/serial A/B, `sacct` elapsed/CPU, Fermi/DOS/PDOS bilimsel eşdeğerliği ve fail/retry kabulü.
+- [ ] Gerçek çekirdek-saat tasarrufu doğrulanmadı: yalnız aynı tahsiste birden fazla aşama çalışması, seri komutlardaki boş çekirdekleri ortadan kaldırmaz; alternatif küçük kaynaklı kuyruk/parallel postprocessing stratejisini gerçek cluster profilleriyle araştır.

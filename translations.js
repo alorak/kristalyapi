@@ -7,6 +7,8 @@
 (() => {
  'use strict';
  const entries=[
+  ["Ortak SLURM tahsisi: bands + bands.x, NSCF + DOS + PDOS","Shared Slurm allocation: bands + bands.x, NSCF + DOS + PDOS"],
+  ["İsteğe bağlı: yalnız 56 MPI görevinde ve toplam grup süresi 72 saati aşmıyorsa. Kuyruğa giren iş sayısını azaltır; 56 çekirdek seri aşamalarda yine ayrılmış kalır. Gerçek CPU-saat tasarrufu iddia edilmez.","Optional: 56 MPI tasks only; total grouped walltime must not exceed 72 hours. Reduces queued job count; all 56 cores stay allocated during serial postprocessing. No proven core-hour savings."],
   ["Seri son işlemler için süre sınırı · yalnız aşamalı ZIP","Serial postprocessing walltime · staged ZIP only"],
   ["Yukarıdaki süreyle aynı","Same as main walltime"],
   ["1 saat","1 hour"],

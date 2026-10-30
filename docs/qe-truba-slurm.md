@@ -415,3 +415,18 @@ Dosya seçimi/çalışma alanı SHA hesaplaması sırasında değişirse önceki
 - `pipeline.json` içinde `resource_estimate` ve `max_reserved_core_hours` alanları vardır. İkincisi her aşamanın çekirdek sayısıyla **talep edilen üst süre sınırının çarpımlarının toplamıdır**, gerçek CPU-zamanı tüketimi, hesap maliyeti veya kuyruğa girme tahmini değildir. Seri aşamalar hâlâ 56 CPU tahsis edip tek işlem kullanır; birleştirilmiş postprocessing henüz uygulanmadı.
 
 Referanslar: [Quantum ESPRESSO UPF standardı](https://pseudopotentials.quantum-espresso.org/home/unified-pseudopotential-format), [TRUBA orfoz CPU kuralları](https://docs.truba.gov.tr/1-kaynaklar/arf/arf_kuyruk_bilgisi.html).
+
+## P2.2 — İsteğe bağlı ortak fiziksel SLURM tahsisi (TRUBA üzerinde deneysel)
+
+Aşamalı ZIP üretiminde **Ortak SLURM tahsisi** işaretlenirse ve MPI görev sayısı **56** ise, beklenen 6 veya 7 bilimsel aşama korunurken iş gönderim planı sırasıyla **SCF**, **bands + bands.x**, **NSCF + dos.x + projwfc.x** (isteğe bağlı en başta **relax**) olarak 3 veya 4 **fiziksel SLURM işi** oluşturur. Her mantıksal aşama hâlâ ayrı `prepare`, ham `*.in`/`*.out`, `finish` kanıtları ve `reports/<stage>.json` SHA-256 verileri üretir. Ortak tahsiste aynı SLURM job ID, `submissions.txt` içinde birden çok ardışık aşamaya atanır; `pipeline.py accounting` bu tekrarları **tek fiziksel iş** olarak yalnız bir kez `sacct` ile sorgular. Saklanan mantıksal iş eşleştirmesini farklı tahsisler olarak **toplamayın**.
+
+İş bağımlılıkları **fiziksel gruplar arasında** `afterok` olarak zincirlenir; grup içindeki `pw.x`, `bands.x`, `dos.x`, `projwfc.x` komutları sırayla çalışır. `current_stage` ile başarısız aşama `reports/<stage>.failure.json` dosyasına yazılır. Normal koşumda `bands-coallocated.slurm` ve `nscf-coallocated.slurm` çağrılır; desteklenen operatör `resume.sh` akışı için SHA-256 ile sabitlenmiş eski **tek aşamalı** SLURM betikleri ZIP içinde tutulur. Başarısız `pw.x` aşamaları otomatik yeniden başlatılmaz.
+
+**Sınırlar ve maliyet doğruluğu:**
+
+- Ortak tahsis **yalnız 56 MPI görevi** için desteklenir; 112 görevi seçen kullanıcı ayrı seri planla devam etmelidir. Daha büyük 112-çekirdekli fiziksel grup, postprocessing sırasında gereksiz tahsisi artırabilir.
+- `bands+bands.x` işi için `PW_saat + seri_saat`, `NSCF+DOS+PDOS` için `PW_saat + 2×seri_saat` ayırtılmış süre sınırları talep edilir; **72 saatten fazla** ise paket güvenli biçimde reddedilir. Tek işte maksimum saat, her aşamanın bağımsız çalışma zamanını garanti etmez; operatör `sacct` verileriyle değerlendirmelidir.
+- **Kuyruğa gönderilen iş sayısı düşer; 56 çekirdek, seri son işlem boyunca da tahsisli kalır.** Bu nedenle daha az gerçek çekirdek-saat, daha iyi performans, daha düşük kuyruk süresi veya TRUBA kotası tasarrufu **kanıtlanmış değildir**. `max_reserved_core_hours` yalnız talep edilen tahsis-süre *üst sınırıdır*; gerçek kullanım için bağımsız `sacct` kayıtlarını kullanın.
+- Varsayılan **işaretlenmemiştir**; geçmiş ZIP, tek aşamalı gönderim ve operatör resume davranışı korunur. Gerçek TRUBA ve QE koşumu ile Si/MoS₂ kabulü yapılmadan üretim doğrulaması iddia edilmez.
+
+Quantum ESPRESSO paralel başlatma, MPI ve OpenMP davranışı çalıştırıldığı kurulumun `module` ve başlatıcı yapılandırmasına bağlıdır: https://www.quantum-espresso.org/Doc/user_guide/node19.html .
