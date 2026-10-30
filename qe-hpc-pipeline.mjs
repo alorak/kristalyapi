@@ -74,6 +74,7 @@ export function stageSlurm(step,resource){
   'set -euo pipefail','umask 077','cd "$SLURM_SUBMIT_DIR"','module purge',
   'module load '+resource.qe_module,'export OMP_NUM_THREADS=1',
   'command -v python3 >/dev/null || { echo "python3 unavailable" >&2; exit 10; }',
+  'python3 -c "import sys; sys.exit(0 if sys.version_info >= (3,9) else 1)" || { echo "Python >=3.9 required" >&2; exit 10; }',
   'command -v '+entry[2]+' >/dev/null || { echo "QE binary unavailable" >&2; exit 11; }',
   ...(isPw?['command -v mpirun >/dev/null || { echo "mpirun unavailable" >&2; exit 12; }']:[]),
   "trap 'code=$?; if [ \"$code\" -ne 0 ]; then python3 pipeline.py fail "+step+" \"$code\" || true; fi' EXIT",
