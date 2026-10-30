@@ -239,7 +239,7 @@
 
   ["Ortak ölçek · sürükleyerek döndürün, tekerlekle yakınlaştırın. Son atomlar başlangıçla periyodik olarak eşlenir. Konumlar Å birimindedir; aktif yapı değiştirilmez.", "Shared scale · drag to rotate and scroll to zoom. Final atoms are matched to the initial periodic images. Positions are in Å; the active structure is unchanged."],
   ["D2–D3 · Gerçek SCF / relaksasyon işi", "D2–D3 · Real SCF / relaxation jobs"],
-  ["PBE ve spinsiz SCF veya sabit hücreli relaksasyon → son SCF seçin. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.", "Choose PBE non-spin SCF or fixed-cell relaxation → final SCF. All atoms are free during relaxation. The operator must configure a UPF profile. The API key stays in page memory; authenticated LAN jobs require HTTPS."],
+  ["PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin elektronik akışta seçilebilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.", "Choose PBE SCF, fixed-cell relaxation → SCF or the electronic bands / DOS workflow. Collinear spin is available in the electronic workflow. All atoms are free during relaxation. The operator must configure a UPF profile. The API key stays in page memory; authenticated LAN jobs require HTTPS."],
   ["En fazla iyonik adım", "Maximum ionic steps"],
   ["İyonik enerji eşiği (Ry)", "Ionic energy threshold (Ry)"],
   ["Gerçek hesabı gönder", "Submit real calculation"],

@@ -1,0 +1,103 @@
+{
+  "status": "passed",
+  "scope": "One real Si collinear spin Docker/API functional smoke; no physical or magnetic ground-state acceptance",
+  "source_commit": "e64c9237c33c1ca147536386415abeca96ce434b",
+  "source_dirty": false,
+  "source_sha256": {
+    "server/api.py": "69761ec014099032567e2168ab2db9caf60c8f2b26a6bf8cd2271d6b8ff8b27e",
+    "server/electronic_core.py": "377f1a813931e0259c3103d24a7720a5202d8262c7d2b01a78960ef9dd0c93c3",
+    "server/electronic_worker.py": "7c937e0de55866547ce7f9715f64cb60f2e39ded44e4793b726ba6b286cc70fa",
+    "server/job_core.py": "eb38483d2385c068934571babb8dfb9db9ddae193975441cdb016924290096f1",
+    "server/job_diagnostics.py": "2b180a6b287bbd54d99baf39a051aaf7ff27a4369f63d26d97c0107576055790",
+    "server/job_store.py": "c435bac61adc84e19b5f0ccc7f3043f9fceac70ba7f097c45322c17f339c4937",
+    "server/qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+    "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+    "server/relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+    "server/relax_worker.py": "7b0c41286a4bc98956a72f1694f13bab032c2e48009e87214018e0cb1a7f540d",
+    "server/resource_policy.py": "a617581f3d41b7c1e3464f2aa36515c6541956dd4ff55132d4b3e185a0f1ff86",
+    "server/worker.py": "141921ae75a2d9608feb4e327b049badc5303f1f13b31f4c66be32c1b43427da",
+    "tools/qe_pipeline.py": "267d96eb220461c8536d9c1ca9b59100fde50d19c2ee821ca7b0b1aaed090d06",
+    "tools/qe_pdos.py": "41046b54b282d32a3686dd88e3a2d5be0f477a4fc3d85abf6ce9ae46b6479e6e",
+    "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+    "tools/qe_checkpoint.py": "822836ac9e7111e1e1f1c28bb0efcdeb248da4086a84ac8e8dffff35c520b9be",
+    "tools/qe_spin.py": "f177d3495b766aeb4d77d6368136ac44a08b8fbd077d83dd45e167bdf1a55fd5",
+    "tools/qe_spin_acceptance.py": "38d4aed991dbed0ab58f612ae8827563785c6c117dece6c2b27a4edf962ac5f2",
+    "server/Dockerfile": "907417d234f6620d85a4e514329e7d55044af310c91c444b952985c03e49db41",
+    "compose.qe.yml": "005f9a943fd29af4283c954650db223dff080ce791ef803ad15fdffcc951f2f1"
+  },
+  "started_at": 1793345414.0071192,
+  "image_source_verified": true,
+  "image_proof": {
+    "qe-api": {
+      "image_id": "sha256:400324c3dbde407146bbd018100dc2a4283f1ce906baf1869b84f627a802070b",
+      "source_sha256": {
+        "api.py": "69761ec014099032567e2168ab2db9caf60c8f2b26a6bf8cd2271d6b8ff8b27e",
+        "electronic_core.py": "377f1a813931e0259c3103d24a7720a5202d8262c7d2b01a78960ef9dd0c93c3",
+        "electronic_worker.py": "7c937e0de55866547ce7f9715f64cb60f2e39ded44e4793b726ba6b286cc70fa",
+        "job_core.py": "eb38483d2385c068934571babb8dfb9db9ddae193975441cdb016924290096f1",
+        "job_diagnostics.py": "2b180a6b287bbd54d99baf39a051aaf7ff27a4369f63d26d97c0107576055790",
+        "job_store.py": "c435bac61adc84e19b5f0ccc7f3043f9fceac70ba7f097c45322c17f339c4937",
+        "qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+        "qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+        "relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+        "relax_worker.py": "7b0c41286a4bc98956a72f1694f13bab032c2e48009e87214018e0cb1a7f540d",
+        "resource_policy.py": "a617581f3d41b7c1e3464f2aa36515c6541956dd4ff55132d4b3e185a0f1ff86",
+        "worker.py": "141921ae75a2d9608feb4e327b049badc5303f1f13b31f4c66be32c1b43427da",
+        "qe_pipeline.py": "267d96eb220461c8536d9c1ca9b59100fde50d19c2ee821ca7b0b1aaed090d06",
+        "qe_pdos.py": "41046b54b282d32a3686dd88e3a2d5be0f477a4fc3d85abf6ce9ae46b6479e6e",
+        "qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+        "qe_checkpoint.py": "822836ac9e7111e1e1f1c28bb0efcdeb248da4086a84ac8e8dffff35c520b9be",
+        "qe_spin.py": "f177d3495b766aeb4d77d6368136ac44a08b8fbd077d83dd45e167bdf1a55fd5"
+      },
+      "limits": {
+        "Memory": 2147483648,
+        "MemorySwap": 4294967296,
+        "NanoCpus": 2000000000
+      }
+    },
+    "qe-worker": {
+      "image_id": "sha256:400324c3dbde407146bbd018100dc2a4283f1ce906baf1869b84f627a802070b",
+      "source_sha256": {
+        "api.py": "69761ec014099032567e2168ab2db9caf60c8f2b26a6bf8cd2271d6b8ff8b27e",
+        "electronic_core.py": "377f1a813931e0259c3103d24a7720a5202d8262c7d2b01a78960ef9dd0c93c3",
+        "electronic_worker.py": "7c937e0de55866547ce7f9715f64cb60f2e39ded44e4793b726ba6b286cc70fa",
+        "job_core.py": "eb38483d2385c068934571babb8dfb9db9ddae193975441cdb016924290096f1",
+        "job_diagnostics.py": "2b180a6b287bbd54d99baf39a051aaf7ff27a4369f63d26d97c0107576055790",
+        "job_store.py": "c435bac61adc84e19b5f0ccc7f3043f9fceac70ba7f097c45322c17f339c4937",
+        "qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+        "qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+        "relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+        "relax_worker.py": "7b0c41286a4bc98956a72f1694f13bab032c2e48009e87214018e0cb1a7f540d",
+        "resource_policy.py": "a617581f3d41b7c1e3464f2aa36515c6541956dd4ff55132d4b3e185a0f1ff86",
+        "worker.py": "141921ae75a2d9608feb4e327b049badc5303f1f13b31f4c66be32c1b43427da",
+        "qe_pipeline.py": "267d96eb220461c8536d9c1ca9b59100fde50d19c2ee821ca7b0b1aaed090d06",
+        "qe_pdos.py": "41046b54b282d32a3686dd88e3a2d5be0f477a4fc3d85abf6ce9ae46b6479e6e",
+        "qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97",
+        "qe_checkpoint.py": "822836ac9e7111e1e1f1c28bb0efcdeb248da4086a84ac8e8dffff35c520b9be",
+        "qe_spin.py": "f177d3495b766aeb4d77d6368136ac44a08b8fbd077d83dd45e167bdf1a55fd5"
+      },
+      "limits": {
+        "Memory": 2147483648,
+        "MemorySwap": 4294967296,
+        "NanoCpus": 2000000000
+      }
+    }
+  },
+  "terminal": {
+    "job_id": "d79c82561e3e406aa8d289852d711feb",
+    "status": "completed",
+    "calculation": "electronic",
+    "spin": "polarized",
+    "created": "2026-10-30T07:30:16.490141+00:00",
+    "updated": "2026-10-30T07:30:35.759563+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null,
+    "resume_count": 0,
+    "pause_requested": false,
+    "can_pause": false,
+    "can_resume": false
+  },
+  "finished_at": 1793345438.9758668
+}

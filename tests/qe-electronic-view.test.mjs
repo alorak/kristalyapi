@@ -169,3 +169,9 @@ test('spin v2 rejects mixed identities, missing channels, grids and projection s
   const raw=spinFixture();mutate(raw);assert.throws(()=>parseQeElectronicResult(raw));
  }
 });
+
+test('archived real Si spin spectra parse both eight-band channels without altering raw data',()=>{
+ const data=JSON.parse(readFileSync(new URL('../validation-results/qe-spin-si-20261030-arm64/pipeline/electronic-results.json',import.meta.url),'utf8'));
+ const parsed=parseQeElectronicResult(data);
+ for(const channel of ['up','down']){assert.equal(parsed.channels[channel].bands.curves.length,8);assert.equal(parsed.channels[channel].dos.energy.length,1401);assert.equal(parsed.channels[channel].pdosDetailed.atoms.length,2);}
+});

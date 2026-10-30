@@ -60,6 +60,8 @@ jobs:
           python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41-20261030-amd64
           python tools/qe_convergence_view.py validation-results/qe-mos2-d41-20261030-amd64 --output /tmp/qe-convergence-view.json
           cmp validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json /tmp/qe-convergence-view.json
+      - name: Reverify archived real Si spin channels without executing QE
+        run: python tools/qe_spin_acceptance.py --verify validation-results/qe-spin-si-20261030-arm64
       - name: Validate D4.1 preregistered plan and pinned raw reference without DFT
         run: python tools/qe_electronic_convergence.py --preflight
 

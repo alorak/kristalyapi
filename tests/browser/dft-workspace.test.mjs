@@ -157,6 +157,28 @@ try{
  await page.locator('#qeJobResultsLink').click();
  await page.waitForFunction(()=>!document.getElementById('qeApiElectronicResults').hidden);
  assert.equal(await page.locator('#qeApiElectronicResults svg').count(),3);
+ // Replay archived real spin spectra locally; no API job is submitted.
+ await page.locator('#qeElectronicFile').setInputFiles(path.join(root,'validation-results/qe-spin-si-20261030-arm64/pipeline/electronic-results.json'));
+ await page.locator('#qeElectronicOpen').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#qeElectronicCharts .qe-spin-channel svg').length===6);
+ assert.equal(await page.locator('#qeElectronicCharts .qe-spin-channel').count(),2);
+ assert.match(await page.locator('#qeElectronicStatus').textContent(),/Spin.*8.*1401/);
+ for(const channel of ['up','down']){
+  const section=page.locator('#qeElectronicCharts [data-spin-channel="'+channel+'"]');
+  const [download]=await Promise.all([page.waitForEvent('download'),section.getByRole('button',{name:'DOS / PDOS verisini CSV indir',exact:true}).click()]);
+  assert.match(download.suggestedFilename(),new RegExp('spin-'+channel+'-dos-pdos\\.csv$'));
+  const csv=await fs.readFile(await download.path(),'utf8');assert.ok(csv.includes('spin_channel'));assert.ok(csv.includes(',"'+channel+'",'));
+ }
+ await page.locator('#dft-sonuclar').screenshot({path:path.join(artifacts,'dft-workspace-spin.png')});
+ await page.setViewportSize({width:390,height:844});
+ assert.ok(await page.locator('#dftPage').evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+ await page.locator('[data-dft-section="hazirlik"]').click();
+ await page.locator('#qeElectronicSpin').selectOption('polarized');
+ assert.equal(await page.locator('#qeSpinSettings').isVisible(),true);
+ await page.locator('#qeSpinSeeds').fill('Mo 0.1\nS 0');
+ assert.equal(await page.locator('#qeSpinSeeds').inputValue(),'Mo 0.1\nS 0');
+ await page.locator('#qeElectronicSpin').selectOption('unpolarized');
+ assert.equal(await page.locator('#qeSpinSettings').isVisible(),false);
  assert.deepEqual(errors,[]);
  console.log('DFT workspace: desktop/mobile routes, form/file persistence, graphics and no automatic server calls passed.');
 }catch(error){if(page)await page.screenshot({path:path.join(artifacts,'dft-workspace-failure.png')}).catch(()=>{});throw error;}

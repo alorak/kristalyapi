@@ -1,0 +1,38 @@
+&CONTROL
+ calculation='nscf',
+ prefix='kristalyapi',
+ pseudo_dir='./pseudo',
+ outdir='./tmp',
+ tprnfor=.true.,
+ verbosity='high',
+/
+&SYSTEM
+ ibrav=0,
+ nat=2,
+ ntyp=1,
+ nbnd = 8,
+ ecutwfc=45.00000000,
+ ecutrho=360.00000000,
+ input_dft='PBE',
+ nspin=2,
+ occupations='smearing',
+ smearing='gaussian',
+ degauss=0.01,
+ starting_magnetization(1)=0.1,
+/
+&ELECTRONS
+ conv_thr=1.0d-8,
+ mixing_beta=0.3,
+ electron_maxstep=150,
+/
+ATOMIC_SPECIES
+Si 28.08500 Si.UPF
+CELL_PARAMETERS angstrom
+0.0000000000 2.7155000000 2.7155000000
+2.7155000000 0.0000000000 2.7155000000
+2.7155000000 2.7155000000 0.0000000000
+ATOMIC_POSITIONS crystal
+Si 0.0050041477 0.9999952280 0.9999952280
+Si 0.2549958523 0.2500047720 0.2500047720
+K_POINTS automatic
+2 2 1 0 0 0

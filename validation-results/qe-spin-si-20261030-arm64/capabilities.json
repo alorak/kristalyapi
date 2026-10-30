@@ -1,0 +1,48 @@
+{
+  "api_version": "0.5.0",
+  "engine": {
+    "id": "quantum-espresso",
+    "version": "6.7MaX",
+    "available": true
+  },
+  "binaries": {
+    "pw.x": true,
+    "bands.x": true,
+    "dos.x": true,
+    "projwfc.x": true
+  },
+  "supported_operations": [
+    "health",
+    "capabilities",
+    "scf",
+    "relax-scf",
+    "electronic",
+    "status",
+    "results",
+    "cancel",
+    "diagnostics",
+    "pause-electronic",
+    "resume-electronic"
+  ],
+  "job_submission_enabled": true,
+  "electronic_spin_modes": [
+    "unpolarized",
+    "collinear-polarized"
+  ],
+  "resource_profile": {
+    "schema": "kristalyapi.qe-resource-profile.v1",
+    "id": "local-default",
+    "max_atoms": 64,
+    "max_bands": 128,
+    "max_nscf_k": 24,
+    "threads": 2,
+    "memory_required_bytes": 0,
+    "scratch_required_bytes": 0,
+    "max_wall_seconds": 604800,
+    "execution_enabled": true,
+    "sha256": "886202ab24d0b2e25489cd2c0aa2a44c155547354f9db37e794b51a989ade545"
+  },
+  "calculations_executed_by_api": false,
+  "binary_smoke": "pwscf_banner",
+  "scientific_calculation_performed": false
+}

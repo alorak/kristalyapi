@@ -1,0 +1,52 @@
+qe-api-1  | INFO:     Started server process [1]
+qe-api-1  | INFO:     Waiting for application startup.
+qe-api-1  | INFO:     Application startup complete.
+qe-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+qe-api-1  | INFO:     192.168.128.1:62668 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62672 - "GET /api/capabilities HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62674 - "POST /api/v1/calculations/validate HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62682 - "POST /api/v1/calculations HTTP/1.1" 202 Accepted
+qe-api-1  | INFO:     192.168.128.1:62684 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62692 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62706 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:62714 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55418 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55434 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55446 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55458 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     127.0.0.1:49968 - "GET /api/health HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55460 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55472 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55486 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55490 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55500 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55510 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55518 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55522 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55532 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55534 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55536 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55542 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55552 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55566 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55574 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55580 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55702 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55710 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55724 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55734 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55738 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55754 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55766 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55768 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55774 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55784 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55786 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55802 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55812 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55826 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55840 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55842 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55856 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:55872 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/diagnostics HTTP/1.1" 200 OK
+qe-api-1  | INFO:     192.168.128.1:56502 - "GET /api/v1/calculations/d79c82561e3e406aa8d289852d711feb/results HTTP/1.1" 200 OK
