@@ -314,6 +314,30 @@ def previous_report(root: Path, plan: list[str], stage: str, check_save: bool = 
     return value
 
 
+def preflight(root: Path) -> dict:
+    """Verify pinned offline package before any Slurm queue submission.
+
+    No SSH, SLURM submission, QE solver or network operation happens here.
+    The submit script independently calls sbatch --test-only for every stage.
+    """
+    config = load_manifest(root)
+    if (root / 'submissions.txt').exists() or (root / '.submission-lock').exists():
+        raise ValueError('Already submitted; new run requires a clean directory')
+    for name in ('reports', 'logs', 'tmp'):
+        path = root / name
+        if path.is_symlink() or (path.exists() and not path.is_dir()):
+            raise ValueError('Unsafe work directory: ' + name)
+    reports = root / 'reports'
+    if reports.exists() and any(reports.iterdir()):
+        raise ValueError('Existing stage evidence; use a clean work directory')
+    resources = config.get('resources')
+    if resources is not None:
+        if not isinstance(resources, dict) or resources.get('partition') != 'orfoz' or resources.get('ntasks') not in (56, 112) or resources.get('nodes') != 1:
+            raise ValueError('Unsupported TRUBA orfoz resource allocation')
+    return {'status': 'preflight-ok', 'stages': config['stages'],
+            'slurm_submission_performed': False, 'scientific_convergence_verified': False}
+
+
 def prepare(root: Path, stage: str) -> None:
     config = load_manifest(root)
     plan = config["stages"]
@@ -455,15 +479,17 @@ def summary(root: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "finish", "fail", "summary"))
+    parser.add_argument("action", choices=("preflight", "prepare", "finish", "fail", "summary"))
     parser.add_argument("stage", nargs="?")
     parser.add_argument("code", nargs="?", type=int)
     args = parser.parse_args(argv)
     try:
         root = Path.cwd().resolve()
-        if args.action != "summary" and args.stage not in STAGES:
+        if args.action not in ("summary", "preflight") and args.stage not in STAGES:
             raise ValueError("Stage name required")
-        if args.action == "prepare":
+        if args.action == "preflight":
+            print(json.dumps(preflight(root), indent=2))
+        elif args.action == "prepare":
             prepare(root, args.stage)
         elif args.action == "finish":
             finish(root, args.stage)
