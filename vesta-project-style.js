@@ -62,6 +62,12 @@ export function vesta3SectionTransferReport(lines){
  for(const line of lines){
   const m=HEADER.exec(line);
   if(m)found.add(m[1]);
+  // LIGHTn and PROJT are typically inline key+parameters in real VESTA 3.x files.
+  // Match only known keys; never interpret arbitrary numeric/title text as code.
+  else{
+   const inline=/^\s*(LIGHT[0-3]|PROJT)\s+(?:[-+]?\d|\.)/.exec(line);
+   if(inline)found.add(inline[1]);
+  }
  }
  // A one-word UPPERCASE title can look like a header. Never claim an
  // unknown word was a parsed VESTA extension or interpret its payload.
