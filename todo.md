@@ -853,6 +853,46 @@ işi olarak açma.
 
 [Yöntem, örnek komutlar ve bilimsel sınırlar](tests/validation/PACKAGE_16_2_STATUS.md).
 
+### V17.1 — VESTA site görünümü ve aktarım kayıp raporu
+
+- [x] ATOMT element ve SITET site RGB/yarıçapı için sınırlandırılmış
+  görünüm aktarımı: site etiket/ID eşleme, yaklaşık ball-mode Å→scale,
+  .2–3 sınırı dışını sessizce kırpmadan uyarı ve fallback.
+- [x] transferReport: hangi .vesta alanının içe alındığı, kısmi/
+  yaklaşık olduğu veya hiç aktarılmadığı; SCENE/LMATRIX kamera/
+  ışık, VECTR, THERI, POLYP ve harici dosya bloklarının kaybı açık.
+- [x] Site stili ve negatif testler; bağımlı JS Pages paketi ve PWA
+  önbellek kapsamına alındı. CI merge-only tetikleme politikası sabit.
+- [ ] Gerçek VESTA GUI ile atom yarıçapı/perspektif, ışık, ADP
+  ve çokyüzlü görsel paritesini doğrulama (NOT_RUN).
+- [ ] Sonraki işler: V17.2 kamera/view, V17.3 ADP/polyhedron/vector
+  destek alt kümesi; V17.4 güvenli .vesta export/round-trip.
+
+[V17.1 uygulama ve sınırlamalar](tests/validation/PACKAGE_17_1_STATUS.md).
+
+### V17.2 — SCENE kamera/yön önizlemesi (deneysel)
+
+- [x] SCENE 4×4 matriste katı sağ-elli 3B rotasyon kontrolü;
+  yansıma, NaN/Inf, shear, nonrigid / translation/bozuk satır reddi.
+- [x] LMATRIX yerel dönüşümü **kamera sanmama**; identity dışı
+  LMATRIX sahnesinde kamera önizlemesini kapatma ve kullanıcıya uyarı.
+- [x] PROJT 0/1 için **kanıtlanmamış, isteğe bağlı**
+  orthographic/perspective mod önizlemesi; zoom/FOV eşitliği
+  iddiası yok. Pan, zoom, BKGRC, LIGHT0–3 sahne ayrıntısı
+  meta/uyarı olarak okunur, render motoruna zorla aktarılmaz.
+- [x] Kullanıcı onayıyla 3B sahne kamera yönünü önizleme; onay
+  yoksa normal Fit görünümü. Bağımsız testler ve Pages/PWA
+  modül-grafiği güncellendi, CI merge-only tetikleyicisi aynı.
+- [ ] **V17.2 bilimsel kabul:** En az 3 gerçek VESTA 3.5.8
+  GUI yönü ve perspektif eş görüntüsü, [uvw]/[hkl]* işaretleri,
+  SCENE→Three.js matris/eksen/döndürme ve PROJT mod/zoom
+  eşlemesi, ışık ve depth-cue kontrolü. GUI NOT_RUN;
+  parity NOT_ESTABLISHED.
+- [ ] **Sıradaki:** V17.3 ADP/vektör/çokyüzlü güvenli alt-kümesi,
+  V17.4 .vesta export ve gerçek VESTA round-trip.
+
+[Protokol ve sınırlamalar](tests/validation/PACKAGE_17_2_STATUS.md).
+
 ### V17 — P1 · VESTA proje içe/dışa aktarımı
 
 - [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,

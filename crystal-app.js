@@ -28,6 +28,8 @@ import { createTrubaPackage } from './qe-hpc-export.js';
 import { createTrubaPipelinePackage } from './qe-hpc-pipeline.js';
 import { parseTrubaSummary,renderTrubaSummary,compareTrubaInputDigest } from './qe-truba-summary-view.js';
 import { parseTrubaPipelineSummary,renderTrubaPipelineSummary } from './qe-truba-pipeline-view.js';
+import { applyVesta3SiteAppearance,vesta3SectionTransferReport } from './vesta-project-style.js';
+import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -8379,27 +8381,15 @@ function vestaProjectData(source){
    }else warnings.push('VESTA non-P1 space group is incompatible or unavailable; supplied sites are displayed as P1 without fabricated symmetry.');
   }else if(n!==1)warnings.push('Unrecognized VESTA space-group setting; importing listed sites as P1.');
  }else warnings.push('GROUP is missing; treating the listed fractional sites as P1.');
+ // V17.1: bounded common VESTA SITE/ATOM appearance subset, with
+ // explicit approximate radius scaling and per-field loss diagnostics.
+ const appearance=applyVesta3SiteAppearance(lines,byIndex,RADII,{atomScale:.8,ballRadiusScale:.52});
+ warnings.push(...appearance.warnings);
  const rgb=p=>{
   const channels=p.map(Number);
   return channels.length===3&&channels.every(n=>Number.isInteger(n)&&n>=0&&n<=255)?
    '#'+channels.map(n=>n.toString(16).padStart(2,'0')).join(''):null;
  };
- // SITET is per crystallographic site; ATOMT is per chemical element.
- const atomIndex=find('ATOMT'),siteStyleIndex=find('SITET'),elementColors=new Map();
- if(atomIndex>=0)for(let i=atomIndex+1;i<lines.length;i++){
-  const p=tokens(lines[i]);if(p[0]==='0')break;
-  if(p.length<6||!/^\\d+$/.test(p[0]))break;
-  const color=rgb(p.slice(3,6));
-  if(color)elementColors.set(cleanSymbol(p[1]),color);
- }
- for(const site of sites)if(elementColors.has(site.symbol))
-  site.visualColor=elementColors.get(site.symbol);
- if(siteStyleIndex>=0)for(let i=siteStyleIndex+1;i<lines.length;i++){
-  const p=tokens(lines[i]);if(p[0]==='0')break;
-  if(p.length<6||!/^\d+$/.test(p[0]))break;
-  const site=byIndex.get(Number(p[0])),color=rgb(p.slice(3,6));
-  if(site&&color&&p[1]===site.label)site.visualColor=color;
- }
  let bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());
  const boundIndex=find('BOUND');
  if(boundIndex>=0){
@@ -8447,17 +8437,19 @@ function vestaProjectData(source){
    else density={reference,scale};
   }else warnings.push('VESTA IMPORT_DENSITY has no usable referenced filename.');
  }
- const unsupported=['IMPORT_STRUCTURE','IMPORT_TEXTURE','IMPORT_ORFFE','VECTR','THERI','SCENE','LMATRIX','PLN2D','HKLPP','POLYP'];
- const present=unsupported.filter(key=>find(key)>=0);
- if(present.length)warnings.push('Not transferred: '+present.join(', ')+'.');
+ const view=parseVesta3View(lines);
+ warnings.push(...view.notes);
+ const transferReport=vesta3SectionTransferReport(lines);
+ if(transferReport.skipped.length)
+  warnings.push('Not transferred from VESTA project: '+transferReport.skipped.join(', ')+'.');
  if(surfaces.length&&!density)warnings.push('ISURF levels require an attached density grid; a .vesta file alone has no voxels.');
  return {name:projectName.slice(0,150),detail:'VESTA 3.x import · '+sites.length+' sites',cell,sites,
   sgNumber,sgSetting,symmetryEnabled,bounds,rep:[1,1,1],boundary:true,
-  style:'ball',cut:2.65,cellVisible:true,axes:false,poly:'',polyCenters:[],nonPeriodic:false,
+  style:'ball',atomScale:.8,cut:2.65,cellVisible:true,axes:false,poly:'',polyCenters:[],nonPeriodic:false,
   bonds:bonds?bonds[0]!=='0':true,labels:labels?labels[0]!=='0':false,
   autoBond:deDuplicatedRules.length===0,bondRules:deDuplicatedRules.join(';'),
   warning:warnings.join(' '),vesta:{version:version[1],density,surfaces,warnings,
-   settingProvenance:vestaSettingProvenance}};
+   settingProvenance:vestaSettingProvenance,appearance,transferReport,view}};
 }
 /* The browser's file chooser is the only authority for a companion density
    file. Basenames are matched exactly; no network, directory or local-path IO. */
@@ -8536,6 +8528,22 @@ function applyVestaCompanion(project,prepared){
  volumeRefreshDatasetUi();volumeSyncIsoControls();updateVolumeInfo();volumeControlChanged();
 }
 
+/* V17.2: explicitly OPT-IN uncalibrated VESTA scene camera preview.
+ * Actual perspective magnification, VESTA light/depth and local LMATRIX
+ * are not silently applied; a user can always select Fit to reset. */
+function applyVestaCameraPreview(view){
+ if(!view?.canPreview)return false;
+ const target=orbit.target.toArray(),distance=camera.position.distanceTo(orbit.target);
+ const preview=vesta3CameraPreview(view,{distance,target});
+ if(preview.perspective!==null&&preview.perspective!==camera.isPerspectiveCamera)
+  toggleProjection(); // Retains on-screen apparent size, not VESTA zoom.
+ camera.position.fromArray(preview.position);
+ camera.up.fromArray(preview.up);
+ camera.lookAt(orbit.target);orbit.update();
+ camera.updateProjectionMatrix();updateAtomLod();updateProjectionButton();
+ return true;
+}
+
 async function importFile(file,selectedFiles=[file]){
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
  const workspaceId=activeWorkspaceId;
@@ -8555,7 +8563,20 @@ async function importFile(file,selectedFiles=[file]){
   state.warning=vesta.warnings.join(' ');
   report(state.warning);
  }
- fit();inform(file.name+' yüklendi · '+state.sites.length+' atom'+(prepared?' · density attached':''));
+ fit();
+ if(vesta?.view?.canPreview){
+  const accepted=window.confirm('VESTA SCENE bakış yönünü deneysel önizleme olarak uygulamak ister misiniz?\n\nDosya matrisi doğrulandı; ancak VESTA 3.5.8 kamera işareti, perspektif gücü, zoom ve ışıklandırma eşdeğerliği kanıtlanmadı. İptal = varsayılan Fit görünümü. Sonradan Fit ile sıfırlayabilirsiniz.');
+  if(accepted){
+   try{applyVestaCameraPreview(vesta.view);
+    vesta.warnings.push('V17.2: experimental SCENE camera preview applied with explicit operator confirmation; VESTA GUI parity NOT_ESTABLISHED.');
+   }catch(error){vesta.warnings.push('VESTA camera preview failed: '+error.message);}
+  }else vesta.warnings.push('VESTA scene preview declined; default fit view retained.');
+  state.warning=vesta.warnings.join(' ');report(state.warning);
+ }else if(vesta?.view?.reason&&vesta.view.reason!=='SCENE missing'){
+  vesta.warnings.push('V17.2 SCENE preview unavailable: '+vesta.view.reason);
+  state.warning=vesta.warnings.join(' ');report(state.warning);
+ }
+ inform(file.name+' yüklendi · '+state.sites.length+' atom'+(prepared?' · density attached':''));
 }
 function cifExportText(state){
  const hasMagnetism=state.sites.some(s=>Array.isArray(s.magneticMoment));
