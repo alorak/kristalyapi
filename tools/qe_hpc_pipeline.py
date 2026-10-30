@@ -167,7 +167,7 @@ def change_calc(source: str, calc: str) -> str:
 
 def change_kpoints(source: str, card: str) -> str:
     return unique_replace(source, r"^K_POINTS\s+automatic\s*\n\s*\d+\s+\d+\s+\d+\s+[01]\s+[01]\s+[01]\s*$",
-                          card.rstrip(), re.M | re.I)
+                          card.rstrip() + "\n", re.M | re.I)
 
 
 def apply_nbnd(source: str, nbnd: int) -> str:
@@ -408,6 +408,8 @@ def summary(root: Path) -> None:
         "scientific_convergence_verified": False,
         "all_upfs_pinned": all(p.get("sha256") for p in config["pseudopotentials"]),
         "stages": records,
+        "structure_in_sha256": config["file_sha256"]["structure.in"],
+        "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
         "note": "Stage completion and hashes are not a band-gap, DOS or physical-convergence proof."
     }
     print(json.dumps(report, ensure_ascii=False, indent=2))
