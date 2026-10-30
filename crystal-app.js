@@ -8511,7 +8511,7 @@ async function importFile(file,selectedFiles=[file]){
    }catch(error){vesta.warnings.push('VESTA camera preview failed: '+error.message);}
   }else vesta.warnings.push('VESTA scene preview declined; default fit view retained.');
   state.warning=vesta.warnings.join(' ');report(state.warning);
- }else if(vesta?.view?.reason){
+ }else if(vesta?.view?.reason&&vesta.view.reason!=='SCENE missing'){
   vesta.warnings.push('V17.2 SCENE preview unavailable: '+vesta.view.reason);
   state.warning=vesta.warnings.join(' ');report(state.warning);
  }
