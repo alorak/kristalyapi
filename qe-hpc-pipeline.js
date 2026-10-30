@@ -89,15 +89,18 @@ export function stageSlurm(step,resource,withElectronic=false){
   '#!/bin/bash','#SBATCH --job-name='+resource.jobName+'-'+step,
   '#SBATCH --account='+resource.account,'#SBATCH --partition='+resource.partition,
   '#SBATCH --nodes=1','#SBATCH --ntasks='+(isPw?resource.ntasks:1),
-  '#SBATCH --cpus-per-task=1','#SBATCH --time='+time(resource.hours),
+  '#SBATCH --cpus-per-task='+(isPw?1:56),'#SBATCH --time='+time(resource.hours),
   '#SBATCH --output=logs/'+step+'-%j.out','#SBATCH --error=logs/'+step+'-%j.err',
-  'set -euo pipefail','umask 077','cd "$SLURM_SUBMIT_DIR"','module purge',
+  'set -euo pipefail','umask 077','cd "$SLURM_SUBMIT_DIR"',
+  "trap 'code=$?; if [ \"$code\" -ne 0 ]; then python3 pipeline.py fail "+step+" \"$code\" || true; fi' EXIT",
+  'module purge',
   'module load '+resource.qe_module,'export OMP_NUM_THREADS=1',
+  'printf "SLURM job=%s node=%s tasks=%s cpus_per_task=%s\\n" "${SLURM_JOB_ID:-unknown}" "${SLURM_JOB_NODELIST:-unknown}" "${SLURM_NTASKS:-unknown}" "${SLURM_CPUS_PER_TASK:-unknown}"',
+  'module list 2>&1 || true',
   'command -v python3 >/dev/null || { echo "python3 unavailable" >&2; exit 10; }',
   'python3 -c "import sys; sys.exit(0 if sys.version_info >= (3,9) else 1)" || { echo "Python >=3.9 required" >&2; exit 10; }',
   'command -v '+entry[2]+' >/dev/null || { echo "QE binary unavailable" >&2; exit 11; }',
   ...(isPw?['command -v mpirun >/dev/null || { echo "mpirun unavailable" >&2; exit 12; }']:[]),
-  "trap 'code=$?; if [ \"$code\" -ne 0 ]; then python3 pipeline.py fail "+step+" \"$code\" || true; fi' EXIT",
   'python3 pipeline.py prepare '+step,
   (isPw?'mpirun ':'')+entry[2]+' -in '+entry[0]+' > '+entry[1],
   ...(step==='projwfc'&&withElectronic?['python3 electronic.py --bundle .']:[]),
@@ -108,8 +111,13 @@ export function stageSlurm(step,resource,withElectronic=false){
 export function submitScript(stages){
  const lines=['#!/bin/bash','set -euo pipefail','umask 077','cd "$(dirname "$0")"',
   'command -v sbatch >/dev/null || { echo "sbatch required" >&2; exit 2; }',
+  'command -v python3 >/dev/null || { echo "python3 required for preflight" >&2; exit 2; }',
   'if test -e submissions.txt || test -e .submission-lock; then echo "Already submitted" >&2; exit 3; fi',
-  'mkdir .submission-lock','mkdir -p logs reports tmp','previous=""',
+  'mkdir -p logs reports tmp',
+  'python3 pipeline.py preflight',
+  // Slurm admission must pass for ALL stages before the FIRST real sbatch.
+  ...stages.map(step=>'sbatch --test-only stages/'+step+'.slurm >/dev/null'),
+  'mkdir .submission-lock','previous=""',
   '# afterok serializes shared QE prefix.save, preventing concurrent writes.'
  ];
  for(const step of stages){
