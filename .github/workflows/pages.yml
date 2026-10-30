@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/qe-hpc-export.test.mjs tests/qe-hpc-pipeline.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-hpc-export.test.mjs tests/qe-hpc-pipeline.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/vesta-project-style.test.mjs tests/vesta-project-view.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -187,6 +187,7 @@ jobs:
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
           cp vesta-project-style.js public/vesta-project-style.js
+          cp vesta-project-view.js public/vesta-project-view.js
           cp qe-hpc-export.js public/qe-hpc-export.js
           cp qe-hpc-pipeline.js public/qe-hpc-pipeline.js
           cp qe-truba-pipeline-view.js public/qe-truba-pipeline-view.js
@@ -253,6 +254,7 @@ jobs:
           test -s public/dft-ui.js
           test -s public/export-graphics.js
           test -s public/vesta-project-style.js
+          test -s public/vesta-project-view.js
           test -s public/export-glyphs.js
           test -s public/vendor/LICENSE-OFL-1.1.txt
           test -s public/qe-defect-compare-view.js

@@ -53,6 +53,8 @@ PWA offline önbelleğe eklendi. Bu yüzden Pages workflow'unda
 yalnız cp ve test -s dağıtım satırları değişti. **CI merge-only
 tetikleme/izin politikaları değiştirilmedi.**
 
+**V17.2 deneysel SCENE önizlemesi eklendi:** [protokol](PACKAGE_17_2_STATUS.md). Kamera, projeksiyon ve aydınlatma VESTA GUI ile hâlâ ölçülmüş değildir.
+
 ## Kalan V17 adımları
 
 - [ ] V17.2: Kamera/perspektif/matris ve ışık ayarlarının gerçek

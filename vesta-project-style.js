@@ -12,18 +12,23 @@ const KNOWN={
  'ISURF':'partial','IMPORT_DENSITY':'external_link_only',
  'IMPORT_STRUCTURE':'not_transferred','IMPORT_TEXTURE':'not_transferred',
  'IMPORT_ORFFE':'not_transferred','VECTR':'not_transferred','VECTT':'not_transferred',
- 'VECTS':'not_transferred','THERI':'not_transferred','SCENE':'not_transferred',
+ 'VECTS':'not_transferred','THERI':'not_transferred','SCENE':'conditional',
  'LMATRIX':'not_transferred','PLN2D':'not_transferred','HKLPP':'not_transferred',
  'POLYP':'not_transferred','POLYS':'not_transferred','BONDP':'not_transferred',
  'FORMP':'not_transferred','UCOLP':'not_transferred','SPLAN':'not_transferred',
  'SURFM':'not_transferred','SURFS':'partial','SECCL':'not_transferred',
  'SECTP':'not_transferred','SECTS':'not_transferred','TEXCL':'not_transferred',
- 'TEX3P':'not_transferred','SHAPE':'not_transferred','PROJT':'not_transferred',
- 'ATOMS':'partial','LPOINT':'not_transferred','LIGHT':'not_transferred'
+ 'TEX3P':'not_transferred','SHAPE':'not_transferred','PROJT':'conditional',
+ 'ATOMS':'partial','LPOINT':'not_transferred','LIGHT':'not_transferred',
+ 'LIGHT0':'not_transferred','LIGHT1':'not_transferred',
+ 'LIGHT2':'not_transferred','LIGHT3':'not_transferred',
+ 'BKGRC':'not_transferred'
 };
 const SKIPPED_NOTE={
- 'SCENE':'Camera position/zoom/perspective cannot be reliably reconstructed from this project subset.',
- 'LMATRIX':'The VESTA orientation/light matrix is not applied; no arbitrary matrix is guessed.',
+ 'SCENE':'Only opt-in rigid SCENE orientation preview; pan/zoom/GUI camera convention not verified.',
+ 'PROJT':'Only opt-in projection mode preview; VESTA perspective factor not transferred.',
+ 'BKGRC':'VESTA background color is recorded but the app theme is preserved.',
+ 'LMATRIX':'Local/phase orientation matrix is NOT a camera; nonidentity LMATRIX blocks preview.',
  'VECTR':'Atomic arrows/vectors are not imported as magnetic moments or displacements.',
  'VECTT':'Vector radius/color styles are not transferred.',
  'THERI':'Thermal ellipsoid settings/ADP are not inferred from the style block.',
@@ -57,6 +62,12 @@ export function vesta3SectionTransferReport(lines){
  for(const line of lines){
   const m=HEADER.exec(line);
   if(m)found.add(m[1]);
+  // LIGHTn and PROJT are typically inline key+parameters in real VESTA 3.x files.
+  // Match only known keys; never interpret arbitrary numeric/title text as code.
+  else{
+   const inline=/^\s*(LIGHT[0-3]|PROJT)\s+(?:[-+]?\d|\.)/.exec(line);
+   if(inline)found.add(inline[1]);
+  }
  }
  // A one-word UPPERCASE title can look like a header. Never claim an
  // unknown word was a parsed VESTA extension or interpret its payload.
