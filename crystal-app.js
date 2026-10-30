@@ -29,6 +29,7 @@ import { parseTrubaPipelineSummary,renderTrubaPipelineSummary } from './qe-truba
 import { applyVesta3SiteAppearance,vesta3SectionTransferReport } from './vesta-project-style.js';
 import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
+import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -9532,6 +9533,33 @@ function exportVrml(){
  download(safeName(state.name)+'.wrl',vrml,'model/vrml');
  if(densityGrid)inform('VRML hacimsel izoyüzeyleri içermez.');
 }
+/* V17.4: limited P1 VESTA export intentionally never writes external
+ * density paths, fabricated ADP, transforms or unknown camera matrices.
+ * The second user-initiated button downloads a SHA-256-bound loss report. */
+function buildVestaExport(){
+ return makeVesta3Export(state,{
+  radii:RADII,
+  colorForSymbol:symbol=>'#'+new THREE.Color(elementColor(symbol)).getHexString(),
+  hasVolume:!!(densityGrid||volumeDatasets?.length)
+ });
+}
+function exportVestaProject(){
+ const output=buildVestaExport();
+ download(safeName(state.name)+'.vesta',output.text,'text/plain;charset=utf-8');
+ inform('VESTA P1 altkümesi dışa aktarıldı; kayıpları görmek için VESTA kayıp raporunu ayrıca indirin. Gerçek VESTA GUI kabulü yapılmadı.');
+}
+async function exportVestaLossReport(){
+ const output=buildVestaExport();
+ const sha256=await vestaExportSha256(output.text,globalThis.crypto);
+ const manifest={...output.manifest,
+  generatedVestaFile:safeName(state.name)+'.vesta',
+  vestaSha256:sha256,
+  hashAlgorithm:'SHA-256 over UTF-8 bytes of exact generated .vesta text',
+  warning:'This report matches the indicated file hash only. If the structure changed after saving .vesta, regenerate both files.'};
+ download(safeName(state.name)+'.vesta.loss.json',JSON.stringify(manifest,null,2)+'\n','application/json');
+ inform('VESTA kayıp raporu SHA-256 ile bağlandı; .vesta dosyasıyla hash eşitliğini kontrol edin.');
+}
+
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,bondMode:state.bondMode||'auto',nonPeriodic:!!state.nonPeriodic,nonPeriodicOrigin:state.nonPeriodicOrigin||[0,0,0],sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCenters:state.polyCenters,polyColor:state.polyColor,polyOpacity:state.polyOpacity,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
@@ -10525,10 +10553,10 @@ function initOpenModal(){
   }
  });
 }
-const EXPORT_FORMATS=['project','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml'];
+const EXPORT_FORMATS=['project','vesta','vesta-loss','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml'];
 let exportFocusBefore=null;
 function exportFunction(format){
- const functions={project:saveProject,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,
+ const functions={project:saveProject,vesta:exportVestaProject,'vesta-loss':exportVestaLossReport,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,
   'pdf-vector':()=>exportVectorPrint('pdf-vector'),eps:()=>exportVectorPrint('eps'),stl:exportStl,glb:exportGlb,vrml:exportVrml};
  if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
  return functions[format];

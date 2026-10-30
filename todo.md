@@ -914,6 +914,33 @@ işi olarak açma.
 
 [V17.3 bilimsel sınırlar ve testler](tests/validation/PACKAGE_17_3_STATUS.md).
 
+### V17.4 — VESTA 3.5 sınırlı P1 dışa aktarma ve kayıp manifesti
+
+- [x] Hücre / atom / doluluk, P1 kimlik simetrisi, BOUND,
+  SITET/ATOMT yaklaşık renk-yarıçap, SBOND eşikleri,
+  BONDS/LABEL ve POLYP global RGB yazıcısı.
+- [x] Etkin SG>1 iken P1 altında sahte eşdeğer atom oluşturmama:
+  güvenli ret. Etiket, sayısal sınır, occupancy, hücre metriği
+  ve bağ kuralları kontrolleri; dış dosya yolları gömülmez.
+- [x] Ayrı VESTA kayıp raporu: SHA-256 dosya özeti,
+  aktarılmayan ADP/magnetic/vector/kamera/LMATRIX/polyhedron
+  geometri/süperhücre/harita ve harici yoğunluk için null hash.
+- [x] Mevcut uygulamanın VESTA importer'ıyla kontrollü
+  P1 round-trip ve olumsuz senaryo testleri eklendi.
+- [x] Save modal, Pages staging ve PWA/offline shell bağlandı;
+  mevcut merge-only CI test komutuna regresyon eklendi.
+- [ ] Native Node testleri ve tarayıcı dosya indirme/yükleme
+  doğrulaması; bu repo yazma ortamında henüz koşulmadı.
+- [ ] **Gerçek VESTA 3.5.8 GUI kabulü:** Üç yapı, bir
+  density/sidecar sahnesi ve farklı site stiliyle gerçek
+  VESTA→KristalYapı→VESTA görüntü/sayısal fark matrisi;
+  halen GUI NOT_RUN, scientificParity NOT_ESTABLISHED.
+- [ ] Bir sonraki: V17.5 gerçek desktop test protokolü ve
+  isteğe bağlı hash'li kullanıcı seçilmiş yoğunluk
+  yan dosyaları; ardından V18 CIF2/simetri/setting.
+
+[Kapsam ve gerçek VESTA kabul kriterleri](tests/validation/PACKAGE_17_4_STATUS.md).
+
 ### V17 — P1 · VESTA proje içe/dışa aktarımı
 
 - [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,
