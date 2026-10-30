@@ -12,6 +12,7 @@ python3 tools/qe_defect_metered_pilot.py --case pristine \
   --memory-gib 96 --scratch-gib 4 --cpus 2 --timeout-seconds 180
 
 python3 -m unittest discover -s tests -p 'test_qe_defect_metered_pilot.py' -v
+python3 -m unittest discover -s tests -p 'test_qe_defect_metered_verify.py' -v
 ```
 
 Aracın eski D5.1 hazırlık dosyalarını, D3 kaynak kimliğini ve D5.2'nin
