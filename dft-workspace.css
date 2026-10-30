@@ -7,7 +7,7 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 .dft-topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 calc(-1*clamp(16px,2.4vw,40px)) 22px;padding:0 clamp(16px,2.4vw,40px);background:#fff;border-bottom:1px solid #dfe7ef}
 .dft-tabs{display:flex;gap:2px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
 .dft-tabs::-webkit-scrollbar{display:none}
-.dft-tabs a{display:flex;gap:7px;align-items:center;flex:0 0 auto;padding:14px 11px 12px;border-bottom:2px solid transparent;color:#687e93!important;font-size:12px;font-weight:600;line-height:1.4;text-decoration:none!important;white-space:nowrap}
+.dft-tabs a{display:flex;gap:7px;align-items:center;flex:0 0 auto;padding:14px 11px 12px;border-bottom:2px solid transparent;color:#52697d!important;font-size:13px;font-weight:600;line-height:1.4;text-decoration:none!important;white-space:nowrap}
 .dft-tabs a svg{width:16px;height:16px;flex:0 0 16px;color:#8299ad}
 .dft-tabs a:hover{color:#2d5f8a!important;background:#f4f8fc}
 .dft-tabs a.active{border-bottom-color:#2b75b5;color:#2168a3!important;font-weight:700}
@@ -45,18 +45,18 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 #dftPage .qe-workflow,.dft-card{border:1px solid #dce5ef;border-radius:11px;background:#fff;padding:20px;margin:0 0 18px;box-shadow:0 2px 6px #263b5303}
 #dftPage .qe-workflow .qe-workflow{padding:14px;background:#f8fafd;box-shadow:none;margin:5px 0}
 #dftPage .measure-subheading,.dft-card h3{font-size:13px;font-weight:750;color:#314e67;margin:0 0 5px;letter-spacing:0;line-height:1.5}
-#dftPage .hint{font-size:11px;line-height:1.75;color:#7a8b9d;margin:0}
-#dftPage .field span{font-size:10px;line-height:1.5;color:#617a91;font-weight:600}
-#dftPage :is(input:not([type=checkbox]),select,textarea){border:1px solid #d3dfea;background:#fbfcfe;color:#304e67;border-radius:6px;padding:9px 10px;font-size:12px;min-width:0}
+#dftPage .hint{font-size:12px;line-height:1.7;color:#52697d;margin:0}
+#dftPage .field span{font-size:13px;line-height:1.5;color:#617a91;font-weight:600}
+#dftPage :is(input:not([type=checkbox]),select,textarea){border:1px solid #d3dfea;background:#fbfcfe;color:#304e67;border-radius:6px;padding:9px 10px;font-size:14px;min-width:0}
 #dftPage textarea{font-size:11px}
-#dftPage button{font-size:11px;border-radius:6px;padding:9px 12px;color:#426581;border-color:#cfdde9;background:#f7faff;font-weight:600;line-height:1.5;min-width:0}
+#dftPage button{font-size:13px;border-radius:6px;padding:9px 12px;color:#426581;border-color:#cfdde9;background:#f7faff;font-weight:600;line-height:1.5;min-width:0}
 #dftPage button:hover:not(:disabled){background:#edf5fd;border-color:#a9c6df}
 #dftPage button.primary{background:#2b75b5;border-color:#2b75b5;color:#fff;box-shadow:0 2px 4px #276da215}
 #dftPage button.primary:hover:not(:disabled){background:#22649d}
 #dftPage #qeJobCancel{color:#986064;border-color:#eadcdd;background:#fffbfb}
 #dftPage :is(a,button,input,select,textarea):focus-visible{outline:2px solid #2c7cba;outline-offset:3px}
 #dftPage button:disabled{opacity:.46}
-#dftPage .note{font-size:11px;color:#647f95;background:#f4f8fc;border:1px solid #e1eaf3;border-radius:7px;padding:11px 12px;min-height:0;line-height:1.75}
+#dftPage .note{font-size:12px;color:#52697d;background:#f4f8fc;border:1px solid #e1eaf3;border-radius:7px;padding:11px 12px;min-height:0;line-height:1.75}
 #dftPage .qe-form-grid{gap:11px}
 #dftPage .qe-electronic-charts{font-size:12px;color:#3c566d}
 #dftPage .qe-electronic-charts h3{font-size:15px;color:#304e68}
@@ -98,3 +98,20 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 .qe-band-dos-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:12px}
 .qe-band-dos-layout section{min-width:0}.qe-linked-chart svg{height:360px!important;max-height:360px}
 @media(max-width:700px){.qe-band-dos-layout{grid-template-columns:minmax(0,1fr)}.qe-linked-chart svg{height:auto!important;max-height:360px}.qe-spectrum-controls{grid-template-columns:minmax(0,1fr)}}
+
+/* DFT preparation: explicitly separate a server job from an offline pw.x file. */
+.dft-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:0;margin:0 0 12px;padding:0;min-width:0}
+.dft-mode-switch legend{font-size:14px;font-weight:700;color:#304e68;margin:0 0 11px}
+.dft-mode-switch label{position:relative;display:block;min-width:0;border:1px solid #d4e0ed;border-radius:10px;background:#fff;padding:14px 16px;cursor:pointer;line-height:1.45}
+.dft-mode-switch label:has(input:checked){border-color:#2b75b5;background:#eff7ff;box-shadow:inset 0 0 0 1px #2b75b5}
+.dft-mode-switch label:has(input:focus-visible){outline:2px solid #2b75b5;outline-offset:3px}
+.dft-mode-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.dft-mode-switch label>span{display:block;font-size:14px;font-weight:750;color:#2c4c67}
+.dft-mode-switch small{display:block;font-size:12px;font-weight:400;color:#52697d;margin-top:3px}
+#dftPage .dft-mode-summary{margin:0 0 18px}
+#dftPreparationGrid[data-mode=file]{grid-template-columns:minmax(0,1fr)}
+#dftPreparationGrid[data-mode=file]>.dft-parameter-workflow{max-width:900px}
+#qeJobPreflightState{margin:8px 0 12px}
+#qeJobPreflightState[data-state=passed]{border-color:#b6d9c7;background:#f0faf4;color:#226347}
+#qeJobPreflightState[data-state=stale],#qeJobPreflightState[data-state=failed]{border-color:#e9c9cd;background:#fff7f6;color:#93454d}
+@media(max-width:760px){.dft-mode-switch{grid-template-columns:minmax(0,1fr);gap:8px}.dft-mode-switch label{padding:12px 13px}}

@@ -730,8 +730,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  <div class="qe-form-grid"><button id="qeProtocolReference" type="button" disabled>Referansı yeni çalışma alanında hazırla</button><button id="qeProtocolSettings" type="button" disabled>Yalnız hesap ayarlarını kullan</button></div>
  <div id="qeProtocolState" class="note" role="status">Protokol uygulanmadı.</div>
 </div>
-<div class="dft-prepare-grid"><div><div class="qe-workflow"><strong class="measure-subheading">Sunucu hesap ayarları</strong>     <p class="hint">PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin elektronik akışta seçilebilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.</p>
-     <label class="field"><span>Sunucu iş akışı</span><select id="qeJobWorkflow"><option value="selected">Seçili SCF / relaksasyon</option><option value="electronic">SCF → bant → DOS / PDOS</option></select></label>
+<fieldset class="dft-mode-switch" aria-label="Hesap hazırlama yöntemi">
+ <legend>Hesabı nasıl hazırlamak istiyorsunuz?</legend>
+ <label><input type="radio" name="dftPreparationMode" value="server" checked><span>Sunucuda hesapla<small>QE API ile doğrula, gönder ve takip et</small></span></label>
+ <label><input type="radio" name="dftPreparationMode" value="file"><span>QE .in dosyası oluştur<small>Girdiyi indir, yerel QE ile çalıştır</small></span></label>
+</fieldset>
+<p class="dft-mode-summary note" id="dftPreparationSummary" role="status">Sunucu hesabı seçildi. Hesaplama türünü ve ortak parametreleri belirleyin.</p>
+<div class="dft-prepare-grid" id="dftPreparationGrid"><div class="dft-server-only"><div class="qe-workflow"><strong class="measure-subheading">Sunucu iş akışı</strong>     <p class="hint">Sunucuda PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin yalnız elektronik akışta kullanılabilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.</p>
+     <label class="field"><span>Sunucu hesap türü</span><select id="qeJobWorkflow"><option value="scf">SCF · tek nokta enerji</option><option value="relax-scf" selected>Relaksasyon → SCF · sabit hücre</option><option value="electronic">SCF → bant → DOS / PDOS</option></select></label>
      <div id="qeElectronicSettings" class="qe-workflow" hidden>
       <label class="field"><span>Elektronik spin modu</span><select id="qeElectronicSpin"><option value="unpolarized">Spinsiz · mevcut referanslar</option><option value="polarized">Kollineer spin ↑ / ↓ · nötr hücre</option></select></label>
       <div id="qeSpinSettings" hidden>
@@ -760,14 +766,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <p class="hint">Yolu yapınıza göre açıkça girin; son ağırlık 1 olmalı. Sonuçlar ham QE enerji referansındadır.</p>
      </div>
      <div class="qe-form-grid">
-      <label class="field"><span>En fazla iyonik adım</span><input id="qeJobMaxSteps" type="number" min="1" max="60" value="30"></label>
-      <label class="field"><span>İyonik enerji eşiği (Ry)</span><input id="qeJobEnergyThreshold" type="number" min="0.00000001" max="0.001" step="0.000001" value="0.000001"></label>
+      <label class="field dft-relax-only"><span>En fazla iyonik adım</span><input id="qeJobMaxSteps" type="number" min="1" max="60" value="30"></label>
+      <label class="field dft-relax-only"><span>İyonik enerji eşiği (Ry)</span><input id="qeJobEnergyThreshold" type="number" min="0.00000001" max="0.001" step="0.000001" value="0.000001"></label>
      </div>
-<a class="dft-next" href="#dft/isler">İş gönderme ve takibe geç <span aria-hidden="true">→</span></a></div></div><div class="qe-workflow">
-    <strong class="measure-subheading">Hesap parametreleri</strong>
+<a class="dft-next dft-server-only" href="#dft/isler">İş gönderme ve takibe geç <span aria-hidden="true">→</span></a></div></div><div class="qe-workflow dft-parameter-workflow">
+    <strong class="measure-subheading">Ortak fiziksel parametreler</strong><p class="hint">Kesme enerjileri ve k-örgüsü iki hazırlık yönteminde de kullanılır. Sunucuya ait iş türü ile yerel dosyanın hesap türü birbirinden bağımsızdır.</p>
     <div class="qe-form-grid">
-     <label class="field"><span>QE hesap türü</span><select id="qeCalcType"><option value="relax">Relaksasyon · sabit hücre</option><option value="scf">DFT · tek nokta enerji (SCF)</option></select></label>
-     <label class="field"><span>Elektron doluluğu</span><select id="qeOccupation"><option value="fixed">Sabit · yalıtkan / yarıiletken</option><option value="smearing">Smearing · metal</option></select></label>
+     <label class="field dft-file-only"><span>Yerel .in hesap türü</span><select id="qeCalcType"><option value="relax">Relaksasyon · sabit hücre</option><option value="scf">DFT · tek nokta enerji (SCF)</option></select></label>
+     <label class="field dft-file-only"><span>Elektron doluluğu (yerel dosya)</span><select id="qeOccupation"><option value="fixed">Sabit · yalıtkan / yarıiletken</option><option value="smearing">Smearing · metal</option></select></label>
      <label class="field"><span>ecutwfc (Ry)</span><input id="qeEcutwfc" type="number" min="10" max="300" step="5" value="50"></label>
      <label class="field"><span>ecutrho (Ry)</span><input id="qeEcutrho" type="number" min="10" max="2400" step="10" value="400"></label>
     </div>
@@ -777,18 +783,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label class="field compact"><span>ky</span><input id="qeKy" type="number" min="1" max="24" step="1" value="4"></label>
      <label class="field compact"><span>kz</span><input id="qeKz" type="number" min="1" max="24" step="1" value="1"></label>
     </div>
-    <label class="field"><span>Kuvvet yakınsaması (Ry/Bohr)</span><input id="qeForceThreshold" type="number" min="0.000001" max="0.01" step="0.0001" value="0.001"></label>
-    <label class="field"><span>Alt sabit atom tabakası (Å, 0 = serbest)</span><input id="qeFreezeBottom" type="number" min="0" max="100" step=".5" value="0"></label>
-    <label class="field"><span>Pseudopotansiyel dosyaları · Element=dosya.UPF</span><textarea id="qePseudoFiles" rows="3" spellcheck="false" placeholder="Si=Si.pbe.UPF"></textarea></label>
-    <button type="button" id="qePseudoAuto">Element adlarından taslak oluştur</button>
-    <p class="hint">UPF adları başlangıçta yalnız taslaktır: gerçek dosyaları indirip ./pseudo dizinine yerleştirin. 50/400 Ry, k-ızgarası, spin ve smearing örnek değerlerdir; fiziksel yakınsama ve uygun pseudopotansiyel seçimi kullanıcı sorumluluğundadır. Kısmi doluluk desteklenmez.</p>
-    <button type="button" id="qeExportPw" class="primary">Quantum ESPRESSO (.in) indir</button>
-    <div id="qeExportStatus" class="note" role="status">Girdi dosyası henüz hazırlanmadı.</div>
+    <label class="field dft-force-only"><span>Kuvvet yakınsaması (Ry/Bohr)</span><input id="qeForceThreshold" type="number" min="0.000001" max="0.01" step="0.0001" value="0.001"></label>
+    <label class="field dft-file-only"><span>Alt sabit atom tabakası (Å, 0 = serbest)</span><input id="qeFreezeBottom" type="number" min="0" max="100" step=".5" value="0"></label>
+    <label class="field dft-file-only"><span>Pseudopotansiyel dosyaları · Element=dosya.UPF</span><textarea id="qePseudoFiles" rows="3" spellcheck="false" placeholder="Si=Si.pbe.UPF"></textarea></label>
+    <button type="button" id="qePseudoAuto" class="dft-file-only">Element adlarından taslak oluştur</button>
+    <p class="hint dft-file-only">UPF adları başlangıçta yalnız taslaktır: gerçek dosyaları indirip ./pseudo dizinine yerleştirin. 50/400 Ry, k-ızgarası, spin ve smearing örnek değerlerdir; fiziksel yakınsama ve uygun pseudopotansiyel seçimi kullanıcı sorumluluğundadır. Kısmi doluluk desteklenmez.</p>
+    <button type="button" id="qeExportPw" class="primary dft-file-only">Quantum ESPRESSO (.in) indir</button>
+    <div id="qeExportStatus" class="note dft-file-only" role="status">Girdi dosyası henüz hazırlanmadı.</div>
    </div></div></section>
 <section id="dft-isler" class="dft-panel" aria-labelledby="dft-title-isler" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-isler" tabindex="-1">İşler ve kaynaklar</h2><p>Ön kontrol, açık onayla hesap gönderme, geçmiş ve ölçülmüş kaynak raporları.</p></div><div class="dft-jobs-grid"><div class="qe-workflow">
      <strong class="measure-subheading">Hesap gönder ve takip et</strong>
      <p id="dftJobSettings" class="note"><span id="dftJobSource"></span><br><span id="dftJobOperation"></span><br><span id="dftJobParameters"></span></p>
-     <a class="dft-settings-back" href="#dft/hazirlik">Hesap ayarlarını düzenle ↗</a>
+     <a class="dft-settings-back" href="#dft/hazirlik">Hesap ayarlarını düzenle ↗</a><div id="qeJobPreflightState" class="note" role="status" aria-live="polite" data-state="idle">Bu yapı ve parametreler için henüz sunucu ön kontrolü yapılmadı.</div>
      <div class="qe-form-grid">
       <button type="button" id="qeJobValidate">Aktif yapıyı ön kontrol et</button>
       <button type="button" id="qeJobSubmit" class="primary">Gerçek hesabı gönder</button>
