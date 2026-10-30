@@ -7,6 +7,11 @@
 (() => {
  'use strict';
  const entries=[
+  ["P1.3 bant/DOS/atomik PDOS JSON dönüştürücüsünü dahil et","Include P1.3 bands/DOS/atomic PDOS JSON converter"],
+  ["Görselleştirme sınırları: en fazla 300 bant, 120.000 bant noktası, 20.000 DOS noktası. Daha büyük hesaplar için işareti kaldırıp P1.2 ham çıktı paketini kullanın.","Visualization limits: up to 300 bands, 120,000 band samples, and 20,000 DOS samples. For larger calculations, uncheck this and use the P1.2 raw-output package."],
+  ["TRUBA P1.3 paketinin ürettiği","Produced by the TRUBA P1.3 package:"],
+  ["dosyası da burada açılır. Bant, DOS ve atom/orbital PDOS sonuçları, kayıtlı kaynak SHA-256 bilgileriyle gösterilir; mevcut yapı otomatik değiştirilmez.","can be opened here. Bands, DOS and atom/orbital PDOS are shown with recorded source SHA-256 metadata; the active structure is not automatically modified."],
+  ["P1.3: ZIP paketindeki doğrulanan","P1.3: The verified"],
   ["TRUBA / SLURM sonuç özeti (P1.1 / P1.2)","TRUBA / SLURM result summary (P1.1 / P1.2)"],
   ["Tek işlerde","For single jobs,"],
   [", aşamalı işlerde",", and for staged jobs"],
