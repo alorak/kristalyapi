@@ -192,13 +192,13 @@ class TestStagedTruba(unittest.TestCase):
     def test_shared_physical_slurm_jobs_deduplicate_accounting_without_duplicating_charge(self):
         from types import SimpleNamespace
         self.use_shared_physical_groups()
-        receipts = ("scf 1000\\n" "bands 1001\\n" "bands_pp 1001\\n"
-                    "nscf 1002\\n" "dos 1002\\n" "projwfc 1002\\n")
+        receipts = ("scf 1000\n" "bands 1001\n" "bands_pp 1001\n"
+                    "nscf 1002\n" "dos 1002\n" "projwfc 1002\n")
         (self.root / "submissions.txt").write_text(receipts)
         calls = []
         def fake_run(argv, **kwargs):
             calls.append(argv)
-            return SimpleNamespace(stdout="\\n".join(
+            return SimpleNamespace(stdout="\n".join(
                 f"{i}|COMPLETED|0:0|5|56|110G||0|0|node01"
                 for i in (1000, 1001, 1002)))
         account = pipeline.accounting(self.root, runner=fake_run)
@@ -214,22 +214,22 @@ class TestStagedTruba(unittest.TestCase):
         self.use_shared_physical_groups()
         self.complete("scf")
         self.complete("bands")
-        good = ("scf 1000\\n" "bands 1001\\n" "bands_pp 1001\\n"
-                "nscf 1002\\n" "dos 1002\\n" "projwfc 1002\\n")
+        good = ("scf 1000\n" "bands 1001\n" "bands_pp 1001\n"
+                "nscf 1002\n" "dos 1002\n" "projwfc 1002\n")
         (self.root / "submissions.txt").write_text(good)
         self.assertEqual(pipeline.resume_check(self.root, "bands_pp")["status"], "resume-ready")
         cases = [
-            ("scf 1000\\nbands 1001\\nbands_pp 1009\\n", "mismatched Slurm"),
-            ("scf 1000\\nbands 1001\\nbands_pp 1001\\nnscf 1001\\n",
+            ("scf 1000\nbands 1001\nbands_pp 1009\n", "mismatched Slurm"),
+            ("scf 1000\nbands 1001\nbands_pp 1001\nnscf 1001\n",
              "reused across physical"),
-            ("scf 1000\\nbands 1001\\n", "Incomplete physical"),
+            ("scf 1000\nbands 1001\n", "Incomplete physical"),
         ]
         for receipt, message in cases:
             (self.root / "submissions.txt").write_text(receipt)
             with self.assertRaisesRegex(ValueError, message):
                 pipeline.resume_check(self.root, "bands_pp")
         (self.root / "submissions.txt").write_text(good)
-        (self.root / "resubmissions.txt").write_text("dos 1002\\n")
+        (self.root / "resubmissions.txt").write_text("dos 1002\n")
         with self.assertRaisesRegex(ValueError, "Duplicate Slurm job IDs"):
             pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(stdout=""))
 
