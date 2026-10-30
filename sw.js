@@ -2,9 +2,9 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-30-d5-metered-truba-p1';
+const CACHE_NAME=CACHE_PREFIX+'2026-10-30-truba-p12-staged-scheduler';
 const APP_FILES=[
- './','./index.html','./styles.css','./dft-workspace.css','./semiconductor-p0.css','./crystal-app.js','./qe-hpc-export.mjs','./qe-truba-summary-view.mjs','./qe_hpc_collect.py','./qe-electronic-view.js','./qe-electronic-setup.js','./qe-convergence-view.js','./qe-job-diagnostics-view.js','./qe-job-tracking.js','./qe-protocol-templates.js','./qe-defect-compare-view.js','./qe-api-client.js','./qe-relax-view.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
+ './','./index.html','./styles.css','./dft-workspace.css','./semiconductor-p0.css','./crystal-app.js','./qe-hpc-export.mjs','./qe-hpc-pipeline.mjs','./qe-truba-pipeline-view.mjs','./qe_hpc_pipeline.py','./qe-truba-summary-view.mjs','./qe_hpc_collect.py','./qe-electronic-view.js','./qe-electronic-setup.js','./qe-convergence-view.js','./qe-job-diagnostics-view.js','./qe-job-tracking.js','./qe-protocol-templates.js','./qe-defect-compare-view.js','./qe-api-client.js','./qe-relax-view.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js',
  './semiconductor-p0.js','./semiconductor-physics-p0-core.js','./xrd-factor-core.js','./powder-planes-view.js',
  './favicon.svg','./manifest.webmanifest',
