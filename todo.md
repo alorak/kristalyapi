@@ -399,6 +399,16 @@ aktarma akışı aynen çalışır; henüz backend varmış gibi gösterilmez.
 
 [Üretim ve doğrulama rehberi](docs/qe-defect-preparation.md). Hazırlanan modeller hesap sonucu değildir.
 
+### D5.2 — Dondurulmuş OOM kanıtından kaynak karar tablosu (çalıştırmasız)
+
+- [x] 2026-10-29 başarısız `nstep=0` pilotunun dört vaka için girdi/stdout/stderr SHA-256, Docker OOM/exit137/izolasyon, kaynak commit, UPF ve QE atom-elektron-bant sayılarını çevrimdışı çapraz doğrula.
+- [x] QE'nin `>` işaretli işlem başına **ondalık GB** bellek tahminlerini, ölçülmüş peak RAM gibi sunmadan hipotetik GiB bütçeleriyle karşılaştır; gerçek 6 GiB OOM ile yeni yapılmamış denemeleri ayır.
+- [x] Sürümlü makine-okunur değerlendirme `kristalyapi.qe-d5-resource-review.v1`, fail-closed bozulma testleri ve CI; [kılavuz](docs/qe-defect-resource-review.md).
+- [x] Varsayılan 128 bant / 64 atom API limitlerini, QE Docker worker'ını ve tüm gerçek koşumları değiştirmeden tut.
+- [ ] **D5.3 (operatör kararı gerekli):** Ayrı kaynakta pinlenmiş `nstep=0` tek-aday denemesi için gerçek cgroup peak / wall-time / CPU / scratch / MPI / QE / UPF kanıtlarını kaydet; RAM yeterliliğini tahmini satırlardan çıkarsama.
+- [ ] **D5.4:** Spin/doluluk ve dolu/boş bant protokolünü belirle; büyük hücre elektronik API limitlerini yalnız doğrulanmış profil ile ayrı güvenlik kabulünden geçir.
+- [ ] **D5.5:** Gerçek kusur relaksasyon → bağımsız SCF → elektronik zinciri, cutoff/k-mesh/süperhücre/DFT+spin karşılaştırma kabulü; henüz yapılmadı.
+
 ### D-P1 — İlk çalışan web dilimi: tek SCF işi (gerçek QE bilimsel kabul bekleniyor)
 
 - [ ] **Sürümlü motor-bağımsız JSON girdi şeması (v1):** hücre
