@@ -102,6 +102,15 @@ def load_manifest(root: Path) -> dict:
     for rel in ("structure.in", "pipeline.py", "submit.sh",
                 *("stages/" + step + ".slurm" for step in plan)):
         require_hash(root, rel, pins.get(rel), MAX_MANIFEST if rel != "structure.in" else 4 * 1024 * 1024)
+    # Legacy P1.2 packages remain valid; new P1.3 ZIPs must pin BOTH
+    # converter and PDOS parser before any stage starts.
+    pinned_converter = "electronic.py" in pins
+    pinned_pdos = "qe_pdos.py" in pins
+    if pinned_converter != pinned_pdos:
+        raise ValueError("Incomplete electronic converter provenance")
+    if pinned_converter:
+        for rel in ("electronic.py", "qe_pdos.py"):
+            require_hash(root, rel, pins[rel], MAX_MANIFEST)
     pseudos = value.get("pseudopotentials")
     if not isinstance(pseudos, list) or not 1 <= len(pseudos) <= 118:
         raise ValueError("Invalid pseudopotential list")
@@ -341,6 +350,8 @@ def finish(root: Path, stage: str) -> None:
     if input_path.read_text("utf-8") != content:
         raise ValueError("Stage input content changed")
     output_name, artifacts = STAGE_OUTPUTS[stage]
+    if stage == "projwfc" and "electronic.py" in config["file_sha256"]:
+        artifacts = artifacts + ("electronic-results.json",)
     output_path = file_at(root, output_name)
     scan_output(output_path, stage)
     hashes = {name: sha256(input_path), output_name: sha256(output_path)}
