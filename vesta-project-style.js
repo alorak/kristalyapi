@@ -97,18 +97,18 @@ export function applyVesta3SiteAppearance(lines,byIndex,radii,{atomScale=.8,ball
   const base=elementStyles.get(obj.symbol);
   if(base?.rgb){obj.visualColor=base.rgb;stats.elementColors++;}
  }
- const chosen=new Set();
+ const chosen=new Set(),convertedSites=new Set();
  const transferRadius=(obj,radius,label)=>{
   if(radius===null)return;
   const base=Number(radii[obj.symbol]??1.1),denominator=Math.min(base,1.6)*atomScale*ballRadiusScale;
   const factor=radius/denominator;
   if(!Number.isFinite(factor)||factor<.2||factor>3){
    stats.skippedRadii++;
-   warnings.push('VESTA radius of '+label+' ('+radius+' A) cannot fit app visualScale 0.2..3; preserved default radius.');
+   warnings.push('VESTA radius of '+label+' ('+radius+' A) cannot fit app visualScale 0.2..3; kept the previous valid element/default radius.');
    return;
   }
   obj.visualScale=+factor.toFixed(6);
-  stats.approximatedSiteRadii++;
+  convertedSites.add(obj);
  };
  for(const [id,obj] of byIndex){
   const base=elementStyles.get(obj.symbol);
@@ -128,6 +128,7 @@ export function applyVesta3SiteAppearance(lines,byIndex,radii,{atomScale=.8,ball
   const r=parseRadius(p[2],'SITET',obj.label);
   if(r!==null)transferRadius(obj,r,obj.label);
  }
+ stats.approximatedSiteRadii=convertedSites.size;
  if(stats.approximatedSiteRadii)warnings.push(
   'VESTA atom radii approximated as ball-mode Angstrom sphere sizes (atomScale='+atomScale+
   '). Exact VESTA renderer/scene camera radius equivalence is NOT established.');
