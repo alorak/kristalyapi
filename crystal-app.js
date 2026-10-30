@@ -21,6 +21,7 @@ import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-vie
 import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 import { createTrubaPackage } from './qe-hpc-export.mjs';
+import { parseTrubaSummary,renderTrubaSummary } from './qe-truba-summary-view.mjs';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -6829,6 +6830,9 @@ async function qeExportTrubaPackage(){
  status.textContent='Yerel ZIP hazırlanıyor; hesap gönderilmiyor.';
  try{
   const {result}=qeBuildLocalInput();
+  const collectorResponse=await fetch(new URL('./qe_hpc_collect.py',import.meta.url));
+  if(!collectorResponse.ok)throw Error('Python sonuç toplayıcı dosyası yüklenemedi.');
+  const collectorScript=await collectorResponse.text();
   const pkg=await createTrubaPackage({
    inputText:result.text,
    account:$('qeHpcAccount').value,
@@ -6836,7 +6840,8 @@ async function qeExportTrubaPackage(){
    ntasks:$('qeHpcTasks').value,
    hours:$('qeHpcHours').value,
    jobName:safeName(state.name)+'-'+$('qeCalcType').value,
-   upfFiles:Array.from($('qeHpcUpfFiles').files||[])
+   upfFiles:Array.from($('qeHpcUpfFiles').files||[]),
+   collectorScript
   });
   download(safeName(state.name)+'_'+$('qeCalcType').value+'_truba.zip',pkg.blob,'application/zip');
   status.textContent='Paket indirildi: '+result.atoms+' atom, '+pkg.manifest.resources.ntasks+
@@ -6845,6 +6850,18 @@ async function qeExportTrubaPackage(){
     'Tüm UPF dosyaları SHA-256 kayıtlarıyla pakette.')+' Bu işlem DFT çalıştırmaz.';
  }catch(error){status.textContent='Paket oluşturulamadı: '+error.message;inform('TRUBA export: '+error.message);}
  finally{button.disabled=false;}
+}
+async function qeOpenTrubaSummary(){
+ const status=$('qeHpcSummaryStatus'),container=$('qeHpcSummaryView');
+ container.replaceChildren();
+ try{
+  const file=$('qeHpcSummaryFile').files?.[0];
+  if(!file||file.size<2||file.size>512000)throw Error('512 KB altı geçerli summary.json seçin.');
+  const summary=parseTrubaSummary(JSON.parse(await file.text()));
+  renderTrubaSummary(container,summary);
+  status.textContent='TRUBA özet dosyası okundu: '+summary.status+
+   '. Mevcut kristalle yapı eşleşmesi doğrulanmaz; hesap gönderilmez.';
+ }catch(error){status.textContent='TRUBA özeti okunamadı: '+error.message;}
 }
 let qeActiveJob=null;
 let qeJobPoller=null;
@@ -10157,6 +10174,7 @@ function bind(){
  $('qePseudoAuto').onclick=()=>{ $('qePseudoFiles').value='';qeEnsurePseudoNames();};
  $('qeExportPw').onclick=qeExportPwInput;
  $('qeExportHpc').onclick=qeExportTrubaPackage;
+ $('qeHpcSummaryOpen').onclick=qeOpenTrubaSummary;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
  $('qeElectronicOpen').onclick=qeLoadElectronicResults;
