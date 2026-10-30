@@ -106,6 +106,10 @@ The **Miller** panel also provides independent **bottom/top vacuum padding** (0�
 
 The application is no longer contained in a single HTML file. [index.html](index.html) defines the UI shell, [styles.css](styles.css) the appearance, [crystal-app.js](crystal-app.js) the application/computation entry point, [translations.js](translations.js) the language strings, and [favicon.svg](favicon.svg) the icon. This is the **first modularization step**; splitting the large application module into crystal-data, rendering, analysis, and UI modules is planned. GitHub Pages serves the entire application. Basic use requires no dedicated application server, account, database, or API key. **Three.js 0.186.1**, OrbitControls, and ConvexGeometry are bundled in [`vendor/three`](vendor/three/README.md), while the Moyo WASM files used for automatic symmetry analysis are loaded from the bundled `vendor/` directory. The 3D engine no longer requires a third-party CDN. A **service worker** caches the application shell and 3D/WASM assets after a successful online installation. Local structure files are not uploaded to a remote application server; COD queries are explicitly initiated by the user.
 
+## Package V15 — controlled real VESTA visual evidence (initial implementation)
+
+Five SHA-pinned CIF/CCP4 scenes and a [GUI PNG evidence auditor](tests/validation/PACKAGE_15_STATUS.md) can compare genuine VESTA 3.5.8 exports against matching Crystal Structure PNGs. Source, screenshot, settings and dimensions are validated; silhouette IoU, bounding-box shift, RGB difference and a visual triptych are reported. **No real VESTA GUI capture is included yet**: the default status is `NOT_RUN`, with `scientificParity=NOT_ESTABLISHED`. Synthetic regression screenshots test only the audit code, not physical or GUI equivalence.
+
 ## VESTA 3 manual-equation comparison and honest GUI evidence (Package 14)
 
 The BVS panel now shows an explicitly **non-GUI, manual-equation projection**:
@@ -375,7 +379,7 @@ Use the vertical icon rail on the right to open these tools without nested secon
 
 ## Reciprocal space and diffraction
 
-The **Reciprocal Space** page (`#karsi-uzay`) is a full-width conceptual laboratory. It reads the active structure (its symmetry-expanded P1 atom list) without changing the editor and reuses the editor's IT92 `f₀(s)`, ADP, and `F(hkl)` calculations.
+**Powder Diffraction → Reciprocal Space** (`#toz-kirinimi/karsi-uzay`; legacy `#karsi-uzay` still resolves) is a full-width conceptual laboratory. It reads the active structure (its symmetry-expanded P1 atom list) without changing the editor and reuses the editor's IT92 `f₀(s)`, ADP, and `F(hkl)` calculations.
 
 | Tab | Content | Scope and limitations |
 | --- | --- | --- |

@@ -1,0 +1,207 @@
+{
+  "schema": "kristalyapi.vesta15.visual-cases.v1",
+  "reference": "https://jp-minerals.org/vesta/en/doc/VESTAch10.html",
+  "vestaVersion": "3.5.8",
+  "interpretation": "Raster morphology metrics are descriptive only, NOT scientific/GUI equivalence",
+  "cases": [
+    {
+      "id": "nacl-001-structure",
+      "kind": "structure",
+      "source": "tests/validation/fixtures/experimental/COD_1000041_NaCl.cif",
+      "sourceGitBlobSha1": "d970bab4c7c0564be6584f7f62f979528ae5503e",
+      "features": [
+        "atoms",
+        "bonds",
+        "unit cell"
+      ],
+      "notes": "Match atom radius, element colors, Na-Cl bond cutoff, labels and symmetry expanded display.",
+      "settings": {
+        "projection": "orthographic",
+        "viewDirection": "[001]",
+        "upDirection": "[010]",
+        "displayBoundsFractional": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "backgroundRGB": [
+          255,
+          255,
+          255
+        ],
+        "outputPixels": [
+          1024,
+          768
+        ]
+      }
+    },
+    {
+      "id": "rutile-110-polyhedron",
+      "kind": "polyhedron",
+      "source": "tests/validation/fixtures/experimental/COD_9009083_rutile.cif",
+      "sourceGitBlobSha1": "8fc17e7ab6720ddd776700a15e1136cccc265094",
+      "features": [
+        "TiO6 polyhedra",
+        "bonds",
+        "unit cell"
+      ],
+      "notes": "Manually match Ti-O bond cutoff, polyhedron definition, alpha and opacity.",
+      "settings": {
+        "projection": "orthographic",
+        "viewDirection": "[110]",
+        "upDirection": "[001]",
+        "displayBoundsFractional": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "backgroundRGB": [
+          255,
+          255,
+          255
+        ],
+        "outputPixels": [
+          1024,
+          768
+        ]
+      }
+    },
+    {
+      "id": "iucr-mixed-occupancy-adp",
+      "kind": "adp",
+      "source": "tests/validation/fixtures/experimental/IUCr_wm5651_KNaCaSiO.cif",
+      "sourceGitBlobSha1": "9536b473b25de0c4aa252cfb01a3e19fcfc7af27",
+      "features": [
+        "mixed K/Na occupancy",
+        "ADP ellipsoids"
+      ],
+      "notes": "Verify K1 0.722 Na1 0.278 site, ellipsoid probability and equivalent origin/setting.",
+      "settings": {
+        "projection": "orthographic",
+        "viewDirection": "[001]",
+        "upDirection": "[010]",
+        "displayBoundsFractional": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "backgroundRGB": [
+          255,
+          255,
+          255
+        ],
+        "outputPixels": [
+          1024,
+          768
+        ]
+      }
+    },
+    {
+      "id": "graphite-001-miller",
+      "kind": "miller",
+      "source": "tests/validation/fixtures/real/Graphite.cif",
+      "sourceGitBlobSha1": "354f144fea6a906b49561fe7aa60f6d3bcff166b",
+      "features": [
+        "(001) Miller plane",
+        "normal arrow"
+      ],
+      "notes": "Keep plane offset, visible copies, geometric normal and clipping identical.",
+      "settings": {
+        "projection": "orthographic",
+        "viewDirection": "[100]",
+        "upDirection": "[001]",
+        "displayBoundsFractional": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "backgroundRGB": [
+          255,
+          255,
+          255
+        ],
+        "outputPixels": [
+          1024,
+          768
+        ]
+      }
+    },
+    {
+      "id": "5i55-ccp4-isosurface",
+      "kind": "volume",
+      "source": "tests/fixtures/gemmi-5i55_tiny.ccp4",
+      "sourceGitBlobSha1": "38b529e1a139160fc06d0d6b9903483bbe9d10d9",
+      "features": [
+        "CCP4 volume map",
+        "signed isosurface"
+      ],
+      "notes": "Partial density map: capture matched map origin/grid, non-null scalar isolevel and sample resolution. Does not certify full-cell density.",
+      "settings": {
+        "projection": "orthographic",
+        "viewDirection": "[001]",
+        "upDirection": "[010]",
+        "displayBoundsFractional": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "backgroundRGB": [
+          255,
+          255,
+          255
+        ],
+        "outputPixels": [
+          1024,
+          768
+        ],
+        "isoLevel": null,
+        "isoLevelUnits": "source-map-units"
+      }
+    }
+  ]
+}

@@ -724,3 +724,16 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Karşı Uzay sayfasını Toz Kırınımı içinde **alt sekme** yapma; navbar bağlantısını kaldırıp eski `#karsi-uzay` URL'sini yeni sekmeye yönlendirme.
 - [x] Kütüphane'yi ana navbar'da DFT'nin **soluna** taşıma; mevcut ayrı Kütüphane sayfasını/arama akışını koruma.
 - [ ] Gerçek masaüstü ve mobil tarayıcıda eğitim görsellerinin yeniden boyutlanmasını, tab klavye odağını ve karşı uzay WebGL canvas görünürlüğünü manuel kabul etme.
+
+### Paket V15 — Gerçek VESTA GUI görsel fark protokolü (30 Ekim 2026)
+
+- [x] NaCl, rutil, IUCr K/Na ADP, grafit (001), kısmi CCP4 için 5 sabit kaynak/sahne ve kaynak Git blob SHA-1'leri.
+- [x] Ekran SHA-256, gerçek VESTA sürümü/operatör, kaynak SHA-256, kamera ve 1024×768 RGB/RGBA PNG doğrulaması.
+- [x] Saf Python foreground IoU, siluet merkez farkı, RGB MAE; yan yana görsel üçlü fark PNG ve CSV/JSON raporu.
+- [x] Gerçek GUI yoksa NOT_RUN; ekran yakalanmışsa yalnız CAPTURED_HUMAN_REVIEW_REQUIRED; bilimsel eşdeğerlik asla sahte PASS değil.
+- [x] Sahte PNG/test fixture, kötü hash/CRC, path traversal, kamera uyuşmazlığı ve kısmi kanıt sentetik birim testleri.
+- [ ] **V15.1:** Gerçek VESTA 3.5.8 GUI ekranları + P14 gerçek bağ/BVS Text Area kayıtları; insan kontrolü.
+- [ ] **V15.1:** CCP4 mutlak izoeşik ve birimlerini belirleyip sabitle; mevcut null iken gerçek karşılaştırma engellenir.
+- [ ] **V15.2:** Deterministik kamera ve objektif atom/bağ/ADP/Miller/alan-topoloji ölçümleri; platform/GPU A/B testleri.
+
+[V15 yöntem ve durum](tests/validation/PACKAGE_15_STATUS.md).
