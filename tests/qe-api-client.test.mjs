@@ -184,7 +184,7 @@ test('filtered history, summary read and naming use bounded authenticated API pa
  assert.equal(calls[2].options.method,'POST');
  assert.deepEqual(JSON.parse(calls[2].options.body),{label:'MoS2 <unsafe>'});
  assert.ok(calls.every(c=>c.options.headers.Authorization==='Bearer '+secret));
- await assert.rejects(setQeJobLabel('http://localhost:8000',secret,job,'bad\\nlabel',{fetcher}));
+ await assert.rejects(setQeJobLabel('http://localhost:8000',secret,job,'bad'+String.fromCharCode(10)+'label',{fetcher}));
  await assert.rejects(getQeCalculationSummary('http://localhost:8000',secret,'../escape',{fetcher}));
  assert.equal(calls.length,3);
 });
