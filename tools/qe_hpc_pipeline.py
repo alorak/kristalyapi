@@ -342,7 +342,9 @@ def science_check(root: Path) -> dict:
         raise ValueError("Atomic elements and UPF manifest species differ")
     valence = {}
     functional = {}
+    suggested_cutoffs = {}
     unknown = []
+    warnings = []
     for pseudo in pseudos:
         element, filename = pseudo["element"], pseudo["file"]
         with file_at(root, "pseudo/" + filename, 24 * 1024 * 1024).open("rb") as stream:
@@ -364,6 +366,16 @@ def science_check(root: Path) -> dict:
             raise ValueError("Invalid UPF v2 element/z_valence header: " + element) from exc
         valence[element] = raw
         functional[element] = attrs.get("functional", "unknown")
+        recommended = {}
+        for key in ("wfc_cutoff", "rho_cutoff"):
+            if key in attrs:
+                try:
+                    value = float(attrs[key].replace("D", "E").replace("d", "e"))
+                    if math.isfinite(value) and value > 0:
+                        recommended[key] = value
+                except ValueError:
+                    warnings.append(element + ": UPF suggested " + key + " is not numeric")
+        suggested_cutoffs[element] = recommended
     for field in ("ecutwfc", "ecutrho"):
         if not re.search(r"(?im)^\s*" + field + r"\s*=\s*(" + NUM + r")", source):
             raise ValueError("Missing QE cutoff: " + field)
@@ -371,6 +383,49 @@ def science_check(root: Path) -> dict:
     ecutrho = float(re.search(r"(?im)^\s*ecutrho\s*=\s*(" + NUM + r")", source).group(1).replace("d", "e").replace("D", "E"))
     if not all(math.isfinite(v) and v > 0 for v in (ecutwfc, ecutrho)) or ecutrho < ecutwfc:
         raise ValueError("Invalid ecutwfc/ecutrho pair")
+    # These are warnings, not scientific convergence decisions.
+    known_xc = {v.strip().upper() for v in functional.values()
+                if v.strip().lower() not in ('', 'unknown', 'none')}
+    if len(known_xc) > 1:
+        warnings.append('UPF XC functional labels differ: ' + ', '.join(sorted(known_xc)))
+    input_xc = re.search(r'''(?im)^\s*input_dft\s*=\s*['"]([^'"\n]+)['"]''', source)
+    if input_xc and known_xc and input_xc.group(1).strip().upper() not in known_xc:
+        warnings.append('Explicit input_dft differs from UPF XC labels; review manually')
+    for element, rec in suggested_cutoffs.items():
+        for name, actual in (("wfc_cutoff", ecutwfc), ("rho_cutoff", ecutrho)):
+            if name in rec and actual + 1e-9 < rec[name]:
+                warnings.append(element + ': requested cutoff below UPF ' + name + ' suggestion (not a measured convergence limit)')
+    # Fractional-z empty gap is an upper-bound geometry indicator only;
+    # atoms have finite extent and this is not a certified slab/vacuum check.
+    slab_geometry = None
+    k_mesh = [int(v) for v in mesh.groups()]
+    if k_mesh[2] == 1:
+        match_cell = re.search(r'(?im)^CELL_PARAMETERS\s+angstrom\s*\n([^\n]+)\n([^\n]+)\n([^\n]+)', source)
+        if match_cell:
+            try:
+                basis = [[float(v.replace('D', 'E').replace('d', 'e')) for v in line.split()]
+                         for line in match_cell.groups()]
+                if any(len(v) != 3 or not all(math.isfinite(n) for n in v) for v in basis):
+                    raise ValueError('Invalid cell vectors')
+                ax, ay, az = basis[0]
+                bx, by, bz = basis[1]
+                cx, cy, cz = basis[2]
+                normal = [ay*bz-az*by, az*bx-ax*bz, ax*by-ay*bx]
+                norm = math.sqrt(sum(v*v for v in normal))
+                height = abs(normal[0]*cx + normal[1]*cy + normal[2]*cz)/norm if norm > 1e-10 else 0
+                zs = sorted(float(row[3]) % 1.0 for row in sites)
+                gaps = [b-a for a, b in zip(zs, zs[1:])] + [1+zs[0]-zs[-1]]
+                gap = height * max(gaps)
+                slab_geometry = {'cell_normal_height_angstrom': round(height, 4),
+                                 'largest_fractional_z_empty_gap_angstrom_upper_bound': round(gap, 4),
+                                 'kz_mesh': 1,
+                                 'assumption': 'Fractional-z slab interpretation, not atom-radius corrected'}
+                if gap < 10:
+                    warnings.append('kz=1 and geometric empty z-gap below 10 Å; review slab vacuum and periodic image coupling')
+            except (ValueError, IndexError, ZeroDivisionError):
+                warnings.append('kz=1: cannot determine fractional-z empty gap; inspect slab geometry')
+        else:
+            warnings.append('kz=1: unsupported cell units for vacuum-gap indication')
     electrons = sum(counts[element] * valence[element] for element in counts) if not unknown else None
     minimum = None
     if electrons is not None:
@@ -387,10 +442,12 @@ def science_check(root: Path) -> dict:
             "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
             "atom_count": len(sites), "elements": dict(counts),
             "upf_valence_electrons": valence, "upf_functional_labels": functional,
+            "upf_suggested_cutoffs_ry": suggested_cutoffs,
+            "scientific_review_warnings": warnings, "possible_2d_vacuum_geometry": slab_geometry,
             "neutral_valence_electrons": electrons,
             "minimum_occupied_nbnd": minimum, "requested_nbnd": config["electronic"]["nbnd"],
             "ecutwfc_ry": ecutwfc, "ecutrho_ry": ecutrho,
-            "k_mesh": [int(v) for v in mesh.groups()],
+            "k_mesh": k_mesh,
             "review_notes": unknown,
             "limitations": "Necessary neutral nonmagnetic band capacity only; empty bands, UPF/XC compatibility, real convergence, k-path, vacuum and physical results not verified."}
 
