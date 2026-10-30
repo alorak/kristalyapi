@@ -217,7 +217,9 @@ def parse_p1_project(path: Path):
         p = line.split()
         if not p:
             continue
-        if p[0] == "0":
+        # A STRUC displacement continuation can start with 0.000000; only
+        # the five-integer zero row terminates the list.
+        if len(p) >= 5 and all(token == "0" for token in p[:5]):
             finished = True
             break
         if not re.fullmatch(r"[1-9]\d*", p[0]):
