@@ -88,6 +88,14 @@ class MeteredPilotTests(unittest.TestCase):
                         {"Destination":"/evidence","Type":"bind","RW":True}]}
         result=d5.check_container_config(info,cfg)
         self.assertEqual(result["memory_bytes"],96*1024**3)
+        with_tmpfs=dict(info,Mounts=info["Mounts"]+[
+            {"Destination":"/work","Type":"tmpfs","RW":True},
+            {"Destination":"/tmp","Type":"tmpfs","RW":True}])
+        self.assertEqual(d5.check_container_config(with_tmpfs,cfg)["read_only"],True)
+        unexpected=dict(info,Mounts=info["Mounts"]+[
+            {"Destination":"/host","Type":"bind","RW":True}])
+        with self.assertRaisesRegex(ValueError,"mount"):
+            d5.check_container_config(unexpected,cfg)
         missing_cap=dict(info,HostConfig={**info["HostConfig"],"CapDrop":[]})
         with self.assertRaisesRegex(ValueError,"security"):
             d5.check_container_config(missing_cap,cfg)
