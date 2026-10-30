@@ -853,6 +853,23 @@ işi olarak açma.
 
 [Yöntem, örnek komutlar ve bilimsel sınırlar](tests/validation/PACKAGE_16_2_STATUS.md).
 
+### V17.1 — VESTA site görünümü ve aktarım kayıp raporu
+
+- [x] ATOMT element ve SITET site RGB/yarıçapı için sınırlandırılmış
+  görünüm aktarımı: site etiket/ID eşleme, yaklaşık ball-mode Å→scale,
+  .2–3 sınırı dışını sessizce kırpmadan uyarı ve fallback.
+- [x] transferReport: hangi .vesta alanının içe alındığı, kısmi/
+  yaklaşık olduğu veya hiç aktarılmadığı; SCENE/LMATRIX kamera/
+  ışık, VECTR, THERI, POLYP ve harici dosya bloklarının kaybı açık.
+- [x] Site stili ve negatif testler; bağımlı JS Pages paketi ve PWA
+  önbellek kapsamına alındı. CI merge-only tetikleme politikası sabit.
+- [ ] Gerçek VESTA GUI ile atom yarıçapı/perspektif, ışık, ADP
+  ve çokyüzlü görsel paritesini doğrulama (NOT_RUN).
+- [ ] Sonraki işler: V17.2 kamera/view, V17.3 ADP/polyhedron/vector
+  destek alt kümesi; V17.4 güvenli .vesta export/round-trip.
+
+[V17.1 uygulama ve sınırlamalar](tests/validation/PACKAGE_17_1_STATUS.md).
+
 ### V17 — P1 · VESTA proje içe/dışa aktarımı
 
 - [ ] Sınırlı 3.x VESTA importunu kamera/view, ışık, site yarıçapı,
