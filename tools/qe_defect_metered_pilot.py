@@ -204,7 +204,9 @@ def check_container_config(info, settings):
         "ALL" not in caps or
         not all(key in scratch for key in ("/work","/tmp")) or
         "size="+str(settings["scratch_tmpfs_bytes"]) not in scratch["/work"] or
-        set(mounts)!={"/inputs","/pseudos","/evidence"} or
+        not {"/inputs","/pseudos","/evidence"}<=set(mounts) or
+        set(mounts)-{"/inputs","/pseudos","/evidence","/tmp","/work"} or
+        any(mounts[k].get("Type")!="tmpfs" for k in ("/tmp","/work") if k in mounts) or
         any(mounts[k].get("Type")!="bind" or mounts[k].get("RW") is not rw for k,rw in
             (("/inputs",False),("/pseudos",False),("/evidence",True)))):
         raise ValueError("Docker security, mount or image attestation differs from requested configuration")
