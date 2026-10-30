@@ -118,7 +118,7 @@ export function parseVesta3View(lines){
    if(raw.sceneTail.length)
     notes.push('SCENE pan/zoom tail preserved as read-only values; never treated as calibrated zoom.');
   }
- }catch(e){reason=e.message;notes.push('SCENE orientation not applied: '+reason);}
+ }catch(e){reason='SCENE: '+e.message;notes.push('SCENE orientation not applied: '+reason);}
  try{
   const i=at(lines,'LMATRIX');
   if(i>=0){
