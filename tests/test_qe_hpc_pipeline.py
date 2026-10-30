@@ -88,6 +88,8 @@ class TestStagedTruba(unittest.TestCase):
         report = json.loads((self.root / "pipeline-summary.json").read_text())
         self.assertEqual(report["status"], "completed")
         self.assertFalse(report["scientific_convergence_verified"])
+        self.assertEqual(report["structure_in_sha256"], sha(self.input_text.encode()))
+        self.assertEqual(report["pipeline_manifest_sha256"], sha((self.root / "pipeline.json").read_bytes()))
         self.assertEqual([s["stage"] for s in report["stages"]], self.plan)
         self.assertIn("K_POINTS crystal_b", (self.root / "bands.in").read_text())
         self.assertIn("nbnd = 16", (self.root / "bands.in").read_text())
