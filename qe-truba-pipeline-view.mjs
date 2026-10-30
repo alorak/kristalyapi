@@ -1,10 +1,13 @@
 /* Read-only P1.2 offline stage evidence summary: no HTML interpolation. */
 const PLAN=['relax','scf','bands','bands_pp','nscf','dos','projwfc'];
 const STATUSES=new Set(['completed','missing','invalid']);
+const HASH=/^[a-f0-9]{64}$/;
 export function parseTrubaPipelineSummary(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||
     value.schema!=='kristalyapi.truba-qe-pipeline-summary.v1'||
     value.scientific_convergence_verified!==false||
+    !HASH.test(value.structure_in_sha256||'')||
+    !HASH.test(value.pipeline_manifest_sha256||'')||
     !['completed','incomplete'].includes(value.status)||
     typeof value.all_upfs_pinned!=='boolean'||
     !Array.isArray(value.stages)||value.stages.length<6||value.stages.length>7)
@@ -27,6 +30,7 @@ export function renderTrubaPipelineSummary(container,data){
  const value=parseTrubaPipelineSummary(data);
  container.replaceChildren();
  container.append(child('h4','TRUBA / SLURM · çok aşamalı QE'));
+ container.append(child('p','Girdi SHA-256: '+value.structure_in_sha256+' · Manifest SHA-256: '+value.pipeline_manifest_sha256));
  container.append(child('p','Durum: '+value.status+
   (value.all_upfs_pinned?' · Tüm UPF hashleri sabitlenmiş':' · Hashlenmemiş UPF var; kanıt eksik')));
  const table=document.createElement('table'),tbody=document.createElement('tbody');
