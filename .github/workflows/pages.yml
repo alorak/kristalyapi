@@ -130,6 +130,8 @@ jobs:
         run: python tests/validation/vesta_14_manual_reference.py
       - name: Reject uncaptured or unversioned VESTA GUI evidence
         run: python -m unittest discover -s tests/validation -p 'test_vesta_14_gui_evidence.py' -v
+      - name: V17.5 desktop acceptance harness synthetic regressions (no real VESTA GUI)
+        run: python -m unittest discover -s tests -p 'test_vesta_17_5_acceptance.py' -v
       - name: Archive Package 10.8 scientific convergence measurements
         if: always()
         uses: actions/upload-artifact@v4
