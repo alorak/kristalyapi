@@ -303,6 +303,29 @@ try{
  await page.waitForFunction(()=>document.getElementById('dftConnectionState').textContent.includes('hazır değil'));
  assert.equal(await page.locator('[data-dft-section="isler"]').getAttribute('aria-disabled'),'true','degraded QE solver cannot unlock jobs');
  assert.deepEqual(errors,[]);
+ // Convergence opens with a per-pair decision summary; the full check table is folded.
+ await page.setViewportSize({width:1280,height:900});
+ await page.locator('[data-dft-section="yakinsama"]').click();
+ await page.locator('#qeConvergenceFile').setInputFiles(path.join(root,'validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json'));
+ await page.locator('#qeConvergenceOpen').click();
+ await page.waitForFunction(()=>document.querySelector('.qe-convergence-summary tbody'));
+ assert.match(await page.locator('.qe-convergence-summary').textContent(),/Karar: 2\/2 geçti · Yardımcı: 1\/2 geçti · Genişlik tutarlılığı: 2\/2 geçti/);
+ assert.equal(await page.locator('.qe-convergence-summary tr[data-state="failed"]').count(),1);
+ assert.equal(await page.locator('details.qe-convergence-all').getAttribute('open'),null,'full check table starts folded');
+ await page.locator('#dft-yakinsama').screenshot({path:path.join(artifacts,'dft-workspace-convergence.png')});
+ // Settings survive a reload in this browser, the API key does not, and reset restores defaults.
+ await page.locator('[data-dft-section="hazirlik"]').click();
+ await page.locator('#qeEcutwfc').fill('77');
+ await page.reload();
+ await page.waitForFunction(()=>!document.getElementById('dft-hazirlik').hidden);
+ assert.equal(await page.locator('#qeEcutwfc').inputValue(),'77');
+ assert.equal(await page.locator('#qeApiToken').inputValue(),'');
+ assert.ok(!(await page.evaluate(()=>localStorage.getItem('kristalyapi.dft-settings.v1'))).includes('test-only-token'),'API key is never stored');
+ await page.locator('[data-dft-section="ayarlar"]').click();
+ await page.locator('#dftSettingsReset').click();
+ assert.equal(await page.locator('#qeEcutwfc').inputValue(),'50');
+ assert.match(await page.locator('#dftSettingsResetStatus').textContent(),/varsayılanlar yüklendi/);
+ assert.deepEqual(errors,[]);
  console.log('DFT workspace: desktop/mobile routes, form/file persistence, graphics and no automatic server calls passed.');
 }catch(error){if(page)await page.screenshot({path:path.join(artifacts,'dft-workspace-failure.png')}).catch(()=>{});throw error;}
 finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

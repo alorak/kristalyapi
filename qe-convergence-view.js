@@ -99,10 +99,26 @@ const label=q=>({common_lowest_path_bands_ev:'Ortak 24 bant farkı (eV)',sampled
  sampled_nscf_cbm_ev:'NSCF CBM farkı (eV)',sampled_nscf_gap_ev:'NSCF aralık farkı (eV)',dos_relative_l1:'DOS bağıl L1',
  'Mo-d_relative_l1':'Mo-d bağıl L1','S-p_relative_l1':'S-p bağıl L1',underlying_nscf_spectrum_integrity_ev:'NSCF spektrum tutarlılığı (eV)',
  unchanged_explicit_path_integrity_ev:'Bant yolu tutarlılığı (eV)'})[q]||q;
-function table(headers,rows){
+const AXES={nbnd:'Bant sayısı',nscf_k:'NSCF k-örgüsü',dos_width:'DOS genişliği'};
+const ROLES={decision:'Karar',diagnostic:'Yardımcı',integrity:'Genişlik tutarlılığı'};
+const pairRole=p=>p.sensitivity_only?'integrity':p.gated?'decision':'diagnostic';
+// One row per pair: verdict and the check closest to (or furthest past) its limit.
+export function convergenceSummary(report){
+ const rows=report.pairs.map(p=>{
+  const failed=p.checks.filter(g=>!g.passed);
+  const critical=[...p.checks].filter(g=>finite(g.value)&&finite(g.limit)&&g.limit>0)
+   .sort((a,b)=>Math.abs(b.value)/b.limit-Math.abs(a.value)/a.limit)[0]||null;
+  return {from:p.from,to:p.to,axis:p.axis,role:pairRole(p),passed:!failed.length,failed:failed.length,checks:p.checks.length,
+   critical:critical&&{quantity:critical.quantity,value:critical.value,limit:critical.limit,ratio:Math.abs(critical.value)/critical.limit}};
+ });
+ const counts=Object.fromEntries(Object.keys(ROLES).map(role=>{const group=rows.filter(r=>r.role===role);return [role,{total:group.length,passed:group.filter(r=>r.passed).length}];}));
+ return {rows,counts};
+}
+function table(headers,rows,states=[]){
  const wrap=node('div',undefined,'qe-convergence-table'),t=node('table'),head=node('thead'),tr=node('tr');
  for(const h of headers){const th=node('th',h);th.scope='col';tr.append(th);}head.append(tr);t.append(head);
- const body=node('tbody');for(const row of rows){const tr=node('tr');for(const cell of row)tr.append(node('td',String(cell)));body.append(tr);}t.append(body);wrap.append(t);return wrap;
+ const body=node('tbody');for(const [i,row] of rows.entries()){const tr=node('tr');if(states[i])tr.setAttribute('data-state',states[i]);
+  for(const cell of row)tr.append(node('td',String(cell)));body.append(tr);}t.append(body);wrap.append(t);return wrap;
 }
 export function convergenceCsv(data){
  const rows=[['from','to','axis','role','quantity','value','limit','passed']];
@@ -118,6 +134,16 @@ export function renderConvergenceView(host,data){
  const commit=report.source_commit||report.reference.source_commit;
  const link=node('a','Kaynak commit: '+commit.slice(0,12));link.href='https://github.com/alorak/kristalyapi/commit/'+commit;
  link.target='_blank';link.rel='noopener noreferrer';host.append(link);
+ const decisions=convergenceSummary(report),overview=node('div',undefined,'qe-convergence-summary');
+ overview.append(node('h4','Karar özeti'),node('p',Object.entries(ROLES).filter(([role])=>decisions.counts[role].total)
+  .map(([role,name])=>name+': '+decisions.counts[role].passed+'/'+decisions.counts[role].total+' geçti').join(' · ')));
+ const verdicts=table(['Karşılaştırma','Eksen','Rol','Sonuç','Eşiğe en yakın ölçüt'],decisions.rows.map(r=>[r.from+' → '+r.to,AXES[r.axis]||r.axis,ROLES[r.role],
+  r.passed?'Geçti':r.failed+'/'+r.checks+' ölçüt kaldı',
+  r.critical?label(r.critical.quantity)+' · '+number(r.critical.value)+' / '+number(r.critical.limit)+' ('+Math.round(r.critical.ratio*100)+'%)':'—']),
+  decisions.rows.map(r=>r.passed?'passed':'failed'));
+ overview.append(verdicts);
+ if(decisions.rows.some(r=>!r.passed&&r.role!=='decision'))overview.append(node('p','Yardımcı veya tutarlılık çiftlerindeki aşımlar sonlu kabul kararını değiştirmez, ancak ilgili eksende dikkat gerektirir.','note'));
+ host.append(overview);
  host.append(table(['Vaka','Bant','NSCF örgüsü','σ (Ry)','VBM (eV)','CBM (eV)','Aralık (eV)','Durum'],
   [...data.cases].map(([id,c])=>{const result=report.cases[id]?.sampled_nscf;return [id,c.nbnd,c.nscf_k+'×'+c.nscf_k,c.degauss_ry,
    number(result?.vbm_ev),number(result?.cbm_ev),number(result?.gap_ev),result?'Raporlandı':'Eksik / başarısız'];})));
@@ -132,7 +158,9 @@ export function renderConvergenceView(host,data){
   if(p.sensitivity_only)for(const [quantity,value] of [['DOS',p.dos_relative_l1],['Mo-d',p.pdos_relative_l1['Mo-d']],['S-p',p.pdos_relative_l1['S-p']]])
    rows.push([p.from+' → '+p.to,'Duyarlılık',quantity+' bağıl L1',number(value),'—','Karar verilmez']);
  }
- host.append(table(['Karşılaştırma','Tür','Ölçüt','Değer','Eşik','Sonuç'],rows));
+ const all=node('details',undefined,'qe-convergence-all');
+ all.append(node('summary','Tüm ölçütler ('+rows.length+' satır)'),table(['Karşılaştırma','Tür','Ölçüt','Değer','Eşik','Sonuç'],rows));
+ host.append(all);
  const pairs=node('select');pairs.setAttribute('aria-label','Eğri karşılaştırma çifti');
  const available=[...plan.decision_pairs,...plan.diagnostic_pairs].filter(p=>data.curves.some(c=>c.id===p.from)&&data.curves.some(c=>c.id===p.to));
  if(!available.length){const o=node('option','Karşılaştırma için ikinci vaka bekleniyor');o.value='';pairs.append(o);}

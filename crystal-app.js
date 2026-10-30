@@ -6925,6 +6925,49 @@ function qeInvalidatePreflight(force=false){
  qePreflightSnapshot=null;
  qeSetPreflightState('stale','Yapı, bağlantı veya hesap parametreleri değişti. Yeniden ön kontrol yapın.');
 }
+// DFT form settings survive reloads in this browser. The API key, chosen files
+// and workspace-bound protocol selections are deliberately never stored.
+const DFT_SETTINGS_KEY='kristalyapi.dft-settings.v1';
+const DFT_SETTINGS_IDS=['qeApiAddress','qeJobProfile','qeJobWorkflow','qeElectronicSpin','qeSpinSeeds','qeSpinSmearing',
+ 'qeElectronicNbnd','qeElectronicMesh','qeBandFirst','qeBandLast','qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma',
+ 'qeElectronicPath','qeJobMaxSteps','qeJobEnergyThreshold','qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
+ 'qeForceThreshold','qeFreezeBottom','qePseudoFiles','qeHpcAccount','qeHpcPartition','qeHpcTasks','qeHpcHours','qeHpcNbnd',
+ 'qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz','qeHpcBandPath','qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss'];
+const DFT_PREPARATION_MODES=['server','file','truba'];
+let dftSettingDefaults=null;
+function readDftSettings(){
+ const values={};
+ for(const id of DFT_SETTINGS_IDS){const el=$(id);values[id]=el.type==='checkbox'?el.checked:el.value;}
+ values.preparationMode=document.querySelector('input[name="dftPreparationMode"]:checked')?.value||'server';
+ return values;
+}
+function applyDftSettings(values){
+ for(const id of DFT_SETTINGS_IDS){
+  const el=$(id),value=values?.[id];
+  if(el.type==='checkbox'){if(typeof value==='boolean')el.checked=value;continue;}
+  if(typeof value!=='string'||value.length>10000)continue;
+  if(el.tagName==='SELECT'&&![...el.options].some(option=>option.value===value))continue;
+  el.value=value;
+ }
+ const mode=DFT_PREPARATION_MODES.includes(values?.preparationMode)?values.preparationMode:'server';
+ document.querySelector('input[name="dftPreparationMode"][value="'+mode+'"]').checked=true;
+}
+function saveDftSettings(){
+ if(!dftSettingDefaults)return;
+ try{localStorage.setItem(DFT_SETTINGS_KEY,JSON.stringify(readDftSettings()));}catch{/* Private browsing or full storage. */}
+}
+function restoreDftSettings(){
+ dftSettingDefaults=readDftSettings();
+ try{const saved=JSON.parse(localStorage.getItem(DFT_SETTINGS_KEY)||'null');if(saved&&typeof saved==='object')applyDftSettings(saved);}
+ catch{/* Ignore unreadable or foreign values; defaults stay. */}
+}
+function resetDftSettings(){
+ try{localStorage.removeItem(DFT_SETTINGS_KEY);}catch{}
+ applyDftSettings(dftSettingDefaults);
+ qeResourceProfile=null;dftServerConnected=false;dftConnectionState='Bağlantı kontrol edilmedi';
+ syncDftPreparation();syncDftSummary();
+ $('dftSettingsResetStatus').textContent='Kaydedilen DFT ayarları silindi; varsayılanlar yüklendi.';
+}
 function syncDftPreparation(){
  const selected=document.querySelector('input[name="dftPreparationMode"]:checked')?.value;
  const mode=selected==='file'||selected==='truba'?selected:'server';
@@ -6941,6 +6984,7 @@ function syncDftPreparation(){
  $('qeElectronicSettings').hidden=mode!=='server'||workflow!=='electronic';
  syncDftElectronicChecks();
  $('qeSpinSettings').hidden=mode!=='server'||workflow!=='electronic'||$('qeElectronicSpin').value!=='polarized';
+ saveDftSettings();
  $('dftPreparationSummary').textContent=mode==='truba'?
   'TRUBA orfoz için çevrimdışı SCF/relax ZIP hazırlanacak. SLURM hesabınızı ve pseudopotansiyelleri kontrol edin; otomatik gönderim yapılmaz.':
   mode==='file'?
@@ -6991,7 +7035,7 @@ function initQeProtocols(){
  const select=$('qeProtocolSelect');
  for(const p of protocolTemplates){const option=document.createElement('option');option.value=p.id;option.textContent=p.label;select.append(option);}
  select.onchange=()=>{
-  const detail=$('qeProtocolDetail');detail.replaceChildren();$('qeProtocolReference').disabled=$('qeProtocolSettings').disabled=!select.value;if(!select.value)return;
+  const detail=$('qeProtocolDetail');detail.replaceChildren();detail.hidden=!select.value;$('qeProtocolReference').disabled=$('qeProtocolSettings').disabled=!select.value;if(!select.value)return;
   const p=protocolById(select.value);
   const text=document.createElement('p');text.textContent=p.scope;detail.append(text);
   const link=document.createElement('a');link.href='https://github.com/alorak/kristalyapi/blob/'+p.evidence_commit+'/'+p.request_path;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Kaynak istek ve kanıt ↗';detail.append(link);
@@ -10229,7 +10273,12 @@ function bind(){
  $('qeElectronicApplyNbnd').onclick=event=>{const input=$('qeElectronicNbnd');input.value=event.currentTarget.dataset.nbnd;
   input.dispatchEvent(new Event('input',{bubbles:true}));event.currentTarget.hidden=true;};
  for(const choice of document.querySelectorAll('input[name="dftPreparationMode"]'))choice.addEventListener('change',syncDftPreparation);
+ restoreDftSettings();
  syncDftPreparation();
+ for(const type of ['input','change'])$('dftPage').addEventListener(type,event=>{
+  if(DFT_SETTINGS_IDS.includes(event.target.id)||event.target.name==='dftPreparationMode')saveDftSettings();
+ });
+ $('dftSettingsReset').onclick=resetDftSettings;
  $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';syncDftElectronicChecks();};
  $('qeJobRefresh').onclick=qeJobRefresh;
  $('qeJobPause').onclick=()=>qeJobPauseResume(false);

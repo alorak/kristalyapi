@@ -721,22 +721,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div></div><div class="qe-workflow"><strong class="measure-subheading">Erişim bilgileri</strong><p class="hint">API anahtarı yalnız sayfa belleğinde tutulur. UPF profili sunucuda tanımlanmış olmalıdır.</p>
      <label class="field"><span>Sunucu UPF profil kimliği</span><input id="qeJobProfile" type="text" maxlength="40" value="si-pbe" spellcheck="false"></label>
      <label class="field"><span>API erişim anahtarı</span><input id="qeApiToken" type="password" autocomplete="off" placeholder="QE_API_TOKEN"></label>
-     <p id="dftReadiness" class="note" role="status">Sunucu işleri için bağlantıyı kontrol edin ve API anahtarını girin.</p><a class="dft-help" href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-runner.md" target="_blank" rel="noopener noreferrer">QE çalıştırma kılavuzu ↗</a></div></div></section>
-<section id="dft-hazirlik" class="dft-panel" aria-labelledby="dft-title-hazirlik" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-hazirlik" tabindex="-1">Hesap hazırlığı</h2><p>Yapıyı ve yöntemi seçin. Sunucu bağlantısını denetleyin veya girdiyi yerel kullanım için indirin.</p></div><div class="qe-workflow qe-protocol-card">
- <strong class="measure-subheading">Kaynağı belli hesap protokolleri</strong>
- <p class="hint">Önce protokolün kapsamını inceleyin. Referansı yeni çalışma alanında hazırlamak veya yalnız ayarları aktarmak hesap başlatmaz.</p>
- <label class="field"><span>Referans protokol</span><select id="qeProtocolSelect"><option value="">Protokol seçin</option></select></label>
- <div id="qeProtocolDetail" class="note"></div>
- <div class="qe-form-grid"><button id="qeProtocolReference" type="button" disabled>Referansı yeni çalışma alanında hazırla</button><button id="qeProtocolSettings" type="button" disabled>Yalnız hesap ayarlarını kullan</button></div>
- <div id="qeProtocolState" class="note" role="status">Protokol uygulanmadı.</div>
-</div>
-<fieldset class="dft-mode-switch" aria-label="Hesap hazırlama yöntemi">
+     <p id="dftReadiness" class="note" role="status">Sunucu işleri için bağlantıyı kontrol edin ve API anahtarını girin.</p>
+     <p class="hint">Adres, UPF profili ve hesap ayarları bu tarayıcıda saklanır; API anahtarı ve seçilen dosyalar saklanmaz.</p>
+     <button type="button" id="dftSettingsReset">Kaydedilen DFT ayarlarını sıfırla</button>
+     <p id="dftSettingsResetStatus" class="hint" role="status"></p><a class="dft-help" href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-runner.md" target="_blank" rel="noopener noreferrer">QE çalıştırma kılavuzu ↗</a></div></div></section>
+<section id="dft-hazirlik" class="dft-panel" aria-labelledby="dft-title-hazirlik" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-hazirlik" tabindex="-1">Hesap hazırlığı</h2><p>Yapıyı ve yöntemi seçin. Sunucu bağlantısını denetleyin veya girdiyi yerel kullanım için indirin.</p></div><fieldset class="dft-mode-switch" aria-label="Hesap hazırlama yöntemi">
  <legend>Hesabı nasıl hazırlamak istiyorsunuz?</legend>
  <label><input type="radio" name="dftPreparationMode" value="server" checked><span>Sunucuda hesapla<small>QE API ile doğrula, gönder ve takip et</small></span></label>
  <label><input type="radio" name="dftPreparationMode" value="file"><span>QE .in dosyası oluştur<small>Girdiyi indir, yerel QE ile çalıştır</small></span></label>
  <label><input type="radio" name="dftPreparationMode" value="truba"><span>TRUBA / SLURM paketi<small>SCF veya relax için çevrimdışı ZIP oluştur</small></span></label>
 </fieldset>
 <p class="dft-mode-summary note" id="dftPreparationSummary" role="status">Sunucu hesabı seçildi. Hesaplama türünü ve ortak parametreleri belirleyin.</p>
+<div class="qe-workflow qe-protocol-card dft-server-only">
+ <strong class="measure-subheading">Kaynağı belli hesap protokolleri</strong>
+ <p class="hint">Önce protokolün kapsamını inceleyin. Referansı yeni çalışma alanında hazırlamak veya yalnız ayarları aktarmak hesap başlatmaz.</p>
+ <label class="field"><span>Referans protokol</span><select id="qeProtocolSelect"><option value="">Protokol seçin</option></select></label>
+ <div id="qeProtocolDetail" class="note" hidden></div>
+ <div class="qe-form-grid"><button id="qeProtocolReference" type="button" disabled>Referansı yeni çalışma alanında hazırla</button><button id="qeProtocolSettings" type="button" disabled>Yalnız hesap ayarlarını kullan</button></div>
+ <div id="qeProtocolState" class="note" role="status">Protokol uygulanmadı.</div>
+</div>
 <div class="dft-prepare-grid" id="dftPreparationGrid"><div class="dft-server-only"><div class="qe-workflow"><strong class="measure-subheading">Sunucu iş akışı</strong>     <p class="hint">Sunucuda PBE SCF, sabit hücreli relaksasyon → SCF veya elektronik bant / DOS akışını seçin. Kollineer spin yalnız elektronik akışta kullanılabilir. Relaksasyonda tüm atomlar serbesttir. UPF profili sunucuda tanımlanmış olmalı; API anahtarı yalnız sayfa belleğinde tutulur. LAN üzerinde anahtarlı işler HTTPS gerektirir.</p>
      <label class="field"><span>Sunucu hesap türü</span><select id="qeJobWorkflow"><option value="scf">SCF · tek nokta enerji</option><option value="relax-scf" selected>Relaksasyon → SCF · sabit hücre</option><option value="electronic">SCF → bant → DOS / PDOS</option></select></label>
      <div id="qeElectronicSettings" class="qe-workflow" hidden>
@@ -776,7 +779,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <label class="field dft-relax-only"><span>İyonik enerji eşiği (Ry)</span><input id="qeJobEnergyThreshold" type="number" min="0.00000001" max="0.001" step="0.000001" value="0.000001"></label>
      </div>
 <a class="dft-next dft-server-only" href="#dft/isler">İş gönderme ve takibe geç <span aria-hidden="true">→</span></a></div></div><div class="qe-workflow dft-parameter-workflow">
-    <strong class="measure-subheading">Ortak fiziksel parametreler</strong><p class="hint">Kesme enerjileri ve k-örgüsü iki hazırlık yönteminde de kullanılır. Sunucuya ait iş türü ile yerel dosyanın hesap türü birbirinden bağımsızdır.</p>
+    <strong class="measure-subheading">Ortak fiziksel parametreler</strong><p class="hint">Kesme enerjileri ve k-örgüsü tüm hazırlık yöntemlerinde kullanılır. Sunucuya ait iş türü ile yerel dosyanın hesap türü birbirinden bağımsızdır.</p>
     <div class="qe-form-grid">
      <label class="field dft-file-only"><span>Yerel .in hesap türü</span><select id="qeCalcType"><option value="relax">Relaksasyon · sabit hücre</option><option value="scf">DFT · tek nokta enerji (SCF)</option></select></label>
      <label class="field dft-file-only"><span>Elektron doluluğu (yerel dosya)</span><select id="qeOccupation"><option value="fixed">Sabit · yalıtkan / yarıiletken</option><option value="smearing">Smearing · metal</option></select></label>
@@ -796,7 +799,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <p class="hint dft-file-only">UPF adları başlangıçta yalnız taslaktır: gerçek dosyaları indirip ./pseudo dizinine yerleştirin. 50/400 Ry, k-ızgarası, spin ve smearing örnek değerlerdir; fiziksel yakınsama ve uygun pseudopotansiyel seçimi kullanıcı sorumluluğundadır. Kısmi doluluk desteklenmez.</p>
     <button type="button" id="qeExportPw" class="primary dft-pw-only">Quantum ESPRESSO (.in) indir</button>
     <div id="qeExportStatus" class="note dft-pw-only" role="status">Girdi dosyası henüz hazırlanmadı.</div>
-    <div class="dft-hpc-only" hidden>
+   </div>
+    <div class="qe-workflow dft-hpc-only dft-hpc-workflow" hidden>
      <strong class="measure-subheading">TRUBA · ARF / Quantum ESPRESSO</strong>
      <p class="hint">Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi, SLURM betiği ve Python sonuç toplayıcı ZIP olarak indirilir. İşi TRUBA'da çalıştırdıktan sonra summary.json dosyasını Sonuçlar sekmesinde açın. Partition, modül ve erişim haklarını doğrulayın.</p>
      <label class="field"><span>SLURM hesap adı (#SBATCH --account) *</span><input id="qeHpcAccount" type="text" maxlength="64" spellcheck="false" autocomplete="off" placeholder="TRUBA kullanıcı veya proje hesabı"></label>
@@ -831,7 +835,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      </details>
      <a class="dft-help" href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-truba-slurm.md" target="_blank" rel="noopener noreferrer">TRUBA kullanım ve sınırlamalar kılavuzu ↗</a>
     </div>
-   </div></div></section>
+</div></section>
 <section id="dft-isler" class="dft-panel" aria-labelledby="dft-title-isler" hidden><div class="dft-panel-heading"><span class="dft-eyebrow">DFT / QUANTUM ESPRESSO</span><h2 id="dft-title-isler" tabindex="-1">İşler ve kaynaklar</h2><p>Ön kontrol, açık onayla hesap gönderme, geçmiş ve ölçülmüş kaynak raporları.</p></div><div class="dft-jobs-grid"><div class="qe-workflow">
      <strong class="measure-subheading">Hesap gönder ve takip et</strong>
      <p id="dftJobSettings" class="note"><span id="dftJobSource"></span><br><span id="dftJobOperation"></span><br><span id="dftJobParameters"></span></p>

@@ -100,3 +100,11 @@ or independent scientific evidence attestation.
 The frontend offers filters, pagination, job naming, and a source-safe detail
 panel with bounded JSON. These are read-only except for the explicit naming
 action; they neither start computations nor replay jobs.
+
+## Saved settings, convergence summary and setup layout
+
+DFT form settings (API address, UPF profile, preparation mode, server/electronic/local/TRUBA parameters) are saved in this browser under `kristalyapi.dft-settings.v1` and restored on reload. The API key, chosen files and workspace-bound protocol selections are never stored. **Settings → Reset saved DFT settings** clears them and restores the page defaults.
+
+The convergence tab opens with a decision summary: pass counts per role (decision, diagnostic, broadening consistency) and one row per pair with its verdict and the check closest to, or furthest past, its limit. Diagnostic or consistency exceedances are flagged without changing the reported finite acceptance. The full per-check table stays available in a folded section.
+
+In preparation, the evidence-backed protocol card appears only for server calculations and follows the preparation-mode choice; its detail strip stays hidden until a protocol is selected. TRUBA cluster settings form their own card beside the shared physical parameters.

@@ -4,7 +4,7 @@ import {createHash,webcrypto} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {parseBandPath,validatePipelineInput,pipelineStages,stageSlurm,
  createTrubaPipelinePackage} from '../qe-hpc-pipeline.js';
-import {parseTrubaPipelineSummary,renderTrubaPipelineSummary} from '../qe-truba-pipeline-view.mjs';
+import {parseTrubaPipelineSummary,renderTrubaPipelineSummary} from '../qe-truba-pipeline-view.js';
 
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const input=[
@@ -133,6 +133,6 @@ test('pipeline report rendering is readonly text and UI contains bindings',()=>{
   'qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(app,/qeExportTrubaPipeline/);
- assert.match(sw,/qe-hpc-pipeline\.mjs/);
+ assert.match(sw,/qe-hpc-pipeline\.js/);
  assert.match(sw,/qe_hpc_pipeline\.py/);
 });
