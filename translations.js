@@ -12,7 +12,6 @@
   ["TRUBA P1.3 paketinin ürettiği","Produced by the TRUBA P1.3 package:"],
   ["dosyası da burada açılır. Bant, DOS ve atom/orbital PDOS sonuçları, kayıtlı kaynak SHA-256 bilgileriyle gösterilir; mevcut yapı otomatik değiştirilmez.","can be opened here. Bands, DOS and atom/orbital PDOS are shown with recorded source SHA-256 metadata; the active structure is not automatically modified."],
   ["P1.3: ZIP paketindeki doğrulanan","P1.3: The verified"],
-  ["başarılı","successful"],
   ["TRUBA / SLURM sonuç özeti (P1.1 / P1.2)","TRUBA / SLURM result summary (P1.1 / P1.2)"],
   ["Tek işlerde","For single jobs,"],
   ["dosyasının ürettiği","produces"],
