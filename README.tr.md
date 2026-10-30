@@ -8,6 +8,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 > Bu proje bilimsel görselleştirme ve eğitim amaçlıdır; VESTA'nın veya deneysel/yüksek doğruluklu hesaplama yazılımlarının tüm işlevlerine eşdeğer değildir. [Bilimsel kapsam ve sınırlar](#bilimsel-kapsam-ve-sınırlar) bölümüne bakın.
 
+**TRUBA / SLURM dışa aktarma (P0):** DFT → Hesap hazırlığı → TRUBA / SLURM paketi yoluyla tek bir Quantum ESPRESSO SCF/relax girdisi, SLURM betiği, manifest ve isteğe bağlı gerçek UPF dosyalarından çevrimdışı ZIP hazırlanabilir. İş gönderilmez veya bilimsel yakınsama onaylanmaz. [TRUBA kullanımı ve sınırlamalar](docs/qe-truba-slurm.md).
+
 ## Hızlı başlangıç
 
 1. [Uygulamayı açın](https://alorak.github.io/kristalyapi/).
