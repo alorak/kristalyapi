@@ -33,6 +33,11 @@ try{
  assert.equal(await page.locator('#app').isVisible(),false);
  assert.equal(await page.locator('#dftNav').getAttribute('aria-current'),'page');
  assert.equal(await page.locator('#qeJobSubmit').count(),1);
+ for(const id of ['qeJobHistoryQuery','qeJobHistoryStatus','qeJobHistoryCalculation','qeJobHistoryPrev','qeJobHistoryNext','qeJobHistoryPage','qeJobName','qeJobNameSave','qeJobProvenance'])
+  assert.equal(await page.locator('#'+id).count(),1,'new DFT history control must be mounted: '+id);
+ assert.equal(await page.locator('#qeJobHistoryPrev').isDisabled(),true);
+ assert.equal(await page.locator('#qeJobHistoryNext').isDisabled(),true);
+ assert.equal(await page.locator('#qeJobProvenance').isHidden(),true);
  await page.locator('#languageTurkish').click();
  assert.equal(await page.locator('#qeJobWorkflow').inputValue(),'relax-scf');
  assert.equal(await page.locator('#qeCalcType').isVisible(),false,'local-only calculation type stays out of server mode');

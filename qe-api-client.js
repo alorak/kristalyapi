@@ -124,8 +124,22 @@ export async function cancelQeScfJob(address,token,jobId,opts){
  return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/cancel',{method:'POST',...opts});
 }
 
-export async function listQeScfJobs(address,token,opts){
- return qeRequest(address,token,'/api/v1/calculations',opts);
+export async function listQeScfJobs(address,token,opts={}){
+ const {filters={},...request}=opts,params=new URLSearchParams();
+ for(const key of ['limit','offset','status','calculation','q']){
+  const value=filters[key];
+  if(value!==undefined&&value!==null&&value!=='')params.set(key,String(value));
+ }
+ return qeRequest(address,token,'/api/v1/calculations'+(params.size?'?'+params.toString():''),request);
+}
+export async function getQeCalculationSummary(address,token,jobId,opts={}){
+ if(!/^[a-f0-9]{32}$/.test(jobId))throw Error('Geçersiz iş numarası.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/summary',opts);
+}
+export async function setQeJobLabel(address,token,jobId,label,opts={}){
+ if(!/^[a-f0-9]{32}$/.test(jobId))throw Error('Geçersiz iş numarası.');
+ if(typeof label!=='string'||label.length>60||/[\x00-\x1f\x7f]/.test(label))throw Error('İş adı geçersiz.');
+ return qeRequest(address,token,'/api/v1/calculations/'+jobId+'/label',{method:'POST',body:{label},...opts});
 }
 
 export function parseQeBandPath(text){

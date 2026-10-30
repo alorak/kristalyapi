@@ -143,3 +143,19 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 .qe-ionic-plot svg{display:block;width:100%;height:auto;min-height:130px}
 .qe-ionic-unavailable{font-size:12px;color:#52697d;line-height:1.6}
 @media(max-width:720px){.qe-ionic-chart-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* DFT job history and read-only calculation evidence. */
+.qe-history-toolbar{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(2,minmax(0,1fr));gap:10px;align-items:end;margin:14px 0}
+.qe-history-pager{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:9px 0}
+.qe-history-pager span{flex:1;text-align:center}
+.qe-job-naming{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin:10px 0 15px}
+.qe-job-provenance{margin-top:15px;border:1px solid #dce7f1;background:#fafcff;border-radius:9px;padding:15px;min-width:0}
+.qe-job-provenance h4{margin:0 0 12px;color:#244e70}
+.qe-provenance-grid{display:grid;grid-template-columns:minmax(120px,.55fr) minmax(0,1fr);gap:0;margin:0}
+.qe-provenance-grid dt,.qe-provenance-grid dd{font-size:12px;line-height:1.5;margin:0;padding:7px 9px;border-bottom:1px solid #e2ebf4;overflow-wrap:anywhere}
+.qe-provenance-grid dt{font-weight:700;color:#54728e}
+.qe-provenance-grid dd{font-variant-numeric:tabular-nums;color:#2b4a64}
+.qe-provenance-details{margin-top:13px}
+.qe-provenance-details summary{cursor:pointer;font-size:12px;font-weight:700;color:#2a6698}
+.qe-provenance-details pre{overflow:auto;max-height:320px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;background:#edf4fa;padding:12px;border-radius:7px}
+@media(max-width:750px){.qe-history-toolbar{grid-template-columns:1fr}.qe-job-naming{grid-template-columns:1fr}.qe-provenance-grid{grid-template-columns:minmax(90px,.55fr) minmax(0,1fr)}}

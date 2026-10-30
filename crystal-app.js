@@ -12,12 +12,12 @@ import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
-import {createJobPoller,renderJobProgress} from './qe-job-tracking.js';
+import {createJobPoller,renderJobProgress,renderCalculationSummary} from './qe-job-tracking.js';
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
-import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
+import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,getQeCalculationSummary,setQeJobLabel,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6828,6 +6828,7 @@ function initDftTracking(){
 }
 function qeJobRefresh({fresh=false}={}){if(!qeActiveJob)return qeFetchJobState(null);return qeJobPoller?qeJobPoller.refresh({fresh}):qeFetchJobState(qeActiveJob);}
 
+let qeHistoryOffset=0,qeSummaryCacheKey='';
 let qeElectronicSource=null;
 let qeProtocolApplied=null,qeProtocolPreflight=null;
 let qePreflightSnapshot=null;
@@ -7029,6 +7030,7 @@ async function qeJobStart(){
    workspaceId,snapshot,status:created.status||'queued',calculation:payload.parameters.calculation};
   syncDftSummary();qeJobPoller?.sync({reset:true});
   $('qeJobResultsLink').hidden=true;$('qeApiScfResult').hidden=true;$('qeJobProgress').replaceChildren();
+  qeSummaryCacheKey='';$('qeJobProvenance').hidden=true;$('qeJobProvenance').replaceChildren();$('qeJobName').value='';
   $('qeJobPause').disabled=true;$('qeJobResume').disabled=true;
   qeClearRelaxationComparison();$('qeJobDiagnostics').replaceChildren();
   $('qeApiElectronicResults').replaceChildren();$('qeApiElectronicResults').hidden=true;
@@ -7088,6 +7090,23 @@ async function qeFetchJobState(job=qeActiveJob){
   status.textContent=message;syncDftSummary();
   $('qeJobTrackingNote').textContent='Durum güncellendi.';
   renderJobProgress($('qeJobProgress'),record,null);
+  const evidenceKey=job.id+'|'+record.updated;
+  if(qeSummaryCacheKey!==evidenceKey){
+   try{
+    const summary=await getQeCalculationSummary(job.address,job.token,job.id);
+    if(qeActiveJob!==job)return true;
+    if(summary.job_id!==job.id||summary.structure_hash!==record.structure_hash)
+     throw Error('Hesap özeti kaynak kimliği uyuşmuyor.');
+    renderCalculationSummary($('qeJobProvenance'),summary);
+    $('qeJobProvenance').hidden=false;
+    $('qeJobName').value=summary.name||'';
+    qeSummaryCacheKey=evidenceKey;
+   }catch(error){
+    if(qeActiveJob!==job)return true;
+    $('qeJobProvenance').replaceChildren();$('qeJobProvenance').hidden=true;
+    $('qeJobTrackingNote').textContent='Hesap özeti alınamadı: '+error.message;
+   }
+  }
   const diagnosticHost=$('qeJobDiagnostics');diagnosticHost.replaceChildren();
   try{const data=await getQeJobDiagnostics(job.address,job.token,job.id);
    if(qeActiveJob===job){renderJobDiagnostics(diagnosticHost,data);renderJobProgress($('qeJobProgress'),record,data);}
@@ -7098,20 +7117,39 @@ async function qeFetchJobState(job=qeActiveJob){
   $('qeApiElectronicResults').hidden=true;$('qeApiScfResult').hidden=true;$('qeJobResultsLink').hidden=true;
   status.textContent='İş durumu: '+error.message;return false;}
 }
-async function qeJobHistoryLoad(){
+async function qeJobHistoryLoad(reset=false){
  const status=$('qeJobStatus'),dropdown=$('qeJobHistorySelect');
+ if(reset)qeHistoryOffset=0;
+ const page=20,filters={limit:page,offset:qeHistoryOffset,
+  q:$('qeJobHistoryQuery').value.trim(),
+  status:$('qeJobHistoryStatus').value,calculation:$('qeJobHistoryCalculation').value};
+ const address=$('qeApiAddress').value,token=$('qeApiToken').value;
+ const expected=JSON.stringify(filters);
  try{
-  const data=await listQeScfJobs($('qeApiAddress').value,$('qeApiToken').value);
-  if(!Array.isArray(data.jobs))throw Error('Sunucu iş geçmişini döndürmedi.');
+  const data=await listQeScfJobs(address,token,{filters});
+  if(address!==$('qeApiAddress').value||token!==$('qeApiToken').value||
+    expected!==JSON.stringify({limit:page,offset:qeHistoryOffset,
+     q:$('qeJobHistoryQuery').value.trim(),status:$('qeJobHistoryStatus').value,
+     calculation:$('qeJobHistoryCalculation').value}))return;
+  if(!Array.isArray(data.jobs)||!Number.isInteger(data.total)||data.total<0)
+   throw Error('Sunucu sayfalı iş geçmişini döndürmedi.');
+  const selected=dropdown.value;
   dropdown.replaceChildren();
   const empty=document.createElement('option');empty.value='';empty.textContent='İş seçin';dropdown.append(empty);
-  for(const item of data.jobs.slice(0,20)){
+  for(const item of data.jobs){
    if(!/^[a-f0-9]{32}$/.test(item.job_id))continue;
    const option=document.createElement('option');option.value=item.job_id;
-   option.textContent=item.job_id.slice(0,12)+' · '+item.status+' · '+item.created;
+   option.textContent=(item.name?item.name.slice(0,60)+' · ':'')+item.job_id.slice(0,12)+
+    ' · '+item.calculation+' · '+item.status+' · '+item.created;
    dropdown.append(option);
   }
-  status.textContent=data.jobs.length+' kayıt yüklendi; bir iş seçip İncele düğmesine basın.';
+  if([...dropdown.options].some(o=>o.value===selected))dropdown.value=selected;
+  $('qeJobHistoryPrev').disabled=qeHistoryOffset===0;
+  $('qeJobHistoryNext').disabled=!data.has_more;
+  $('qeJobHistoryPage').textContent=data.total?
+   (qeHistoryOffset+1)+'–'+(qeHistoryOffset+data.jobs.length)+' / '+data.total+' iş':
+   'Eşleşen iş bulunamadı';
+  status.textContent=data.total+' kayıt bulundu; bir iş seçip İncele düğmesine basın.';
  }catch(error){status.textContent='İş geçmişi: '+error.message;}
 }
 async function qeJobHistoryOpen(){
@@ -7121,9 +7159,24 @@ async function qeJobHistoryOpen(){
   const address=$('qeApiAddress').value,token=$('qeApiToken').value;
   const record=await getQeScfJob(address,token,id);
   qeActiveJob={id,address,token,hash:record.structure_hash,workspaceId:null,snapshot:null,status:record.status,calculation:record.calculation};
-  syncDftSummary();
-  await qeJobRefresh();
+  qeSummaryCacheKey='';$('qeJobProvenance').hidden=true;$('qeJobProvenance').replaceChildren();
+  $('qeJobName').value=record.name||'';
+  syncDftSummary();qeJobPoller?.sync({reset:true});
+  await qeJobRefresh({fresh:true});
  }catch(error){status.textContent='Önceki iş: '+error.message;}
+}
+async function qeJobNameSave(){
+ const job=qeActiveJob,status=$('qeJobStatus');
+ if(!job){status.textContent='İsimlendirmek için önce geçmişten bir iş açın.';return;}
+ const label=$('qeJobName').value.trim();
+ try{
+  const updated=await setQeJobLabel(job.address,job.token,job.id,label);
+  if(qeActiveJob!==job)return;
+  qeSummaryCacheKey='';
+  status.textContent='İş adı güncellendi: '+(updated.name||'(adsız)');
+  await qeJobHistoryLoad();
+  await qeJobRefresh({fresh:true});
+ }catch(error){status.textContent='İş adı: '+error.message;}
 }
 async function qeJobPauseResume(resume){
  if(!qeActiveJob)return;
@@ -10039,8 +10092,14 @@ function bind(){
  $('qeJobPause').onclick=()=>qeJobPauseResume(false);
  $('qeJobResume').onclick=()=>qeJobPauseResume(true);
  $('qeJobCancel').onclick=qeJobCancel;
- $('qeJobHistoryLoad').onclick=qeJobHistoryLoad;
+ $('qeJobHistoryLoad').onclick=()=>qeJobHistoryLoad(true);
  $('qeJobHistoryOpen').onclick=qeJobHistoryOpen;
+ $('qeJobNameSave').onclick=qeJobNameSave;
+ $('qeJobHistoryPrev').onclick=()=>{qeHistoryOffset=Math.max(0,qeHistoryOffset-20);void qeJobHistoryLoad();};
+ $('qeJobHistoryNext').onclick=()=>{qeHistoryOffset+=20;void qeJobHistoryLoad();};
+ for(const id of ['qeJobHistoryStatus','qeJobHistoryCalculation'])
+  $(id).onchange=()=>qeJobHistoryLoad(true);
+ $('qeJobHistoryQuery').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();void qeJobHistoryLoad(true);}};
  $('qeApiAddress').onchange=()=>{$('qeApiStatus').textContent='Adres değişti; bağlantıyı yeniden kontrol edin.';};
  $('qeDefectCompareOpen').onclick=qeLoadDefectComparison;
  $('qeDefectCompareFile').onchange=()=>{$('qeDefectCompareCharts').replaceChildren();$('qeDefectCompareStatus').textContent='Kusur serisi dosyası seçildi; açın.';};

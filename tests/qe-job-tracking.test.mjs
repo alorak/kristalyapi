@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const {createJobPoller,jobProgress}=await import('data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../qe-job-tracking.js',import.meta.url))).toString('base64'));
+const {createJobPoller,jobProgress,renderCalculationSummary}=await import('data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../qe-job-tracking.js',import.meta.url))).toString('base64'));
 function harness(refresh=async()=>true){
  let job=null,visible=true,calls=0,stops=0;const timers=new Map();let serial=0;
  const poller=createJobPoller({current:()=>job,eligible:j=>visible&&j.status==='running',refresh:async j=>{calls++;return refresh(j);},
@@ -47,4 +47,30 @@ test('a mutation refresh waits for an older read then requests fresh status',asy
 test('spin progress includes independent bands.x stages with seven total steps',()=>{
  const steps=jobProgress({calculation:'electronic',spin:'polarized',status:'running'},{active_stage:'bands_pp_down',stages:['scf','bands','bands_pp_up'].map(name=>({name,status:'completed'}))});
  assert.equal(steps.length,7);assert.equal(steps.filter(s=>s.state==='completed').length,3);assert.equal(steps.find(s=>s.name==='bands_pp_down').state,'running');assert.ok(!steps.some(s=>s.name==='bands_pp'));
+});
+
+test('provenance display shows only recorded values and renders hostile names as text',()=>{
+ const original=globalThis.document;
+ class Element{
+  constructor(tag){this.tag=tag;this.children=[];this.textContent='';this.className='';}
+  append(...nodes){this.children.push(...nodes);}
+  replaceChildren(...nodes){this.children=nodes;}
+ }
+ globalThis.document={createElement:tag=>new Element(tag)};
+ try{
+  const host=new Element('section');
+  const summary={schema:'kristalyapi.calculation-summary.v1',job_id:'a'.repeat(32),
+   name:'<img src=x onerror=evil()>',status:'completed',structure_hash:'b'.repeat(64),
+   request:{calculation:'scf',functional:'PBE',spin:'unpolarized',ecutwfc_ry:45,
+    ecutrho_ry:360,kpoints:[2,2,2],atom_count:2},evidence_status:'matched',
+   result:{energy_ev:-100,energy_ry:-7.35,engine_version:'6.7',
+    input_sha256:'c'.repeat(64),output_sha256:'d'.repeat(64),pseudopotentials:{}}};
+  renderCalculationSummary(host,summary);
+  const walk=n=>[n,...n.children.flatMap(walk)],nodes=walk(host);
+  assert.ok(nodes.some(n=>n.tag==='h4'&&n.textContent.includes('<img')));
+  assert.ok(nodes.some(n=>n.tag==='dd'&&n.textContent==='-100.00000000'));
+  assert.ok(!nodes.some(n=>n.tag==='img'),'untrusted labels must never become HTML');
+  assert.throws(()=>renderCalculationSummary(host,{...summary,structure_hash:'invalid'}));
+  assert.throws(()=>renderCalculationSummary(host,{...summary,schema:'other'}));
+ }finally{if(original===undefined)delete globalThis.document;else globalThis.document=original;}
 });

@@ -804,14 +804,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <button type="button" id="qeJobCancel">İşi iptal et</button>
       <button type="button" id="qeJobHistoryLoad">Sunucudaki iş geçmişini yükle</button>
      </div>
+     <div class="qe-history-toolbar">
+      <label class="field"><span>İş adı / ID / profil ara</span><input id="qeJobHistoryQuery" type="search" maxlength="64" placeholder="İş adı veya SHA-256"></label>
+      <label class="field"><span>Durum</span><select id="qeJobHistoryStatus"><option value="">Tümü</option><option value="queued">Kuyrukta</option><option value="running">Çalışıyor</option><option value="paused">Duraklatıldı</option><option value="completed">Tamamlandı</option><option value="failed">Başarısız</option><option value="not_converged">Yakınsamadı</option><option value="timed_out">Süre aşımı</option><option value="cancelled">İptal</option></select></label>
+      <label class="field"><span>Hesap türü</span><select id="qeJobHistoryCalculation"><option value="">Tümü</option><option value="scf">SCF</option><option value="relax-scf">Relaksasyon → SCF</option><option value="electronic">Bant / DOS</option></select></label>
+     </div>
      <label class="field"><span>Önceki QE işi</span><select id="qeJobHistorySelect"><option value="">Bu oturumda iş geçmişi yüklenmedi</option></select></label>
+     <div class="qe-history-pager"><button type="button" id="qeJobHistoryPrev" disabled>Önceki sayfa</button><span id="qeJobHistoryPage" class="hint" aria-live="polite">Geçmiş yüklenmedi</span><button type="button" id="qeJobHistoryNext" disabled>Sonraki sayfa</button></div>
      <button type="button" id="qeJobHistoryOpen">Seçili işi incele</button>
+     <div class="qe-job-naming"><label class="field"><span>Seçili işin adı</span><input id="qeJobName" type="text" maxlength="60" placeholder="Örn. MoS₂ SCF · referans"></label><button type="button" id="qeJobNameSave">İş adını kaydet</button></div>
      <label class="check"><input type="checkbox" id="qeJobAutoRefresh" checked>Görünür İşler sayfasında 5 saniyede bir yenile</label>
      <p id="qeJobTrackingNote" class="hint">Otomatik takip yalnız seçilmiş bir iş için çalışır.</p>
      <div id="qeJobProgress"></div>
      <a id="qeJobResultsLink" class="dft-next" href="#dft/sonuclar" hidden>Hesabın sonuçlarını aç ↗</a>
      <div id="qeJobStatus" class="note" role="status" aria-live="polite">Henüz QE işi gönderilmedi. Hesaplama için açık kullanıcı onayı gereklidir.</div>
 
+     <section id="qeJobProvenance" class="qe-job-provenance" aria-live="polite" hidden></section>
      <div id="qeJobDiagnostics" class="qe-electronic-charts" aria-live="polite"></div>
 
      <p class="hint">Sonuç yalnız çalışan Quantum ESPRESSO çıktısından gelir. İş geçmişi sunucudaki SQLite veritabanında tutulur; bu ekranın anahtarı veya hesabı tarayıcı depolamasında tutulmaz. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-jobs.md" target="_blank" rel="noopener noreferrer">SCF işi ve worker kurulumu</a></p>
