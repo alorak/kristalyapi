@@ -7107,14 +7107,15 @@ async function qeJobCancel(){
 async function qeTestApiConnection(){
  const button=$('qeApiTest'),input=$('qeApiAddress'),status=$('qeApiStatus'),attempt=input.value;
  button.disabled=true;
- dftConnectionState='Bağlantı denetleniyor…';syncDftSummary();
+ dftServerConnected=false;dftConnectionState='Bağlantı denetleniyor…';syncDftSummary();
  status.textContent='Yerel QE API bağlantısı kontrol ediliyor...';
  try{
   const probe=await inspectQeApi(attempt);
   if(input.value!==attempt){
-   dftConnectionState='Adres değişti; tekrar denetleyin';
+   dftServerConnected=false;dftConnectionState='Adres değişti; tekrar denetleyin';
    status.textContent='Adres değişti; yeniden bağlantı testi yapın.';return;
   }
+  dftServerConnected=probe.jobsEnabled;
   dftConnectionState=probe.resourceProfile.executionEnabled===false?'Kaynak profili: yalnız hazırlık':probe.ready?'QE sunucusu hazır':'API erişilebilir; çözücü hazır değil';
   qeResourceProfile={base:probe.base,limits:probe.resourceProfile};
   $('qeElectronicNbnd').max=String(probe.resourceProfile.max_bands);$('qeElectronicMesh').max=String(probe.resourceProfile.max_nscf_k);
@@ -7123,7 +7124,7 @@ async function qeTestApiConnection(){
    ' Kaynak profili: '+probe.resourceProfile.id+' · atom/bant sınırı: '+probe.resourceProfile.max_atoms+'/'+probe.resourceProfile.max_bands+'. QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
    (probe.jobsEnabled?' · QE işi alımı açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
  }catch(error){
-  dftConnectionState='Sunucuya bağlanılamadı';
+  dftServerConnected=false;dftConnectionState='Sunucuya bağlanılamadı';
   status.textContent='Bağlantı kurulamadı: '+error.message+
    ' Yerel ağ izni, HTTPS/HTTP tarayıcı kısıtları, CORS ve konteyner portunu kontrol edin.';
  }finally{button.disabled=false;syncDftSummary();}
@@ -9259,9 +9260,12 @@ function setLibraryPane(mode){
 function isLibraryHash(hash){return hash==='#kutuphane';}
 function isReciprocalHash(hash){return hash==='#karsi-uzay';}
 // Dedicated hash routes keep one mounted set of QE forms, jobs and result hosts.
-const DFT_SECTIONS=['hazirlik','isler','sonuclar','yakinsama','kusurlar'];
+const DFT_SECTIONS=['hazirlik','isler','sonuclar','yakinsama','kusurlar','ayarlar'];
 let dftActiveSection=null;
 let dftConnectionState='Bağlantı kontrol edilmedi';
+// Server-backed tabs stay locked until a job-capable server answered for the current address.
+let dftServerConnected=false;
+function dftServerReady(){return dftServerConnected&&$('qeApiToken').value.trim()!=='';}
 function dftSectionFromHash(hash){
  const section=String(hash).split('/')[1];
  return DFT_SECTIONS.includes(section)?section:'hazirlik';
@@ -9280,7 +9284,14 @@ function syncDftSummary(){
   $('dftStructureCell').textContent=error.message;
  }
  $('dftConnectionState').textContent=dftConnectionState;
- $('dftCurrentJob').textContent=qeActiveJob?qeActiveJob.id+' · '+(qeActiveJob.status||''):'Henüz iş yok';
+ const ready=dftServerReady(),token=$('qeApiToken').value.trim()!=='';
+ $('dftConnectionChip').dataset.state=dftServerConnected?(ready?'ready':'token'):dftConnectionState==='Sunucuya bağlanılamadı'?'failed':'unchecked';
+ $('dftReadiness').textContent=ready?'Sunucu işleri kullanılabilir.':dftServerConnected?'Sunucu işleri için API anahtarını girin.':
+  token?'Sunucu işleri için bağlantıyı kontrol edin.':'Sunucu işleri için bağlantıyı kontrol edin ve API anahtarını girin.';
+ const jobs=document.querySelector('[data-dft-section="isler"]');
+ jobs.classList.toggle('locked',!ready);
+ if(ready){jobs.removeAttribute('aria-disabled');jobs.removeAttribute('title');}
+ else{jobs.setAttribute('aria-disabled','true');jobs.title='Önce Ayarlar sekmesinde sunucu bağlantısını kurun';}
  const electronic=$('qeJobWorkflow').value==='electronic';
  const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
  const source=electronic&&qeElectronicSource?(qeElectronicSource.protocolId?'Protokol referansı: ':'Son relaksasyon yapısı: ')+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
@@ -9291,7 +9302,10 @@ function syncDftSummary(){
 
 }
 function syncDftWorkspace(){
- const section=dftSectionFromHash(window.location.hash);
+ let section=dftSectionFromHash(window.location.hash);
+ const redirected=section==='isler'&&!dftServerReady();
+ if(redirected){section='ayarlar';history.replaceState(null,'','#dft/ayarlar');}
+ $('dftSettingsNotice').hidden=!redirected;
  const changed=dftActiveSection!==section;
  const focusHeading=changed&&dftActiveSection!==null&&$('dftPage').contains(document.activeElement);
  for(const key of DFT_SECTIONS){
@@ -9956,7 +9970,8 @@ function bind(){
  $('qeConvergenceOpen').onclick=qeLoadConvergenceView;
  $('qeConvergenceFile').onchange=()=>{$('qeConvergenceCharts').replaceChildren();$('qeConvergenceStatus').textContent='Dosya seçildi; raporu açın.';};
  $('qeApiTest').onclick=qeTestApiConnection;
- $('qeApiAddress').addEventListener('input',()=>{qeResourceProfile=null;$('qeElectronicNbnd').max='128';$('qeElectronicMesh').max='24';dftConnectionState='Adres değişti; tekrar denetleyin';syncDftSummary();});
+ $('qeApiAddress').addEventListener('input',()=>{qeResourceProfile=null;$('qeElectronicNbnd').max='128';$('qeElectronicMesh').max='24';dftServerConnected=false;dftConnectionState='Adres değişti; tekrar denetleyin';syncDftSummary();});
+ $('qeApiToken').addEventListener('input',syncDftSummary);
  $('qeJobValidate').onclick=qeJobPreflight;
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
