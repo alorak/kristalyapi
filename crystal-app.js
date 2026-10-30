@@ -6834,8 +6834,11 @@ let qePreflightSnapshot=null;
 function qeSetPreflightState(state,message){
  const element=$('qeJobPreflightState');element.dataset.state=state;element.textContent=message;
 }
-function qeInvalidatePreflight(){
+function qeInvalidatePreflight(force=false){
  if(!qePreflightSnapshot)return;
+ let current=null;try{current=JSON.stringify(qeJobPayload());}catch{}
+ if(!force&&qePreflightSnapshot.workspaceId===activeWorkspaceId&&
+   qePreflightSnapshot.address===$('qeApiAddress').value&&current===qePreflightSnapshot.snapshot)return;
  qePreflightSnapshot=null;
  qeSetPreflightState('stale','Yapı, bağlantı veya hesap parametreleri değişti. Yeniden ön kontrol yapın.');
 }
@@ -6908,13 +6911,16 @@ function initQeProtocols(){
  };
  $('qeProtocolReference').onclick=()=>qeApplyProtocol(true);$('qeProtocolSettings').onclick=()=>qeApplyProtocol(false);
  const changed=event=>{
-  if(!/^qe/.test(event.target.id))return;
-  qeProtocolPreflight=null;qeUpdateProtocolState();
-  if(['qeJobProfile','qeApiAddress','qeApiToken','qeJobWorkflow','qeCalcType','qeOccupation',
-   'qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz','qeForceThreshold','qeFreezeBottom',
+  const id=event.target.id;
+  if(!['qeJobProfile','qeApiAddress','qeApiToken','qeJobWorkflow',
+   'qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz','qeForceThreshold',
    'qeJobMaxSteps','qeJobEnergyThreshold','qeElectronicSpin','qeSpinSeeds','qeSpinSmearing',
    'qeElectronicNbnd','qeElectronicMesh','qeElectronicPath','qeBandFirst','qeBandLast',
-   'qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma'].includes(event.target.id))qeInvalidatePreflight();
+   'qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma'].includes(id))return;
+  const previous=qePreflightSnapshot;
+  qeInvalidatePreflight(id==='qeApiToken');
+  if(!previous||!qePreflightSnapshot)qeProtocolPreflight=null;
+  qeUpdateProtocolState();
  };
  $('dftPage').addEventListener('input',changed);
  $('dftPage').addEventListener('change',changed);
