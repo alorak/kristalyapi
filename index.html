@@ -809,6 +809,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <p class="hint">UPF yüklemezseniz dosyaları TRUBA üzerindeki <code>pseudo/</code> dizinine yerleştirmelisiniz. Yüklenen UPF'ler ZIP içinde SHA-256 ile kaydedilir; hiçbir dosya ağa gönderilmez. Dosya adları yukarıdaki Element=dosya.UPF satırlarıyla birebir eşleşmelidir.</p>
      <button type="button" id="qeExportHpc" class="primary">TRUBA / SLURM ZIP indir</button>
      <div id="qeHpcExportStatus" class="note" role="status" aria-live="polite">ZIP paketi henüz hazırlanmadı.</div>
+     <details class="qe-hpc-pipeline">
+      <summary><strong>P1.2 · Çok aşamalı bant / DOS paketi</strong><small>Relax (isteğe bağlı) → SCF → bands.x → NSCF → DOS / PDOS</small></summary>
+      <p class="hint">Bu akış ayrı SLURM işleri ve <code>afterok</code> bağımlılıkları üretir. K-yolunu kristalinizin karşılıklı uzayına göre kendiniz tanımlayın. Bant sayısı, NSCF k-örgüsü ve enerji penceresi fiziksel yakınsama testinin yerine geçmez. Spin/SOC/vc-relax desteklenmez.</p>
+      <div class="qe-form-grid">
+       <label class="field"><span>Bant sayısı (nbnd) *</span><input id="qeHpcNbnd" type="number" min="1" max="10000" step="1" value="32"></label>
+       <label class="field"><span>NSCF kx *</span><input id="qeHpcNscfKx" type="number" min="1" max="48" step="1" value="8"></label>
+       <label class="field"><span>NSCF ky *</span><input id="qeHpcNscfKy" type="number" min="1" max="48" step="1" value="8"></label>
+       <label class="field"><span>NSCF kz *</span><input id="qeHpcNscfKz" type="number" min="1" max="48" step="1" value="1"></label>
+      </div>
+      <label class="field"><span>Açık crystal_b bant yolu * (etiket kx ky kz segment)</span><textarea id="qeHpcBandPath" rows="5" spellcheck="false" placeholder="G 0 0 0 40&#10;K 0.333333 0.333333 0 40&#10;M 0.5 0 0 20&#10;G 0 0 0 1"></textarea></label>
+      <p class="hint">Örnek koordinatlar yalnız yazım biçimini gösterir; seçili kristalin yüksek simetri noktaları veya bant yolu otomatik doğrulanmaz. Son satırın segment değeri 1 olmalı.</p>
+      <div class="qe-form-grid">
+       <label class="field"><span>DOS Emin (eV)</span><input id="qeHpcEmin" type="number" min="-100" max="100" step="0.5" value="-10"></label>
+       <label class="field"><span>DOS Emax (eV)</span><input id="qeHpcEmax" type="number" min="-100" max="100" step="0.5" value="10"></label>
+       <label class="field"><span>DOS ΔE (eV)</span><input id="qeHpcDeltaE" type="number" min="0.005" max="0.5" step="0.005" value="0.02"></label>
+       <label class="field"><span>Gauss degauss (Ry)</span><input id="qeHpcDegauss" type="number" min="0.0001" max="0.1" step="0.001" value="0.01"></label>
+      </div>
+      <button type="button" id="qeHpcPipelineExport" class="primary">P1.2 · Aşamalı SLURM ZIP indir</button>
+      <div id="qeHpcPipelineStatus" class="note" role="status" aria-live="polite">P1.2 paketi henüz hazırlanmadı; tarayıcı SLURM işi göndermez.</div>
+     </details>
      <a class="dft-help" href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-truba-slurm.md" target="_blank" rel="noopener noreferrer">TRUBA kullanım ve sınırlamalar kılavuzu ↗</a>
     </div>
    </div></div></section>
