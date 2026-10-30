@@ -62,7 +62,7 @@ const tools={relax:['structure.in','relax.out','pw.x'],scf:['scf.in','scf.out','
  nscf:['nscf.in','nscf.out','pw.x'],dos:['dos.in','dos.out','dos.x'],
  projwfc:['projwfc.in','projwfc.out','projwfc.x']};
 function time(hours){return hours>=24?Math.floor(hours/24)+'-'+String(hours%24).padStart(2,'0')+':00:00':String(hours).padStart(2,'0')+':00:00';}
-export function stageSlurm(step,resource){
+export function stageSlurm(step,resource,withElectronic=false){
  const entry=tools[step];if(!entry)throw Error('Bilinmeyen aşama.');
  const isPw=['relax','scf','bands','nscf'].includes(step);
  return [
@@ -80,6 +80,7 @@ export function stageSlurm(step,resource){
   "trap 'code=$?; if [ \"$code\" -ne 0 ]; then python3 pipeline.py fail "+step+" \"$code\" || true; fi' EXIT",
   'python3 pipeline.py prepare '+step,
   (isPw?'mpirun ':'')+entry[2]+' -in '+entry[0]+' > '+entry[1],
+  ...(step==='projwfc'&&withElectronic?['python3 electronic.py --bundle .']:[]),
   'python3 pipeline.py finish '+step,
   ...(step==='projwfc'?['python3 pipeline.py summary']:[]),''
  ].join('\n');
@@ -102,15 +103,21 @@ export function submitScript(stages){
  return lines.concat(['echo "Queued afterok stages; inspect submissions.txt, squeue and sacct."','']).join('\n');
 }
 export async function createTrubaPipelinePackage(args){
- const {inputText,pipelineScript,upfFiles=[]}=args;
+ const {inputText,pipelineScript,upfFiles=[],converterScript='',pdosHelperScript=''}=args;
  const {calculation,pseudos,electronic}=validatePipelineInput(inputText,args);
  const resources=validateResources({account:args.account,partition:args.partition||'orfoz',
   ntasks:args.ntasks,hours:args.hours,jobName:args.jobName||'qe-pipeline'});
  if(typeof pipelineScript!=='string'||pipelineScript.length>128000||!pipelineScript.includes(SCHEMA))
   throw Error('Uyumlu pipeline.py dosyası gerekli.');
+ const electronic=Boolean(converterScript||pdosHelperScript);
+ if(electronic&&(typeof converterScript!=='string'||typeof pdosHelperScript!=='string'||
+   converterScript.length>128000||pdosHelperScript.length>128000||
+   !converterScript.includes('kristalyapi.qe-electronic.v1')||
+   !pdosHelperScript.includes('parse_atom_orbital_pdos')))
+  throw Error('P1.3 dönüştürücü ve qe_pdos.py eşleşen metin olarak eklenmeli.');
  if(!Array.isArray(upfFiles)||upfFiles.length>118)throw Error('UPF listesi geçersiz.');
  const expected=new Set(pseudos.map(p=>p.file)),included=new Map(),hashes={};
- let total=encoder.encode(inputText).length+encoder.encode(pipelineScript).length;
+ let total=encoder.encode(inputText).length+encoder.encode(pipelineScript).length+encoder.encode(converterScript).length+encoder.encode(pdosHelperScript).length;
  for(const file of upfFiles){
   const name=String(file.name||'');
   if(!/^[A-Za-z0-9][A-Za-z0-9_.+-]*\.upf$/i.test(name)||name.includes('..')||
@@ -124,15 +131,20 @@ export async function createTrubaPipelinePackage(args){
   included.set(name,bytes);hashes[name]=await sha(bytes);
  }
  const stages=pipelineStages(calculation);
- const scripts=stages.map(step=>({name:'stages/'+step+'.slurm',text:stageSlurm(step,resources)}));
+ const scripts=stages.map(step=>({name:'stages/'+step+'.slurm',text:stageSlurm(step,resources,electronic)}));
  const submit=submitScript(stages);
  const file_sha256={'structure.in':await sha(encoder.encode(inputText)),
   'pipeline.py':await sha(encoder.encode(pipelineScript)),
   'submit.sh':await sha(encoder.encode(submit))};
  for(const script of scripts)file_sha256[script.name]=await sha(encoder.encode(script.text));
+ if(electronic){
+  file_sha256['electronic.py']=await sha(encoder.encode(converterScript));
+  file_sha256['qe_pdos.py']=await sha(encoder.encode(pdosHelperScript));
+ }
  const missing=pseudos.filter(p=>!included.has(p.file)).map(p=>p.file);
  const manifest={schema:SCHEMA,status:missing.length?'upf-required':'prepared-not-submitted',
   calculation,execution_performed:false,stages,resources,file_sha256,
+  electronic_converter_included:electronic,
   pseudopotentials:pseudos.map(p=>({element:p.element,file:p.file,
    included:included.has(p.file),sha256:hashes[p.file]||null})),
   missing_upfs:missing,electronic,
@@ -144,6 +156,7 @@ export async function createTrubaPipelinePackage(args){
   '3. Submit explicitly: bash submit.sh',
   '4. Inspect submissions.txt, squeue, sacct, logs/, reports/ and the raw outputs.',
   '5. After the last stage: pipeline-summary.json (or python3 pipeline.py summary).',
+  ...(electronic?['6. P1.3 generates electronic-results.json before projwfc completion; open it in DFT > Results > Bands/DOS.']:[]),
   'Do NOT delete ./tmp/kristalyapi.save or run stages concurrently.',
   'A failed stage prevents successors via afterok; no automatic restart/resume.',
   'No inferred high-symmetry path, magnetic/SOC/variable-cell workflow or certified scientific convergence.',
@@ -156,6 +169,10 @@ export async function createTrubaPipelinePackage(args){
   {name:'README.md',bytes:encoder.encode(readme.join('\n'))},
   {name:'pseudo/README.txt',bytes:encoder.encode('Place real UPFs from pipeline.json here.\n')}
  ];
+ if(electronic){
+  files.push({name:'electronic.py',bytes:encoder.encode(converterScript)});
+  files.push({name:'qe_pdos.py',bytes:encoder.encode(pdosHelperScript)});
+ }
  for(const item of scripts)files.push({name:item.name,bytes:encoder.encode(item.text)});
  for(const [name,bytes] of included)files.push({name:'pseudo/'+name,bytes});
  return {blob:zipStored(files),manifest,missing};
