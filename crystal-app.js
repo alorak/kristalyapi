@@ -8946,11 +8946,8 @@ function vectorPdfBytes(items,width,height){
   if(p.type==='line')rows.push(rgb(p.stroke)+' RG',n(p.width)+' w',n(p.x1)+' '+n(p.y1)+' m '+n(p.x2)+' '+n(p.y2)+' l S');
   else if(p.type==='triangle')rows.push(rgb(fill)+' rg',p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'l':'m')).join(' ')+' h f');
   else if(p.type==='label'){
-   const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\else if(p.type==='label'){
    const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
-   rows.push('0.125 0.188 0.278 rg','BT /F1 12 Tf 1 0 0 -1 '+n(p.x-3*label.length)+' '+n(p.y)+' Tm ('+label+') Tj ET');
-  }else{');
-   const size=p.fontSize??12,x=n(p.x-size*(p.textStroke?.333:.25)*label.length);
+   const size=p.fontSize??12,x=n(p.x-size*(p.textStroke ? .333 : .25)*label.length);
    const position='1 0 0 -1 '+x+' '+n(p.y)+' Tm ';
    if(p.textStroke)rows.push(rgb(p.textStroke)+' RG',n(p.strokeWidth??1)+' w',
     'BT /F1 '+n(size)+' Tf '+position+'1 Tr ('+label+') Tj ET');
@@ -8996,10 +8993,7 @@ function vectorEpsText(items,width,height){
   if(p.type==='line')rows.push(rgb(p.stroke,alpha)+' setrgbcolor',n(p.width)+' setlinewidth','newpath '+n(p.x1)+' '+n(p.y1)+' moveto '+n(p.x2)+' '+n(p.y2)+' lineto stroke');
   else if(p.type==='triangle')rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'lineto':'moveto')).join(' ')+' closepath fill');
   else if(p.type==='label'){
-   const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\else if(p.type==='label'){
    const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
-   rows.push('0.125 0.188 0.278 setrgbcolor',n(p.x)+' '+n(p.y)+' translate','1 -1 scale','/Helvetica findfont 12 scalefont setfont','('+label+') dup stringwidth pop -2 div 0 moveto show');
-  }else{');
    rows.push(rgb(fill,alpha)+' setrgbcolor',n(p.x)+' '+n(p.y)+' translate','1 -1 scale',
     '/Helvetica findfont '+n(p.fontSize??12)+' scalefont setfont','('+label+') dup stringwidth pop -2 div 0 moveto');
    if(p.textStroke)rows.push('gsave',rgb(p.textStroke,alpha)+' setrgbcolor',n(p.strokeWidth??1)+' setlinewidth',
