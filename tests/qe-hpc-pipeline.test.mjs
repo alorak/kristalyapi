@@ -95,6 +95,7 @@ test('pipeline summary parser rejects fabricated completed states and unknown st
  const summary={
   schema:'kristalyapi.truba-qe-pipeline-summary.v1',status:'completed',
   scientific_convergence_verified:false,all_upfs_pinned:true,
+  structure_in_sha256:sha(input),pipeline_manifest_sha256:sha('manifest'),
   stages:pipelineStages('scf').map(stage=>({stage,status:'completed',file_count:3,job_id:'1234'}))
  };
  assert.equal(parseTrubaPipelineSummary(summary),summary);
@@ -109,6 +110,7 @@ test('pipeline report rendering is readonly text and UI contains bindings',()=>{
  const summary={
   schema:'kristalyapi.truba-qe-pipeline-summary.v1',status:'incomplete',
   scientific_convergence_verified:false,all_upfs_pinned:false,
+  structure_in_sha256:sha(input),pipeline_manifest_sha256:sha('manifest'),
   stages:pipelineStages('scf').map(stage=>({stage,status:'missing'}))
  };
  class Element{
