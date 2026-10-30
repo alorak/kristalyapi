@@ -43,6 +43,31 @@ test('P1.3 TRUBA summary provenance is bound to input and manifest hashes',()=>{
  path.truba_provenance.source_sha256['../passwd']=h;
  assert.throws(()=>parseQeElectronicResult(path),/TRUBA P1.3/);
 });
+test('P1.4 keeps physical band indices for a selected large-ndbn TRUBA window',()=>{
+ const output=valid(),digest='b'.repeat(64);
+ output.bands.band_index_start=301;
+ output.bands.total_bands=800;
+ output.bands.selection_policy='explicit-one-based-inclusive';
+ output.truba_provenance={
+  pipeline_manifest_sha256:digest,
+  source_sha256:{'structure.in':output.input_sha256,
+   'scf.in':digest,'bands.dat.gnu':digest,'dos.dat':digest,
+   'pdos.pdos_tot':digest,'reports/scf.json':digest},
+  all_upfs_pinned:true,scientific_convergence_verified:false
+ };
+ const displayed=parseQeElectronicResult(output);
+ assert.equal(displayed.bands.firstBand,301);
+ assert.equal(displayed.bands.totalBands,800);
+ assert.equal(displayed.bands.curves.length,2);
+ output.bands.band_index_start=9999;
+ output.bands.total_bands=10000;
+ assert.throws(()=>parseQeElectronicResult(output),/Bant penceresi/);
+ output.bands.band_index_start=9998;
+ assert.equal(parseQeElectronicResult(output).bands.totalBands,10000);
+ const noProvenance=structuredClone(output);
+ delete noProvenance.truba_provenance;
+ assert.throws(()=>parseQeElectronicResult(noProvenance),/Bant penceresi/);
+});
 test('wrong schema or empty payload is not accepted as DFT output',()=>{
  assert.throws(()=>parseQeElectronicResult({schema:'kristalyapi.qe-pipeline.v1'}),/şema/);
  assert.throws(()=>parseQeElectronicResult({schema:'kristalyapi.qe-electronic.v1'}),/Bant veya DOS/);

@@ -53,6 +53,26 @@ export function validatePipelineInput(input,opts){
  if(emax<=emin||emax-emin>150||Math.ceil((emax-emin)/delta_e)>20000)throw Error('DOS enerji penceresi geçersiz.');
  return {calculation,pseudos,electronic:{nbnd,mesh,emin,emax,delta_e,degauss,path:parseBandPath(opts.bandPath)}};
 }
+// P1.4 selects a view only. QE still calculates ALL requested nbnd bands.
+export function validateBandWindow(nbnd,bandFirst,bandLast,kPoints){
+ const n=num(nbnd,'nbnd',1,10000,true);
+ const count=num(kPoints,'Bant yolu nokta sayısı',2,20000,true);
+ // Bound the entire raw file scanning cost independently from the chart.
+ if(n*count>4_000_000)throw Error('P1.4 ham bant dosyası 4 milyon örnek sınırını aşıyor; P1.2 ham çıktı modunu kullanın.');
+ const absent=v=>v===null||v===undefined||String(v).trim()==='';
+ if(absent(bandFirst)&&absent(bandLast)){
+  if(n>300)throw Error('300 bant üzeri P1.4 için görüntülenecek ilk ve son bant zorunlu.');
+  if(n*count>120000)throw Error('Bant grafiği 120.000 örnek sınırını aşıyor; açık bant aralığı belirleyin.');
+  return null; // Legacy P1.3 full range: preserve manifest compatibility.
+ }
+ if(absent(bandFirst)||absent(bandLast))throw Error('P1.4 ilk ve son bant birlikte girilmeli.');
+ const first=num(bandFirst,'İlk görüntüleme bandı',1,n,true);
+ const last=num(bandLast,'Son görüntüleme bandı',1,n,true);
+ const width=last-first+1;
+ if(last<first||width>300)throw Error('P1.4 bant aralığı artan sırada ve en fazla 300 bant olmalı.');
+ if(width*count>120000)throw Error('P1.4 görüntüleme penceresi 120.000 bant noktasını aşıyor.');
+ return [first,last]; // one-based, inclusive; no implicit VBM/CBM guess.
+}
 export function pipelineStages(calc){
  if(!['scf','relax'].includes(calc))throw Error('Geçersiz hesap türü.');
  return [...(calc==='relax'?['relax']:[]),'scf','bands','bands_pp','nscf','dos','projwfc'];
@@ -110,8 +130,10 @@ export async function createTrubaPipelinePackage(args){
  if(typeof pipelineScript!=='string'||pipelineScript.length>128000||!pipelineScript.includes(SCHEMA))
   throw Error('Uyumlu pipeline.py dosyası gerekli.');
  const withConverter=Boolean(converterScript||pdosHelperScript);
- if(withConverter&&electronic.nbnd>300)
-  throw Error('P1.3 en fazla 300 bant destekler. Daha büyük hesap için P1.3 seçimini kaldırın.');
+ const bandWindow=withConverter?validateBandWindow(
+  electronic.nbnd,args.bandFirst,args.bandLast,
+  1+electronic.path.slice(0,-1).reduce((count,point)=>count+point.segments,0)
+ ):null;
  if(withConverter&&(typeof converterScript!=='string'||typeof pdosHelperScript!=='string'||
    converterScript.length>128000||pdosHelperScript.length>128000||
    !converterScript.includes('kristalyapi.qe-electronic.v1')||
@@ -149,7 +171,7 @@ export async function createTrubaPipelinePackage(args){
   electronic_converter_included:withConverter,
   pseudopotentials:pseudos.map(p=>({element:p.element,file:p.file,
    included:included.has(p.file),sha256:hashes[p.file]||null})),
-  missing_upfs:missing,electronic,
+  missing_upfs:missing,electronic:{...electronic,...(bandWindow?{band_window:bandWindow}:{})},
   note:'No calculation submitted or physical convergence proven.'};
  const readme=['# TRUBA QE: P1.2 offline afterok pipeline','','NOT SUBMITTED.',
   'Stages: '+stages.join(' -> '),
@@ -158,7 +180,7 @@ export async function createTrubaPipelinePackage(args){
   '3. Submit explicitly: bash submit.sh',
   '4. Inspect submissions.txt, squeue, sacct, logs/, reports/ and the raw outputs.',
   '5. After the last stage: pipeline-summary.json (or python3 pipeline.py summary).',
-  ...(withConverter?['6. P1.3 generates electronic-results.json before projwfc completion; open it in DFT > Results > Bands/DOS.']:[]),
+  ...(withConverter?['6. P1.3 converts QE outputs into electronic-results.json (P1.4 plots only '+(bandWindow?bandWindow[0]+'-'+bandWindow[1]:'all '+electronic.nbnd)+' bands, but QE calculates all '+electronic.nbnd+').']:[]),
   'Do NOT delete ./tmp/kristalyapi.save or run stages concurrently.',
   'A failed stage prevents successors via afterok; no automatic restart/resume.',
   'No inferred high-symmetry path, magnetic/SOC/variable-cell workflow or certified scientific convergence.',

@@ -823,6 +823,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <label class="field"><span>NSCF ky *</span><input id="qeHpcNscfKy" type="number" min="1" max="48" step="1" value="8"></label>
        <label class="field"><span>NSCF kz *</span><input id="qeHpcNscfKz" type="number" min="1" max="48" step="1" value="1"></label>
       </div>
+      <div class="qe-form-grid qe-hpc-band-window">
+       <label class="field"><span>Grafikte ilk bant (1 tabanlı)</span><input id="qeHpcBandFirst" type="number" min="1" max="10000" step="1" placeholder="Örn. 301"></label>
+       <label class="field"><span>Grafikte son bant (dahil)</span><input id="qeHpcBandLast" type="number" min="1" max="10000" step="1" placeholder="Örn. 380"></label>
+      </div>
+      <p id="qeHpcBandWindowHint" class="hint" role="status" aria-live="polite">300 veya daha az bantta boş bırakabilirsiniz. Daha büyük nbnd için grafik aralığını açıkça seçin. QE yine tüm nbnd bantlarını hesaplar.</p>
       <label class="field"><span>Açık crystal_b bant yolu * (etiket kx ky kz segment)</span><textarea id="qeHpcBandPath" rows="5" spellcheck="false" placeholder="G 0 0 0 40&#10;K 0.333333 0.333333 0 40&#10;M 0.5 0 0 20&#10;G 0 0 0 1"></textarea></label>
       <p class="hint">Örnek koordinatlar yalnız yazım biçimini gösterir; seçili kristalin yüksek simetri noktaları veya bant yolu otomatik doğrulanmaz. Son satırın segment değeri 1 olmalı.</p>
       <div class="qe-form-grid">
@@ -831,7 +836,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <label class="field"><span>DOS ΔE (eV)</span><input id="qeHpcDeltaE" type="number" min="0.005" max="0.5" step="0.005" value="0.02"></label>
        <label class="field"><span>Gauss degauss (Ry)</span><input id="qeHpcDegauss" type="number" min="0.0001" max="0.1" step="0.001" value="0.01"></label>
       </div>
-      <label class="field qe-hpc-converter-option"><span><input id="qeHpcConvertElectronic" type="checkbox" checked> P1.3 bant/DOS/atomik PDOS JSON dönüştürücüsünü dahil et</span><small>Görselleştirme sınırları: en fazla 300 bant, 120.000 bant noktası, 20.000 DOS noktası. Daha büyük hesaplar için işareti kaldırıp P1.2 ham çıktı paketini kullanın.</small></label>
+      <label class="field qe-hpc-converter-option"><span><input id="qeHpcConvertElectronic" type="checkbox" checked> P1.3 bant/DOS/atomik PDOS JSON dönüştürücüsünü dahil et</span><small>P1.4: QE tüm nbnd bantlarını hesaplar; grafik yalnız seçtiğiniz 1–300 bantlık aralığı (en fazla 120.000 nokta) gösterir. 20.000 DOS noktası ve 4 milyon ham bant örneği sınırı vardır. Aşılırsa dönüştürücüyü kapatıp P1.2 ham çıktı paketini kullanın.</small></label>
       <button type="button" id="qeHpcPipelineExport" class="primary">P1.2 · Aşamalı SLURM ZIP indir</button>
       <div id="qeHpcPipelineStatus" class="note" role="status" aria-live="polite">P1.2 paketi henüz hazırlanmadı; tarayıcı SLURM işi göndermez.</div>
      </details>

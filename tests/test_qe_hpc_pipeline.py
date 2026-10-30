@@ -172,5 +172,18 @@ class TestStagedTruba(unittest.TestCase):
             pipeline.prepare(self.root, "scf")
 
 
+    def test_p14_band_window_requires_converter_instead_of_changing_raw_qe(self):
+        # Raw P1.2 ZIP does not need a plot range; an unexplained selection
+        # in a non-converter manifest must not be silently ignored.
+        self.manifest["electronic"]["nbnd"] = 800
+        self.manifest["electronic"]["band_window"] = [301, 380]
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "requires pinned electronic converter"):
+            pipeline.load_manifest(self.root)
+        del self.manifest["electronic"]["band_window"]
+        self.write_manifest()
+        self.assertEqual(pipeline.load_manifest(self.root)["electronic"]["nbnd"], 800)
+
+
 if __name__ == "__main__":
     unittest.main()

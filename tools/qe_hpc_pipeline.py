@@ -149,6 +149,29 @@ def load_manifest(root: Path) -> dict:
             raise ValueError("Invalid band path record")
     if path[-1]["segments"] != 1:
         raise ValueError("Last band-path segment must be 1")
+    # P1.4 display selection never changes pw.x nbnd. All raw bands are
+    # inspected by the converter, but only the selected curves are exported.
+    samples = 1 + sum(p["segments"] for p in path[:-1])
+    window = opts.get("band_window")
+    if pinned_converter:
+        if opts["nbnd"] * samples > 4_000_000:
+            raise ValueError("P1.4 raw band scan exceeds 4 million samples")
+        if window is None:
+            if opts["nbnd"] > 300:
+                raise ValueError("P1.4 explicit band window required above 300 bands")
+            selected = opts["nbnd"]
+        else:
+            if (not isinstance(window, list) or len(window) != 2 or
+                    any(type(n) is not int for n in window) or
+                    not 1 <= window[0] <= window[1] <= opts["nbnd"] or
+                    window[1] - window[0] + 1 > 300):
+                raise ValueError("P1.4 invalid one-based band window")
+            selected = window[1] - window[0] + 1
+        if selected * samples > 120_000:
+            raise ValueError("P1.4 band window exceeds 120000 frontend plot samples")
+    elif window is not None:
+        raise ValueError("P1.4 plot window requires pinned electronic converter")
+
     for name in ("emin", "emax", "delta_e", "degauss"):
         v = opts.get(name)
         if type(v) not in (int, float) or not math.isfinite(v):

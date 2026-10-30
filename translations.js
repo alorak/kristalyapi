@@ -7,6 +7,10 @@
 (() => {
  'use strict';
  const entries=[
+  ["Grafikte ilk bant (1 tabanlı)","First displayed band (1-based)"],
+  ["Grafikte son bant (dahil)","Last displayed band (inclusive)"],
+  ["300 veya daha az bantta boş bırakabilirsiniz. Daha büyük nbnd için grafik aralığını açıkça seçin. QE yine tüm nbnd bantlarını hesaplar.","For up to 300 bands, leave both blank. For larger nbnd, explicitly choose a display window. QE still computes all nbnd bands."],
+  ["P1.4: QE tüm nbnd bantlarını hesaplar; grafik yalnız seçtiğiniz 1–300 bantlık aralığı (en fazla 120.000 nokta) gösterir. 20.000 DOS noktası ve 4 milyon ham bant örneği sınırı vardır. Aşılırsa dönüştürücüyü kapatıp P1.2 ham çıktı paketini kullanın.","P1.4: QE computes all nbnd bands; the plot shows only your selected 1–300-band window (up to 120,000 points). The DOS limit is 20,000 points and the raw band scan limit is 4 million samples. Disable conversion to keep P1.2 raw output if exceeded."],
   ["P1.3 bant/DOS/atomik PDOS JSON dönüştürücüsünü dahil et","Include P1.3 bands/DOS/atomic PDOS JSON converter"],
   ["Görselleştirme sınırları: en fazla 300 bant, 120.000 bant noktası, 20.000 DOS noktası. Daha büyük hesaplar için işareti kaldırıp P1.2 ham çıktı paketini kullanın.","Visualization limits: up to 300 bands, 120,000 band samples, and 20,000 DOS samples. For larger calculations, uncheck this and use the P1.2 raw-output package."],
   ["TRUBA P1.3 paketinin ürettiği","Produced by the TRUBA P1.3 package:"],

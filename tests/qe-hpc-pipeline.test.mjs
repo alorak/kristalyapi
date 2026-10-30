@@ -94,7 +94,21 @@ test('P1.3 converter is pinned, embedded and must succeed before final receipt',
  assert.equal(result.manifest.file_sha256['qe_pdos.py'],sha(pdosHelperScript));
  assert.equal(result.manifest.electronic_converter_included,true);
  await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
-  pdosHelperScript,nbnd:301}),/en fazla 300 bant/);
+  pdosHelperScript,nbnd:301}),/görüntülenecek ilk ve son bant/);
+ const wide=await createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:800,bandFirst:'301',bandLast:'380'});
+ assert.equal(wide.manifest.electronic.nbnd,800);
+ assert.deepEqual(wide.manifest.electronic.band_window,[301,380]);
+ assert.equal(wide.manifest.electronic_converter_included,true);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:800,bandFirst:301}),/ilk ve son bant birlikte/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:800,bandFirst:501,bandLast:801}),/aralığında/);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:800,bandFirst:301,bandLast:601}),/en fazla 300 bant/);
+ const longPath=Array.from({length:11},(_,i)=>'K'+i+' '+(i/10)+' 0 0 '+(i===10?1:500)).join('\n');
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:100,bandFirst:1,bandLast:30,bandPath:longPath}),/120.000/);
  const largeRaw=await createTrubaPipelinePackage({...opts,pipelineScript,nbnd:301});
  assert.equal(largeRaw.manifest.electronic_converter_included,false);
  const slurm=decode('stages/projwfc.slurm');
@@ -156,7 +170,7 @@ test('pipeline report rendering is readonly text and UI contains bindings',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
- for(const id of ['qeHpcConvertElectronic','qeHpcPipelineExport','qeHpcPipelineStatus','qeHpcBandPath',
+ for(const id of ['qeHpcConvertElectronic','qeHpcBandFirst','qeHpcBandLast','qeHpcBandWindowHint','qeHpcPipelineExport','qeHpcPipelineStatus','qeHpcBandPath',
   'qeHpcNbnd','qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz',
   'qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss'])
   assert.match(html,new RegExp('id="'+id+'"'));

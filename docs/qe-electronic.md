@@ -10,6 +10,18 @@ Makalede SIESTA kullanıldığı için bu QE iş akışı birebir yeniden üreti
 olarak kabul edilmemelidir; sayısal yakınsama ve fiziksel protokol
 doğrulanmalıdır.
 
+## TRUBA P1.4: büyük nbnd, sınırlı grafik penceresi
+
+Yüksek `nbnd` bilimsel hesaplamanın bant sayısıdır. TRUBA paketinde
+`Grafikte ilk bant` / `Grafikte son bant` ile 1 tabanlı ve dahil
+bir grafik aralığı seçilebilir (800 bandın içinden 301–380 gibi).
+`pw.x` hiçbir bandı atlamaz; `bands.x` çıktısının **tüm** blokları
+doğrulanır. `electronic-results.json` içinde yalnız seçili eğriler
+taşınır ve `band_index_start` ile `total_bands` kaydedilir.
+Böylece DFT grafik başlığı/CSV özgün bant indeksini korur.
+Bu seçim otomatik Fermi/valans bandı tanısı değildir.
+[P1.4 kaynak sınırları ve test durumu](qe-truba-slurm.md).
+
 ## TRUBA P1.3: ham QE çıktılarını doğrudan grafiklere aktarma
 
 [TRUBA / SLURM P1.3 kılavuzu](qe-truba-slurm.md) kapsamında DFT → Hesap hazırlığı

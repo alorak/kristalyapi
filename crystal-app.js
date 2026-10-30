@@ -6853,6 +6853,31 @@ async function qeExportTrubaPackage(){
  }catch(error){status.textContent='Paket oluşturulamadı: '+error.message;inform('TRUBA export: '+error.message);}
  finally{button.disabled=false;}
 }
+function qeSyncHpcBandWindow(){
+ const enabled=$('qeHpcConvertElectronic').checked;
+ const total=Number($('qeHpcNbnd').value);
+ const first=$('qeHpcBandFirst'),last=$('qeHpcBandLast');
+ for(const field of [first,last]){
+  field.disabled=!enabled;
+  field.max=String(Number.isInteger(total)&&total>=1&&total<=10000?total:10000);
+ }
+ const hint=$('qeHpcBandWindowHint');
+ if(!enabled){
+  hint.textContent='P1.3/P1.4 grafik dönüştürücü kapalı; QE ham bant dosyaları yine üretilecek.';
+  return;
+ }
+ if(!Number.isInteger(total)||total<1||total>10000){
+  hint.textContent='Önce hesaplanacak toplam bant sayısını (nbnd) 1–10000 arasında girin.';
+ }else if(!first.value.trim()&&!last.value.trim()){
+  hint.textContent=total>300?
+   'P1.4: '+total+' bant hesaplanacak. Grafik için ilk ve son bant zorunlu; nbnd değiştirilmeyecek.':
+   total+' bant hesaplanacak ve tamamı çizilecek; isterseniz daha dar bant aralığı seçebilirsiniz.';
+ }else{
+  hint.textContent='QE '+total+' bandı hesaplayacak. Grafik penceresi: '+
+   (first.value||'?')+'–'+(last.value||'?')+
+   ' (1 tabanlı, en fazla 300 bant ve 120.000 çizim noktası).';
+ }
+}
 async function qeExportTrubaPipeline(){
  const button=$('qeHpcPipelineExport'),status=$('qeHpcPipelineStatus');
  if(button.disabled)return;
@@ -6882,6 +6907,8 @@ async function qeExportTrubaPipeline(){
    jobName:safeName(state.name)+'-electronic',
    upfFiles:Array.from($('qeHpcUpfFiles').files||[]),pipelineScript,
    converterScript,pdosHelperScript,
+   bandFirst:$('qeHpcConvertElectronic').checked?$('qeHpcBandFirst').value:null,
+   bandLast:$('qeHpcConvertElectronic').checked?$('qeHpcBandLast').value:null,
    nbnd:$('qeHpcNbnd').value,kx:$('qeHpcNscfKx').value,
    ky:$('qeHpcNscfKy').value,kz:$('qeHpcNscfKz').value,
    bandPath:$('qeHpcBandPath').value,
@@ -6892,7 +6919,12 @@ async function qeExportTrubaPipeline(){
   status.textContent='P1.2 ZIP hazır: '+pkg.manifest.stages.join(' → ')+
    '. Sırayla çalışma yalnız TRUBA üzerinde bash submit.sh komutuyla başlar. '+
    (pkg.missing.length?'Eksik UPF: '+pkg.missing.join(', '):'UPF dosyaları pakette.')+
-   (pkg.manifest.electronic_converter_included?' P1.3: Başarılı sonuçta electronic-results.json oluşur; Sonuçları incele → Bant, DOS ve PDOS altında açabilirsiniz.':' P1.3 JSON dönüştürücü seçilmedi; yalnız ham hesap dosyaları üretilecek.')+' Bant yolu/nbnd ve yakınsama kullanıcı tarafından doğrulanmalı.';
+   (pkg.manifest.electronic_converter_included?
+    ' P1.3/P1.4: '+pkg.manifest.electronic.nbnd+' bant hesaplanır; grafik '+
+    (pkg.manifest.electronic.band_window?pkg.manifest.electronic.band_window.join('–'):'tam bant aralığını')+
+    ' gösterir. electronic-results.json dosyasını Sonuçları incele → Bant/DOS alanından açın.':
+    ' P1.3/P1.4 dönüştürücü kapalı; yalnız ham hesap dosyaları üretilecek.')+
+   ' Bant yolu/nbnd ve fiziksel yakınsama kullanıcı tarafından doğrulanmalı.';
  }catch(error){status.textContent='P1.2 paketi oluşturulamadı: '+error.message;inform('TRUBA P1.2: '+error.message);}
  finally{button.disabled=false;}
 }
@@ -10267,6 +10299,10 @@ function bind(){
  $('qeExportPw').onclick=qeExportPwInput;
  $('qeExportHpc').onclick=qeExportTrubaPackage;
  $('qeHpcPipelineExport').onclick=qeExportTrubaPipeline;
+ for(const id of ['qeHpcNbnd','qeHpcBandFirst','qeHpcBandLast'])
+  $(id).addEventListener('input',qeSyncHpcBandWindow);
+ $('qeHpcConvertElectronic').addEventListener('change',qeSyncHpcBandWindow);
+ qeSyncHpcBandWindow();
  $('qeHpcSummaryOpen').onclick=qeOpenTrubaSummary;
  $('qeOutputFile').onchange=()=>{qePendingOutput=null;qePendingFingerprint=null;$('qeApplyGeometry').disabled=true;$('qeImportSummary').textContent='Dosya seçildi; önce sonuçları oku.';};
  $('qeParseOutput').onclick=qePreviewOutputFile;
