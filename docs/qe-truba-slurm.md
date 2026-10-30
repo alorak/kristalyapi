@@ -393,3 +393,12 @@ JSON şeması `kristalyapi.truba-qe-accounting.v1` içerir. `submissions.txt` ve
 - `status=necessary-capacity-checked` yalnız **gerekli elektron kapasitesini** ifade eder, yeterli boş bant sayısını veya bilimsel yakınsamayı garanti etmez.
 - `ecutrho ≥ ecutwfc > 0` kontrolü gerçekleştirilir, ancak UPF/XC işlevsel uyumu, PAW/ultrasoft özel cutoff koşulları, k-yolu, vakum, spin/SOC, manyetizma ve deneysel özellikler hâlâ **bağımsız inceleme gerektirir**.
 - Bu aşamada yalnız dosya incelenir; yeni bir Quantum ESPRESSO hesabı veya SLURM işi çalıştırılmaz.
+
+
+## P1.9 — İçe aktarılan sonuç ile etkin DFT girdisinin eşleşmesi
+
+DFT → Sonuçları incele ekranındaki `summary.json`, `pipeline-summary.json` ve TRUBA P1.3 `electronic-results.json` dosyaları açıldığında uygulama aktif kristalden **mevcut DFT hazırlık ayarlarıyla** yeniden `structure.in` metnini üretir. HTTPS/WebCrypto SHA-256 ile kaydedilen **başlangıç girdi hash'i** karşılaştırılır ve üç durumdan biri açıkça gösterilir: `eşleşiyor`, `farklı`, `karşılaştırılamadı`.
+
+Bu, **byte düzeyinde girdi + ayar eşleşmesidir**; sadece atom düzeninin geometrik kimliği veya bağımsız bilimsel geçerlilik garantisi değildir. Aynı kristalde farklı cutoff, k-örgüsü, atom sabitleme veya UPF dosya adları **farklı hash** oluşturabilir; bu beklenen davranıştır. İçe aktarılan belge üzerinde SHA değeri kullanıcı tarafından değiştirilebilir; JSON bağımsız imzalı değildir. Sonuçlar ve relaksasyon koordinatları mevcut kristale otomatik uygulanmaz.
+
+Dosya seçimi/çalışma alanı SHA hesaplaması sırasında değişirse önceki sonuç görünümü kabul edilmez.
