@@ -251,6 +251,47 @@ function drawExportAxisGizmo(ctx,stageRect,factor){
  }finally{ctx.restore();}
 }
 
+/* Camera-locked Cartesian X/Y/Z triad as true vector paths, shared by SVG,
+   vector PDF and EPS. Use the live gizmo's depth ordering and viewport position:
+   no 3D lattice a/b/c vectors are implied by these Cartesian directions. */
+function axisGizmoVectorPrimitives(svg,stageRect,bounds){
+ const n=(el,attr)=>Number(el.getAttribute(attr));
+ const sx=bounds.width/120,sy=bounds.height/120,scale=Math.min(sx,sy);
+ const xy=(x,y)=>[(bounds.left-stageRect.left)+x*sx,(bounds.top-stageRect.top)+y*sy];
+ const depth=-1000000,shapes=[];
+ for(const group of svg.querySelectorAll('g')){
+  const line=group.querySelector('line'),arrow=group.querySelector('polygon'),label=group.querySelector('text');
+  if(!line||!arrow||!label)continue;
+  const opacity=Number(group.getAttribute('opacity')??1);
+  const [x1,y1]=xy(n(line,'x1'),n(line,'y1')),[x2,y2]=xy(n(line,'x2'),n(line,'y2'));
+  shapes.push({type:'line',x1,y1,x2,y2,width:n(line,'stroke-width')*scale,
+   stroke:line.getAttribute('stroke'),opacity,depth});
+  const points=arrow.getAttribute('points').trim().split(/\s+/).map(pair=>{
+   const [x,y]=pair.split(',').map(Number);return xy(x,y);
+  });
+  shapes.push({type:'triangle',points,fill:arrow.getAttribute('fill'),opacity,depth});
+  const [x,y]=xy(n(label,'x'),n(label,'y'));
+  shapes.push({type:'label',x,y,text:label.textContent,fill:label.getAttribute('fill'),
+   textStroke:label.getAttribute('stroke')||'#ffffff',
+   strokeWidth:n(label,'stroke-width')*scale,fontSize:n(label,'font-size')*scale,
+   opacity,depth});
+ }
+ const center=svg.querySelector('circle');
+ if(center){
+  const [x,y]=xy(n(center,'cx'),n(center,'cy'));
+  shapes.push({type:'circle',x,y,r:n(center,'r')*scale,fill:center.getAttribute('fill'),
+   stroke:center.getAttribute('stroke'),strokeWidth:n(center,'stroke-width')*scale,
+   flat:true,opacity:1,depth});
+ }
+ return shapes;
+}
+function exportAxisGizmoPrimitives(stageRect){
+ const svg=$('axisGizmoSvg'),bounds=svg?.getBoundingClientRect();
+ if(!bounds||bounds.width<=0||bounds.height<=0||!axisGizmoParts.length)return [];
+ updateAxisGizmo();
+ return axisGizmoVectorPrimitives(svg,stageRect,bounds);
+}
+
 /* Volumetric files use Cartesian Å: axes are per-voxel step vectors.
    The input grid is NOT rescaled to match the currently displayed crystal. */
 const VOLUME_MAX_VOXELS=2500000;
@@ -8726,7 +8767,8 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
  const markup=items.slice().sort((a,b)=>b.depth-a.depth).map(p=>{
   const opacity=alpha(p.opacity??1);
   if(p.type==='circle')return '<circle cx="'+f(p.x)+'" cy="'+f(p.y)+'" r="'+f(p.r)+
-   '" fill="url(#'+id(col(p.fill))+')" stroke="#1f3040" stroke-opacity=".18" stroke-width=".6" opacity="'+opacity+'"/>';
+   '" fill="'+(p.flat?col(p.fill):'url(#'+id(col(p.fill))+')')+'" stroke="'+col(p.stroke||'#1f3040')+
+   '" stroke-opacity="'+(p.stroke?'1':'.18')+'" stroke-width="'+f(p.strokeWidth??.6)+'" opacity="'+opacity+'"/>';
   if(p.type==='ellipse')return '<ellipse cx="'+f(p.x)+'" cy="'+f(p.y)+'" rx="'+f(p.rx)+'" ry="'+f(p.ry)+
    '" transform="rotate('+f(p.angle)+' '+f(p.x)+' '+f(p.y)+')" fill="'+col(p.fill)+'" opacity="'+opacity+'"/>';
   if(p.type==='line')return '<path d="M '+f(p.x1)+' '+f(p.y1)+' L '+f(p.x2)+' '+f(p.y2)+'" fill="none" stroke="'+
@@ -8734,7 +8776,10 @@ function crystalSvgText(items,width,height,title='Kristal Yapı',transparent=fal
   if(p.type==='triangle')return '<path d="M '+f(p.points[0][0])+' '+f(p.points[0][1])+' L '+
    f(p.points[1][0])+' '+f(p.points[1][1])+' L '+f(p.points[2][0])+' '+f(p.points[2][1])+
    ' Z" fill="'+col(p.fill)+'" opacity="'+opacity+'"/>';
-  if(p.type==='label')return '<text x="'+f(p.x)+'" y="'+f(p.y)+'" fill="#203047" font-size="12" font-family="sans-serif" text-anchor="middle">'+svgEscape(p.text)+'</text>';
+  if(p.type==='label')return '<text x="'+f(p.x)+'" y="'+f(p.y)+'" fill="'+col(p.fill||'#203047')+
+   '" font-size="'+f(p.fontSize??12)+'" font-family="sans-serif" text-anchor="middle"'+
+   (p.textStroke?' stroke="'+col(p.textStroke)+'" stroke-width="'+f(p.strokeWidth??1)+'" paint-order="stroke fill"':'')+
+   ' opacity="'+opacity+'">'+svgEscape(p.text)+'</text>';
   throw Error('Bilinmeyen SVG geometri türü.');
  }).join('\n');
  return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+
@@ -8838,6 +8883,7 @@ function exportSvg(){
  const rect=$('stage').getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));
  const primitives=crystalSvgPrimitives(width,height);
  if(!primitives.length)throw Error('SVG için görünür yapı öğesi yok.');
+ primitives.push(...exportAxisGizmoPrimitives(rect));
  const svg=crystalSvgText(primitives,width,height,state.name,$('svgTransparent').checked);
  download(safeName(state.name)+'.svg',svg,'image/svg+xml;charset=utf-8');
  if(densityGrid&&volumeView.mode!=='off')inform('SVG yalnız vektörel yapı katmanlarını içerir; hacimsel alanlar PNG ile dışa aktarılabilir.');
@@ -8875,6 +8921,11 @@ function vectorPagePrimitives(items,width,height){
    !Number.isFinite(item.opacity??1)||(item.opacity??1)<0||(item.opacity??1)>1)
    throw Error('Vektör koordinatı veya opaklığı geçersiz.');
   if(item.type!=='label'&&!/^#[a-f0-9]{6}$/i.test(item.stroke||item.fill||''))throw Error('Vektör rengi geçersiz.');
+  if(item.type==='label'&&((item.fill&&!/^#[a-f0-9]{6}$/i.test(item.fill))||
+   (item.textStroke&&!/^#[a-f0-9]{6}$/i.test(item.textStroke))||
+   (item.fontSize!==undefined&&(!Number.isFinite(item.fontSize)||item.fontSize<=0))||
+   (item.strokeWidth!==undefined&&(!Number.isFinite(item.strokeWidth)||item.strokeWidth<0))))
+   throw Error('Vektör etiket stili geçersiz.');
  }
  return items.slice().sort((a,b)=>b.depth-a.depth);
 }
@@ -8896,11 +8947,16 @@ function vectorPdfBytes(items,width,height){
   else if(p.type==='triangle')rows.push(rgb(fill)+' rg',p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'l':'m')).join(' ')+' h f');
   else if(p.type==='label'){
    const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
-   rows.push('0.125 0.188 0.278 rg','BT /F1 12 Tf 1 0 0 -1 '+n(p.x-3*label.length)+' '+n(p.y)+' Tm ('+label+') Tj ET');
+   const size=p.fontSize??12,x=n(p.x-size*(p.textStroke ? .333 : .25)*label.length);
+   const position='1 0 0 -1 '+x+' '+n(p.y)+' Tm ';
+   if(p.textStroke)rows.push(rgb(p.textStroke)+' RG',n(p.strokeWidth??1)+' w',
+    'BT /F1 '+n(size)+' Tf '+position+'1 Tr ('+label+') Tj ET');
+   rows.push(rgb(fill)+' rg','BT /F1 '+n(size)+' Tf '+position+'0 Tr ('+label+') Tj ET');
   }else{
    const e=p.type==='circle'?vectorEllipse(p.x,p.y,p.r,p.r):vectorEllipse(p.x,p.y,p.rx,p.ry,p.angle);
    rows.push(rgb(fill)+' rg',path(e)+' f');
-   if(p.type==='circle'&&p.r>1){
+   if(p.stroke)rows.push(rgb(p.stroke)+' RG',n(p.strokeWidth??1)+' w',path(e)+' S');
+   if(p.type==='circle'&&p.r>1&&!p.flat){
     rows.push(rgb(vectorHighlightColor(fill))+' rg',path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' f');
    }
   }
@@ -8938,11 +8994,16 @@ function vectorEpsText(items,width,height){
   else if(p.type==='triangle')rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+p.points.map((pt,i)=>n(pt[0])+' '+n(pt[1])+' '+(i?'lineto':'moveto')).join(' ')+' closepath fill');
   else if(p.type==='label'){
    const label=String(p.text||'').replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,'\\$&');
-   rows.push('0.125 0.188 0.278 setrgbcolor',n(p.x)+' '+n(p.y)+' translate','1 -1 scale','/Helvetica findfont 12 scalefont setfont','('+label+') dup stringwidth pop -2 div 0 moveto show');
+   rows.push(rgb(fill,alpha)+' setrgbcolor',n(p.x)+' '+n(p.y)+' translate','1 -1 scale',
+    '/Helvetica findfont '+n(p.fontSize??12)+' scalefont setfont','('+label+') dup stringwidth pop -2 div 0 moveto');
+   if(p.textStroke)rows.push('gsave',rgb(p.textStroke,alpha)+' setrgbcolor',n(p.strokeWidth??1)+' setlinewidth',
+    '('+label+') true charpath stroke','grestore');
+   rows.push('('+label+') show');
   }else{
    const ellipse=p.type==='circle'?vectorEllipse(p.x,p.y,p.r,p.r):vectorEllipse(p.x,p.y,p.rx,p.ry,p.angle);
    rows.push(rgb(fill,alpha)+' setrgbcolor','newpath '+path(ellipse)+' fill');
-   if(p.type==='circle'&&p.r>1)rows.push(rgb(vectorHighlightColor(fill),alpha)+' setrgbcolor','newpath '+path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' fill');
+   if(p.stroke)rows.push(rgb(p.stroke,alpha)+' setrgbcolor',n(p.strokeWidth??1)+' setlinewidth','newpath '+path(ellipse)+' stroke');
+   if(p.type==='circle'&&p.r>1&&!p.flat)rows.push(rgb(vectorHighlightColor(fill),alpha)+' setrgbcolor','newpath '+path(vectorEllipse(p.x-p.r*.27,p.y-p.r*.31,p.r*.28,p.r*.22))+' fill');
   }
   rows.push('grestore');
  }
@@ -8954,6 +9015,7 @@ function exportVectorPrint(format){
  const rect=$('stage').getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);
  const primitives=crystalSvgPrimitives(width,height);
  if(!primitives.length)throw Error('Vektör çıktı için görünür yapı yok.');
+ primitives.push(...exportAxisGizmoPrimitives(rect));
  if(format==='pdf-vector')download(safeName(state.name)+'_vektor.pdf',vectorPdfBytes(primitives,width,height),'application/pdf');
  else download(safeName(state.name)+'.eps',vectorEpsText(primitives,width,height),'application/postscript');
  if(densityGrid&&volumeView.mode!=='off')inform('Vektör çıktı hacimsel alan katmanını içermez; PNG/TIFF kullanabilirsiniz.');
