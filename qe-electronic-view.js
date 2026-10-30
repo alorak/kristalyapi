@@ -56,7 +56,7 @@ function parseSingleChannel(data,spinChannel=null){
   let kNodes=null;
   if(data.bands.k_path_nodes!==undefined){
    const raw=data.bands.k_path_nodes,labels=output.bandLabels;
-   if(!Array.isArray(raw)||!raw.length||raw.length>24||raw.length!==labels.length)
+   if(!Array.isArray(raw)||!raw.length||raw.length>32||raw.length!==labels.length)
     throw Error('k-yolu düğümleri ve etiket sayıları eşleşmiyor.');
    kNodes=raw.map((node,i)=>{
     const value=node?.distance;

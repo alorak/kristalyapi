@@ -11,7 +11,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"tools"))
 import test_qe_jobs as fixtures
 from job_core import canonical_request, make_pw_input
 from relax_core import (SCHEMA, NotConverged, checked_relaxation, checked_scf,
-                        final_forces, make_relax_input, relaxed_structure, scf_request)
+                        final_forces, make_relax_input, relaxed_structure, scf_request, parse_ionic_history)
 from worker import execute
 
 
@@ -119,6 +119,36 @@ class RelaxationTests(unittest.TestCase):
         proof=final_forces(text,p['structure'])
         self.assertEqual(len(proof['forces_ry_bohr']),2)
         self.assertEqual(proof['max_force_component_ry_bohr'],1e-5)
+
+    def test_ionic_history_requires_every_energy_to_have_one_total_force(self):
+        digest="a"*64
+        paired=raw(True).replace("! total energy = -8.00000000 Ry\n",
+            "! total energy = -8.00000000 Ry\nTotal force = 0.00005000\n")
+        history=parse_ionic_history(paired,digest)
+        self.assertEqual(len(history["steps"]),2)
+        self.assertEqual(history["stdout_sha256"],digest)
+        self.assertAlmostEqual(history["steps"][-1]["energy_ry"],-8.0000005)
+        self.assertIsNone(parse_ionic_history(raw(True),digest),
+                          "single final force cannot prove the earlier ionic force")
+        self.assertIsNone(parse_ionic_history(paired.replace("0.00005000","NaN"),digest))
+        self.assertIsNone(parse_ionic_history(paired.replace("0.00005000","-0.1"),digest))
+        with self.assertRaises(ValueError):parse_ionic_history(paired,"not-sha")
+
+    def test_worker_emits_only_complete_ionic_history_bound_to_raw_hash(self):
+        paired=raw(True).replace("! total energy = -8.00000000 Ry\n",
+            "! total energy = -8.00000000 Ry\nTotal force = 0.00005000\n")
+        jid,row=self.run_job(relax_text=paired)
+        self.assertEqual(row["status"],"completed",row["error"])
+        result=self.client.get('/api/v1/calculations/'+jid+'/results',headers=self.auth).json()
+        history=result["ionic_history"]
+        self.assertEqual(history["schema"],"kristalyapi.qe-ionic-history.v1")
+        self.assertEqual(len(history["steps"]),2)
+        self.assertEqual(history["stdout_sha256"],result["artifact_sha256"]["relax.out"])
+        self.assertNotEqual(history["steps"][0]["energy_ry"],result["energy_ry"],
+                            "separate final SCF must not contaminate ionic history")
+        jid,other=self.run_job()
+        old=self.client.get('/api/v1/calculations/'+jid+'/results',headers=self.auth).json()
+        self.assertNotIn("ionic_history",old,"incomplete pairing must never be published")
 
     def test_unconverged_relaxation_never_starts_scf_or_publishes_result(self):
         jid,row=self.run_job(relax_text=raw(True).replace('bfgs converged','bfgs stopped'))

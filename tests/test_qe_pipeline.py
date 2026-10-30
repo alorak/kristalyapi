@@ -1,5 +1,4 @@
 """Mock-executable (NOT scientific) tests for local QE electronic workflow."""
-import json
 from pathlib import Path
 import sys
 import tempfile
@@ -10,7 +9,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from qe_pipeline import (bands_input, change_calculation, insert_nbnd, load_band_path,
-                         nscf_input, parse_bands_gnu, parse_dos, parse_pdos_total,
+                         nscf_input, parse_bands_gnu, checked_k_path_nodes, parse_dos, parse_pdos_total,
                          post_input, run_pipeline, use_relaxed_positions)
 from test_qe_runner import INPUT, fake_output
 
@@ -69,17 +68,6 @@ class PipelineTest(unittest.TestCase):
         self.assertIn("filpdos='pdos'", post_input("projwfc"))
         with self.assertRaisesRegex(ValueError, "NSCF k mesh"):
             nscf_input(scf, 25, 1)
-
-    def test_band_path_nodes_follow_sampled_distances_without_guessing(self):
-        from qe_pipeline import band_path_nodes
-        archive = Path(__file__).resolve().parents[1] / "validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/pipeline"
-        distance = json.loads((archive / "electronic-results.json").read_text())["bands"]["distance"]
-        path = [("Gamma", [0, 0, 0], 20), ("M", [.5, 0, 0], 20), ("K", [1/3, 1/3, 0], 20), ("Gamma", [0, 0, 0], 1)]
-        nodes = band_path_nodes(path, distance)
-        self.assertEqual([n["label"] for n in nodes], ["Gamma", "M", "K", "Gamma"])
-        self.assertEqual([n["distance"] for n in nodes], [distance[0], distance[20], distance[40], distance[60]])
-        self.assertIsNone(band_path_nodes(path[:-1] + [("Gamma", [0, 0, 0], 2)], distance))
-        self.assertIsNone(band_path_nodes([("A", [0, 0, 0], 1), ("B", [0, 0, 0], 1)], [0.0, 0.0]))
 
     def test_parse_band_dos_and_projected_dos_without_fabricated_fermi(self):
         bands = self.root / "bands.dat.gnu"
@@ -183,6 +171,35 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(len(data["pdos_atoms"]["atoms"]), 3)
         self.assertEqual(len(data["pdos_atoms"]["elements"]), 2)
         self.assertFalse((self.root / "complete" / "structure.out").exists())
+
+    def test_sampled_band_path_nodes_use_actual_gnu_grid_and_cell_metric(self):
+        path=[("Gamma",[0,0,0],2),("M",[.5,0,0],2),("X",[1,0,0],1)]
+        distance=[0,.25,.5,.75,1.]
+        nodes=checked_k_path_nodes(INPUT,path,distance)
+        self.assertEqual(nodes,[{"label":"Gamma","distance":0},
+                                {"label":"M","distance":.5},
+                                {"label":"X","distance":1.}])
+        self.assertIsNone(checked_k_path_nodes(INPUT,path,distance[:-1]))
+        self.assertIsNone(checked_k_path_nodes(INPUT,path,[0,.1,.5,.75,1.]))
+        noncollinear=[("Gamma",[0,0,0],2),("M",[.5,0,0],2),
+                     ("K",[.333333,.333333,0],1)]
+        self.assertIsNone(checked_k_path_nodes(INPUT,noncollinear,distance))
+        self.assertIsNone(checked_k_path_nodes(INPUT.replace("CELL_PARAMETERS angstrom","CELL_PARAMETERS alat"),
+                                                path,distance))
+
+    def test_mocked_completed_pipeline_exports_verified_sampled_k_nodes(self):
+        self.kpath.write_text("Gamma 0 0 0 1\nM 0.5 0 0 1\n")
+        calls=[]
+        with (patch("qe_pipeline.shutil.which", return_value="/mock/qe.x"),
+              patch("qe_pipeline.subprocess.run", side_effect=self.mocked_process(calls))):
+            result=run_pipeline(self.infile,self.pseudos,self.root/"k-nodes",
+                                execute=True,band_path=self.kpath,nbnd=25,pdos=True)
+        self.assertEqual(result["status"],"completed")
+        import json
+        raw=json.loads((self.root/"k-nodes"/"electronic-results.json").read_text())
+        self.assertEqual(raw["bands"]["k_path_nodes"],
+            [{"label":"Gamma","distance":0.0},{"label":"M","distance":1.0}])
+        self.assertEqual(raw["bands"]["distance"],[0.0,1.0])
 
     def test_reject_missing_band_configuration_and_spin_input(self):
         with self.assertRaisesRegex(ValueError, "nbnd"):

@@ -10,7 +10,7 @@ import subprocess
 import time
 
 from job_core import canonical_request, load_profile, make_pw_input
-from relax_core import NotConverged, checked_relaxation, checked_scf, make_relax_input, scf_request
+from relax_core import NotConverged, checked_relaxation, checked_scf, make_relax_input, scf_request, parse_ionic_history
 
 
 class Stopped(Exception):
@@ -93,7 +93,17 @@ def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeou
         code = run("relax.in","relax.out","relax.stderr")
         if code != 0:
             raise ValueError("QE relaxation exited with code "+str(code))
-        final_structure, relax = checked_relaxation(request,read_output(root/"relax.out"),code)
+        relax_raw=read_output(root/"relax.out")
+        final_structure, relax = checked_relaxation(request,relax_raw,code)
+        history=parse_ionic_history(relax_raw,digest(root/"relax.out"))
+        if history is not None:
+            last=history["steps"][-1]
+            # A paired-history claim must match the already accepted final
+            # ionic-step evidence. Inconsistency omits history, not the job.
+            if (abs(last["energy_ry"]-relax["energy_ry"])>1e-8 or
+                abs(last["total_force_ry_bohr"]-relax["total_force_ry_bohr"])>1e-8 or
+                len(history["steps"])>request["relaxation"]["max_steps"]):
+                history=None
         stage = "scf"
         stopped()
         for meta in upf.values():
@@ -125,6 +135,8 @@ def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeou
             "relaxation_settings":request["relaxation"],
             "stages":{"relax":relax,"scf":{**scf,"structure_hash":final_hash}},
             "artifact_sha256":artifacts,"scientific_convergence_study_completed":False}
+        if history is not None:
+            result["ionic_history"]=history
         status = "completed"
     except Stopped as exc:
         status, error = exc.status, str(exc)

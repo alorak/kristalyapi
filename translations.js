@@ -7,6 +7,13 @@
 (() => {
  'use strict';
  const entries=[
+  ["İyonik yakınsama · ham QE adımları","Ionic convergence · raw QE steps"],
+  ["İyonik adım","Ionic step"],
+  ["Toplam enerji","Total energy"],
+  ["Toplam kuvvet","Total force"],
+  ["Kaynak: relax.out · SHA-256 ","Source: relax.out · SHA-256 "],
+  [" · Yalnız enerji ve toplam kuvvet çiftleri doğrulanmış adımlar. Ayrı SCF aşamasının enerjisi bu seriyle birleştirilmez."," · Only steps with paired energy and total force values are shown. The independent SCF-stage energy is not combined with this series."],
+  ["İyonik adım enerji/kuvvet geçmişi bu sonuçta bulunmuyor; yalnız başlangıç ve son geometri karşılaştırılabilir.","Ionic-step energy/force history is unavailable in this result; only initial/final geometry can be compared."],
   ["En büyük atom hareketi: ","Largest atomic displacement: "],
   [" · ortalama: "," · mean: "],
   [" · son en büyük kuvvet bileşeni: "," · final maximum force component: "],

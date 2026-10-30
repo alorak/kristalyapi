@@ -118,8 +118,13 @@ try{
   const raw={schema:'kristalyapi.qe-relax-scf-result.v1',engine:'quantum-espresso',
    structure_hash:sourceHash,final_structure_hash:finalHash,scf_converged:true,
    geometry_converged:true,job_done:true,initial_structure:structure,final_structure:finalStructure,
-   relaxation_settings:{force_threshold_ry_bohr:1e-4},energy_ry:-8,energy_ev:-8*13.605693122994,
-   stages:{relax:{...stage,geometry_converged:true,has_final_coordinates:true},
+   relaxation_settings:{force_threshold_ry_bohr:1e-4,max_steps:20},energy_ry:-8,energy_ev:-8*13.605693122994,
+   artifact_sha256:{'relax.out':'c'.repeat(64)},
+   ionic_history:{schema:'kristalyapi.qe-ionic-history.v1',source:'relax.out',
+    stdout_sha256:'c'.repeat(64),steps:[
+     {step:1,energy_ry:-7.999,total_force_ry_bohr:.00007},
+     {step:2,energy_ry:-8,total_force_ry_bohr:.00002}]},
+   stages:{relax:{...stage,geometry_converged:true,has_final_coordinates:true,energy_ry:-8,total_force_ry_bohr:.00002},
     scf:{...stage,structure_hash:finalHash}}};
   const host=document.createElement('section');host.id='dftRelaxTestHost';
   document.querySelector('#dft-sonuclar').append(host);
@@ -128,6 +133,9 @@ try{
  const relaxHost=page.locator('#dftRelaxTestHost');
  assert.equal(await relaxHost.locator('canvas').count(),2);
  assert.match(await relaxHost.locator('.qe-relax-summary').textContent(),/0\.100000 Å/);
+ assert.equal(await relaxHost.locator('.qe-ionic-chart-grid svg').count(),2);
+ assert.equal(await relaxHost.locator('.qe-ionic-chart-grid svg').first().getAttribute('data-ionic-points'),'2');
+ assert.match(await relaxHost.locator('.qe-ionic-history').textContent(),/SHA-256/);
  await relaxHost.getByLabel('Yer değiştirme vektörlerini göster').check();
  await relaxHost.getByLabel('Atomları en büyük harekete göre sırala').check();
  assert.equal(await relaxHost.locator('.qe-relax-table tbody tr').count(),2);
