@@ -77,10 +77,23 @@ class MeteredPilotTests(unittest.TestCase):
         cfg=d5.checked_settings("pristine",d5.review.IMAGE_ID,"arm64",96,4,2,180)
         info={"HostConfig":{"Memory":cfg["memory_bytes"],"MemorySwap":cfg["memory_bytes"],
               "NanoCpus":2*10**9,"NetworkMode":"none","ReadonlyRootfs":True,
-              "PidsLimit":128},
-              "State":{"ExitCode":0,"OOMKilled":False}}
+              "PidsLimit":128,
+              "SecurityOpt":["no-new-privileges:true"],"CapDrop":["ALL"],
+              "Tmpfs":{"/work":"rw,nosuid,size="+str(cfg["scratch_tmpfs_bytes"])+",mode=1777",
+                       "/tmp":"rw,nosuid,noexec,size=64m"}},
+              "State":{"ExitCode":0,"OOMKilled":False},
+              "Image":cfg["image_id"],"Config":{"User":str(os.getuid())+":"+str(os.getgid())},
+              "Mounts":[{"Destination":"/inputs","Type":"bind","RW":False},
+                        {"Destination":"/pseudos","Type":"bind","RW":False},
+                        {"Destination":"/evidence","Type":"bind","RW":True}]}
         result=d5.check_container_config(info,cfg)
         self.assertEqual(result["memory_bytes"],96*1024**3)
+        missing_cap=dict(info,HostConfig={**info["HostConfig"],"CapDrop":[]})
+        with self.assertRaisesRegex(ValueError,"security"):
+            d5.check_container_config(missing_cap,cfg)
+        missing_evidence=dict(info,Mounts=info["Mounts"][:2])
+        with self.assertRaisesRegex(ValueError,"mount"):
+            d5.check_container_config(missing_evidence,cfg)
         for field,value in [("MemorySwap",0),("NanoCpus",3*10**9),("NetworkMode","bridge"),
                             ("ReadonlyRootfs",False),("PidsLimit",0)]:
             info["HostConfig"][field]=value
@@ -106,6 +119,7 @@ class MeteredPilotTests(unittest.TestCase):
         self.assertEqual(d5.evaluated_status(report,raw,None,case),"incomplete_resource_evidence")
         for change in (
             {"memory_peak_bytes":None},{"memory_limit_bytes":4*1024**3},
+            {"oom_kill_delta":None},
             {"swap_limit_bytes":5},{"cpu_usage_usec_delta":None},
             {"scratch_used_peak_bytes":-1},{"qe_returncode":1},
         ):
