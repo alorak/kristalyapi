@@ -256,6 +256,9 @@ function drawExportAxisGizmo(ctx,stageRect,factor){
    no 3D lattice a/b/c vectors are implied by these Cartesian directions. */
 function axisGizmoVectorPrimitives(svg,stageRect,bounds){
  const n=(el,attr)=>Number(el.getAttribute(attr));
+ // Live markup may use short #rgb colours; export validators accept only #rrggbb.
+ const hex=(el,attr)=>{const v=String(el.getAttribute(attr)||'').trim().toLowerCase();
+  return /^#[0-9a-f]{3}$/.test(v)?'#'+[...v.slice(1)].map(c=>c+c).join(''):v;};
  const sx=bounds.width/120,sy=bounds.height/120,scale=Math.min(sx,sy);
  const xy=(x,y)=>[(bounds.left-stageRect.left)+x*sx,(bounds.top-stageRect.top)+y*sy];
  const depth=-1000000,shapes=[];
@@ -265,22 +268,22 @@ function axisGizmoVectorPrimitives(svg,stageRect,bounds){
   const opacity=Number(group.getAttribute('opacity')??1);
   const [x1,y1]=xy(n(line,'x1'),n(line,'y1')),[x2,y2]=xy(n(line,'x2'),n(line,'y2'));
   shapes.push({type:'line',x1,y1,x2,y2,width:n(line,'stroke-width')*scale,
-   stroke:line.getAttribute('stroke'),opacity,depth});
+   stroke:hex(line,'stroke'),opacity,depth});
   const points=arrow.getAttribute('points').trim().split(/\s+/).map(pair=>{
    const [x,y]=pair.split(',').map(Number);return xy(x,y);
   });
-  shapes.push({type:'triangle',points,fill:arrow.getAttribute('fill'),opacity,depth});
+  shapes.push({type:'triangle',points,fill:hex(arrow,'fill'),opacity,depth});
   const [x,y]=xy(n(label,'x'),n(label,'y'));
-  shapes.push({type:'label',x,y,text:label.textContent,fill:label.getAttribute('fill'),
-   textStroke:label.getAttribute('stroke')||'#ffffff',
+  shapes.push({type:'label',x,y,text:label.textContent,fill:hex(label,'fill'),
+   textStroke:hex(label,'stroke')||'#ffffff',
    strokeWidth:n(label,'stroke-width')*scale,fontSize:n(label,'font-size')*scale,
    opacity,depth});
  }
  const center=svg.querySelector('circle');
  if(center){
   const [x,y]=xy(n(center,'cx'),n(center,'cy'));
-  shapes.push({type:'circle',x,y,r:n(center,'r')*scale,fill:center.getAttribute('fill'),
-   stroke:center.getAttribute('stroke'),strokeWidth:n(center,'stroke-width')*scale,
+  shapes.push({type:'circle',x,y,r:n(center,'r')*scale,fill:hex(center,'fill'),
+   stroke:hex(center,'stroke'),strokeWidth:n(center,'stroke-width')*scale,
    flat:true,opacity:1,depth});
  }
  return shapes;

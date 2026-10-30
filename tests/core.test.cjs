@@ -268,7 +268,8 @@ test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF
   const label=element({x:String(a.x),y:String(a.y),fill:a.color,stroke:'#ffffff','stroke-width':'3','font-size':'13'},a.label);
   return {getAttribute:key=>key==='opacity'?a.opacity:null,querySelector:key=>({line,polygon:arrow,text:label})[key]};
  });
- const center=element({cx:'60',cy:'58',r:'4',fill:'#69798a',stroke:'#ffffff','stroke-width':'1.5'});
+ // Same short colour as the live #axisGizmoSvg markup in index.html.
+ const center=element({cx:'60',cy:'58',r:'4',fill:'#69798a',stroke:'#fff','stroke-width':'1.5'});
  const svg={querySelectorAll:()=>groups,querySelector:key=>key==='circle'?center:null};
  const shapes=api.axisGizmoVectorPrimitives(svg,{left:100,top:50},{left:112,top:80,width:120,height:120});
  assert.equal(shapes.length,10);
@@ -290,7 +291,8 @@ test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF
  assert.match(pdf,/ 1 Tr \(/,'PDF must outline text as vectors');
  assert.doesNotMatch(pdf,/\/DCTDecode|\/Subtype \/Image|\/XObject/);
  assert.doesNotMatch(eps,/colorimage/);
- assert.match(xml,/fill="#69798a"/);
+ assert.match(xml,/fill="#69798a" stroke="#ffffff"/);
+ assert.equal(shapes.at(-1).stroke,'#ffffff','#rgb is expanded for the export colour validators');
  assert.throws(()=>api.vectorPdfBytes([{...shapes[2],fill:'url(javascript:1)'}],600,400),/etiket stili/);
 });
 
