@@ -7,6 +7,14 @@
 (() => {
  'use strict';
  const entries=[
+  ["Tek düğüm, CPU tabanlı orfoz profili. İş gönderilmez; hesap girdisi, SLURM betiği ve Python sonuç toplayıcı ZIP olarak indirilir. İşi TRUBA'da çalıştırdıktan sonra summary.json dosyasını Sonuçlar sekmesinde açın. Partition, modül ve erişim haklarını doğrulayın.","Single-node CPU-based orfoz profile. No job is submitted; the input, SLURM script and Python result collector are downloaded as a ZIP. After running on TRUBA, open summary.json in the Results tab. Verify the partition, modules and permissions."],
+  ["TRUBA / SLURM sonuç özeti (P1)","TRUBA / SLURM result summary (P1)"],
+  ["SLURM paketi içindeki","Inside the SLURM package,"],
+  [", iş sonunda",", at the end of the job,"],
+  ["üretir; eksik veya başarısız işlerde de durum kaydeder. 1 GiB'a kadar ham çıktıyı aktarmaz, yalnız özeti açın. İçe alma sunucuya veri göndermez ve mevcut kristali değiştirmez.","generates a summary at the end of the job; it also records incomplete or failed runs. Do not transfer up to 1 GiB of raw output: open only the summary. Importing does not upload data or modify the active crystal."],
+  ["TRUBA sonuç özeti (.json)","TRUBA result summary (.json)"],
+  ["SLURM özetini incele","Inspect SLURM summary"],
+  ["Henüz TRUBA sonuç özeti açılmadı.","No TRUBA result summary opened yet."],
   ["TRUBA / SLURM paketi","TRUBA / SLURM package"],
   ["SCF veya relax için çevrimdışı ZIP oluştur","Create an offline ZIP for SCF or relaxation"],
   ["TRUBA · ARF / Quantum ESPRESSO","TRUBA · ARF / Quantum ESPRESSO cluster"],
