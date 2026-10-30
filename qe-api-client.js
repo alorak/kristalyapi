@@ -83,7 +83,7 @@ function checkedJobCredentials(address,token){
   throw Error('Geçerli en az 32 karakterli API anahtarını girin.');
  return {base,token};
 }
-async function qeRequest(address,token,path,{method='GET',body,fetcher=fetch}={}){
+async function qeRequest(address,token,path,{method='GET',body,fetcher=fetch,timeoutMs=15000}={}){
  const {base}=checkedJobCredentials(address,token);
  const options={method,mode:'cors',cache:'no-store',credentials:'omit',
   headers:{Authorization:'Bearer '+token},redirect:'error'};
@@ -92,12 +92,18 @@ async function qeRequest(address,token,path,{method='GET',body,fetcher=fetch}={}
   options.body=JSON.stringify(body);
   if(options.body.length>65536)throw Error('DFT hesaplama isteği 64 KiB sınırını aşıyor.');
  }
+ const controller=new AbortController();
+ const timer=method==='GET'?setTimeout(()=>controller.abort(),timeoutMs):null;
+ if(timer!==null)options.signal=controller.signal;
+ try{
  const response=await fetcher(base+path,options);
  const result=await response.json();
  if(!response.ok){
   throw Error('QE API ('+response.status+'): '+String(result.detail||'İstek başarısız').slice(0,180));
  }
  return result;
+ }catch(error){if(controller.signal.aborted)throw Error('QE okuma isteği zaman aşımına uğradı.');throw error;
+ }finally{if(timer!==null)clearTimeout(timer);}
 }
 export async function validateQeScf(address,token,payload,opts){
  return qeRequest(address,token,'/api/v1/calculations/validate',{method:'POST',body:payload,...opts});

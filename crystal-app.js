@@ -12,6 +12,7 @@ import { initReciprocalPage } from './reciprocal-page.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
+import {createJobPoller,renderJobProgress} from './qe-job-tracking.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
@@ -6813,6 +6814,17 @@ function qeExportPwInput(){
  }catch(error){$('qeExportStatus').textContent=error.message;inform('QE dışa aktarma: '+error.message);}
 }
 let qeActiveJob=null;
+let qeJobPoller=null;
+function initDftTracking(){
+ qeJobPoller=createJobPoller({current:()=>qeActiveJob,refresh:qeFetchJobState,
+  eligible:job=>$('qeJobAutoRefresh').checked&&document.visibilityState==='visible'&&
+   pageFromHash(window.location.hash)==='dft'&&dftSectionFromHash(window.location.hash)==='isler'&&['queued','running'].includes(job.status),
+  onFailureLimit:()=>{$('qeJobTrackingNote').textContent='Üç bağlantı hatasından sonra otomatik yenileme durdu. Yenile düğmesiyle tekrar deneyin.';}});
+ $('qeJobAutoRefresh').addEventListener('change',()=>qeJobPoller.sync({reset:true}));
+ document.addEventListener('visibilitychange',()=>qeJobPoller.sync());
+}
+function qeJobRefresh({fresh=false}={}){if(!qeActiveJob)return qeFetchJobState(null);return qeJobPoller?qeJobPoller.refresh({fresh}):qeFetchJobState(qeActiveJob);}
+
 let qeElectronicSource=null;
 function qeElectronicModeChanged(){
  $('qeElectronicSettings').hidden=$('qeJobWorkflow').value!=='electronic';
@@ -6888,8 +6900,9 @@ async function qeJobStart(){
   if(created.structure_hash!==validated.structure_hash)
    throw Error('Gönderilen ve doğrulanan yapı özetleri uyuşmuyor.');
   qeActiveJob={id:created.job_id,address,token,hash:created.structure_hash,
-   workspaceId,snapshot};
-  syncDftSummary();
+   workspaceId,snapshot,status:created.status||'queued',calculation:payload.parameters.calculation};
+  syncDftSummary();qeJobPoller?.sync({reset:true});
+  $('qeJobResultsLink').hidden=true;$('qeApiScfResult').hidden=true;$('qeJobProgress').replaceChildren();
   $('qeJobPause').disabled=true;$('qeJobResume').disabled=true;
   qeClearRelaxationComparison();$('qeJobDiagnostics').replaceChildren();
   $('qeApiElectronicResults').replaceChildren();$('qeApiElectronicResults').hidden=true;
@@ -6898,11 +6911,12 @@ async function qeJobStart(){
  }catch(error){status.textContent='QE işi gönderme: '+error.message;}
  finally{btn.disabled=false;}
 }
-async function qeJobRefresh(){
- const status=$('qeJobStatus');if(!qeActiveJob){status.textContent='Bu sekmede takip edilen bir iş yok.';return;}
+async function qeFetchJobState(job=qeActiveJob){
+ const status=$('qeJobStatus');if(!job){status.textContent='Bu sekmede takip edilen bir iş yok.';return false;}
  try{
-  const job=qeActiveJob,record=await getQeScfJob(job.address,job.token,job.id);
-  if(qeActiveJob!==job)return;
+  const record=await getQeScfJob(job.address,job.token,job.id);
+  if(qeActiveJob!==job)return true;
+  job.status=record.status;record.calculation=record.calculation||job.calculation;job.calculation=record.calculation;
   $('qeJobPause').disabled=!record.can_pause||record.pause_requested;
   $('qeJobResume').disabled=!record.can_resume;
   let message='İş '+job.id+' · '+record.status+' · yapı özeti '+record.structure_hash.slice(0,12)+'.';
@@ -6911,7 +6925,12 @@ async function qeJobRefresh(){
   if(stale)message+=' Aktif yapı/ayarlar değişmiş; sonuç mevcut yapıya aktarılmayacak.';
   if(record.status==='completed'){
    const result=await getQeScfResult(job.address,job.token,job.id);
+   if(qeActiveJob!==job)return true;
    if(result.structure_hash!==job.hash)throw Error('DFT sonucu kaynak yapıyla uyuşmuyor.');
+   if(typeof result.energy_ev!=='number'||!Number.isFinite(result.energy_ev))throw Error('Sonuç enerjisi geçersiz.');
+   $('qeJobResultsLink').hidden=false;
+   $('qeApiScfResult').hidden=false;
+   $('qeApiScfResult').textContent='İş '+job.id+' · '+result.energy_ev.toFixed(6)+' eV · SCF: '+(result.scf_converged?'yakınsadı':'yakınsamadı');
    message+=' Gerçek QE toplam enerjisi: '+result.energy_ev?.toFixed(6)+' eV; '+
     'SCF yakınsama: '+(result.scf_converged?'evet':'hayır')+
     '. Tek bir başarılı iş bilimsel yakınsama çalışması değildir.';
@@ -6939,13 +6958,19 @@ async function qeJobRefresh(){
   }else if(record.status==='paused')message+=' Tamamlanan aşama sınırında duraklatıldı; kayıtlar denetlenerek devam edilebilir.';
   else if(record.pause_requested&&record.status==='running')message+=' Duraklatma istendi; çalışan aşamanın tamamlanması bekleniyor.';
   else if(record.error)message+=' Hata: '+record.error;
-  status.textContent=message;
+  if(qeActiveJob!==job)return true;
+  status.textContent=message;syncDftSummary();
+  $('qeJobTrackingNote').textContent='Durum güncellendi.';
+  renderJobProgress($('qeJobProgress'),record,null);
   const diagnosticHost=$('qeJobDiagnostics');diagnosticHost.replaceChildren();
   try{const data=await getQeJobDiagnostics(job.address,job.token,job.id);
-   if(qeActiveJob===job)renderJobDiagnostics(diagnosticHost,data);
+   if(qeActiveJob===job){renderJobDiagnostics(diagnosticHost,data);renderJobProgress($('qeJobProgress'),record,data);}
   }catch{if(qeActiveJob===job)diagnosticHost.textContent='Bu sunucuda kaynak raporu alınamadı.';}
- }catch(error){qeClearRelaxationComparison();$('qeApiElectronicResults').replaceChildren();
-  $('qeApiElectronicResults').hidden=true;status.textContent='İş durumu: '+error.message;}
+  return true;
+ }catch(error){if(qeActiveJob!==job)return true;
+  qeClearRelaxationComparison();$('qeApiElectronicResults').replaceChildren();
+  $('qeApiElectronicResults').hidden=true;$('qeApiScfResult').hidden=true;$('qeJobResultsLink').hidden=true;
+  status.textContent='İş durumu: '+error.message;return false;}
 }
 async function qeJobHistoryLoad(){
  const status=$('qeJobStatus'),dropdown=$('qeJobHistorySelect');
@@ -6969,7 +6994,7 @@ async function qeJobHistoryOpen(){
  try{
   const address=$('qeApiAddress').value,token=$('qeApiToken').value;
   const record=await getQeScfJob(address,token,id);
-  qeActiveJob={id,address,token,hash:record.structure_hash,workspaceId:null,snapshot:null};
+  qeActiveJob={id,address,token,hash:record.structure_hash,workspaceId:null,snapshot:null,status:record.status,calculation:record.calculation};
   syncDftSummary();
   await qeJobRefresh();
  }catch(error){status.textContent='Önceki iş: '+error.message;}
@@ -6980,7 +7005,7 @@ async function qeJobPauseResume(resume){
  if(resume&&!window.confirm('Aynı ayarlarla gerçek QE işine devam edilsin mi?'))return;
  try{
   await (resume?resumeQeElectronicJob:pauseQeElectronicJob)(job.address,job.token,job.id);
-  if(qeActiveJob===job)await qeJobRefresh();
+  if(qeActiveJob===job)await qeJobRefresh({fresh:true});
  }catch(error){$('qeJobStatus').textContent='Duraklatma/devam: '+error.message;}
 }
 async function qeJobCancel(){
@@ -6989,6 +7014,8 @@ async function qeJobCancel(){
  try{
   const job=qeActiveJob;
   const result=await cancelQeScfJob(job.address,job.token,job.id);
+  if(qeActiveJob!==job)return;
+  job.status=result.status;qeJobPoller?.sync();
   $('qeJobPause').disabled=true;$('qeJobResume').disabled=true;
   $('qeJobStatus').textContent='İptal isteği: '+result.status+'. Çalışan işlem worker tarafından sonlandırılacaktır.';
  }catch(error){$('qeJobStatus').textContent='İptal isteği: '+error.message;}
@@ -9166,7 +9193,7 @@ function syncDftSummary(){
   $('dftStructureCell').textContent=error.message;
  }
  $('dftConnectionState').textContent=dftConnectionState;
- $('dftCurrentJob').textContent=qeActiveJob?qeActiveJob.id:'Henüz iş yok';
+ $('dftCurrentJob').textContent=qeActiveJob?qeActiveJob.id+' · '+(qeActiveJob.status||''):'Henüz iş yok';
  const electronic=$('qeJobWorkflow').value==='electronic';
  const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
  const source=electronic&&qeElectronicSource?'Son relaksasyon yapısı: '+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
@@ -9208,6 +9235,7 @@ function syncLibraryNavigation(){
  $('dftNav').classList.toggle('active',page==='dft');
  $('dftNav').setAttribute('aria-current',page==='dft'?'page':'false');
  if(page==='dft')syncDftWorkspace();
+ qeJobPoller?.sync();
  document.body.classList.toggle('library-open',library);
  document.body.classList.toggle('reciprocal-open',reciprocal);
  document.body.classList.toggle('lesson-open',page==='powder'||page==='semiconductor');
@@ -9806,6 +9834,7 @@ function initRightSidebarTabs(){
 function bind(){
  initWorkspaceUi();
  initRightSidebarTabs();
+ initDftTracking();
  initLibrary();
  initVolumeControls();
  initStage3Analyses();

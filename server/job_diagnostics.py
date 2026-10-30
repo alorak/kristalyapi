@@ -109,7 +109,7 @@ class Recorder:
         if current['current'] is not None: self.maximum = max(self.maximum or 0, current['current'])
         row = self.store.get(self.jid)
         if row is None: return
-        stages, active = stage_details(self.folder) if final else ([], (_json(self.folder/'pipeline/progress.json',4096) or {}).get('active_stage'))
+        stages, active = stage_details(self.folder)
         if not stages and self.phase_details:
             stages = list(self.phase_details.values()) if final else []
             if final and self.phase in self.phase_details:
