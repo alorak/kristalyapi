@@ -130,6 +130,40 @@ export function submitScript(stages){
  }
  return lines.concat(['echo "Queued afterok stages; inspect submissions.txt, squeue and sacct."','']).join('\n');
 }
+export function resumeScript(stages){
+ if(!Array.isArray(stages)||!stages.includes('bands_pp')||!stages.includes('dos')||!stages.includes('projwfc'))
+  throw Error('Unsupported resume stage plan');
+ const lines=['#!/bin/bash','set -euo pipefail','umask 077','cd "$(dirname "$0")"',
+  'stage="${1:-}"',
+  'case "$stage" in bands_pp|dos|projwfc) ;; *) echo "Only bands_pp, dos or projwfc can be resumed" >&2; exit 2 ;; esac',
+  'command -v sbatch >/dev/null && command -v squeue >/dev/null && command -v python3 >/dev/null || { echo "Slurm and Python3 required" >&2; exit 2; }',
+  'python3 pipeline.py resume-check "$stage"',
+  '# No original work may remain queued/running: operator must cancel pending descendants first.',
+  'while read -r original id; do',
+  ' case "$id" in ""|*[!0-9]*) echo "Invalid original job id" >&2; exit 3 ;; esac',
+  ' if test -n "$(squeue -h -j "$id" -o %i)"; then echo "Original job $id remains active; cancel pending successors manually" >&2; exit 3; fi',
+  'done < submissions.txt',
+  'selected=0',
+  'for step in '+stages.join(' ')+'; do',
+  ' if test "$step" = "$stage"; then selected=1; fi',
+  ' if test "$selected" -eq 1; then sbatch --test-only "stages/$step.slurm" >/dev/null; fi',
+  'done',
+  'mkdir .resume-lock','previous=""','selected=0',
+  'for step in '+stages.join(' ')+'; do',
+  ' if test "$step" = "$stage"; then selected=1; fi',
+  ' if test "$selected" -eq 0; then continue; fi',
+  ' if test -n "$previous"; then',
+  '  response=$(sbatch --parsable --dependency=afterok:"$previous" "stages/$step.slurm")',
+  ' else',
+  '  response=$(sbatch --parsable "stages/$step.slurm")',
+  ' fi',
+  'id="${response%%;*}"',
+  'case "$id" in ""|*[!0-9]*) echo "Invalid resumed job id" >&2; exit 4 ;; esac',
+  'printf "%s %s\\n" "$step" "$id" >> resubmissions.txt','previous="$id"',
+  'done',
+  'echo "Manually resumed Slurm chain; retain submissions.txt, resubmissions.txt and raw output evidence."',''];
+ return lines.join('\n');
+}
 export async function createTrubaPipelinePackage(args){
  const {inputText,pipelineScript,upfFiles=[],converterScript='',pdosHelperScript=''}=args;
  const {calculation,pseudos,electronic}=validatePipelineInput(inputText,args);
@@ -165,9 +199,11 @@ export async function createTrubaPipelinePackage(args){
  const stages=pipelineStages(calculation);
  const scripts=stages.map(step=>({name:'stages/'+step+'.slurm',text:stageSlurm(step,resources,withConverter)}));
  const submit=submitScript(stages);
+ const resume=resumeScript(stages);
  const file_sha256={'structure.in':await sha(encoder.encode(inputText)),
   'pipeline.py':await sha(encoder.encode(pipelineScript)),
-  'submit.sh':await sha(encoder.encode(submit))};
+  'submit.sh':await sha(encoder.encode(submit)),
+  'resume.sh':await sha(encoder.encode(resume))};
  for(const script of scripts)file_sha256[script.name]=await sha(encoder.encode(script.text));
  if(withConverter){
   file_sha256['electronic.py']=await sha(encoder.encode(converterScript));
@@ -190,13 +226,15 @@ export async function createTrubaPipelinePackage(args){
   '5. After the last stage: pipeline-summary.json (or python3 pipeline.py summary).',
   ...(withConverter?['6. P1.3 converts QE outputs into electronic-results.json (P1.4 plots only '+(bandWindow?bandWindow[0]+'-'+bandWindow[1]:'all '+electronic.nbnd)+' bands, but QE calculates all '+electronic.nbnd+').']:[]),
   'Do NOT delete ./tmp/kristalyapi.save or run stages concurrently.',
-  'A failed stage prevents successors via afterok; no automatic restart/resume.',
+  'Failed postprocessor: archive its old outputs, cancel pending original jobs, then bash resume.sh bands_pp|dos|projwfc (one manual retry).',
+  'Partial pw.x restart is intentionally unsupported; create a NEW package. No automatic restart/resume.',
   'No inferred high-symmetry path, magnetic/SOC/variable-cell workflow or certified scientific convergence.',
   'Missing UPF files: '+(missing.join(', ')||'none'), '',''];
  const files=[
   {name:'structure.in',bytes:encoder.encode(inputText)},
   {name:'pipeline.py',bytes:encoder.encode(pipelineScript)},
   {name:'submit.sh',bytes:encoder.encode(submit)},
+  {name:'resume.sh',bytes:encoder.encode(resume)},
   {name:'pipeline.json',bytes:encoder.encode(JSON.stringify(manifest,null,2)+'\n')},
   {name:'README.md',bytes:encoder.encode(readme.join('\n'))},
   {name:'pseudo/README.txt',bytes:encoder.encode('Place real UPFs from pipeline.json here.\n')}
