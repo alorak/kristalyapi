@@ -31,11 +31,13 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/qe-hpc-export.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-hpc-export.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/pages-assets.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Test TRUBA offline collector with synthetic fixtures
+        run: python -m unittest discover -s tests -p 'test_qe_hpc_collect.py' -v
       - name: Test local QE runner without actual DFT
         run: python -m unittest discover -s tests -p 'test_qe_runner.py' -v
       - name: Test QE atom and orbital PDOS parser (mocked data)
@@ -177,6 +179,8 @@ jobs:
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
           cp qe-hpc-export.mjs public/qe-hpc-export.mjs
+          cp qe-truba-summary-view.mjs public/qe-truba-summary-view.mjs
+          cp tools/qe_hpc_collect.py public/qe_hpc_collect.py
           cp qe-electronic-view.js public/qe-electronic-view.js
           cp qe-convergence-view.js public/qe-convergence-view.js
           cp qe-job-diagnostics-view.js public/qe-job-diagnostics-view.js
@@ -215,6 +219,8 @@ jobs:
           test -s public/semiconductor-p0.js
           test -s public/semiconductor-physics-p0-core.js
           test -s public/qe-hpc-export.mjs
+          test -s public/qe-truba-summary-view.mjs
+          test -s public/qe_hpc_collect.py
           test -s public/qe-electronic-view.js
           test -s public/qe-convergence-view.js
           test -s public/qe-job-diagnostics-view.js
