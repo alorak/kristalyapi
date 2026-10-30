@@ -330,3 +330,29 @@ Resmî kaynaklar:
 - `preflight` mevcut `submissions.txt`, `.submission-lock` veya dolu `reports/` dizinini reddeder. Yeni hesap için temiz bir dizin gerekir.
 - Çalışma loglarına SLURM job/düğüm/görev/CPU bilgileri ve `module list` yazılır; hata yakalama tuzağı modül yüklemeden önce kurulur.
 - **Henüz yapılmadı:** gerçek orfoz üzerinde iş gönderme, SLURM/MPI/QE 7.4 çalışması ve bağımsız bilimsel kabul. Seri postprocessing aşamalarını mevcut tahsis altında birleştirme ve güvenli aşama yeniden başlatma da açık işlerdir.
+
+
+## P1.6 — Kontrollü postprocessing yeniden gönderimi
+
+Yeni P1.6 ZIP paketinde SHA-256 ile sabitlenmiş `resume.sh` bulunur. Kullanıcı **açıkça** çalıştırmadıkça hiçbir işi göndermez. Yalnız seri `bands_pp` (`bands.x`), `dos` (`dos.x`) ve `projwfc` (`projwfc.x`) aşamalarından **bir kez** devam etmeye izin verir. `relax`, `scf`, `bands` ve `nscf` aşamalarında yarım kalmış `pw.x` hesabı **yeniden kullanılmaz**; QE `prefix.save` içeriği eksik/yazılır durumda olabileceğinden yeni temiz paket gerekir.
+
+Örnek, `bands.x` henüz başlamamış veya başarısız olmuşsa:
+
+```bash
+# Önce orijinal submissions.txt içindeki tüm iş ID'lerini kontrol edin.
+cat submissions.txt
+squeue -u "$USER"
+# Yanlış bağımlılık nedeniyle PENDING kalan eski işler için gerekli
+# scancel komutlarını operatör kararıyla ve yalnız kendi job ID'lerinizde çalıştırın.
+# Başarısız bant dosyalarını ve .out loglarını silmeyin; ayrı bir
+# arşiv dizinine elle taşıyıp hashlerini ayrıca saklayın.
+python3 pipeline.py resume-check bands_pp
+bash resume.sh bands_pp
+cat resubmissions.txt
+```
+
+- `resume-check`, mevcut `pipeline.json`, betik ve UPF hashlerini, orijinal `submissions.txt` sırasını, önceki aşamaların tüm tamamlanma raporlarını ve mevcut QE XML hashini kontrol eder.
+- Devam edilecek aşamadan sonraki herhangi bir çıktı veya tamamlanmış rapor varsa reddeder. Kısmi çıktıların silinmesini veya üstüne yazılmasını **otomatik yapmaz**.
+- `resume.sh`, orijinal işlerden hiçbiri `squeue` içinde aktif/pending değilse ve geriye kalan aşamaların tümü `sbatch --test-only` aşamasından geçerse yeniden `afterok` bağımlılık zinciri oluşturur.
+- Orijinal `submissions.txt` korunur; yeniden gönderilen ID'ler `resubmissions.txt` içine yazılır. `.resume-lock` ikinci otomatik denemeyi engeller. Kısmi yeniden gönderim başarısız olursa güvenli biçimde yeni paket/operatör değerlendirmesi gerekir.
+- **Sınırlama:** Bu akış gerçek TRUBA sisteminde test edilmemiştir. Restart XML hash eşleşmesi tek başına bütün wavefunction dosyalarının sağlamlığını kanıtlamaz; bu nedenle `pw.x` aşamalarında resume desteklenmemektedir.
