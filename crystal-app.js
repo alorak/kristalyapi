@@ -6823,7 +6823,7 @@ function initDftTracking(){
  $('qeJobAutoRefresh').addEventListener('change',()=>qeJobPoller.sync({reset:true}));
  document.addEventListener('visibilitychange',()=>qeJobPoller.sync());
 }
-function qeJobRefresh({fresh=false}={}){return qeJobPoller?qeJobPoller.refresh({fresh}):qeFetchJobState(qeActiveJob);}
+function qeJobRefresh({fresh=false}={}){if(!qeActiveJob)return qeFetchJobState(null);return qeJobPoller?qeJobPoller.refresh({fresh}):qeFetchJobState(qeActiveJob);}
 
 let qeElectronicSource=null;
 function qeElectronicModeChanged(){
