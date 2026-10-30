@@ -22,7 +22,7 @@ from qe_probe import inspect_qe
 from job_diagnostics import read_diagnostics
 from resource_policy import load_operator_profile,scope,digest as resource_digest
 
-API_VERSION="0.4.4"
+API_VERSION="0.5.0"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -85,6 +85,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel","diagnostics","pause-electronic","resume-electronic"]
                                    if enabled else ["health","capabilities"]),
             "job_submission_enabled":enabled and resource_profile["execution_enabled"],
+            "electronic_spin_modes":["unpolarized","collinear-polarized"],
             "resource_profile":{**resource_profile,"sha256":resource_digest(resource_profile)},
             "calculations_executed_by_api":False,
             "binary_smoke":status["binary_smoke"],
@@ -151,11 +152,11 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         return {"job_id":job_id,"status":"queued","structure_hash":fingerprint}
 
     def public_job(row):
-        return {"job_id":row["id"],"status":row["status"],"calculation":json.loads(row["request_json"])["parameters"]["calculation"],"created":row["created"],
+        return {"job_id":row["id"],"status":row["status"],"calculation":json.loads(row["request_json"])["parameters"]["calculation"],"spin":json.loads(row["request_json"])["parameters"]["spin"],"created":row["created"],
                 "updated":row["updated"],"structure_hash":row["structure_hash"],
                 "profile_id":row["profile_id"],"cancel_requested":bool(row["cancel_requested"]),
                 "error":row["error"],"resume_count":row.get("resume_count",0),"pause_requested":bool(row.get('pause_requested')),
-                "can_pause":row['status']=='running' and not row['cancel_requested'] and json.loads(row['request_json'])['schema']=='kristalyapi.qe-electronic-job.v1',
+                "can_pause":row['status']=='running' and not row['cancel_requested'] and json.loads(row['request_json'])['schema'] in ('kristalyapi.qe-electronic-job.v1','kristalyapi.qe-electronic-job.v2'),
                 "can_resume":row['status']=='paused' and bool(row.get('checkpoint_sha256')) and row.get('resume_count',0)<20}
 
     async def lookup(request,job_id):
@@ -191,14 +192,14 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     async def get_logs(request:Request,job_id:str):
         row=await lookup(request,job_id)
         path=store.root/"runs"/job_id/"structure.out"
-        if json.loads(row["request_json"])["schema"]=="kristalyapi.qe-electronic-job.v1":
+        if json.loads(row["request_json"])["schema"] in ("kristalyapi.qe-electronic-job.v1","kristalyapi.qe-electronic-job.v2"):
             folder=store.root/"runs"/job_id/"pipeline"
             progress=folder/"progress.json"
             step="scf"
             if progress.is_file() and progress.stat().st_size<=65536:
                 try:
                     value=json.loads(progress.read_text()).get("active_stage")
-                    if value in {"scf","bands","bands_pp","nscf","dos","projwfc"}:step=value
+                    if value in {"scf","bands","bands_pp","bands_pp_up","bands_pp_down","nscf","dos","projwfc"}:step=value
                 except (OSError,ValueError):pass
             path=folder/(step+".out")
         if not path.exists() and json.loads(row["request_json"])["schema"]=="kristalyapi.qe-relax-scf-job.v1":

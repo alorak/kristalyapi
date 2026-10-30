@@ -13,7 +13,7 @@ export function parseJobDiagnostics(data){
  if(resources&&['sampled_worker_memory_max_bytes','memory_limit_bytes','swap_limit_bytes','cgroup_oom_kill_delta','child_cpu_seconds'].some(k=>resources[k]!==null&&!finite(resources[k])))
   throw Error('Kaynak ölçümü geçersiz.');
  if(data.reason_code==='cgroup_oom_kill'&&!(resources?.cgroup_oom_kill_delta>0))throw Error('OOM kanıtı eksik.');
- if(!Array.isArray(data.stages)||data.stages.length>7||data.stages.some(s=>!['relax','scf','bands','bands_pp','nscf','dos','projwfc'].includes(s.name)||
+ if(!Array.isArray(data.stages)||data.stages.length>9||data.stages.some(s=>!['relax','scf','bands','bands_pp','bands_pp_up','bands_pp_down','nscf','dos','projwfc'].includes(s.name)||
   s.duration_seconds!==null&&!finite(s.duration_seconds)))throw Error('Aşama süreleri geçersiz.');
  return data;
 }

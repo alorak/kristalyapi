@@ -44,3 +44,7 @@ test('a mutation refresh waits for an older read then requests fresh status',asy
  let release;let index=0;const h=harness(()=>++index===1?new Promise(resolve=>release=resolve):Promise.resolve(true));h.job={status:'running'};
  const old=h.poller.refresh(),fresh=h.poller.refresh({fresh:true});release(true);await Promise.all([old,fresh]);assert.equal(h.calls,2);h.poller.dispose();
 });
+test('spin progress includes independent bands.x stages with seven total steps',()=>{
+ const steps=jobProgress({calculation:'electronic',spin:'polarized',status:'running'},{active_stage:'bands_pp_down',stages:['scf','bands','bands_pp_up'].map(name=>({name,status:'completed'}))});
+ assert.equal(steps.length,7);assert.equal(steps.filter(s=>s.state==='completed').length,3);assert.equal(steps.find(s=>s.name==='bands_pp_down').state,'running');assert.ok(!steps.some(s=>s.name==='bands_pp'));
+});

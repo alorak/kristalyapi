@@ -31,7 +31,7 @@ def num(value, low, high, label):
 
 
 def canonical_request(data):
-    if isinstance(data,dict) and data.get("schema")=="kristalyapi.qe-electronic-job.v1":
+    if isinstance(data,dict) and data.get("schema") in ("kristalyapi.qe-electronic-job.v1","kristalyapi.qe-electronic-job.v2"):
         from electronic_core import canonical_electronic_request
         return canonical_electronic_request(data)
     if isinstance(data,dict) and data.get("schema")=="kristalyapi.qe-relax-scf-job.v1":
@@ -156,6 +156,10 @@ def make_pw_input(request,upf):
         " input_dft='PBE',"," occupations='fixed',","/",
         "&ELECTRONS"," conv_thr=1.0d-8,"," mixing_beta=0.3,"," electron_maxstep=150,","/",
         "ATOMIC_SPECIES"]
+    if p['spin']=='polarized':
+        offset=lines.index(" occupations='fixed',")
+        lines[offset:offset+1]=[" nspin=2,"," occupations='smearing',"," smearing='gaussian',",
+            f" degauss={p['degauss_ry']:.12g},",*[f" starting_magnetization({i})={p['starting_magnetization'][sp]:.12g}," for i,sp in enumerate(species,1)]]
     for sp in species:
         lines.append(sp+" "+f"{ATOMIC_MASS[sp]:.5f}"+" "+upf[sp]["file"])
     lines.append("CELL_PARAMETERS angstrom")

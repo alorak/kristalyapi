@@ -85,13 +85,14 @@ def parse_atom_symbols(scf_source: str):
 
 def parse_atom_orbital_pdos(
     workdir: Path, energy_ev: list[float], total_projection: list[float],
-    atom_symbols: list[str]
+    atom_symbols: list[str], *, spin_channel=None
 ):
     """Group all atomic wavefunctions by atom index and orbital angular momentum.
 
     Never extrapolate chemical bonding or quantum-emitter optical transitions
     from PDOS. Every band energy is still on the raw QE energy reference.
     """
+    if spin_channel not in (None,'up','down'):raise ValueError('Invalid collinear spin channel')
     size = len(energy_ev)
     if not (2 <= size <= MAX_ROWS) or size != len(total_projection):
         raise ValueError("Incompatible reference DOS grid")
@@ -103,7 +104,7 @@ def parse_atom_orbital_pdos(
     filelist = sorted(workdir.glob("pdos.pdos_atm#*"))
     if not filelist:
         raise ValueError("projwfc.x did not produce atom-resolved PDOS files")
-    if len(filelist) > MAX_FILES or len(filelist) * size > MAX_SAMPLES:
+    if len(filelist) > MAX_FILES or len(filelist) * size * (2 if spin_channel else 1) > MAX_SAMPLES:
         raise ValueError("Atom-resolved PDOS too large for bounded frontend export")
     unique = set()
     atom_data = {}
@@ -126,7 +127,10 @@ def parse_atom_orbital_pdos(
         if key in unique:
             raise ValueError(file.name + ": duplicate atomic wfc index")
         unique.add(key)
-        rows = _numeric_rows(file, 2 + L_COUNT[orbital])
+        rows = _numeric_rows(file, (3+2*L_COUNT[orbital]) if spin_channel else (2+L_COUNT[orbital]))
+        if spin_channel:
+            channel=0 if spin_channel=='up' else 1
+            rows=[[r[0],r[1+channel],*r[3+channel::2]] for r in rows]
         source_points = len(rows)
         rows = exact_energy_window(rows, energy_ev, file.name)
         a = atom_data.setdefault(idx, blank())
@@ -184,12 +188,13 @@ def parse_atom_orbital_pdos(
         "elements": elements,
         "source_files": provenance,
         "max_projection_reconciliation_error": worst,
-        "spin_mode": "collinear-unpolarized",
+        "spin_mode": "collinear-polarized" if spin_channel else "collinear-unpolarized",
+        **({"spin_channel":spin_channel} if spin_channel else {}),
         "units": "states/eV per simulation cell",
         "reference": "Raw QE electronic energies; no Fermi/vacuum alignment",
         "limitations": [
             "Projected DOS depends on atomic-wavefunction projections and UPF data.",
             "Atom/orbital-resolved DOS is not a direct proof of a localized optical emitter.",
-            "Only non-spin-polarized collinear QE projwfc.x output is accepted."
+            ("Collinear scalar-relativistic projections; SOC and noncollinear output are not accepted." if spin_channel else "Only non-spin-polarized collinear QE projwfc.x output is accepted.")
         ]
     }

@@ -1,7 +1,7 @@
 /* Read-only polling. No submission, retry of mutations, timers or credentials in storage. */
 const stageOrder={scf:['scf'],'relax-scf':['relax','scf'],electronic:['scf','bands','bands_pp','nscf','dos','projwfc']};
 export function jobProgress(record,diagnostics){
- const order=stageOrder[record?.calculation]||[];
+ const order=record?.calculation==='electronic'&&record?.spin==='polarized'?['scf','bands','bands_pp_up','bands_pp_down','nscf','dos','projwfc']:stageOrder[record?.calculation]||[];
  const completed=new Set((diagnostics?.stages||[]).filter(s=>s.status==='completed').map(s=>s.name));
  return order.map(name=>({name,state:record.status==='completed'||completed.has(name)?'completed':
   (diagnostics?.stages||[]).some(s=>s.name===name&&s.status==='failed')?'failed':

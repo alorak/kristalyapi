@@ -15,8 +15,13 @@ SCHEMA="kristalyapi.qe-electronic-job.v1"
 def scf_request(data):
     result={key:copy.deepcopy(data[key]) for key in ALLOWED_TOP}
     result["schema"]="kristalyapi.qe-scf-job.v1"
+    spin=result['parameters'].get('spin')=='polarized'
+    extra={key:result['parameters'].pop(key) for key in ('starting_magnetization','degauss_ry') if key in result['parameters']}
     result["parameters"]["calculation"]="scf"
-    return canonical_request(result)
+    result['parameters']['spin']='unpolarized'
+    canonical,fingerprint=canonical_request(result)
+    if spin:canonical['parameters'].update(spin='polarized',**extra)
+    return canonical,fingerprint
 
 
 def canonical_electronic_request(data):
@@ -24,6 +29,22 @@ def canonical_electronic_request(data):
         raise ValueError("Electronic jobs require exact structured fields")
     if not isinstance(data["parameters"],dict) or data["parameters"].get("calculation")!="electronic":
         raise ValueError("Invalid electronic calculation type")
+    polarized=data.get('schema')=='kristalyapi.qe-electronic-job.v2'
+    params=data['parameters']
+    if polarized:
+        from job_core import ALLOWED_PARAMS
+        if set(params)!=ALLOWED_PARAMS|{'starting_magnetization','degauss_ry'} or params.get('spin')!='polarized':
+            raise ValueError('Electronic v2 requires explicit collinear polarized parameters')
+        seeds=params['starting_magnetization']
+        if not isinstance(data.get('structure'),dict) or not isinstance(data['structure'].get('atoms'),list):raise ValueError('Invalid spin structure')
+        species={a.get('element') for a in data.get('structure',{}).get('atoms',[]) if isinstance(a,dict)}
+        if not isinstance(seeds,dict) or set(seeds)!=species:
+            raise ValueError('Starting magnetization must cover every element exactly')
+        seeds={sp:num(value,-1,1,'starting magnetization') for sp,value in sorted(seeds.items())}
+        if not any(seeds.values()):raise ValueError('At least one nonzero starting polarization is required')
+        width=num(params['degauss_ry'],.001,.05,'SCF Gaussian smearing (Ry)')
+    elif params.get('spin')!='unpolarized' or set(params)!={'calculation','functional','ecutwfc_ry','ecutrho_ry','kpoints','spin'}:
+        raise ValueError('Electronic v1 only supports unpolarized parameters')
     settings=data["electronic"]
     required={"nbnd","nscf_k","band_path"}
     if not isinstance(settings,dict) or not required<=set(settings) or set(settings)-required-{'dos','band_window'}:
@@ -52,7 +73,11 @@ def canonical_electronic_request(data):
     result,fingerprint=scf_request(data)
     if result["parameters"]["kpoints"][2]!=1:
         raise ValueError("D4 supports 2D slab meshes with kz=1")
-    result["schema"]=SCHEMA;result["parameters"]["calculation"]="electronic"
+    result["schema"]='kristalyapi.qe-electronic-job.v2' if polarized else SCHEMA
+    result["parameters"]["calculation"]="electronic"
+    if polarized:
+        result['parameters'].update(starting_magnetization=seeds,degauss_ry=width)
+        if 'dos' not in settings:raise ValueError('Polarized jobs require explicit DOS settings')
     result["electronic"]={"nbnd":nbnd,"nscf_k":mesh,"band_path":points}
     if 'dos' in settings:result['electronic']['dos']=canonical_dos_settings(settings['dos'])
     if 'band_window' in settings:
@@ -99,6 +124,8 @@ def checked_band_capacity(request, upf, pseudo_dir):
                 raise ValueError('Element or valence mismatch')
         except (ET.ParseError,KeyError,ValueError) as exc:
             raise ValueError('Invalid electronic UPF element/z_valence header: '+element) from exc
+        if request['parameters']['spin']=='polarized' and header.get('has_so','').strip().lower() not in ('f','false'):
+            raise ValueError('Spin workflow requires explicit scalar UPF has_so=false: '+element)
         valence[element] = value
         if large:
             count=header.get('number_of_wfc','')
@@ -109,15 +136,18 @@ def checked_band_capacity(request, upf, pseudo_dir):
     if abs(electrons-round(electrons)) > 1e-7:
         raise ValueError('Fractional neutral electron counts require a different electronic workflow')
     electrons = round(electrons)
-    minimum = math.ceil(electrons/2)
+    # Conservative capacity for unconstrained collinear spin occupations: each
+    # spin band can hold one electron; this is not an empty-band convergence test.
+    polarized=request['parameters']['spin']=='polarized'
+    minimum = electrons if polarized else math.ceil(electrons/2)
     requested = request['electronic']['nbnd']
     if requested < minimum:
         raise ValueError(f'nbnd={requested} cannot hold {electrons} neutral valence electrons; '
-                         f'unpolarized jobs need at least {minimum} bands')
+                         f'this spin workflow requires at least {minimum} bands per channel')
     view={}
     if large:
         p=request['electronic']['dos'];points=round((p['energy_max_ev']-p['energy_min_ev'])/p['delta_e_ev'])+1
-        samples=sum(wfc_counts[a['element']] for a in request['structure']['atoms'])*points
+        samples=sum(wfc_counts[a['element']] for a in request['structure']['atoms'])*points*(2 if polarized else 1)
         if samples>750000:raise ValueError('Large PDOS view exceeds atomic-wavefunction sample budget')
         view={'view_preflight':{'energy_points':points,'atomic_wfc_samples':samples,'upf_wfc_counts':wfc_counts}}
     return {**view,'neutral_valence_electrons':electrons,'minimum_nbnd':minimum,'requested_nbnd':requested,

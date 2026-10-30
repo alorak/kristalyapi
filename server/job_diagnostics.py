@@ -9,7 +9,7 @@ import time
 
 _ACTIVE = ContextVar('qe_job_diagnostics', default=None)
 SCHEMA = 'kristalyapi.qe-job-diagnostics.v1'
-STAGES = ('relax', 'scf', 'bands', 'bands_pp', 'nscf', 'dos', 'projwfc')
+STAGES = ('relax', 'scf', 'bands', 'bands_pp', 'bands_pp_up', 'bands_pp_down', 'nscf', 'dos', 'projwfc')
 CGROUP = Path('/sys/fs/cgroup')
 
 

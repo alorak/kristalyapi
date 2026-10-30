@@ -114,7 +114,7 @@ class JobStore:
         with self.conn() as db:
             db.execute('BEGIN IMMEDIATE')
             row=db.execute('SELECT status,request_json,cancel_requested FROM jobs WHERE id=?',(job_id,)).fetchone()
-            if row is None or row['status']!='running' or row['cancel_requested'] or json.loads(row['request_json'])['schema']!='kristalyapi.qe-electronic-job.v1':
+            if row is None or row['status']!='running' or row['cancel_requested'] or json.loads(row['request_json'])['schema'] not in ('kristalyapi.qe-electronic-job.v1','kristalyapi.qe-electronic-job.v2'):
                 raise ValueError('Only running electronic jobs support stage-boundary pause')
             db.execute('UPDATE jobs SET pause_requested=1,updated=? WHERE id=?',(now(),job_id))
         return self.get(job_id)

@@ -32,7 +32,7 @@ from resource_policy import current as resource_limits
 @record_job
 def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
             pseudo_dir=Path("/pseudos"),timeout=3600):
-    if json.loads(job["request_json"]).get("schema")=="kristalyapi.qe-electronic-job.v1":
+    if json.loads(job["request_json"]).get("schema") in ("kristalyapi.qe-electronic-job.v1","kristalyapi.qe-electronic-job.v2"):
         from electronic_worker import execute_electronic
         return execute_electronic(store,job,qe_binary=qe_binary,profiles_dir=profiles_dir,
             pseudo_dir=pseudo_dir,timeout=timeout,kill=_kill_group,

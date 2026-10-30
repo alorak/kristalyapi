@@ -6856,6 +6856,7 @@ function qeApplyProtocol(reference){
   ['qeKx','qeKy','qeKz'].forEach((id,i)=>$(id).value=settings.kpoints[i]);
   $('qeElectronicNbnd').value=electronic.nbnd;$('qeElectronicMesh').value=electronic.nscf_k;
   $('qeBandFirst').value='';$('qeBandLast').value='';
+ $('qeElectronicSpin').value='unpolarized';$('qeSpinSettings').hidden=true;
   $('qeElectronicPath').value=electronic.band_path.map(p=>[p.label,...p.k,p.segments].join(' ')).join('\n');
   $('qeDosExplicit').checked=true;$('qeDosMin').value=electronic.dos.energy_min_ev;$('qeDosMax').value=electronic.dos.energy_max_ev;
   $('qeDosStep').value=electronic.dos.delta_e_ev;$('qeDosSigma').value=electronic.dos.degauss_ry;
@@ -6885,6 +6886,7 @@ function initQeProtocols(){
 let qeResourceProfile=null;
 function qeElectronicModeChanged(){
  $('qeElectronicSettings').hidden=$('qeJobWorkflow').value!=='electronic';
+ $('qeSpinSettings').hidden=$('qeElectronicSpin').value!=='polarized';
 }
 let qeComparisonDispose=null;
 function qeClearRelaxationComparison(){
@@ -6895,7 +6897,8 @@ function qeJobPayload(){
  const electronic=$('qeJobWorkflow').value==='electronic';
  const relax=!electronic&&$('qeCalcType').value==='relax';
  if(!electronic&&!relax&&$('qeCalcType').value!=='scf')throw Error('SCF veya sabit hücreli relaksasyon seçin.');
- if($('qeOccupation').value!=='fixed')
+ const polarized=electronic&&$('qeElectronicSpin').value==='polarized';
+ if(!polarized&&$('qeOccupation').value!=='fixed')
   throw Error('Sunucu işleri sabit doluluklu ve spinsiz olmalı.');
  if(electronic&&qeElectronicSource?.protocolId&&qeElectronicSource.workspaceId!==activeWorkspaceId)throw Error('Protokol referansının çalışma alanı değişti; kaynağı yeniden seçin.');
  const model=electronic&&qeElectronicSource?null:qeCalculationStructure(state);
@@ -6924,7 +6927,20 @@ function qeJobPayload(){
    energy_threshold_ry:Number($('qeJobEnergyThreshold').value)};
  }
  if(electronic){
-  payload.schema='kristalyapi.qe-electronic-job.v1';payload.parameters.calculation='electronic';
+  payload.schema=polarized?'kristalyapi.qe-electronic-job.v2':'kristalyapi.qe-electronic-job.v1';payload.parameters.calculation='electronic';
+  if(polarized){
+   const seeds={};
+   for(const row of $('qeSpinSeeds').value.trim().split(/\n/)){
+    const parts=row.trim().split(/\s+/),value=Number(parts[1]);
+    if(parts.length!==2||!/^[A-Z][a-z]?$/.test(parts[0])||Object.hasOwn(seeds,parts[0])||!Number.isFinite(value)||Math.abs(value)>1)throw Error('Spin tohumlarını ELEMENT DEĞER biçiminde tekil satırlar olarak girin.');
+    seeds[parts[0]]=value;
+   }
+   const species=[...new Set(atoms.map(a=>a.element))].sort();
+   if(JSON.stringify(Object.keys(seeds).sort())!==JSON.stringify(species)||!Object.values(seeds).some(v=>v!==0))throw Error('Her element için bir spin tohumu ve en az bir sıfırdan farklı değer gerekli.');
+   const width=Number($('qeSpinSmearing').value);if(!Number.isFinite(width)||width<.001||width>.05)throw Error('SCF spin genişliği 0.001–0.05 Ry olmalı.');
+   if(!$('qeDosExplicit').checked)throw Error('Spin hesabı için açık DOS / PDOS ayarlarını seçin.');
+   payload.parameters.spin='polarized';payload.parameters.starting_magnetization=seeds;payload.parameters.degauss_ry=width;
+  }
   payload.electronic={nbnd:Number($('qeElectronicNbnd').value),nscf_k:Number($('qeElectronicMesh').value),
    band_path:parseQeBandPath($('qeElectronicPath').value)};
   const first=$('qeBandFirst').value,last=$('qeBandLast').value;
@@ -7018,7 +7034,7 @@ async function qeFetchJobState(job=qeActiveJob){
     message+=' Relaksasyon ve son SCF geçti; en büyük kuvvet bileşeni '+
      comparison.maxForceComponent.toExponential(3)+' Ry/Bohr. Başlangıç/son yapı Sonuçlar sayfasında karşılaştırılabilir.';
    }
-   if(result.schema==='kristalyapi.qe-electronic-job-result.v1'){
+   if(['kristalyapi.qe-electronic-job-result.v1','kristalyapi.qe-electronic-job-result.v2'].includes(result.schema)){
     const parsed=parseQeElectronicResult(result.electronic),box=$('qeApiElectronicResults');
     box.hidden=false;renderQeElectronicResults(box,parsed);
     message+=' Bant, DOS ve atom/orbital PDOS grafikleri Sonuçlar sayfasında gösteriliyor.';
@@ -7033,7 +7049,7 @@ async function qeFetchJobState(job=qeActiveJob){
   const diagnosticHost=$('qeJobDiagnostics');diagnosticHost.replaceChildren();
   try{const data=await getQeJobDiagnostics(job.address,job.token,job.id);
    if(qeActiveJob===job){renderJobDiagnostics(diagnosticHost,data);renderJobProgress($('qeJobProgress'),record,data);}
-  }catch{if(qeActiveJob===job)diagnosticHost.textContent='Bu sunucuda kaynak raporu alınamadı.';}
+  }catch(error){if(qeActiveJob===job)diagnosticHost.textContent='Bu sunucuda kaynak raporu alınamadı. '+error.message;}
   return true;
  }catch(error){if(qeActiveJob!==job)return true;
   qeClearRelaxationComparison();$('qeApiElectronicResults').replaceChildren();
@@ -7153,8 +7169,9 @@ async function qeLoadElectronicResults(){
    throw Error('Dosya veya çalışma alanı değişti; dosyayı yeniden açın.');
   const parsed=parseQeElectronicResult(JSON.parse(raw));
   renderQeElectronicResults(container,parsed);
-  status.textContent='Elektronik sonuç yerel dosyadan yüklendi. Bant sayısı: '+
-   (parsed.bands?.curves.length||0)+'; DOS noktası: '+(parsed.dos?.energy.length||0)+'.';
+  const summary=parsed.channels?.up||parsed;
+  status.textContent=(parsed.channels?'Spin ↑ / ↓. ':'')+'Elektronik sonuç yerel dosyadan yüklendi. Bant sayısı: '+
+   (summary.bands?.curves.length||0)+'; DOS noktası: '+(summary.dos?.energy.length||0)+'.';
  }catch(error){
   container.replaceChildren();status.textContent='Elektronik veri: '+error.message;
  }
@@ -9268,7 +9285,7 @@ function syncDftSummary(){
  const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
  const source=electronic&&qeElectronicSource?(qeElectronicSource.protocolId?'Protokol referansı: ':'Son relaksasyon yapısı: ')+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
  $('dftJobSource').textContent=source;
- $('dftJobOperation').textContent='PBE · '+operation;
+ $('dftJobOperation').textContent='PBE · '+operation+(electronic&&$('qeElectronicSpin').value==='polarized'?' · spin ↑ / ↓':'');
  $('dftJobParameters').textContent='ecutwfc '+$('qeEcutwfc').value+' Ry / ecutrho '+$('qeEcutrho').value+
   ' Ry · k '+[$('qeKx').value,$('qeKy').value,$('qeKz').value].join(' × ')+' · UPF: '+$('qeJobProfile').value;
 
@@ -9943,6 +9960,7 @@ function bind(){
  $('qeJobValidate').onclick=qeJobPreflight;
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
+ $('qeElectronicSpin').onchange=qeElectronicModeChanged;
  $('qeElectronicUseActive').onclick=()=>{qeElectronicSource=null;qeProtocolPreflight=null;qeUpdateProtocolState();$('qeElectronicSourceStatus').textContent='Kaynak: aktif yapı.';};
  $('qeJobRefresh').onclick=qeJobRefresh;
  $('qeJobPause').onclick=()=>qeJobPauseResume(false);

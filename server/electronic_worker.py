@@ -63,6 +63,8 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
                 argv.extend([flag,str(p[key])])
         if 'band_window' in request['electronic']:
             argv.extend(['--band-first',str(request['electronic']['band_window'][0]),'--band-last',str(request['electronic']['band_window'][1])])
+        polarized=request['parameters']['spin']=='polarized'
+        if polarized:argv.append('--spin-polarized')
         pause_file=root/'pause.request'
         if resuming and pause_file.exists():pause_file.unlink()
         argv.extend(['--pause-file',str(pause_file)])
@@ -102,6 +104,9 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
         if manifest.get('dos_settings')!=request['electronic'].get('dos'):
             raise ValueError('Pipeline DOS settings differ from the validated request')
         required={"scf","bands","bands_pp","nscf","dos","projwfc"}
+        if polarized:required=required-{'bands_pp'}|{'bands_pp_up','bands_pp_down'}
+        expected_schema='kristalyapi.qe-electronic.v2' if polarized else 'kristalyapi.qe-electronic.v1'
+        if electronic.get('schema')!=expected_schema:raise ValueError('Electronic spin result schema mismatch')
         if manifest["status"]!="completed" or set(manifest["steps"])!=required or any(
                 step["status"]!="completed" for step in manifest["steps"].values()):
             raise ValueError("Electronic pipeline incomplete")
@@ -124,6 +129,8 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
             "pipeline_steps":manifest["steps"],"artifact_sha256":artifacts,"electronic":electronic,
             "electronic_preflight":capacity,
             "scientific_convergence_study_completed":False}
+        if polarized:
+            result.update(schema='kristalyapi.qe-electronic-job-result.v2',spin_parameters=request['parameters'],magnetization=electronic['magnetization'])
         status="completed"
     except Stopped as exc:status,error=exc.status,str(exc)
     except (OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError) as exc:
