@@ -261,7 +261,7 @@ def generate_input(root: Path, stage: str, config: dict) -> tuple[str, str]:
     raise ValueError("Unknown stage")
 
 
-def previous_report(root: Path, plan: list[str], stage: str) -> dict | None:
+def previous_report(root: Path, plan: list[str], stage: str, check_save: bool = True) -> dict | None:
     index = plan.index(stage)
     if index == 0:
         return None
@@ -271,6 +271,11 @@ def previous_report(root: Path, plan: list[str], stage: str) -> dict | None:
             value.get("stage") != prior or value.get("status") != "completed"):
         raise ValueError("Prior stage not completed: " + prior)
     for rel, digest in value.get("hashes", {}).items():
+        # Validate previous XML BEFORE the new stage; pw.x may then rewrite
+        # prefix.save while executing. At finish, historical XML is immutable
+        # evidence in the report, not the current saved-state content.
+        if rel == "tmp/kristalyapi.save/data-file-schema.xml" and not check_save:
+            continue
         require_hash(root, rel, digest)
     if not value.get("hashes") or "tmp/kristalyapi.save/data-file-schema.xml" not in value["hashes"]:
         raise ValueError("Previous stage lacks restart XML evidence")
@@ -330,7 +335,7 @@ def finish(root: Path, stage: str) -> None:
     plan = config["stages"]
     if stage not in plan:
         raise ValueError("Stage not in package")
-    previous_report(root, plan, stage)
+    previous_report(root, plan, stage, check_save=False)
     name, content = generate_input(root, stage, config)
     input_path = file_at(root, name, 4 * 1024 * 1024)
     if input_path.read_text("utf-8") != content:
