@@ -30,3 +30,8 @@ test('renderer labels sampled memory and never describes it as a measured peak',
   assert.match(text,/OOM teyit edilmedi/);assert.match(text,/garantili tepe RAM.*değildir/);
  }finally{globalThis.document=previous;}
 });
+
+test('real seven-stage spin diagnostics include both bands postprocessors',()=>{
+ const data=JSON.parse(readFileSync(new URL('../validation-results/qe-spin-si-20261030-arm64/diagnostics.json',import.meta.url),'utf8'));
+ assert.equal(parseJobDiagnostics(data).stages.length,7);assert.ok(data.stages.some(s=>s.name==='bands_pp_down'));
+});

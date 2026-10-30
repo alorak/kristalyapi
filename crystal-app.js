@@ -7049,7 +7049,7 @@ async function qeFetchJobState(job=qeActiveJob){
   const diagnosticHost=$('qeJobDiagnostics');diagnosticHost.replaceChildren();
   try{const data=await getQeJobDiagnostics(job.address,job.token,job.id);
    if(qeActiveJob===job){renderJobDiagnostics(diagnosticHost,data);renderJobProgress($('qeJobProgress'),record,data);}
-  }catch{if(qeActiveJob===job)diagnosticHost.textContent='Bu sunucuda kaynak raporu alınamadı.';}
+  }catch(error){if(qeActiveJob===job)diagnosticHost.textContent='Bu sunucuda kaynak raporu alınamadı. '+error.message;}
   return true;
  }catch(error){if(qeActiveJob!==job)return true;
   qeClearRelaxationComparison();$('qeApiElectronicResults').replaceChildren();
@@ -9285,7 +9285,7 @@ function syncDftSummary(){
  const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
  const source=electronic&&qeElectronicSource?(qeElectronicSource.protocolId?'Protokol referansı: ':'Son relaksasyon yapısı: ')+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
  $('dftJobSource').textContent=source;
- $('dftJobOperation').textContent='PBE · '+operation;
+ $('dftJobOperation').textContent='PBE · '+operation+(electronic&&$('qeElectronicSpin').value==='polarized'?' · spin ↑ / ↓':'');
  $('dftJobParameters').textContent='ecutwfc '+$('qeEcutwfc').value+' Ry / ecutrho '+$('qeEcutrho').value+
   ' Ry · k '+[$('qeKx').value,$('qeKy').value,$('qeKz').value].join(' × ')+' · UPF: '+$('qeJobProfile').value;
 

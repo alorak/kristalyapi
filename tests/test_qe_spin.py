@@ -86,6 +86,10 @@ class SpinTests(unittest.TestCase):
   self.upf.write_text(self.upf.read_text().replace('has_so="F"','has_so="T"'))
   upf['Si']['sha256']=hashlib.sha256(self.upf.read_bytes()).hexdigest()
   with self.assertRaisesRegex(ValueError,'has_so=false'):checked_band_capacity(p,upf,self.pseudo)
+ def test_archived_real_spin_reverifies_without_qe_or_docker(self):
+  from qe_spin_acceptance import verify
+  proof=verify(ROOT/'validation-results/qe-spin-si-20261030-arm64')
+  self.assertEqual(proof['status'],'passed');self.assertFalse(proof['calculations_executed_by_verifier'])
  def binary(self):
   p=self.root/'fake-spin'
   p.write_text('''#!/usr/bin/env python3

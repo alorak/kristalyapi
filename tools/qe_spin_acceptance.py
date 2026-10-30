@@ -61,6 +61,14 @@ def verify(folder):
   check(preflight['upf_sha256'][element]==meta['sha256']==manifest['pseudopotentials'][element]['sha256'],'UPF proof mismatch')
  check(result['pseudopotentials']['Si']['sha256']=='669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a','Wrong pinned Si UPF')
  check(summary['status']=='passed' and summary['image_source_verified'] is True and summary['source_dirty'] is False,'Source/image receipt incomplete')
+ runtime_names={Path(name).name:value for name,value in summary['source_sha256'].items() if name.startswith('server/') and name.endswith('.py') or name.startswith('tools/') and Path(name).name in ('qe_run.py','qe_pipeline.py','qe_pdos.py','qe_checkpoint.py','qe_spin.py')}
+ check(set(summary.get('image_proof',{}))=={'qe-api','qe-worker'},'Both image receipts required')
+ images=set()
+ for service,receipt in summary['image_proof'].items():
+  check(receipt['source_sha256']==runtime_names,'Docker runtime source hashes differ: '+service)
+  check(receipt['limits']['Memory']==2147483648 and receipt['limits']['NanoCpus']==2000000000,'Unexpected functional smoke resource bounds')
+  images.add(receipt['image_id'])
+ check(len(images)==1,'API and worker image identities differ')
  check(re.fullmatch('[a-f0-9]{40}',summary['source_commit']) is not None,'Missing committed source')
  for name,expected_hash in summary['source_sha256'].items():
   check(not Path(name).is_absolute() and '..' not in Path(name).parts,'Unsafe source path')
