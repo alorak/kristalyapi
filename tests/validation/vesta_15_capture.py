@@ -104,7 +104,7 @@ def seal(root: Path, cases: list[dict] | None = None) -> dict:
                 raise ValueError("Missing VESTA/Kristal Yapı image slot")
             name = item.get("path")
             if (not isinstance(name, str) or not name or Path(name).is_absolute()
-                    or ".." in Path(name).parts or "\\\\" in name):
+                    or ".." in Path(name).parts or "\\" in name):
                 raise ValueError("Image path outside permitted evidence folder")
             path = root.resolve() / name
             if path.exists():
