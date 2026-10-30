@@ -671,3 +671,12 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Eksik/legacy UPF valans bilgisini `valence-unverified` olarak işaretleme; bilimsel geçerlilik iddiasında bulunmama; sentetik Si/yanlış element testleri.
 - [ ] Fonksiyonel, UPF ailesi, cutoff/k-mesh/2B vakum ve fiziksel yakınsama koşulları için bağımsız referanslı kabul.
 - [ ] Gerçek Si ve MoS₂ UPF v2 ile TRUBA orfoz hesap kabulü.
+
+
+### TRUBA P1.9 — Sonuç/girdi SHA eşleştirmesi
+
+- [x] Tek iş ve aşamalı SLURM sonuç özetlerinde aktif DFT hazırlık `structure.in` SHA-256 eşleştirme; eşleşmeme/karşılaştırılamama uyarıları.
+- [x] TRUBA bant/DOS/PDOS sonuçlarında da kaynak `input_sha256` karşılaştırma; çalışma alanı/dosya değişimi yarış kontrolü.
+- [x] WebCrypto SHA-256 yardımcı fonksiyonu ve sentetik regresyonları; kristal koordinatlarını otomatik uygulamama.
+- [ ] Bağımsız kaynak ZIP/ham dosyalarla doğrulanabilir dijital imza veya harici güven kökü; SHA içeren JSON tek başına yetmez.
+- [ ] Yalnız geometriyi esas alan normalleştirilmiş yapı kimliği ve hesap protokol kimliğinin bilimsel karşılaştırılması.
