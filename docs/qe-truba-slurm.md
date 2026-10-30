@@ -231,11 +231,54 @@ düğüm çizgileri, ancak kullanıcının verdiği etikete karşılık gelen
 çizilir; otomatik simetri tanısı yapılmaz. Fermi/vakum enerji kaydırması,
 interpolasyon veya otomatik bant aralığı yorumu yapılmaz.
 
-Grafik sınırları: **en fazla 300 bant ve 120.000 bant örneği**,
-**20.000 DOS örneği**, atomik PDOS kaynaklarında dosya/örnek bellek
-limitleri ve en fazla 16 MB JSON. Çok büyük hesaplarda P1.3 seçeneğini
-kapatıp normal P1.2 ham çıktı zincirini çalıştırın; bu kaynak
-sınırlarının bilimsel nbnd seçimi olarak yorumlanmaması gerekir.
+P1.4 ile grafik için **en fazla 300 seçilmiş bant ve 120.000 bant
+örneği**, **20.000 DOS örneği** desteklenir. Kaynak `bands.dat.gnu`
+için 96 MiB ve **4 milyon okunacak bant noktası**, PDOS için ayrıca
+dosya/örnek bellek limitleri ve sonuç JSON için 16 MB sınırı vardır.
+Bu kaynak sınırları bilimsel `nbnd` seçimi değildir. Çok büyük ham QE
+çıktılarında dönüştürücü seçimini kaldırıp normal P1.2 paketini
+çalıştırabilirsiniz.
+
+## P1.4 — 300'den fazla hesaplanmış bantta grafik penceresi
+
+DFT → Hesap hazırlığı → TRUBA → Çok aşamalı bant/DOS paketi alanında
+`nbnd` tüm hesaplanacak bantların sayısıdır. **Grafikte ilk bant**
+ve **Grafikte son bant** alanları yalnızca `electronic-results.json`
+içindeki görüntüleme seçimini belirler. Örnek:
+
+| Parametre | Örnek |
+|---|---|
+| Hesaplanan bant sayısı (`nbnd`) | 800 |
+| Grafikte ilk bant (dahil) | 301 |
+| Grafikte son bant (dahil) | 380 |
+| Ham QE çıktısı | 800 bandın tamamı |
+| Görselleştirilen bant eğrisi | 80 adet, özgün indeksleri 301–380 |
+
+Yalnızca dönüştürücü açık olduğunda seçim etkindir. `nbnd ≤ 300`
+ve toplam çizim yükü uygunsa iki alan boş bırakılabilir; mevcut P1.3
+davranışında bütün bantlar çizilir. `nbnd > 300` için
+başlangıç/bitiş **zorunludur**. Bant penceresi 1 tabanlı ve dahilidir:
+`1 ≤ first ≤ last ≤ nbnd`, `last − first + 1 ≤ 300`.
+Buna ek olarak seçilen bant sayısı × k-noktası sayısı en fazla
+120.000, toplam hesaplanan bant sayısı × k-noktası sayısı en fazla
+4.000.000 olmalıdır; büyük kaynaklar için JSON seçeneği kapatılabilir.
+
+Dönüştürücü `bands.dat.gnu` dosyasını **baştan sona akışla tarar**;
+seçilmeyen bantların tüm satırlarında k-uzaklığı, sonlu sayılar,
+k-nokta sayısı ve tam `nbnd` eşleşmesi yine doğrulanır.
+Bellekte yalnızca seçilen bant enerjileri saklanır. `bands`
+alanında `band_index_start=301` ve `total_bands=800`
+gibi özgün indeksler korunduğundan, DFT grafik başlığı ve CSV
+bant adları fiziksel hesap bandı numarasını doğru gösterir.
+**VBM/CBM veya Fermi seviyesine göre otomatik seçim yapılmaz.**
+Enerji ölçeği, k-yolu ve bilimsel doğrulama kuralları değişmez.
+
+P1.2/P1.3 eski paketleri (pencere alanı olmayan ve toplam ≤300 bant
+içerenler) aynı biçimde çalışır. Aşama manifestindeki
+`electronic.band_window` yalnız açık seçimde yazılır; Python
+aşama doğrulayıcısı geçersiz/eksik sınırları, kaynak/çıktı
+bütçesini ve SHA-256 eşleşmelerini reddeder.
+Gerçek TRUBA üzerinde büyük sistem kabul testi hâlâ beklemektedir.
 
 **Kanıt:** `truba_provenance` altında giriş ve manifest SHA-256,
 kaynak dosya SHA-256'ları, UPF hash bütünlüğü durumu ve
