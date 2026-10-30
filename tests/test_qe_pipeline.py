@@ -1,4 +1,5 @@
 """Mock-executable (NOT scientific) tests for local QE electronic workflow."""
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -68,6 +69,17 @@ class PipelineTest(unittest.TestCase):
         self.assertIn("filpdos='pdos'", post_input("projwfc"))
         with self.assertRaisesRegex(ValueError, "NSCF k mesh"):
             nscf_input(scf, 25, 1)
+
+    def test_band_path_nodes_follow_sampled_distances_without_guessing(self):
+        from qe_pipeline import band_path_nodes
+        archive = Path(__file__).resolve().parents[1] / "validation-results/qe-mos2-d4-20261029-amd64/cases/electronic/pipeline"
+        distance = json.loads((archive / "electronic-results.json").read_text())["bands"]["distance"]
+        path = [("Gamma", [0, 0, 0], 20), ("M", [.5, 0, 0], 20), ("K", [1/3, 1/3, 0], 20), ("Gamma", [0, 0, 0], 1)]
+        nodes = band_path_nodes(path, distance)
+        self.assertEqual([n["label"] for n in nodes], ["Gamma", "M", "K", "Gamma"])
+        self.assertEqual([n["distance"] for n in nodes], [distance[0], distance[20], distance[40], distance[60]])
+        self.assertIsNone(band_path_nodes(path[:-1] + [("Gamma", [0, 0, 0], 2)], distance))
+        self.assertIsNone(band_path_nodes([("A", [0, 0, 0], 1), ("B", [0, 0, 0], 1)], [0.0, 0.0]))
 
     def test_parse_band_dos_and_projected_dos_without_fabricated_fermi(self):
         bands = self.root / "bands.dat.gnu"

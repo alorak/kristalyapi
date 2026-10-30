@@ -53,6 +53,16 @@ Relaxation comparison keeps the existing two synchronized 3D views and adds an o
 
 A browser regression uses a **synthetic** 5 Å periodic wrap case solely to test UI behavior; it does not constitute an additional real Quantum ESPRESSO calculation or acceptance result.
 
+New pipeline runs write `bands.k_path_nodes` themselves. `tools/qe_pipeline.py` places node *j* at sample index `N₀ + … + N₍ⱼ₋₁₎` of the `bands.x` distance grid, using the requested `crystal_b` segment counts. If the sampled grid length does not equal the sum of those counts, or nodes do not strictly advance, the field is omitted rather than guessed. Archived evidence files are unchanged and keep showing labels as text.
+
+The first spectrum view hides band manifolds separated from the highest connected manifold by more than 3 eV (for MoS₂: the Mo 4s/4p semicore and S 3s bands) and starts at the next 0.5 eV below it. Data, CSV and the full range are unchanged and one click away. Axis ticks use round 1/2/2.5/5 × 10ⁿ steps.
+
+## Electronic setup checks
+
+The electronic server workflow only supports kz=0 band paths and a kz=1 dense mesh, i.e. layers separated by vacuum along c. Preparation measures the largest periodic empty gap along c, normal to the ab plane, and warns when it is below 8 Å. The warning does not block submission. **Suggest a band path** classifies the ab lattice (hexagonal γ=120°/60°, square, rectangular) and fills the conventional Γ–M–K–Γ, Γ–X–M–Γ or Γ–X–S–Y–Γ path in reciprocal crystal coordinates, with ~60 samples split by reciprocal length. Oblique lattices get no suggestion.
+
+The minimum band count depends on UPF valences, which only the server reads. After an electronic preflight, the `electronic_preflight` capacity (or the server's insufficient-band error) is shown together with a suggestion of `max(minimum + 4, ⌈1.2 × minimum⌉)` bands, capped by the server's band limit. This mirrors `pw.x` defaults for smeared systems and is not a convergence test. The advice is cleared when the structure or UPF profile changes.
+
 ## Evidence-backed protocol templates
 
 Preparation includes **Si functional smoke** and **MoS₂ D4.1 finite band/mesh acceptance** templates. Both embed the exact recorded request, request-file SHA-256, source/evidence commits, engine version, structure hash and UPF identities. Si is only an operational test, and MoS₂ scope is limited to the fixed D3 geometry/PBE/scalar/unpolarized protocol; DOS broadening remains sensitivity only.

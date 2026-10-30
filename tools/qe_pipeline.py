@@ -257,6 +257,24 @@ def parse_bands_gnu(path,band_window=None):
             "reference": "raw QE eigenvalue energy zero (not vacuum/experimental PL)",**metadata}
 
 
+def band_path_nodes(points, distance):
+    """Locate band-path labels on the sampled bands.x distance axis.
+
+    crystal_b samples N points from each node to the next, so node j sits at
+    index sum(N_0..N_j-1). Returns None instead of guessing when the sampled
+    grid does not match the requested path or nodes do not strictly advance.
+    """
+    if not points or len(distance) != sum(n for _, _, n in points):
+        return None
+    nodes, index = [], 0
+    for label, _, segments in points:
+        nodes.append({"label": label, "distance": distance[index]})
+        index += segments
+    if any(b["distance"] <= a["distance"] for a, b in zip(nodes, nodes[1:])):
+        return None
+    return nodes
+
+
 def parse_dos(path):
     rows = read_numeric_columns(path, 3)
     if any(len(row) != 3 for row in rows):
@@ -423,6 +441,9 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
             if execute:
                 if spin_polarized:result['spin_bands']={c:parse_bands_gnu(workdir/('bands_'+c+'.dat.gnu'),band_window) for c in ('up','down')}
                 else:result["bands"] = parse_bands_gnu(workdir / "bands.dat.gnu",band_window)
+                for bands in (result['spin_bands'].values() if spin_polarized else [result["bands"]]):
+                    nodes = band_path_nodes(path, bands["distance"])
+                    if nodes:bands["k_path_nodes"] = nodes
                 persist()
         if pdos:
             step_run("nscf", nscf_input(scf_source, nbnd, nscf_k))
