@@ -43,7 +43,7 @@ test('D3 form sends the selected operation and explicit bounded ionic settings',
  const source=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
  const func=source.match(/function qeJobPayload\(\)\{[\s\S]+?\n\}\nasync function qeJobPreflight/)[0]
   .replace(/\nasync function qeJobPreflight$/,'');
- const values={qeCalcType:'relax',qeOccupation:'fixed',qeJobProfile:'si-pbe',qeKx:2,qeKy:2,qeKz:2,
+ const values={qeJobWorkflow:'relax-scf',qeCalcType:'relax',qeOccupation:'fixed',qeJobProfile:'si-pbe',qeKx:2,qeKy:2,qeKz:2,
   qeEcutwfc:45,qeEcutrho:360,qeFreezeBottom:0,qeJobMaxSteps:30,qeForceThreshold:.0001,qeJobEnergyThreshold:.000001};
  const run=()=>Function('$','state','qeCalculationStructure','basis','validateCell','const qeResourceProfile=null,normalizeQeApiUrl=x=>x;return ('+func+')()')(
   id=>({value:values[id]??'',checked:false}),{},()=>({cell:{},sites:[{symbol:'Si',x:0,y:0,z:0}]}),
@@ -51,7 +51,7 @@ test('D3 form sends the selected operation and explicit bounded ionic settings',
  const relaxed=run();assert.equal(relaxed.schema,'kristalyapi.qe-relax-scf-job.v1');
  assert.equal(relaxed.parameters.calculation,'relax-scf');assert.equal(relaxed.relaxation.max_steps,30);
  values.qeFreezeBottom=1;assert.throws(run,/tüm atomlar serbest/);
- values.qeFreezeBottom=0;values.qeCalcType='scf';const scf=run();
+ values.qeFreezeBottom=0;values.qeJobWorkflow='scf';const scf=run();
  assert.equal(scf.schema,'kristalyapi.qe-scf-job.v1');assert.equal(scf.parameters.calculation,'scf');
  assert.equal(scf.relaxation,undefined);
 });
