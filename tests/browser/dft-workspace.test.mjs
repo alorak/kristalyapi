@@ -183,6 +183,10 @@ try{
  await page.waitForFunction(()=>document.getElementById('qeProtocolState').textContent.includes('ön kontrolüyle eşleşti'));
  assert.equal(await page.locator('#qeJobPreflightState').getAttribute('data-state'),'passed');
  await page.locator('[data-dft-section="hazirlik"]').click();
+ await page.locator('input[name="dftPreparationMode"][value="file"]').check();
+ await page.locator('#qeOccupation').selectOption('smearing');
+ assert.equal(await page.locator('#qeJobPreflightState').getAttribute('data-state'),'passed','local-only occupation changes do not invalidate server preflight');
+ await page.locator('input[name="dftPreparationMode"][value="server"]').check();
  await page.locator('#qeEcutwfc').fill('125');
  assert.equal(await page.locator('#qeJobPreflightState').getAttribute('data-state'),'stale','editing validated parameters must invalidate preflight');
  await page.locator('#qeEcutwfc').fill('120');
