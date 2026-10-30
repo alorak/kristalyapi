@@ -2222,7 +2222,9 @@ function refreshPerformancePanel(){
  ].join('\n');
 }
 function loop(timestamp){
- requestAnimationFrame(loop);orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();
+ requestAnimationFrame(loop);
+ if(document.visibilityState==='hidden'||$('app').hidden){previousFrameTimestamp=0;return;}
+ orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();
  if(++performanceFrameCounter%15===0){updateAtomLod();updatePolyhedronLod();}
  pollGpuTimer();
  updateAxisGizmo();
