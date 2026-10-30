@@ -100,7 +100,7 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 @media(max-width:700px){.qe-band-dos-layout{grid-template-columns:minmax(0,1fr)}.qe-linked-chart svg{height:auto!important;max-height:360px}.qe-spectrum-controls{grid-template-columns:minmax(0,1fr)}}
 
 /* DFT preparation: explicitly separate a server job from an offline pw.x file. */
-.dft-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:0;margin:0 0 12px;padding:0;min-width:0}
+.dft-mode-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border:0;margin:0 0 12px;padding:0;min-width:0}
 .dft-mode-switch legend{font-size:14px;font-weight:700;color:#304e68;margin:0 0 11px}
 .dft-mode-switch label{position:relative;display:block;min-width:0;border:1px solid #d4e0ed;border-radius:10px;background:#fff;padding:14px 16px;cursor:pointer;line-height:1.45}
 .dft-mode-switch label:has(input:checked){border-color:#2b75b5;background:#eff7ff;box-shadow:inset 0 0 0 1px #2b75b5}
@@ -111,6 +111,12 @@ body.dft-open .workspace-action:not(.workspace-launcher){display:none!important}
 #dftPage .dft-mode-summary{margin:0 0 18px}
 #dftPreparationGrid[data-mode=file]{grid-template-columns:minmax(0,1fr)}
 #dftPreparationGrid[data-mode=file]>.dft-parameter-workflow{max-width:900px}
+#dftPreparationGrid[data-mode=truba]{grid-template-columns:minmax(0,1fr)}
+#dftPreparationGrid[data-mode=truba]>.dft-parameter-workflow{max-width:900px}
+#dftPage .dft-hpc-only{margin-top:18px;padding:16px;border:1px solid #dce5ef;border-radius:9px;background:#f8fbfe;display:grid;gap:11px}
+#dftPage .dft-hpc-only .hint{margin-bottom:3px}
+#dftPage .dft-hpc-only input[type=file]{width:100%;font-size:12px}
+@media(min-width:761px) and (max-width:980px){.dft-mode-switch{grid-template-columns:minmax(0,1fr)}}
 #qeJobPreflightState{margin:8px 0 12px}
 #dftPage .qe-dimension-note{margin:0 0 12px}
 #dftPage .qe-dimension-note[data-state=ok]{border-color:#c9e4da;background:#f2faf6;color:#2c6a50}
