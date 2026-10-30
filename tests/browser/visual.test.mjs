@@ -1127,6 +1127,31 @@ try{
  const [,exportWidth,exportHeight]=pngDownload.suggestedFilename().match(/_(\d+)x(\d+)\.png$/)||[];
  assert.equal(output.readUInt32BE(16),Number(exportWidth),'the PNG IHDR width must match requested buffer size');
  assert.equal(output.readUInt32BE(20),Number(exportHeight),'the PNG IHDR height must match requested buffer size');
+ // The camera-locked SVG triad sits outside WebGL; confirm it survives the downloaded PNG.
+ const triadColors=await page.evaluate(async base64=>{
+  const image=new Image();image.src='data:image/png;base64,'+base64;await image.decode();
+  const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
+  const stage=document.getElementById('stage').getBoundingClientRect();
+  const gizmo=document.getElementById('axisGizmoSvg').getBoundingClientRect();
+  const scale=image.width/stage.width;
+  const x=Math.max(0,Math.floor((gizmo.left-stage.left)*scale));
+  const y=Math.max(0,Math.floor((gizmo.top-stage.top)*scale));
+  const w=Math.min(image.width-x,Math.ceil(gizmo.width*scale));
+  const h=Math.min(image.height-y,Math.ceil(gizmo.height*scale));
+  const pixels=ctx.getImageData(x,y,w,h).data;
+  const colors={red:0,green:0,blue:0};
+  for(let i=0;i<pixels.length;i+=4){
+   const r=pixels[i],g=pixels[i+1],b=pixels[i+2],a=pixels[i+3];
+   if(a<100)continue;
+   if(r>150&&r>g*1.7&&r>b*1.5)colors.red++;
+   if(g>90&&g>r*1.3&&g>b*1.2)colors.green++;
+   if(b>125&&b>r*1.5&&b>g*1.2)colors.blue++;
+  }
+  return colors;
+ },output.toString('base64'));
+ for(const axis of ['red','green','blue'])
+  assert.ok(triadColors[axis]>10,'exported PNG must contain '+axis+' camera axis pixels: '+JSON.stringify(triadColors));
  await page.setViewportSize({width:1024,height:768});
  await page.locator('#saveBtn').click();
  await page.locator('#pngScale').selectOption('4');
