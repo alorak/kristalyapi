@@ -531,11 +531,16 @@ try{
  assert.ok(Math.abs(restoredView.ink-originalView.ink)<originalView.ink*.22,
   'repeated projection switching must not gradually zoom the structure');
  const tools=page.locator('[data-right-tool]');
- assert.equal(await tools.count(),15,'measurement history, Miller, defects and QE must retain independent analysis icons');
-  for(const tool of ['measurement','history','miller','defects','qe']){
+ assert.equal(await tools.count(),14,'measurement history, Miller and defects must retain independent analysis icons');
+  for(const tool of ['measurement','history','miller','defects']){
     assert.equal(await page.locator('[data-right-tool="'+tool+'"]').count(),1,
       tool+' must have exactly one right-toolbar icon');
   }
+ // QE moved to the dedicated DFT workspace; its toolbar icon is now a route link, not a drawer.
+ const dftLauncher=page.locator('#rightToolRail [data-dft-launcher]');
+ assert.equal(await dftLauncher.count(),1,'QE must keep exactly one right-toolbar launcher');
+ assert.equal(await dftLauncher.getAttribute('href'),'#dft','QE launcher must open the DFT workspace');
+ assert.equal(await page.locator('[data-right-tool="qe"]').count(),0,'QE must not return as a drawer icon');
  assert.equal(await page.locator('[data-right-tool="measurement"]').evaluate(el=>el.nextElementSibling?.dataset.rightTool),'history',
   'measurement and history icons should be immediately adjacent');
  for(const [source,destination] of [
