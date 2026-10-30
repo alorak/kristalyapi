@@ -200,11 +200,13 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         await lookup(request,job_id)
         if "application/json" not in request.headers.get("Content-Type","").lower():
             raise HTTPException(status_code=415,detail="JSON Content-Type required")
-        data=await request.body()
-        if len(data)>512:
-            raise HTTPException(status_code=413,detail="Job label exceeds size limit")
+        data=bytearray()
+        async for chunk in request.stream():
+            data.extend(chunk)
+            if len(data)>512:
+                raise HTTPException(status_code=413,detail="Job label exceeds size limit")
         try:
-            value=json.loads(data)
+            value=json.loads(data.decode('utf-8'))
             if not isinstance(value,dict) or set(value)!={"label"}:
                 raise ValueError("Only label is supported")
             return public_job(store.set_label(job_id,value["label"]))
