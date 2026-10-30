@@ -274,8 +274,8 @@ test('VESTA-like Cartesian XYZ compass remains actual vector geometry in SVG/PDF
  assert.equal(shapes.length,10);
  assert.deepEqual(Array.from(new Set(shapes.map(s=>s.type))),['line','triangle','label','circle']);
  approx(shapes[0].x1,72);approx(shapes[0].y1,88);
- assert.deepEqual(shapes.filter(s=>s.type==='label').map(s=>s.text),['X','Y','Z']);
- assert.deepEqual(shapes.filter(s=>s.type==='label').map(s=>s.fill),axes.map(a=>a.color));
+ assert.deepEqual(Array.from(shapes.filter(s=>s.type==='label'),s=>s.text),['X','Y','Z']);
+ assert.deepEqual(Array.from(shapes.filter(s=>s.type==='label'),s=>s.fill),axes.map(a=>a.color));
  assert.equal(shapes.filter(s=>s.type==='label')[1].opacity,.74);
  assert.ok(shapes.every(s=>s.depth<0),'HUD should be rendered after structure geometry');
  const xml=api.crystalSvgText(shapes,600,400,'XYZ axes',true);
