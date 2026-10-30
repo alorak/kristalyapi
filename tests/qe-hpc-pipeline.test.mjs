@@ -106,7 +106,7 @@ test('P1.3 converter is pinned, embedded and must succeed before final receipt',
   pdosHelperScript,nbnd:800,bandFirst:501,bandLast:801}),/aralığında/);
  await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
   pdosHelperScript,nbnd:800,bandFirst:301,bandLast:601}),/en fazla 300 bant/);
- const longPath=Array.from({length:11},(_,i)=>'K'+i+' '+(i/10)+' 0 0 '+(i===10?1:500)).join('\\n');
+ const longPath=Array.from({length:11},(_,i)=>'K'+i+' '+(i/10)+' 0 0 '+(i===10?1:500)).join('\n');
  await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
   pdosHelperScript,nbnd:100,bandFirst:1,bandLast:30,bandPath:longPath}),/120.000/);
  const largeRaw=await createTrubaPipelinePackage({...opts,pipelineScript,nbnd:301});
