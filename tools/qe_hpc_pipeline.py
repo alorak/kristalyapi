@@ -356,7 +356,7 @@ def finish(root: Path, stage: str) -> None:
               "slurm_job_id": (os.environ.get("SLURM_JOB_ID") or None),
               "hashes": hashes, "previous_stage": (
                   plan[plan.index(stage) - 1] if plan.index(stage) else None),
-              "validated_not_physically_converged": True}
+              "scientific_convergence_verified": False}
     if (root / "reports").is_symlink():
         raise ValueError("Unsafe reports directory")
     (root / "reports").mkdir(exist_ok=True)
