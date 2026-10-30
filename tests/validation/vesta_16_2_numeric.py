@@ -336,13 +336,52 @@ def write_reports(report: dict, directory: Path) -> None:
                                  fmt(m["absoluteError"]["kristalyapi"]), m["status"]])
 
 
+def prepare_template(baseline: list[dict], output: Path) -> None:
+    """Create an explicitly unattested operator form; never fabricate results."""
+    if output.is_symlink():
+        raise ValueError("Refusing symlink template destination")
+    payload = {
+        "schema": SCHEMA,
+        "vestaVersion": "3.5.8",
+        "vestaGuiExecuted": False,
+        "operator": "REPLACE_WITH_OPERATOR",
+        "platform": "REPLACE_WITH_OS_AND_CAPTURE_METHOD",
+        "kristalyapiCommit": "REPLACE_WITH_FULL_40_CHARACTER_GIT_SHA",
+        "cases": [
+            {"id": item["id"], "sourceSha256": item["sourceSha256"],
+             "availableKeys": [metric["key"] for metric in item["references"]],
+             "measurements": []}
+            for item in baseline
+        ],
+        "instructions": (
+            "Only after real VESTA 3.5.8 and app PNG captures: set attestation, "
+            "copy exact V15.1 provenance, record both values per metric as "
+            '{"key":"...","vesta":number_or_3vector,"kristalyapi":number_or_3vector}. '
+            "Keep measurements empty for unmeasured metrics and provide "
+            "--v15-capture to audit the actual matched PNGs."
+        ),
+    }
+    with output.open("x", encoding="utf-8") as file:
+        json.dump(payload, file, indent=2, ensure_ascii=False)
+        file.write("\n")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", type=Path, help="Private numeric GUI/app measurements")
     parser.add_argument("--v15-capture", type=Path, help="Independent real V15 screenshot capture.json")
-    parser.add_argument("--out-dir", type=Path, required=True, help="New/empty output directory")
+    parser.add_argument("--out-dir", type=Path, help="New/empty output directory")
+    parser.add_argument("--template-out", type=Path, help="Create an explicitly unattested numeric evidence template")
     args = parser.parse_args(argv)
     try:
+        if args.template_out:
+            if args.out_dir or args.evidence or args.v15_capture:
+                raise ValueError("--template-out cannot be mixed with audit arguments")
+            prepare_template(source_references(), args.template_out)
+            print("Created unattested V16.2 operator template; GUI status NOT_RUN")
+            return 0
+        if args.out_dir is None:
+            raise ValueError("--out-dir required for report mode")
         if bool(args.evidence) != bool(args.v15_capture):
             raise ValueError("--evidence and --v15-capture must be supplied together")
         report = compare(source_references(), args.evidence, args.v15_capture)
