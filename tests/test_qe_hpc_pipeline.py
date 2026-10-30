@@ -162,6 +162,77 @@ class TestStagedTruba(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid or unsorted"):
             pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(stdout=""))
 
+    def use_shared_physical_groups(self):
+        self.manifest["submission_mode"] = "shared-allocation-v1"
+        self.manifest["submission_groups"] = [
+            ["scf"], ["bands", "bands_pp"], ["nscf", "dos", "projwfc"]]
+        self.manifest["resources"] = {
+            "partition": "orfoz", "ntasks": 56, "nodes": 1,
+            "hours": 12, "postprocess_hours": 2}
+        for name in ("bands", "nscf"):
+            rel = f"stages/{name}-coallocated.slurm"
+            (self.root / rel).write_text("synthetic shared " + name)
+            self.manifest["file_sha256"][rel] = sha((self.root / rel).read_bytes())
+        self.write_manifest()
+
+    def test_shared_allocation_preflight_pins_and_validates_exact_groups(self):
+        self.use_shared_physical_groups()
+        self.assertEqual(pipeline.preflight(self.root)["status"], "preflight-ok")
+        self.assertEqual(pipeline.submission_groups(pipeline.load_manifest(self.root)),
+                         self.manifest["submission_groups"])
+        (self.root / "stages/bands-coallocated.slurm").write_text("tampered")
+        with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+            pipeline.preflight(self.root)
+        (self.root / "stages/bands-coallocated.slurm").write_text("synthetic shared bands")
+        self.manifest["submission_groups"][1] = ["bands"]
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Invalid shared allocation groups"):
+            pipeline.preflight(self.root)
+
+    def test_shared_physical_slurm_jobs_deduplicate_accounting_without_duplicating_charge(self):
+        from types import SimpleNamespace
+        self.use_shared_physical_groups()
+        receipts = ("scf 1000\\n" "bands 1001\\n" "bands_pp 1001\\n"
+                    "nscf 1002\\n" "dos 1002\\n" "projwfc 1002\\n")
+        (self.root / "submissions.txt").write_text(receipts)
+        calls = []
+        def fake_run(argv, **kwargs):
+            calls.append(argv)
+            return SimpleNamespace(stdout="\\n".join(
+                f"{i}|COMPLETED|0:0|5|56|110G||0|0|node01"
+                for i in (1000, 1001, 1002)))
+        account = pipeline.accounting(self.root, runner=fake_run)
+        self.assertEqual(account["status"], "collected")
+        self.assertEqual(account["physical_job_count"], 3)
+        self.assertEqual(len(account["jobs"]), 6)
+        self.assertEqual(calls[0][calls[0].index("--jobs")+1], "1000,1001,1002")
+        self.assertEqual(account["jobs"][1]["job_id"], account["jobs"][2]["job_id"])
+        self.assertEqual(account["jobs"][3]["job_id"], account["jobs"][5]["job_id"])
+        self.assertIn("Never sum", account["notice"])
+
+    def test_shared_resume_requires_valid_original_job_receipts(self):
+        self.use_shared_physical_groups()
+        self.complete("scf")
+        self.complete("bands")
+        good = ("scf 1000\\n" "bands 1001\\n" "bands_pp 1001\\n"
+                "nscf 1002\\n" "dos 1002\\n" "projwfc 1002\\n")
+        (self.root / "submissions.txt").write_text(good)
+        self.assertEqual(pipeline.resume_check(self.root, "bands_pp")["status"], "resume-ready")
+        cases = [
+            ("scf 1000\\nbands 1001\\nbands_pp 1009\\n", "mismatched Slurm"),
+            ("scf 1000\\nbands 1001\\nbands_pp 1001\\nnscf 1001\\n",
+             "reused across physical"),
+            ("scf 1000\\nbands 1001\\n", "Incomplete physical"),
+        ]
+        for receipt, message in cases:
+            (self.root / "submissions.txt").write_text(receipt)
+            with self.assertRaisesRegex(ValueError, message):
+                pipeline.resume_check(self.root, "bands_pp")
+        (self.root / "submissions.txt").write_text(good)
+        (self.root / "resubmissions.txt").write_text("dos 1002\\n")
+        with self.assertRaisesRegex(ValueError, "Duplicate Slurm job IDs"):
+            pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(stdout=""))
+
     def test_science_preflight_requires_enough_bands_for_real_upf_v2_valence(self):
         raw = (b'<UPF version="2"><PP_HEADER element="Si" z_valence="4.0" '
                b'functional="PBE" has_so="F"/></UPF>')
