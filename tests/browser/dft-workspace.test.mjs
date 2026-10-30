@@ -169,7 +169,8 @@ try{
   assert.match(download.suggestedFilename(),new RegExp('spin-'+channel+'-dos-pdos\\.csv$'));
   const csv=await fs.readFile(await download.path(),'utf8');assert.ok(csv.includes('spin_channel'));assert.ok(csv.includes(',"'+channel+'",'));
  }
- await page.locator('#dft-sonuclar').screenshot({path:path.join(artifacts,'dft-workspace-spin.png')});
+ await page.locator('#qeElectronicCharts .qe-spin-channel h3').first().scrollIntoViewIfNeeded();
+ await page.screenshot({path:path.join(artifacts,'dft-workspace-spin.png')});
  await page.setViewportSize({width:390,height:844});
  assert.ok(await page.locator('#dftPage').evaluate(el=>el.scrollWidth<=el.clientWidth+1));
  await page.locator('[data-dft-section="hazirlik"]').click();
