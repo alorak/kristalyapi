@@ -350,9 +350,32 @@ try{
  const [pdfDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="pdf"]').click()]);
  const pdfData=await fs.readFile(await pdfDownload.path());
  assert.equal(pdfData.toString('ascii',0,8),'%PDF-1.4');
- assert.ok(pdfData.includes(Buffer.from('/DCTDecode')),'PDF must embed an actual JPEG');
- assert.ok(pdfData.includes(Buffer.from('/MediaBox [0 0')),'PDF must have a physical A4 page');
+ assert.ok(pdfData.includes(Buffer.from('/FlateDecode')),'PDF must embed lossless (Flate) pixels');
+ assert.ok(!pdfData.includes(Buffer.from('/DCTDecode')),'PDF must not use lossy JPEG in Chromium');
+ assert.ok(pdfData.includes(Buffer.from('/MediaBox [0 0 842 595]')),'without a width the PDF is an A4 page');
  await fs.writeFile(path.join(artifacts,'print-export-sample.pdf'),pdfData);
+ assert.equal(tiffData.readUInt16LE(tiffData.readUInt32LE(4)+2+3*12+8),5,'TIFF strips must be LZW-compressed');
+ // Publication size: 85 mm at 600 DPI is 2008 px for every raster format and an 85 mm vector page.
+ await page.locator('#saveBtn').click();
+ await page.locator('#exportWidthMm').selectOption('85');
+ await page.locator('#printDpi').selectOption('600');
+ assert.equal(await page.locator('#pngScale').isDisabled(),true,'a physical width replaces the multiplier');
+ const [figurePng]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="png"]').click()]);
+ const figurePngData=await fs.readFile(await figurePng.path());
+ assert.equal(figurePngData.readUInt32BE(16),2008,'85 mm at 600 DPI');
+ const phys=figurePngData.indexOf('pHYs');
+ assert.ok(phys>0&&phys<figurePngData.indexOf('IDAT'),'PNG must carry its print resolution before the image data');
+ assert.equal(figurePngData.readUInt32BE(phys+4),23622,'600 DPI in pixels per metre');
+ await page.locator('#saveBtn').click();
+ const [figureSvg]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="svg"]').click()]);
+ assert.match(await fs.readFile(await figureSvg.path(),'utf8'),/<svg [^>]*width="85mm"/);
+ await page.locator('#saveBtn').click();
+ const [figurePdf]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="pdf-vector"]').click()]);
+ assert.match((await fs.readFile(await figurePdf.path())).toString('latin1'),/\/MediaBox \[0 0 240\.945 /,'vector page is 85 mm wide');
+ await page.locator('#saveBtn').click();
+ await page.locator('#exportWidthMm').selectOption('');
+ await page.locator('#printDpi').selectOption('300');
+ await page.locator('#exportModalClose').click();
  await page.locator('#saveBtn').click();
  const [stlDownload]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="stl"]').click()]);
  const stlData=await fs.readFile(await stlDownload.path());
@@ -1160,13 +1183,15 @@ try{
   ]);
   const vectorText=(await fs.readFile(await vectorDownload.path())).toString('latin1');
   for(const [axis,color] of [['X','#e24b4b'],['Y','#23a45b'],['Z','#286de0']]){
-   if(format==='svg')assert.match(vectorText,new RegExp('<text[^>]*fill="'+color+'"[^>]*>'+axis+'</text>'),
-    'SVG must preserve '+axis+' orientation label color');
-   if(format==='pdf-vector')assert.match(vectorText,new RegExp('\\('+axis+'\\) Tj ET'),
-    'vector PDF must preserve '+axis+' text glyph');
-   if(format==='eps')assert.match(vectorText,new RegExp('\\('+axis+'\\) true charpath stroke'),
-    'EPS must preserve '+axis+' outlined text glyph');
+   if(format==='svg')assert.match(vectorText,new RegExp('<path data-text="'+axis+'"[^>]*fill="'+color+'"'),
+    'SVG must preserve '+axis+' orientation label color as a glyph outline');
+   if(format!=='svg')assert.match(vectorText,new RegExp('% text: '+axis+'\\n'),
+    format+' must keep the '+axis+' label as an outlined glyph');
   }
+  // Text is drawn as outlines, so journal preflight finds no unembedded fonts.
+  if(format==='pdf-vector')assert.doesNotMatch(vectorText,/\/Font|\/BaseFont/,'vector PDF must not reference fonts');
+  if(format==='eps')assert.doesNotMatch(vectorText,/findfont/,'EPS must not reference fonts');
+  if(format==='svg')assert.doesNotMatch(vectorText,/<text/,'SVG labels must not depend on installed fonts');
   if(format==='pdf-vector')assert.doesNotMatch(vectorText,/\/DCTDecode|\/Subtype \/Image/,
    'vector PDF must not rasterize the orientation marker');
   if(format==='eps')assert.doesNotMatch(vectorText,/colorimage/,
@@ -1188,12 +1213,10 @@ try{
   if(format==='png'){
    assert.equal(source.slice(1,4),'PNG','lattice compass PNG must be exported');
   }else for(const axis of ['a','b','c']){
-   if(format==='svg')assert.match(source,new RegExp('<text[^>]*>'+axis+'</text>'),
+   if(format==='svg')assert.match(source,new RegExp('<path data-text="'+axis+'"'),
     'SVG export must show crystallographic '+axis);
-   if(format==='pdf-vector')assert.match(source,new RegExp('\\('+axis+'\\) Tj ET'),
-    'vector PDF must show crystallographic '+axis);
-   if(format==='eps')assert.match(source,new RegExp('\\('+axis+'\\) true charpath stroke'),
-    'EPS must show crystallographic '+axis);
+   if(format!=='svg')assert.match(source,new RegExp('% text: '+axis+'\\n'),
+    format+' export must show crystallographic '+axis);
   }
  }
  await page.locator('#axisCompassMode').selectOption('cartesian');

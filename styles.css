@@ -811,6 +811,8 @@ header .actions .header-io svg{width:15px;height:15px;stroke:currentColor;stroke
 .site-style-panel input[type=number]{height:31px}
 .site-style-panel small{font-size:10px;line-height:1.5;color:#7890a6}
 .export-png-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 24px;border-top:1px solid #e4ebf3;background:#f8fbff;font-size:12px;color:#55718b}
+.export-png-controls[hidden]{display:none!important}
+.export-png-controls button{padding:5px 10px;font-size:12px;border-radius:7px;border:1px solid #b9cde2;background:#fff;color:#1f4f7d;cursor:pointer}
 .export-png-controls label{display:flex;align-items:center;gap:6px}.export-png-controls select{padding:5px 7px;font-size:12px;min-width:80px;border-radius:7px}.export-png-controls input{accent-color:#2678cc}
 .poly-opacity-control{min-width:38px!important}
 @media(max-width:580px){.workspace-current{display:none}.open-dialog-head,.open-tabs,.open-list,.open-dialog-foot{padding-left:14px;padding-right:14px}.open-tabs button{flex:1;padding:8px 5px}.open-dialog{max-height:92dvh}}
