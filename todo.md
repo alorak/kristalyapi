@@ -631,3 +631,15 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
   SLURM/`bands.x` sonucu, 301–380 gibi açık grafik penceresi, eksiksiz
   hash kanıtı ve DFT grafiği/CSV doğrulaması; bu CI için sentetik
   veriden bağımsız olarak raporlanmalı.
+
+
+### TRUBA P1.5 — Kaynak tahsisi ve güvenli ön kontrol (30 Ekim 2026)
+
+- [x] `orfoz` için yalnız 56/112 MPI görevi, seri postprocessor için en az 56 CPU tahsisi.
+- [x] `pipeline.py preflight`: doğrulanmış kaynaklar, temiz çalışma alanı, sabitlenmiş Python/betik/UPF hashleri.
+- [x] `submit.sh`: bütün aşamalarda `sbatch --test-only` başarılı olmadan hiçbir gerçek `sbatch` çağrısı yapmama.
+- [x] Erken hata kaydı ve SLURM/modül çevre logları; sentetik Python/JS testleri.
+- [ ] Gerçek TRUBA orfoz Si smoke, MoS₂ ve 300+ bant kabulü (operatör erişimi gerektirir).
+- [ ] `afterok` zincirinde güvenli yeniden başlatma / kontrollü retry.
+- [ ] Seri postprocessing tahsislerini birleştirerek çekirdek/zaman israfını azaltma.
+- [ ] sacct kaynak telemetrisi, bilimsel input ön kontrolü, sonuç–yapı eşleştirmesi ve parametre taramaları.
