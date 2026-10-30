@@ -10,6 +10,7 @@ Requires Python 3.9+ standard library only.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -20,6 +21,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 
 SCHEMA = "kristalyapi.truba-qe-pipeline.v1"
 REPORT_SCHEMA = "kristalyapi.truba-qe-stage.v1"
@@ -318,6 +320,81 @@ def previous_report(root: Path, plan: list[str], stage: str, check_save: bool = 
     return value
 
 
+def science_check(root: Path) -> dict:
+    """Necessary, limited, nonmagnetic electron-capacity check from UPF v2.
+
+    Missing/legacy UPF metadata is flagged as unverified, NEVER guessed.
+    No energy, band gap, cutoff/k-mesh or physical convergence is certified.
+    """
+    config = load_manifest(root)
+    source = file_at(root, "structure.in", 4 * 1024 * 1024).read_text("utf-8")
+    nat_match = re.search(r"(?im)^\s*nat\s*=\s*(\d+)", source)
+    pos = re.search(r"(?ims)^ATOMIC_POSITIONS\s+crystal\s*\n(.*?)^K_POINTS\s+automatic\s*$", source)
+    mesh = re.search(r"(?im)^K_POINTS\s+automatic\s*\n\s*(\d+)\s+(\d+)\s+(\d+)\s+[01]\s+[01]\s+[01]", source)
+    if not nat_match or not pos or not mesh:
+        raise ValueError("Cannot independently inspect source QE atomic sites/k mesh")
+    sites = [row.split() for row in pos.group(1).splitlines() if row.strip()]
+    if len(sites) != int(nat_match.group(1)) or any(len(row) not in (4, 7) for row in sites):
+        raise ValueError("Source atomic sites do not match nat")
+    counts = Counter(row[0] for row in sites)
+    pseudos = config["pseudopotentials"]
+    if set(counts) != {p.get("element") for p in pseudos}:
+        raise ValueError("Atomic elements and UPF manifest species differ")
+    valence = {}
+    functional = {}
+    unknown = []
+    for pseudo in pseudos:
+        element, filename = pseudo["element"], pseudo["file"]
+        with file_at(root, "pseudo/" + filename, 24 * 1024 * 1024).open("rb") as stream:
+            start = stream.read(131072)
+        match = re.search(br"<PP_HEADER\b[^>]*>", start)
+        if match is None:
+            unknown.append(element + ": missing UPF v2 PP_HEADER")
+            continue
+        tag = match.group(0)
+        if not tag.endswith(b"/>"):
+            tag = tag[:-1] + b"/>"
+        try:
+            attrs = ET.fromstring(tag).attrib
+            raw = float(attrs["z_valence"].replace("D", "E").replace("d", "e"))
+            if (attrs["element"].strip() != element or not math.isfinite(raw)
+                    or not 0 < raw <= 100):
+                raise ValueError("element/valence mismatch")
+        except (ET.ParseError, KeyError, ValueError) as exc:
+            raise ValueError("Invalid UPF v2 element/z_valence header: " + element) from exc
+        valence[element] = raw
+        functional[element] = attrs.get("functional", "unknown")
+    for field in ("ecutwfc", "ecutrho"):
+        if not re.search(r"(?im)^\s*" + field + r"\s*=\s*(" + NUM + r")", source):
+            raise ValueError("Missing QE cutoff: " + field)
+    ecutwfc = float(re.search(r"(?im)^\s*ecutwfc\s*=\s*(" + NUM + r")", source).group(1).replace("d", "e").replace("D", "E"))
+    ecutrho = float(re.search(r"(?im)^\s*ecutrho\s*=\s*(" + NUM + r")", source).group(1).replace("d", "e").replace("D", "E"))
+    if not all(math.isfinite(v) and v > 0 for v in (ecutwfc, ecutrho)) or ecutrho < ecutwfc:
+        raise ValueError("Invalid ecutwfc/ecutrho pair")
+    electrons = sum(counts[element] * valence[element] for element in counts) if not unknown else None
+    minimum = None
+    if electrons is not None:
+        if not math.isclose(electrons, round(electrons), abs_tol=1e-6):
+            unknown.append("Fractional neutral valence electron count: manual review required")
+        else:
+            minimum = math.ceil(round(electrons) / 2)
+            if config["electronic"]["nbnd"] < minimum:
+                raise ValueError(f"nbnd={config['electronic']['nbnd']} cannot hold {round(electrons)} neutral valence electrons; requires at least {minimum}")
+    return {"schema": "kristalyapi.truba-qe-science-preflight.v1",
+            "status": "valence-unverified" if unknown else "necessary-capacity-checked",
+            "scientific_convergence_verified": False,
+            "structure_in_sha256": config["file_sha256"]["structure.in"],
+            "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
+            "atom_count": len(sites), "elements": dict(counts),
+            "upf_valence_electrons": valence, "upf_functional_labels": functional,
+            "neutral_valence_electrons": electrons,
+            "minimum_occupied_nbnd": minimum, "requested_nbnd": config["electronic"]["nbnd"],
+            "ecutwfc_ry": ecutwfc, "ecutrho_ry": ecutrho,
+            "k_mesh": [int(v) for v in mesh.groups()],
+            "review_notes": unknown,
+            "limitations": "Necessary neutral nonmagnetic band capacity only; empty bands, UPF/XC compatibility, real convergence, k-path, vacuum and physical results not verified."}
+
+
 def preflight(root: Path) -> dict:
     """Verify pinned offline package before any Slurm queue submission.
 
@@ -339,6 +416,7 @@ def preflight(root: Path) -> dict:
         if not isinstance(resources, dict) or resources.get('partition') != 'orfoz' or resources.get('ntasks') not in (56, 112) or resources.get('nodes') != 1:
             raise ValueError('Unsupported TRUBA orfoz resource allocation')
     return {'status': 'preflight-ok', 'stages': config['stages'],
+            'science': science_check(root),
             'slurm_submission_performed': False, 'scientific_convergence_verified': False}
 
 
@@ -612,16 +690,18 @@ def summary(root: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("preflight", "resume-check", "prepare", "finish", "fail", "summary", "accounting"))
+    parser.add_argument("action", choices=("preflight", "science-check", "resume-check", "prepare", "finish", "fail", "summary", "accounting"))
     parser.add_argument("stage", nargs="?")
     parser.add_argument("code", nargs="?", type=int)
     args = parser.parse_args(argv)
     try:
         root = Path.cwd().resolve()
-        if args.action not in ("summary", "preflight", "accounting") and args.stage not in STAGES:
+        if args.action not in ("summary", "preflight", "science-check", "accounting") and args.stage not in STAGES:
             raise ValueError("Stage name required")
         if args.action == "preflight":
             print(json.dumps(preflight(root), indent=2))
+        elif args.action == "science-check":
+            print(json.dumps(science_check(root), indent=2))
         elif args.action == "resume-check":
             print(json.dumps(resume_check(root, args.stage), indent=2))
         elif args.action == "accounting":
