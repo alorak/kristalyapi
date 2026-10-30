@@ -1,5 +1,8 @@
 # Paket V15 — VESTA / Kristal Yapı görsel karşılaştırması
 
+**V15.1 güncellemesi:** [Operatör yakalama ve P14 çapraz bağlantı kılavuzu](PACKAGE_15_1_STATUS.md): özel klasör/manifest, PNG hash kilitleme, sahne hazır olma denetimi, tarih ve ROI kontrolü. Gerçek GUI kanıtı yine **NOT_RUN**.
+
+
 **Durum: kaynak/araç ve sentetik testler hazır; gerçek VESTA GUI kanıtı YOK (NOT_RUN).**
 
 V15, VESTA 3.5.8 ile Kristal Yapı'da **aynı kaynak ve gösterim koşullarında**

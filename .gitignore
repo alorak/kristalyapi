@@ -8,3 +8,6 @@ qe-local/
 *.sqlite3-wal
 __pycache__/
 .pytest_cache/
+# V15 real VESTA GUI captures stay private and never travel with application code.
+/v15-private/
+/validation-results/vesta15/

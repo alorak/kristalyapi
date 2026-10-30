@@ -4,7 +4,8 @@
 
 - **V15.0 kodlandı:** gerçek kaynaklara sabitlenmiş 5 görsel sahne, kaynak Git blob SHA-1/Png SHA-256 doğrulaması, saf Python görüntü fark raporu, sentetik kanıt regresyonları.
 - **Bilimsel sınır:** siluet IoU, RGB MAE ve üçlü görsel yalnız görsel fark metriğidir; gerçek VESTA 3.5.8 GUI henüz yürütülmedi. `scientificParity=NOT_ESTABLISHED` kalır.
-- **V15.1–V15.2:** operatör ekranları, P14 bağ/BVS GUI değerleri, kamera/ışık eşitleme ve geometri/yoğunluk karşılaştırmasının bilimsel kabulü.
+- **V15.1 operatör araçları uygulandı:** özel yerel kanıt `prepare/seal/status`, gerçek PNG sha/ROI/tarih kontrolleri, P14 raporuna bağlı bağımsız kaynak ve ekran hash metaverisi. **Gerçek VESTA GUI yapılmadı**.
+- **V15.1–V15.2 kalan:** gerçek VESTA 3.5.8 ekran/Text Area kayıtları, kamera/ışık eşitleme ve geometri/yoğunluk bilimsel kabulü.
 
 [V15 protokolü](tests/validation/PACKAGE_15_STATUS.md).
 

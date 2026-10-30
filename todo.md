@@ -732,8 +732,11 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Saf Python foreground IoU, siluet merkez farkı, RGB MAE; yan yana görsel üçlü fark PNG ve CSV/JSON raporu.
 - [x] Gerçek GUI yoksa NOT_RUN; ekran yakalanmışsa yalnız CAPTURED_HUMAN_REVIEW_REQUIRED; bilimsel eşdeğerlik asla sahte PASS değil.
 - [x] Sahte PNG/test fixture, kötü hash/CRC, path traversal, kamera uyuşmazlığı ve kısmi kanıt sentetik birim testleri.
-- [ ] **V15.1:** Gerçek VESTA 3.5.8 GUI ekranları + P14 gerçek bağ/BVS Text Area kayıtları; insan kontrolü.
+- [x] **V15.1 operatör altyapısı:** `prepare / seal / status` ile özel kanıt manifesti, operatörce çekilen PNG hashleri, tarih/ROI/format doğrulaması, kaynağa göre P14 GUI raporu bağlantısı; sentetik Python/Node regresyonu.
+- [ ] **V15.1 gerçek kabul:** VESTA 3.5.8 GUI ekranları ve P14 gerçek bağ/BVS Text Area kayıtları; **halen yapılmadı, NOT_RUN**.
 - [ ] **V15.1:** CCP4 mutlak izoeşik ve birimlerini belirleyip sabitle; mevcut null iken gerçek karşılaştırma engellenir.
 - [ ] **V15.2:** Deterministik kamera ve objektif atom/bağ/ADP/Miller/alan-topoloji ölçümleri; platform/GPU A/B testleri.
 
 [V15 yöntem ve durum](tests/validation/PACKAGE_15_STATUS.md).
+
+[V15.1 operatör ve gerçek GUI ölçüm kılavuzu](tests/validation/PACKAGE_15_1_STATUS.md).

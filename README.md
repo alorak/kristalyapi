@@ -108,6 +108,8 @@ The application is no longer contained in a single HTML file. [index.html](index
 
 ## Package V15 — controlled real VESTA visual evidence (initial implementation)
 
+V15.1 adds an operator-side `prepare/seal/status` capture helper, image dates/identical ROI enforcement, and an optional P14 report source/hash cross-reference. [Operator procedure](tests/validation/PACKAGE_15_1_STATUS.md). Genuine VESTA GUI captures are **NOT_RUN**; metadata and visual similarity are not scientific equivalence.
+
 Five SHA-pinned CIF/CCP4 scenes and a [GUI PNG evidence auditor](tests/validation/PACKAGE_15_STATUS.md) can compare genuine VESTA 3.5.8 exports against matching Crystal Structure PNGs. Source, screenshot, settings and dimensions are validated; silhouette IoU, bounding-box shift, RGB difference and a visual triptych are reported. **No real VESTA GUI capture is included yet**: the default status is `NOT_RUN`, with `scientificParity=NOT_ESTABLISHED`. Synthetic regression screenshots test only the audit code, not physical or GUI equivalence.
 
 ## VESTA 3 manual-equation comparison and honest GUI evidence (Package 14)

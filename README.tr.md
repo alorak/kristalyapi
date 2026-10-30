@@ -74,6 +74,8 @@ Mimari artık tek bir HTML dosyasına gömülü değildir: [index.html](index.ht
 
 ## Paket V15 — Gerçek VESTA görsel karşılaştırma hazırlığı
 
+V15.1'de gerçek ekran toplama için `vesta_15_capture.py prepare/seal/status`, tarih ve aynı ROI zorunluluğu ve P14 raporuna bağlama eklendi. [V15.1 operatör kılavuzu](tests/validation/PACKAGE_15_1_STATUS.md). Bu yalnız hazırlık/denetim altyapısıdır; gerçek VESTA GUI kanıtı hâlâ **NOT_RUN**.
+
 VESTA 3.5.8 ile aynı sabit CIF/CCP4 kaynakları kullanıldığında operatörün iki gerçek PNG'sini denetleyen [V15 protokolü](tests/validation/PACKAGE_15_STATUS.md), SHA-256 ve görünür siluet/RGB farklarını raporlayabilir. **Gerçek VESTA GUI ekranları henüz yok:** varsayılan rapor `NOT_RUN` ve bilimsel parite `NOT_ESTABLISHED`. Sentetik testler gerçek GUI karşılaştırması sayılmaz; VESTA ikilisi dağıtılmaz.
 
 ## VESTA 3 kılavuz denklemiyle doğrulama ve GUI kanıtı (Paket 14)
