@@ -356,3 +356,49 @@ cat resubmissions.txt
 - `resume.sh`, orijinal işlerden hiçbiri `squeue` içinde aktif/pending değilse ve geriye kalan aşamaların tümü `sbatch --test-only` aşamasından geçerse yeniden `afterok` bağımlılık zinciri oluşturur.
 - Orijinal `submissions.txt` korunur; yeniden gönderilen ID'ler `resubmissions.txt` içine yazılır. `.resume-lock` ikinci otomatik denemeyi engeller. Kısmi yeniden gönderim başarısız olursa güvenli biçimde yeni paket/operatör değerlendirmesi gerekir.
 - **Sınırlama:** Bu akış gerçek TRUBA sisteminde test edilmemiştir. Restart XML hash eşleşmesi tek başına bütün wavefunction dosyalarının sağlamlığını kanıtlamaz; bu nedenle `pw.x` aşamalarında resume desteklenmemektedir.
+
+
+## P1.7 — SLURM kaynak telemetrisi ve gerçek kabul kanıtları
+
+P1.7 paketi `pipeline.py accounting` komutunu destekler. **Yalnız kullanıcı açıkça çağırdığında**, Python `subprocess.run([...], shell=False)` yoluyla salt okunur `sacct` sorgusu yapar. QE/Slurm işi göndermez, kuyruktaki işleri değiştirmez.
+
+```bash
+# İşi bitmiş/orijinal iş ID'leri için operatör tarafından:
+python3 pipeline.py accounting > truba-accounting.json
+# Bu dosya değişmeden arşivlenir; varsa resubmissions.txt içindeki
+# manuel devam işlerinin kimlikleri de rapora dahil edilir.
+```
+
+JSON şeması `kristalyapi.truba-qe-accounting.v1` içerir. `submissions.txt` ve varsa `resubmissions.txt` güvenli, sıralı, sayısal SLURM job ID olarak doğrulanır. `sacct --parsable2 --noheader` sonuçlarından işin `State`, `ExitCode`, `ElapsedRaw`, `AllocCPUS`, `ReqMem`, `MaxRSS`, disk I/O ve `NodeList` alanları saklanır. `.batch` ve diğer step kayıtları ana iş satırından ayrı tutulur; bazı kurulumlarda **MaxRSS yalnız step satırında** bulunabilir. Bir işin muhasebe kaydı henüz erişilebilir değilse `status=partial` yazılır, sahte başarılı durum oluşturulmaz.
+
+### TRUBA kabulünde saklanması gereken asgari dosyalar
+
+1. Değişmeyen ilk ZIP, `pipeline.json`, gerçek UPF dosyalarının SHA-256 değerleri ve kullanılan `structure.in`.
+2. Her aşamanın ham `*.in`, `*.out`, `logs/*.out`, `logs/*.err`, `reports/*.json` dosyaları; `submissions.txt` ve varsa `resubmissions.txt`.
+3. `pipeline-summary.json`, `electronic-results.json`, `truba-accounting.json`; gerçek `bands.dat.gnu`, `dos.dat`, `pdos*`.
+4. `module list` ve `pw.x` QE sürüm/derleme kaydı; TRUBA orfoz düğüm/hesap tahsisi ve `sacct` ölçümleri.
+5. Önceden tanımlanmış bilimsel kabul ölçütleri ve bağımsız Si/MoS₂ referansları (aynı UPF, fonksiyonel, kesme enerjisi, k-örgüsü ve karşılaştırılabilir QE sürümü). Bu araç yalnız dosyaları raporlar; bilimsel kabulü **otomatik geçirmez**.
+
+Öncelik önce **2 atomlu Si SCF → bands → NSCF → DOS/PDOS** smoke; ardından MoS₂ sabit hücreli relax ve 300+ bantlı büyük referanstır. TRUBA üzerinde gerçekten çalışmadan bu adımlara tamamlandı işareti verilmemelidir.
+
+
+## P1.8 — Bilimsel kapasite ön kontrolü (UPF v2)
+
+`python3 pipeline.py science-check` komutu ve `submit.sh` tarafından otomatik çağrılan `pipeline.py preflight`, `structure.in` içindeki `nat`, atom türleri, k-örgüsü ve `ecutwfc/ecutrho` değerlerini inceler. Hash doğrulaması geçmiş gerçek UPF v2 dosyasındaki `<PP_HEADER element=... z_valence=...>` özelliklerini okuyarak **nötr ve spin-polarize olmayan** hesap için asgari işgal edilen bant sayısını belirler:
+
+`N_e = Σ (atom sayısı × UPF z_valence)`, `nbnd_min = ceil(N_e / 2)`.
+
+- Bilinen UPF v2 değerlik sayılarıyla seçilen `nbnd` fiziksel olarak **yetersizse**, gönderim ön kontrolü başarısız olur; kaynak tüketmeden önce düzeltme istenir.
+- Eski UPF, eksik `PP_HEADER` veya eksik valans metaverisinde elektron sayısı **tahmin edilmez**, `status=valence-unverified` döner; geriye uyumluluk için tek başına eski UPF nedeniyle gönderim engellenmez.
+- `status=necessary-capacity-checked` yalnız **gerekli elektron kapasitesini** ifade eder, yeterli boş bant sayısını veya bilimsel yakınsamayı garanti etmez.
+- `ecutrho ≥ ecutwfc > 0` kontrolü gerçekleştirilir, ancak UPF/XC işlevsel uyumu, PAW/ultrasoft özel cutoff koşulları, k-yolu, vakum, spin/SOC, manyetizma ve deneysel özellikler hâlâ **bağımsız inceleme gerektirir**.
+- Bu aşamada yalnız dosya incelenir; yeni bir Quantum ESPRESSO hesabı veya SLURM işi çalıştırılmaz.
+
+
+## P1.9 — İçe aktarılan sonuç ile etkin DFT girdisinin eşleşmesi
+
+DFT → Sonuçları incele ekranındaki `summary.json`, `pipeline-summary.json` ve TRUBA P1.3 `electronic-results.json` dosyaları açıldığında uygulama aktif kristalden **mevcut DFT hazırlık ayarlarıyla** yeniden `structure.in` metnini üretir. HTTPS/WebCrypto SHA-256 ile kaydedilen **başlangıç girdi hash'i** karşılaştırılır ve üç durumdan biri açıkça gösterilir: `eşleşiyor`, `farklı`, `karşılaştırılamadı`.
+
+Bu, **byte düzeyinde girdi + ayar eşleşmesidir**; sadece atom düzeninin geometrik kimliği veya bağımsız bilimsel geçerlilik garantisi değildir. Aynı kristalde farklı cutoff, k-örgüsü, atom sabitleme veya UPF dosya adları **farklı hash** oluşturabilir; bu beklenen davranıştır. İçe aktarılan belge üzerinde SHA değeri kullanıcı tarafından değiştirilebilir; JSON bağımsız imzalı değildir. Sonuçlar ve relaksasyon koordinatları mevcut kristale otomatik uygulanmaz.
+
+Dosya seçimi/çalışma alanı SHA hesaplaması sırasında değişirse önceki sonuç görünümü kabul edilmez.

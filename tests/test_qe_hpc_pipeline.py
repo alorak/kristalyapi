@@ -130,6 +130,73 @@ class TestStagedTruba(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Resume already submitted"):
             pipeline.resume_check(self.root, "bands_pp")
 
+    def test_operator_accounting_gathers_job_and_step_resources_without_submission(self):
+        from types import SimpleNamespace
+        (self.root / "submissions.txt").write_text(
+            "".join(f"{stage} {i+1000}\n" for i, stage in enumerate(self.plan)))
+        cols = lambda job, step, state, rss: (
+            f"{job}{step}|{state}|0:0|12|56|110G|{rss}|0|0|node01")
+        sacct = "\n".join((cols("1000", "", "COMPLETED", ""),
+                          cols("1000", ".batch", "COMPLETED", "32000K")))
+        observed = []
+        def fake_run(argv, **kwargs):
+            observed.append((argv, kwargs))
+            return SimpleNamespace(stdout=sacct)
+        record = pipeline.accounting(self.root, runner=fake_run)
+        self.assertEqual(record["schema"], "kristalyapi.truba-qe-accounting.v1")
+        self.assertEqual(record["status"], "partial")
+        self.assertEqual(record["jobs"][0]["job"]["state"], "COMPLETED")
+        self.assertEqual(record["jobs"][0]["steps"][0]["max_rss"], "32000K")
+        self.assertIsNone(record["jobs"][1]["job"])
+        self.assertEqual(observed[0][0][0], "sacct")
+        self.assertNotIn("sbatch", observed[0][0])
+        self.assertFalse(observed[0][1].get("shell", False))
+
+    def test_operator_accounting_rejects_invalid_jobs_and_forged_sacct(self):
+        from types import SimpleNamespace
+        (self.root / "submissions.txt").write_text("scf 1000\nbands 1001\n")
+        with self.assertRaisesRegex(ValueError, "Unexpected Slurm"):
+            pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(
+                stdout="9999|FAILED|1:0|12|56|110G|0|0|0|node01"))
+        (self.root / "submissions.txt").write_text("scf 1000;rm\n")
+        with self.assertRaisesRegex(ValueError, "Invalid or unsorted"):
+            pipeline.accounting(self.root, runner=lambda *a, **k: SimpleNamespace(stdout=""))
+
+    def test_science_preflight_requires_enough_bands_for_real_upf_v2_valence(self):
+        raw = (b'<UPF version="2"><PP_HEADER element="Si" z_valence="4.0" '
+               b'functional="PBE" has_so="F"/></UPF>')
+        (self.root / "pseudo/Si.UPF").write_bytes(raw)
+        self.manifest["pseudopotentials"][0]["sha256"] = sha(raw)
+        self.manifest["electronic"]["nbnd"] = 3
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "requires at least 4"):
+            pipeline.science_check(self.root)
+        with self.assertRaisesRegex(ValueError, "requires at least 4"):
+            pipeline.preflight(self.root)
+        self.manifest["electronic"]["nbnd"] = 16
+        self.write_manifest()
+        report = pipeline.science_check(self.root)
+        self.assertEqual(report["status"], "necessary-capacity-checked")
+        self.assertEqual(report["neutral_valence_electrons"], 8)
+        self.assertEqual(report["minimum_occupied_nbnd"], 4)
+        self.assertEqual(report["k_mesh"], [4, 4, 4])
+        self.assertFalse(report["scientific_convergence_verified"])
+
+    def test_science_preflight_legacy_upf_is_not_falsely_verified(self):
+        report = pipeline.science_check(self.root)
+        self.assertEqual(report["status"], "valence-unverified")
+        self.assertIsNone(report["minimum_occupied_nbnd"])
+        self.assertTrue(report["review_notes"])
+        self.assertEqual(pipeline.preflight(self.root)["science"]["status"], "valence-unverified")
+
+    def test_science_preflight_rejects_upf_element_mismatch(self):
+        raw = b'<UPF><PP_HEADER element="Mo" z_valence="4.0"/></UPF>'
+        (self.root / "pseudo/Si.UPF").write_bytes(raw)
+        self.manifest["pseudopotentials"][0]["sha256"] = sha(raw)
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Invalid UPF v2 element"):
+            pipeline.science_check(self.root)
+
     def test_electronic_chain_preserves_order_and_artifacts(self):
         for stage in self.plan:
             self.complete(stage)

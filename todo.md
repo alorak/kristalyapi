@@ -653,3 +653,30 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Tekrar denenen `pw.x` aşamalarını ve kısmi `bands.x/dos.x/projwfc.x` çıktılarının üstüne yazılmasını reddetme; sentetik testler.
 - [ ] Gerçek TRUBA'da kesilmiş postprocessor zincirinde smoke test.
 - [ ] Güvenilir `pw.x` resume için tüm QE restart veri dosyalarının ayrı snapshot/hash yönetimi ve operatör kabulü (şimdilik desteklenmiyor).
+
+
+### TRUBA P1.7 — Kaynak muhasebesi ve bağımsız kabul kanıtları
+
+- [x] Operatör tarafından çağrılan `python3 pipeline.py accounting`: `sacct` iş/step sonuçlarını ayrı tutan ve eksik veriyi `partial` raporlayan salt-okunur JSON.
+- [x] Orijinal ve yeniden gönderilen işlerin sıralı/nümerik job ID doğrulaması, komut enjeksiyonu reddi ve sentetik regresyonlar.
+- [x] Si/MoS₂ TRUBA gerçek-küme smoke protokolü, korunacak girdi/ham çıktı/UPF/SLURM/telemetri kanıt envanteri.
+- [ ] Gerçek `sacct` çıktısıyla kabul ve bilimsel Si/MoS₂ referans kıyasının operatörce çalıştırılması.
+- [ ] Güncel TRUBA IQ ve bellek/disk tüketimi üzerinden kalibre kaynak önerileri (ölçülmüş tahsis verisi gerektirir).
+
+
+### TRUBA P1.8 — Nötr UPF v2 elektron kapasitesi ve gerekli bilimsel ön kontrol
+
+- [x] `pipeline.py science-check`: sabitlenmiş UPF v2 `element/z_valence` ve `structure.in` atom sayılarından nötr elektron sayısı ve asgari `nbnd` kontrolü.
+- [x] `submit.sh` öncesindeki `preflight` içine gerekli bant kapasitesi kontrolünü ekleme (bilinen valansla yetersiz `nbnd` engellenir).
+- [x] Eksik/legacy UPF valans bilgisini `valence-unverified` olarak işaretleme; bilimsel geçerlilik iddiasında bulunmama; sentetik Si/yanlış element testleri.
+- [ ] Fonksiyonel, UPF ailesi, cutoff/k-mesh/2B vakum ve fiziksel yakınsama koşulları için bağımsız referanslı kabul.
+- [ ] Gerçek Si ve MoS₂ UPF v2 ile TRUBA orfoz hesap kabulü.
+
+
+### TRUBA P1.9 — Sonuç/girdi SHA eşleştirmesi
+
+- [x] Tek iş ve aşamalı SLURM sonuç özetlerinde aktif DFT hazırlık `structure.in` SHA-256 eşleştirme; eşleşmeme/karşılaştırılamama uyarıları.
+- [x] TRUBA bant/DOS/PDOS sonuçlarında da kaynak `input_sha256` karşılaştırma; çalışma alanı/dosya değişimi yarış kontrolü.
+- [x] WebCrypto SHA-256 yardımcı fonksiyonu ve sentetik regresyonları; kristal koordinatlarını otomatik uygulamama.
+- [ ] Bağımsız kaynak ZIP/ham dosyalarla doğrulanabilir dijital imza veya harici güven kökü; SHA içeren JSON tek başına yetmez.
+- [ ] Yalnız geometriyi esas alan normalleştirilmiş yapı kimliği ve hesap protokol kimliğinin bilimsel karşılaştırılması.
