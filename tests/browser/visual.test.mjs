@@ -1173,11 +1173,17 @@ try{
    'EPS must not rasterize the orientation marker');
  }
  // Select crystallographic a/b/c. No camera movement is needed to refresh the live compass.
+ // Groups are re-stacked by depth, so DOM order follows the camera: match labels by colour.
+ const compassLabelsAre=labels=>page.waitForFunction(expected=>{
+  const byColor=Object.fromEntries([...document.querySelectorAll('#axisGizmoSvg g text')]
+   .map(el=>[el.getAttribute('fill'),el.textContent]));
+  return ['#e24b4b','#23a45b','#286de0'].map(color=>byColor[color]).join('')===expected;
+ },labels);
  await page.locator('#axisCompassMode').selectOption('lattice');
- await page.waitForFunction(()=>[...document.querySelectorAll('#axisGizmoSvg g text')]
-  .map(el=>el.textContent).join('')==='abc');
+ await compassLabelsAre('abc');
  assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.axis-compass.v1')),'lattice');
- assert.match(await page.locator('#axisGizmoSvg').getAttribute('aria-label'),/Kristalografik/);
+ assert.match(await page.locator('#axisGizmoSvg').getAttribute('aria-label'),/^Crystallographic compass: a red, b green, c blue$/,
+  'the page is in English here, so the aria label must be translated too');
  for(const format of ['png','svg','pdf-vector','eps']){
   await page.locator('#saveBtn').click();
   const [downloadAbc]=await Promise.all([page.waitForEvent('download'),
@@ -1195,8 +1201,7 @@ try{
   }
  }
  await page.locator('#axisCompassMode').selectOption('cartesian');
- await page.waitForFunction(()=>[...document.querySelectorAll('#axisGizmoSvg g text')]
-  .map(el=>el.textContent).join('')==='XYZ');
+ await compassLabelsAre('XYZ');
  await page.setViewportSize({width:1024,height:768});
  await page.locator('#saveBtn').click();
  await page.locator('#pngScale').selectOption('4');
