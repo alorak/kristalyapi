@@ -60,6 +60,8 @@ test('QE input recognizes only SCF/relax and safe UPF names',()=>{
 test('TRUBA resource values reject injection and out-of-profile allocations',()=>{
  assert.throws(()=>validateResources({account:'hello;rm -rf /'}),/hesap adı/);
  assert.throws(()=>validateResources({account:'ab',ntasks:1}),/MPI görev/);
+ assert.throws(()=>validateResources({account:'ab',ntasks:57}),/56 veya 112/);
+ assert.throws(()=>validateResources({account:'ab',ntasks:80}),/56 veya 112/);
  assert.throws(()=>validateResources({account:'ab',hours:73}),/Süre/);
  assert.throws(()=>validateResources({account:'ab',partition:'debug'}),/orfoz/);
  assert.deepEqual([validateResources({account:'project',ntasks:56,hours:72}).nodes,

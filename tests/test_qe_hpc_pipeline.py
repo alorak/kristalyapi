@@ -81,6 +81,27 @@ class TestStagedTruba(unittest.TestCase):
         pipeline.finish(self.root, stage)
         self.assertTrue((self.root / "reports" / (stage + ".json")).exists())
 
+    def test_preflight_validates_package_and_refuses_replay(self):
+        self.assertEqual(pipeline.preflight(self.root)['status'], 'preflight-ok')
+        (self.root / 'submissions.txt').write_text('scf 1234\n')
+        with self.assertRaisesRegex(ValueError, 'Already submitted'):
+            pipeline.preflight(self.root)
+        (self.root / 'submissions.txt').unlink()
+        (self.root / 'pseudo/Si.UPF').write_text('changed')
+        with self.assertRaisesRegex(ValueError, 'SHA-256 mismatch'):
+            pipeline.preflight(self.root)
+
+    def test_preflight_rejects_invalid_resources_and_existing_reports(self):
+        self.manifest['resources'] = {'partition': 'orfoz', 'ntasks': 80, 'nodes': 1}
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, 'Unsupported TRUBA'):
+            pipeline.preflight(self.root)
+        self.manifest['resources']['ntasks'] = 56
+        self.write_manifest()
+        (self.root / 'reports/old.json').write_text('{}')
+        with self.assertRaisesRegex(ValueError, 'Existing stage evidence'):
+            pipeline.preflight(self.root)
+
     def test_electronic_chain_preserves_order_and_artifacts(self):
         for stage in self.plan:
             self.complete(stage)

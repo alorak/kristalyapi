@@ -320,3 +320,13 @@ Resmî kaynaklar:
 - [TRUBA Quantum ESPRESSO rehberi](https://docs.truba.gov.tr/2-temel_bilgiler/uygulamalar/QEspresso/index.html)
 - [TRUBA kuyruklar ve kaynaklar](https://docs.truba.gov.tr/2-temel_bilgiler/hesaplama_kumeleri.html)
 - [TRUBA SLURM betik özellikleri](https://docs.truba.gov.tr/2-temel_bilgiler/slurm-betik-ozellik.html)
+
+
+## P1.5 — TRUBA kaynak uygunluğu ve fail-closed submit
+
+- `orfoz` kuyruk profili için yalnız **56 veya 112** MPI görevine izin verilir; 57–111 gibi ara değerler reddedilir. [TRUBA kuyruk kuralları](https://docs.truba.gov.tr/1-kaynaklar/arf/arf_kuyruk_bilgisi.html).
+- Paralel `pw.x` aşamaları `--ntasks=56/112 --cpus-per-task=1` kullanır. Seri `bands.x`, `dos.x`, `projwfc.x` aşamaları ise `--ntasks=1 --cpus-per-task=56` ile **56 çekirdek tahsis eder fakat 1 çekirdek kullanır**. Bu asgari orfoz tahsis koşulunu sağlar ama 55 çekirdek boş kaldığından pahalıdır; postprocessing birleştirme sonraki optimizasyondur.
+- `bash submit.sh` ilk gerçek işten önce `python3 pipeline.py preflight` ile ZIP/UPF/hash bütünlüğünü ve eski çalışma kanıtlarını denetler, ardından **bütün 6/7 aşama** için `sbatch --test-only` çağırır. Tek bir test başarısızsa hiçbir gerçek iş gönderilmez. Bu denetim ilerideki kuyruk kota/hesap başarısını garanti etmez.
+- `preflight` mevcut `submissions.txt`, `.submission-lock` veya dolu `reports/` dizinini reddeder. Yeni hesap için temiz bir dizin gerekir.
+- Çalışma loglarına SLURM job/düğüm/görev/CPU bilgileri ve `module list` yazılır; hata yakalama tuzağı modül yüklemeden önce kurulur.
+- **Henüz yapılmadı:** gerçek orfoz üzerinde iş gönderme, SLURM/MPI/QE 7.4 çalışması ve bağımsız bilimsel kabul. Seri postprocessing aşamalarını mevcut tahsis altında birleştirme ve güvenli aşama yeniden başlatma da açık işlerdir.
