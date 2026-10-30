@@ -653,3 +653,12 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Tekrar denenen `pw.x` aşamalarını ve kısmi `bands.x/dos.x/projwfc.x` çıktılarının üstüne yazılmasını reddetme; sentetik testler.
 - [ ] Gerçek TRUBA'da kesilmiş postprocessor zincirinde smoke test.
 - [ ] Güvenilir `pw.x` resume için tüm QE restart veri dosyalarının ayrı snapshot/hash yönetimi ve operatör kabulü (şimdilik desteklenmiyor).
+
+
+### TRUBA P1.7 — Kaynak muhasebesi ve bağımsız kabul kanıtları
+
+- [x] Operatör tarafından çağrılan `python3 pipeline.py accounting`: `sacct` iş/step sonuçlarını ayrı tutan ve eksik veriyi `partial` raporlayan salt-okunur JSON.
+- [x] Orijinal ve yeniden gönderilen işlerin sıralı/nümerik job ID doğrulaması, komut enjeksiyonu reddi ve sentetik regresyonlar.
+- [x] Si/MoS₂ TRUBA gerçek-küme smoke protokolü, korunacak girdi/ham çıktı/UPF/SLURM/telemetri kanıt envanteri.
+- [ ] Gerçek `sacct` çıktısıyla kabul ve bilimsel Si/MoS₂ referans kıyasının operatörce çalıştırılması.
+- [ ] Güncel TRUBA IQ ve bellek/disk tüketimi üzerinden kalibre kaynak önerileri (ölçülmüş tahsis verisi gerektirir).
