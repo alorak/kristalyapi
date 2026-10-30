@@ -686,3 +686,12 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] `resume.sh`: `squeue` başarılı çıkış kodu ve boş çıktı ayrımını zorunlu tut; SLURM sorgu başarısızken iş göndermeyi reddet.
 - [x] Mock `squeue` hata/aktif-job durumlarında sıfır yeni `sbatch` çağrısını doğrulayan Node regresyonu.
 - [ ] Gerçek TRUBA üzerinde bağlantı kesintisi ve iptal edilen bağımlı işler için operatör kabulü.
+
+### TRUBA P2.1 — UPF/XC, 2B vakum uyarısı ve aşama bazında süre profili
+
+- [x] UPF v2 `functional`/önerilen `wfc_cutoff`–`rho_cutoff` metadata incelemesi; karışık XC, açık `input_dft` uyuşmazlığı ve düşük cutoff için **bilimsel uyarı**, yanlış başarı iddiası yok.
+- [x] `k_z=1` için hücre normali boyunca en büyük kesirli-z geometrik boşluk üst sınırını inceleme uyarısı olarak raporla; NaN/sonsuz atom koordinatlarını reddet.
+- [x] Aşamalı SLURM ZIP'de seri postprocessor süre sınırını ayrı isteğe bağlı seçme ve manifestte tahsis CPU-saat *üst sınırını* gösterme; eski varsayılan süre korunur.
+- [x] Mock QE/UPF ve kaynak-süre profili regresyonları.
+- [ ] Seri postprocessor hesaplarının farklı kısa işlere bölünmesini gerçekten ortadan kaldırmak için kanıt/afterok uyumlu birleşik SLURM allocation tasarımı (bu değişiklik yalnız süre sınırını iyileştirir).
+- [ ] Gerçek TRUBA üzerinde cutoff, k-örgüsü, 2B vakum ve projeksiyon/bant sayısı yakınsama kabulü.
