@@ -28,6 +28,7 @@ import { parseTrubaSummary,renderTrubaSummary,compareTrubaInputDigest } from './
 import { parseTrubaPipelineSummary,renderTrubaPipelineSummary } from './qe-truba-pipeline-view.js';
 import { applyVesta3SiteAppearance,vesta3SectionTransferReport } from './vesta-project-style.js';
 import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
+import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -3893,6 +3894,7 @@ function renderOverlayList(){
 const LAYER_TYPES=[
  ['atoms','Atomlar','#467bb9'],['ellipsoids','Termal elipsoitler','#568bc5'],
  ['magnetic','Manyetik momentler','#da7591'],
+ ['vestaVectors','VESTA çizim okları (türü belirsiz)','#df8b45'],
  ['bonds','Bağlar','#98a5b0'],['polyhedra','Koordinasyon çokyüzlüleri','#54a1db'],
  ['morphology','Kristal morfolojisi','#67a6d5'],['overlays','Diğer kristal fazları','#8c5bba'],
  ['cell','Birim hücre','#74869a'],['miller','Miller düzlemleri','#40b7d5'],
@@ -4060,6 +4062,21 @@ function build(){
   const length=Math.min(1.8,.4+.28*norm),dir=m.normalize();
   const arrow=new THREE.ArrowHelper(dir,item.pos.clone(),length,0xd7698b,length*.28,Math.max(.07,length*.13));
   addLayerObject(arrow,'magnetic');magneticArrows++;
+ }
+ /* VESTA VECTR are untyped VISUAL arrows, never magneticMoment / mu_B. */
+ if(!state.symmetryEnabled){
+  const vestaArrows=validatedVestaDisplayVectors(state.vestaDisplayVectors,state.sites.map(site=>site.label));
+  const perSite=new Map(vestaArrows.map(v=>[v.siteLabel,v]));let drawn=0;
+  for(let i=0;i<entry.length&&drawn<200;i++){
+   const atom=entry[i],arrow=perSite.get(atom.site.label);
+   if(!atomRender[i].visible||!arrow)continue;
+   const direction=new THREE.Vector3(...arrow.cartesian),rawLength=direction.length()*arrow.displayScale;
+   if(rawLength<1e-9)continue;
+   const visibleLength=Math.min(5,rawLength); // Explicit bounded DISPLAY length, not a scientific conversion.
+   const mesh=new THREE.ArrowHelper(direction.normalize(),atom.pos.clone(),visibleLength,
+    new THREE.Color(arrow.style.color),Math.min(.4,visibleLength*.3),Math.min(.14,visibleLength*.12));
+   addLayerObject(mesh,'vestaVectors');drawn++;
+  }
  }
  const bondStarted=performance.now();
  const rules=parseBondRules(state.bondRules),bondPeriodic=bondIsPeriodic(state.bondMode,state.nonPeriodic);
@@ -7896,6 +7913,7 @@ function loadProject(json){
   throw Error('Periyodik olmayan yapı konum ofseti geçersiz.');
  return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,bounds,style,cut,autoBond:obj.autoBond!==false,bondMode,nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:[...nonPeriodicOrigin],sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,morphology,morphVisible:!!obj.morphVisible,overlays,poly,polyCenters,polyColor:visualHex(obj.polyColor,'#54a1db'),polyOpacity,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
   adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
+  vestaDisplayVectors:validatedVestaDisplayVectors(obj.vestaDisplayVectors,sites.map(site=>site.label)),
   layers:normalizedLayerState(obj.layers),layerOrder:normalizedLayerOrder(obj.layerOrder),
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
@@ -8007,6 +8025,7 @@ function lastCrystalPayload(current){
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
   atomScale:current.atomScale,poly:current.poly,polyCenters:current.polyCenters,polyColor:current.polyColor,polyOpacity:current.polyOpacity,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors,
+  vestaDisplayVectors:validatedVestaDisplayVectors(current.vestaDisplayVectors,current.sites.map(site=>site.label)),
   layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder)
  };
 }
@@ -8378,6 +8397,8 @@ function vestaProjectData(source){
  }
  const view=parseVesta3View(lines);
  warnings.push(...view.notes);
+ const scientific=parseVesta3ScientificStyles(lines,byIndex);
+ warnings.push(...scientific.warnings);
  const transferReport=vesta3SectionTransferReport(lines);
  if(transferReport.skipped.length)
   warnings.push('Not transferred from VESTA project: '+transferReport.skipped.join(', ')+'.');
@@ -8385,10 +8406,12 @@ function vestaProjectData(source){
  return {name:projectName.slice(0,150),detail:'VESTA 3.x import · '+sites.length+' sites',cell,sites,
   sgNumber,sgSetting,symmetryEnabled,bounds,rep:[1,1,1],boundary:true,
   style:'ball',atomScale:.8,cut:2.65,cellVisible:true,axes:false,poly:'',polyCenters:[],nonPeriodic:false,
+  polyColor:scientific.polyhedron.status==='COLOR_ONLY'?scientific.polyhedron.color:'#54a1db',
+  vestaDisplayVectors:scientific.vectors.length&&!symmetryEnabled?validatedVestaDisplayVectors(scientific.vectors,sites.map(site=>site.label)):[],
   bonds:bonds?bonds[0]!=='0':true,labels:labels?labels[0]!=='0':false,
   autoBond:deDuplicatedRules.length===0,bondRules:deDuplicatedRules.join(';'),
   warning:warnings.join(' '),vesta:{version:version[1],density,surfaces,warnings,
-   settingProvenance:vestaSettingProvenance,appearance,transferReport,view}};
+   settingProvenance:vestaSettingProvenance,appearance,transferReport,view,scientific}};
 }
 /* The browser's file chooser is the only authority for a companion density
    file. Basenames are matched exactly; no network, directory or local-path IO. */
@@ -8494,7 +8517,7 @@ async function importFile(file,selectedFiles=[file]){
  if(workspaceId!==activeWorkspaceId)throw Error('File loading changed workspaces; please try again.');
  if(densityGrid)resetVolume();
  const {vesta,...structure}=obj;
- state={...state,...structure,cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:obj.nonPeriodicOrigin||[0,0,0],bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...structure,vestaDisplayVectors:structure.vestaDisplayVectors||[],cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:obj.nonPeriodicOrigin||[0,0,0],bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  if(isCif&&name.endsWith('.json')===false)state.cifOriginal=originalCifRecord(state,str);
  syncControls();build();
  if(vesta){
@@ -9505,6 +9528,7 @@ function exportVrml(){
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,bondMode:state.bondMode||'auto',nonPeriodic:!!state.nonPeriodic,nonPeriodicOrigin:state.nonPeriodicOrigin||[0,0,0],sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCenters:state.polyCenters,polyColor:state.polyColor,polyOpacity:state.polyOpacity,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
+ vestaDisplayVectors:validatedVestaDisplayVectors(state.vestaDisplayVectors,state.sites.map(site=>site.label)),
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
