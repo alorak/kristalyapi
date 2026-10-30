@@ -164,7 +164,8 @@ jobs:
           if [ ! -f validation-results/qe-mos2-d41/plan.json ]; then
             cp tests/fixtures/qe/mos2-electronic-convergence.json validation-results/qe-mos2-d41/plan.json
           fi
-          python tools/qe_electronic_convergence.py --report validation-results/qe-mos2-d41
+          python tools/qe_electronic_convergence.py --report validation-results/qe-mos2-d41 || true
+          python tools/qe_convergence_view.py validation-results/qe-mos2-d41 --output validation-results/qe-mos2-d41/convergence-view.json
           python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41
       - name: Retain cohort, comparisons and all raw failures
         if: always()

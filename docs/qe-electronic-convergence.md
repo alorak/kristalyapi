@@ -120,3 +120,27 @@ MoS₂ eğri penceresi mevcut durum aralığının içindeki −8…6 eV olarak
 önceden sabitlendi; geniş pencerede durum integrali ayrı `dos.x` çıktısıyla
 korundu. Sayısal kabul eşikleri değiştirilmedi. İlk başarısız Si kanıtı
 saklanır; bu düzeltmeden önce yeni bir MoS₂ D4.1 vakası çalıştırılmadı.
+
+## D4.2 — Uygulamada raporu inceleme
+
+Karşılaştırma raporunu ham kohorttan yeniden hesapladıktan sonra görünümü üret:
+
+```sh
+python tools/qe_convergence_view.py validation-results/qe-mos2-d41 --output convergence-view.json
+```
+
+Araç kayıtlı `comparison.json` ile yeniden türetilen ham rapor eşleşmezse
+çıktı vermez. Eksik/başarısız kohort da kendi başarısız durumuyla incelenebilir;
+olmamış vaka için eğri üretilmez. Devam eden eski bir CI sürümünün paketinde
+görünüm dosyası yoksa indirilmiş kanıt kökünde bu komut kullanılabilir.
+
+DFT panelindeki **Elektronik yakınsama ve kanıt raporu** bölümünde dosyayı aç.
+Plan, karşılaştırma ve eğri JSON hash'leri tarayıcıda eşleştirilir; karar
+bayraklarının sayısal eşiklerle tutarlılığı kontrol edilir. Bu dosya kontrolü
+ham QE kanıtının bağımsız doğrulamasının yerine geçmez; ekranda kabul
+**dosyada raporlanan** sonuç olarak belirtilir.
+
+Panel örneklenmiş NSCF VBM/CBM/aralık değerlerini, karar ve yardımcı
+çiftleri, genişlik duyarlılığını, DOS/Mo-d/S-p eğri çiftlerini, kaynak commit
+ve ham dosya özetlerini gösterir. Tablo CSV olarak indirilebilir. Eski D4
+0.02 eV, yeni vakalar 0.01 eV ham ortak örneklerle çizilir; enerji kaydırılmaz.

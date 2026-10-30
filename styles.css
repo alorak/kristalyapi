@@ -1167,3 +1167,7 @@ body.lesson-open #app{display:none!important}
 .xrd-factor-insight,.xrd-strongest-note{margin-top:11px;padding:12px 15px;border:1px solid #cee0f0;border-radius:11px;background:#f0f7fe;color:#365e7c;line-height:1.65;font-size:12px}
 .xrd-strongest-note{margin-top:12px;background:#fff9ed;border-color:#f0e0ba;color:#715423}
 @media(max-width:850px){.xrd-factor-steps{grid-template-columns:minmax(0,1fr)}.xrd-factor-step{padding:13px 15px}.xrd-factor-table th,.xrd-factor-table td{padding:10px 11px}}
+
+.qe-convergence-table{overflow-x:auto;margin:12px 0}.qe-convergence-table table{border-collapse:collapse;width:100%;min-width:680px;font-size:12px}.qe-convergence-table th,.qe-convergence-table td{padding:6px;text-align:left;border-bottom:1px solid var(--border,#6b728055);overflow-wrap:anywhere}.qe-electronic-charts details{overflow-wrap:anywhere;margin-top:12px}
+
+.qe-workflow{grid-template-columns:minmax(0,1fr);min-width:0}.qe-electronic-charts{min-width:0;max-width:100%;overflow-wrap:anywhere}
