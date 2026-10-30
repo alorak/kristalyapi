@@ -33,6 +33,13 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
   assert.ok(pages.includes('test -s public/'+file),file+' must be checked for a nonempty deploy artifact');
   assert.ok(sw.includes("'./"+file+"'"),file+' must be cached by the offline shell');
  }
+ assert.ok(existsSync(path.join(root,'tools/qe_hpc_electronic.py')),'P1.3 converter must exist');
+ assert.ok(existsSync(path.join(root,'tools/qe_pdos.py')),'P1.3 QE projected DOS parser must exist');
+ for(const name of ['qe_hpc_electronic.py','qe_pdos.py']){
+  assert.ok(pages.includes('cp tools/'+name+' public/tools/'+name),'P1.3 asset '+name+' must deploy');
+  assert.ok(pages.includes('test -s public/tools/'+name),'P1.3 asset '+name+' must be nonempty');
+  assert.ok(sw.includes("'./tools/"+name+"'"),'P1.3 asset '+name+' must be offline cached');
+ }
  assert.ok(existsSync(path.join(root,'tools/qe_hpc_pipeline.py')),'P1.2 stage driver must exist');
  assert.ok(pages.includes('cp tools/qe_hpc_pipeline.py public/tools/qe_hpc_pipeline.py'),'P1.2 driver must retain its tools/ Pages route');
  assert.ok(pages.includes('test -s public/tools/qe_hpc_pipeline.py'),'P1.2 driver deploy asset must be checked');
@@ -48,7 +55,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-truba-p12-js-modules'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-truba-p13-electronic'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
