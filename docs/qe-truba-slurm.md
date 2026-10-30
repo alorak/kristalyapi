@@ -380,3 +380,16 @@ JSON şeması `kristalyapi.truba-qe-accounting.v1` içerir. `submissions.txt` ve
 5. Önceden tanımlanmış bilimsel kabul ölçütleri ve bağımsız Si/MoS₂ referansları (aynı UPF, fonksiyonel, kesme enerjisi, k-örgüsü ve karşılaştırılabilir QE sürümü). Bu araç yalnız dosyaları raporlar; bilimsel kabulü **otomatik geçirmez**.
 
 Öncelik önce **2 atomlu Si SCF → bands → NSCF → DOS/PDOS** smoke; ardından MoS₂ sabit hücreli relax ve 300+ bantlı büyük referanstır. TRUBA üzerinde gerçekten çalışmadan bu adımlara tamamlandı işareti verilmemelidir.
+
+
+## P1.8 — Bilimsel kapasite ön kontrolü (UPF v2)
+
+`python3 pipeline.py science-check` komutu ve `submit.sh` tarafından otomatik çağrılan `pipeline.py preflight`, `structure.in` içindeki `nat`, atom türleri, k-örgüsü ve `ecutwfc/ecutrho` değerlerini inceler. Hash doğrulaması geçmiş gerçek UPF v2 dosyasındaki `<PP_HEADER element=... z_valence=...>` özelliklerini okuyarak **nötr ve spin-polarize olmayan** hesap için asgari işgal edilen bant sayısını belirler:
+
+`N_e = Σ (atom sayısı × UPF z_valence)`, `nbnd_min = ceil(N_e / 2)`.
+
+- Bilinen UPF v2 değerlik sayılarıyla seçilen `nbnd` fiziksel olarak **yetersizse**, gönderim ön kontrolü başarısız olur; kaynak tüketmeden önce düzeltme istenir.
+- Eski UPF, eksik `PP_HEADER` veya eksik valans metaverisinde elektron sayısı **tahmin edilmez**, `status=valence-unverified` döner; geriye uyumluluk için tek başına eski UPF nedeniyle gönderim engellenmez.
+- `status=necessary-capacity-checked` yalnız **gerekli elektron kapasitesini** ifade eder, yeterli boş bant sayısını veya bilimsel yakınsamayı garanti etmez.
+- `ecutrho ≥ ecutwfc > 0` kontrolü gerçekleştirilir, ancak UPF/XC işlevsel uyumu, PAW/ultrasoft özel cutoff koşulları, k-yolu, vakum, spin/SOC, manyetizma ve deneysel özellikler hâlâ **bağımsız inceleme gerektirir**.
+- Bu aşamada yalnız dosya incelenir; yeni bir Quantum ESPRESSO hesabı veya SLURM işi çalıştırılmaz.

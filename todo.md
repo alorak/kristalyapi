@@ -662,3 +662,12 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Si/MoS₂ TRUBA gerçek-küme smoke protokolü, korunacak girdi/ham çıktı/UPF/SLURM/telemetri kanıt envanteri.
 - [ ] Gerçek `sacct` çıktısıyla kabul ve bilimsel Si/MoS₂ referans kıyasının operatörce çalıştırılması.
 - [ ] Güncel TRUBA IQ ve bellek/disk tüketimi üzerinden kalibre kaynak önerileri (ölçülmüş tahsis verisi gerektirir).
+
+
+### TRUBA P1.8 — Nötr UPF v2 elektron kapasitesi ve gerekli bilimsel ön kontrol
+
+- [x] `pipeline.py science-check`: sabitlenmiş UPF v2 `element/z_valence` ve `structure.in` atom sayılarından nötr elektron sayısı ve asgari `nbnd` kontrolü.
+- [x] `submit.sh` öncesindeki `preflight` içine gerekli bant kapasitesi kontrolünü ekleme (bilinen valansla yetersiz `nbnd` engellenir).
+- [x] Eksik/legacy UPF valans bilgisini `valence-unverified` olarak işaretleme; bilimsel geçerlilik iddiasında bulunmama; sentetik Si/yanlış element testleri.
+- [ ] Fonksiyonel, UPF ailesi, cutoff/k-mesh/2B vakum ve fiziksel yakınsama koşulları için bağımsız referanslı kabul.
+- [ ] Gerçek Si ve MoS₂ UPF v2 ile TRUBA orfoz hesap kabulü.
