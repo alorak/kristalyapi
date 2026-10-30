@@ -6830,7 +6830,7 @@ async function qeExportTrubaPackage(){
  status.textContent='Yerel ZIP hazırlanıyor; hesap gönderilmiyor.';
  try{
   const {result}=qeBuildLocalInput();
-  const collectorResponse=await fetch(new URL('./qe_hpc_collect.py',import.meta.url));
+  const collectorResponse=await fetch(new URL('./qe_hpc_collect.py',document.baseURI));
   if(!collectorResponse.ok)throw Error('Python sonuç toplayıcı dosyası yüklenemedi.');
   const collectorScript=await collectorResponse.text();
   const pkg=await createTrubaPackage({
