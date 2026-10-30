@@ -653,3 +653,45 @@ Ayrıntılar: [TRUBA SLURM kılavuzu](docs/qe-truba-slurm.md).
 - [x] Tekrar denenen `pw.x` aşamalarını ve kısmi `bands.x/dos.x/projwfc.x` çıktılarının üstüne yazılmasını reddetme; sentetik testler.
 - [ ] Gerçek TRUBA'da kesilmiş postprocessor zincirinde smoke test.
 - [ ] Güvenilir `pw.x` resume için tüm QE restart veri dosyalarının ayrı snapshot/hash yönetimi ve operatör kabulü (şimdilik desteklenmiyor).
+
+
+### TRUBA P1.7 — Kaynak muhasebesi ve bağımsız kabul kanıtları
+
+- [x] Operatör tarafından çağrılan `python3 pipeline.py accounting`: `sacct` iş/step sonuçlarını ayrı tutan ve eksik veriyi `partial` raporlayan salt-okunur JSON.
+- [x] Orijinal ve yeniden gönderilen işlerin sıralı/nümerik job ID doğrulaması, komut enjeksiyonu reddi ve sentetik regresyonlar.
+- [x] Si/MoS₂ TRUBA gerçek-küme smoke protokolü, korunacak girdi/ham çıktı/UPF/SLURM/telemetri kanıt envanteri.
+- [ ] Gerçek `sacct` çıktısıyla kabul ve bilimsel Si/MoS₂ referans kıyasının operatörce çalıştırılması.
+- [ ] Güncel TRUBA IQ ve bellek/disk tüketimi üzerinden kalibre kaynak önerileri (ölçülmüş tahsis verisi gerektirir).
+
+
+### TRUBA P1.8 — Nötr UPF v2 elektron kapasitesi ve gerekli bilimsel ön kontrol
+
+- [x] `pipeline.py science-check`: sabitlenmiş UPF v2 `element/z_valence` ve `structure.in` atom sayılarından nötr elektron sayısı ve asgari `nbnd` kontrolü.
+- [x] `submit.sh` öncesindeki `preflight` içine gerekli bant kapasitesi kontrolünü ekleme (bilinen valansla yetersiz `nbnd` engellenir).
+- [x] Eksik/legacy UPF valans bilgisini `valence-unverified` olarak işaretleme; bilimsel geçerlilik iddiasında bulunmama; sentetik Si/yanlış element testleri.
+- [ ] Fonksiyonel, UPF ailesi, cutoff/k-mesh/2B vakum ve fiziksel yakınsama koşulları için bağımsız referanslı kabul.
+- [ ] Gerçek Si ve MoS₂ UPF v2 ile TRUBA orfoz hesap kabulü.
+
+
+### TRUBA P1.9 — Sonuç/girdi SHA eşleştirmesi
+
+- [x] Tek iş ve aşamalı SLURM sonuç özetlerinde aktif DFT hazırlık `structure.in` SHA-256 eşleştirme; eşleşmeme/karşılaştırılamama uyarıları.
+- [x] TRUBA bant/DOS/PDOS sonuçlarında da kaynak `input_sha256` karşılaştırma; çalışma alanı/dosya değişimi yarış kontrolü.
+- [x] WebCrypto SHA-256 yardımcı fonksiyonu ve sentetik regresyonları; kristal koordinatlarını otomatik uygulamama.
+- [ ] Bağımsız kaynak ZIP/ham dosyalarla doğrulanabilir dijital imza veya harici güven kökü; SHA içeren JSON tek başına yetmez.
+- [ ] Yalnız geometriyi esas alan normalleştirilmiş yapı kimliği ve hesap protokol kimliğinin bilimsel karşılaştırılması.
+
+### TRUBA P2.0 — Devam işlemi güvenliği
+
+- [x] `resume.sh`: `squeue` başarılı çıkış kodu ve boş çıktı ayrımını zorunlu tut; SLURM sorgu başarısızken iş göndermeyi reddet.
+- [x] Mock `squeue` hata/aktif-job durumlarında sıfır yeni `sbatch` çağrısını doğrulayan Node regresyonu.
+- [ ] Gerçek TRUBA üzerinde bağlantı kesintisi ve iptal edilen bağımlı işler için operatör kabulü.
+
+### TRUBA P2.1 — UPF/XC, 2B vakum uyarısı ve aşama bazında süre profili
+
+- [x] UPF v2 `functional`/önerilen `wfc_cutoff`–`rho_cutoff` metadata incelemesi; karışık XC, açık `input_dft` uyuşmazlığı ve düşük cutoff için **bilimsel uyarı**, yanlış başarı iddiası yok.
+- [x] `k_z=1` için hücre normali boyunca en büyük kesirli-z geometrik boşluk üst sınırını inceleme uyarısı olarak raporla; NaN/sonsuz atom koordinatlarını reddet.
+- [x] Aşamalı SLURM ZIP'de seri postprocessor süre sınırını ayrı isteğe bağlı seçme ve manifestte tahsis CPU-saat *üst sınırını* gösterme; eski varsayılan süre korunur.
+- [x] Mock QE/UPF ve kaynak-süre profili regresyonları.
+- [ ] Seri postprocessor hesaplarının farklı kısa işlere bölünmesini gerçekten ortadan kaldırmak için kanıt/afterok uyumlu birleşik SLURM allocation tasarımı (bu değişiklik yalnız süre sınırını iyileştirir).
+- [ ] Gerçek TRUBA üzerinde cutoff, k-örgüsü, 2B vakum ve projeksiyon/bant sayısı yakınsama kabulü.

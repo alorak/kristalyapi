@@ -7,7 +7,7 @@ export const DFT_SETTINGS_KEY='kristalyapi.dft-settings.v1';
 export const DFT_SETTINGS_IDS=['qeApiAddress','qeJobProfile','qeJobWorkflow','qeElectronicSpin','qeSpinSeeds','qeSpinSmearing',
  'qeElectronicNbnd','qeElectronicMesh','qeBandFirst','qeBandLast','qeDosExplicit','qeDosMin','qeDosMax','qeDosStep','qeDosSigma',
  'qeElectronicPath','qeJobMaxSteps','qeJobEnergyThreshold','qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
- 'qeForceThreshold','qeFreezeBottom','qePseudoFiles','qeHpcAccount','qeHpcPartition','qeHpcTasks','qeHpcHours','qeHpcNbnd',
+ 'qeForceThreshold','qeFreezeBottom','qePseudoFiles','qeHpcAccount','qeHpcPartition','qeHpcTasks','qeHpcHours','qeHpcPostHours','qeHpcNbnd',
  'qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz','qeHpcBandPath','qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss',
  'qeHpcBandFirst','qeHpcBandLast','qeHpcConvertElectronic'];
 // Controls in Setup/Settings that are intentionally not saved.

@@ -3,12 +3,14 @@
 
 Only the generated fixed workflow is supported: optional fixed-cell relax,
 SCF, bands/bands.x, NSCF, DOS and projected DOS. This tool never submits jobs,
-executes shell commands, downloads pseudopotentials or infers a k-path.
+executes shell commands (except operator-invoked read-only sacct accounting),
+downloads pseudopotentials or infers a k-path.
 Requires Python 3.9+ standard library only.
 """
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -16,8 +18,10 @@ import math
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 
 SCHEMA = "kristalyapi.truba-qe-pipeline.v1"
 REPORT_SCHEMA = "kristalyapi.truba-qe-stage.v1"
@@ -316,6 +320,145 @@ def previous_report(root: Path, plan: list[str], stage: str, check_save: bool = 
     return value
 
 
+def science_check(root: Path) -> dict:
+    """Necessary, limited, nonmagnetic electron-capacity check from UPF v2.
+
+    Missing/legacy UPF metadata is flagged as unverified, NEVER guessed.
+    No energy, band gap, cutoff/k-mesh or physical convergence is certified.
+    """
+    config = load_manifest(root)
+    source = file_at(root, "structure.in", 4 * 1024 * 1024).read_text("utf-8")
+    nat_match = re.search(r"(?im)^\s*nat\s*=\s*(\d+)", source)
+    pos = re.search(r"(?ims)^ATOMIC_POSITIONS\s+crystal\s*\n(.*?)^K_POINTS\s+automatic\s*$", source)
+    mesh = re.search(r"(?im)^K_POINTS\s+automatic\s*\n\s*(\d+)\s+(\d+)\s+(\d+)\s+[01]\s+[01]\s+[01]", source)
+    if not nat_match or not pos or not mesh:
+        raise ValueError("Cannot independently inspect source QE atomic sites/k mesh")
+    sites = [row.split() for row in pos.group(1).splitlines() if row.strip()]
+    if len(sites) != int(nat_match.group(1)) or any(len(row) not in (4, 7) for row in sites):
+        raise ValueError("Source atomic sites do not match nat")
+    try:
+        fractional_sites = [[float(coord.replace('d', 'e').replace('D', 'E')) for coord in row[1:4]]
+                            for row in sites]
+    except ValueError as exc:
+        raise ValueError('Invalid fractional atom coordinates') from exc
+    if any(not math.isfinite(v) for row in fractional_sites for v in row):
+        raise ValueError('Nonfinite fractional atom coordinates')
+    counts = Counter(row[0] for row in sites)
+    pseudos = config["pseudopotentials"]
+    if set(counts) != {p.get("element") for p in pseudos}:
+        raise ValueError("Atomic elements and UPF manifest species differ")
+    valence = {}
+    functional = {}
+    suggested_cutoffs = {}
+    unknown = []
+    warnings = []
+    for pseudo in pseudos:
+        element, filename = pseudo["element"], pseudo["file"]
+        with file_at(root, "pseudo/" + filename, 24 * 1024 * 1024).open("rb") as stream:
+            start = stream.read(131072)
+        match = re.search(br"<PP_HEADER\b[^>]*>", start)
+        if match is None:
+            unknown.append(element + ": missing UPF v2 PP_HEADER")
+            continue
+        tag = match.group(0)
+        if not tag.endswith(b"/>"):
+            tag = tag[:-1] + b"/>"
+        try:
+            attrs = ET.fromstring(tag).attrib
+            raw = float(attrs["z_valence"].replace("D", "E").replace("d", "e"))
+            if (attrs["element"].strip() != element or not math.isfinite(raw)
+                    or not 0 < raw <= 100):
+                raise ValueError("element/valence mismatch")
+        except (ET.ParseError, KeyError, ValueError) as exc:
+            raise ValueError("Invalid UPF v2 element/z_valence header: " + element) from exc
+        valence[element] = raw
+        functional[element] = attrs.get("functional", "unknown")
+        recommended = {}
+        for key in ("wfc_cutoff", "rho_cutoff"):
+            if key in attrs:
+                try:
+                    value = float(attrs[key].replace("D", "E").replace("d", "e"))
+                    if math.isfinite(value) and value > 0:
+                        recommended[key] = value
+                except ValueError:
+                    warnings.append(element + ": UPF suggested " + key + " is not numeric")
+        suggested_cutoffs[element] = recommended
+    for field in ("ecutwfc", "ecutrho"):
+        if not re.search(r"(?im)^\s*" + field + r"\s*=\s*(" + NUM + r")", source):
+            raise ValueError("Missing QE cutoff: " + field)
+    ecutwfc = float(re.search(r"(?im)^\s*ecutwfc\s*=\s*(" + NUM + r")", source).group(1).replace("d", "e").replace("D", "E"))
+    ecutrho = float(re.search(r"(?im)^\s*ecutrho\s*=\s*(" + NUM + r")", source).group(1).replace("d", "e").replace("D", "E"))
+    if not all(math.isfinite(v) and v > 0 for v in (ecutwfc, ecutrho)) or ecutrho < ecutwfc:
+        raise ValueError("Invalid ecutwfc/ecutrho pair")
+    # These are warnings, not scientific convergence decisions.
+    known_xc = {v.strip().upper() for v in functional.values()
+                if v.strip().lower() not in ('', 'unknown', 'none')}
+    if len(known_xc) > 1:
+        warnings.append('UPF XC functional labels differ: ' + ', '.join(sorted(known_xc)))
+    input_xc = re.search(r'''(?im)^\s*input_dft\s*=\s*['"]([^'"\n]+)['"]''', source)
+    if input_xc and known_xc and input_xc.group(1).strip().upper() not in known_xc:
+        warnings.append('Explicit input_dft differs from UPF XC labels; review manually')
+    for element, rec in suggested_cutoffs.items():
+        for name, actual in (("wfc_cutoff", ecutwfc), ("rho_cutoff", ecutrho)):
+            if name in rec and actual + 1e-9 < rec[name]:
+                warnings.append(element + ': requested cutoff below UPF ' + name + ' suggestion (not a measured convergence limit)')
+    # Fractional-z empty gap is an upper-bound geometry indicator only;
+    # atoms have finite extent and this is not a certified slab/vacuum check.
+    slab_geometry = None
+    k_mesh = [int(v) for v in mesh.groups()]
+    if k_mesh[2] == 1:
+        match_cell = re.search(r'(?im)^CELL_PARAMETERS\s+angstrom\s*\n([^\n]+)\n([^\n]+)\n([^\n]+)', source)
+        if match_cell:
+            try:
+                basis = [[float(v.replace('D', 'E').replace('d', 'e')) for v in line.split()]
+                         for line in match_cell.groups()]
+                if any(len(v) != 3 or not all(math.isfinite(n) for n in v) for v in basis):
+                    raise ValueError('Invalid cell vectors')
+                ax, ay, az = basis[0]
+                bx, by, bz = basis[1]
+                cx, cy, cz = basis[2]
+                normal = [ay*bz-az*by, az*bx-ax*bz, ax*by-ay*bx]
+                norm = math.sqrt(sum(v*v for v in normal))
+                height = abs(normal[0]*cx + normal[1]*cy + normal[2]*cz)/norm if norm > 1e-10 else 0
+                zs = sorted(row[2] % 1.0 for row in fractional_sites)
+                gaps = [b-a for a, b in zip(zs, zs[1:])] + [1+zs[0]-zs[-1]]
+                gap = height * max(gaps)
+                slab_geometry = {'cell_normal_height_angstrom': round(height, 4),
+                                 'largest_fractional_z_empty_gap_angstrom_upper_bound': round(gap, 4),
+                                 'kz_mesh': 1,
+                                 'assumption': 'Fractional-z slab interpretation, not atom-radius corrected'}
+                if gap < 10:
+                    warnings.append('kz=1 and geometric empty z-gap below 10 Å; review slab vacuum and periodic image coupling')
+            except (ValueError, IndexError, ZeroDivisionError):
+                warnings.append('kz=1: cannot determine fractional-z empty gap; inspect slab geometry')
+        else:
+            warnings.append('kz=1: unsupported cell units for vacuum-gap indication')
+    electrons = sum(counts[element] * valence[element] for element in counts) if not unknown else None
+    minimum = None
+    if electrons is not None:
+        if not math.isclose(electrons, round(electrons), abs_tol=1e-6):
+            unknown.append("Fractional neutral valence electron count: manual review required")
+        else:
+            minimum = math.ceil(round(electrons) / 2)
+            if config["electronic"]["nbnd"] < minimum:
+                raise ValueError(f"nbnd={config['electronic']['nbnd']} cannot hold {round(electrons)} neutral valence electrons; requires at least {minimum}")
+    return {"schema": "kristalyapi.truba-qe-science-preflight.v1",
+            "status": "valence-unverified" if unknown else "necessary-capacity-checked",
+            "scientific_convergence_verified": False,
+            "structure_in_sha256": config["file_sha256"]["structure.in"],
+            "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
+            "atom_count": len(sites), "elements": dict(counts),
+            "upf_valence_electrons": valence, "upf_functional_labels": functional,
+            "upf_suggested_cutoffs_ry": suggested_cutoffs,
+            "scientific_review_warnings": warnings, "possible_2d_vacuum_geometry": slab_geometry,
+            "neutral_valence_electrons": electrons,
+            "minimum_occupied_nbnd": minimum, "requested_nbnd": config["electronic"]["nbnd"],
+            "ecutwfc_ry": ecutwfc, "ecutrho_ry": ecutrho,
+            "k_mesh": k_mesh,
+            "review_notes": unknown,
+            "limitations": "Necessary neutral nonmagnetic band capacity only; empty bands, UPF/XC compatibility, real convergence, k-path, vacuum and physical results not verified."}
+
+
 def preflight(root: Path) -> dict:
     """Verify pinned offline package before any Slurm queue submission.
 
@@ -337,6 +480,7 @@ def preflight(root: Path) -> dict:
         if not isinstance(resources, dict) or resources.get('partition') != 'orfoz' or resources.get('ntasks') not in (56, 112) or resources.get('nodes') != 1:
             raise ValueError('Unsupported TRUBA orfoz resource allocation')
     return {'status': 'preflight-ok', 'stages': config['stages'],
+            'science': science_check(root),
             'slurm_submission_performed': False, 'scientific_convergence_verified': False}
 
 
@@ -495,6 +639,78 @@ def fail(root: Path, stage: str, exit_code: int) -> None:
                          "utc": datetime.now(timezone.utc).isoformat()})
 
 
+def accounting(root: Path, runner=None) -> dict:
+    """Operator-only, read-only sacct inspection; no sbatch, shell or QE run.
+
+    Slurm job rows and step-level MaxRSS are kept separately; accounting
+    presence is NOT proof of scientific convergence or successful execution.
+    """
+    config = load_manifest(root)
+    plan = config["stages"]
+    jobs = []
+    for filename, attempt in (("submissions.txt", "original"),
+                              ("resubmissions.txt", "manual-resume")):
+        path = root / filename
+        if not path.exists() and not path.is_symlink():
+            if attempt == "original":
+                raise ValueError("Missing original Slurm submissions")
+            continue
+        lines = file_at(root, filename, MAX_MANIFEST).read_text("utf-8").splitlines()
+        records = [line.strip().split() for line in lines if line.strip()]
+        if not records or len(records) > len(plan):
+            raise ValueError("Invalid Slurm submission record count")
+        previous_index = -1
+        for row in records:
+            if (len(row) != 2 or row[0] not in plan or
+                    not re.fullmatch(r"[0-9]{1,18}", row[1]) or
+                    plan.index(row[0]) != previous_index + 1 and
+                    not (previous_index == -1 and attempt == "manual-resume")):
+                raise ValueError("Invalid or unsorted Slurm job receipts")
+            previous_index = plan.index(row[0])
+            jobs.append({"stage": row[0], "job_id": row[1], "attempt": attempt})
+    identifiers = [item["job_id"] for item in jobs]
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("Duplicate Slurm job IDs")
+    args = ["sacct", "--parsable2", "--noheader", "--jobs", ",".join(identifiers),
+            "--format=JobIDRaw,State,ExitCode,ElapsedRaw,AllocCPUS,ReqMem,MaxRSS,MaxDiskRead,MaxDiskWrite,NodeList"]
+    try:
+        if runner is None:
+            runner = subprocess.run
+        result = runner(args, capture_output=True, text=True, timeout=20, check=True)
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise ValueError("sacct unavailable or failed") from exc
+    if not isinstance(result.stdout, str) or len(result.stdout.encode("utf-8")) > 512 * 1024:
+        raise ValueError("Oversized or invalid sacct response")
+    by_id = {item["job_id"]: {"job": None, "steps": []} for item in jobs}
+    fields = ("job_id_raw", "state", "exit_code", "elapsed_raw", "alloc_cpus",
+              "requested_memory", "max_rss", "disk_read", "disk_write", "nodelist")
+    for raw in result.stdout.splitlines():
+        if not raw.strip():
+            continue
+        values = raw.split("|")
+        if len(values) != len(fields) or any(len(v) > 512 for v in values):
+            raise ValueError("Malformed sacct accounting row")
+        raw_id = values[0]
+        root_id = raw_id.split(".", 1)[0]
+        if root_id not in by_id or not re.fullmatch(re.escape(root_id) + r"(?:[.][A-Za-z0-9_-]{1,20})?", raw_id):
+            raise ValueError("Unexpected Slurm job/step ID in accounting")
+        record = dict(zip(fields, values))
+        if root_id == raw_id:
+            if by_id[root_id]["job"] is not None:
+                raise ValueError("Duplicate sacct job row")
+            by_id[root_id]["job"] = record
+        else:
+            if len(by_id[root_id]["steps"]) >= 32:
+                raise ValueError("Excessive Slurm step records")
+            by_id[root_id]["steps"].append(record)
+    return {"schema": "kristalyapi.truba-qe-accounting.v1",
+            "source": "operator-invoked-sacct", "scientific_convergence_verified": False,
+            "status": "collected" if all(x["job"] is not None for x in by_id.values()) else "partial",
+            "pipeline_manifest_sha256": sha256(file_at(root, "pipeline.json", MAX_MANIFEST)),
+            "jobs": [{**item, **by_id[item["job_id"]]} for item in jobs],
+            "notice": "MaxRSS may be missing on job rows; inspect step records. No resource sufficiency or physical convergence is asserted."}
+
+
 def summary(root: Path) -> None:
     config = load_manifest(root)
     records = []
@@ -538,18 +754,22 @@ def summary(root: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("preflight", "resume-check", "prepare", "finish", "fail", "summary"))
+    parser.add_argument("action", choices=("preflight", "science-check", "resume-check", "prepare", "finish", "fail", "summary", "accounting"))
     parser.add_argument("stage", nargs="?")
     parser.add_argument("code", nargs="?", type=int)
     args = parser.parse_args(argv)
     try:
         root = Path.cwd().resolve()
-        if args.action not in ("summary", "preflight") and args.stage not in STAGES:
+        if args.action not in ("summary", "preflight", "science-check", "accounting") and args.stage not in STAGES:
             raise ValueError("Stage name required")
         if args.action == "preflight":
             print(json.dumps(preflight(root), indent=2))
+        elif args.action == "science-check":
+            print(json.dumps(science_check(root), indent=2))
         elif args.action == "resume-check":
             print(json.dumps(resume_check(root, args.stage), indent=2))
+        elif args.action == "accounting":
+            print(json.dumps(accounting(root), indent=2))
         elif args.action == "prepare":
             prepare(root, args.stage)
         elif args.action == "finish":
