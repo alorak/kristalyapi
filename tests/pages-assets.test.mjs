@@ -33,6 +33,12 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
   assert.ok(pages.includes('test -s public/'+file),file+' must be checked for a nonempty deploy artifact');
   assert.ok(sw.includes("'./"+file+"'"),file+' must be cached by the offline shell');
  }
+ const trubaApp=readFileSync(path.join(root,'crystal-app.js'),'utf8');
+ const trubaPage=readFileSync(path.join(root,'index.html'),'utf8');
+ for(const id of ['qeHpcBandFirst','qeHpcBandLast','qeHpcBandWindowHint']){
+  assert.ok(trubaPage.includes('id="'+id+'"'),'Missing P1.4 control '+id);
+  assert.ok(trubaApp.includes("$('"+id+"')"),'P1.4 control is not wired '+id);
+ }
  assert.ok(existsSync(path.join(root,'tools/qe_hpc_electronic.py')),'P1.3 converter must exist');
  assert.ok(existsSync(path.join(root,'tools/qe_pdos.py')),'P1.3 QE projected DOS parser must exist');
  for(const name of ['qe_hpc_electronic.py','qe_pdos.py']){
@@ -55,7 +61,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-truba-p13-dft-open-items'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-truba-p14-band-window'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
