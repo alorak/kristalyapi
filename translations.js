@@ -7,6 +7,21 @@
 (() => {
  'use strict';
  const entries=[
+  ["En düşük enerji (eV)", "Minimum energy (eV)"],
+  ["En yüksek enerji (eV)", "Maximum energy (eV)"],
+  ["Bant ve DOS’u yan yana göster", "Show bands and DOS side by side"],
+  ["Enerji penceresini uygula", "Apply energy window"],
+  ["Tam enerji aralığı", "Full energy range"],
+  ["Bant verisini CSV indir", "Download band data as CSV"],
+  ["DOS / PDOS verisini CSV indir", "Download DOS / PDOS data as CSV"],
+  ["Grafikleri SVG indir", "Download plots as SVG"],
+  ["Grafikleri PNG indir", "Download plots as PNG"],
+  ["Enerji penceresi yalnız görünümü değiştirir. CSV, yüklenen verinin tüm örneklerini ham enerji referansında içerir.", "The energy window only changes the view. CSV includes all loaded samples at the raw energy reference."],
+  ["Görünüm güncellendi; ham veri korunur.", "View updated; raw data preserved."],
+  ["Enerji penceresi sonlu ve artan olmalı.", "Energy limits must be finite and increasing."],
+  ["Enerji penceresi veri aralığıyla kesişmiyor.", "The energy window does not overlap the data range."],
+  ["Enerji sınırlarını girin.", "Enter the energy limits."],
+
   ["Görünür İşler sayfasında 5 saniyede bir yenile", "Refresh every 5 seconds while the Jobs page is visible"],
   ["Otomatik takip yalnız seçilmiş bir iş için çalışır.", "Automatic tracking runs only for a selected job."],
   ["Hesabın sonuçlarını aç ↗", "Open calculation results ↗"],

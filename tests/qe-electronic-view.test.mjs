@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../qe-electronic-view.js',import.meta.url),'utf8');
-const {parseQeElectronicResult}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {parseQeElectronicResult,electronicEnergyRange,checkedEnergyWindow,electronicCsv}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
 const valid=()=>({
  schema:'kristalyapi.qe-electronic.v1',
@@ -113,15 +113,32 @@ test('orbital selector renders per-atom PDOS against total projection without cl
   const host=new FakeNode('div');
   const result=parseQeElectronicResult(atomPdos());
   renderQeElectronicResults(host,result);
-  const selects=host.children.filter(node=>node.tag==='select');
+  const walk=node=>[node,...node.children.flatMap(walk)];
+  const all=walk(host);
+  const selects=all.filter(node=>node.tag==='select');
   assert.equal(selects.length,1);
   assert.ok(selects[0].children.some(child=>String(child.textContent).includes('Mo')));
-  const slots=host.children.filter(node=>node.tag==='div');
+  const slots=all.filter(node=>node.tag==='div');
   assert.ok(slots.some(slot=>slot.children[0]?.tag==='svg'));
-  assert.match(host.children.at(-1).textContent,/optik geçiş kanıtı değildir/);
+  assert.ok(all.some(node=>/optik geçiş kanıtı değildir/.test(node.textContent)));
   assert.equal(result.pdosDetailed.elements.length,2);
  }finally{
   if(previous===undefined)delete globalThis.document;
   else globalThis.document=previous;
  }
+});
+
+test('energy windows bound display without changing full raw samples',()=>{
+ const data=parseQeElectronicResult(valid()),before=JSON.stringify(data);
+ assert.deepEqual(electronicEnergyRange(data),[-1,1]);
+ assert.deepEqual(checkedEnergyWindow(data,-.5,.5),[-.5,.5]);
+ for(const [lo,hi] of [[1,1],[2,3],[NaN,1],[-1,Infinity]])assert.throws(()=>checkedEnergyWindow(data,lo,hi));
+ assert.equal(JSON.stringify(data),before);
+ const bands=electronicCsv(data,'bands').trim().split('\n');assert.equal(bands.length,4);assert.match(bands[1],/^-?0,/);assert.match(bands[0],/band_1_ev.*energy_zero.*input_sha256/);
+ const dos=electronicCsv(data,'dos').trim().split('\n');assert.equal(dos.length,4);assert.match(dos[1],/^-1,/);assert.match(dos.at(-1),/^1,/);
+});
+test('CSV preserves all atom/orbital groups and escapes untrusted energy labels',()=>{
+ const data=parseQeElectronicResult(atomPdos());data.energyZero='=unsafe,"label"';
+ const csv=electronicCsv(data,'dos');assert.match(csv,/Mo_d_states_per_ev/);assert.match(csv,/atom_1_Mo_d_states_per_ev/);assert.ok(csv.includes('"\'=unsafe,""label"""'));
+ assert.throws(()=>electronicCsv({bands:null,dos:null},'bands'));
 });

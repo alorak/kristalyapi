@@ -112,7 +112,8 @@ function el(tag,attrs={},text=''){
  if(text)node.textContent=text;
  return node;
 }
-export function chart(title,xName,yName,curves,width=660,height=260){
+let chartSerial=0;
+export function chart(title,xName,yName,curves,width=660,height=260,domains={}){
  const svg=el('svg',{viewBox:'0 0 '+width+' '+height,role:'img','aria-label':title});
  svg.style.cssText='width:100%;height:auto;display:block;max-height:360px';
  const left=57,right=12,top=18,bottom=42;
@@ -120,6 +121,11 @@ export function chart(title,xName,yName,curves,width=660,height=260){
  let xMin=Infinity,xMax=-Infinity,yMin=Infinity,yMax=-Infinity;
  for(const c of curves){for(const v of c.x){xMin=Math.min(xMin,v);xMax=Math.max(xMax,v);}
   for(const v of c.y){yMin=Math.min(yMin,v);yMax=Math.max(yMax,v);}}
+ if(domains.xDomain)[xMin,xMax]=domains.xDomain;
+ if(domains.yDomain)[yMin,yMax]=domains.yDomain;
+ for(const [a,b] of [[xMin,xMax],[yMin,yMax]])if(!finite(a)||!finite(b)||a>b)throw Error('Grafik ekseni geçersiz.');
+ svg.setAttribute('data-x-min',xMin);svg.setAttribute('data-x-max',xMax);
+ svg.setAttribute('data-y-min',yMin);svg.setAttribute('data-y-max',yMax);
  if(xMin===xMax)xMax=xMin+1;
  if(yMin===yMax){yMin-=.5;yMax+=.5;}
  const xVal=x=>left+(x-xMin)/(xMax-xMin)*plotW;
@@ -137,15 +143,18 @@ export function chart(title,xName,yName,curves,width=660,height=260){
  svg.append(el('text',{x:width/2,y:height-4,'text-anchor':'middle','font-size':12,fill:axis},xName));
  svg.append(el('text',{x:9,y:height/2,transform:'rotate(-90 9 '+height/2+')',
   'text-anchor':'middle','font-size':12,fill:axis},yName));
+ const clip='qe-chart-clip-'+(++chartSerial);
+ const defs=el('defs'),pathClip=el('clipPath',{id:clip});pathClip.append(el('rect',{x:left,y:top,width:plotW,height:plotH}));defs.append(pathClip);svg.append(defs);
+ const paths=el('g',{'clip-path':'url(#'+clip+')'});svg.append(paths);
  curves.forEach((c,i)=>{
   const d=c.x.map((x,j)=>(j?'L':'M')+xVal(x).toFixed(2)+','+yVal(c.y[j]).toFixed(2)).join(' ');
   const color=i===0?'#2877c6':'#d48922';
-  svg.append(el('path',{d,fill:'none',stroke:color,'stroke-width':curves.length>20?'0.7':1.8,
+  paths.append(el('path',{d,fill:'none',stroke:color,'stroke-width':curves.length>20?'0.7':1.8,
    'vector-effect':'non-scaling-stroke'}));
  });
  return svg;
 }
-export function renderQeElectronicResults(container,data){
+function renderElectronicContent(container,data,energyWindow,linked,selection=null){
  container.replaceChildren();
  const heading=document.createElement('p');
  heading.textContent='Kaynak: '+data.source+' · Enerji sıfırı: '+data.energyZero;
@@ -159,30 +168,36 @@ export function renderQeElectronicResults(container,data){
   hash.textContent='Hesaplama girdisi SHA-256: '+data.inputHash;
   container.append(hash);
  }
+ const layout=document.createElement('div');
+ let bandBox=container,dosBox=container;
+ if(linked&&data.bands&&data.dos){
+  layout.className='qe-band-dos-layout';bandBox=document.createElement('section');dosBox=document.createElement('section');
+  bandBox.className=dosBox.className='qe-linked-chart';layout.append(bandBox,dosBox);container.append(layout);
+ }
  if(data.bands){
   const heading=document.createElement('strong');
   heading.style.cssText='display:block;margin:14px 0 6px';
   heading.textContent='Elektronik bantlar · ham QE enerjileri';
-  container.append(heading);
+  bandBox.append(heading);
   const result=chart('QE elektronik bant yapısı','k-yolu uzaklığı','Enerji (eV)',
-   data.bands.curves.map(y=>({x:data.bands.distance,y})));
-  container.append(result);
+   data.bands.curves.map(y=>({x:data.bands.distance,y})),linked?480:660,linked?360:260,{yDomain:energyWindow});
+  bandBox.append(result);
   if(data.bandLabels.length){
    const caption=document.createElement('small');
    caption.style.cssText='display:block;margin:6px 0';
    caption.textContent='K-yolu etiket sırası: '+data.bandLabels.join(' → ')+'. Uzaklık eksenindeki etiket konumları otomatik çıkarılmaz.';
-   container.append(caption);
+   bandBox.append(caption);
   }
  }
  if(data.dos){
-  const head=document.createElement('strong');head.style.cssText='display:block;margin:14px 0 6px';head.textContent='DOS / toplam projeksiyon · ham enerji';container.append(head);
+  const head=document.createElement('strong');head.style.cssText='display:block;margin:14px 0 6px';head.textContent='DOS / toplam projeksiyon · ham enerji';dosBox.append(head);
   const curves=[{x:data.dos.energy,y:data.dos.values}];
   if(data.pdos)curves.push({x:data.dos.energy,y:data.pdos});
-  container.append(chart('QE toplam DOS ve PDOS','Enerji (eV)','Durum/(eV hücre)',curves));
+  dosBox.append(chart('QE toplam DOS ve PDOS',linked?'Durum/(eV hücre)':'Enerji (eV)',linked?'Enerji (eV)':'Durum/(eV hücre)',linked?curves.map(c=>({x:c.y,y:c.x})):curves,linked?280:660,linked?360:260,linked?{yDomain:energyWindow}:{xDomain:energyWindow}));
   const leg=document.createElement('small');
   leg.style.cssText='display:block;margin:6px 0';
   leg.textContent='Mavi: toplam DOS'+(data.pdos?' · Turuncu: atomik orbitallerin toplam PDOS katkısı':'')+'. Enerjiler Fermi seviyesine hizalanmamıştır.';
-  container.append(leg);
+  dosBox.append(leg);
  }
  if(data.pdosDetailed){
   const heading=document.createElement('strong');
@@ -212,6 +227,7 @@ export function renderQeElectronicResults(container,data){
   }
   const defaultIndex=choices.findIndex(c=>c.key==='element-Mo-d');
   if(defaultIndex>=0)select.selectedIndex=defaultIndex;
+  if(selection&&choices.some(c=>c.key===selection))select.value=selection;
   const plot=document.createElement('div');
   const legend=document.createElement('small');
   legend.style.cssText='display:block;margin:6px 0';
@@ -222,7 +238,7 @@ export function renderQeElectronicResults(container,data){
     'Enerji (eV)','Durum/(eV hücre)',[
      {x:data.pdosDetailed.energy,y:data.pdos},
      {x:data.pdosDetailed.energy,y:c.value}
-    ]));
+    ],660,260,{xDomain:energyWindow}));
    legend.textContent=localized('Mavi: tüm atomların toplam PDOS katkısı')+' · '+
     localized('Turuncu:')+' '+c.label+'. '+
     localized('Bu yansıtma kimyasal bağ veya optik geçiş kanıtı değildir.');
@@ -231,4 +247,94 @@ export function renderQeElectronicResults(container,data){
   container.append(select,plot,legend);
   update();
  }
+}
+
+export function electronicEnergyRange(data){
+ let lo=Infinity,hi=-Infinity;
+ for(const values of [...(data.bands?.curves||[]),...(data.dos?[data.dos.energy]:[])])
+  for(const value of values){lo=Math.min(lo,value);hi=Math.max(hi,value);}
+ if(!finite(lo)||!finite(hi))throw Error('Enerji aralığı bulunamadı.');
+ return lo===hi?[lo-.5,hi+.5]:[lo,hi];
+}
+export function checkedEnergyWindow(data,min,max){
+ if(!finite(min)||!finite(max)||min>=max||Math.max(Math.abs(min),Math.abs(max))>1e6)throw Error('Enerji penceresi sonlu ve artan olmalı.');
+ const [lo,hi]=electronicEnergyRange(data);
+ if(max<=lo||min>=hi)throw Error('Enerji penceresi veri aralığıyla kesişmiyor.');
+ return [min,max];
+}
+const csvCell=value=>typeof value==='number'?String(value):'"'+String(value??'').replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';
+export function electronicCsv(data,kind){
+ let header,columns;
+ if(kind==='bands'&&data.bands){
+  const start=data.bands.bandIndexStart||1;
+  header=['k_distance',...data.bands.curves.map((_,i)=>'band_'+(i+start)+'_ev')];columns=[data.bands.distance,...data.bands.curves];
+ }else if(kind==='dos'&&data.dos){
+  header=['energy_ev','total_dos_states_per_ev'];columns=[data.dos.energy,data.dos.values];
+  if(data.pdos){header.push('total_pdos_states_per_ev');columns.push(data.pdos);}
+  if(data.pdosDetailed)for(const [kind,groups] of [['element',data.pdosDetailed.elements],['atom',data.pdosDetailed.atoms]])for(const item of groups){
+   const prefix=kind==='element'?item.element:'atom_'+item.atomIndex+'_'+item.element;
+   header.push(prefix+'_total_states_per_ev');columns.push(item.total);
+   for(const [orbital,values] of Object.entries(item.orbitals)){header.push(prefix+'_'+orbital+'_states_per_ev');columns.push(values);}
+  }
+ }else throw Error('İndirilecek veri bulunamadı.');
+ header.push('energy_zero','input_sha256');const lines=[header.map(csvCell).join(',')];
+ for(let i=0;i<columns[0].length;i++)lines.push([...columns.map(c=>c[i]),data.energyZero,data.inputHash].map(csvCell).join(','));
+ return lines.join('\n')+'\n';
+}
+export function serializeElectronicPlots(host,data,energyWindow){
+ const plots=[...host.querySelectorAll('svg')];if(!plots.length)throw Error('İndirilecek grafik yok.');
+ const width=900,row=!!host.querySelector('.qe-band-dos-layout');
+ const height=90+(row?400+Math.max(0,plots.length-2)*310:plots.length*310);
+ const root=el('svg',{xmlns:NS,width,height,viewBox:`0 0 ${width} ${height}`,color:'#334155'});
+ root.append(el('rect',{width,height,fill:'#fff'}));
+ root.append(el('style',{},'text{font-family:Arial,sans-serif}'));
+ root.append(el('metadata',{},JSON.stringify({schema:'kristalyapi.qe-plot-export.v1',source:data.source,energy_zero:data.energyZero,input_sha256:data.inputHash,display_energy_window_ev:energyWindow})));
+ for(const [i,text] of ['Quantum ESPRESSO · '+data.source,'Enerji sıfırı: '+data.energyZero,'SHA-256: '+(data.inputHash||'—')+' · '+energyWindow.join(' … ')+' eV'].entries())
+  root.append(el('text',{x:20,y:20+i*20,'font-size':i===0?14:10,fill:'#334155'},text));
+ let y=85;
+ for(const [i,plot] of plots.entries()){
+  const beside=row&&i<2,x=beside&&i===1?600:0,w=beside?(i===0?600:300):width,h=beside?360:275;
+  const titleY=beside?85:y;
+  root.append(el('text',{x:x+15,y:titleY,'font-size':11,fill:'#334155'},plot.getAttribute('aria-label')||''));
+  const copy=plot.cloneNode(true);copy.removeAttribute('style');copy.setAttribute('x',x);copy.setAttribute('y',titleY+10);copy.setAttribute('width',w);copy.setAttribute('height',h);root.append(copy);
+  if(beside&&i===1)y=485;else if(!beside)y+=310;
+ }
+ return {text:new XMLSerializer().serializeToString(root),width,height};
+}
+function downloadElectronicBlob(blob,filename){
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+export function renderQeElectronicResults(container,data){
+ container.replaceChildren();
+ const controls=document.createElement('div');controls.className='qe-spectrum-controls';
+ const min=document.createElement('input'),max=document.createElement('input');
+ const full=electronicEnergyRange(data);let window=[...full];
+ const field=(text,input,value)=>{const label=document.createElement('label');label.className='field';const span=document.createElement('span');span.textContent=text;input.type='number';input.step='any';input.value=String(value);label.append(span,input);return label;};
+ controls.append(field('En düşük enerji (eV)',min,full[0]),field('En yüksek enerji (eV)',max,full[1]));
+ const linked=document.createElement('input');linked.type='checkbox';linked.checked=!!(data.bands&&data.dos);linked.disabled=!(data.bands&&data.dos);
+ const linkedLabel=document.createElement('label');linkedLabel.className='check';const linkedText=document.createElement('span');linkedText.textContent='Bant ve DOS’u yan yana göster';linkedLabel.append(linked,linkedText);
+ const message=document.createElement('p');message.className='hint';message.setAttribute('role','status');
+ const plots=document.createElement('div');plots.className='qe-electronic-plot-area';
+ const apply=document.createElement('button');apply.type='button';apply.textContent='Enerji penceresini uygula';
+ const redraw=()=>{const selection=plots.querySelector?.('select')?.value;renderElectronicContent(plots,data,window,linked.checked,selection);};
+ apply.onclick=()=>{try{if(!min.value.trim()||!max.value.trim())throw Error('Enerji sınırlarını girin.');window=checkedEnergyWindow(data,Number(min.value),Number(max.value));redraw();message.textContent='Görünüm güncellendi; ham veri korunur.';}catch(error){message.textContent=error.message;}};
+ const reset=document.createElement('button');reset.type='button';reset.textContent='Tam enerji aralığı';reset.onclick=()=>{window=[...full];min.value=String(full[0]);max.value=String(full[1]);redraw();message.textContent='';};
+ linked.onchange=redraw;controls.append(apply,reset);container.append(controls,linkedLabel);
+ const actions=document.createElement('div');actions.className='qe-spectrum-downloads';
+ const button=(label,callback)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=async()=>{try{b.disabled=true;await callback();}catch(error){message.textContent=error.message;}finally{b.disabled=false;}};actions.append(b);};
+ const stem='qe-'+(data.inputHash?.slice(0,12)||'electronic');
+ if(data.bands)button('Bant verisini CSV indir',()=>downloadElectronicBlob(new Blob([electronicCsv(data,'bands')],{type:'text/csv;charset=utf-8'}),stem+'-bands.csv'));
+ if(data.dos)button('DOS / PDOS verisini CSV indir',()=>downloadElectronicBlob(new Blob([electronicCsv(data,'dos')],{type:'text/csv;charset=utf-8'}),stem+'-dos-pdos.csv'));
+ button('Grafikleri SVG indir',()=>downloadElectronicBlob(new Blob([serializeElectronicPlots(plots,data,window).text],{type:'image/svg+xml;charset=utf-8'}),stem+'.svg'));
+ button('Grafikleri PNG indir',async()=>{
+  const snapshot=serializeElectronicPlots(plots,data,window),url=URL.createObjectURL(new Blob([snapshot.text],{type:'image/svg+xml;charset=utf-8'}));
+  try{const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('PNG görüntüsü oluşturulamadı.'));image.src=url;});
+   const canvas=document.createElement('canvas');canvas.width=snapshot.width*2;canvas.height=snapshot.height*2;
+   if(canvas.width*canvas.height>16e6)throw Error('PNG boyut sınırı aşıldı.');
+   canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('PNG oluşturulamadı.');downloadElectronicBlob(blob,stem+'.png');
+  }finally{URL.revokeObjectURL(url);}
+ });
+ const note=document.createElement('p');note.className='hint';note.textContent='Enerji penceresi yalnız görünümü değiştirir. CSV, yüklenen verinin tüm örneklerini ham enerji referansında içerir.';
+ container.append(actions,note,message,plots);redraw();
 }
