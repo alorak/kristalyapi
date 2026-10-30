@@ -253,6 +253,17 @@ Bu bölüm **genel DFT web/API altyapısıdır**. Yukarıdaki **M-P0–M-P5**,
 karşılaştırması için ayrı kalır. Yeni platform mevcut runner/pipeline'ı
 tekrar yazmamalı; gerekli adaptörler ve testlerle yeniden kullanmalı.
 
+### D-UX P0 — Hesap hazırlama ve iş durumu arayüzü
+
+- [x] **Sunucu / yerel dosya ayrımı:** DFT hazırlığında iki açık yöntem. Sunucu iş türü tek seçimden SCF, sabit-hücre relaksasyon → SCF veya elektronik zincir olarak belirlenir; yerel QE `.in` hesap türü/doluluğu/UPF dosya adları yalnız dosya dışa aktarımını etkiler.
+- [x] **İlgili alanları göster:** Kuvvet eşiklerini yalnız relaksasyonda; iyonik adım ve enerji eşiğini sunucu relaksasyonunda göster. Var olan değerleri ve referans protokolünü mod geçişlerinde koru.
+- [x] **İş açılma kapısı:** QE motoru hazır, iş gönderimi açık, kaynak profili yürütmeye izin veriyor ve anahtar biçimi geçerli olmadan İşler sayfasını etkinleştirme.
+- [x] **Ön kontrol durumu:** İş durumundan ayrı ön kontrol göstergesi; yapı, adres veya ilgili parametre değişiminde eskimiş ön kontrolün durumunu yenile. Gerçek gönderimde sunucu ön kontrolünü tekrar koş.
+- [x] **Görsel iyileştirme:** Form etiketleri, yardımcı metinler ve eylemlerin okunabilirliği; dar ekranlarda hazırlık yöntemi seçeneklerini tek sütuna indir.
+- [x] Tarayıcı regresyonunda yöntem geçişi, sunucu/yerel alan ayrımı, kısa anahtar, bozulmuş çözücü, yalnız hazırlık kaynak profili ve eskimiş ön kontrol durumunu kapsa.
+- [ ] **Takip P1:** İş listesini proje/iş adı, filtreleme ve sayfalama ile geliştirme; ayrı bir iş snapshot/provenance özeti ve hesaplanan bant/DOS görünümü.
+- [ ] **Takip P1:** Kullanıcı etkileşimli hesap türü ve preflight durumları için daha kapsamlı TR/EN metin bütünlüğü; gerçek Chromium + API CI koşularını merge öncesi doğrula.
+
 ### D0–D1 — Docker QE kurulumu ve read-only bağlantı (ilk altyapı)
 
 - [x] İlk konteyner: Debian Trixie QE 6.7-3+b1 sürümünü paket düzeyinde sabitleyen Dockerfile; `pw.x`, `bands.x`, `dos.x`, `projwfc.x` varlık kontrolleri ve `pw.x` banner smoke. **Bu gerçek SCF/relax fizik koşumu değildir.**
