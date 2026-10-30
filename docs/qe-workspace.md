@@ -18,6 +18,19 @@ The dedicated stylesheet is staged in the Pages artifact and cached with the ver
 
 Validation: `node --test tests/*.test.* tests/validation/test_runner.cjs`; real-browser regression `node tests/browser/dft-workspace.test.mjs` (pinned Playwright/Chromium in CI). The latter checks desktop/mobile bounds, route visibility, form/file/plot persistence, and absence of automatic API calls. Its committed real MoS₂ file is used only to test rendering, not as a new scientific acceptance run.
 
+## Calculation preparation and readiness
+
+The **Hesap hazırlığı** page separates two explicit destinations:
+
+- **Sunucuda hesapla:** choose **SCF**, **fixed-cell relaxation → SCF**, or **SCF → bands → DOS/PDOS** with a single server job-type selector. The server always uses its own approved UPF profile and supported occupation rules. Select the QE API endpoint and authentication in **Ayarlar**; local `.in` occupations, freeze-layer and pseudopotential file fields never change a server job.
+- **QE .in dosyası oluştur:** choose the local `pw.x` calculation type and occupations, map local UPF filenames, optionally freeze a bottom layer, and download an input file without sending network requests or starting a job.
+
+The shared cutoff/k-mesh fields apply to both destinations. Force tolerance is shown only for relaxation; the server's ionic step and energy-tolerance fields are shown only for server relaxation. Switching destinations never itself submits a job or discards form values. Evidence-backed protocols select the server destination automatically.
+
+The Jobs tab unlocks only when the API reports an available QE solver, job submission enabled, a resource profile that permits execution, and a syntactically valid 32–256-character API key. A reachable but read-only/degraded/preparation-only server remains visible in settings and cannot unlock Jobs.
+
+Preflight status has its own notice, separate from an active job's status. Changes to structure, connection, or job parameters mark an earlier preflight as stale; actual submissions still perform fresh server preflight and require explicit confirmation. A successful preflight is not physical convergence.
+
 ## Live job tracking
 
 After explicit submission or opening a history item, Jobs can refresh the selected job every five seconds while that page and the browser tab are visible. The checkbox disables automatic reads. Completed, paused and terminal jobs stop the timer; resume or an explicit refresh updates the state. A single in-flight reader serializes manual and timer refreshes, and responses for a superseded job cannot publish results. Three failed reads stop automatic refresh with a manual recovery message; retry delays are 5/10/20 seconds. GET requests have a 15-second deadline. No mutation is automatically retried.
