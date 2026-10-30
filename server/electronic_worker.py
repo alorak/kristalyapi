@@ -15,6 +15,9 @@ from electronic_core import scf_request,path_text,checked_band_capacity
 from relax_worker import digest,Stopped
 
 
+from job_diagnostics import record_job,sample_job
+
+@record_job
 def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,limits,kill,
                        bands_x="bands.x",dos_x="dos.x",projwfc_x="projwfc.x"):
     jid=job["id"];root=store.root/"runs"/jid
@@ -50,6 +53,7 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
                 env={**os.environ,"OMP_NUM_THREADS":"2"},preexec_fn=limits)
             deadline=time.monotonic()+timeout
             while process.poll() is None:
+                sample_job(process)
                 if store.get(jid)["cancel_requested"]:raise Stopped("cancelled","Electronic pipeline cancelled")
                 if time.monotonic()>=deadline:raise Stopped("timed_out",f"Electronic pipeline exceeded its {timeout:g} s wall-time limit")
                 time.sleep(.2)
@@ -97,4 +101,5 @@ def execute_electronic(store,job,*,qe_binary,profiles_dir,pseudo_dir,timeout,lim
             kill(process)
             try:process.wait(timeout=10)
             except subprocess.SubprocessError:pass
+        sample_job(process)
         store.set_result(jid,status,result=result,error=error,input_sha=input_sha,output_sha=output_sha)

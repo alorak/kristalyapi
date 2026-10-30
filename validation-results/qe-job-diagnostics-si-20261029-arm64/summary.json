@@ -1,0 +1,91 @@
+{
+  "dos_settings": {
+    "delta_e_ev": 0.01,
+    "degauss_ry": 0.005,
+    "energy_min_ev": -4,
+    "energy_max_ev": 10
+  },
+  "scope": "Real Si Docker/API operational diagnostics smoke at 45/360 Ry, k=2x2x1, nbnd8; no MoS2/Si scientific accuracy acceptance.",
+  "source_commit": "600a7413eb46b862a3126adc5e3c5690322ac11e",
+  "status": "passed",
+  "image_id": "sha256:4a90e69e16649a88490b798ae43552ef83d6f238f7043d143c9f4002c222d2a4",
+  "worker_resources": {
+    "Memory": 2147483648,
+    "MemorySwap": 4294967296,
+    "NanoCpus": 2000000000
+  },
+  "source_sha256": {
+    "server/api.py": "c8523a63d78ad499af1dcbb776cd86e52ca946c4e099de69949ff27b911a3df8",
+    "server/electronic_core.py": "857f1209e64158b36fd6aa54bfbc1d1769f5d77f10e832c97ce7feb8a71136d5",
+    "server/electronic_worker.py": "1a85b2fd8270aa01a49ac7ee974d776628d7795223fb94ff3d3a817faca2158c",
+    "server/job_core.py": "5299f4bdfda45088f21cafdc123c2f89e61d99ad2111b1513a31309b857a00e3",
+    "server/job_diagnostics.py": "48dd76ecba0f74f01bf34b240f7c32010b877752fc5c77b752fd48aea6e791ee",
+    "server/job_store.py": "0573125b96885516777951b7d2e1c6ec4670d812707289552093a86e0be58fe7",
+    "server/qe_post_settings.py": "a7c41050f675513fdf8370a69088b2aed987b9d6ad088bf3419fb9a0c9526300",
+    "server/qe_probe.py": "94bfa75af9350c2950044d8a27e91790c59b1efe2855ad7c0b128beb2b836616",
+    "server/relax_core.py": "ad9ce3a06ffc66eb9332cc18a1dffd33e473a8cb819584987cae260c2f96dfbe",
+    "server/relax_worker.py": "b4e0918d3933a3a8f1bdb7910ef287772543e2568cbbb97a0476adbfb46ddd0c",
+    "server/worker.py": "33433bb4a63426c0ba8343067dcca639eb1eacf0c63b09d961542bb15ad3c198",
+    "server/Dockerfile": "c484800d7fb4da8862858d57ca64d290c530766dc5e73b6d11aa226e1ff212a7",
+    "compose.qe.yml": "497874d657d50c8d7c626d17a37214e528c4ea993b05b80f9b21790957cac01d",
+    "tools/qe_pipeline.py": "23daa52cac18f79884941f827617cc84329aff54a7e4de6fc43da22074e3f575",
+    "tools/qe_pdos.py": "dcd429d6b72a0c2702d084b860b348c46d49b281e8e79eced17905131b5b731e",
+    "tools/qe_run.py": "b82725909f6beb4da517eea991220d090866827eef721b54fcd1282f7099dd97"
+  },
+  "image_source_verified": true,
+  "terminal": {
+    "job_id": "d334fb1ddd0e4ed690aa554b58f89814",
+    "status": "completed",
+    "created": "2026-10-29T18:51:06.883016+00:00",
+    "updated": "2026-10-29T18:51:21.510097+00:00",
+    "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+    "profile_id": "si-pbe",
+    "cancel_requested": false,
+    "error": null
+  },
+  "energy_ry": -22.47661421,
+  "band_count": 8,
+  "dos_points": 1401,
+  "pdos_atoms": 2,
+  "raw_api_hashes_verified": true,
+  "integrated_state_count_error": 0.0,
+  "diagnostics_verified": true,
+  "api": {
+    "validation": {
+      "valid": true,
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "atoms": 2,
+      "profile_id": "si-pbe",
+      "upf_sha256": {
+        "Si": "669fb75395a9d26973b0ea1ce8223bbcb30d3396c5d48bf5e794d1243c52375a"
+      },
+      "calculation": "electronic",
+      "notice": "Validation is not a DFT convergence study",
+      "electronic_preflight": {
+        "neutral_valence_electrons": 8,
+        "minimum_nbnd": 4,
+        "requested_nbnd": 8,
+        "upf_valence_electrons": {
+          "Si": 4.0
+        },
+        "scope": "Necessary capacity only; empty-band, spin and physical convergence acceptance are separate"
+      }
+    },
+    "submitted": {
+      "job_id": "d334fb1ddd0e4ed690aa554b58f89814",
+      "status": "queued",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3"
+    },
+    "terminal": {
+      "job_id": "d334fb1ddd0e4ed690aa554b58f89814",
+      "status": "completed",
+      "created": "2026-10-29T18:51:06.883016+00:00",
+      "updated": "2026-10-29T18:51:21.510097+00:00",
+      "structure_hash": "75f7028a918ecf62e27d81d1b6c098ef3d334ed0052746e1fd9adf1c8c8754f3",
+      "profile_id": "si-pbe",
+      "cancel_requested": false,
+      "error": null
+    }
+  },
+  "resources_removed": true
+}

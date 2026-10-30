@@ -26,6 +26,9 @@ def sha(path):
     return digest.hexdigest()
 
 
+from job_diagnostics import record_job,sample_job
+
+@record_job
 def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
             pseudo_dir=Path("/pseudos"),timeout=3600):
     if json.loads(job["request_json"]).get("schema")=="kristalyapi.qe-electronic-job.v1":
@@ -71,6 +74,7 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
         if not binary:
             raise ValueError("Configured QE binary unavailable")
         with input_file.open("rb") as stdin,output_file.open("wb") as stdout,stderr_file.open("wb") as stderr:
+            sample_job(stage='scf')
             process=subprocess.Popen(
                 [binary,"-in","structure.in"],cwd=workdir,
                 stdin=stdin,stdout=stdout,stderr=stderr,
@@ -79,6 +83,7 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
             )
             deadline=time.monotonic()+timeout
             while process.poll() is None:
+                sample_job(process)
                 if store.get(job_id)["cancel_requested"]:
                     _kill_group(process)
                     status="cancelled"
@@ -90,6 +95,7 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
                     break
                 time.sleep(.5)
             process.wait(timeout=10)
+            sample_job(process,stage='scf',done=True)
         output_sha=sha(output_file)
         if status not in ("cancelled","timed_out"):
             # Partial or absent output can never be reported as completed.

@@ -19,8 +19,9 @@ from fastapi.responses import JSONResponse
 from job_core import canonical_request,load_profile
 from job_store import JobStore
 from qe_probe import inspect_qe
+from job_diagnostics import read_diagnostics
 
-API_VERSION="0.4.1"
+API_VERSION="0.4.2"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -79,7 +80,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             "engine":{"id":"quantum-espresso","version":status["qe_version"],
                       "available":status["ready"]},
             "binaries":status["binaries"],
-            "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel"]
+            "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel","diagnostics"]
                                    if enabled else ["health","capabilities"]),
             "job_submission_enabled":enabled,
             "calculations_executed_by_api":False,
@@ -173,6 +174,10 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         if row["status"]!="completed" or row["result_json"] is None:
             raise HTTPException(status_code=409,detail="No converged result for this job")
         return json.loads(row["result_json"])
+
+    @app.get("/api/v1/calculations/{job_id}/diagnostics")
+    async def diagnostics(request:Request,job_id:str):
+        return read_diagnostics(store,await lookup(request,job_id))
 
     @app.get("/api/v1/calculations/{job_id}/logs")
     async def get_logs(request:Request,job_id:str):

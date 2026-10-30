@@ -33,6 +33,9 @@ def read_output(path):
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+from job_diagnostics import record_job,sample_job
+
+@record_job
 def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeout, limits, kill):
     jid = job["id"]
     root = store.root/"runs"/jid
@@ -50,6 +53,7 @@ def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeou
     def run(input_name, output_name, stderr_name):
         stopped()
         process = None
+        sample_job(stage=stage)
         try:
             with (root/input_name).open("rb") as stdin, (root/output_name).open("wb") as stdout, \
                     (root/stderr_name).open("wb") as stderr:
@@ -57,6 +61,7 @@ def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeou
                     stdin=stdin,stdout=stdout,stderr=stderr,start_new_session=True,
                     env={**os.environ,"OMP_NUM_THREADS":"2"},preexec_fn=limits)
                 while process.poll() is None:
+                    sample_job(process)
                     stopped()
                     time.sleep(.2)
                 return process.wait(timeout=10)
@@ -64,6 +69,7 @@ def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeou
             if process is not None and process.poll() is None:
                 kill(process)
                 process.wait(timeout=10)
+            sample_job(process,stage=stage,done=True)
 
     try:
         stopped()
