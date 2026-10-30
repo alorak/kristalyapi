@@ -93,6 +93,10 @@ test('P1.3 converter is pinned, embedded and must succeed before final receipt',
  assert.equal(result.manifest.file_sha256['electronic.py'],sha(converterScript));
  assert.equal(result.manifest.file_sha256['qe_pdos.py'],sha(pdosHelperScript));
  assert.equal(result.manifest.electronic_converter_included,true);
+ await assert.rejects(createTrubaPipelinePackage({...opts,pipelineScript,converterScript,
+  pdosHelperScript,nbnd:301}),/en fazla 300 bant/);
+ const largeRaw=await createTrubaPipelinePackage({...opts,pipelineScript,nbnd:301});
+ assert.equal(largeRaw.manifest.electronic_converter_included,false);
  const slurm=decode('stages/projwfc.slurm');
  assert.match(slurm,/python3 electronic\.py --bundle \./);
  assert.ok(slurm.indexOf('python3 electronic.py --bundle .')<
@@ -152,7 +156,7 @@ test('pipeline report rendering is readonly text and UI contains bindings',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
- for(const id of ['qeHpcPipelineExport','qeHpcPipelineStatus','qeHpcBandPath',
+ for(const id of ['qeHpcConvertElectronic','qeHpcPipelineExport','qeHpcPipelineStatus','qeHpcBandPath',
   'qeHpcNbnd','qeHpcNscfKx','qeHpcNscfKy','qeHpcNscfKz',
   'qeHpcEmin','qeHpcEmax','qeHpcDeltaE','qeHpcDegauss'])
   assert.match(html,new RegExp('id="'+id+'"'));
