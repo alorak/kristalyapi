@@ -16,6 +16,7 @@ on:
       - 'crystal-app.js'
       - 'volume-iso-worker.js'
       - 'styles.css'
+      - 'dft-workspace.css'
       - 'sw.js'
       - 'manifest.webmanifest'
       - 'translations.js'
@@ -50,6 +51,8 @@ jobs:
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
       - name: Verify linked education labs in Chromium
         run: node tests/browser/lesson-labs.test.mjs
+      - name: Verify dedicated DFT routes and controls
+        run: node tests/browser/dft-workspace.test.mjs
       - name: Render real WebGL scenes and compare screenshots
         id: visual
         run: node tests/browser/visual.test.mjs

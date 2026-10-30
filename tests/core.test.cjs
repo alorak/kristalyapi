@@ -70,7 +70,7 @@ vm.runInContext('this.perfApi={atomLodTier,frameTimingStats};',context);
 const perfApi=context.perfApi;
 vm.runInContext('this.defectApi={defectSupercellModel,pointDefectModel,boundaryVacuumModel};',context);
 vm.runInContext('this.qeWorkflowApi={qeCalculationStructure,qePwInputText,qePwOutputData,QE_MASS_NUMBERS};',context);
-vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash};',context);
+vm.runInContext('this.pageApi={pageFromHash,isLibraryHash,isReciprocalHash,dftSectionFromHash};',context);
 function approx(a, b, eps = 1e-7) { assert.ok(Math.abs(a - b) < eps, a + ' expected ' + b); }
 const cubic = { a: 5, b: 5, c: 5, alpha: 90, beta: 90, gamma: 90 };
 
@@ -870,7 +870,7 @@ test('QE controls are accessible without remote calculation',()=>{
  for(const id of ['qeCalcType','qeOccupation','qeEcutwfc','qeEcutrho','qeKx','qeKy','qeKz',
   'qeFreezeBottom','qeForceThreshold','qePseudoFiles','qeExportPw','qeOutputFile','qeParseOutput','qeApplyGeometry'])
   assert.match(htmlShell,new RegExp('id="'+id+'"'));
- assert.match(htmlShell,/data-right-tool="qe"/);
+ assert.match(htmlShell,/<a href="#dft" class="right-tool" data-dft-launcher="true"/);
  assert.match(moduleScript,/qeApplyOutputGeometry/);
  assert.match(moduleScript,/qePwOutputData/);
 });
@@ -1023,7 +1023,7 @@ test('English dictionary covers the existing static editor, library and analysis
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
  const languageNeutral=new Set(['GitHub ↗','Element A','Element B','FCC conventional → primitive',
   'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
-  'Cloudflare Worker · COD API','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
+  'Cloudflare Worker · COD API','Quantum ESPRESSO','DFT / QUANTUM ESPRESSO','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
   'Cu Kα1 · 1.5406 Å','Co Kα1 · 1.7890 Å','Mo Kα1 · 0.7093 Å','Ag Kα1 · 0.5594 Å',
   "kristalyapi-cod-api.aoakkirman.workers.dev","10¹⁵ cm⁻³","10¹⁶ cm⁻³","0,00 V","+0,45 V","1,0 mm²","+0,450 V","1 − f(Ev)","= 25, D","= 10 cm²/s, L","P3 · ideal"]);
  assert.deepEqual(labels.filter(label=>!languageNeutral.has(label)&&
@@ -1363,9 +1363,9 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','qe','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,15);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,14);
  assert.match(rail,/data-right-tool="measurement"[\s\S]*?data-right-tool="history"/);
  assert.match(html,/\.right-drawer-pane>\.section\[data-right-section\]>h2:first-child\{display:none\}/);
  assert.ok(!html.includes('Bilimsel kapsam</h2>'),'redundant scientific scope block should be removed');
@@ -3113,6 +3113,9 @@ test('reciprocal-space page is routed, wired to the editor and deployed with its
  const pages=context.pageApi;
  assert.equal(pages.pageFromHash('#kutuphane'),'library');
  assert.equal(pages.pageFromHash('#karsi-uzay'),'reciprocal');
+ assert.equal(pages.pageFromHash('#dft'),'dft');
+ assert.equal(pages.pageFromHash('#dft/yakinsama'),'dft');
+ assert.equal(pages.pageFromHash('#dft-other'),'editor');
  assert.equal(pages.pageFromHash('#kristal'),'editor');
  assert.equal(pages.pageFromHash(''),'editor');
  assert.match(html,/<a id="reciprocalNav" href="#karsi-uzay">Karşı Uzay<\/a>/);
@@ -4065,4 +4068,16 @@ test('P2 COD 1561664 display filtering preserves occupancy and unresolved formul
   {symbol:'Cs',occupancy:.8,disorderAssembly:'B',disorderGroup:'1'}];
  assert.equal(api.disorderDisplayIndices(independent,'dominant').size,2,
   'different assemblies cannot hide one another');
+});
+
+
+test('DFT deep links select bounded sections with a preparation fallback',()=>{
+ const {pageFromHash,dftSectionFromHash}=context.pageApi;
+ for(const section of ['hazirlik','isler','sonuclar','yakinsama','kusurlar']){
+  assert.equal(pageFromHash('#dft/'+section),'dft');
+  assert.equal(dftSectionFromHash('#dft/'+section),section);
+ }
+ assert.equal(dftSectionFromHash('#dft'),'hazirlik');
+ assert.equal(dftSectionFromHash('#dft/unknown'),'hazirlik');
+ assert.equal(pageFromHash('#dft-example'),'editor');
 });

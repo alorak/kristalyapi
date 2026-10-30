@@ -12,6 +12,7 @@ on:
       - 'crystal-app.js'
       - 'index.html'
       - 'styles.css'
+      - 'dft-workspace.css'
       - 'validation-results/qe-*/**'
 
 permissions:
@@ -55,3 +56,30 @@ jobs:
           fi
       - name: Validate D4.1 preregistered plan and pinned raw reference without DFT
         run: python tools/qe_electronic_convergence.py --preflight
+
+  dft-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser test dependencies
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1 @spglib/moyo-wasm@0.21.0
+          npx playwright install --with-deps chromium
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
+      - name: Verify dedicated DFT routes and mounted forms without calculations
+        run: node tests/browser/dft-workspace.test.mjs
+      - name: Retain DFT screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dft-workspace-browser
+          path: tests/browser/artifacts/dft-workspace-*.png
+          if-no-files-found: warn
+          retention-days: 14

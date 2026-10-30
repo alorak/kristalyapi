@@ -158,8 +158,7 @@ düzeltmeler gerekebilir.
 
 ## 4. Arayüz
 
-[KristalYapı](https://alorak.github.io/kristalyapi/) → **DFT /
-Quantum ESPRESSO** → **4 · MoS₂ kusur serisi karşılaştırması** →
+[KristalYapı](https://alorak.github.io/kristalyapi/) → **DFT → Kusur çalışmaları** → **MoS₂ kusur karşılaştırması** →
 `defect-comparison.json` yükle.
 
 Mevcut grafikler:

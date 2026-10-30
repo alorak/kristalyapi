@@ -5790,6 +5790,7 @@ function syncControls(){
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
  syncQuickbar();
  try{previewPlane();}catch(e){}fillPoly();syncAnalysisAvailability();renderSites();renderBondRuleEditor();renderMillerLayerList();renderMorphList();renderOverlayList();renderLayerManager();
+ if($('dftPage')&&!$('dftPage').hidden)syncDftSummary();
 }
 function fillPoly(){
  const node=$('polyElement'),els=[...new Set(state.sites.map(x=>cleanSymbol(x.symbol)))];
@@ -6888,6 +6889,7 @@ async function qeJobStart(){
    throw Error('Gönderilen ve doğrulanan yapı özetleri uyuşmuyor.');
   qeActiveJob={id:created.job_id,address,token,hash:created.structure_hash,
    workspaceId,snapshot};
+  syncDftSummary();
   $('qeJobPause').disabled=true;$('qeJobResume').disabled=true;
   qeClearRelaxationComparison();$('qeJobDiagnostics').replaceChildren();
   $('qeApiElectronicResults').replaceChildren();$('qeApiElectronicResults').hidden=true;
@@ -6924,14 +6926,15 @@ async function qeJobRefresh(){
      qeElectronicSource={structure:structuredClone(result.final_structure),hash:result.final_structure_hash,jobId:job.id};
      $('qeJobWorkflow').value='electronic';qeElectronicModeChanged();
      $('qeElectronicSourceStatus').textContent='Kaynak: '+job.id+' · son yapı '+result.final_structure_hash.slice(0,12)+'.';
+     window.location.hash='dft/hazirlik';
     };box.append(use);
     message+=' Relaksasyon ve son SCF geçti; en büyük kuvvet bileşeni '+
-     comparison.maxForceComponent.toExponential(3)+' Ry/Bohr. Başlangıç/son yapı aşağıda karşılaştırılabilir.';
+     comparison.maxForceComponent.toExponential(3)+' Ry/Bohr. Başlangıç/son yapı Sonuçlar sayfasında karşılaştırılabilir.';
    }
    if(result.schema==='kristalyapi.qe-electronic-job-result.v1'){
     const parsed=parseQeElectronicResult(result.electronic),box=$('qeApiElectronicResults');
     box.hidden=false;renderQeElectronicResults(box,parsed);
-    message+=' Bant, DOS ve atom/orbital PDOS sonuçları aşağıda gösteriliyor.';
+    message+=' Bant, DOS ve atom/orbital PDOS grafikleri Sonuçlar sayfasında gösteriliyor.';
    }
   }else if(record.status==='paused')message+=' Tamamlanan aşama sınırında duraklatıldı; kayıtlar denetlenerek devam edilebilir.';
   else if(record.pause_requested&&record.status==='running')message+=' Duraklatma istendi; çalışan aşamanın tamamlanması bekleniyor.';
@@ -6967,6 +6970,7 @@ async function qeJobHistoryOpen(){
   const address=$('qeApiAddress').value,token=$('qeApiToken').value;
   const record=await getQeScfJob(address,token,id);
   qeActiveJob={id,address,token,hash:record.structure_hash,workspaceId:null,snapshot:null};
+  syncDftSummary();
   await qeJobRefresh();
  }catch(error){status.textContent='Önceki iş: '+error.message;}
 }
@@ -6992,20 +6996,24 @@ async function qeJobCancel(){
 async function qeTestApiConnection(){
  const button=$('qeApiTest'),input=$('qeApiAddress'),status=$('qeApiStatus'),attempt=input.value;
  button.disabled=true;
+ dftConnectionState='Bağlantı denetleniyor…';syncDftSummary();
  status.textContent='Yerel QE API bağlantısı kontrol ediliyor...';
  try{
   const probe=await inspectQeApi(attempt);
   if(input.value!==attempt){
+   dftConnectionState='Adres değişti; tekrar denetleyin';
    status.textContent='Adres değişti; yeniden bağlantı testi yapın.';return;
   }
+  dftConnectionState=probe.ready?'QE sunucusu hazır':'API erişilebilir; çözücü hazır değil';
   const list=Object.entries(probe.binaries).map(([key,ok])=>key+': '+(ok?'var':'eksik')).join(' · ');
   status.textContent=(probe.ready?'QE sunucusu hazır.':'QE API erişilebilir; çözücü henüz hazır değil.')+
    ' QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
    (probe.jobsEnabled?' · QE işi alımı açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
  }catch(error){
+  dftConnectionState='Sunucuya bağlanılamadı';
   status.textContent='Bağlantı kurulamadı: '+error.message+
    ' Yerel ağ izni, HTTPS/HTTP tarayıcı kısıtları, CORS ve konteyner portunu kontrol edin.';
- }finally{button.disabled=false;}
+ }finally{button.disabled=false;syncDftSummary();}
 }
 async function qeLoadDefectComparison(){
  const input=$('qeDefectCompareFile'),file=input.files?.[0],status=$('qeDefectCompareStatus');
@@ -9136,17 +9144,70 @@ function setLibraryPane(mode){
 }
 function isLibraryHash(hash){return hash==='#kutuphane';}
 function isReciprocalHash(hash){return hash==='#karsi-uzay';}
+// Dedicated hash routes keep one mounted set of QE forms, jobs and result hosts.
+const DFT_SECTIONS=['hazirlik','isler','sonuclar','yakinsama','kusurlar'];
+let dftActiveSection=null;
+let dftConnectionState='Bağlantı kontrol edilmedi';
+function dftSectionFromHash(hash){
+ const section=String(hash).split('/')[1];
+ return DFT_SECTIONS.includes(section)?section:'hazirlik';
+}
+function syncDftSummary(){
+ if(!$('dftStructureName'))return;
+ $('dftStructureName').textContent=state.name||activeWorkspace()?.label||'Aktif yapı';
+ try{
+  const model=qeCalculationStructure(state);
+  const counts=new Map();for(const site of model.sites)counts.set(site.symbol,(counts.get(site.symbol)||0)+1);
+  $('dftStructureDetail').textContent=model.sites.length+' atom · '+[...counts].map(([el,n])=>el+' × '+n).join(' · ');
+  const c=model.cell;
+  $('dftStructureCell').textContent='a '+c.a.toFixed(3)+' · b '+c.b.toFixed(3)+' · c '+c.c.toFixed(3)+' Å';
+ }catch(error){
+  $('dftStructureDetail').textContent='Hesap yapısı hazırlanmalı.';
+  $('dftStructureCell').textContent=error.message;
+ }
+ $('dftConnectionState').textContent=dftConnectionState;
+ $('dftCurrentJob').textContent=qeActiveJob?qeActiveJob.id:'Henüz iş yok';
+ const electronic=$('qeJobWorkflow').value==='electronic';
+ const operation=electronic?'SCF → bant → DOS / PDOS':$('qeCalcType').value==='relax'?'relax → SCF':'SCF';
+ const source=electronic&&qeElectronicSource?'Son relaksasyon yapısı: '+qeElectronicSource.hash.slice(0,12):'Kaynak: aktif yapı.';
+ $('dftJobSource').textContent=source;
+ $('dftJobOperation').textContent='PBE · '+operation;
+ $('dftJobParameters').textContent='ecutwfc '+$('qeEcutwfc').value+' Ry / ecutrho '+$('qeEcutrho').value+
+  ' Ry · k '+[$('qeKx').value,$('qeKy').value,$('qeKz').value].join(' × ')+' · UPF: '+$('qeJobProfile').value;
+
+}
+function syncDftWorkspace(){
+ const section=dftSectionFromHash(window.location.hash);
+ const changed=dftActiveSection!==section;
+ const focusHeading=changed&&dftActiveSection!==null&&$('dftPage').contains(document.activeElement);
+ for(const key of DFT_SECTIONS){
+  $('dft-'+key).hidden=key!==section;
+  const link=document.querySelector('[data-dft-section="'+key+'"]');
+  link.classList.toggle('active',key===section);
+  if(key===section)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+ }
+ dftActiveSection=section;syncDftSummary();
+ if(changed)$('dftPage').scrollTop=0;
+ if(focusHeading)$('dft-title-'+section).focus({preventScroll:true});
+}
+
 function pageFromHash(hash){
  if(isLibraryHash(hash))return 'library';
  if(isReciprocalHash(hash))return 'reciprocal';
  if(hash==='#toz-kirinimi')return 'powder';
  if(hash==='#yariiletken-fizigi')return 'semiconductor';
+ if(hash==='#dft'||hash.startsWith('#dft/'))return 'dft';
  return 'editor';
 }
 let reciprocalPage=null;
 let powderLesson=null,semiconductorLesson=null,semiconductorP0=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
+ document.body.classList.toggle('dft-open',page==='dft');
+ $('dftPage').hidden=page!=='dft';
+ $('dftNav').classList.toggle('active',page==='dft');
+ $('dftNav').setAttribute('aria-current',page==='dft'?'page':'false');
+ if(page==='dft')syncDftWorkspace();
  document.body.classList.toggle('library-open',library);
  document.body.classList.toggle('reciprocal-open',reciprocal);
  document.body.classList.toggle('lesson-open',page==='powder'||page==='semiconductor');
@@ -9680,8 +9741,8 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','qe','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','DFT / Quantum ESPRESSO','Kristalografik simetri'];
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','bonds','lattice','miller','defects','symmetry'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
 let rightSidebarTab=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -9778,6 +9839,7 @@ function bind(){
  $('qeConvergenceOpen').onclick=qeLoadConvergenceView;
  $('qeConvergenceFile').onchange=()=>{$('qeConvergenceCharts').replaceChildren();$('qeConvergenceStatus').textContent='Dosya seçildi; raporu açın.';};
  $('qeApiTest').onclick=qeTestApiConnection;
+ $('qeApiAddress').addEventListener('input',()=>{dftConnectionState='Adres değişti; tekrar denetleyin';syncDftSummary();});
  $('qeJobValidate').onclick=qeJobPreflight;
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;
