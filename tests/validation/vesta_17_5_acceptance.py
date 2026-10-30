@@ -35,8 +35,8 @@ FIELDS = ("a", "b", "c", "alpha", "beta", "gamma")
 def selected_cases(cases=None):
     cases = pinned_cases() if cases is None else cases
     by_id = {c["id"]: c for c in cases}
-    if set(by_id) != set(SUITES):
-        raise ValueError("V17.5 requires exactly three pinned CIF cases and one CCP4 case")
+    if not set(SUITES).issubset(by_id) or len(by_id) != len(cases):
+        raise ValueError("V17.5 requires three pinned CIF cases and one CCP4 case")
     return [by_id[key] for key in SUITES]
 
 
