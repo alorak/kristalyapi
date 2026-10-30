@@ -56,6 +56,9 @@ class Acceptance17Tests(unittest.TestCase):
     def fake_artifacts(self, modified_site=False):
         data = self.data()
         for entry in data["cases"]:
+            if entry["suite"] == "VOLUME_LOSS_GATE":
+                source = visual.ROOT / self.cases[-1]["source"]
+                (self.folder / entry["volumeCompanion"]["path"]).write_bytes(source.read_bytes())
             if entry["suite"] == "P1_EXPORT_ROUNDTRIP":
                 source = self.project()
                 path = self.folder / entry["exportedProject"]["path"]
@@ -70,6 +73,10 @@ class Acceptance17Tests(unittest.TestCase):
                     "generatedVestaFile": path.name,
                     "exportSiteCount": 1,
                     "externalFiles": [],
+                    "entries": [
+                        {"field": "SCENE/PROJT/LMATRIX/LIGHT", "status": "DROPPED"},
+                        {"field": "ADP", "status": "DROPPED"},
+                    ],
                 }
                 (self.folder / entry["lossReport"]["path"]).write_text(json.dumps(report))
                 resaved = self.project(x=.05 if modified_site else 0)
@@ -103,6 +110,7 @@ class Acceptance17Tests(unittest.TestCase):
         self.assertFalse(doc["vestaGuiExecuted"])
         self.assertEqual(len(doc["cases"]), 4)
         self.assertIsNone(doc["cases"][-1]["exportedProject"])
+        self.assertTrue(doc["cases"][-1]["volumeCompanion"]["path"].endswith(".ccp4"))
         result = v17.audit(self.folder, self.out, self.cases)
         self.assertEqual(result["vestaGuiStatus"], "NOT_RUN")
         self.assertEqual(result["scientificParity"], "NOT_ESTABLISHED")
@@ -131,6 +139,8 @@ class Acceptance17Tests(unittest.TestCase):
         self.assertEqual(outcome["cases"][-1]["omittedByV17_4"],
                          "VOLUME_GRID_NOT_EXPORTED; UNKNOWN_SOURCE_PHYSICAL_UNITS")
         self.assertEqual(outcome["cases"][-1]["roundtrip"], None)
+        self.assertEqual(outcome["cases"][-1]["operatorSelectedCcp4Sha256"],
+                         self.cases[-1]["sourceSha256"])
         self.assertTrue((self.out / "matrix.csv").is_file())
         self.assertTrue((self.out / "nacl-001-structure-reopened-comparison.png").is_file())
 
