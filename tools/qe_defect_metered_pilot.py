@@ -252,7 +252,8 @@ def run_pilot(settings, target, pseudos_dir, rendered, pseudo_hashes, selected, 
         "daemon":daemon,"upf_sha256":pseudo_hashes,"calculation_performed":False,
         "scientific_convergence_accepted":False,"full_scf_resource_validated":False,
         "initialization_only":True,"container_removed":False,"status":"failed",
-        "physical_memory_peak_bytes":None,"timeout_seconds":settings["timeout_seconds"]}
+        "cgroup_memory_peak_bytes":None,"timeout_seconds":settings["timeout_seconds"],
+        "runner_script_sha256":sha(Path(__file__).read_bytes())}
     container=None;process=None
     try:
         argv=make_docker_create(settings,evidence,inputs,pseudos_dir,name)
@@ -284,7 +285,7 @@ def run_pilot(settings, target, pseudos_dir, rendered, pseudo_hashes, selected, 
         report["calculation_performed"]=any(report["raw_qe_diagnostics"][field] for field in
                                            ("has_energy","has_scf_convergence","scf_started"))
         report["status"]=evaluated_status(report,text,metrics,selected)
-        report["physical_memory_peak_bytes"]=metrics.get("memory_peak_bytes") if (
+        report["cgroup_memory_peak_bytes"]=metrics.get("memory_peak_bytes") if (
             isinstance(metrics,dict) and type(metrics.get("memory_peak_bytes")) is int) else None
         if report["calculation_performed"]:
             report["status"]="unexpected_scf_execution"
