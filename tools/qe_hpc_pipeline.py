@@ -1,0 +1,442 @@
+#!/usr/bin/env python3
+"""Strict offline QE/SLURM pipeline stage preparation, evidence and summary.
+
+Only the generated fixed workflow is supported: optional fixed-cell relax,
+SCF, bands/bands.x, NSCF, DOS and projected DOS. This tool never submits jobs,
+executes shell commands, downloads pseudopotentials or infers a k-path.
+Requires Python 3.9+ standard library only.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+
+SCHEMA = "kristalyapi.truba-qe-pipeline.v1"
+REPORT_SCHEMA = "kristalyapi.truba-qe-stage.v1"
+SUMMARY_SCHEMA = "kristalyapi.truba-qe-pipeline-summary.v1"
+SHA = re.compile(r"[0-9a-f]{64}\Z")
+UPF = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.+-]*\.upf\Z", re.I)
+NUM = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[dDeE][+-]?\d+)?"
+STAGES = ("relax", "scf", "bands", "bands_pp", "nscf", "dos", "projwfc")
+STAGE_OUTPUTS = {
+    "relax": ("relax.out", ()),
+    "scf": ("scf.out", ()),
+    "bands": ("bands.out", ()),
+    "bands_pp": ("bands_pp.out", ("bands.dat.gnu",)),
+    "nscf": ("nscf.out", ()),
+    "dos": ("dos.out", ("dos.dat",)),
+    "projwfc": ("projwfc.out", ("pdos.pdos_tot",)),
+}
+MAX_FILE = 1024 * 1024 * 1024
+MAX_MANIFEST = 128 * 1024
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for part in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(part)
+    return h.hexdigest()
+
+
+def file_at(root: Path, rel: str, size_limit: int = MAX_FILE) -> Path:
+    if (not isinstance(rel, str) or rel.startswith("/") or "\\" in rel or
+            any(part in ("", ".", "..") for part in rel.split("/"))):
+        raise ValueError("Invalid relative path")
+    path = root / rel
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > size_limit:
+        raise ValueError("Required safe file missing or oversized: " + rel)
+    if not path.resolve().is_relative_to(root):
+        raise ValueError("File escapes pipeline root")
+    return path
+
+
+def require_hash(root: Path, rel: str, digest: str, limit: int = MAX_FILE) -> Path:
+    if not isinstance(digest, str) or not SHA.fullmatch(digest):
+        raise ValueError("Invalid expected hash: " + rel)
+    path = file_at(root, rel, limit)
+    if sha256(path) != digest:
+        raise ValueError("SHA-256 mismatch: " + rel)
+    return path
+
+
+def atomic_json(path: Path, value: dict) -> None:
+    if path.is_symlink() or path.exists():
+        raise ValueError("Refusing to overwrite existing evidence: " + path.name)
+    encoded = (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False,
+                          allow_nan=False) + "\n").encode("utf-8")
+    if len(encoded) > MAX_MANIFEST:
+        raise ValueError("Evidence JSON too large")
+    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".qe-stage-",
+                                     delete=False) as stream:
+        temp = Path(stream.name)
+        stream.write(encoded)
+    try:
+        if path.exists() or path.is_symlink():
+            raise ValueError("Refusing to replace evidence")
+        os.replace(temp, path)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def load_manifest(root: Path) -> dict:
+    value = json.loads(file_at(root, "pipeline.json", MAX_MANIFEST).read_text("utf-8"))
+    if not isinstance(value, dict) or value.get("schema") != SCHEMA:
+        raise ValueError("Unsupported pipeline.json schema")
+    plan = value.get("stages")
+    calc = value.get("calculation")
+    expected = list(STAGES) if calc == "relax" else list(STAGES[1:])
+    if plan != expected:
+        raise ValueError("Invalid or unsupported stage plan")
+    pins = value.get("file_sha256")
+    if not isinstance(pins, dict):
+        raise ValueError("Missing package file hashes")
+    for rel in ("structure.in", "pipeline.py", "submit.sh",
+                *("stages/" + step + ".slurm" for step in plan)):
+        require_hash(root, rel, pins.get(rel), MAX_MANIFEST if rel != "structure.in" else 4 * 1024 * 1024)
+    pseudos = value.get("pseudopotentials")
+    if not isinstance(pseudos, list) or not 1 <= len(pseudos) <= 118:
+        raise ValueError("Invalid pseudopotential list")
+    names = set()
+    for pseudo in pseudos:
+        if not isinstance(pseudo, dict) or not isinstance(pseudo.get("file"), str):
+            raise ValueError("Invalid pseudopotential record")
+        name = pseudo["file"]
+        if not UPF.fullmatch(name) or name.lower() in names:
+            raise ValueError("Unsafe or duplicate UPF filename")
+        names.add(name.lower())
+        path = file_at(root, "pseudo/" + name, 24 * 1024 * 1024)
+        if path.stat().st_size == 0:
+            raise ValueError("Empty UPF: " + name)
+        expected_sha = pseudo.get("sha256")
+        if expected_sha is not None:
+            require_hash(root, "pseudo/" + name, expected_sha, 24 * 1024 * 1024)
+    opts = value.get("electronic")
+    if not isinstance(opts, dict) or not isinstance(opts.get("path"), list):
+        raise ValueError("Missing electronic setup")
+    if not isinstance(opts.get("nbnd"), int) or not 1 <= opts["nbnd"] <= 10000:
+        raise ValueError("Invalid nbnd")
+    mesh = opts.get("mesh")
+    if not isinstance(mesh, list) or len(mesh) != 3 or any(
+            not isinstance(n, int) or not 1 <= n <= 48 for n in mesh):
+        raise ValueError("Invalid NSCF mesh")
+    path = opts["path"]
+    if not 2 <= len(path) <= 32:
+        raise ValueError("Invalid band path length")
+    for p in path:
+        if (not isinstance(p, dict) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,15}",
+                str(p.get("label", ""))) or not isinstance(p.get("k"), list)
+                or len(p["k"]) != 3 or any(type(n) not in (float, int)
+                or not math.isfinite(n) or abs(n) > 2 for n in p["k"])
+                or type(p.get("segments")) is not int or not 1 <= p["segments"] <= 500):
+            raise ValueError("Invalid band path record")
+    if path[-1]["segments"] != 1:
+        raise ValueError("Last band-path segment must be 1")
+    for name in ("emin", "emax", "delta_e", "degauss"):
+        v = opts.get(name)
+        if type(v) not in (int, float) or not math.isfinite(v):
+            raise ValueError("Invalid DOS parameter: " + name)
+    if (opts["emin"] >= opts["emax"] or not 0.005 <= opts["delta_e"] <= 0.5
+            or not 0.0001 <= opts["degauss"] <= 0.1):
+        raise ValueError("DOS parameter range invalid")
+    return value
+
+
+def unique_replace(text: str, pattern: str, replacement: str, flags: int = re.M | re.I) -> str:
+    result, n = re.subn(pattern, lambda _: replacement, text, count=1, flags=flags)
+    if n != 1:
+        raise ValueError("Expected source QE card missing: " + pattern[:35])
+    return result
+
+
+def change_calc(source: str, calc: str) -> str:
+    source = unique_replace(source, r"^\s*calculation\s*=\s*['\"](?:scf|relax)['\"]",
+                            " calculation = '" + calc + "'")
+    # &IONS must be absent in non-relaxation calculations.
+    source = re.sub(r"(?ims)^\s*&IONS\b.*?^\s*/\s*$", "", source)
+    return source
+
+
+def change_kpoints(source: str, card: str) -> str:
+    return unique_replace(source, r"^K_POINTS\s+automatic\s*\n\s*\d+\s+\d+\s+\d+\s+[01]\s+[01]\s+[01]\s*$",
+                          card.rstrip(), re.M | re.I)
+
+
+def add_nbnd(source: str, nbnd: int) -> str:
+    if re.search(r"(?im)^\s*nbnd\s*=", source):
+        raise ValueError("Input already declares nbnd")
+    return unique_replace(source, r"^\s*ntyp\s*=\s*\d+\s*,?\s*$",
+                          lambda_stub_nbnd(nbnd))
+
+
+def lambda_stub_nbnd(nbnd: int) -> str:
+    # Kept separate to make added lines deterministic.
+    return " ntyp = " + str(current_ntyp) + ",\n nbnd = " + str(nbnd) + ","
+
+
+def apply_nbnd(source: str, nbnd: int) -> str:
+    if re.search(r"(?im)^\s*nbnd\s*=", source):
+        raise ValueError("Input already declares nbnd")
+    match = re.search(r"(?im)^\s*ntyp\s*=\s*(\d+)\s*,?\s*$", source)
+    if not match:
+        raise ValueError("Source ntyp missing")
+    return source[:match.end()] + "\n nbnd = " + str(nbnd) + "," + source[match.end():]
+
+
+def relaxed_positions(source: str, relax_output: str) -> str:
+    if not re.search(r"(?i)\bJOB\s+DONE\.", relax_output):
+        raise ValueError("Relax output not finished")
+    if not re.search(r"(?i)\bbfgs\s+converged\b", relax_output):
+        raise ValueError("Relax was not geometry converged")
+    blocks = list(re.finditer(r"(?is)Begin final coordinates(.*?)End final coordinates", relax_output))
+    if not blocks:
+        raise ValueError("Relax output lacks final coordinates")
+    block = blocks[-1].group(1)
+    if re.search(r"(?im)^\s*CELL_PARAMETERS\b", block):
+        raise ValueError("Variable-cell relaxation not supported")
+    m = re.search(r"(?im)^\s*ATOMIC_POSITIONS\s*\(?crystal\)?\s*$", block)
+    if not m:
+        raise ValueError("Final QE positions must use crystal fractional coordinates")
+    source_positions = re.search(
+        r"(?ims)^ATOMIC_POSITIONS\s+crystal\s*\n(.*?)^K_POINTS\s+automatic\s*$",
+        source)
+    if not source_positions:
+        raise ValueError("Source must use fractional ATOMIC_POSITIONS")
+    originals = [line.split()[0] for line in source_positions.group(1).splitlines()
+                 if line.strip()]
+    if not originals or len(originals) > 1000:
+        raise ValueError("Invalid source atom count")
+    new_rows = []
+    for line in block[m.end():].splitlines():
+        row = line.split()
+        if len(row) < 4 or not re.fullmatch(r"[A-Z][a-z]?", row[0]):
+            if new_rows:
+                break
+            continue
+        try:
+            xyz = [float(v.replace("D", "E").replace("d", "e")) for v in row[1:4]]
+        except ValueError as exc:
+            raise ValueError("Invalid relaxed coordinates") from exc
+        if not all(math.isfinite(v) for v in xyz):
+            raise ValueError("Nonfinite relaxed coordinates")
+        new_rows.append(row[0] + " " + " ".join(f"{v % 1.0:.12f}" for v in xyz))
+    if [r.split()[0] for r in new_rows] != originals:
+        raise ValueError("Relax changed atom order/number; rejecting chained SCF")
+    return (source[:source_positions.start()] + "ATOMIC_POSITIONS crystal\n"
+            + "\n".join(new_rows) + "\nK_POINTS automatic"
+            + source[source_positions.end():])
+
+
+def generate_input(root: Path, stage: str, config: dict) -> tuple[str, str]:
+    source = file_at(root, "structure.in", 4 * 1024 * 1024).read_text("utf-8")
+    elec = config["electronic"]
+    if stage == "relax":
+        return "structure.in", source
+    if stage == "scf":
+        if config["calculation"] == "relax":
+            relax_text = file_at(root, "relax.out").read_text("utf-8", errors="replace")
+            source = relaxed_positions(source, relax_text)
+        return "scf.in", change_calc(source, "scf")
+    if stage in ("bands", "nscf"):
+        source = file_at(root, "scf.in", 4 * 1024 * 1024).read_text("utf-8")
+        source = apply_nbnd(change_calc(source, stage), elec["nbnd"])
+        if stage == "bands":
+            path = elec["path"]
+            card = "K_POINTS crystal_b\n" + str(len(path)) + "\n"
+            card += "\n".join(" ".join(f"{v:.12g}" for v in p["k"]) + " "
+                              + str(p["segments"]) + " ! " + p["label"] for p in path)
+        else:
+            card = ("K_POINTS automatic\n"
+                    + " ".join(str(v) for v in elec["mesh"]) + " 0 0 0")
+        return stage + ".in", change_kpoints(source, card)
+    if stage == "bands_pp":
+        return "bands_pp.in", ("&BANDS\n prefix='kristalyapi',\n outdir='./tmp',"
+                               "\n filband='bands.dat',\n lsym=.false.,\n/\n")
+    if stage in ("dos", "projwfc"):
+        project = stage == "projwfc"
+        return stage + ".in", (
+            ("&PROJWFC" if project else "&DOS") + "\n"
+            + " prefix='kristalyapi',\n outdir='./tmp',\n"
+            + (" filpdos='pdos',\n" if project else " fildos='dos.dat',\n")
+            + " DeltaE=" + str(elec["delta_e"]) + ",\n"
+            + " ngauss=0,\n degauss=" + str(elec["degauss"]) + ",\n"
+            + " Emin=" + str(elec["emin"]) + ",\n"
+            + " Emax=" + str(elec["emax"]) + ",\n/\n")
+    raise ValueError("Unknown stage")
+
+
+def previous_report(root: Path, plan: list[str], stage: str) -> dict | None:
+    index = plan.index(stage)
+    if index == 0:
+        return None
+    prior = plan[index - 1]
+    value = json.loads(file_at(root, "reports/" + prior + ".json", MAX_MANIFEST).read_text("utf-8"))
+    if (not isinstance(value, dict) or value.get("schema") != REPORT_SCHEMA or
+            value.get("stage") != prior or value.get("status") != "completed"):
+        raise ValueError("Prior stage not completed: " + prior)
+    for rel, digest in value.get("hashes", {}).items():
+        require_hash(root, rel, digest)
+    if not value.get("hashes") or "tmp/kristalyapi.save/data-file-schema.xml" not in value["hashes"]:
+        raise ValueError("Previous stage lacks restart XML evidence")
+    return value
+
+
+def prepare(root: Path, stage: str) -> None:
+    config = load_manifest(root)
+    plan = config["stages"]
+    if stage not in plan:
+        raise ValueError("Stage not in package")
+    file_at(root, "stages/" + stage + ".slurm", MAX_MANIFEST)
+    if (root / "reports" / (stage + ".json")).exists():
+        raise ValueError("Stage already completed; refusing automatic overwrite")
+    previous_report(root, plan, stage)
+    name, content = generate_input(root, stage, config)
+    if name != "structure.in":
+        target = root / name
+        if target.exists() or target.is_symlink():
+            if target.is_symlink() or target.read_text("utf-8") != content:
+                raise ValueError("Existing stage input differs; refusing overwrite")
+        else:
+            target.write_text(content, encoding="utf-8")
+    print("Prepared stage:", stage, "input:", name)
+
+
+def scan_output(path: Path, stage: str) -> None:
+    if path.stat().st_size < 1:
+        raise ValueError("Empty QE stage output: " + stage)
+    done = False
+    scf = False
+    bfgs = False
+    with path.open("r", encoding="utf-8", errors="replace") as stream:
+        while line := stream.readline(1024 * 1024 + 1):
+            if len(line) > 1024 * 1024:
+                raise ValueError("QE output line exceeds limit")
+            if re.search(r"\bJOB\s+DONE\.", line, re.I):
+                done = True
+            if re.search(r"convergence\s+NOT\s+achieved", line, re.I):
+                scf = False
+            elif re.search(r"convergence\s+has\s+been\s+achieved", line, re.I):
+                scf = True
+            if re.search(r"\bbfgs\s+converged\b", line, re.I):
+                bfgs = True
+    if stage in ("relax", "scf", "bands", "nscf") and not done:
+        raise ValueError(stage + ": missing JOB DONE")
+    if stage in ("relax", "scf") and not scf:
+        raise ValueError(stage + ": SCF not converged")
+    if stage == "relax" and not bfgs:
+        raise ValueError("Relax geometry not converged")
+
+
+def finish(root: Path, stage: str) -> None:
+    config = load_manifest(root)
+    plan = config["stages"]
+    if stage not in plan:
+        raise ValueError("Stage not in package")
+    previous_report(root, plan, stage)
+    name, content = generate_input(root, stage, config)
+    input_path = file_at(root, name, 4 * 1024 * 1024)
+    if input_path.read_text("utf-8") != content:
+        raise ValueError("Stage input content changed")
+    output_name, artifacts = STAGE_OUTPUTS[stage]
+    output_path = file_at(root, output_name)
+    scan_output(output_path, stage)
+    hashes = {name: sha256(input_path), output_name: sha256(output_path)}
+    for artifact in artifacts:
+        path = file_at(root, artifact)
+        if path.stat().st_size == 0:
+            raise ValueError("Empty stage artifact: " + artifact)
+        hashes[artifact] = sha256(path)
+    xml = file_at(root, "tmp/kristalyapi.save/data-file-schema.xml")
+    hashes["tmp/kristalyapi.save/data-file-schema.xml"] = sha256(xml)
+    report = {"schema": REPORT_SCHEMA, "stage": stage, "status": "completed",
+              "completed_utc": datetime.now(timezone.utc).isoformat(),
+              "slurm_job_id": (os.environ.get("SLURM_JOB_ID") or None),
+              "hashes": hashes, "previous_stage": (
+                  plan[plan.index(stage) - 1] if plan.index(stage) else None),
+              "validated_not_physically_converged": True}
+    (root / "reports").mkdir(exist_ok=True)
+    atomic_json(root / "reports" / (stage + ".json"), report)
+    print("Stage completed:", stage, "hashes:", len(hashes))
+
+
+def fail(root: Path, stage: str, exit_code: int) -> None:
+    if stage not in STAGES:
+        raise ValueError("Unknown stage")
+    (root / "reports").mkdir(exist_ok=True)
+    target = root / "reports" / (stage + ".failure.json")
+    if target.exists():
+        return
+    atomic_json(target, {"schema": REPORT_SCHEMA, "stage": stage,
+                         "status": "failed", "exit_code": exit_code,
+                         "utc": datetime.now(timezone.utc).isoformat()})
+
+
+def summary(root: Path) -> None:
+    config = load_manifest(root)
+    records = []
+    for name in config["stages"]:
+        path = root / "reports" / (name + ".json")
+        if not path.is_file() or path.is_symlink():
+            records.append({"stage": name, "status": "missing"})
+            continue
+        report = json.loads(file_at(root, "reports/" + name + ".json", MAX_MANIFEST).read_text("utf-8"))
+        valid = (report.get("schema") == REPORT_SCHEMA and
+                 report.get("stage") == name and report.get("status") == "completed")
+        if valid:
+            try:
+                for rel, digest in report["hashes"].items():
+                    require_hash(root, rel, digest)
+            except (ValueError, KeyError):
+                valid = False
+        records.append({"stage": name, "status": "completed" if valid else "invalid",
+                        "job_id": report.get("slurm_job_id"),
+                        "file_count": len(report.get("hashes", {}))})
+    report = {
+        "schema": SUMMARY_SCHEMA, "status": "completed" if all(
+            r["status"] == "completed" for r in records) else "incomplete",
+        "scientific_convergence_verified": False,
+        "all_upfs_pinned": all(p.get("sha256") for p in config["pseudopotentials"]),
+        "stages": records,
+        "note": "Stage completion and hashes are not a band-gap, DOS or physical-convergence proof."
+    }
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    dest = root / "pipeline-summary.json"
+    if dest.is_symlink():
+        raise ValueError("Refusing symlink output")
+    dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("prepare", "finish", "fail", "summary"))
+    parser.add_argument("stage", nargs="?")
+    parser.add_argument("code", nargs="?", type=int)
+    args = parser.parse_args(argv)
+    try:
+        root = Path.cwd().resolve()
+        if args.action != "summary" and args.stage not in STAGES:
+            raise ValueError("Stage name required")
+        if args.action == "prepare":
+            prepare(root, args.stage)
+        elif args.action == "finish":
+            finish(root, args.stage)
+        elif args.action == "fail":
+            fail(root, args.stage, args.code or 1)
+        else:
+            summary(root)
+        return 0
+    except (ValueError, OSError, KeyError, json.JSONDecodeError) as exc:
+        print("TRUBA pipeline refused:", exc, file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
