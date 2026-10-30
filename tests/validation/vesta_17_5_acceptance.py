@@ -78,6 +78,7 @@ def prepare(folder: Path, commit: str, cases=None):
             "exportedProject": artifact_slot(cid, "app-export", ".vesta") if structure else None,
             "lossReport": artifact_slot(cid, "app-export", ".vesta.loss.json") if structure else None,
             "desktopResavedProject": artifact_slot(cid, "vesta-resaved", ".vesta") if structure else None,
+            "volumeCompanion": artifact_slot(cid, "operator-selected", ".ccp4") if not structure else None,
             "screenshots": {
                 key: image_slot(cid, key, scene["settings"]["outputPixels"])
                 for key in (("vestaOpened", "kristalyapiOpened", "kristalyapiReopened")
@@ -141,6 +142,8 @@ def _validate_header(evidence: dict, cases: list[dict], *, require_operator: boo
         required = ("exportedProject", "lossReport", "desktopResavedProject")
         if SUITES[cid] == "VOLUME_LOSS_GATE" and any(row.get(k) is not None for k in required):
             raise ValueError("Volume loss gate cannot claim V17.4 embedded/grid export")
+        if (SUITES[cid] == "VOLUME_LOSS_GATE") != (row.get("volumeCompanion") is not None):
+            raise ValueError("Only the volume gate may require a real selected CCP4 companion")
         needed = ("vestaOpened", "kristalyapiOpened", "kristalyapiReopened") if SUITES[cid] == "P1_EXPORT_ROUNDTRIP" else ("vestaOpened", "kristalyapiOpened")
         if not isinstance(row.get("screenshots"), dict) or set(row["screenshots"]) != set(needed):
             raise ValueError("Incorrect screenshot stages for " + cid)
@@ -159,7 +162,7 @@ def seal(folder: Path, cases=None):
     by_id = {c["id"]: c for c in cases}
     for row in evidence["cases"]:
         cid = row["id"]
-        slots = [row[k] for k in ("exportedProject", "lossReport", "desktopResavedProject")
+        slots = [row[k] for k in ("exportedProject", "lossReport", "desktopResavedProject", "volumeCompanion")
                  if row[k] is not None] + list(row["screenshots"].values())
         for slot in slots:
             name = slot["path"]
@@ -298,7 +301,7 @@ def audit(folder: Path, out_dir: Path, cases=None, *, require_all=False):
         if structure:
             needed = [row["exportedProject"], row["lossReport"], row["desktopResavedProject"]]
         else:
-            needed = []
+            needed = [row["volumeCompanion"]]
             report["omittedByV17_4"] = "VOLUME_GRID_NOT_EXPORTED; UNKNOWN_SOURCE_PHYSICAL_UNITS"
         slots = [*needed, *row["screenshots"].values()]
         found = []
@@ -327,9 +330,22 @@ def audit(folder: Path, out_dir: Path, cases=None, *, require_all=False):
                     or manifest.get("vestaSha256") != digest(exported.read_bytes())
                     or manifest.get("generatedVestaFile") != exported.name):
                 raise ValueError("V17.4 export manifest provenance/hash mismatch: " + cid)
-            if any(item.get("path") or item.get("sha256")
-                   for item in manifest.get("externalFiles", [])):
+            if not isinstance(manifest.get("externalFiles", []), list) or any(
+                not isinstance(item, dict) or item.get("path") is not None or item.get("sha256") is not None
+                for item in manifest.get("externalFiles", [])
+            ):
                 raise ValueError("External volume file path/hash may not be fabricated")
+            entries = manifest.get("entries")
+            if not isinstance(entries, list) or not any(
+                isinstance(item, dict) and item.get("field") == "SCENE/PROJT/LMATRIX/LIGHT"
+                and item.get("status") == "DROPPED" for item in entries
+            ):
+                raise ValueError("Missing explicit V17.4 camera/light loss disclosure")
+            if cid == "iucr-mixed-occupancy-adp" and not any(
+                isinstance(item, dict) and item.get("field") == "ADP"
+                and item.get("status") == "DROPPED" for item in entries
+            ):
+                raise ValueError("IUCr ADP loss must be explicit")
             a, b = parse_p1_project(exported), parse_p1_project(resaved)
             if manifest.get("exportSiteCount") != len(a["sites"]):
                 raise ValueError("Export manifest site count does not match VESTA structure")
@@ -338,6 +354,10 @@ def audit(folder: Path, out_dir: Path, cases=None, *, require_all=False):
             report["desktopResavedSha256"] = digest(resaved.read_bytes())
             report["v17_4LossManifestSha256"] = digest(loss_report.read_bytes())
         else:
+            companion = found[0]
+            if digest(companion.read_bytes()) != scene["sourceSha256"]:
+                raise ValueError("Selected GUI CCP4 sidecar differs from source-pinned binary")
+            report["operatorSelectedCcp4Sha256"] = digest(companion.read_bytes())
             if scene["settings"].get("isoLevel") != 1 or scene["settings"].get("isoLevelUnits") != "source-map-units":
                 raise ValueError("Native CCP4 +1.0 isolevel and UNKNOWN units must remain pinned")
         capture = {name: _capture(folder, shot, scene)
