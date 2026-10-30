@@ -37,6 +37,18 @@ python3 tools/qe_defect_metered_pilot.py \
   --output /yeni/d5-3-tek-vaka
 ```
 
+Üretilen `report.json` ve ham dosyaları ayrı bir komutla yeniden denetleyin:
+
+```bash
+python3 tools/qe_defect_metered_verify.py --output /yeni/d5-3-tek-vaka
+```
+
+Bu denetleyici Docker veya QE başlatmaz. Ham girdi, stdout, stderr,
+metrik ve rapor hash'lerini; orijinal D5.1/D5.2 input kimliğini;
+yalnız kanıtlı `initialized_only_metered` durumunu yeniden kontrol eder.
+Rapor ve ham dosyaların birlikte değiştirilmesini önleyen bağımsız imza
+ya da harici zaman damgası değildir.
+
 İmaj, **mevcut yerel Docker image ID** olarak bulunmalı; otomatik pull
 veya internet bağlantısı yoktur. Mimarisi ve imaj SHA-256'sı Docker
 tarafında doğrulanır. Mo/S/O operatör UPF dosyaları hazırlık
