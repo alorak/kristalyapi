@@ -1,0 +1,21 @@
+{
+  "schema": "kristalyapi.qe-hpc-package-inspection.v1",
+  "source_commit": "0fd12f212b6601b32a4b6aa39c3ec820cecb096c",
+  "source_dirty": false,
+  "cases": [
+    "pristine",
+    "V_S",
+    "V_2S",
+    "O_S"
+  ],
+  "profile_sha256": "93cf6efb6d11e034b0fdb2c6804ea4455facc871efcbadedb7ea0cddb56d23c5",
+  "package_manifest_sha256": "34bb0d16762b8736d651c339d25911edf6a6a18c11394df8f5af3bc7d89562f8",
+  "archive_sha256": "72c2c8e1e4ec02e6753913f3901d95c0af7cf986d2e2f158c7556e90cca2b5cf",
+  "archive_bytes": 103682,
+  "verified_file_count": 53,
+  "inspection_passed": true,
+  "initialization_executed": false,
+  "scf_executed": false,
+  "hpc_job_submitted": false,
+  "full_scf_resource_sufficiency_validated": false
+}

@@ -34,6 +34,7 @@ def read_output(path):
 
 
 from job_diagnostics import record_job,sample_job
+from resource_policy import current as resource_limits
 
 @record_job
 def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeout, limits, kill):
@@ -59,7 +60,7 @@ def execute_relax_scf(store, job, *, qe_binary, profiles_dir, pseudo_dir, timeou
                     (root/stderr_name).open("wb") as stderr:
                 process = subprocess.Popen([binary,"-in",input_name],cwd=root,
                     stdin=stdin,stdout=stdout,stderr=stderr,start_new_session=True,
-                    env={**os.environ,"OMP_NUM_THREADS":"2"},preexec_fn=limits)
+                    env={**os.environ,"OMP_NUM_THREADS":str(resource_limits()["threads"])},preexec_fn=limits)
                 while process.poll() is None:
                     sample_job(process)
                     stopped()

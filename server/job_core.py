@@ -11,6 +11,7 @@ import json
 import math
 import re
 from pathlib import Path
+from resource_policy import current as resource_limits
 
 RY_TO_EV = 13.605693122994
 SYMBOL = re.compile(r"^[A-Z][a-z]?$")
@@ -59,8 +60,8 @@ def canonical_request(data):
     if abs(volume)<1:
         raise ValueError("Degenerate or too small cell")
     raw_atoms=structure["atoms"]
-    if not isinstance(raw_atoms,list) or not 1<=len(raw_atoms)<=64:
-        raise ValueError("D2 accepts 1-64 fully occupied explicit atoms")
+    if not isinstance(raw_atoms,list) or not 1<=len(raw_atoms)<=resource_limits()["max_atoms"]:
+        raise ValueError("D2 accepts 1-"+str(resource_limits()["max_atoms"])+" fully occupied explicit atoms")
     atoms=[]
     for row in raw_atoms:
         if not isinstance(row,dict) or set(row)!={"element","fractional"}:

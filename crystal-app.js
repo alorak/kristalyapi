@@ -17,7 +17,7 @@ import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightM
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
 import { parseRelaxationResult,renderRelaxationComparison } from './qe-relax-view.js';
-import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
+import { inspectQeApi,validateQeScf,submitQeScf,getQeScfJob,getQeScfResult,cancelQeScfJob,listQeScfJobs,parseQeBandPath,normalizeQeApiUrl,getQeJobDiagnostics,pauseQeElectronicJob,resumeQeElectronicJob } from './qe-api-client.js';
 import { analyzeMos2Structure,createMos2StudyManifest } from './mos2-defect-study-core.js';
 
 const $ = id => document.getElementById(id);
@@ -6855,6 +6855,7 @@ function qeApplyProtocol(reference){
   $('qeEcutwfc').value=settings.ecutwfc_ry;$('qeEcutrho').value=settings.ecutrho_ry;
   ['qeKx','qeKy','qeKz'].forEach((id,i)=>$(id).value=settings.kpoints[i]);
   $('qeElectronicNbnd').value=electronic.nbnd;$('qeElectronicMesh').value=electronic.nscf_k;
+  $('qeBandFirst').value='';$('qeBandLast').value='';
   $('qeElectronicPath').value=electronic.band_path.map(p=>[p.label,...p.k,p.segments].join(' ')).join('\n');
   $('qeDosExplicit').checked=true;$('qeDosMin').value=electronic.dos.energy_min_ev;$('qeDosMax').value=electronic.dos.energy_max_ev;
   $('qeDosStep').value=electronic.dos.delta_e_ev;$('qeDosSigma').value=electronic.dos.degauss_ry;
@@ -6881,6 +6882,7 @@ function initQeProtocols(){
  $('dftPage').addEventListener('change',event=>{if(/^qe/.test(event.target.id)){qeProtocolPreflight=null;qeUpdateProtocolState();}});
 }
 
+let qeResourceProfile=null;
 function qeElectronicModeChanged(){
  $('qeElectronicSettings').hidden=$('qeJobWorkflow').value!=='electronic';
 }
@@ -6902,7 +6904,8 @@ function qeJobPayload(){
   element:site.symbol,
   fractional:[Number(site.x),Number(site.y),Number(site.z)]
  })):structuredClone(qeElectronicSource.structure.atoms);
- if(!atoms.length||atoms.length>64)throw Error('QE API en fazla 64 atom destekler.');
+ const caps=qeResourceProfile?.base===normalizeQeApiUrl($('qeApiAddress').value)?qeResourceProfile.limits:{max_atoms:64};
+ if(!atoms.length||atoms.length>caps.max_atoms)throw Error('QE API atom sınırı: '+caps.max_atoms+'.');
  const kpoints=[$('qeKx'),$('qeKy'),$('qeKz')].map(el=>Number(el.value));
  const payload={
   schema:relax?'kristalyapi.qe-relax-scf-job.v1':'kristalyapi.qe-scf-job.v1',
@@ -6924,6 +6927,8 @@ function qeJobPayload(){
   payload.schema='kristalyapi.qe-electronic-job.v1';payload.parameters.calculation='electronic';
   payload.electronic={nbnd:Number($('qeElectronicNbnd').value),nscf_k:Number($('qeElectronicMesh').value),
    band_path:parseQeBandPath($('qeElectronicPath').value)};
+  const first=$('qeBandFirst').value,last=$('qeBandLast').value;
+  if(first||last){if(!first||!last)throw Error('Bant penceresinin iki sınırı da gerekli.');payload.electronic.band_window=[Number(first),Number(last)];}
   if($('qeDosExplicit').checked)payload.electronic.dos={delta_e_ev:Number($('qeDosStep').value),degauss_ry:Number($('qeDosSigma').value),energy_min_ev:Number($('qeDosMin').value),energy_max_ev:Number($('qeDosMax').value)};
  }
  return payload;
@@ -7094,10 +7099,12 @@ async function qeTestApiConnection(){
    dftConnectionState='Adres değişti; tekrar denetleyin';
    status.textContent='Adres değişti; yeniden bağlantı testi yapın.';return;
   }
-  dftConnectionState=probe.ready?'QE sunucusu hazır':'API erişilebilir; çözücü hazır değil';
+  dftConnectionState=probe.resourceProfile.executionEnabled===false?'Kaynak profili: yalnız hazırlık':probe.ready?'QE sunucusu hazır':'API erişilebilir; çözücü hazır değil';
+  qeResourceProfile={base:probe.base,limits:probe.resourceProfile};
+  $('qeElectronicNbnd').max=String(probe.resourceProfile.max_bands);$('qeElectronicMesh').max=String(probe.resourceProfile.max_nscf_k);
   const list=Object.entries(probe.binaries).map(([key,ok])=>key+': '+(ok?'var':'eksik')).join(' · ');
   status.textContent=(probe.ready?'QE sunucusu hazır.':'QE API erişilebilir; çözücü henüz hazır değil.')+
-   ' QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
+   ' Kaynak profili: '+probe.resourceProfile.id+' · atom/bant sınırı: '+probe.resourceProfile.max_atoms+'/'+probe.resourceProfile.max_bands+'. QE: '+probe.version+' · API: '+probe.apiVersion+' · '+list+
    (probe.jobsEnabled?' · QE işi alımı açık; gerçek UPF profili ve anahtar gerekir.':' · D0–D1 keşif modu; DFT işi gönderilemez.');
  }catch(error){
   dftConnectionState='Sunucuya bağlanılamadı';
@@ -9932,7 +9939,7 @@ function bind(){
  $('qeConvergenceOpen').onclick=qeLoadConvergenceView;
  $('qeConvergenceFile').onchange=()=>{$('qeConvergenceCharts').replaceChildren();$('qeConvergenceStatus').textContent='Dosya seçildi; raporu açın.';};
  $('qeApiTest').onclick=qeTestApiConnection;
- $('qeApiAddress').addEventListener('input',()=>{dftConnectionState='Adres değişti; tekrar denetleyin';syncDftSummary();});
+ $('qeApiAddress').addEventListener('input',()=>{qeResourceProfile=null;$('qeElectronicNbnd').max='128';$('qeElectronicMesh').max='24';dftConnectionState='Adres değişti; tekrar denetleyin';syncDftSummary();});
  $('qeJobValidate').onclick=qeJobPreflight;
  $('qeJobSubmit').onclick=qeJobStart;
  $('qeJobWorkflow').onchange=qeElectronicModeChanged;

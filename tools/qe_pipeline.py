@@ -212,7 +212,7 @@ def read_numeric_columns(path, mincols, maxrows=30000):
     return rows
 
 
-def parse_bands_gnu(path):
+def parse_bands_gnu(path,band_window=None):
     if not path.is_file() or path.stat().st_size > 8_000_000:
         raise ValueError("Missing/oversized bands.dat.gnu")
     blocks, block = [], []
@@ -244,8 +244,14 @@ def parse_bands_gnu(path):
     for block in blocks:
         if len(block) != len(distance) or any(abs(row[0] - x) > 1e-5 for row, x in zip(block, distance)):
             raise ValueError("Inconsistent band k-distance")
+    count=len(blocks);metadata={}
+    if band_window is not None:
+        first,last=band_window
+        if any(type(v) is not int for v in band_window) or not 1<=first<=last<=count or last-first+1>300:
+            raise ValueError('Invalid one-based band display window')
+        blocks=blocks[first-1:last];metadata={'band_index_start':first,'total_bands':count}
     return {"distance": distance, "energies_ev": [[row[1] for row in block] for block in blocks],
-            "reference": "raw QE eigenvalue energy zero (not vacuum/experimental PL)"}
+            "reference": "raw QE eigenvalue energy zero (not vacuum/experimental PL)",**metadata}
 
 
 def parse_dos(path):
@@ -276,13 +282,17 @@ def parse_pdos_total(path, dos):
 
 def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
                  bands_x="bands.x", dos_x="dos.x", projwfc_x="projwfc.x",
-                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None,pause_file=None,resume=False,expected_checkpoint_sha=None):
+                 band_path=None, nbnd=None, nscf_k=12, pdos=False, timeout=14400,dos_settings=None,pause_file=None,resume=False,expected_checkpoint_sha=None,band_window=None):
     if (resume or pause_file is not None) and not execute:
         raise ValueError("Checkpoint pause/resume requires actual execution")
     if dos_settings is not None:
         dos_settings=canonical_dos_settings(dos_settings)
         if not pdos:raise ValueError('DOS settings require the DOS/PDOS pipeline')
     path = load_band_path(band_path)
+    if band_window is not None and (not path or not isinstance(band_window,(list,tuple)) or len(band_window)!=2 or
+            any(type(x) is not int for x in band_window) or nbnd is None or not 1<=band_window[0]<=band_window[1]<=nbnd or band_window[1]-band_window[0]+1>300):
+        raise ValueError('Band window requires 1-300 existing one-based path bands')
+    if band_window is not None:band_window=list(band_window)
     if not (1 <= timeout <= 604800):
         raise ValueError("Timeout must be 1 second to 7 days")
     if (path or pdos) and nbnd is None:
@@ -310,7 +320,7 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
     if pause_file is not None or resume:
         identity=checkpoint.contract(input_file,pseudo_dir,model,
             {'nbnd':nbnd,'nscf_k':nscf_k,'dos_settings':dos_settings,'pdos':pdos,
-             'band_path':band_path.read_text() if band_path else None},
+             'band_path':band_path.read_text() if band_path else None,'band_window':band_window},
             {name:shutil.which(commands[name]) for name in needed},
             [Path(__file__),Path(checkpoint.__file__),Path(qe_run.__file__),Path(qe_pdos.__file__),Path(qe_post_settings.__file__)])
     result = checkpoint.load(workdir,identity,expected_checkpoint_sha) if resume else stage(input_file, pseudo_dir, workdir)
@@ -403,7 +413,7 @@ def run_pipeline(input_file, pseudo_dir, workdir, *, execute=False, pw="pw.x",
             step_run("bands", band_text)
             step_run("bands_pp", post_input("bands_pp"), post=True)
             if execute:
-                result["bands"] = parse_bands_gnu(workdir / "bands.dat.gnu")
+                result["bands"] = parse_bands_gnu(workdir / "bands.dat.gnu",band_window)
                 persist()
         if pdos:
             step_run("nscf", nscf_input(scf_source, nbnd, nscf_k))
@@ -462,6 +472,8 @@ def main(argv=None):
     parser.add_argument("--projwfc-x", default="projwfc.x")
     parser.add_argument("--band-path", type=Path, help="Explicit crystal_b k-path: LABEL kx ky kz N")
     parser.add_argument("--nbnd", type=int)
+    parser.add_argument("--band-first",type=int)
+    parser.add_argument("--band-last",type=int)
     parser.add_argument("--nscf-k", type=int, default=12)
     parser.add_argument("--pdos", action="store_true")
     parser.add_argument('--pause-file',type=Path)
@@ -475,6 +487,8 @@ def main(argv=None):
     parser.add_argument("--run", action="store_true", help="Execute actual QE; default is prepare-only")
     args = parser.parse_args(argv)
     try:
+        if (args.band_first is None)!=(args.band_last is None):raise ValueError('Both band window bounds are required')
+        band_window=[args.band_first,args.band_last] if args.band_first is not None else None
         values=[args.dos_delta_e,args.dos_degauss,args.dos_emin,args.dos_emax]
         settings=None
         if any(x is not None for x in values):
@@ -486,7 +500,7 @@ def main(argv=None):
                               projwfc_x=args.projwfc_x, band_path=args.band_path,
                               nbnd=args.nbnd, nscf_k=args.nscf_k, pdos=args.pdos,
                               timeout=args.timeout,dos_settings=settings,pause_file=args.pause_file,
-                              resume=args.resume,expected_checkpoint_sha=args.expected_checkpoint_sha)
+                              resume=args.resume,expected_checkpoint_sha=args.expected_checkpoint_sha,band_window=band_window)
         print(json.dumps({"status": result["status"], "manifest": str(args.workdir / "pipeline.json")},
                          ensure_ascii=False))
         return 75 if result["status"]=="paused" else 0 if result["status"] in ("prepared", "completed") else 1

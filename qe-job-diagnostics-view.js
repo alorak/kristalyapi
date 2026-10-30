@@ -1,5 +1,5 @@
 /* Operational telemetry is separate from scientific acceptance. */
-const reasons={paused_at_stage_boundary:'Tamamlanan aşama sınırında duraklatıldı',completed:'Hesap tamamlandı',in_progress:'İş sürüyor',cancelled:'Kullanıcı iptal etti',wall_time_limit:'Süre sınırı aşıldı',
+const reasons={resource_policy_rejected:'Kaynak profili işin çalıştırılmasına izin vermedi',paused_at_stage_boundary:'Tamamlanan aşama sınırında duraklatıldı',completed:'Hesap tamamlandı',in_progress:'İş sürüyor',cancelled:'Kullanıcı iptal etti',wall_time_limit:'Süre sınırı aşıldı',
  cgroup_oom_kill:'Bellek sınırında sonlandırıldı (cgroup OOM kanıtı)',worker_interrupted:'Worker yeniden başladı; iş kesildi',
  scf_not_converged:'SCF yakınsaması sağlanmadı',dos_grid_mismatch:'DOS / PDOS enerji gridleri uyuşmuyor',disk_full:'Disk alanı veya kota yetersiz',
  memory_allocation_failed:'Bellek ayırma hatası',process_killed_unconfirmed:'İşlem sinyalle sonlandı; OOM teyit edilmedi',

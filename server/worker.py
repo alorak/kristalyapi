@@ -27,6 +27,7 @@ def sha(path):
 
 
 from job_diagnostics import record_job,sample_job
+from resource_policy import current as resource_limits
 
 @record_job
 def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
@@ -35,12 +36,12 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
         from electronic_worker import execute_electronic
         return execute_electronic(store,job,qe_binary=qe_binary,profiles_dir=profiles_dir,
             pseudo_dir=pseudo_dir,timeout=timeout,kill=_kill_group,
-            limits=lambda:_limits(max(4000,math.ceil(2*timeout)+30)))
+            limits=lambda:_limits(max(4000,math.ceil(resource_limits()["threads"]*timeout)+30)))
     if json.loads(job["request_json"]).get("schema")=="kristalyapi.qe-relax-scf-job.v1":
         from relax_worker import execute_relax_scf
         return execute_relax_scf(store,job,qe_binary=qe_binary,profiles_dir=profiles_dir,
             pseudo_dir=pseudo_dir,timeout=timeout,kill=_kill_group,
-            limits=lambda:_limits(max(4000,math.ceil(2*timeout)+30)))
+            limits=lambda:_limits(max(4000,math.ceil(resource_limits()["threads"]*timeout)+30)))
     job_id=job["id"]
     workdir=store.root/"runs"/job_id
     process=None
@@ -78,8 +79,8 @@ def execute(store,job,*,qe_binary="pw.x",profiles_dir=Path("/profiles"),
             process=subprocess.Popen(
                 [binary,"-in","structure.in"],cwd=workdir,
                 stdin=stdin,stdout=stdout,stderr=stderr,
-                start_new_session=True,env={**os.environ,"OMP_NUM_THREADS":"2"},
-                preexec_fn=_limits
+                start_new_session=True,env={**os.environ,"OMP_NUM_THREADS":str(resource_limits()["threads"])},
+                preexec_fn=lambda:_limits(max(4000,math.ceil(resource_limits()["threads"]*timeout)+30))
             )
             deadline=time.monotonic()+timeout
             while process.poll() is None:

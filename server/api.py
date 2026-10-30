@@ -20,8 +20,9 @@ from job_core import canonical_request,load_profile
 from job_store import JobStore
 from qe_probe import inspect_qe
 from job_diagnostics import read_diagnostics
+from resource_policy import load_operator_profile,scope,digest as resource_digest
 
-API_VERSION="0.4.3"
+API_VERSION="0.4.4"
 JOB_ID=re.compile(r"^[a-f0-9]{32}$")
 
 
@@ -46,6 +47,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     if enabled and (len(token)<32 or len(token)>256 or any(ch.isspace() for ch in token)):
         raise ValueError("A strong >=32-character QE_API_TOKEN is mandatory for jobs")
     store=JobStore(job_root or os.getenv("QE_JOBS_ROOT","/var/lib/qe")) if enabled else None
+    resource_profile=load_operator_profile()
     profiles=Path(profiles_dir or os.getenv("QE_PROFILES_DIR","/profiles"))
     pseudo=Path(pseudo_dir or os.getenv("QE_PSEUDOS_DIR","/pseudos"))
     status=probe if probe is not None else inspect_qe(
@@ -71,7 +73,7 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
         return JSONResponse(status_code=200 if status["ready"] else 503,content={
             "status":"ready" if status["ready"] else "degraded",
             "api_version":API_VERSION,"engine":"quantum-espresso",
-            "binary_smoke":status["binary_smoke"],"read_only":not enabled})
+            "binary_smoke":status["binary_smoke"],"read_only":not (enabled and resource_profile["execution_enabled"])})
 
     @app.get("/api/capabilities")
     def capabilities():
@@ -82,7 +84,8 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
             "binaries":status["binaries"],
             "supported_operations":(["health","capabilities","scf","relax-scf","electronic","status","results","cancel","diagnostics","pause-electronic","resume-electronic"]
                                    if enabled else ["health","capabilities"]),
-            "job_submission_enabled":enabled,
+            "job_submission_enabled":enabled and resource_profile["execution_enabled"],
+            "resource_profile":{**resource_profile,"sha256":resource_digest(resource_profile)},
             "calculations_executed_by_api":False,
             "binary_smoke":status["binary_smoke"],
             "scientific_calculation_performed":False
@@ -111,12 +114,13 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
                 raise HTTPException(status_code=413,detail="Calculation exceeds 64 KiB")
         try:
             raw=json.loads(data.decode("utf-8"))
-            payload,structure_hash=canonical_request(raw)
-            upf=load_profile(payload,profiles,pseudo)
-            capacity=None
-            if payload['parameters']['calculation']=='electronic':
-                from electronic_core import checked_band_capacity
-                capacity=checked_band_capacity(payload,upf,pseudo)
+            with scope(resource_profile):
+                payload,structure_hash=canonical_request(raw)
+                upf=load_profile(payload,profiles,pseudo)
+                capacity=None
+                if payload['parameters']['calculation']=='electronic':
+                    from electronic_core import checked_band_capacity
+                    capacity=checked_band_capacity(payload,upf,pseudo)
         except (ValueError,TypeError,KeyError,UnicodeError,OSError) as exc:
             raise HTTPException(status_code=422,detail=str(exc)[:300]) from exc
         return payload,structure_hash,upf,capacity
@@ -138,8 +142,10 @@ def create_app(*,probe=None,allowed_origins=None,allowed_hosts=None,
     @app.post("/api/v1/calculations",status_code=202)
     async def submit(request:Request):
         payload,fingerprint,_,_=await validated(request)
+        if not resource_profile['execution_enabled']:
+            raise HTTPException(status_code=409,detail='Resource profile is preparation-only; execution disabled')
         try:
-            job_id=store.submit(payload,fingerprint,max_pending=10)
+            job_id=store.submit(payload,fingerprint,max_pending=10,resource_profile_sha=resource_digest(resource_profile))
         except ValueError as exc:
             raise HTTPException(status_code=429,detail=str(exc)) from exc
         return {"job_id":job_id,"status":"queued","structure_hash":fingerprint}

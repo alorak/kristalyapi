@@ -43,11 +43,11 @@ class JobStore:
             )""")
             columns={row[1] for row in db.execute('PRAGMA table_info(jobs)')}
             for name,definition in [('pause_requested','INTEGER NOT NULL DEFAULT 0'),
-                                    ('resume_requested','INTEGER NOT NULL DEFAULT 0'),('resume_count','INTEGER NOT NULL DEFAULT 0'),('checkpoint_sha256','TEXT')]:
+                                    ('resume_requested','INTEGER NOT NULL DEFAULT 0'),('resume_count','INTEGER NOT NULL DEFAULT 0'),('checkpoint_sha256','TEXT'),('resource_profile_sha256','TEXT')]:
                 if name not in columns:db.execute('ALTER TABLE jobs ADD COLUMN '+name+' '+definition)
             db.execute("CREATE INDEX IF NOT EXISTS jobs_by_status ON jobs(status,created)")
 
-    def submit(self,payload,structure_hash,max_pending=10):
+    def submit(self,payload,structure_hash,max_pending=10,resource_profile_sha=None):
         job_id=uuid4().hex
         with self.conn() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -56,10 +56,10 @@ class JobStore:
             if pending>=max_pending:
                 raise ValueError("QE job queue is full")
             t=now()
-            db.execute("INSERT INTO jobs (id,created,updated,status,request_json,structure_hash,profile_id) "
-                       "VALUES (?,?,?,?,?,?,?)",
+            db.execute("INSERT INTO jobs (id,created,updated,status,request_json,structure_hash,profile_id,resource_profile_sha256) "
+                       "VALUES (?,?,?,?,?,?,?,?)",
                        (job_id,t,t,"queued",json.dumps(payload,separators=(",",":")),
-                        structure_hash,payload["profile_id"]))
+                        structure_hash,payload["profile_id"],resource_profile_sha))
         return job_id
 
     def get(self,job_id):

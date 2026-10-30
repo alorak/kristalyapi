@@ -160,3 +160,11 @@ test('authenticated status reads abort on deadline without retrying mutations',a
  await assert.rejects(()=>getQeScfJob('http://127.0.0.1:8000','a'.repeat(32),'b'.repeat(32),{fetcher,timeoutMs:5}),/zaman aşımına/);
  assert.equal(calls,1);
 });
+
+test('operator resource caps are bounded and execution-disabled identity is preserved',async()=>{
+ const {parseResourceProfile}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+ assert.equal(parseResourceProfile().max_bands,128);
+ const profile={id:'hpc-preparation',max_atoms:128,max_bands:512,max_nscf_k:24,execution_enabled:false,sha256:'a'.repeat(64)};
+ assert.equal(parseResourceProfile(profile).executionEnabled,false);
+ for(const change of [{max_bands:2049},{max_atoms:true},{execution_enabled:1},{sha256:'invalid'}])assert.throws(()=>parseResourceProfile({...profile,...change}));
+});

@@ -1,0 +1,12 @@
+{
+  "schema": "kristalyapi.qe-resource-profile.v1",
+  "id": "hpc-preparation-128g",
+  "max_atoms": 128,
+  "max_bands": 512,
+  "max_nscf_k": 24,
+  "threads": 8,
+  "memory_required_bytes": 137438953472,
+  "max_wall_seconds": 14400,
+  "execution_enabled": false,
+  "scratch_required_bytes": 68719476736
+}

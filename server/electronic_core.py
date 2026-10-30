@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 from job_core import ALLOWED_TOP, canonical_request, num
 from qe_post_settings import canonical_dos_settings
+from resource_policy import current as resource_limits,DEFAULT
 
 SCHEMA="kristalyapi.qe-electronic-job.v1"
 
@@ -25,11 +26,11 @@ def canonical_electronic_request(data):
         raise ValueError("Invalid electronic calculation type")
     settings=data["electronic"]
     required={"nbnd","nscf_k","band_path"}
-    if not isinstance(settings,dict) or set(settings) not in (required,required|{'dos'}):
+    if not isinstance(settings,dict) or not required<=set(settings) or set(settings)-required-{'dos','band_window'}:
         raise ValueError("Expected explicit bands, dense mesh and band path")
     nbnd,mesh=settings["nbnd"],settings["nscf_k"]
-    if type(nbnd) is not int or not 1<=nbnd<=128 or type(mesh) is not int or not 2<=mesh<=24:
-        raise ValueError("nbnd must be 1-128 and dense 2D k mesh 2-24")
+    if type(nbnd) is not int or not 1<=nbnd<=resource_limits()["max_bands"] or type(mesh) is not int or not 2<=mesh<=resource_limits()["max_nscf_k"]:
+        raise ValueError("nbnd must be 1-"+str(resource_limits()["max_bands"])+" and dense 2D k mesh 2-"+str(resource_limits()["max_nscf_k"]))
     path=settings["band_path"]
     if not isinstance(path,list) or not 2<=len(path)<=16:
         raise ValueError("An explicit 2-16 point crystal_b path is required")
@@ -54,6 +55,19 @@ def canonical_electronic_request(data):
     result["schema"]=SCHEMA;result["parameters"]["calculation"]="electronic"
     result["electronic"]={"nbnd":nbnd,"nscf_k":mesh,"band_path":points}
     if 'dos' in settings:result['electronic']['dos']=canonical_dos_settings(settings['dos'])
+    if 'band_window' in settings:
+        w=settings['band_window']
+        if not isinstance(w,list) or len(w)!=2 or any(type(n) is not int for n in w) or not 1<=w[0]<=w[1]<=nbnd or w[1]-w[0]+1>300:
+            raise ValueError('Band window must select 1-300 existing bands using one-based indices')
+        result['electronic']['band_window']=w.copy()
+    if resource_limits()!=DEFAULT and (len(result['structure']['atoms'])>64 or nbnd>128):
+        if 'dos' not in result['electronic'] or nbnd>300 and 'band_window' not in result['electronic']:
+            raise ValueError('Large electronic jobs require explicit DOS and a bounded band window')
+        p=result['electronic']['dos'];points=round((p['energy_max_ev']-p['energy_min_ev'])/p['delta_e_ev'])+1
+        if nbnd*sum(q['segments'] for q in result['electronic']['band_path'])>120000:
+            raise ValueError('Large electronic raw band grid exceeds point budget')
+        if len(result['structure']['atoms'])*points>400000:
+            raise ValueError('Large electronic view exceeds atom/energy sample budget')
     return result,fingerprint
 
 
@@ -67,7 +81,8 @@ def checked_band_capacity(request, upf, pseudo_dir):
 
     It cannot select a suitable empty-band count or establish spin/convergence.
     """
-    valence = {}
+    valence = {};wfc_counts={}
+    large=resource_limits()!=DEFAULT and (len(request["structure"]["atoms"])>64 or request["electronic"]["nbnd"]>128)
     for element, meta in upf.items():
         raw = (pseudo_dir/meta['file']).read_bytes()
         if hashlib.sha256(raw).hexdigest() != meta['sha256']:
@@ -85,6 +100,11 @@ def checked_band_capacity(request, upf, pseudo_dir):
         except (ET.ParseError,KeyError,ValueError) as exc:
             raise ValueError('Invalid electronic UPF element/z_valence header: '+element) from exc
         valence[element] = value
+        if large:
+            count=header.get('number_of_wfc','')
+            if not re.fullmatch(r'[0-9]+',count) or not 1<=int(count)<=20:
+                raise ValueError('Large PDOS preflight requires a bounded UPF number_of_wfc: '+element)
+            wfc_counts[element]=int(count)
     electrons = sum(valence[a['element']] for a in request['structure']['atoms'])
     if abs(electrons-round(electrons)) > 1e-7:
         raise ValueError('Fractional neutral electron counts require a different electronic workflow')
@@ -94,6 +114,12 @@ def checked_band_capacity(request, upf, pseudo_dir):
     if requested < minimum:
         raise ValueError(f'nbnd={requested} cannot hold {electrons} neutral valence electrons; '
                          f'unpolarized jobs need at least {minimum} bands')
-    return {'neutral_valence_electrons':electrons,'minimum_nbnd':minimum,'requested_nbnd':requested,
+    view={}
+    if large:
+        p=request['electronic']['dos'];points=round((p['energy_max_ev']-p['energy_min_ev'])/p['delta_e_ev'])+1
+        samples=sum(wfc_counts[a['element']] for a in request['structure']['atoms'])*points
+        if samples>750000:raise ValueError('Large PDOS view exceeds atomic-wavefunction sample budget')
+        view={'view_preflight':{'energy_points':points,'atomic_wfc_samples':samples,'upf_wfc_counts':wfc_counts}}
+    return {**view,'neutral_valence_electrons':electrons,'minimum_nbnd':minimum,'requested_nbnd':requested,
             'upf_valence_electrons':valence,
             'scope':'Necessary capacity only; empty-band, spin and physical convergence acceptance are separate'}
