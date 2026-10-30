@@ -85,7 +85,7 @@ def inspect_ccp4(path: Path, iso_level: float) -> dict:
         "fullGridSamplingXYZ": list(steps),
         "crsToXYZ": list(axes),
         "cell": dict(zip(("a", "b", "c", "alpha", "beta", "gamma"), cell)),
-        "sampledFullCell": False,
+        "sampledFullCell": all(dims[i] == steps[axes[i] - 1] for i in range(3)),
         "sampleCount": count,
         "statisticsNativeUnits": {"min": round(actual_min, 8), "max": round(actual_max, 8),
                                   "mean": round(mean, 8), "rms": round(rms, 8)},
