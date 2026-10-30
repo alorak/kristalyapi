@@ -57,6 +57,7 @@ export function validateResources(options){
  const partition=options.partition||'orfoz';
  if(partition!=='orfoz')throw Error('P0 yalnız TRUBA orfoz profilini destekliyor.');
  const ntasks=validInteger(options.ntasks??112,'MPI görev sayısı',56,112);
+ if(ntasks!==56&&ntasks!==112)throw Error('TRUBA orfoz için yalnızca 56 veya 112 MPI görevi kullanılabilir.');
  const hours=validInteger(options.hours??12,'Süre (saat)',1,72);
  const jobName=String(options.jobName||'qe-job').normalize('NFKD')
   .replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,45)||'qe-job';
