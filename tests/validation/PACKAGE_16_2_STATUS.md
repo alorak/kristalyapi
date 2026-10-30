@@ -57,8 +57,9 @@ mock'lanır; üretim CLI'sinde gerçek hash/PNG kontrolü zorunludur.
 1. V15.1 ile VESTA 3.5.8 ve KristalYapı PNG çiftlerini
    gerçekte yakalayın, mühürleyin ve operatör/platform/git SHA
    bilgilerini doğru girin.
-2. Açıkça onaysız sayısal şablon oluşturun:
+2. Açıkça onaysız sayısal şablon oluşturun (özel dizini önce açın):
 
+       mkdir -p v16-private
        python3 tests/validation/vesta_16_2_numeric.py \
          --template-out v16-private/numeric-evidence.json
 
