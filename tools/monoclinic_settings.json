@@ -1,0 +1,707 @@
+{
+ "source": "gemmi 0.7.5 spacegroup_table (International Tables Vol. A settings)",
+ "settings": [
+  {
+   "number": 5,
+   "qualifier": "b1",
+   "hm": "C 1 2 1",
+   "short": "C2",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z"
+   ]
+  },
+  {
+   "number": 5,
+   "qualifier": "b2",
+   "hm": "A 1 2 1",
+   "short": "A2",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z"
+   ]
+  },
+  {
+   "number": 5,
+   "qualifier": "b3",
+   "hm": "I 1 2 1",
+   "short": "I2",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z"
+   ]
+  },
+  {
+   "number": 5,
+   "qualifier": "c1",
+   "hm": "A 1 1 2",
+   "short": "A112",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y,z"
+   ]
+  },
+  {
+   "number": 5,
+   "qualifier": "c2",
+   "hm": "B 1 1 2",
+   "short": "B112",
+   "centring": [
+    "0,0,0",
+    "1/2,0,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y,z"
+   ]
+  },
+  {
+   "number": 5,
+   "qualifier": "c3",
+   "hm": "I 1 1 2",
+   "short": "I112",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y,z"
+   ]
+  },
+  {
+   "number": 7,
+   "qualifier": "b1",
+   "hm": "P 1 c 1",
+   "short": "Pc",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,-y,z+1/2"
+   ]
+  },
+  {
+   "number": 7,
+   "qualifier": "b2",
+   "hm": "P 1 n 1",
+   "short": "Pn",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,-y,z+1/2"
+   ]
+  },
+  {
+   "number": 7,
+   "qualifier": "b3",
+   "hm": "P 1 a 1",
+   "short": "Pa",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,-y,z"
+   ]
+  },
+  {
+   "number": 7,
+   "qualifier": "c1",
+   "hm": "P 1 1 a",
+   "short": "P11a",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,y,-z"
+   ]
+  },
+  {
+   "number": 7,
+   "qualifier": "c2",
+   "hm": "P 1 1 n",
+   "short": "P11n",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 7,
+   "qualifier": "c3",
+   "hm": "P 1 1 b",
+   "short": "P11b",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 8,
+   "qualifier": "b1",
+   "hm": "C 1 m 1",
+   "short": "Cm",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,-y,z"
+   ]
+  },
+  {
+   "number": 8,
+   "qualifier": "b2",
+   "hm": "A 1 m 1",
+   "short": "Am",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,-y,z"
+   ]
+  },
+  {
+   "number": 8,
+   "qualifier": "b3",
+   "hm": "I 1 m 1",
+   "short": "Im",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,-y,z"
+   ]
+  },
+  {
+   "number": 8,
+   "qualifier": "c1",
+   "hm": "A 1 1 m",
+   "short": "A11m",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,y,-z"
+   ]
+  },
+  {
+   "number": 8,
+   "qualifier": "c2",
+   "hm": "B 1 1 m",
+   "short": "B11m",
+   "centring": [
+    "0,0,0",
+    "1/2,0,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,y,-z"
+   ]
+  },
+  {
+   "number": 8,
+   "qualifier": "c3",
+   "hm": "I 1 1 m",
+   "short": "I11m",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,y,-z"
+   ]
+  },
+  {
+   "number": 9,
+   "qualifier": "b1",
+   "hm": "C 1 c 1",
+   "short": "Cc",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,-y,z+1/2"
+   ]
+  },
+  {
+   "number": 9,
+   "qualifier": "b2",
+   "hm": "A 1 n 1",
+   "short": "An",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,-y+1/2,z"
+   ]
+  },
+  {
+   "number": 9,
+   "qualifier": "b3",
+   "hm": "I 1 a 1",
+   "short": "Ia",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,-y,z"
+   ]
+  },
+  {
+   "number": 9,
+   "qualifier": "c1",
+   "hm": "A 1 1 a",
+   "short": "A11a",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,y,-z"
+   ]
+  },
+  {
+   "number": 9,
+   "qualifier": "c2",
+   "hm": "B 1 1 n",
+   "short": "B11n",
+   "centring": [
+    "0,0,0",
+    "1/2,0,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x+1/2,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 9,
+   "qualifier": "c3",
+   "hm": "I 1 1 b",
+   "short": "I11b",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "x,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 12,
+   "qualifier": "b1",
+   "hm": "C 1 2/m 1",
+   "short": "C2/m",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z",
+    "-x,-y,-z",
+    "x,-y,z"
+   ]
+  },
+  {
+   "number": 12,
+   "qualifier": "b2",
+   "hm": "A 1 2/m 1",
+   "short": "A2/m",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z",
+    "-x,-y,-z",
+    "x,-y,z"
+   ]
+  },
+  {
+   "number": 12,
+   "qualifier": "b3",
+   "hm": "I 1 2/m 1",
+   "short": "I2/m",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z",
+    "-x,-y,-z",
+    "x,-y,z"
+   ]
+  },
+  {
+   "number": 12,
+   "qualifier": "c1",
+   "hm": "A 1 1 2/m",
+   "short": "A112/m",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y,z",
+    "-x,-y,-z",
+    "x,y,-z"
+   ]
+  },
+  {
+   "number": 12,
+   "qualifier": "c2",
+   "hm": "B 1 1 2/m",
+   "short": "B112/m",
+   "centring": [
+    "0,0,0",
+    "1/2,0,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y,z",
+    "-x,-y,-z",
+    "x,y,-z"
+   ]
+  },
+  {
+   "number": 12,
+   "qualifier": "c3",
+   "hm": "I 1 1 2/m",
+   "short": "I112/m",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y,z",
+    "-x,-y,-z",
+    "x,y,-z"
+   ]
+  },
+  {
+   "number": 13,
+   "qualifier": "b1",
+   "hm": "P 1 2/c 1",
+   "short": "P2/c",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z+1/2",
+    "-x,-y,-z",
+    "x,-y,z+1/2"
+   ]
+  },
+  {
+   "number": 13,
+   "qualifier": "b2",
+   "hm": "P 1 2/n 1",
+   "short": "P2/n",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,y,-z+1/2",
+    "-x,-y,-z",
+    "x+1/2,-y,z+1/2"
+   ]
+  },
+  {
+   "number": 13,
+   "qualifier": "b3",
+   "hm": "P 1 2/a 1",
+   "short": "P2/a",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,y,-z",
+    "-x,-y,-z",
+    "x+1/2,-y,z"
+   ]
+  },
+  {
+   "number": 13,
+   "qualifier": "c1",
+   "hm": "P 1 1 2/a",
+   "short": "P112/a",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,-y,z",
+    "-x,-y,-z",
+    "x+1/2,y,-z"
+   ]
+  },
+  {
+   "number": 13,
+   "qualifier": "c2",
+   "hm": "P 1 1 2/n",
+   "short": "P112/n",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,-y+1/2,z",
+    "-x,-y,-z",
+    "x+1/2,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 13,
+   "qualifier": "c3",
+   "hm": "P 1 1 2/b",
+   "short": "P112/b",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y+1/2,z",
+    "-x,-y,-z",
+    "x,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 14,
+   "qualifier": "b1",
+   "hm": "P 1 21/c 1",
+   "short": "P21/c",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y+1/2,-z+1/2",
+    "-x,-y,-z",
+    "x,-y+1/2,z+1/2"
+   ]
+  },
+  {
+   "number": 14,
+   "qualifier": "b2",
+   "hm": "P 1 21/n 1",
+   "short": "P21/n",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,y+1/2,-z+1/2",
+    "-x,-y,-z",
+    "x+1/2,-y+1/2,z+1/2"
+   ]
+  },
+  {
+   "number": 14,
+   "qualifier": "b3",
+   "hm": "P 1 21/a 1",
+   "short": "P21/a",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,y+1/2,-z",
+    "-x,-y,-z",
+    "x+1/2,-y+1/2,z"
+   ]
+  },
+  {
+   "number": 14,
+   "qualifier": "c1",
+   "hm": "P 1 1 21/a",
+   "short": "P1121/a",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,-y,z+1/2",
+    "-x,-y,-z",
+    "x+1/2,y,-z+1/2"
+   ]
+  },
+  {
+   "number": 14,
+   "qualifier": "c2",
+   "hm": "P 1 1 21/n",
+   "short": "P1121/n",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,-y+1/2,z+1/2",
+    "-x,-y,-z",
+    "x+1/2,y+1/2,-z+1/2"
+   ]
+  },
+  {
+   "number": 14,
+   "qualifier": "c3",
+   "hm": "P 1 1 21/b",
+   "short": "P1121/b",
+   "centring": [
+    "0,0,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y+1/2,z+1/2",
+    "-x,-y,-z",
+    "x,y+1/2,-z+1/2"
+   ]
+  },
+  {
+   "number": 15,
+   "qualifier": "b1",
+   "hm": "C 1 2/c 1",
+   "short": "C2/c",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,0"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,y,-z+1/2",
+    "-x,-y,-z",
+    "x,-y,z+1/2"
+   ]
+  },
+  {
+   "number": 15,
+   "qualifier": "b2",
+   "hm": "A 1 2/n 1",
+   "short": "A2/n",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,y+1/2,-z",
+    "-x,-y,-z",
+    "x+1/2,-y+1/2,z"
+   ]
+  },
+  {
+   "number": 15,
+   "qualifier": "b3",
+   "hm": "I 1 2/a 1",
+   "short": "I2/a",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,y,-z",
+    "-x,-y,-z",
+    "x+1/2,-y,z"
+   ]
+  },
+  {
+   "number": 15,
+   "qualifier": "c1",
+   "hm": "A 1 1 2/a",
+   "short": "A112/a",
+   "centring": [
+    "0,0,0",
+    "0,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,-y,z",
+    "-x,-y,-z",
+    "x+1/2,y,-z"
+   ]
+  },
+  {
+   "number": 15,
+   "qualifier": "c2",
+   "hm": "B 1 1 2/n",
+   "short": "B112/n",
+   "centring": [
+    "0,0,0",
+    "1/2,0,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x+1/2,-y+1/2,z",
+    "-x,-y,-z",
+    "x+1/2,y+1/2,-z"
+   ]
+  },
+  {
+   "number": 15,
+   "qualifier": "c3",
+   "hm": "I 1 1 2/b",
+   "short": "I112/b",
+   "centring": [
+    "0,0,0",
+    "1/2,1/2,1/2"
+   ],
+   "operations": [
+    "x,y,z",
+    "-x,-y+1/2,z",
+    "-x,-y,-z",
+    "x,y+1/2,-z"
+   ]
+  }
+ ]
+}

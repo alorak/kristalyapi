@@ -9,7 +9,9 @@ const app=fs.readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
 const SG=JSON.parse(app.match(/^const SPACE_GROUPS=(\{.*\});$/m)[1]);
 const pairs=key=>{const [c,o]=SG[key];return o.flatMap(op=>c.map(t=>[op,t]));};
 const groups={};for(const key of Object.keys(SG)){const n=key.split('-')[0];(groups[n]=groups[n]||[]).push(key);}
-const twoSettings=Object.values(groups).filter(keys=>keys.length===2);
+// Groups with several settings: every setting paired with the group's first one.
+const multiSettings=Object.values(groups).filter(keys=>keys.length>=2);
+const twoSettings=multiSettings.flatMap(keys=>keys.slice(1).map(key=>[keys[0],key]));
 const wrap=v=>v-Math.floor(v);
 const close=(a,b,t=1e-6)=>assert.ok(Math.abs(a-b)<=t,a+' ≉ '+b);
 function expand(sites,key){
@@ -27,11 +29,12 @@ const cellFor=key=>{
  if(n>=195)return {a:7.1,b:7.1,c:7.1,alpha:90,beta:90,gamma:90};
  if(n>=75)return {a:6.3,b:6.3,c:9.7,alpha:90,beta:90,gamma:90};
  if(n>=16)return {a:5.1,b:6.7,c:8.9,alpha:90,beta:90,gamma:90};
- return key.endsWith('-c')?{a:5.1,b:6.7,c:8.9,alpha:90,beta:90,gamma:104.5}:{a:5.1,b:6.7,c:8.9,alpha:90,beta:104.5,gamma:90};
+ return /-c\d?$/.test(key)?{a:5.1,b:6.7,c:8.9,alpha:90,beta:90,gamma:104.5}:{a:5.1,b:6.7,c:8.9,alpha:90,beta:104.5,gamma:90};
 };
 
-test('every two-setting group has a verified transformation in both directions',()=>{
- assert.equal(twoSettings.length,44);
+test('every multi-setting group has a verified transformation in both directions',()=>{
+ assert.equal(multiSettings.length,44);
+ assert.equal(twoSettings.length,36+8*5,'monoclinic groups 5,7,8,9,12,13,14,15 have six settings each');
  for(const [a,b] of twoSettings)for(const [from,to] of [[a,b],[b,a]]){
   const t=findSettingTransform(pairs(from),pairs(to));
   assert.ok(t,from+' → '+to);
@@ -111,4 +114,15 @@ test('asymmetric unit: diamond in Fd-3m and refusal of a structure without that 
  assert.throws(()=>asymmetricUnit(cell,p1.slice(1),pairs('227-1')),/görüntüsü yapıda yok/);
  assert.throws(()=>asymmetricUnit(cell,p1.map((s,i)=>i?s:{...s,symbol:'Ge'}),pairs('227-1')),/görüntüsü yapıda yok/);
  assert.equal(asymmetricUnit(cell,p1,pairs('1')).sites.length,8,'P1 keeps every atom');
+});
+
+test('monoclinic cell choices: Wyckoff multiplicities hold in every new setting',()=>{
+ const keys=Object.keys(SG).filter(k=>/^\d+-[bc][23]$/.test(k));
+ assert.equal(keys.length,32);
+ const [x,y,z]=[.1234,.2871,.3946];
+ for(const key of keys)for(const [letter,multiplicity,,formula] of SG[key][2]){
+  const point=formula.split(',').map(term=>Function('x','y','z','return '+term.replace(/(\d+)\/(\d+)/g,'($1/$2)'))(x,y,z));
+  const orbit=expand([{symbol:'X',x:point[0],y:point[1],z:point[2]}],key);
+  assert.equal(orbit.length,multiplicity,key+' '+multiplicity+letter+' '+formula);
+ }
 });

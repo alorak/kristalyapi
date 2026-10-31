@@ -1064,8 +1064,17 @@ işi olarak açma.
   227 ayar 2, Hall 526). Gemmi: her ayar Gemmi tablosunda; editörün
   (P, p)'si Gemmi işlemlerini hedef ayara taşıyor; mesafeler ve U
   özdeğerleri korunuyor (`test_setting_transform_gemmi.py`).
-- [ ] Monoklinik hücre seçimi 2/3 (I/A merkezli), romboedral ters
-  (reverse) ayar ve ITA dışı ayarlar: tablo yalnız iki ayar içeriyor.
+- [x] Monoklinik hücre seçimi 2/3 (I/A merkezli). **Yapıldı (V18):**
+  5, 7, 8, 9, 12, 13, 14, 15 için b2/b3/c2/c3 (32 ayar; tablo 274 → 306):
+  işlemler Gemmi tablosundan (`tools/build_monoclinic_settings.py`),
+  Wyckoff konumları hücre seçimi 1'den doğrulanmış (P, p) ile
+  (`tools/build_monoclinic_settings.mjs`); çokluklar her ayarda test
+  edildi. Menüde tam H-M simgesi; CIF'te işlem listesi yoksa ayar H-M
+  simgesinden seçilir (önceden P2₁/n gibi bir CIF P2₁/c işlemleriyle
+  yanlış genişletilirdi). Ayar dönüşümü ve asimetrik birime indirme bu
+  ayarlarda da çalışır; Gemmi testi 120 ayar / 152 yön.
+- [ ] Romboedral ters (reverse) ayar ve ITA dışı ayarlar (ör. eksen
+  işareti farklı −b1 gibi monoklinik varyantlar).
 - [ ] BNS/mCIF 3B, modüle/superspace ve VASP SAXIS eksenleri için
   destek sınırlarını netleştir; metadata yoksa dönüştürmeyi uydurma.
 - [ ] **Kabul:** Triklinik, monoklinik, R-merkezli, özel konum ve
