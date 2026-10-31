@@ -78,9 +78,17 @@ test('CIF2 comma string is not misread as a three-entry list',()=>{
 });
 test('nested containers have strict end delimiters, depth and size bounds',()=>{
  assert.throws(()=>readCif2Document(fixture.replace('{"remark":','{"remark"')),/immediately adjacent colon|quoted/);
- assert.throws(()=>readCif2Document(fixture.replace('[red [1 2]','[red [1 2')),/unterminated|unexpected/i);
+ assert.throws(()=>readCif2Document(fixture.replace('[red [1 2]','[red [1 2')),/unterminated|unexpected|directive/i);
  const nesting='['.repeat(16)+'1'+']'.repeat(16);
  assert.throws(()=>readCif2Document(fixture.replace('[1 0.25 0]',nesting)),/nesting depth/);
+});
+test('quoted directive-shaped metadata must not become structural parser control',()=>{
+ const crafted=fixture.replace('_cell_length_a 5','_cell_length_a 5\n_local_note "loop_"');
+ const selected=selectCif2Structure(crafted,'alpha');
+ assert.ok(!selected.tokens.includes('_local_note'));
+ assert.ok(selected.ignoredCompoundNames.includes('_local_note')===false);
+ const science=fixture.replace('_cell_length_a 5','_cell_length_a "loop_"');
+ assert.throws(()=>selectCif2Structure(science,'alpha'),/reserved keyword cannot be converted/);
 });
 test('CIF2 duplicate data block and save frame names are rejected',()=>{
  const dup=fixture.replace('data_beta','data_ALPHA');
