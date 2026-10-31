@@ -772,7 +772,7 @@ işi olarak açma.
 
 | Özellik | Durum | Gerçek açık ve paket |
 | --- | --- | --- |
-| CIF, simetri ve hücre dönüşümü | Kısmi | Alternatif setting/origin/Hall, CIF2 ve mCIF varyantları → V18 |
+| CIF, simetri ve hücre dönüşümü | Kısmi | V18.3: ayar/orijin/eksen dönüşümü ve P1 → asimetrik birim (Gemmi teyitli); monoklinik cell choice 2/3, CIF2/mCIF varyantları → V18 |
 | Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | V19: konum bazlı opaklık/gizleme/etiket, element çifti bağ stili, vdW nokta yüzeyi, ADP ana eksen/elips, moment oku ölçeği; tek bağ/yüz stili ve VESTA görsel kıyası açık |
 | Mesafe/açı, koordinasyon/BVS | Kısmi | 8 gerçek merkez ve VESTA Text Area değerleri; kaynak parametre farkı → V16/V21 |
 | Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; otomatik atom/hücre hizalama, RMSD yok → V21 |
@@ -1037,8 +1037,9 @@ işi olarak açma.
   ve merge-only CI doğrulaması.
 - [x] V18.2 typed List/Table ve seçili data_ bloğu;
   gerçek corpus kapsamı ayrıca açık.
-- [ ] V18.3 Hall, unique axis, origin ve setting
-  dönüşümlerinin Gemmi kaynaklı matematiksel teyidi.
+- [x] V18.3 Hall, unique axis, origin ve setting
+  dönüşümlerinin Gemmi kaynaklı matematiksel teyidi (yukarıdaki V18
+  maddesi; cell choice 2/3 açık).
 - [ ] V18.4 CIF2 manyetik simetri/ADP/disorder
   fiziksel doğruluğu. Tam CIF2 NOT_SUPPORTED.
 
@@ -1049,9 +1050,22 @@ işi olarak açma.
 - [ ] CIF1/CIF2, çoklu blok, karışık/alternatif occupancy, site ADP,
   koordinat hataları ve provenance için güvenli kabul/koruma/ret
   politikası; farklı yapı bloklarını sessizce birleştirme.
-- [ ] Moyo tabanlı SG/primitive-conventional işlemlerinde Hall seçimi,
+- [x] Moyo tabanlı SG/primitive-conventional işlemlerinde Hall seçimi,
   origin shift, R-merkezleme ve kullanıcının alternatif setting seçimi;
-  hacim, atom çokluğu ve periyodik koordinat korunumu.
+  hacim, atom çokluğu ve periyodik koordinat korunumu. **Yapıldı
+  (V18.3):** iki ayarlı 44 grubun 88 yönü için (P, p) işlem kümelerinden
+  aranır ve tam eşleşme doğrulanır (ITA §1.5: W′ = P⁻¹WP,
+  w′ = P⁻¹(w + (W − I)p)); eksen b↔c, orijin seçimi 1↔2 ve obverse
+  hekzagonal↔romboedral. Hücre, koordinat, Uij (Kartezyen değişmez) ve
+  manyetik moment birlikte dönüşür; hücre başına atom sayısı det P ile
+  denetlenir. P1 yapı seçili grubun asimetrik birimine indirilir (her
+  işlem her atomu aynı element/dolulukta atoma götürmeli); Moyo
+  konvansiyonel dönüşümünden sonra Hall ayarı bu yolla bulunur (ör. Si →
+  227 ayar 2, Hall 526). Gemmi: her ayar Gemmi tablosunda; editörün
+  (P, p)'si Gemmi işlemlerini hedef ayara taşıyor; mesafeler ve U
+  özdeğerleri korunuyor (`test_setting_transform_gemmi.py`).
+- [ ] Monoklinik hücre seçimi 2/3 (I/A merkezli), romboedral ters
+  (reverse) ayar ve ITA dışı ayarlar: tablo yalnız iki ayar içeriyor.
 - [ ] BNS/mCIF 3B, modüle/superspace ve VASP SAXIS eksenleri için
   destek sınırlarını netleştir; metadata yoksa dönüştürmeyi uydurma.
 - [ ] **Kabul:** Triklinik, monoklinik, R-merkezli, özel konum ve

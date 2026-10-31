@@ -134,6 +134,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="stack">
     <label class="field"><span>Uzay grubu (1–230)</span><select id="spaceGroup"></select></label>
     <label class="field"><span>Uzay grubu ayarı / setting</span><select id="sgSetting"></select></label>
+    <div class="setting-transform-row" id="settingTransformRow" hidden><label class="field"><span>Yapıyı diğer ayara dönüştür</span><select id="settingTarget"></select></label><button id="settingTransform" type="button" class="small">Dönüştür</button></div>
+    <p class="hint" id="settingTransformNote" hidden>Ayar listesi yalnız simetri işlemlerini değiştirir. Hücreyi, koordinatları, ADP'leri ve momentleri birlikte taşımak için “Dönüştür”ü kullanın: baz matrisi P ve orijin kayması iki ayarın işlem kümelerinden bulunur ve tam eşleşme doğrulanır (ITA §1.5).</p>
     <label class="check"><input type="checkbox" id="useSymmetry"> Atomları asimetrik konum kabul edip simetri uygula</label>
     <div class="note" id="sgSummary">P1: 1 simetri işlemi</div>
     <label class="field"><span>Wyckoff konumları ve eşleştirme</span><select id="wyckoff"></select></label>
@@ -227,6 +229,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div id="moyoResult" class="note" aria-live="polite">Moyo WASM analizi henüz çalıştırılmadı.</div>
     <div class="actionrow"><button type="button" id="moyoApplyConventional" disabled>Konvansiyonel hücreye dönüştür</button>
      <button type="button" id="moyoApplyPrimitive" disabled>Primitive hücreye dönüştür</button></div>
+    <button type="button" id="recoverSymmetry">Seçili uzay grubunun asimetrik birimine indir</button>
+    <p class="hint">P1 yapıyı Kristalografik simetri bölümünde seçili uzay grubunun her ayarında dener: her işlem her atomu aynı element ve dolulukta bir atoma (yukarıdaki tolerans içinde) götürmelidir. Uyan ilk ayarda her yörüngeden bir atom tutulur ve simetri açılır; atomlar idealize edilmez. Moyo konvansiyonel dönüşümünden sonra bu adım bulunan uzay grubuyla kendiliğinden denenir.</p>
     <p class="hint">Moyo, 230 uzay grubu ve Hall setting'i üzerinde simetri arar; matris/orijin kayması raporlanır. Dönüşüm, atomları simetrik idealize etmeden geometrik olarak yeniden ifade eder ve açık P1 kaydeder. Tam eşleştirme yapı uyuşmazlığında reddedilir. WASM paketi GitHub Pages dağıtımına yerel eklenir.</p>
     <p class="hint">Bu işlemler atom koordinatlarını, doluluk oranlarını ve varsa ADP tensörlerini yeni hücreye dönüştürür; sonuç açık P1 olarak saklanır. Uygun olmayan merkezlenme reddedilir.</p>
    </div>
