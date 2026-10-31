@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validatedSiteAppearance,siteLabelText,validatedClipPlane,normalizedClipSettings,clipSignedDistance,
- insideClipPlanes,clipKeepMask,placeLabels,MAX_CLIP_PLANES} from '../scene-controls.js';
+ insideClipPlanes,clipKeepMask,placeLabels,MAX_CLIP_PLANES,bondPairKey,parseBondPairStyles,fibonacciSphere,dotSurfacePoints,
+ normalizedDotSurface,normalizedMomentStyle,momentArrowLength} from '../scene-controls.js';
 
 const close=(a,b,t=1e-9)=>assert.ok(Math.abs(a-b)<=t,a+' ≉ '+b);
 
@@ -74,4 +75,48 @@ test('label placement: no overlaps when room exists, fixed offsets respected, ke
  // No room at all: the clash is reported rather than hidden.
  const crowded=placeLabels(Array.from({length:12},(_,i)=>({x:10,y:10,r:1,width:20,height:10,depth:i})),{width:22,height:22});
  assert.ok(crowded.some(p=>p.overlap));
+});
+
+test('bond pair styles: colours and hidden pairs keyed by the sorted element pair',()=>{
+ const styles=parseBondPairStyles('si-o #D04040\nSi-Si gizle; Ti - O hide');
+ assert.deepEqual([...styles],[['O-Si',{color:'#d04040'}],['Si-Si',{hidden:true}],['O-Ti',{hidden:true}]]);
+ assert.equal(bondPairKey('O','si'),'O-Si');assert.equal(parseBondPairStyles('').size,0);
+ assert.throws(()=>parseBondPairStyles('Si-O red'),/okunamadı/);
+ assert.throws(()=>parseBondPairStyles('Si-O #ff0000\nO-Si gizle'),/iki kez/);
+ assert.throws(()=>parseBondPairStyles(Array.from({length:61},(_,i)=>'Si-O #ff0000').join('\n')),/60/);
+});
+
+test('dot surface: uniform sphere sampling and the exposed fraction of overlapping spheres',()=>{
+ const unit=fibonacciSphere(2000);
+ assert.ok(unit.every(u=>Math.abs(Math.hypot(...u)-1)<1e-12));
+ const mean=[0,1,2].map(k=>unit.reduce((s,u)=>s+u[k],0)/unit.length);
+ assert.ok(mean.every(v=>Math.abs(v)<2e-3),'no hemisphere is favoured: '+mean);
+ // Lone sphere: density × 4πr² dots, all on the surface.
+ const lone=dotSurfacePoints([{center:[1,2,3],radius:2,color:'#ff0000'}],{density:4});
+ assert.equal(lone.points.length,Math.round(4*4*Math.PI*4));
+ assert.ok(lone.points.every(p=>Math.abs(Math.hypot(p[0]-1,p[1]-2,p[2]-3)-2)<1e-9));
+ // Two unit spheres one radius apart: each loses a cap of height r − d/2 = 0.5,
+ // area 2πrh = π, i.e. a quarter of its surface (Archimedes' hat-box theorem).
+ const pair=dotSurfacePoints([{center:[0,0,0],radius:1,color:'#ff0000'},{center:[1,0,0],radius:1,color:'#00ff00'}],{density:400});
+ const perSphere=Math.round(400*4*Math.PI);
+ for(const owner of [0,1]){
+  const kept=pair.owners.filter(o=>o===owner).length;
+  assert.ok(Math.abs(kept/perSphere-.75)<.01,'exposed fraction '+kept/perSphere);
+ }
+ assert.ok(pair.points.every((p,i)=>{const o=pair.owners[i]===0?[1,0,0]:[0,0,0];return Math.hypot(p[0]-o[0],p[1]-o[1],p[2]-o[2])>=1-1e-9;}),
+  'no dot lies inside the other sphere');
+ assert.ok(dotSurfacePoints([{center:[0,0,0],radius:1,color:'#fff'}],{density:8,maxPoints:10}).truncated);
+ assert.deepEqual(normalizedDotSurface({enabled:true,scale:9,density:'2'}),{enabled:true,scale:1,density:2});
+});
+
+test('moment arrows: automatic length unchanged, linear length proportional and capped',()=>{
+ const auto=normalizedMomentStyle(undefined);
+ assert.deepEqual(auto,{mode:'auto',scale:.5,color:'#d7698b'});
+ assert.equal(momentArrowLength(2,auto).length,.4+.28*2);assert.equal(momentArrowLength(10,auto).length,1.8);
+ const linear=normalizedMomentStyle({mode:'linear',scale:.5,color:'#00AA00'});
+ assert.equal(linear.color,'#00aa00');
+ const a=momentArrowLength(2,linear).length,b=momentArrowLength(4,linear).length;
+ assert.equal(b/a,2,'twice the moment, twice the arrow');
+ assert.deepEqual(momentArrowLength(20,linear),{length:8,capped:true});
+ assert.equal(normalizedMomentStyle({mode:'linear',scale:5}).scale,.5,'out-of-range scale falls back');
 });

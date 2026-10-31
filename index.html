@@ -165,6 +165,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <label class="field"><span>Bağ stili</span><select id="bondStyle"><option value="unicolor" selected>Tek renk silindir</option><option value="bicolor">İki renkli silindir (atom renkleri)</option><option value="line">İnce çizgi (atom renkleri)</option><option value="dashed">Kesikli silindir</option></select></label>
    <label class="field"><span>Çifte özel bağ yarıçapı (Å), satır başına örn. Si-O 0.08</span><textarea id="bondRadii" rows="2" placeholder="Si-O 0.08" style="width:100%"></textarea></label>
    <button id="applyBondRadii" type="button" class="small">Yarıçapları uygula</button>
+   <label class="field"><span>Çift bağ rengi veya gizleme, satır başına örn. Si-O #d04040 ya da Si-Si gizle</span><textarea id="bondPairStyles" rows="2" placeholder="Si-O #d04040" style="width:100%"></textarea></label>
+   <button id="applyBondPairStyles" type="button" class="small">Çift stillerini uygula</button>
+   <p class="hint">Çift stilleri yalnız çizimi değiştirir: bağ araması, koordinasyon, ölçümler ve dışa aktarılan bağ listeleri aynı kalır. Renk, tek ya da iki renkli stilin yerine geçer.</p>
    <label class="check"><input id="hbondEnabled" type="checkbox"> Hidrojen bağlarını göster (D–H···A)</label>
    <div class="view-range-grid"><label>En uzun H···A (Å) <input id="hbondMaxHA" type="number" min="1.5" max="3.5" step="0.05" value="2.5"></label><label>En uzun D···A (Å) <input id="hbondMaxDA" type="number" min="2.2" max="4.5" step="0.05" value="3.5"></label><label>En küçük D–H···A açısı (°) <input id="hbondMinAngle" type="number" min="90" max="175" step="1" value="120"></label></div>
    <p class="hint">Verici (D) H atomuna 1,2 Å içindeki N/O/F; alıcı (A) N/O/F/S/Cl. Varsayılanlar yaygın geometrik ölçütlerdir (Jeffrey 1997; IUPAC 2011 açı için 110° üstünü önerir) ve yalnız görüntülenen atomlar arasında aranır. Yapıda H atomu yoksa hidrojen bağı çizilmez.</p>
@@ -422,6 +425,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <label class="field"><span>Renk şeması</span><select id="colorScheme"><option value="app" selected>Uygulama</option><option value="jmol">Jmol</option><option value="cpk">CPK</option></select></label>
    <p class="hint">Yarıçap seti yalnız görünümü değiştirir; bağ araması kendi eşiklerini kullanır. Siteye özel renk ve boyutlar korunur.</p>
    <p class="hint" id="radiusNote" role="status"></p>
+  </div>
+  <div class="section view-section" data-right-section="view"><h2>Nokta yüzeyi, ADP eksenleri ve moment okları</h2>
+   <label class="check"><input id="dotSurfaceEnabled" type="checkbox"> van der Waals nokta yüzeyi</label>
+   <div class="view-range-grid"><label>Yarıçap ölçeği (× vdW) <input id="dotSurfaceScale" type="number" min=".5" max="1.5" step=".05" value="1"></label><label>Yoğunluk (nokta/Å²) <input id="dotSurfaceDensity" type="number" min=".5" max="8" step=".5" value="3"></label></div>
+   <label class="check"><input id="adpAxesEnabled" type="checkbox"> ADP ana eksenleri ve elipsleri (elipsoitler açıkken)</label>
+   <div class="view-range-grid"><label>Moment oku uzunluğu <select id="momentMode"><option value="auto" selected>Otomatik (okunabilir)</option><option value="linear">Doğrusal (Å/μB)</option></select></label><label>Ölçek (Å/μB) <input id="momentScale" type="number" min=".05" max="2" step=".05" value=".5"></label><label>Ok rengi <input id="momentColor" type="color" value="#d7698b"></label></div>
+   <p class="hint">Nokta yüzeyi, görüntülenen atomların ölçekli van der Waals kürelerinin (Alvarez 2013) başka bir küre içinde kalmayan kısmıdır; tablo değeri olmayan element için 1,7 Å kullanılır ve bildirilir. ADP eksenleri seçili olasılıktaki yarı eksenler, elipsler ana düzlemlerdeki kesitlerdir (ORTEP/VESTA "principal ellipses"). Moment okunun yönü Kartezyen moment yönüdür; otomatik uzunluk okunabilirlik için sıkıştırılır (0,4 + 0,28·|μ| Å, en çok 1,8 Å), doğrusal uzunluk ölçek × |μ| olup 8 Å ile sınırlanır.</p>
+   <p class="hint" id="surfaceStatus" role="status"></p>
   </div>
   <div class="section" data-right-section="layers"><h2>Nesneler ve katmanlar</h2>
    <p class="hint">Öğeleri gizle, saydamlık ve renklerini ayarla, sıralarını değiştir. Değişiklikler proje ve Geri Al/Yinele geçmişine kaydedilir.</p>

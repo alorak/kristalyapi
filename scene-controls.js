@@ -140,3 +140,88 @@ export function placeLabels(labels,{width,height,gap=.3}={}){
  }
  return out;
 }
+
+/* ---- V19 P2: bond pair styles, dot surface and moment arrows ---- */
+
+const SYMBOL=/^[A-Za-z]{1,2}$/;
+const capital=symbol=>symbol.charAt(0).toUpperCase()+symbol.slice(1).toLowerCase();
+export const bondPairKey=(a,b)=>[capital(String(a)),capital(String(b))].sort().join('-');
+
+/* One rule per line (or ';'): "Si-O #ff0000" colours, "Si-Si gizle"/"hide"
+ * hides that element pair's bonds. Display only: bond search, coordination
+ * and measurements are unchanged. */
+export function parseBondPairStyles(text){
+ const out=new Map();
+ const lines=String(text||'').split(/[\n;]+/).map(line=>line.trim()).filter(Boolean);
+ if(lines.length>60)throw Error('En çok 60 bağ çifti stili girilebilir.');
+ for(const line of lines){
+  const match=line.match(/^([A-Za-z]{1,2})\s*-\s*([A-Za-z]{1,2})\s+(#[0-9A-Fa-f]{6}|gizle|hide)$/i);
+  if(!match||!SYMBOL.test(match[1])||!SYMBOL.test(match[2]))
+   throw Error('Bağ çifti stili "'+line.slice(0,40)+'" okunamadı; örn. Si-O #ff0000 veya Si-Si gizle.');
+  const key=bondPairKey(match[1],match[2]);
+  if(out.has(key))throw Error(key+' bağ çifti iki kez tanımlanmış.');
+  out.set(key,/^#/.test(match[3])?{color:match[3].toLowerCase()}:{hidden:true});
+ }
+ return out;
+}
+
+/* n nearly uniform unit vectors (Fibonacci / golden-angle spiral). */
+export function fibonacciSphere(n){
+ if(!Number.isInteger(n)||n<1)throw Error('Nokta sayısı pozitif tam sayı olmalı.');
+ const golden=Math.PI*(3-Math.sqrt(5)),out=[];
+ for(let i=0;i<n;i++){
+  const z=1-2*(i+.5)/n,r=Math.sqrt(Math.max(0,1-z*z)),phi=i*golden;
+  out.push([r*Math.cos(phi),r*Math.sin(phi),z]);
+ }
+ return out;
+}
+
+export const DOT_SURFACE_DEFAULTS=Object.freeze({enabled:false,scale:1,density:3});
+export function normalizedDotSurface(raw){
+ const n=(value,min,max,fallback)=>{const v=Number(value);return Number.isFinite(v)&&v>=min&&v<=max?v:fallback;};
+ return {enabled:raw?.enabled===true,scale:n(raw?.scale,.5,1.5,1),density:n(raw?.density,.5,8,3)};
+}
+
+/* van der Waals dot surface: points on each sphere (radius = scale × vdW)
+ * with a density in dots per Å², keeping only points outside every other
+ * sphere — the solvent-free envelope of the displayed atoms.
+ * spheres: [{center:[x,y,z], radius, color}]. */
+export function dotSurfacePoints(spheres,{density=3,maxPoints=80000}={}){
+ if(!(density>0))throw Error('Nokta yoğunluğu pozitif olmalı.');
+ const maxR=Math.max(0,...spheres.map(s=>s.radius)),size=Math.max(1e-6,2*maxR);
+ const cell=p=>p.map(v=>Math.floor(v/size)),key=c=>c.join(',');
+ const grid=new Map();
+ spheres.forEach((s,i)=>{const k=key(cell(s.center));if(!grid.has(k))grid.set(k,[]);grid.get(k).push(i);});
+ const points=[],colors=[],owners=[],templates=new Map();
+ let truncated=false;
+ for(let i=0;i<spheres.length&&!truncated;i++){
+  const s=spheres[i],count=Math.max(12,Math.round(density*4*Math.PI*s.radius*s.radius));
+  if(!templates.has(count))templates.set(count,fibonacciSphere(count));
+  const near=[],[cx,cy,cz]=cell(s.center);
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++)
+   for(const j of grid.get(key([cx+x,cy+y,cz+z]))||[])if(j!==i)near.push(spheres[j]);
+  for(const u of templates.get(count)){
+   const p=[0,1,2].map(k=>s.center[k]+s.radius*u[k]);
+   if(near.some(o=>(p[0]-o.center[0])**2+(p[1]-o.center[1])**2+(p[2]-o.center[2])**2<o.radius*o.radius-1e-9))continue;
+   if(points.length>=maxPoints){truncated=true;break;}
+   points.push(p);colors.push(s.color);owners.push(i);
+  }
+ }
+ return {points,colors,owners,truncated};
+}
+
+/* Magnetic moment arrows. "auto" keeps the earlier readable length
+ * (0.4 + 0.28·|μ| Å, at most 1.8 Å); "linear" draws scale·|μ| Å so lengths
+ * compare between sites. The direction is always the moment direction. */
+export const MOMENT_STYLE_DEFAULTS=Object.freeze({mode:'auto',scale:.5,color:'#d7698b'});
+export const MAX_MOMENT_ARROW=8;
+export function normalizedMomentStyle(raw){
+ const scale=Number(raw?.scale);
+ return {mode:raw?.mode==='linear'?'linear':'auto',scale:Number.isFinite(scale)&&scale>=.05&&scale<=2?scale:.5,
+  color:/^#[0-9a-f]{6}$/i.test(String(raw?.color))?String(raw.color).toLowerCase():MOMENT_STYLE_DEFAULTS.color};
+}
+export function momentArrowLength(norm,style){
+ if(!(norm>=0))throw Error('Moment büyüklüğü geçersiz.');
+ if(style.mode==='linear'){const length=style.scale*norm;return {length:Math.min(MAX_MOMENT_ARROW,length),capped:length>MAX_MOMENT_ARROW};}
+ return {length:Math.min(1.8,.4+.28*norm),capped:false};
+}

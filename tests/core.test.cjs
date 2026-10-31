@@ -326,6 +326,16 @@ test('V19 per-site appearance and clipping planes survive project files and are 
  assert.deepEqual(JSON.parse(JSON.stringify(again.clip)),JSON.parse(JSON.stringify(loaded.clip)));
  assert.equal(again.sites[0].labelText,'Fe(II)');
  assert.throws(()=>api.loadProject(JSON.stringify({cell:{a:4,b:4,c:4,alpha:90,beta:90,gamma:90},sites:[{symbol:'Fe',x:0,y:0,z:0,labelText:'<b>'}]})),/Etiket metni/);
+ // V19 P2 display settings: kept when valid, dropped or clamped when not.
+ const p2=api.loadProject(JSON.stringify({cell:{a:4,b:4,c:4,alpha:90,beta:90,gamma:90},sites:[{symbol:'Fe',x:0,y:0,z:0}],
+  bondPairStyles:'Fe-O #ff0000',dotSurface:{enabled:true,scale:1.2,density:2},adpAxes:true,momentStyle:{mode:'linear',scale:.25,color:'#112233'}}));
+ assert.equal(p2.bondPairStyles,'Fe-O #ff0000');assert.equal(p2.adpAxes,true);
+ assert.deepEqual(JSON.parse(JSON.stringify(p2.dotSurface)),{enabled:true,scale:1.2,density:2});
+ assert.deepEqual(JSON.parse(JSON.stringify(p2.momentStyle)),{mode:'linear',scale:.25,color:'#112233'});
+ const p2again=api.loadProject(JSON.stringify(api.lastCrystalPayload(p2)));
+ assert.equal(p2again.bondPairStyles,'Fe-O #ff0000');assert.equal(p2again.momentStyle.mode,'linear');assert.equal(p2again.dotSurface.enabled,true);
+ const p2bad=api.loadProject(JSON.stringify({cell:{a:4,b:4,c:4,alpha:90,beta:90,gamma:90},sites:[{symbol:'Fe',x:0,y:0,z:0}],bondPairStyles:'Fe-O red',adpAxes:'yes'}));
+ assert.equal(p2bad.bondPairStyles,'');assert.equal(p2bad.adpAxes,false);
 });
 test('exported SHELX/CASTEP/QE/XSF/mCIF files read back through the editor importers',()=>{
  const SG=api.SPACE_GROUPS,pairsOf=key=>{const [c,o]=SG[key];return o.flatMap(op=>c.map(t=>[op,t]));};
@@ -2451,7 +2461,7 @@ test('Layer manager: canonical order, visibility, opacity and color are bounded'
  assert.equal(layers.atoms.color,'');
  const order=Array.from(api.normalizedLayerOrder(['volume','atoms','volume','invalid']));
  assert.deepEqual(order.slice(0,2),['volume','atoms']);
- assert.equal(order.length,13,'includes the VESTA display-vector layer');
+ assert.equal(order.length,14,'includes the VESTA display-vector and dot-surface layers');
  assert.match(html,/id="layerManager"/);
  assert.match(html,/id="adpVisible"/);
  assert.match(html,/id="adpLevel"/);
