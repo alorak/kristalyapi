@@ -35,6 +35,7 @@ import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
 import {alignPhases,alignmentCsv} from './phase-alignment.js';
+import {refineExtremum,voronoiPartition} from './volume-analysis.js';
 import {findSettingTransform,transformStructure,describeSettingTransform,asymmetricUnit} from './setting-transform.js';
 import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES,bondPairKey,parseBondPairStyles,normalizedDotSurface,dotSurfacePoints,normalizedMomentStyle,momentArrowLength} from './scene-controls.js';
 import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
@@ -885,23 +886,14 @@ function volumeFindPeaks(g,{mode='max',threshold=0,limit=12,refine=true,mergeSym
    if(mode==='max'?value>other:value<other)strict=true;
   }
   if(!extremum||!strict)continue;
-  // Independent three-point parabolic vertex along each grid direction. It
-  // captures a sub-voxel extremum without falsely claiming a 3D Hessian fit.
-  const shift=[0,1,2].map(axis=>{
-   if(!refine)return 0;
-   const n=d[axis],atAxis=[i,j,k][axis];
-   if(!periodic&&(atAxis===0||atAxis===n-1))return 0;
-   const neighbours=[-1,1].map(delta=>{
-    const xyz=[i,j,k];xyz[axis]=(atAxis+delta+n)%n;
-    return g.values[gridIndex(g,...xyz)];
-   });
-   const denom=neighbours[0]-2*value+neighbours[1];
-   return Math.abs(denom)>1e-10?clamp(.5*(neighbours[0]-neighbours[1])/denom,-.5,.5):0;
-  });
+  // V20: 27-point quadratic (Hessian) vertex when the curvature has the sign of the
+  // extremum and the vertex lies within a voxel; per-axis parabola otherwise.
+  const fit=refine?refineExtremum(g,i,j,k,mode):{shift:[0,0,0],method:'none',eigenvalues:null};
+  const shift=fit.shift;
   const pos=[i+shift[0],j+shift[1],k+shift[2]],world=volumeWorld(g,...pos);
   const gridFraction=pos.map((n,a)=>periodic?frac(n/d[a]):n/(d[a]-1));
   peaks.push({i,j,k,x:world[0],y:world[1],z:world[2],value,
-   gridFraction,shift,refined:!!refine});
+   gridFraction,shift,refined:!!refine,method:fit.method,eigenvalues:fit.eigenvalues,reason:fit.reason||''});
  }
  peaks.sort((a,b)=>mode==='max'?b.value-a.value:a.value-b.value);
  if(!mergeSymmetry)return peaks.slice(0,limit);
@@ -923,9 +915,9 @@ function volumeFindPeaks(g,{mode='max',threshold=0,limit=12,refine=true,mergeSym
  return accepted;
 }
 function volumePeaksCsv(peaks,units){
- return ['i,j,k,x_A,y_A,z_A,value_'+String(units).replace(/[^a-zA-Z0-9]/g,'_')+',frac_u,frac_v,frac_w,offset_i,offset_j,offset_k',
-  ...peaks.map(p=>[p.i,p.j,p.k,p.x,p.y,p.z,p.value,...p.gridFraction,...p.shift]
-   .map(v=>Number(v).toPrecision(10)).join(','))].join('\n')+'\n';
+ return ['i,j,k,x_A,y_A,z_A,value_'+String(units).replace(/[^a-zA-Z0-9]/g,'_')+',frac_u,frac_v,frac_w,offset_i,offset_j,offset_k,refinement,hessian_eig1,hessian_eig2,hessian_eig3',
+  ...peaks.map(p=>[...[p.i,p.j,p.k,p.x,p.y,p.z,p.value,...p.gridFraction,...p.shift].map(v=>Number(v).toPrecision(10)),
+   p.method||'axis',...(p.eigenvalues||[NaN,NaN,NaN]).map(v=>Number.isFinite(v)?Number(v).toPrecision(6):'')].join(','))].join('\n')+'\n';
 }
 /* Numerical nearest-nucleus Voronoi partition on a periodic density grid.
    Not a Bader topology partition; block samples retain physical voxel weights. */
@@ -940,43 +932,23 @@ function volumeVoronoiIntegration(g,cell,sites,maxSamples=12000){
   throw Error('Yoğunluk ızgarası mevcut birim hücrenin orijini ve eksenleriyle uyuşmuyor.');
  if(!Number.isInteger(maxSamples)||maxSamples<100||maxSamples>50000)
   throw Error('Örnekleme sınırı geçersiz.');
- let stride=1;
- while(d.reduce((p,n)=>p*Math.ceil(n/stride),1)>maxSamples)stride++;
  const atomCoords=sites.map((s,i)=>{
   if(!['x','y','z'].every(k=>Number.isFinite(s[k])))throw Error('Geçersiz atom koordinatı: '+i);
   return [frac(s.x),frac(s.y),frac(s.z)];
  });
- const charges=Array(sites.length).fill(0),counts=Array(sites.length).fill(0);
- const Bv=B.map(v=>v.toArray()),voxelVolume=V/g.values.length;
- let sampled=0,total=0;
- for(let i=0;i<d[0];i+=stride)for(let j=0;j<d[1];j+=stride)for(let k=0;k<d[2];k+=stride){
-  const ni=Math.min(stride,d[0]-i),nj=Math.min(stride,d[1]-j),nk=Math.min(stride,d[2]-k);
-  const ii=Math.min(d[0]-1,i+Math.floor(ni/2)),jj=Math.min(d[1]-1,j+Math.floor(nj/2)),kk=Math.min(d[2]-1,k+Math.floor(nk/2));
-  const position=[ii/d[0],jj/d[1],kk/d[2]];
-  let best=Infinity,index=-1;
-  for(let site=0;site<atomCoords.length;site++){
-   const delta=position.map((v,t)=>v-atomCoords[site][t]);
-   for(let u=-1;u<=1;u++)for(let v=-1;v<=1;v++)for(let w=-1;w<=1;w++){
-    const x=delta[0]+u,y=delta[1]+v,z=delta[2]+w;
-    const px=x*Bv[0][0]+y*Bv[1][0]+z*Bv[2][0];
-    const py=x*Bv[0][1]+y*Bv[1][1]+z*Bv[2][1];
-    const pz=x*Bv[0][2]+y*Bv[1][2]+z*Bv[2][2];
-    const dist2=px*px+py*py+pz*pz;
-    if(dist2<best-1e-10){best=dist2;index=site;}
-   }
-  }
-  const weight=ni*nj*nk*voxelVolume,charge=g.values[gridIndex(g,ii,jj,kk)]*weight;
-  charges[index]+=charge;counts[index]+=ni*nj*nk;total+=charge;sampled++;
- }
+ // V20: every voxel is summed (exact total); boundary blocks are assigned voxel by
+ // voxel; the voxel-scale ambiguity is reported per site as an upper bound.
+ const part=voronoiPartition(g,B.map(v=>v.toArray()),atomCoords,{maxBlocks:maxSamples});
  return {sites:sites.map((s,i)=>({index:(s.sourceSiteIndex??i)+1,expandedIndex:i+1,
-  symmetryOperation:(s.symmetryOperationIndex??0)+1,symbol:s.symbol,label:s.label||'',charge:charges[i],
-  voxelFraction:counts[i]/g.values.length})),total,volume:V,sampled,stride,units:'electrons',
-  method:'periodic nearest-nucleus sampled Voronoi (not Bader)'};
+  symmetryOperation:(s.symmetryOperationIndex??0)+1,symbol:s.symbol,label:s.label||'',charge:part.charges[i],
+  uncertainty:part.uncertainty[i],voxelFraction:part.voxelFractions[i]})),total:part.total,volume:V,sampled:part.blocks,
+  stride:part.stride,refinedBlocks:part.refinedBlocks,ambiguousVoxels:part.ambiguousVoxels,voxelHalfDiagonal:part.voxelHalfDiagonal,
+  units:'electrons',method:'periodic nearest-nucleus Voronoi, voxel-resolved at boundaries (not Bader)'};
 }
 function volumeVoronoiCsv(result){
- return ['asymmetric_site,expanded_site,symmetry_operation,symbol,label,electrons,voxel_fraction',
+ return ['asymmetric_site,expanded_site,symmetry_operation,symbol,label,electrons,boundary_uncertainty_electrons,voxel_fraction',
   ...result.sites.map(s=>[s.index,s.expandedIndex,s.symmetryOperation,s.symbol,JSON.stringify(s.label),
-   s.charge.toPrecision(9),s.voxelFraction.toPrecision(9)].join(','))].join('\n')+'\n';
+   s.charge.toPrecision(9),(s.uncertainty??0).toPrecision(6),s.voxelFraction.toPrecision(9)].join(','))].join('\n')+'\n';
 }
 
 
@@ -2052,7 +2024,8 @@ function initVolumeControls(){
    lastVolumePeaks={peaks,grid:densityGrid};
    $('volumePeakResults').textContent=peaks.length?
     peaks.map((p,i)=>(i+1)+'. '+p.value.toPrecision(5)+' '+densityGrid.units+' · ('+
-     [p.x,p.y,p.z].map(v=>v.toFixed(3)).join(', ')+') Å · f=('+p.gridFraction.map(v=>v.toFixed(4)).join(', ')+')').join('\n'):
+     [p.x,p.y,p.z].map(v=>v.toFixed(3)).join(', ')+') Å · f=('+p.gridFraction.map(v=>v.toFixed(4)).join(', ')+')'+
+     (p.method==='quadratic'?' · 27 noktalı Hessian uydurması':p.method==='axis'?' · eksen parabolü'+(p.reason?' ('+p.reason+')':''):'')).join('\n'):
     'Bu eşikte iç ızgara noktalarında yerel ekstremum bulunamadı.';
    $('volumePeakResults').style.whiteSpace='pre-line';
   }catch(error){inform('Tepe araması: '+error.message);}
@@ -2067,9 +2040,10 @@ function initVolumeControls(){
    const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,64):state.sites;
    const result=volumeVoronoiIntegration(densityGrid,state.cell,sites);
    lastVoronoi={grid:densityGrid,result};
-   $('volumeVoronoiResults').textContent=result.sampled+' örnek · toplam '+result.total.toFixed(4)+' e\n'+
+   $('volumeVoronoiResults').textContent='Toplam '+result.total.toFixed(4)+' e (tüm vokseller) · '+result.sampled+' blok, '+
+    result.refinedBlocks+' sınır bloğu voksel voksel atandı · voksel yarı köşegeni '+result.voxelHalfDiagonal.toFixed(3)+' Å\n'+
     result.sites.map(s=>'ASU '+s.index+' · '+s.symbol+' '+s.label+' [simetri '+s.symmetryOperation+
-     ', atom '+s.expandedIndex+']: '+s.charge.toFixed(4)+' e').join('\n');
+     ', atom '+s.expandedIndex+']: '+s.charge.toFixed(4)+' e (sınır belirsizliği ≤ '+s.uncertainty.toFixed(4)+' e)').join('\n');
    $('volumeVoronoiResults').style.whiteSpace='pre-line';
   }catch(error){inform('Voronoi: '+error.message);}
  };

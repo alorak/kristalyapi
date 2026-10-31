@@ -1032,6 +1032,8 @@ try{
  assert.match(await fs.readFile(await cubeDownload.path(),'utf8'),/Kristal Yapi \| quantity=/);
  await page.locator('#volumePeakFind').click();
  assert.ok((await page.locator('#volumePeakResults').textContent()).length>15);
+ const peakText=await page.locator('#volumePeakResults').textContent();
+ if(/^1\. /.test(peakText))assert.match(peakText,/Hessian|parabol/,'each peak names its sub-voxel method');
  await page.locator('#volumeAxis').selectOption('hkl');
  assert.match(await page.locator('#volumeSliceStats').textContent(),/\(1 1 1\)/);
  await save(page,'25-miller-volumetric-slice',metrics);
