@@ -46,7 +46,7 @@ test('explicit block selection imports alpha only and beta only',()=>{
 });
 test('non-structural compound loops are skipped, but typed metadata is available',()=>{
  const chosen=selectCif2Structure(fixture,'alpha');
- assert.deepEqual(chosen.ignoredCompoundNames,['_local_source_collection','_local_rgb_name','_local_rgb_value']);
+ assert.deepEqual([...chosen.ignoredCompoundNames],['_local_source_collection','_local_rgb_name','_local_rgb_value']);
  assert.equal(chosen.typedMetadata.length,2);
  assert.equal(chosen.typedMetadata[1].rows[0][1].kind,'list');
  assert.equal(chosen.tokens.includes('_local_rgb_value'),false);
