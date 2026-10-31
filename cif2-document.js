@@ -30,6 +30,9 @@ export function readCif2Document(source){
     if(s.slice(i,i+width)===ch.repeat(width)){
      const value=s.slice(begin,i);
      for(let j=0;j<width;j++)eat();
+     const next=s[i];
+     if(next!==undefined&&!blank(next)&&next!=='#'&&!']}:'.includes(next))
+      throw Error('CIF2 quoted string must be separated from adjacent values');
      found=true;
      return {kind:'scalar',value,quoted:true,start,end:i};
     }
