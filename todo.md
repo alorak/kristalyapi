@@ -782,7 +782,7 @@ işi olarak açma.
 | CUBE/CHGCAR/XSF/CCP4-MRC | Mevcut / kısmi | 24 MB / 2.5M voksel sınırı, birim/orijin, gerçek varyant testi → V20 |
 | Çok seviyeli ± izoyüzey ve 2B kontur | Mevcut / doğrulanmadı | Mutlak izoeşik, mesh/topoloji, alanla renklendirme ve sayısal kıyas → V16/V20 |
 | Fourier/Patterson ve türetilmiş alan | Kısmi | Deneysel faz/ölçek ve model-FCF-MTZ yorum sınırları → V20 |
-| Voronoi yük entegrasyonu | Kısmi | Seyrek örneklem ve gerçek yakınsama/hata bütçesi → V20 |
+| Voronoi yük entegrasyonu | Mevcut / doğrulanmadı | V20: tüm vokseller, sınırda voksel ataması, site başına sınır belirsizliği; NumPy ile gerçek cube'ta birebir; Bader değildir |
 | Çokyüzlü kimyası / BVS | Kısmi | Parametre çiftleri, occupancy ve hacim/bozulma referansı → V21 |
 | PNG/SVG/TIFF/PDF/EPS ve 3B export | Mevcut / doğrulanmadı | #174 + #178 ile mm/DPI, derinliği doğru vektör, fontsuz metin, punto etiket, lejant, Å ölçeği, köken bilgisi; bağımsız VESTA görsel kabulü → V19 |
 | Kristalografik bakış yönü (a/b/c, a*/b*/c*, [uvw], (hkl) normali) | Mevcut / doğrulanmadı | V24: Görünüm paneli, sabit açılı döndürme, köken bilgisi; gerçek VESTA kıyası → V16 |
@@ -1148,8 +1148,19 @@ işi olarak açma.
   Fo−Fc/2Fo−Fc, ağırlıklı katsayı ve gerektiğinde Laplasyen için
   faz, sigma/FOM/FREE, ölçek, d_min ve fiziksel model ayrımı.
   Eksik deneysel fazı üretildi sayma.
-- [ ] Voronoi ≠ Bader; 2B eğik Miller konturları ve subvoxel
-  min/max için grid yakınsaması, sayısal integral ve hata raporu.
+- [x] Voronoi ≠ Bader; subvoxel min/max için grid yakınsaması, sayısal
+  integral ve hata raporu. **Yapıldı (V20 P1):** Voronoi artık her vokseli
+  toplar (toplam = ızgara integrali, eski blok-merkezi örneklemesinin
+  kaydırma hatası yok); sınır blokları voksel voksel atanır, böylece
+  sonuç tam voksel çözünürlüklü atamaya eşittir; iki en yakın çekirdeği
+  bir voksel köşegeninden yakın voksellerin yükü site başına üst sınır
+  olarak raporlanır (CSV sütunu). Gerçek Cr₄O₅ cube'unda (pymatgen
+  sabitli) bağımsız NumPy atamasıyla birebir; 2,5 M voksel/64 atom ≈1 s.
+  Tepe: 27 noktalı ikinci derece (Hessian) uydurma, eğrilik işareti ve
+  bir voksel sınırı denetimiyle; eğik ızgarada dönük anizotrop Gaussian
+  için hata ızgarayla küçülür (0,1 Å'da <0,01 Å), eksen parabolü
+  çapraz terimler yüzünden ~0,05 Å'da kalır (testli).
+- [ ] 2B eğik Miller konturları için ızgara yakınsaması ve hata raporu.
 - [ ] **Kabul:** Kaynağı sabitlenmiş birer gerçek CUBE/CHGCAR/XSF/
   CCP4 + deneysel FCF/MTZ; voxel/Å, izoyüzey, kontur, integral
   ve tepe sonuçlarında mutlak/bağıl tolerans, hata dosyası testleri.

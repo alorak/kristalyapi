@@ -641,11 +641,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <label class="field compact"><span>En fazla</span><input id="volumePeakCount" type="number" min="1" max="50" step="1" value="12"></label>
       </div>
       <div class="actionrow"><button type="button" id="volumePeakFind">Yerel ekstremumları bul</button><button type="button" id="volumePeakCsv">CSV indir</button></div>
-      <div class="volume-peak-options"><label class="check"><input id="volumePeakRefine" type="checkbox" checked> Alt-voksel parabolik konum</label><label class="check"><input id="volumePeakMerge" type="checkbox"> Simetri eşdeğerlerini birleştir</label></div>
+      <div class="volume-peak-options"><label class="check"><input id="volumePeakRefine" type="checkbox" checked> Alt-voksel konum (27 noktalı Hessian uydurması)</label><label class="check"><input id="volumePeakMerge" type="checkbox"> Simetri eşdeğerlerini birleştir</label></div>
       <div id="volumePeakResults" class="hint" aria-live="polite">Önce bir alan yükleyin.</div>
      </div>
      <div class="note"><strong>Sayısal Voronoi integrali</strong>
-      <p class="hint">Periyodik, hücreyle hizalı elektron yoğunluğunu en yakın çekirdeğe böler. Yükler e birimindedir; bu yöntem Bader analizi değildir. Büyük ızgaralar en fazla 12.000 örnek noktasıyla yaklaşık integrallenir.</p>
+      <p class="hint">Periyodik, hücreyle hizalı elektron yoğunluğunu en yakın çekirdeğe böler. Yükler e birimindedir; bu yöntem Bader analizi değildir. Her vokselin değeri toplanır (toplam, ızgara integraline eşittir); büyük ızgaralarda bloklar atanır, sınıra yakın bloklar voksel voksel atanır. Her konum için, iki en yakın çekirdeği bir voksel köşegeninden yakın olan voksellerin yükü sınır belirsizliği (üst sınır) olarak verilir.</p>
       <p class="volume-science-warning">PAW / VASP notu: CHGCAR genellikle valans yoğunluğudur; çekirdek bölgesinde tüm-elektron yoğunluğunu temsil etmez. AECCAR0 + AECCAR2 referansı Bader analizleri için önemlidir. Buradaki Voronoi yüklerini Bader yükleriyle eşdeğer saymayın.</p>
       <div class="actionrow"><button type="button" id="volumeVoronoi">Site başına yükü hesapla</button><button type="button" id="volumeVoronoiCsv">CSV indir</button></div>
       <div id="volumeVoronoiResults" class="hint" aria-live="polite">İşlem bekleniyor.</div>
