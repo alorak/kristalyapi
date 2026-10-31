@@ -36,11 +36,11 @@ const cellFor=k=>{const n=Number(k.split('-')[0]);
  if(n>=195)return {a:7.1,b:7.1,c:7.1,alpha:90,beta:90,gamma:90};
  if(n>=75)return {a:6.3,b:6.3,c:9.7,alpha:90,beta:90,gamma:90};
  if(n>=16)return {a:5.1,b:6.7,c:8.9,alpha:90,beta:90,gamma:90};
- return k.endsWith('-c')?{a:5.1,b:6.7,c:8.9,alpha:90,beta:90,gamma:104.5}:{a:5.1,b:6.7,c:8.9,alpha:90,beta:104.5,gamma:90};};
+ return /-c\d?$/.test(k)?{a:5.1,b:6.7,c:8.9,alpha:90,beta:90,gamma:104.5}:{a:5.1,b:6.7,c:8.9,alpha:90,beta:104.5,gamma:90};};
 const site={symbol:'Fe',label:'Fe1',x:.1234,y:.2871,z:.4119,occupancy:1,adp:[.012,.018,.025,.002,-.004,.003]};
 const out=[];
-for(const keys of Object.values(groups)){if(keys.length!==2)continue;
- for(const [from,to] of [[keys[0],keys[1]],[keys[1],keys[0]]]){
+for(const keys of Object.values(groups)){if(keys.length<2)continue;
+ for(const [from,to] of keys.slice(1).flatMap(k=>[[keys[0],k],[k,keys[0]]])){
   const t=findSettingTransform(pairs(from),pairs(to)),cell=cellFor(from),moved=transformStructure(cell,[site],t);
   out.push({from,to,P:t.P,p:t.p,cell,site,newCell:moved.cell,newSite:moved.sites[0],
    fromOps:pairs(from),toOps:pairs(to)});
@@ -147,7 +147,7 @@ class SettingTransformGemmi(unittest.TestCase):
                     matches = matching_setting(number, pairs)
                     self.assertGreaterEqual(len(matches), 1)
                     self.assertEqual(len({frozenset(gemmi_ops(sg)) for sg in matches}), 1)
-        self.assertEqual(len(seen), 88)
+        self.assertEqual(len(seen), 120)  # 88 + 32 monoclinic cell choices
 
     def test_editor_transform_maps_gemmi_operations_onto_gemmi_target(self):
         for case in self.cases:

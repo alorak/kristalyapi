@@ -1886,6 +1886,10 @@ try{
   const mp=await mtzContext.newPage();mp.on('pageerror',error=>errors.push(error.message));
   await mp.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
   await mp.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
+  // V18: all ITA monoclinic cell choices are offered with their H-M symbols.
+  await mp.evaluate(()=>{const s=document.getElementById('spaceGroup');s.value='14';s.dispatchEvent(new Event('change',{bubbles:true}));});
+  const p21=await mp.locator('#sgSetting option').allTextContents();
+  assert.deepEqual(p21.map(t=>t.replace(/^.* · /,'')),['P 1 21/c 1','P 1 21/n 1','P 1 21/a 1','P 1 1 21/a','P 1 1 21/n','P 1 1 21/b']);
   // The reflections must belong to the active cell.
   await mp.evaluate(()=>{for(const [id,v] of [['a',50.347],['b',4.777],['c',14.746],['alpha',90],['beta',101.73],['gamma',90]])document.getElementById(id).value=v;
    document.getElementById('applyCell').click();});

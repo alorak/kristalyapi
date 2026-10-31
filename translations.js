@@ -1916,6 +1916,8 @@
  ];
  const dictionary=new Map(entries);
  const parts=[
+  ['CIF simetri işlemlerini içermiyor; işlemler H-M simgesindeki ayardan (', 'The CIF has no symmetry operations; they were taken from the setting of its H-M symbol ('],
+  [') alındı.', ').'],
   [' · σA kabukları: ', ' · σA shells: '],
   [' (σA, model fazlı)', ' (σA, model-phased)'],
   ['σA ağırlıklı 2mFo−DFc (merkezcil yansımada mFo) katsayıları: ', 'σA-weighted 2mFo−DFc (mFo for centric reflections) coefficients: '],

@@ -18,7 +18,7 @@ test('every bundled setting parses, starts with the identity and formats back to
    assert.deepEqual(again.R,op.R,key);again.t.forEach((v,i)=>close(v,op.t[i],1e-9));
   }
  }
- assert.equal(Object.keys(SPACE_GROUPS).length,274);
+ assert.equal(Object.keys(SPACE_GROUPS).length,306,'274 + 32 monoclinic cell choices');
  assert.equal(formatSymop(parseSymop('x-y,-y+1/2, z')),'x-y,-y+1/2,z');
  assert.throws(()=>parseSymop('x,y'),/üç/);assert.throws(()=>symmetryOperations([['-x,-y,-z','0,0,0']]),/birim/);
  assert.equal(symmetryCode(0,[0,0,0]),'.');assert.equal(symmetryCode(2,[1,-1,0]),'3_645');

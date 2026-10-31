@@ -76,8 +76,22 @@ function candidateMatrices(){
   if(det3(P)>0&&!P.every((row,i)=>row.every((v,j)=>v===I3[i][j])))out.push(P);
  }
  out.push(HEX_TO_RHOMB,RHOMB_TO_HEX);
- return out;
+ // Monoclinic cell choices 1↔2↔3 (ITA Table 1.5.1.1) are unimodular matrices
+ // with entries −1, 0, 1 that mix the two axes normal to the unique axis.
+ const seen=new Set(out.map(P=>P.flat().join(',')));
+ const extra=[];
+ for(let code=0;code<19683;code++){
+  const v=[];let c=code;for(let i=0;i<9;i++){v.push(c%3-1);c=Math.floor(c/3);}
+  const P=[v.slice(0,3),v.slice(3,6),v.slice(6,9)];
+  if(det3(P)!==1||seen.has(v.join(',')))continue;
+  extra.push(P);
+ }
+ // Simplest first: fewest non-zero entries, then fewest negative ones (no needless axis flips).
+ const cost=P=>[P.flat().filter(Boolean).length,P.flat().filter(v=>v<0).length];
+ extra.sort((a,b)=>{const x=cost(a),y=cost(b);return x[0]-y[0]||x[1]-y[1];});
+ return out.concat(extra);
 }
+let CANDIDATES=null;
 function originCandidates(){
  const values=[];for(let k=0;k<24;k++)values.push(k/24);
  const out=[];
@@ -95,14 +109,25 @@ let ORIGINS=null;
 export function findSettingTransform(fromPairs,toPairs){
  const source=symmetryOperations(fromPairs),target=symmetryOperations(toPairs);
  ORIGINS??=originCandidates();
- for(const P of candidateMatrices()){
+ CANDIDATES??=candidateMatrices();
+ for(const P of CANDIDATES){
   const d=det3(P);
   if(Math.abs(source.length*d-target.length)>1e-6)continue;
   // Rotation parts must match before any origin shift is tried.
   const targetRotations=new Set(target.map(op=>op.R.flat().join(',')));
   const Pi=inv3(P);
   if(!source.every(op=>targetRotations.has(mul(mul(Pi,op.R),P).flat().map(v=>Math.round(clean(v)*1e6)/1e6).join(','))))continue;
-  for(const p of ORIGINS)if(settingTransformValid(source,target,P,p))return {P:P.map(r=>r.slice()),p:p.slice(),det:d};
+  // Fail fast: w' = P⁻¹(w + (W − I)p) must be a target translation for every
+  // operation; most shifts fail on the first non-identity operation.
+  const targetKeys=keySet(target);if(!targetKeys)continue;
+  const checks=source.slice(1).map(op=>({op,R:mul(mul(Pi,op.R),P).map(row=>row.map(clean))}));
+  const fits=p=>checks.every(({op,R})=>{
+   const shifted=op.t.map((v,i)=>v+op.R[i][0]*p[0]+op.R[i][1]*p[1]+op.R[i][2]*p[2]-p[i]);
+   const t=[0,1,2].map(i=>wrap(Pi[i][0]*shifted[0]+Pi[i][1]*shifted[1]+Pi[i][2]*shifted[2]));
+   if(t.some(v=>Math.abs(v*24-Math.round(v*24))>1e-5))return false;
+   return targetKeys.has(opKey({R,t}));
+  });
+  for(const p of ORIGINS)if(fits(p)&&settingTransformValid(source,target,P,p))return {P:P.map(r=>r.slice()),p:p.slice(),det:d};
  }
  return null;
 }

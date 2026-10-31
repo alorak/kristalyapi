@@ -312,6 +312,18 @@ test('CIF e.s.d.s are kept with the values they belong to; projects validate app
  const bad=api.loadProject(JSON.stringify({cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90,su:{a:'x'}},sites:[{symbol:'Si',x:0,y:0,z:0}],radiusSet:'metallic',colorScheme:'vesta'}));
  assert.equal(bad.cell.su,undefined);assert.equal(bad.radiusSet,'default');assert.equal(bad.colorScheme,'app');
 });
+test('V18 monoclinic cell choices: H-M symbols pick the setting, also in CIFs without operations',()=>{
+ const hm=vm.runInContext('({n:settingFromHm("P 21/n"),full:settingFromHm("P 1 21/n 1",14),i2a:settingFromHm("I 1 2/a 1"),c2c:settingFromHm("C 2/c"),none:settingFromHm("P 21/z"),label:settingLabel("14-b2"),label1:settingLabel("14-b")})',context);
+ assert.deepEqual(JSON.parse(JSON.stringify(hm)),{n:'14-b2',full:'14-b2',i2a:'15-b3',c2c:'15-b',none:null,label:'b2 · P 1 21/n 1',label1:'b1 · P 1 21/c 1'});
+ const cif=['data_p21n','_cell_length_a 7.1','_cell_length_b 8.2','_cell_length_c 9.3','_cell_angle_alpha 90','_cell_angle_beta 97','_cell_angle_gamma 90',
+  "_symmetry_space_group_name_H-M 'P 21/n'",'_symmetry_Int_Tables_number 14',
+  'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z','C1 C 0.1 0.2 0.3'].join('\n');
+ const data=api.cifData(cif);
+ assert.equal(data.sites.length,4);
+ const has=(x,y,z)=>data.sites.some(s=>[s.x,s.y,s.z].every((v,i)=>Math.abs(((v-[x,y,z][i])%1+1.5)%1-.5)<1e-6));
+ assert.ok(has(.4,.7,.2),'P21/n: −x+1/2, y+1/2, −z+1/2');assert.ok(!has(.9,.7,.2),'not the P21/c image −x, y+1/2, −z+1/2');
+ assert.match(data.warning||'',/P 1 21\/n 1/);
+});
 test('V19 per-site appearance and clipping planes survive project files and are validated',()=>{
  const sites=[{symbol:'Fe',label:'Fe1',x:0,y:0,z:0,visualOpacity:.5,visualHidden:true,labelText:'Fe(II)',labelOffset:[1,-.5],labelHidden:false},
   {symbol:'O',label:'O1',x:.5,y:0,z:0,labelOffset:[0,0]}];
