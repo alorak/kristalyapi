@@ -272,6 +272,8 @@ export function geometryCsv(rows){
  const lines=['type,atoms,symmetry_codes,value,su,unit'];
  const push=(type,list,unit)=>{for(const r of list)lines.push([type,r.labels.join('-'),r.codes.join(' '),r.value.toFixed(6),r.su==null?'':r.su.toExponential(3),unit].map(String).map(csvCell).join(','));};
  push('bond',rows.bonds,'angstrom');push('angle',rows.angles,'degree');push('torsion',rows.torsions,'degree');
+ for(const r of rows.hbonds||[])for(const [type,key,unit] of [['hbond_DH','dh','angstrom'],['hbond_HA','ha','angstrom'],['hbond_DA','da','angstrom'],['hbond_DHA','angle','degree']])
+  lines.push([type,r.labels.join('-'),r.codes.join(' '),r[key].toFixed(6),r.su[key]==null?'':r.su[key].toExponential(3),unit].map(String).map(csvCell).join(','));
  return lines.join('\n')+'\n';
 }
 const cifValue=v=>/^[^\s'"_#$;[\]][^\s]*$/.test(v)?v:"'"+v.replace(/'/g,'')+"'";
@@ -295,5 +297,53 @@ export function geometryCif(rows,ops,{name='structure',spaceGroup='',note=''}={}
   r=>[...r.labels,formatWithSu(r.value,r.su,{decimals:2}),r.codes[0],r.codes[2],'?']);
  loop(rows.torsions,['_geom_torsion_atom_site_label_1','_geom_torsion_atom_site_label_2','_geom_torsion_atom_site_label_3','_geom_torsion_atom_site_label_4','_geom_torsion','_geom_torsion_site_symmetry_1','_geom_torsion_site_symmetry_2','_geom_torsion_site_symmetry_3','_geom_torsion_site_symmetry_4','_geom_torsion_publ_flag'],
   r=>[...r.labels,formatWithSu(r.value,r.su,{decimals:2}),...r.codes,'?']);
+ if(rows.hbonds?.length)out.push(hydrogenBondCifLoop(rows.hbonds).trimEnd());
  return out.join('\n')+'\n';
+}
+
+/* ---- Hydrogen bonds --------------------------------------------------------- */
+
+/* Common geometric criteria; every value can be changed by the caller.
+   D–H is a covalent bond to a donor; H···A, D···A and the D–H···A angle
+   follow widely used limits (e.g. Jeffrey, An Introduction to Hydrogen
+   Bonding, 1997; IUPAC Recommendations 2011 ask for an angle above 110°). */
+export const HBOND_DEFAULTS=Object.freeze({donors:['N','O','F'],acceptors:['N','O','F','S','Cl'],
+ maxDH:1.2,maxHA:2.5,maxDA:3.5,minAngle:120});
+/** D–H···A hydrogen bonds around every H site at its identity position.
+ * Rows: labels [D,H,A], codes [D,H,A], distances dh/ha/da, angle, with s.u.s. */
+export function hydrogenBonds(sites,cell,ops,options={}){
+ const o={...HBOND_DEFAULTS,...options};
+ if(!(o.maxDH>0&&o.maxHA>o.maxDH&&o.maxDA>0&&o.minAngle>=90&&o.minAngle<180))throw Error('Hidrojen bağı ölçütleri geçersiz.');
+ const donors=new Set(o.donors),acceptors=new Set(o.acceptors);
+ const range=(a,b)=>a==='H'&&(donors.has(b)||acceptors.has(b))?[.5,o.maxHA]:[0,0];
+ const lists=neighbourLists(sites,cell,ops,range,{skip:o.skip,periodic:o.periodic!==false});
+ const M=cellMatrix(cell),position=p=>toCartesian(M,place(ops,sites,p)),code=p=>symmetryCode(p.op,p.shift);
+ const rows=[];
+ for(let h=0;h<sites.length;h++){
+  if(sites[h].symbol!=='H')continue;
+  const H={site:h,op:0,shift:[0,0,0]},list=lists[h];
+  const donor=list.filter(n=>donors.has(sites[n.site].symbol)&&n.distance<=o.maxDH)[0];
+  if(!donor)continue;
+  for(const a of list){
+   if(a===donor||!acceptors.has(sites[a.site].symbol)||a.distance<=o.maxDH)continue;
+   const placements=[donor,H,a],points=placements.map(position);
+   const da=bondLength([points[0],points[2]]),angle=bondAngle(points);
+   if(da>o.maxDA||angle<o.minAngle)continue;
+   const su=quantity=>propagate(quantity,placements,sites,cell,ops,o.cellSu);
+   rows.push({labels:placements.map(p=>sites[p.site].label),codes:placements.map(code),
+    dh:donor.distance,ha:a.distance,da,angle,
+    su:{dh:su(p=>bondLength([p[0],p[1]])),ha:su(p=>bondLength([p[1],p[2]])),da:su(p=>bondLength([p[0],p[2]])),angle:su(bondAngle)}});
+  }
+ }
+ return rows;
+}
+/** CIF _geom_hbond loop for hydrogenBonds rows (codes refer to the block's symop list). */
+export function hydrogenBondCifLoop(rows){
+ if(!rows.length)return '';
+ const lines=['','loop_','_geom_hbond_atom_site_label_D','_geom_hbond_atom_site_label_H','_geom_hbond_atom_site_label_A',
+  '_geom_hbond_distance_DH','_geom_hbond_distance_HA','_geom_hbond_distance_DA','_geom_hbond_angle_DHA',
+  '_geom_hbond_site_symmetry_D','_geom_hbond_site_symmetry_H','_geom_hbond_site_symmetry_A','_geom_hbond_publ_flag'];
+ for(const r of rows)lines.push([...r.labels,formatWithSu(r.dh,r.su.dh,{decimals:3}),formatWithSu(r.ha,r.su.ha,{decimals:3}),
+  formatWithSu(r.da,r.su.da,{decimals:3}),formatWithSu(r.angle,r.su.angle,{decimals:1}),...r.codes,'?'].map(cifValue).join(' '));
+ return lines.join('\n')+'\n';
 }

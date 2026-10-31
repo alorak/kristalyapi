@@ -161,6 +161,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <p class="hint">Element çiftine özel min–maks eşikleri diğer bağlardan bağımsızdır. Öneriler atom yarıçaplarına dayalı görsel başlangıç değerleridir, deneysel bağ doğrulaması değildir.</p>
   </div>
+  <div class="section" data-right-section="bonds"><h2>Bağ stili ve hidrojen bağları</h2>
+   <label class="field"><span>Bağ stili</span><select id="bondStyle"><option value="unicolor" selected>Tek renk silindir</option><option value="bicolor">İki renkli silindir (atom renkleri)</option><option value="line">İnce çizgi (atom renkleri)</option><option value="dashed">Kesikli silindir</option></select></label>
+   <label class="field"><span>Çifte özel bağ yarıçapı (Å), satır başına örn. Si-O 0.08</span><textarea id="bondRadii" rows="2" placeholder="Si-O 0.08" style="width:100%"></textarea></label>
+   <button id="applyBondRadii" type="button" class="small">Yarıçapları uygula</button>
+   <label class="check"><input id="hbondEnabled" type="checkbox"> Hidrojen bağlarını göster (D–H···A)</label>
+   <div class="view-range-grid"><label>En uzun H···A (Å) <input id="hbondMaxHA" type="number" min="1.5" max="3.5" step="0.05" value="2.5"></label><label>En uzun D···A (Å) <input id="hbondMaxDA" type="number" min="2.2" max="4.5" step="0.05" value="3.5"></label><label>En küçük D–H···A açısı (°) <input id="hbondMinAngle" type="number" min="90" max="175" step="1" value="120"></label></div>
+   <p class="hint">Verici (D) H atomuna 1,2 Å içindeki N/O/F; alıcı (A) N/O/F/S/Cl. Varsayılanlar yaygın geometrik ölçütlerdir (Jeffrey 1997; IUPAC 2011 açı için 110° üstünü önerir) ve yalnız görüntülenen atomlar arasında aranır. Yapıda H atomu yoksa hidrojen bağı çizilmez.</p>
+   <p class="hint" id="hbondStatus" role="status"></p>
+  </div>
   <div class="section"><h2>Süperhücre</h2><div class="triple">
    <label class="field compact"><span>a ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="ra" data-repeat-step="-1" aria-label="a tekrar sayısını azalt">−</button><input id="ra" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="ra" data-repeat-step="1" aria-label="a tekrar sayısını artır">+</button></div></label>
    <label class="field compact"><span>b ×</span><div class="supercell-stepper"><button type="button" data-repeat-target="rb" data-repeat-step="-1" aria-label="b tekrar sayısını azalt">−</button><input id="rb" type="number" min="1" max="6" step="1" value="2"><button type="button" data-repeat-target="rb" data-repeat-step="1" aria-label="b tekrar sayısını artır">+</button></div></label>
@@ -442,6 +451,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div class="section" data-right-section="measurement"><h2>Geometri tablosu</h2>
    <p class="hint">Bağ, açı ve isteğe bağlı burulma açıları geçerli bağ eşikleriyle, CIF simetri koduyla (n_klm; 1_555 = .) listelenir. s.u. değerleri CIF e.s.d.lerinden kovaryanssız yayılımla hesaplanır; e.s.d. yoksa boş kalır.</p>
    <label class="check"><input id="geometryTorsions" type="checkbox"> Burulma açılarını ekle</label>
+   <label class="check"><input id="geometryHbonds" type="checkbox"> Hidrojen bağlarını ekle (bağ panelindeki ölçütlerle)</label>
    <div class="view-index-row"><button type="button" id="geometryRun">Tabloyu hesapla</button><button type="button" id="geometryCsv" disabled>CSV indir</button><button type="button" id="geometryCif" disabled>CIF _geom indir</button></div>
    <p class="hint" id="geometrySummary" role="status">Tablo henüz hesaplanmadı.</p>
    <div class="geometry-preview" id="geometryPreview"></div>
@@ -1721,6 +1731,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </button>
    <button type="button" data-export="pdb" class="export-option">
     <span class="export-option-icon">⌬</span><span><strong>PDB</strong><small>CRYST1 + ATOM/HETATM · bir hücre, P1</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="shelx" class="export-option">
+    <span class="export-option-icon">⎔</span><span><strong>SHELX (.res)</strong><small>Asimetrik birim + LATT/SYMM · özel konum SOF değerleri</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="castep" class="export-option">
+    <span class="export-option-icon">◫</span><span><strong>CASTEP (.cell)</strong><small>Yalnız yapı · tüm atomlar, kesirli koordinat</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="qe" class="export-option">
+    <span class="export-option-icon">⚛</span><span><strong>Quantum ESPRESSO (.pwi)</strong><small>pw.x yapısı · psödopotansiyel ve kesme enerjisi yer tutucu</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="xsf" class="export-option">
+    <span class="export-option-icon">⬚</span><span><strong>XSF yapı (.xsf)</strong><small>XCrySDen · CRYSTAL/PRIMCOORD veya molekül</small></span><span class="export-option-arrow">↓</span>
+   </button>
+   <button type="button" data-export="mcif" class="export-option">
+    <span class="export-option-icon">↗</span><span><strong>Manyetik CIF (.mcif)</strong><small>P1 (BNS 1.1) · manyetik momentler eksen bileşenleriyle</small></span><span class="export-option-arrow">↓</span>
    </button>
    <button type="button" data-export="png" class="export-option">
     <span class="export-option-icon">▧</span><span><strong>PNG görseli</strong><small>3B görünüm · DPI bilgisi · seçilen eksenler</small></span><span class="export-option-arrow">↓</span>

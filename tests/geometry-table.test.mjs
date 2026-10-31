@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {parseSymop,formatSymop,symmetryOperations,symmetryCode,geometryTable,formatWithSu,geometryCsv,geometryCif,
- bondLength,bondAngle,torsionAngle} from '../geometry-table.js';
+ bondLength,bondAngle,torsionAngle,hydrogenBonds,hydrogenBondCifLoop,HBOND_DEFAULTS} from '../geometry-table.js';
 
 const close=(a,b,t=1e-6)=>assert.ok(Math.abs(a-b)<=t,a+' ≉ '+b);
 const app=fs.readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
@@ -78,4 +78,27 @@ test('geometric quantities and torsion sign convention',()=>{
  // Positive when A turns clockwise onto D, looking along B→C (IUPAC).
  close(torsionAngle([[1,0,0],[0,0,0],[0,0,1],[0,1,1]]),90);
  close(torsionAngle([[1,0,0],[0,0,0],[0,0,1],[-1,0,1]]),180);
+});
+
+test('hydrogen bonds: D–H···A geometry, symmetry codes, criteria and CIF loop',()=>{
+ const ops=symmetryOperations([['x,y,z','0,0,0']]);
+ // A chain: O1–H1 0.96 Å along a, and H1···O1 of the next cell 1.90 Å further on.
+ const a=2.86,chain=[{label:'O1',symbol:'O',x:0,y:0,z:0},{label:'H1',symbol:'H',x:.96/a,y:0,z:0}];
+ const rows=hydrogenBonds(chain,{a,b:6,c:6,alpha:90,beta:90,gamma:90},ops);
+ assert.equal(rows.length,1);
+ const [r]=rows;
+ assert.deepEqual(r.labels,['O1','H1','O1']);assert.deepEqual(r.codes,['.','.','1_655'],'the acceptor is the next cell along a');
+ close(r.dh,.96);close(r.ha,1.9);close(r.da,2.86);close(r.angle,180);
+ assert.equal(r.su.ha,null,'no e.s.d.s: no s.u.');
+ assert.equal(hydrogenBonds(chain,{a,b:6,c:6,alpha:90,beta:90,gamma:90},ops,{maxHA:1.8}).length,0,'H···A above the limit');
+ // Bend the chain so the D–H···A angle drops below 120°.
+ const bent=[chain[0],chain[1],{label:'O2',symbol:'O',x:.96/a+.3/a,y:1.85/6,z:0}];
+ assert.equal(hydrogenBonds(bent,{a:20,b:6,c:6,alpha:90,beta:90,gamma:90},ops,{periodic:false}).filter(x=>x.labels[2]==='O2').length,0);
+ assert.equal(HBOND_DEFAULTS.minAngle,120);
+ assert.throws(()=>hydrogenBonds(chain,{a,b:6,c:6,alpha:90,beta:90,gamma:90},ops,{maxHA:1}),/ölçüt/);
+ const loop=hydrogenBondCifLoop(rows);
+ assert.match(loop,/_geom_hbond_site_symmetry_A\n_geom_hbond_publ_flag\nO1 H1 O1 0\.960 1\.900 2\.860 180\.0 \. \. 1_655 \?\n$/);
+ const withH=geometryTable(chain,{a,b:6,c:6,alpha:90,beta:90,gamma:90},ops,()=>[.5,1.2]);withH.hbonds=rows;
+ assert.match(geometryCsv(withH),/\nhbond_HA,O1-H1-O1,\. \. 1_655,1\.900000,,angstrom\n/);
+ assert.match(geometryCif(withH,ops),/_geom_hbond_angle_DHA/);
 });

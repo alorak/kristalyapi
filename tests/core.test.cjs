@@ -30,6 +30,8 @@ class Vector3 {
   }
   toArray() { return [this.x, this.y, this.z]; }
   negate() { this.x = -this.x; this.y = -this.y; this.z = -this.z; return this; }
+  distanceTo(v) { return Math.hypot(this.x - v.x, this.y - v.y, this.z - v.z); }
+  lerp(v, t) { this.x += (v.x - this.x) * t; this.y += (v.y - this.y) * t; this.z += (v.z - this.z) * t; return this; }
 }
 const htmlShell = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert.match(htmlShell,/"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
@@ -52,7 +54,7 @@ vm.createContext(context);
 // Helper ES modules run in their own function scope (as in the browser) and
 // only their exports become globals for the editor code. Isolated contexts
 // below load them too, because loadProject uses the VESTA module helpers.
-const HELPER_MODULES=['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js',
+const HELPER_MODULES=['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js',
  'vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js'];
 function loadHelperModules(target){
  for(const file of HELPER_MODULES){
@@ -72,7 +74,7 @@ vm.runInContext('Object.assign(this.api,{vectorPageLayout,vectorPdfBytes,vectorE
 vm.runInContext('Object.assign(this.api,{pseudoVoigt,cagliotiFwhm,powderProfile,parsePowderCsv,powderProfileCsv});',context);
 vm.runInContext('Object.assign(this.api,{shelxData,qeData,qeBravaisVectors,castepData,structureImportData});',context);
 vm.runInContext('Object.assign(this.api,{vestaProjectData,vestaCompanionMatch});',context);
-vm.runInContext('Object.assign(this.api,{numberSu});',context);
+vm.runInContext('Object.assign(this.api,{numberSu,parseBondRadii,dashSegments,xsfStructureData});',context);
 vm.runInContext('Object.assign(this.api,{disorderTag,sitesAreAlternatives,partialOccupancyOpacity,coordinationGeometry});',context);
 vm.runInContext('Object.assign(this.api,{bvsOccupancyDistribution,bvsCenterAlternatives,vesta3ManualBvsProjection});',context);
 vm.runInContext('this.p1={linearVolumeCombination,linearVolumeCombination3,volumeIntegral,volumeFindPeaks,volumePeaksCsv,sliceMillerFrame,scatteringFactor,modelFourierMap,readFcf,readMtz,mtzSymmetryReflection,observedFourierMap,parseMagneticOperation,rotateMagneticMoment,volumeVoronoiIntegration,volumeVoronoiCsv,pdbData,pdbSpaceGroup,pdbExportText,parseIonicCharges,madelungEwald};',context);
@@ -309,6 +311,48 @@ test('CIF e.s.d.s are kept with the values they belong to; projects validate app
  assert.equal(loaded.radiusSet,'vdw');assert.equal(loaded.colorScheme,'jmol');assert.equal(loaded.view.background,'#000000');
  const bad=api.loadProject(JSON.stringify({cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90,su:{a:'x'}},sites:[{symbol:'Si',x:0,y:0,z:0}],radiusSet:'metallic',colorScheme:'vesta'}));
  assert.equal(bad.cell.su,undefined);assert.equal(bad.radiusSet,'default');assert.equal(bad.colorScheme,'app');
+});
+test('exported SHELX/CASTEP/QE/XSF/mCIF files read back through the editor importers',()=>{
+ const SG=api.SPACE_GROUPS,pairsOf=key=>{const [c,o]=SG[key];return o.flatMap(op=>c.map(t=>[op,t]));};
+ const modelOf=(cell,sites,symmetry=null)=>({name:'t',cell,basis:api.basis(cell).map(v=>[v.x,v.y,v.z]),sites,symmetry});
+ const key=list=>Array.from(list,s=>s.symbol+':'+[s.x,s.y,s.z].map(v=>((v%1)+1)%1).map(v=>v.toFixed(4)).join(',')+':'+(s.occupancy??1).toFixed(3)).sort();
+ const cubic={a:5.431,b:5.431,c:5.431,alpha:90,beta:90,gamma:90};
+ // Diamond Si, both origin choices: special position 8a must come back fully occupied.
+ for(const [setting,xyz] of [['227-1',[0,0,0]],['227-2',[.125,.125,.125]]]){
+  const res=context.shelxResText(modelOf(cubic,[{symbol:'Si',label:'Si1',x:xyz[0],y:xyz[1],z:xyz[2],occupancy:1}],{pairs:pairsOf(setting)})).text;
+  const back=api.shelxData(res);
+  assert.equal(back.sites.length,8,setting);back.sites.forEach(s=>approx(s.occupancy,1));
+ }
+ // P2_1/c: an atom on the inversion centre (SOF 10.5) and a half-occupied general atom.
+ const mono={a:5,b:6,c:7,alpha:90,beta:100,gamma:90},p21c=Object.keys(SG).find(k=>k==='14'||k.startsWith('14-'));
+ const res=context.shelxResText(modelOf(mono,[{symbol:'Fe',label:'Fe1',x:0,y:0,z:0,occupancy:1},{symbol:'O',label:'O1',x:.2,y:.3,z:.1,occupancy:.5}],{pairs:pairsOf(p21c)})).text;
+ assert.match(res,/\nFe1  1 0\.000000 0\.000000 0\.000000 10\.50000 /);
+ const mono2=api.shelxData(res);
+ assert.equal(mono2.sites.filter(s=>s.symbol==='Fe').length,2);mono2.sites.filter(s=>s.symbol==='Fe').forEach(s=>approx(s.occupancy,1));
+ assert.equal(mono2.sites.filter(s=>s.symbol==='O').length,4);mono2.sites.filter(s=>s.symbol==='O').forEach(s=>approx(s.occupancy,.5));
+ // P1 lists: CASTEP, QE and XSF keep cell and fractional positions.
+ const nacl=[{symbol:'Na',label:'Na1',x:0,y:0,z:0,occupancy:1},{symbol:'Cl',label:'Cl1',x:.5,y:.5,z:.5,occupancy:1},{symbol:'Na',label:'Na2',x:.5,y:.5,z:0,occupancy:1}];
+ const tri={a:5.1,b:6.2,c:7.3,alpha:80,beta:95,gamma:105};
+ for(const [name,text,read] of [['castep',context.castepCellText(modelOf(tri,nacl)).text,t=>api.castepData(t)],
+  ['qe',context.qeStructureInputText(modelOf(tri,nacl)).text,t=>api.qeData(t)],
+  ['xsf',context.xsfStructureText(modelOf(tri,nacl)).text,t=>api.structureImportData(t,'s.xsf')]]){
+  const back=read(text);
+  assert.deepEqual(key(back.sites),key(nacl),name);
+  for(const k of ['a','b','c','alpha','beta','gamma'])approx(back.cell[k],tri[k],1e-5);
+ }
+ // mCIF moments come back as the same Cartesian vectors.
+ const moment=[1.5,-.5,2];
+ const mcif=context.magneticCifText(modelOf(tri,[{symbol:'Fe',label:'Fe1',x:.1,y:.2,z:.3,occupancy:1,magneticMoment:moment}])).text;
+ const magnetic=api.cifData(mcif);
+ magnetic.sites[0].magneticMoment.forEach((v,i)=>approx(v,moment[i],1e-4));
+});
+test('bond radii per element pair and dash pieces for dashed bonds',()=>{
+ const radii=api.parseBondRadii('Si-O 0.08\nO-Ti: 0.1');
+ assert.equal(radii.get('O-Si'),.08);assert.equal(radii.get('O-Ti'),.1);
+ assert.equal(api.parseBondRadii('').size,0);
+ assert.throws(()=>api.parseBondRadii('Si-O'),/Si-O 0\.08/);assert.throws(()=>api.parseBondRadii('Si-O 2'),/0\.005/);
+ const pieces=api.dashSegments(new Vector3(0,0,0),new Vector3(1,0,0),.16,.11);
+ assert.equal(pieces.length,4);approx(pieces[0][1].x,.16);approx(pieces[3][0].x,.81);approx(pieces[3][1].x,.97); // 0.16 dash + 0.11 gap: the last dash ends at 0.97
 });
 test('raster PDF is lossless Flate on A4 or on a page cut to the figure size',()=>{
  const zlib=require('node:zlib'),pixels=new Uint8Array(1200*800*3).fill(200);
@@ -1180,7 +1224,7 @@ test('English dictionary covers the existing static editor, library and analysis
  const fragment=html.slice(html.indexOf('<header>'),html.indexOf('<script type="module" src="./crystal-app.js">'));
  const labels=[...new Set([...fragment.matchAll(/>([^<>]+)</g)]
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
- const languageNeutral=new Set(['GitHub ↗','[u v w]','(h k l)','Jmol','CPK','Element A','Element B','FCC conventional → primitive',
+ const languageNeutral=new Set(['GitHub ↗','[u v w]','(h k l)','Jmol','CPK','SHELX (.res)','CASTEP (.cell)','Quantum ESPRESSO (.pwi)','Element A','Element B','FCC conventional → primitive',
   'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
   'Cloudflare Worker · COD API','Quantum ESPRESSO','DFT / QUANTUM ESPRESSO','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
   'Cu Kα1 · 1.5406 Å','Co Kα1 · 1.7890 Å','Mo Kα1 · 0.7093 Å','Ag Kα1 · 0.5594 Å',
@@ -1411,7 +1455,7 @@ test('preset favorites store only allowlisted structure keys',()=>{
 test('Save dialog offers offline STL and binary glTF 3D exports alongside existing formats',()=>{
  assert.match(html,/id="saveBtn"[^>]*aria-haspopup="dialog"/);
  assert.match(html,/id="exportModal"[^>]*role="dialog"[^>]*aria-modal="true"/);
- assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','vesta','vesta-loss','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml']);
+ assert.deepEqual(Array.from(api.EXPORT_FORMATS),['project','vesta','vesta-loss','cif','poscar','xyz','pdb','shelx','castep','qe','xsf','mcif','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml']);
  for(const name of api.EXPORT_FORMATS){
   assert.match(html,new RegExp('data-export="'+name+'"'));
   assert.equal(typeof api.exportFunction(name),'function');
