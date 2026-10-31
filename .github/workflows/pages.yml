@@ -220,6 +220,7 @@ jobs:
           cp structure-export.js public/structure-export.js
           cp scene-controls.js public/scene-controls.js
           cp setting-transform.js public/setting-transform.js
+          cp phase-alignment.js public/phase-alignment.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
           cp qe-relax-view.js public/qe-relax-view.js
@@ -282,6 +283,7 @@ jobs:
           test -s public/structure-export.js
           test -s public/scene-controls.js
           test -s public/setting-transform.js
+          test -s public/phase-alignment.js
           test -s public/vendor/LICENSE-OFL-1.1.txt
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js
