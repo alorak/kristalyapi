@@ -54,7 +54,7 @@ vm.createContext(context);
 // Helper ES modules run in their own function scope (as in the browser) and
 // only their exports become globals for the editor code. Isolated contexts
 // below load them too, because loadProject uses the VESTA module helpers.
-const HELPER_MODULES=['cif2-lex.js','cif2-document.js','cif2-symmetry.js','export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js',
+const HELPER_MODULES=['cif2-lex.js','cif2-document.js','cif2-symmetry.js','export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js',
  'vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js'];
 function loadHelperModules(target){
  for(const file of HELPER_MODULES){
@@ -311,6 +311,21 @@ test('CIF e.s.d.s are kept with the values they belong to; projects validate app
  assert.equal(loaded.radiusSet,'vdw');assert.equal(loaded.colorScheme,'jmol');assert.equal(loaded.view.background,'#000000');
  const bad=api.loadProject(JSON.stringify({cell:{a:5,b:5,c:5,alpha:90,beta:90,gamma:90,su:{a:'x'}},sites:[{symbol:'Si',x:0,y:0,z:0}],radiusSet:'metallic',colorScheme:'vesta'}));
  assert.equal(bad.cell.su,undefined);assert.equal(bad.radiusSet,'default');assert.equal(bad.colorScheme,'app');
+});
+test('V19 per-site appearance and clipping planes survive project files and are validated',()=>{
+ const sites=[{symbol:'Fe',label:'Fe1',x:0,y:0,z:0,visualOpacity:.5,visualHidden:true,labelText:'Fe(II)',labelOffset:[1,-.5],labelHidden:false},
+  {symbol:'O',label:'O1',x:.5,y:0,z:0,labelOffset:[0,0]}];
+ const clip={integrity:'bonded',planes:[{h:0,k:0,l:1,distance:2,keep:'below'},{h:0,k:0,l:0,distance:1,keep:'above'}]};
+ const loaded=api.loadProject(JSON.stringify({cell:{a:4,b:4,c:4,alpha:90,beta:90,gamma:90},sites,clip}));
+ assert.deepEqual(JSON.parse(JSON.stringify(loaded.sites[0])),{symbol:'Fe',label:'Fe1',x:0,y:0,z:0,occupancy:1,
+  visualOpacity:.5,visualHidden:true,labelText:'Fe(II)',labelOffset:[1,-.5]});
+ assert.equal(loaded.sites[1].labelOffset,undefined,'a zero offset is not stored');
+ assert.deepEqual(JSON.parse(JSON.stringify(loaded.clip)),{planes:[{h:0,k:0,l:1,distance:2,keep:'below',enabled:true}],integrity:'bonded'},
+  'the invalid (000) plane is dropped');
+ const again=api.loadProject(JSON.stringify(api.lastCrystalPayload(loaded)));
+ assert.deepEqual(JSON.parse(JSON.stringify(again.clip)),JSON.parse(JSON.stringify(loaded.clip)));
+ assert.equal(again.sites[0].labelText,'Fe(II)');
+ assert.throws(()=>api.loadProject(JSON.stringify({cell:{a:4,b:4,c:4,alpha:90,beta:90,gamma:90},sites:[{symbol:'Fe',x:0,y:0,z:0,labelText:'<b>'}]})),/Etiket metni/);
 });
 test('exported SHELX/CASTEP/QE/XSF/mCIF files read back through the editor importers',()=>{
  const SG=api.SPACE_GROUPS,pairsOf=key=>{const [c,o]=SG[key];return o.flatMap(op=>c.map(t=>[op,t]));};

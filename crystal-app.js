@@ -34,6 +34,7 @@ import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
+import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES} from './scene-controls.js';
 import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
 import {validateCif2Symmetry} from './cif2-symmetry.js';
 
@@ -138,7 +139,7 @@ function validatedVisualSite(site){
  if(site.visualScale!==undefined){const n=Number(site.visualScale);if(!Number.isFinite(n)||n<.2||n>3)throw Error('Atom stili ölçeği geçersiz.');out.visualScale=n;}
  if(site.polyColor!==undefined){if(!/^#[0-9a-fA-F]{6}$/.test(String(site.polyColor)))throw Error('Çokyüzlü rengi geçersiz.');out.polyColor=String(site.polyColor).toLowerCase();}
  if(site.polyOpacity!==undefined){const n=Number(site.polyOpacity);if(!Number.isFinite(n)||n<.05||n>1)throw Error('Çokyüzlü opaklığı geçersiz.');out.polyOpacity=n;}
- return out;
+ return Object.assign(out,validatedSiteAppearance(site));
 }
 let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',bondMode:'auto',nonPeriodic:false,nonPeriodicOrigin:[0,0,0],plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},planeLayers:[],rep:[2,2,2],bounds:DEFAULT_BOUNDS.map(v=>v.slice()),style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyCenters:[],polyColor:'#54a1db',polyOpacity:.25,polyCut:0,polyNeighbors:12,warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomRender=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer,measurementHistory=[];
@@ -3358,7 +3359,7 @@ function pointDefectModel(cell,sites,request){
  if(kind==='substitution'){
   if(target.symbol===symbol)throw Error('İkame elementi mevcut atomdan farklı olmalı.');
   const atom={...target,symbol,label:symbol+'_def'+(index+1)};
-  for(const key of ['adp','uIso','visualColor','visualScale','polyColor','polyOpacity','magneticMoment'])delete atom[key];
+  for(const key of ['adp','uIso','visualColor','visualScale','polyColor','polyOpacity','magneticMoment',...SITE_APPEARANCE_KEYS])delete atom[key];
   out[index]=atom;
   return {sites:out,description:target.symbol+' → '+symbol+' ikame · '+(index+1)+'. atom'};
  }
@@ -4063,7 +4064,7 @@ function atomDisplayRadius(symbol){
 }
 /* ---- Bond styles and hydrogen bonds ------------------------------------- */
 const BOND_STYLE_KEYS=['unicolor','bicolor','line','dashed'];
-let hydrogenBondCount=0;
+let hydrogenBondCount=0,clipHiddenCount=0;
 /* "Si-O 0.08" per line: bond radius (Å) for an element pair, any order. */
 function parseBondRadii(text){
  const radii=new Map();
@@ -4124,7 +4125,7 @@ function drawHydrogenBonds(entry){
 function build(){
  radiusFallbacks=new Set();sceneBoundsCache=null;
  // Runs once this synchronous build has finished and radius fallbacks are known.
- if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();updateHydrogenBondStatus();});
+ if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();updateHydrogenBondStatus();updateClipStatus();});
  const buildStarted=performance.now();
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
@@ -4162,8 +4163,39 @@ function build(){
   }
  }
  atomData=entry;
+ const bondStarted=performance.now();
+ const rules=parseBondRules(state.bondRules),bondPeriodic=bondIsPeriodic(state.bondMode,state.nonPeriodic);
+ const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
+ const key=(x,y,z)=>x+','+y+','+z;
+ for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
+ const adjacency=Array.from({length:entry.length},()=>[]);
+ let capReached=false,alternativeBondsSkipped=0;
+ const partialSites=visiblePhysical.filter(site=>partialOccupancyOpacity(site.occupancy)<1).length;
+ for(let i=0;i<entry.length;i++){
+  const p=entry[i].pos,b=ck(p);
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+   for(const j of buckets.get(key(b[0]+x,b[1]+y,b[2]+z))||[]){
+    if(j<=i)continue;
+    if(!bondPeriodic&&[0,1,2].some(k=>Math.floor(entry[i].frac[k]+1e-7)!==Math.floor(entry[j].frac[k]+1e-7)))continue;
+    const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut,state.autoBond);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
+    if(sitesAreAlternatives(entry[i].site,entry[j].site,d)){alternativeBondsSkipped++;continue;}
+    if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
+    bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
+   }
+  }
+ }
  const activePlane=state.plane.slab?planeNormal(state.plane.h,state.plane.k,state.plane.l,B):null;
- const visibleAtom=item=>!activePlane||Math.abs((state.plane.h*item.frac[0]+state.plane.k*item.frac[1]+state.plane.l*item.frac[2]-state.plane.offset)*activePlane.d)<=state.plane.thickness/2+1e-7;
+ const inSlab=item=>!activePlane||Math.abs((state.plane.h*item.frac[0]+state.plane.k*item.frac[1]+state.plane.l*item.frac[2]-state.plane.offset)*activePlane.d)<=state.plane.thickness/2+1e-7;
+ // V19: user-hidden sites and (hkl) clipping planes are display-only.
+ state.clip=normalizedClipSettings(state.clip);
+ const clipPlanes=state.clip.planes.filter(plane=>plane.enabled),clipSpacing=clipPlanes.map(plane=>planeNormal(plane.h,plane.k,plane.l,B).d);
+ const shownBase=entry.map(item=>!item.site.visualHidden&&inSlab(item));
+ const insideClip=clipPlanes.length?entry.map((item,i)=>shownBase[i]&&insideClipPlanes(item.frac,clipPlanes,clipSpacing)):shownBase;
+ const keptByClip=clipPlanes.length&&state.clip.integrity!=='cut'?
+  clipKeepMask(insideClip,bondPairs,state.clip.integrity).map((keep,i)=>keep&&shownBase[i]):insideClip;
+ entry.forEach((item,i)=>{item.shown=keptByClip[i];});
+ const visibleAtom=item=>item.shown;
+ clipHiddenCount=shownBase.filter((shown,i)=>shown&&!keptByClip[i]).length;
  const radiusScale=state.style==='space'?1.0:state.style==='stick'?.20:state.style==='wire'?.11:state.style==='poly'?.32:.52;
  const atomOpacity=state.style==='wire'?.72:1;
  let adpInvalid=0;
@@ -4174,7 +4206,7 @@ function build(){
   const shown=visibleAtom(item);
   atomRender[i]={size,visible:shown};
   const color=visualHex(item.site.visualColor,elementColor(item.site.symbol));
-  const occupancyOpacity=partialOccupancyOpacity(item.site.occupancy);
+  const occupancyOpacity=partialOccupancyOpacity(item.site.occupancy)*(item.site.visualOpacity??1);
   const groupKey=item.site.symbol+'|'+occupancyOpacity;
   if(!instanceGroups.has(groupKey))instanceGroups.set(groupKey,[]);
   if(shown)instanceGroups.get(groupKey).push({index:i,pos:item.pos,size,color,opacity:occupancyOpacity});
@@ -4230,34 +4262,13 @@ function build(){
    addLayerObject(mesh,'vestaVectors');drawn++;
   }
  }
- const bondStarted=performance.now();
- const rules=parseBondRules(state.bondRules),bondPeriodic=bondIsPeriodic(state.bondMode,state.nonPeriodic);
- const buckets=new Map(),size=Math.max(state.cut,...[...rules.values()].map(v=>v[1]));const ck=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)];
- const key=(x,y,z)=>x+','+y+','+z;
- for(let i=0;i<entry.length;i++){const b=ck(entry[i].pos),k=key(...b);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(i);}
- const adjacency=Array.from({length:entry.length},()=>[]);
- let capReached=false,alternativeBondsSkipped=0;
- const partialSites=visiblePhysical.filter(site=>partialOccupancyOpacity(site.occupancy)<1).length;
- for(let i=0;i<entry.length;i++){
-  const p=entry[i].pos,b=ck(p);
-  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
-   for(const j of buckets.get(key(b[0]+x,b[1]+y,b[2]+z))||[]){
-    if(j<=i)continue;
-    if(!bondPeriodic&&[0,1,2].some(k=>Math.floor(entry[i].frac[k]+1e-7)!==Math.floor(entry[j].frac[k]+1e-7)))continue;
-    const d=p.distanceTo(entry[j].pos),range=bondRange(entry[i].site.symbol,entry[j].site.symbol,rules,state.cut,state.autoBond);if(d<range[0]-1e-6||d>range[1]+1e-6)continue;
-    if(sitesAreAlternatives(entry[i].site,entry[j].site,d)){alternativeBondsSkipped++;continue;}
-    if(bondPairs.length>=MAX_BONDS){capReached=true;continue;}
-    bondPairs.push([i,j,d]);adjacency[i].push(j);adjacency[j].push(i);
-   }
-  }
- }
  if(state.bonds&&state.style!=='space'&&state.style!=='poly'){
   const style=BOND_STYLE_KEYS.includes(state.bondStyle)?state.bondStyle:'unicolor',coloured=style==='bicolor'||style==='line';
   const bondMat=new THREE.MeshStandardMaterial({color:coloured?0xffffff:state.style==='wire'?0x96a2ae:0x98a5b0,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
   const baseRadius=style==='line'?.018:state.style==='wire'?.012:state.style==='stick'?.095:.055;
   const pairRadii=parseBondRadii(state.bondRadii||'');
   const defaultBounds=state.bounds.every(([a,b])=>a===0&&b===1);
-  const periodic=state.plane.slab||!defaultBounds||!bondPeriodic?null:
+  const periodic=state.plane.slab||!defaultBounds||!bondPeriodic||clipPlanes.length||entry.some(item=>item.site.visualHidden)?null:
    periodicBondSegments(visiblePhysical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond,{split:coloured});
   // [start, end, site of this end, site at the other end]; sites give colour and pair radius.
   let pieces;
@@ -4283,7 +4294,17 @@ function build(){
  const bondFinished=performance.now();
  addCellLines(B,state.rep);drawMillerPlane(B);drawMorphology(B,center);drawOverlayStructures(B,center);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
- if(state.labels&&entry.length<=160)for(const item of entry){if(!visibleAtom(item))continue;const cv=document.createElement('canvas');cv.width=128;cv.height=64;const ctx=cv.getContext('2d');ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(item.site.symbol,64,47);const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));sprite.position.copy(item.pos).z+=.6;sprite.scale.set(1.0,.5,1);sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');}
+ if(state.labels&&entry.length<=160)for(const item of entry){
+  if(!visibleAtom(item)||item.site.labelHidden)continue;
+  const text=siteLabelText(item.site,'symbol'),cv=document.createElement('canvas'),ctx=cv.getContext('2d');
+  ctx.font='bold 42px sans-serif';cv.width=Math.max(128,Math.ceil((ctx.measureText?.(text).width||0)+20));cv.height=64;
+  ctx.fillStyle='#e8f5ff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText(text,cv.width/2,47);
+  const tx=new THREE.CanvasTexture(cv);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthWrite:false,transparent:true}));
+  sprite.position.copy(item.pos).z+=.6;sprite.scale.set(cv.width/128,.5,1);
+  // labelOffset is in em (42 px of the 64 px tall sprite); positive y moves the label up.
+  const [dx,dy]=item.site.labelOffset||[0,0];if(sprite.center)sprite.center.set(.5-dx*42/cv.width,.5-dy*42/64);
+  sprite.userData.disposableMaterial=true;addLayerObject(sprite,'labels');
+ }
  const polyStarted=performance.now();
  lastPolyStats={templates:0,reuses:0,templateBytes:0};
  let polyCount=0,polyTruncated=false,polyFailed=0,polyMissing=[],polyArea=0,polyVolume=0,polyRadius=0;
@@ -6058,7 +6079,7 @@ function initRepeatSteppers(){
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncRepeatSteppers();syncSgControls();$('bondRules').value=state.bondRules;
- syncViewPanel();syncPolyhedraElements();
+ syncViewPanel();syncPolyhedraElements();syncClipPanel();
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
  for(let axis=0;axis<3;axis++)for(let side=0;side<2;side++)$('bound'+['X','Y','Z'][axis]+(side?'Max':'Min')).value=state.bounds[axis][side];
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
@@ -6250,12 +6271,62 @@ function renderSiteStyleControls(){
  $('siteStyleScale').value=site.visualScale??1;
  $('sitePolyColor').value=visualHex(site.polyColor,state.polyColor||'#54a1db');
  $('sitePolyOpacity').value=site.polyOpacity??state.polyOpacity??.25;
+ $('siteStyleOpacity').value=site.visualOpacity??1;
+ $('siteStyleHidden').checked=!!site.visualHidden;$('siteLabelHidden').checked=!!site.labelHidden;
+ $('siteLabelText').value=site.labelText||'';
+ const [dx,dy]=site.labelOffset||[0,0];$('siteLabelDx').value=dx;$('siteLabelDy').value=dy;
 }
 function updateSiteVisual(field,raw){
  const site=state.sites[Number($('siteStyleSite').value)];if(!site)return;
- const candidate={...site,[field]:field.endsWith('Color')?raw:Number(raw)};
- try{validatedVisualSite(candidate);site[field]=candidate[field];build();}
- catch(error){inform(error.message);renderSiteStyleControls();}
+ const value=field.endsWith('Color')||field==='labelText'||typeof raw==='boolean'||Array.isArray(raw)?raw:Number(raw);
+ try{
+  // Validation drops neutral values (no text, zero offset, not hidden) so the project stays minimal.
+  const valid=validatedVisualSite({...site,[field]:value});
+  if(valid[field]===undefined)delete site[field];else site[field]=valid[field];
+  build();
+ }catch(error){inform(error.message);renderSiteStyleControls();}
+}
+function clipPlaneText(plane){
+ return '('+[plane.h,plane.k,plane.l].join(' ')+') '+(plane.keep==='below'?'≤ ':'≥ ')+plane.distance+' Å';
+}
+function syncClipPanel(){
+ if(!$('clipPlaneList'))return;
+ state.clip=normalizedClipSettings(state.clip);
+ $('clipIntegrity').value=state.clip.integrity;
+ $('clipPlaneList').replaceChildren(...state.clip.planes.map((plane,index)=>{
+  const item=document.createElement('li'),toggle=document.createElement('label'),box=document.createElement('input'),text=document.createElement('span'),remove=document.createElement('button');
+  box.type='checkbox';box.checked=plane.enabled;box.setAttribute('aria-label',clipPlaneText(plane)+' etkin');
+  box.onchange=()=>changeClip(clip=>{clip.planes[index].enabled=box.checked;});
+  text.textContent=clipPlaneText(plane);toggle.append(box,text);
+  remove.type='button';remove.className='del';remove.textContent='×';remove.title='Düzlemi kaldır';
+  remove.onclick=()=>changeClip(clip=>{clip.planes.splice(index,1);});
+  item.append(toggle,remove);return item;
+ }));
+ $('clipAdd').disabled=state.clip.planes.length>=MAX_CLIP_PLANES;
+ updateClipStatus();
+}
+function updateClipStatus(){
+ if(!$('clipStatus'))return;
+ const active=normalizedClipSettings(state.clip).planes.filter(plane=>plane.enabled).length;
+ const millerOnly=state.plane?.visible&&!state.plane?.slab;
+ $('clipStatus').textContent=[active?active+' etkin düzlem · '+clipHiddenCount+' atom görünümden çıkarıldı.':'',
+  millerOnly?'Miller düzlemi yalnız görsel bir katmandır; atomları kesmez (kesmek için dilim kalınlığını kullanın veya buraya düzlem ekleyin).':''].filter(Boolean).join(' ');
+}
+function changeClip(mutate){
+ runViewAction(()=>{
+  const clip=JSON.parse(JSON.stringify(normalizedClipSettings(state.clip)));mutate(clip);
+  state.clip=normalizedClipSettings(clip);build();syncClipPanel();
+ });
+}
+function initClipPanel(){
+ $('clipAdd').onclick=()=>runViewAction(()=>{
+  if(normalizedClipSettings(state.clip).planes.length>=MAX_CLIP_PLANES)throw Error('En çok '+MAX_CLIP_PLANES+' kesme düzlemi eklenebilir.');
+  const plane=validatedClipPlane({h:Number($('clipH').value),k:Number($('clipK').value),l:Number($('clipL').value),
+   distance:Number($('clipDistance').value),keep:$('clipKeep').value});
+  changeClip(clip=>{clip.planes.push(plane);});
+ });
+ $('clipClear').onclick=()=>changeClip(clip=>{clip.planes=[];});
+ $('clipIntegrity').onchange=()=>changeClip(clip=>{clip.integrity=$('clipIntegrity').value;});
 }
 function applyCell(){try{const c={};for(const k of ['a','b','c','alpha','beta','gamma'])c[k]=Number($(k).value);state.cell=validateCell(c);state.warning='';build();fit();}catch(e){inform(e.message);}}
 function applyRepeat(){const r=['ra','rb','rc'].map(x=>Number($(x).value));if(r.some(x=>!Number.isInteger(x)||x<1||x>6)){inform('Her eksende tekrar sayısı 1 ile 6 arasında tam sayı olmalıdır.');return;}state.rep=r;build();fit();}
@@ -8162,6 +8233,7 @@ function loadProject(json){
   bondRadii:typeof obj.bondRadii==='string'&&obj.bondRadii.length<=2000?obj.bondRadii:'',
   // Thresholds are clamped again where they are used (hydrogenBondSettings).
   hbonds:obj.hbonds&&typeof obj.hbonds==='object'?{enabled:obj.hbonds.enabled===true,maxHA:Number(obj.hbonds.maxHA),maxDA:Number(obj.hbonds.maxDA),minAngle:Number(obj.hbonds.minAngle)}:{enabled:false},
+  clip:normalizedClipSettings(obj.clip),
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
 
@@ -8282,7 +8354,8 @@ function lastCrystalPayload(current){
   vestaDisplayVectors:applicableVestaVectors(current),
   layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder),
   view:current.view,radiusSet:current.radiusSet||'default',ionicRadii:current.ionicRadii||{},colorScheme:current.colorScheme||'app',
-  bondStyle:current.bondStyle||'unicolor',bondRadii:current.bondRadii||'',hbonds:current.hbonds||{enabled:false}
+  bondStyle:current.bondStyle||'unicolor',bondRadii:current.bondRadii||'',hbonds:current.hbonds||{enabled:false},
+  clip:normalizedClipSettings(current.clip)
  };
 }
 function storeLastCrystal(storage,current){
@@ -9403,7 +9476,7 @@ function exportAtomDiscs(width,height){
    const p=screen(centre),edge=screen(centre.clone().addScaledVector(right,scale.x));if(!p||!edge)continue;
    if(obj.instanceColor)obj.getColorAt(i,color);else color.copy(material.color);
    const site=atomData[obj.userData.instanceAtomIndices?.[i]]?.site;
-   discs.push({x:p.x,y:p.y,r:Math.hypot(edge.x-p.x,edge.y-p.y),depth:p.depth,symbol:site?.symbol||'',
+   discs.push({x:p.x,y:p.y,r:Math.hypot(edge.x-p.x,edge.y-p.y),depth:p.depth,symbol:site?.symbol||'',site,
     label:site?.label||site?.symbol||'',color:'#'+color.getHexString(THREE.SRGBColorSpace)});
   }
  }
@@ -9418,7 +9491,8 @@ function exportOverlaySettings(){
  const labelPt=Number($('exportLabelPt').value),labelText=$('exportLabelText').value,compass=$('exportCompass').value;
  if(!EXPORT_LABEL_PT.includes(labelPt)||!['symbol','site'].includes(labelText)||!EXPORT_COMPASS_PLACES.includes(compass))
   throw Error('Figür öğesi ayarı geçersiz.');
- return {labelPt,labelText,compass,legend:$('exportLegend').checked,scaleBar:$('exportScaleBar').checked};
+ return {labelPt,labelText,compass,legend:$('exportLegend').checked,scaleBar:$('exportScaleBar').checked,
+  avoidOverlap:$('exportLabelAvoid')?.checked!==false};
 }
 // CSS pixels per typographic point: the page scale for a chosen width, else 96 DPI.
 function exportCssPxPerPt(rect){
@@ -9434,12 +9508,17 @@ function exportOverlayPrimitives(rect){
  const corner=(x,y)=>(y<height/2?'top-':'bottom-')+(x<width/2?'left':'right');
  const discs=exportAtomDiscs(width,height);
  // Labels sit above their atom and stay readable over neighbouring atoms.
- if(state.labels&&root.children.some(o=>o.userData.layer==='labels'&&o.visible))
-  for(const d of discs){
-   // Kept inside the figure: an atom at the top edge gets its label just inside.
-   const text=options.labelText==='site'?d.label:d.symbol,half=textOutline(text,{size:px}).width/2;
-   label(text,Math.min(width-half,Math.max(half,d.x)),Math.max(1.05*px,d.y-d.r-.3*px));
-  }
+ if(state.labels&&root.children.some(o=>o.userData.layer==='labels'&&o.visible)){
+  // Site label text/offset/visibility come from the per-site style; positions
+  // stay inside the figure and, unless switched off, avoid each other.
+  const shown=discs.filter(d=>!d.site?.labelHidden).map(d=>{const text=siteLabelText(d.site||d,options.labelText);
+   return {...d,text,width:textOutline(text,{size:px}).width,height:px,offset:d.site?.labelOffset};}).filter(d=>d.text);
+  const placed=options.avoidOverlap?placeLabels(shown,{width,height}):
+   shown.map(d=>placeLabels([{...d,offset:d.offset||[0,0]}],{width,height})[0]);
+  shown.forEach((d,i)=>label(d.text,placed[i].x,placed[i].y));
+  const clashes=placed.filter(p=>p.overlap).length;
+  if(clashes)notes.push(clashes+' etiket başka bir etiketle çakışıyor; yazı boyutunu küçültün veya konum etiket ofseti verin.');
+ }
  if(options.compass!=='none'&&axisGizmoParts.length){
   // The live gizmo letters are 13 units of a 120-unit box: size the box from the label size.
   const size=px*120/13;let left,top;
@@ -9912,7 +9991,7 @@ function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.string
  vestaDisplayVectors:applicableVestaVectors(state),
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale,
  view:state.view,radiusSet:state.radiusSet||'default',ionicRadii:state.ionicRadii||{},colorScheme:state.colorScheme||'app',
- bondStyle:state.bondStyle||'unicolor',bondRadii:state.bondRadii||'',hbonds:state.hbonds||{enabled:false}},null,2),'application/json');}
+ bondStyle:state.bondStyle||'unicolor',bondRadii:state.bondRadii||'',hbonds:state.hbonds||{enabled:false},clip:normalizedClipSettings(state.clip)},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
@@ -11390,7 +11469,7 @@ function initPolyhedraTable(){
 function bind(){
  initWorkspaceUi();
  initRightSidebarTabs();
- initViewPanel();initGeometryTable();initBondStylePanel();initPolyhedraTable();
+ initViewPanel();initGeometryTable();initBondStylePanel();initPolyhedraTable();initClipPanel();
  initDftTracking();
  initQeProtocols();
  initLibrary();
@@ -11523,10 +11602,13 @@ function bind(){
  };
  window.addEventListener('crystal-language-change',renderDisorderSummary);
  $('siteStyleSite').onchange=renderSiteStyleControls;
- for(const [id,field] of [['siteStyleColor','visualColor'],['siteStyleScale','visualScale'],['sitePolyColor','polyColor'],['sitePolyOpacity','polyOpacity']])
+ for(const [id,field] of [['siteStyleColor','visualColor'],['siteStyleScale','visualScale'],['sitePolyColor','polyColor'],['sitePolyOpacity','polyOpacity'],['siteStyleOpacity','visualOpacity'],['siteLabelText','labelText']])
   $(id).onchange=event=>updateSiteVisual(field,event.target.value);
+ for(const [id,field] of [['siteStyleHidden','visualHidden'],['siteLabelHidden','labelHidden']])
+  $(id).onchange=event=>updateSiteVisual(field,event.target.checked);
+ for(const id of ['siteLabelDx','siteLabelDy'])$(id).onchange=()=>updateSiteVisual('labelOffset',[Number($('siteLabelDx').value),Number($('siteLabelDy').value)]);
  $('siteStyleReset').onclick=()=>{const site=state.sites[Number($('siteStyleSite').value)];if(!site)return;
-  for(const key of ['visualColor','visualScale','polyColor','polyOpacity'])delete site[key];renderSiteStyleControls();build();};
+  for(const key of ['visualColor','visualScale','polyColor','polyOpacity',...SITE_APPEARANCE_KEYS])delete site[key];renderSiteStyleControls();build();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible'])$(k).addEventListener('change',e=>{
   const oldStyle=state.style;state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;

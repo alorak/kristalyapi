@@ -57,6 +57,8 @@ window.__visualTest={
  // Cosine between the camera's view-out direction and the c lattice vector.
  // Distinct instance colours of bond meshes and of atoms (two-colour bonds reuse atom colours).
  instanceColors:layer=>{const out=new Set(),c=new THREE.Color();for(const o of root.children){if(o.userData.layer!==layer||!o.isInstancedMesh||!o.instanceColor)continue;for(let i=0;i<o.count;i++){o.getColorAt(i,c);out.add(c.getHexString());}}return [...out].sort();},
+ atomInstances:()=>atomMesh.reduce((sum,mesh)=>sum+mesh.count,0),
+ labelCount:()=>root.children.filter(o=>o.userData.layer==='labels').length,
  cameraAlongCell:()=>{const c=basis(state.cell)[2].clone().normalize(),out=camera.position.clone().sub(orbit.target).normalize();return out.dot(c);},
  morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
  moleculeBonds:()=>{const water=xyzData('3\\nH2O\\nO 0 0 0\\nH .9584 0 0\\nH -.239 0 .927');
@@ -445,6 +447,47 @@ try{
  assert.match(shelx.suggestedFilename(),/\.res$/);
  const shelxText=await fs.readFile(await shelx.path(),'utf8');
  assert.match(shelxText,/^TITL /);assert.match(shelxText,/\nLATT -?\d\n/);assert.match(shelxText,/\nSFAC /);assert.match(shelxText,/\nEND\n$/);
+ // V19: (hkl) clipping planes with integrity options and per-site appearance.
+ const change=(id,value)=>page.evaluate(([id,value])=>{const el=document.getElementById(id);
+  if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));},[id,value]);
+ const allAtoms=await page.evaluate(()=>window.__visualTest.atomInstances());
+ const cellC=await page.evaluate(()=>Number(document.getElementById('c').value));
+ for(const [id,value] of [['clipH',0],['clipK',0],['clipL',1],['clipDistance',(cellC/2).toFixed(3)],['clipKeep','below']])
+  await page.evaluate(([id,value])=>{document.getElementById(id).value=value;},[id,value]);
+ await page.evaluate(()=>document.getElementById('clipAdd').click());
+ const clipped=await page.evaluate(()=>window.__visualTest.atomInstances());
+ assert.ok(clipped>0&&clipped<allAtoms,'a (001) plane at c/2 hides the upper atoms: '+clipped+' of '+allAtoms);
+ assert.match(await page.locator('#clipStatus').textContent(),/1 (etkin düzlem|enabled planes)/);
+ assert.equal(await page.locator('#clipPlaneList li').count(),1);
+ await change('clipIntegrity','bonded');
+ const bonded=await page.evaluate(()=>window.__visualTest.atomInstances());
+ assert.ok(bonded>=clipped&&bonded<=allAtoms,'keeping bonded neighbours shows at least the cut atoms: '+bonded);
+ await page.evaluate(()=>document.querySelector('#clipPlaneList input[type=checkbox]').click());
+ assert.equal(await page.evaluate(()=>window.__visualTest.atomInstances()),allAtoms,'a disabled plane does not clip');
+ await page.evaluate(()=>document.getElementById('clipClear').click());
+ await change('clipIntegrity','cut');
+ assert.equal(await page.locator('#clipPlaneList li').count(),0);
+ await change('siteStyleSite','0');
+ await change('siteStyleHidden',true);
+ const withoutSite=await page.evaluate(()=>window.__visualTest.atomInstances());
+ assert.ok(withoutSite<allAtoms,'hiding a site removes its atoms from the view');
+ await change('siteStyleHidden',false);
+ assert.equal(await page.evaluate(()=>window.__visualTest.atomInstances()),allAtoms);
+ if(allAtoms<=160){
+  await change('siteLabelText','Q1');
+  await change('labels',true);
+  assert.ok(await page.evaluate(()=>window.__visualTest.labelCount())>0);
+  await page.locator('#saveBtn').click();
+  const [labelSvg]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="svg"]').click()]);
+  const labelSvgText=await fs.readFile(await labelSvg.path(),'utf8');
+  assert.match(labelSvgText,/data-text="Q1"/,'the site label text reaches the vector export');
+  await change('siteLabelHidden',true);
+  await page.locator('#saveBtn').click();
+  const [hiddenSvg]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="svg"]').click()]);
+  assert.doesNotMatch(await fs.readFile(await hiddenSvg.path(),'utf8'),/data-text="Q1"/,'a hidden label is not exported');
+  await change('labels',false);
+ }
+ await page.evaluate(()=>document.getElementById('siteStyleReset').click());
  // Undo restores the previous appearance; reset returns to the original scene.
  await page.locator('[data-right-tool="view"]').click();
  await page.locator('#viewAppearanceReset').click();
