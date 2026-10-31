@@ -50,7 +50,7 @@ function parserFromHtml(filename) {
   for(const [moduleName,names] of [
    ['cif2-lex.js',['isCif2','tokenizeCif2']],
    ['cif2-symmetry.js',['validateCif2Symmetry']],
-   ['cif2-document.js',['readCif2Document','listCif2Structures','selectCif2Structure']]
+   ['cif2-document.js',['readCif2Document','listCif2Structures','selectCif2Structure','safeCif2Metadata']]
   ]){
    const helperPath=path.join(path.dirname(filename),moduleName);
    const code=fs.readFileSync(helperPath,'utf8').replace(/^export /gm,'').replace(/^import .*?;\s*$/gm,'');
