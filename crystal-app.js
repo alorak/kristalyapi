@@ -6494,6 +6494,9 @@ function cifProvenanceFromSource(source){
 }
 function originalCifRecord(current,text){
  if(typeof text!=='string'||text.length>4000000)throw Error('Orijinal CIF metni geçersiz.');
+ // A selected block of a multi-block CIF2 must NEVER cause a later
+ // "unchanged source" export to silently emit multiple other crystals.
+ if(isCif2(text)&&readCif2Document(text).blocks.length!==1)return null;
  return {text,fingerprint:cifScientificFingerprint(current),provenance:cifProvenanceFromSource(text)};
 }
 function cifMetaFromTags(tags){const result={};for(const k of CIF_META_TAGS)if(typeof tags[k]==='string'&&!['?','.'].includes(tags[k]))result[k]=tags[k].slice(0,600);return result;}
@@ -6700,7 +6703,7 @@ function cifData(src,selectedCif2Block=null){
  }
  const label=String(cif2Selection?.name||src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
  return {cif2TypedMetadata,cif2BlockName:cif2Selection?.name||'',name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,
-  warning:[assumption,cif2?'CIF2 V18.2: selected '+cif2Selection.name+' (from '+cif2Selection.blockCount+' data blocks); typed metadata '+cif2Selection.ignoredCompoundNames.length+' tags not mapped into crystal physics; '+cif2Selection.ignoredSaveFrames+' save frames ignored.':'',cif2MetadataWarning,excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
+  warning:[assumption,cif2?'CIF2 V18.2: selected '+cif2Selection.name+' (from '+cif2Selection.blockCount+' data blocks); typed metadata '+cif2Selection.ignoredCompoundNames.length+' tags not mapped into crystal physics; '+cif2Selection.ignoredSaveFrames+' save frames ignored. '+(cif2Selection.blockCount>1?'Original multi-block source will not be exported as one selected structure.':''):'',cif2MetadataWarning,excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
   cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){
