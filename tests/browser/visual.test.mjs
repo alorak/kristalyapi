@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs/promises';
+import zlib from 'node:zlib';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -1245,7 +1246,7 @@ try{
  assert.equal(await page.locator('#xrdMapSize option').count(),3);
  assert.deepEqual(await page.locator('#fcfMapKind option').evaluateAll(options=>
   options.map(opt=>opt.value)),
-  ['difference','observed','twice-observed','weighted-main','weighted-difference']);
+  ['difference','observed','twice-observed','weighted-main','weighted-difference','sigmaa-main','sigmaa-difference']);
  assert.equal(await page.locator('#mtzFreeExclude option').count(),3);
  assert.equal(await page.locator('#mtzFomMode option').count(),2);
  assert.equal(await page.locator('#mtzMinSnr').getAttribute('min'),'0');
@@ -1879,6 +1880,24 @@ try{
   const [alignCsv]=await Promise.all([sp.waitForEvent('download'),sp.evaluate(()=>document.querySelector('[data-overlay-csv="0"]').click())]);
   assert.match(await fs.readFile(await alignCsv.path(),'utf8'),/^primary,overlay,element,displacement_A/);
  }finally{await settingContext.close();}
+ // V20: σA-weighted 2mFo−DFc from the real Refmac MTZ (5wkd, C2) with FC_ALL / PHIC_ALL.
+ const mtzContext=await browser.newContext({viewport:{width:1280,height:800}});
+ try{
+  const mp=await mtzContext.newPage();mp.on('pageerror',error=>errors.push(error.message));
+  await mp.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
+  await mp.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
+  // The reflections must belong to the active cell.
+  await mp.evaluate(()=>{for(const [id,v] of [['a',50.347],['b',4.777],['c',14.746],['alpha',90],['beta',101.73],['gamma',90]])document.getElementById(id).value=v;
+   document.getElementById('applyCell').click();});
+  await mp.evaluate(()=>{document.getElementById('mtzFcColumn').value='1:FC_ALL';document.getElementById('mtzPhaseColumn').value='1:PHIC_ALL';});
+  const wkd=zlib.gunzipSync(await fs.readFile(path.join(base,'tests/fixtures/gemmi-5wkd_phases.mtz.gz')));
+  await mp.locator('#fcfFile').setInputFiles({name:'5wkd.mtz',mimeType:'application/octet-stream',buffer:wkd});
+  await mp.waitForFunction(()=>/Fcalc|yansıma|reflections/.test(document.querySelector('#fcfStatus')?.textContent||''));
+  await mp.evaluate(()=>{const set=(id,v)=>{const el=document.getElementById(id);el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}));};
+   set('fcfMapKind','sigmaa-main');set('xrdMapSize','64');set('xrdMapResolution','1.8');document.getElementById('fcfMapAdd').click();});
+  await mp.waitForFunction(()=>/σA (kabukları|shells)/.test(document.querySelector('#fcfStatus')?.textContent||''),null,{timeout:20000});
+  assert.match(await mp.locator('#fcfStatus').textContent(),/σA (kabukları|shells): [\d.]+–[\d.]+ Å σA 0\.\d{3}/);
+ }finally{await mtzContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));

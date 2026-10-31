@@ -36,6 +36,7 @@ import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
 import {alignPhases,alignmentCsv} from './phase-alignment.js';
 import {refineExtremum,voronoiPartition} from './volume-analysis.js';
+import {sigmaAWeights,sigmaACoefficients} from './sigmaa.js';
 import {findSettingTransform,transformStructure,describeSettingTransform,asymmetricUnit} from './setting-transform.js';
 import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES,bondPairKey,parseBondPairStyles,normalizedDotSurface,dotSurfacePoints,normalizedMomentStyle,momentArrowLength} from './scene-controls.js';
 import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
@@ -5669,7 +5670,8 @@ function fcfReflectionSelection(cell,fcf,{size=32,dMin=1.2}={}){
 function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMode='raw',
  minSignalToNoise=0,freeFlagValue=null,fomMode='off'}={}){
  const weighted=kind==='weighted-main'||kind==='weighted-difference';
- if(!['difference','observed','twice-observed','weighted-main','weighted-difference'].includes(kind)||
+ const sigmaa=kind==='sigmaa-main'||kind==='sigmaa-difference',preweighted=weighted||sigmaa;
+ if(!['difference','observed','twice-observed','weighted-main','weighted-difference','sigmaa-main','sigmaa-difference'].includes(kind)||
    !['raw','lsq'].includes(scaleMode)||!['off','multiply'].includes(fomMode)||
    !Number.isFinite(minSignalToNoise)||minSignalToNoise<0||minSignalToNoise>100||
    freeFlagValue!==null&&(!Number.isInteger(freeFlagValue)||freeFlagValue<0||freeFlagValue>999))
@@ -5677,11 +5679,18 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
  if(weighted&&!fcf?.mtz)throw Error('Ağırlıklı FWT/DELFWT katsayıları MTZ gerektirir.');
  if(weighted&&fomMode!=='off')
   throw Error('FWT/DELFWT zaten rafine edilmiş ağırlık içerir; FOM yeniden çarpılamaz.');
- const source=weighted?(kind==='weighted-main'?fcf.mtz.weightedMain:fcf.mtz.weightedDifference):fcf?.reflections;
+ if(sigmaa&&(!fcf?.mtz?.symmetryOperations?.length||!fcf.hasPhases||!fcf.hasCalc))
+  throw Error('σA ağırlıklı harita, uzay grubu işlemleri olan ve Fo, Fc, φc içeren bir MTZ gerektirir.');
+ if(sigmaa&&fomMode!=='off')throw Error('σA haritası kendi m ağırlığını kullanır; FOM ayrıca çarpılamaz.');
+ // V20: m and D from a shell-wise maximum-likelihood σA (Read 1986); free reflections
+ // chosen for exclusion do not enter the σA estimate and are left out of the map.
+ const sigmaaResult=sigmaa?sigmaAWeights(fcf.reflections,fcf.cell||cell,fcf.mtz.symmetryOperations.map(op=>op.R),{freeFlagValue}):null;
+ const source=sigmaa?sigmaACoefficients(sigmaaResult,kind==='sigmaa-main'?'main':'difference'):
+  weighted?(kind==='weighted-main'?fcf.mtz.weightedMain:fcf.mtz.weightedDifference):fcf?.reflections;
  if(!source?.length)throw Error('İstenen MTZ ağırlıklı harita katsayıları/fazları yok.');
- if(!weighted&&!fcf?.hasPhases)
+ if(!preweighted&&!fcf?.hasPhases)
   throw Error('FCF/MTZ model fazları yok; faz bilgisi eksik, Fobs tek başına Fourier haritası üretmez.');
- if(!weighted&&kind!=='observed'&&!fcf.hasCalc)
+ if(!preweighted&&kind!=='observed'&&!fcf.hasCalc)
   throw Error('Fo−Fc haritası için Fcalc genlikleri gerekli.');
  if(minSignalToNoise>0&&!fcf?.mtz?.optionalColumns.sigma)
   throw Error('Fo/σ eşiği için MTZ SIGFP sütunu gerekli.');
@@ -5690,7 +5699,7 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
  if(fomMode==='multiply'&&!fcf?.mtz?.optionalColumns.fom)
   throw Error('FOM çarpanı için MTZ FOM sütunu gerekli.');
  let skippedSignal=0,skippedFree=0,skippedMissingQuality=0;
- const measuredFo=weighted&&minSignalToNoise>0?
+ const measuredFo=preweighted&&minSignalToNoise>0?
   new Map(fcf.reflections.map(r=>[[r.h,r.k,r.l].join(','),r.fo])):null;
  const reflections=source.filter(r=>{
   if(freeFlagValue!==null){
@@ -5702,7 +5711,7 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
     skippedMissingQuality++;return false;
    }
    // Signal-to-noise gate always uses measured Fo, not preweighted FWT.
-   const obs=weighted?measuredFo.get([r.h,r.k,r.l].join(',')):r.fo;
+   const obs=preweighted?measuredFo.get([r.h,r.k,r.l].join(',')):r.fo;
    if(!Number.isFinite(obs)){skippedMissingQuality++;return false;}
    if(obs/r.sigma<minSignalToNoise){skippedSignal++;return false;}
   }
@@ -5714,7 +5723,7 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
  if(selected.reflections.some(r=>!Number.isFinite(r.rad)))
   throw Error('FCF yansımalarının tümünde hesaplanan faz gerekli.');
  let scale=1;
- if(!weighted&&kind!=='observed'&&scaleMode==='lsq'){
+ if(!preweighted&&kind!=='observed'&&scaleMode==='lsq'){
   let numerator=0,denominator=0;
   for(const r of selected.reflections){numerator+=r.fo*r.fc;denominator+=r.fc*r.fc;}
   if(denominator<=1e-15||numerator<=0)throw Error('Fo/Fc LSQ ölçeği hesaplanamadı; sıfır Fcalc veya Fo.');
@@ -5724,14 +5733,15 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
  const re=new Float64Array(size**3),im=new Float64Array(size**3);
  const idx=(h,k,l)=>((h+size)%size*size+(k+size)%size)*size+(l+size)%size;
  for(const r of selected.reflections){
-  const base=weighted?r.fo:kind==='observed'?r.fo:
+  const base=preweighted?r.fo:kind==='observed'?r.fo:
    (kind==='twice-observed'?2*r.fo:r.fo)-scale*r.fc;
   const amp=base*(fomMode==='multiply'?r.fom:1);
   const a=idx(r.h,r.k,r.l),b=idx(-r.h,-r.k,-r.l);
   re[a]=re[b]=amp*Math.cos(r.rad);im[a]=amp*Math.sin(r.rad);im[b]=-im[a];
  }
  const label=kind==='difference'?'FO-FC':kind==='twice-observed'?'2FO-FC':
-  kind==='weighted-main'?'FWT':kind==='weighted-difference'?'DELFWT':'FOBS';
+  kind==='weighted-main'?'FWT':kind==='weighted-difference'?'DELFWT':
+  kind==='sigmaa-main'?'2MFO-DFC':kind==='sigmaa-difference'?'MFO-DFC':'FOBS';
  const result=fourierGridFromCoefficients(cell,size,re,im,label,'göreli F/Å³');
  result.experimental={kind,used:selected.reflections.length,
   skipped:selected.skippedResolution+selected.skippedNyquist+
@@ -5741,10 +5751,14 @@ function observedFourierMap(cell,fcf,{kind='difference',size=32,dMin=1.2,scaleMo
   observed:source.length,clippedNegativeFo2:fcf.clippedNegativeFo2||0,
   sourceCell:selected.sourceCell,gridP1Possible:selected.gridP1Possible,
   gridP1Coverage:selected.gridP1Possible?selected.reflections.length/selected.gridP1Possible:null,
-  scaleMode:weighted||kind==='observed'?'not-applicable':scaleMode,
+  scaleMode:preweighted||kind==='observed'?'not-applicable':scaleMode,
   fcScale:scale,minSignalToNoise,freeFlagValue,fomMode,
   modelPhased:!weighted,
-  warning:weighted?
+  sigmaA:sigmaaResult?{shells:sigmaaResult.shells,used:sigmaaResult.used}:null,
+  warning:sigmaa?
+   'σA ağırlıklı '+(kind==='sigmaa-main'?'2mFo−DFc (merkezcil yansımada mFo)':'mFo−DFc')+' katsayıları: σA her çözünürlük kabuğunda en büyük olabilirlikle tahmin edildi (Read 1986), m ve D yansıma başına hesaplandı. '+
+    'Kabuk içinde σA sabittir; toplu çözücü/anizotropi düzeltmesi yapılmaz, bu yüzden bunları içeren Fc (ör. FC_ALL/PHIC_ALL) önerilir. Faz modelden gelir (model yanlılığı vardır).':
+   weighted?
    'MTZ '+label+'/'+(kind==='weighted-main'?'PHWT':'PHDELWT')+
     ' katsayıları haritaya doğrudan aktarıldı; refinman σA/m/D ağırlıkları dosyada hazırdır, burada hesaplanmaz. '+
     'Gemmi ile karşılaştırılan, seçili çözünürlük/Nyquist ızgarasında model kaynaklı fazlar ve orijin korunur.':
@@ -6038,7 +6052,8 @@ function initStage3Analyses(){
     dMin:Number($('xrdMapResolution').value),size:Number($('xrdMapSize').value),
     minSignalToNoise:Number($('mtzMinSnr').value),
     freeFlagValue:exclude==='none'?null:Number(exclude),fomMode:$('mtzFomMode').value});
-   addVolumeDataset(g,(fcf.mtz?'MTZ':'SHELX')+' '+(kind==='difference'?'Fo−Fc':kind==='twice-observed'?'2Fo−Fc':kind==='weighted-main'?'FWT':kind==='weighted-difference'?'DELFWT':'Fo')+' ('+(kind.startsWith('weighted-')?'rafine katsayı':'model fazlı')+')');
+   addVolumeDataset(g,(fcf.mtz?'MTZ':'SHELX')+' '+(kind==='difference'?'Fo−Fc':kind==='twice-observed'?'2Fo−Fc':kind==='weighted-main'?'FWT':kind==='weighted-difference'?'DELFWT':
+    kind==='sigmaa-main'?'2mFo−DFc':kind==='sigmaa-difference'?'mFo−DFc':'Fo')+' ('+(kind.startsWith('weighted-')?'rafine katsayı':kind.startsWith('sigmaa-')?'σA, model fazlı':'model fazlı')+')');
    if($('volumeMode').value==='off')$('volumeMode').value='both';
    volumeSyncIsoControls();volumeRefreshDatasetUi();volumeControlChanged();
    const e=g.experimental;
@@ -6047,7 +6062,8 @@ function initStage3Analyses(){
     e.skippedSignal+' Fo/σ dışı · '+e.skippedFree+' FREE dışı · '+
     e.skippedMissingQuality+' kalite verisi eksik'+
     (e.gridP1Coverage===null?'':(' · P1 ızgara kapsama '+(100*e.gridP1Coverage).toFixed(1)+'%'))+
-    (!kind.startsWith('weighted-')&&kind!=='observed'?' · Fc ölçeği '+e.fcScale.toFixed(5)+' ('+e.scaleMode+')':'')+
+    (!kind.startsWith('weighted-')&&!kind.startsWith('sigmaa-')&&kind!=='observed'?' · Fc ölçeği '+e.fcScale.toFixed(5)+' ('+e.scaleMode+')':'')+
+    (e.sigmaA?' · σA kabukları: '+e.sigmaA.shells.map(s=>s.dMax.toFixed(2)+'–'+s.dMin.toFixed(2)+' Å σA '+s.sigmaA.toFixed(3)+' ⟨m⟩ '+s.meanM.toFixed(2)).join('; '):'')+
     (e.clippedNegativeFo2?' · negatif F²: '+e.clippedNegativeFo2:'')+
     (fcf.mtz?' · MTZ eksik satır: '+fcf.mtz.skippedMissing:'')+'. '+e.warning;
    setRightSidebarTab('volume');

@@ -1016,8 +1016,8 @@ işi olarak açma.
   projeksiyon kontrolü, Pages/PWA ve merge-only CI.
 - [ ] Gerçek CIF2/DDLm corpus, compound science
   sözlük eşlemesi ve daha erişilebilir blok seçim UI.
-- [ ] V18.3 Hall/setting/origin dönüşümleri;
-  V18.4 mCIF2 ve ADP/disorder.
+- [x] V18.3 Hall/setting/origin dönüşümleri (#200).
+- [ ] V18.4 mCIF2 ve ADP/disorder.
 
 [V18.2 kapsamı ve kabul sınırları](tests/validation/PACKAGE_18_2_STATUS.md).
 
@@ -1144,10 +1144,19 @@ işi olarak açma.
 - [ ] 24 MB / 2.5M voksel sınırını büyütmek gerekiyorsa
   Worker/chunk/streaming/iptal/aygıt bütçesi; kontrolsüz downsample
   veya sessiz fazla bellek tüketimi yok.
-- [ ] Model Fourier/Patterson, FCF/MTZ gözlenen veriye bağlı
-  Fo−Fc/2Fo−Fc, ağırlıklı katsayı ve gerektiğinde Laplasyen için
-  faz, sigma/FOM/FREE, ölçek, d_min ve fiziksel model ayrımı.
-  Eksik deneysel fazı üretildi sayma.
+- [x] FCF/MTZ gözlenen veriye bağlı Fo−Fc/2Fo−Fc ve ağırlıklı katsayı;
+  faz, sigma/FOM/FREE, ölçek, d_min ve fiziksel model ayrımı. Eksik
+  deneysel fazı üretildi sayma. **Yapıldı (V20):** ham/LSQ, FOM ve
+  hazır FWT/DELFWT'ye ek olarak uygulamada σA ağırlıklı 2mFo−DFc
+  (merkezcilde mFo) ve mFo−DFc: σA kabuk başına en büyük olabilirlik
+  (Read 1986), ε/merkezcillik uzay grubu işlemlerinden, m = I₁/I₀ veya
+  tanh, D = σA√(Σo/Σc); seçilen FREE yansımaları σA tahminine girmez.
+  Doğrulama: ε/merkezcillik Gemmi ile birebir; bağımsız SciPy
+  tahmincisiyle σA 2·10⁻⁵ içinde; gerçek 5wkd'de Refmac FWT/DELFWT ile
+  karmaşık korelasyon > 0,98/0,94, harita korelasyonu > 0,97/0,90;
+  benzetilmiş veride bilinen σA ±0,03 içinde geri bulunur.
+- [ ] σA'nın kabuklar arası düzgünleştirilmesi, toplu çözücü/anizotropik
+  ölçek, model Patterson ve Laplasyen haritaları.
 - [x] Voronoi ≠ Bader; subvoxel min/max için grid yakınsaması, sayısal
   integral ve hata raporu. **Yapıldı (V20 P1):** Voronoi artık her vokseli
   toplar (toplam = ızgara integrali, eski blok-merkezi örneklemesinin
