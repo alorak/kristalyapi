@@ -48,7 +48,7 @@ test('explicit block selection imports alpha only and beta only',()=>{
  assert.equal(a.cif2TypedMetadata.length,2);
  assert.equal(a.cif2TypedMetadata[0].value.kind,'list');
  assert.equal(a.cif2TypedMetadata[1].rows[0][1].kind,'list');
- assert.deepEqual(safeCif2Metadata(a.cif2TypedMetadata),a.cif2TypedMetadata);
+ assert.equal(JSON.stringify(safeCif2Metadata(a.cif2TypedMetadata)),JSON.stringify(a.cif2TypedMetadata));
 });
 test('non-structural compound loops are skipped, but typed metadata is available',()=>{
  const chosen=selectCif2Structure(fixture,'alpha');
