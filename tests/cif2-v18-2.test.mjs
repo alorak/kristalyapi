@@ -93,7 +93,7 @@ test('quoted directive-shaped metadata must not become structural parser control
  const crafted=fixture.replace('_cell_length_a 5','_cell_length_a 5\n_local_note "loop_"');
  const selected=selectCif2Structure(crafted,'alpha');
  assert.ok(!selected.tokens.includes('_local_note'));
- assert.ok(selected.ignoredCompoundNames.includes('_local_note')===false);
+ assert.ok(selected.ignoredCompoundNames.includes('_local_note'),'omitted control-like metadata must appear in the loss audit');
  const science=fixture.replace('_cell_length_a 5','_cell_length_a "loop_"');
  assert.throws(()=>selectCif2Structure(science,'alpha'),/reserved keyword cannot be converted/);
 });
