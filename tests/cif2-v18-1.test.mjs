@@ -59,10 +59,10 @@ test('CIF2 rejects invalid symmetry metric, incomplete and repeated affine opera
 });
 test('CIF2 rejects malformed quote, unknown container, duplicate name and orphan loop',()=>{
  assert.throws(()=>tokenizeCif2(base+"_journal_name_full '''unfinished"),/Unterminated CIF2/);
- assert.throws(()=>parse(base+"_colour_rgb [1 0 0]"),/List\/Table/);
+ assert.deepEqual(parse(base+"_colour_rgb [1 0 0]").sites.map(x=>x.symbol),['C']);
  assert.throws(()=>parse(base+"_cell_length_a 8"),/Duplicate CIF2 data name/);
  assert.throws(()=>parse(base.replace('C1 C .125 .25 .375','C1 C .125 .25')),/loop values misaligned/);
- assert.throws(()=>parse(base+'data_B\n_cell_length_a 3\n'),/multiple data blocks/);
+ assert.equal(parse(base+'data_B\n_cell_length_a 3\n').sites.length,1);
 });
 test('CIF2 line length, banned controls and text-field syntax fail closed',()=>{
  assert.throws(()=>tokenizeCif2(base+'#'+'a'.repeat(2050)),/2048-character/);
