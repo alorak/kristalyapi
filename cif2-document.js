@@ -165,6 +165,49 @@ export function readCif2Document(source){
  if(!blocks.length)throw Error('CIF2 requires a data_ block');
  return {schema:'CIF2_TYPED_AST_V18_2',blocks};
 }
+/* Preserve only audited, nonstructural typed metadata in project snapshots.
+ * Zero-length metadata is valid. Reject malformed user-edited project JSON.
+ */
+export function safeCif2Metadata(raw){
+ if(raw===undefined||raw===null)return [];
+ if(!Array.isArray(raw)||raw.length>256)throw Error('Invalid CIF2 typed metadata');
+ const visit=(node,depth=0)=>{
+  if(depth>12||!node||typeof node!=='object')throw Error('Invalid CIF2 metadata nesting');
+  if(node.kind==='scalar'){
+   if(typeof node.value!=='string'||node.value.length>8192||typeof node.quoted!=='boolean')
+    throw Error('Invalid CIF2 metadata string');
+   return {kind:'scalar',value:node.value,quoted:node.quoted};
+  }
+  if(node.kind==='list'){
+   if(!Array.isArray(node.items)||node.items.length>512)throw Error('Invalid CIF2 metadata List');
+   return {kind:'list',items:node.items.map(v=>visit(v,depth+1))};
+  }
+  if(node.kind==='table'){
+   if(!Array.isArray(node.entries)||node.entries.length>512)throw Error('Invalid CIF2 metadata Table');
+   const seen=new Set();
+   return {kind:'table',entries:node.entries.map(entry=>{
+    if(typeof entry.key!=='string'||entry.key.length>256)throw Error('Invalid CIF2 Table key');
+    const key=nameKey(entry.key);
+    if(seen.has(key))throw Error('Duplicate CIF2 Table key');
+    seen.add(key);return {key:entry.key,value:visit(entry.value,depth+1)};
+   })};
+  }
+  throw Error('Unsupported CIF2 metadata kind');
+ };
+ const out=raw.map(entry=>{
+  if(typeof entry.name==='string'&&/^_[a-z0-9_.-]{1,128}$/i.test(entry.name))
+   return {name:entry.name,value:visit(entry.value)};
+  if(Array.isArray(entry.names)&&entry.names.length<=64&&
+      entry.names.every(n=>typeof n==='string'&&/^_[a-z0-9_.-]{1,128}$/i.test(n))&&
+      Array.isArray(entry.rows)&&entry.rows.length<=512&&entry.rows.every(row=>
+       Array.isArray(row)&&row.length===entry.names.length))
+   return {names:entry.names.slice(),rows:entry.rows.map(row=>row.map(v=>visit(v)))};
+  throw Error('Invalid CIF2 typed metadata entry');
+ });
+ if(JSON.stringify(out).length>60000)throw Error('CIF2 typed metadata exceeds 60 KB project limit');
+ return out;
+}
+
 export function listCif2Structures(source){
  const doc=readCif2Document(source);
  return doc.blocks.map(block=>{
