@@ -34,7 +34,7 @@ import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
-import {readCif2Document,listCif2Structures,selectCif2Structure} from './cif2-document.js';
+import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
 import {validateCif2Symmetry} from './cif2-symmetry.js';
 
 const $ = id => document.getElementById(id);
@@ -6312,7 +6312,7 @@ function loadPreset(key){
  if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
- state.cifMeta={};state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
+ state.cifMeta={};state.cif2TypedMetadata=[];state.cif2BlockName='';state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
  state.cut=ex.cut;state.warning='';state.poly='';state.polyCenters=[];state.polyCut=0;state.polyNeighbors=12;state.polyColor='#54a1db';state.polyOpacity=.25;state.rep=[1,1,1];state.bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());
  state.bondRules='';state.bondMode='auto';state.nonPeriodic=false;state.bonds=true;state.autoBond=true;state.style='ball';state.boundary=true;state.cellVisible=true;
  state.plane={h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2};state.planeLayers=[];
@@ -6324,7 +6324,7 @@ function loadPreset(key){
 function createEmptyStructure(){
  if(densityGrid)resetVolume();
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
- state.cifMeta={};state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
+ state.cifMeta={};state.cif2TypedMetadata=[];state.cif2BlockName='';state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
  state.cell={a:5,b:5,c:5,alpha:90,beta:90,gamma:90};
  state.sites=atoms('Si',[[0,0,0]]);state.rep=[1,1,1];state.bounds=DEFAULT_BOUNDS.map(pair=>pair.slice());
  state.poly='';state.polyCenters=[];state.polyColor='#54a1db';state.polyOpacity=.25;state.polyCut=0;state.polyNeighbors=12;state.warning='';state.sgNumber=1;state.sgSetting='1';state.boundary=true;state.cellVisible=true;
@@ -6528,6 +6528,14 @@ function cifData(src,selectedCif2Block=null){
  // ambiguous multi-block content before any crystallographic interpretation.
  const cif2Selection=cif2?selectCif2Structure(src,selectedCif2Block):null;
  const cif2Tokens=cif2Selection?.tokens||null;
+ let cif2TypedMetadata=[],cif2MetadataWarning='';
+ if(cif2Selection){
+  try{cif2TypedMetadata=safeCif2Metadata(cif2Selection.typedMetadata);}
+  catch(error){
+   if(!/exceeds 60 KB/.test(error.message))throw error;
+   cif2MetadataWarning='CIF2 bileşik üstveri 60 KB sınırını aştığı için proje snapshot\'ına alınmadı.';
+  }
+ }
  // A genuine IUCr supplementary CIF can have a metadata-only data_global
  // followed by precisely one structural data_ block. Isolate that block:
  // never mix its cell/atom loops with the global records or a second crystal.
@@ -6691,8 +6699,8 @@ function cifData(src,selectedCif2Block=null){
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
  const label=String(cif2Selection?.name||src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
- return {name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,
-  warning:[assumption,cif2?'CIF2 V18.2: selected '+cif2Selection.name+' (from '+cif2Selection.blockCount+' data blocks); typed metadata '+cif2Selection.ignoredCompoundNames.length+' tags not mapped into crystal physics; '+cif2Selection.ignoredSaveFrames+' save frames ignored.':'',excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
+ return {cif2TypedMetadata,cif2BlockName:cif2Selection?.name||'',name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,
+  warning:[assumption,cif2?'CIF2 V18.2: selected '+cif2Selection.name+' (from '+cif2Selection.blockCount+' data blocks); typed metadata '+cif2Selection.ignoredCompoundNames.length+' tags not mapped into crystal physics; '+cif2Selection.ignoredSaveFrames+' save frames ignored.':'',cif2MetadataWarning,excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
   cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){
@@ -8099,7 +8107,7 @@ function loadProject(json){
  if(!Array.isArray(nonPeriodicOrigin)||nonPeriodicOrigin.length!==3||
    nonPeriodicOrigin.some(n=>!Number.isFinite(n)||Math.abs(n)>1e6))
   throw Error('Periyodik olmayan yapı konum ofseti geçersiz.');
- return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,bounds,style,cut,autoBond:obj.autoBond!==false,bondMode,nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:[...nonPeriodicOrigin],sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,morphology,morphVisible:!!obj.morphVisible,overlays,poly,polyCenters,polyColor:visualHex(obj.polyColor,'#54a1db'),polyOpacity,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
+ return {name:String(obj.name||'Kristal proje').slice(0,150),detail:String(obj.detail||'Kaydedilmiş proje').slice(0,200),cell:obj.cell,sites,warning:'',rep,bounds,style,cut,autoBond:obj.autoBond!==false,bondMode,nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:[...nonPeriodicOrigin],sgNumber:n,sgSetting:setting,symmetryEnabled:!!obj.symmetryEnabled,bondRules,plane,planeLayers,morphology,morphVisible:!!obj.morphVisible,overlays,poly,polyCenters,polyColor:visualHex(obj.polyColor,'#54a1db'),polyOpacity,polyCut,polyNeighbors,cifMeta:cifMetaValid(obj.cifMeta),cif2TypedMetadata:safeCif2Metadata(obj.cif2TypedMetadata),cif2BlockName:typeof obj.cif2BlockName==='string'?obj.cif2BlockName.slice(0,128):'',cifComposition:typeof obj.cifComposition==='string'?obj.cifComposition.slice(0,1000):'',
   adpVisible:!!obj.adpVisible,adpLevel:[50,90,99].includes(+obj.adpLevel)?+obj.adpLevel:50,
   vestaDisplayVectors:validatedVestaDisplayVectors(obj.vestaDisplayVectors,sites.map(site=>site.label)),
   layers:normalizedLayerState(obj.layers),layerOrder:normalizedLayerOrder(obj.layerOrder),
@@ -8225,7 +8233,7 @@ function lastCrystalPayload(current){
   sgSetting:current.sgSetting,symmetryEnabled:current.symmetryEnabled,
   bondRules:current.bondRules,plane:current.plane,planeLayers:current.planeLayers||[],
   morphology:current.morphology||[],morphVisible:!!current.morphVisible,overlays:current.overlays||[],
-  cifMeta:cifMetaValid(current.cifMeta),cifComposition:current.cifComposition||'',adpVisible:!!current.adpVisible,adpLevel:current.adpLevel||50,
+  cifMeta:cifMetaValid(current.cifMeta),cif2TypedMetadata:safeCif2Metadata(current.cif2TypedMetadata),cif2BlockName:current.cif2BlockName||'',cifComposition:current.cifComposition||'',adpVisible:!!current.adpVisible,adpLevel:current.adpLevel||50,
   bonds:current.bonds,cellVisible:current.cellVisible,boundary:current.boundary,
   labels:current.labels,axes:current.axes,autoRotate:current.autoRotate,
   atomScale:current.atomScale,poly:current.poly,polyCenters:current.polyCenters,polyColor:current.polyColor,polyOpacity:current.polyOpacity,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors,
@@ -8737,7 +8745,7 @@ async function importFile(file,selectedFiles=[file]){
  if(workspaceId!==activeWorkspaceId)throw Error('File loading changed workspaces; please try again.');
  if(densityGrid)resetVolume();
  const {vesta,...structure}=obj;
- state={...state,...structure,vestaDisplayVectors:structure.vestaDisplayVectors||[],cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:obj.nonPeriodicOrigin||[0,0,0],bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
+ state={...state,...structure,vestaDisplayVectors:structure.vestaDisplayVectors||[],cifOriginal:null,overlays:obj.overlays||[],cifMeta:cifMetaValid(obj.cifMeta),cif2TypedMetadata:safeCif2Metadata(obj.cif2TypedMetadata),cif2BlockName:obj.cif2BlockName||'',cifComposition:obj.cifComposition||'',adpVisible:!!obj.adpVisible,adpLevel:obj.adpLevel||50,sgNumber:obj.sgNumber||1,sgSetting:obj.sgSetting||'1',symmetryEnabled:!!obj.symmetryEnabled,autoBond:obj.autoBond!==false,bondMode:obj.bondMode||'auto',nonPeriodic:!!obj.nonPeriodic,nonPeriodicOrigin:obj.nonPeriodicOrigin||[0,0,0],bondRules:obj.bondRules||'',plane:obj.plane||{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},rep:obj.rep||[1,1,1],bounds:obj.bounds||DEFAULT_BOUNDS.map(pair=>pair.slice()),planeLayers:obj.planeLayers||[],poly:obj.poly||'',polyCenters:normalizedPolyCenters(obj.polyCenters,obj.poly,obj.sites),polyColor:obj.polyColor||'#54a1db',polyOpacity:obj.polyOpacity??.25,polyCut:obj.polyCut??0,polyNeighbors:obj.polyNeighbors??12,boundary:obj.boundary!==false};state.sites=state.sites.map((s,i)=>({...s,symbol:cleanSymbol(s.symbol),label:s.label||('Atom '+(i+1)),x:Number(s.x),y:Number(s.y),z:Number(s.z)}));
  if(isCif&&name.endsWith('.json')===false)state.cifOriginal=originalCifRecord(state,str);
  syncControls();build();
  if(vesta){
@@ -9858,7 +9866,7 @@ async function exportVestaLossReport(){
 
 function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.stringify({format:'kristalyapi-v1',name:state.name,detail:state.detail,cell:state.cell,sites:state.sites,rep:state.rep,bounds:state.bounds||DEFAULT_BOUNDS,style:state.style,cut:state.cut,autoBond:state.autoBond,bondMode:state.bondMode||'auto',nonPeriodic:!!state.nonPeriodic,nonPeriodicOrigin:state.nonPeriodicOrigin||[0,0,0],sgNumber:state.sgNumber,sgSetting:state.sgSetting,symmetryEnabled:state.symmetryEnabled,bondRules:state.bondRules,plane:state.plane,planeLayers:state.planeLayers||[],
  morphology:state.morphology||[],morphVisible:!!state.morphVisible,overlays:state.overlays||[],poly:state.poly,polyCenters:state.polyCenters,polyColor:state.polyColor,polyOpacity:state.polyOpacity,polyCut:state.polyCut,polyNeighbors:state.polyNeighbors,
- cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
+ cifMeta:cifMetaValid(state.cifMeta),cif2TypedMetadata:safeCif2Metadata(state.cif2TypedMetadata),cif2BlockName:state.cif2BlockName||'',cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
  vestaDisplayVectors:applicableVestaVectors(state),
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale,
  view:state.view,radiusSet:state.radiusSet||'default',ionicRadii:state.ionicRadii||{},colorScheme:state.colorScheme||'app',
