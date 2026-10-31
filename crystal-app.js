@@ -33,6 +33,8 @@ import { applyVesta3SiteAppearance,vesta3SectionTransferReport } from './vesta-p
 import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
+import {isCif2,tokenizeCif2} from './cif2-lex.js';
+import {validateCif2Symmetry} from './cif2-symmetry.js';
 
 const $ = id => document.getElementById(id);
 const PERIODIC_SYMBOLS=('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
@@ -6489,6 +6491,10 @@ function cifProvenanceSafeValue(value){
  return '"'+s+'"';
 }
 function cifProvenanceFromSource(source){
+ // Never reinterpret CIF2 quoted/list-valued provenance with CIF1 grammar.
+ // If edited, produce a clean generated CIF1 structure without inventing
+ // source metadata; unchanged original text can still be preserved verbatim.
+ if(isCif2(source))return {scalars:[],loops:[]};
  const t=tokenizeCif(source),scalars=[],loops=[],seen=new Set();
  const eligible=key=>/^_(?:publ_author|citation|journal)_[a-z0-9_]+$/.test(key);
  // CIF '?' and '.' are missing-value tokens, distinct from quoted literal
@@ -6554,10 +6560,15 @@ function rotateMagneticMoment(moment,operation,cell){
 }
 
 function cifData(src){
+ const cif2=isCif2(src);
+ // CIF2 is only accepted as a strict, single-block scalar/loop subset.
+ // This preflight rejects unsupported List/Table, duplicate names and
+ // ambiguous multi-block content before any crystallographic interpretation.
+ const cif2Tokens=cif2?tokenizeCif2(src):null;
  // A genuine IUCr supplementary CIF can have a metadata-only data_global
  // followed by precisely one structural data_ block. Isolate that block:
  // never mix its cell/atom loops with the global records or a second crystal.
- const markers=[...src.matchAll(/(?:^|\n)[ \t]*data_([^\s#]+)/gi)];
+ const markers=cif2?[]:[...src.matchAll(/(?:^|\n)[ \t]*data_([^\s#]+)/gi)];
  let excludedGlobal=false;
  if(markers.length>1){
   const blocks=markers.map((m,i)=>({
@@ -6570,7 +6581,7 @@ function cifData(src){
    throw Error('CIF birden çok data_ bloğu içeriyor. Farklı kristalleri birleştirmemek için tek yapı bloğu seçin.');
   src=structures[0].body;excludedGlobal=true;
  }
- const t=tokenizeCif(src),tags={},loops=[];let i=0;
+ const t=cif2?cif2Tokens:tokenizeCif(src),tags={},loops=[];let i=0;
  while(i<t.length){
   const k=t[i++];if(k.toLowerCase()==='loop_'){const cols=[];while(i<t.length&&t[i].startsWith('_'))cols.push(t[i++].toLowerCase());if(!cols.length)continue;const rows=[];while(i<t.length&&!t[i].startsWith('_')&&!/^(loop_|data_|save_|stop_)$/i.test(t[i])&&!/^data_/i.test(t[i])){const row=t.slice(i,i+cols.length);if(row.length<cols.length)break;rows.push(row);i+=cols.length;}if(cols.length===1&&rows.length===1&&cols[0].startsWith('_cell_'))tags[cols[0]]=rows[0][0];loops.push({cols,rows});}
   else if(k.startsWith('_')&&i<t.length)tags[k.toLowerCase()]=t[i++];
@@ -6641,7 +6652,14 @@ function cifData(src){
  const byName=Object.entries(SPACE_NAMES).find(([_,value])=>canon(value)===canon(sg));
  const sgNumber=Number.isInteger(numeric)&&numeric>=1&&numeric<=230?numeric:(byName?+byName[0]:1);
  const key=preferredSetting(sgNumber);
+ let cif2Symmetry=null;
+ if(cif2){
+  if(hasMagnetism)throw Error('CIF2 magnetic moment/operation combination is not supported in V18.1');
+  if(explicitSymmetry)cif2Symmetry=validateCif2Symmetry(sym,c,applySymmetry);
+  else if(sgNumber!==1)throw Error('CIF2 non-P1 group without explicit operations: setting/origin cannot be safely assumed');
+ }
  let operations=sym.map(op=>[op,'0,0,0']),assumption='';
+ if(cif2&&cif2Symmetry)assumption='CIF2 explicit symmetry operations validated against cell metric and group closure. IT setting/origin NOT inferred from group number; source operators are authoritative.';
  if(hasMagnetism){
   if(magOps.length){
    const centering=magCenter.length?magCenter:[parseMagneticOperation('x,y,z,+1')];
@@ -6711,7 +6729,7 @@ function cifData(src){
  }
  const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
  return {name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,
-  warning:[assumption,excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
+  warning:[assumption,cif2?'CIF2 V18.1: triple-quoted scalar/loop subset; nested List/Table and save frames rejected.':'',excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
   cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){

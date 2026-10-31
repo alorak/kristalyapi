@@ -44,6 +44,20 @@ function parserFromHtml(filename) {
   const source=script.slice(0,boundary).replace(/^import .*?;\s*$/gm,'');
   const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,document:{getElementById(){return null;}}};
   vm.createContext(context);
+  // Load only our two bounded, pure CIF2 helpers into the same isolated VM.
+  // Browser imports are stripped above; otherwise CIF2 would be undefined
+  // in independent CI measurements. No arbitrary npm modules are executed.
+  for(const [moduleName,names] of [
+   ['cif2-lex.js',['isCif2','tokenizeCif2']],
+   ['cif2-symmetry.js',['validateCif2Symmetry']]
+  ]){
+   const helperPath=path.join(path.dirname(filename),moduleName);
+   const code=fs.readFileSync(helperPath,'utf8').replace(/^export /gm,'');
+   const bridge=vm.runInContext('(function(){'+code+
+      ';return {'+names.map(name=>name+':'+name).join(',')+'};})()',context,
+      {timeout:5000,filename:moduleName});
+   for(const name of names)context[name]=bridge[name];
+  }
   vm.runInContext(source+'\nthis.__cifParser = cifData; this.__cifExportText = cifExportText; this.__originalCifRecord = originalCifRecord; this.__cifExportPreservingSource = cifExportPreservingSource;',context,{timeout:15000,filename:src?'browser-crystal-app.js':'browser-index-inline.js'});
   if(typeof context.__cifParser!=='function')throw Error('cifData() not found');
   // Keep the callable parser API stable; expose the SAME production exporter
