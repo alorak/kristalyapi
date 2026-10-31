@@ -1002,6 +1002,29 @@ işi olarak açma.
   desteklenen stiller için fark matrisi. Kayıplı alanlar başarılı
   **kayıpsız** dönüşüm olarak raporlanmaz.
 
+### V18.1 — CIF2 güvenli skaler içe aktarımı ve açık simetri
+
+- [x] CIF2 zorunlu sürüm başlığı, Unicode, üçlü tırnak
+  metni ve skaler/loop altkümesi için bağımsız sınırlı lexer.
+- [x] List/Table, save/global ve birden fazla data_
+  bloğunda sessiz CIF1 yanlış okuması yerine açık ret;
+  CIF1 yolu değişmedi.
+- [x] Açık xyz işlemleri için tamsayı R, det ±1,
+  hücre Gram metriği Rᵀ G R=G, identity ve mod-1
+  kompozisyon kapanışı. CIF2 SG>1 operatörsüzse
+  setting/origin uydurulmadan ret.
+- [x] P−1 ve P2₁ CIF2 fixture, Node parser regresyonu,
+  Gemmi 0.7.4 bağımsız karşılaştırması, Pages/PWA
+  ve merge-only CI doğrulaması.
+- [ ] V18.2 typed List/Table, çoklu data_ bloğu ve
+  seçilmiş yapı; gerçek CIF2 corpus.
+- [ ] V18.3 Hall, unique axis, origin ve setting
+  dönüşümlerinin Gemmi kaynaklı matematiksel teyidi.
+- [ ] V18.4 CIF2 manyetik simetri/ADP/disorder
+  fiziksel doğruluğu. Tam CIF2 NOT_SUPPORTED.
+
+[Paket 18.1 kapsamı ve testleri](tests/validation/PACKAGE_18_1_STATUS.md).
+
 ### V18 — P1 · CIF2, simetri/setting ve manyetik doğruluk
 
 - [ ] CIF1/CIF2, çoklu blok, karışık/alternatif occupancy, site ADP,
