@@ -46,7 +46,7 @@ test('explicit block selection imports alpha only and beta only',()=>{
 });
 test('non-structural compound loops are skipped, but typed metadata is available',()=>{
  const chosen=selectCif2Structure(fixture,'alpha');
- assert.deepEqual(chosen.ignoredCompoundNames,[' _invalid_placeholder'].filter(Boolean).slice(1).concat(['_local_source_collection','_local_rgb_name','_local_rgb_value']));
+ assert.deepEqual(chosen.ignoredCompoundNames,['_local_source_collection','_local_rgb_name','_local_rgb_value']);
  assert.equal(chosen.typedMetadata.length,2);
  assert.equal(chosen.typedMetadata[1].rows[0][1].kind,'list');
  assert.equal(chosen.tokens.includes('_local_rgb_value'),false);
@@ -69,9 +69,12 @@ test('table keys must be quoted with adjacent colon and be unique',()=>{
  const duplicate=fixture.replace("'nested':{","'rgb':{");
  assert.throws(()=>readCif2Document(duplicate),/duplicate Table key/);
 });
-test('CIF2 lists use whitespace not comma-separated STAR syntax',()=>{
- const bad=fixture.replace('[1 0.25 0]','[1,0.25,0]');
- assert.throws(()=>readCif2Document(bad),/comma|List|invalid/i);
+test('CIF2 comma string is not misread as a three-entry list',()=>{
+ const altered=fixture.replace('[1 0.25 0]','[1,0.25,0]');
+ const parsed=readCif2Document(altered);
+ const rgb=parsed.blocks[0].entries.find(item=>item.name==='_local_rgb').value;
+ assert.equal(rgb.items.length,1);
+ assert.equal(rgb.items[0].value,'1,0.25,0');
 });
 test('nested containers have strict end delimiters, depth and size bounds',()=>{
  assert.throws(()=>readCif2Document(fixture.replace('{"remark":','{"remark"')),/immediately adjacent colon|quoted/);
