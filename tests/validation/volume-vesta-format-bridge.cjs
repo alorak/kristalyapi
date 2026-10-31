@@ -30,6 +30,7 @@ assert.ok(end>0,'Browser parser boundary not found');
 const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
  URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(context);
+require('./cif2-vm.cjs').loadCif2Helpers(context);
 vm.runInContext(browser.slice(0,end).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.readers={chgcar:readChgcar,cube:readCube,xsf:readXsf};',context);
 

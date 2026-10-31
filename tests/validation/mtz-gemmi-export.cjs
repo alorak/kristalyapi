@@ -10,6 +10,7 @@ const core=fs.readFileSync(path.join(root,'tests','core.test.cjs'),'utf8');
 const vectors=core.slice(core.indexOf('class Vector3'),core.indexOf('const htmlShell'));
 const context={URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(context);
+require('./cif2-vm.cjs').loadCif2Helpers(context);
 vm.runInContext(vectors+'\nthis.__Vector3=Vector3;',context);
 context.THREE={Vector3:context.__Vector3,SphereGeometry:class{},CylinderGeometry:class{}};
 const marker=app.indexOf('// @kristalyapi/browser-bootstrap:');

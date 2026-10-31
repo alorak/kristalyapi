@@ -18,6 +18,7 @@ const index=source.indexOf('// @kristalyapi/browser-bootstrap:');
 if(index<0)throw Error('Browser bootstrap marker missing');
 const context={THREE:{Vector3,SphereGeometry:class {},CylinderGeometry:class {}},URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(context);
+require('./cif2-vm.cjs').loadCif2Helpers(context);
 vm.runInContext(source.slice(0,index).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.ccp4Read=readCcp4Map;',context);
 const filepath=process.argv[2];

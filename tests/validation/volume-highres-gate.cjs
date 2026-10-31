@@ -22,6 +22,7 @@ assert.ok(end>0);
 const parse={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
  URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(parse);
+require('./cif2-vm.cjs').loadCif2Helpers(parse);
 vm.runInContext(app.slice(0,end).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.ccp4Read=readCcp4Map;',parse);
 const ctx={self:{postMessage(){}},Float32Array,Float64Array,Uint8ClampedArray,Math};

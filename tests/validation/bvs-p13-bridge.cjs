@@ -26,6 +26,7 @@ const end=script.indexOf('// @kristalyapi/browser-bootstrap:');
 assert.ok(end>0,'Production module bootstrap boundary missing');
 const context={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},URLSearchParams,URL,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(context);
+require('./cif2-vm.cjs').loadCif2Helpers(context);
 vm.runInContext(script.slice(0,end).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.bvs=bondValenceSum;this.centerAlternatives=bvsCenterAlternatives;'+
  'this.vestaProjection=vesta3ManualBvsProjection;this.coordGeometry=coordinationGeometry;'+

@@ -25,6 +25,7 @@ assert.ok(boundary>0,'missing validated browser bootstrap boundary');
 const parseCtx={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
  URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(parseCtx);
+require('./cif2-vm.cjs').loadCif2Helpers(parseCtx);
 vm.runInContext(src.slice(0,boundary).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.read=readCcp4Map;this.toCube=volumeCubeText;this.fromCube=readCube;'+
  'this.toXsf=volumeXsfText;this.fromXsf=readXsf;this.normalize=interpretVolumeUnits;',parseCtx);
