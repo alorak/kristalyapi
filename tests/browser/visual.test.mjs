@@ -1839,6 +1839,29 @@ try{
    JSON.stringify({workerParity,firstHeavy,workerHeavy,liveStart,liveSlice,line,cached,cancel,finished,sliceWorkerStats},null,2));
 
  }finally{await importContext.close();}
+ // V18.3: P1 diamond → asymmetric unit of Fd-3m, then origin choice 1 → 2.
+ const settingContext=await browser.newContext({viewport:{width:1280,height:800}});
+ try{
+  const sp=await settingContext.newPage();sp.on('pageerror',error=>errors.push(error.message));
+  await sp.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
+  await sp.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
+  const visible=async()=>Number((await sp.locator('#totalSummary').textContent()).match(/^(\d+)/)[1]);
+  const p1Visible=await visible();
+  assert.equal(await sp.locator('#siteRows tr').count(),8,'built-in silicon starts as eight P1 sites');
+  await sp.evaluate(()=>{const s=document.getElementById('spaceGroup');s.value='227';s.dispatchEvent(new Event('change',{bubbles:true}));});
+  await sp.evaluate(()=>document.getElementById('recoverSymmetry').click());
+  assert.equal(await sp.locator('#siteRows tr').count(),1,'one asymmetric Si site in Fd-3m');
+  assert.equal(await sp.locator('#useSymmetry').isChecked(),true);
+  assert.equal(await visible(),p1Visible,'the expanded structure shows the same atoms');
+  assert.equal(await sp.evaluate(()=>document.getElementById('settingTransformRow').hidden),false);
+  await sp.evaluate(()=>{const s=document.getElementById('settingTarget');s.value='227-2';document.getElementById('settingTransform').click();});
+  assert.equal(await sp.locator('#sgSetting').inputValue(),'227-2');
+  const coords=await sp.evaluate(()=>['x','y','z'].map(k=>Number(document.querySelector('#siteRows input[name='+k+']').value)));
+  assert.deepEqual(coords,[.875,.875,.875],'origin choice 2 puts Si at 8a (7/8,7/8,7/8) ≡ (1/8,1/8,1/8)');
+  // Origin 1 has Si on the cell faces (boundary copies are drawn); origin 2 has none,
+  // so the 2×2×2 view shows exactly 8 atoms per cell.
+  assert.equal(await visible(),8*8,'the transformation keeps eight Si per conventional cell');
+ }finally{await settingContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');
  await fs.writeFile(path.join(artifacts,'metrics.json'),JSON.stringify(metrics,null,2));

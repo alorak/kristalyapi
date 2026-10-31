@@ -34,6 +34,7 @@ import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
+import {findSettingTransform,transformStructure,describeSettingTransform,asymmetricUnit} from './setting-transform.js';
 import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES,bondPairKey,parseBondPairStyles,normalizedDotSurface,dotSurfacePoints,normalizedMomentStyle,momentArrowLength} from './scene-controls.js';
 import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
 import {validateCif2Symmetry} from './cif2-symmetry.js';
@@ -3746,8 +3747,10 @@ function applyMoyoCell(primitive){
   const r=moyoApplyCell(moyoCache.dataset,primitive,state.cell,sites);
   const sg=moyoCache.dataset.number,hm=moyoCache.dataset.hm_symbol,hall=moyoCache.dataset.hall_number;
   applyStandardizedCell(r,primitive?'moyo primitive':'moyo conventional');
+  // V18.3: in the conventional cell, take the symmetry back as an asymmetric unit when it checks out.
+  const recovered=primitive?null:recoverSymmetry(sg,{quiet:true});
   $('moyoResult').textContent='SG #'+sg+' '+hm+' (Hall '+hall+') · '+r.transform.setting+
-   ' hücreye gerçek matris ve orijin kayması uygulandı. Yeni atomlar P1 olarak saklandı.';
+   ' hücreye gerçek matris ve orijin kayması uygulandı. '+(recovered?'Simetri doğrulandı: '+recovered+'.':'Yeni atomlar P1 olarak saklandı.');
   $('moyoApplyConventional').disabled=true;$('moyoApplyPrimitive').disabled=true;
   moyoCache=null;
  }catch(error){inform('SG dönüşümü: '+error.message);}
@@ -3755,6 +3758,8 @@ function applyMoyoCell(primitive){
 
 function initStandardizationControls(){
  $('moyoDetect').onclick=analyzeMoyoCrystal;
+ $('recoverSymmetry').onclick=()=>{try{inform('Simetri doğrulandı: '+recoverSymmetry(state.sgNumber)+'.');}catch(error){inform(error.message);}};
+ $('settingTransform').onclick=()=>{try{transformToSetting($('settingTarget').value);}catch(error){inform('Ayar dönüşümü: '+error.message);}};
  $('moyoApplyConventional').onclick=()=>applyMoyoCell(false);
  $('moyoApplyPrimitive').onclick=()=>applyMoyoCell(true);
  $('niggliReduce').onclick=()=>{
@@ -3864,6 +3869,52 @@ function syncSgControls(){
  $('sgSummary').textContent=(SPACE_NAMES[state.sgNumber]||'SG '+state.sgNumber)+' · '+ops.length+' simetri işlemi · '+(state.symmetryEnabled?'Asimetrik atomlar genişletiliyor.':'Mevcut P1 atomları doğrudan gösteriliyor.');
  const wy=$('wyckoff');wy.replaceChildren();for(const site of w){const o=document.createElement('option');o.value=site[0];o.textContent=site[1]+site[0]+' · '+site[2]+' · '+site[3];wy.append(o);}
  $('wyckoffInfo').textContent=w.length+' Wyckoff sınıfı; Atom tablosunda simetri açıkken Wyckoff harfi ve çokluğu, mümkünse otomatik belirlenir. 60 konumu aşan yapılarda sınıflama atlanır.';
+ const others=keys.filter(k=>k!==state.sgSetting);
+ $('settingTransformRow').hidden=$('settingTransformNote').hidden=!others.length;
+ $('settingTarget').replaceChildren(...others.map(k=>{const o=document.createElement('option');o.value=k;o.textContent=k===String(state.sgNumber)?'Standart ayar':k.replace(/^\d+-/,'');return o;}));
+}
+/* V18.3: re-express the structure in another setting of the same group. */
+function transformToSetting(target){
+ if(!sgKeys(state.sgNumber).includes(target)||target===state.sgSetting)throw Error('Hedef ayar aynı uzay grubunun başka bir ayarı olmalı.');
+ const transform=findSettingTransform(settingOps(state.sgSetting),settingOps(target));
+ if(!transform)throw Error('Bu iki ayar arasında doğrulanmış bir dönüşüm bulunamadı.');
+ const before=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,MAX_ATOMS).length:state.sites.length;
+ const result=transformStructure(validateCell(state.cell),state.sites,transform);
+ const cell=validateCell(result.cell);
+ if(state.symmetryEnabled&&!validateSymmetryMetric(cell,target))throw Error('Dönüştürülen hücre hedef ayarın metriğiyle uyumsuz.');
+ if(state.symmetryEnabled){
+  const after=expandSites(result.sites,target,MAX_ATOMS,cell).length;
+  // Conventional-cell content scales with the cell volume (det P).
+  if(Math.abs(after-before*transform.det)>1e-6)throw Error('Dönüşüm hücre başına atom sayısını korumadı ('+before+' → '+after+').');
+ }
+ if(densityGrid)resetVolume();
+ const text=describeSettingTransform(transform);
+ state.cell=cell;state.sites=result.sites;state.sgSetting=target;state.cifOriginal=null;
+ state.plane={...state.plane,visible:false,slab:false};state.planeLayers=[];state.morphology=[];state.morphVisible=false;
+ stage3Planes=[];lastBvs=null;lastXrd=null;renderStage3Planes();
+ state.detail=(state.detail||'')+' · ayar dönüşümü: '+text;
+ inform('Ayar dönüşümü tamamlandı ('+target.replace(/^\d+-/,'')+'): '+text+'. '+result.notes.join(' ')+' Miller düzlemleri ve morfoloji eski eksenlere bağlı olduğu için temizlendi.');
+ syncControls();renderSites();build();fit();
+}
+/* V18.3: P1 structure → asymmetric unit of the selected space group. */
+function recoverSymmetry(number,{quiet=false}={}){
+ if(state.symmetryEnabled)throw Error('Yapı zaten simetri ile genişletiliyor; önce P1 atom listesine geçin.');
+ const tolerance=Number($('moyoTolerance')?.value||.001)*10;
+ const errors=[];
+ for(const key of sgKeys(number)){
+  if(!validateSymmetryMetric(state.cell,key))continue;
+  try{
+   const reduced=asymmetricUnit(state.cell,state.sites,settingOps(key),{tolerance:Math.max(.005,tolerance)});
+   if(expandSites(reduced.sites,key,MAX_ATOMS).length!==state.sites.length)throw Error('genişletilen atom sayısı tutmuyor');
+   state.sites=reduced.sites;state.sgNumber=number;state.sgSetting=key;state.symmetryEnabled=true;state.cifOriginal=null;
+   const text=reduced.sites.length+' asimetrik konum · '+(SPACE_NAMES[number]||'SG '+number)+' ('+(key===String(number)?'standart ayar':'ayar '+key.replace(/^\d+-/,''))+')';
+   state.detail=(state.detail||'')+' · '+text;
+   syncControls();renderSites();build();
+   return text;
+  }catch(error){errors.push(key+': '+error.message);}
+ }
+ if(quiet)return null;
+ throw Error('Yapı seçili uzay grubunun hiçbir ayarında değişmez değil. '+(errors[0]||'Hücre metriği uyumsuz.'));
 }
 
 
