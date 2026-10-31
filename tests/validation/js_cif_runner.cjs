@@ -51,8 +51,8 @@ function parserFromHtml(filename) {
    ['cif2-lex.js',['isCif2','tokenizeCif2']],
    ['cif2-symmetry.js',['validateCif2Symmetry']]
   ]){
-   const filename=path.join(path.dirname(filename),moduleName);
-   const code=fs.readFileSync(filename,'utf8').replace(/^export /gm,'');
+   const helperPath=path.join(path.dirname(filename),moduleName);
+   const code=fs.readFileSync(helperPath,'utf8').replace(/^export /gm,'');
    const bridge=vm.runInContext('(function(){'+code+
       ';return {'+names.map(name=>name+':'+name).join(',')+'};})()',context,
       {timeout:5000,filename:moduleName});
