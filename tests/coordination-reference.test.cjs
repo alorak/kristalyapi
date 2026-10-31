@@ -14,7 +14,7 @@ const ctx={
  toCart:(d,B)=>{const [x,y,z]=cart(d,B);return {x,y,z,length:()=>Math.hypot(x,y,z)};}
 };
 vm.createContext(ctx);
-vm.runInContext(src.slice(a,b)+';this.neighbors=coordinationNeighbors;this.geometry=coordinationGeometry;this.hull=coordinationHullMetrics;this.distortion=polyhedralDistortionMetrics',ctx);
+vm.runInContext(src.slice(a,b)+';this.neighbors=coordinationNeighbors;this.geometry=coordinationGeometry;this.hull=coordinationHullMetrics;this.distortion=polyhedralDistortionMetrics;this.table=polyhedraTableRows;this.csv=polyhedraCsv',ctx);
 const atom=(symbol,x,y,z,occupancy=1)=>({symbol,x,y,z,occupancy});
 function independentImages(sites,B,range,search=6,centerIndex=0){
  const center=sites[centerIndex],result=[];
@@ -331,4 +331,65 @@ test('P7.9 expected equal bond length uses formal charge and occupancy-weighted 
  assert.ok(Math.abs(full.expectedBondLength-(2.15-.37*Math.log(1/2)))<1e-12);
  const empty=ctx.bvs([atom('Na',0,0,0),atom('Cl',.5,0,0,0)],0,B,'Na1-Cl',3.5);
  assert.equal(empty.expectedBondLength,null);
+});
+
+/* ---- Polyhedra table: every center, independent hull and formulas ---------- */
+// Brute-force convex hull for a few points: a triangle is a face when every
+// other point lies on one side of its plane. Independent of three.js.
+function bruteHull(points){
+ const faces=[],n=points.length,sub=(p,q)=>p.map((v,k)=>v-q[k]);
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
+  const u=sub(points[j],points[i]),v=sub(points[k],points[i]);
+  const normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  if(Math.hypot(...normal)<1e-9)continue;
+  const sides=points.map((p,m)=>m===i||m===j||m===k?0:Math.sign(Math.round(sub(p,points[i]).reduce((s,x,c)=>s+x*normal[c],0)*1e9)));
+  if(sides.some(x=>x>0)&&sides.some(x=>x<0))continue;
+  // Coplanar fourth points mean a non-triangular face: keep the triangle, as a hull would.
+  faces.push(sides.some(x=>x>0)?[i,k,j]:[i,j,k]);
+ }
+ const unique=[],seen=new Set();
+ for(const f of faces){const key=[...f].sort().join('/');if(!seen.has(key)){seen.add(key);unique.push(f);}}
+ return {geometry:mockHull(points,unique),dispose(){}};
+}
+function hoppe(lengths){
+ const min=Math.min(...lengths),w=lengths.map(d=>Math.exp(1-(d/min)**6));
+ const mean=lengths.reduce((s,d,i)=>s+d*w[i],0)/w.reduce((a,b)=>a+b,0);
+ return lengths.reduce((s,d)=>s+Math.exp(1-(d/mean)**6),0);
+}
+test('V21 polyhedra table: cubic perovskite Ti octahedron is ideal and Sr has twelve neighbours',()=>{
+ const a=3.905,B=[[a,0,0],[0,a,0],[0,0,a]];
+ const sites=[atom('Sr',0,0,0),atom('Ti',.5,.5,.5),atom('O',.5,.5,0),atom('O',.5,0,.5),atom('O',0,.5,.5)];
+ const [sr,ti]=ctx.table(sites,[0,1],B,[.5,2.9],0,false,true,bruteHull);
+ assert.equal(ti.neighbors,6);assert.equal(ti.composition,'O6');assert.equal(ti.metrics.polyhedronType,'octahedron');
+ assert.ok(Math.abs(ti.metrics.distortionIndex)<1e-12);assert.ok(Math.abs(ti.metrics.econ-6)<1e-12);
+ assert.ok(Math.abs(ti.metrics.quadraticElongation-1)<1e-12);assert.ok(Math.abs(ti.metrics.bondAngleVariance)<1e-9);
+ assert.ok(Math.abs(ti.volume-4/3*(a/2)**3)<1e-9,'octahedron volume (4/3) r^3');
+ assert.equal(sr.neighbors,12);assert.equal(sr.metrics.polyhedronType,null,'a cuboctahedron has no lambda/sigma^2');
+ assert.ok(Math.abs(sr.metrics.econ-12)<1e-12);
+ const csv=ctx.csv([sr,ti]);
+ assert.match(csv,/^label,element,neighbors,unique_vertices,weighted_cn,composition,mean_bond_A,baur_D,hoppe_ECoN,volume_A3,/);
+ assert.match(csv,/\nTi,Ti,6,6,6\.000,O6,1\.95250,0\.000000,6\.00000,/);
+});
+test('V21 polyhedra table: tetragonal elongation matches independent D, ECoN, lambda and sigma^2',()=>{
+ // Ti on 4 O at 1.95 Å and 2 O at 2.10 Å: all O–Ti–O angles stay 90°.
+ const a=3.9,c=4.2,B=[[a,0,0],[0,a,0],[0,0,c]];
+ const sites=[atom('Ti',.5,.5,.5),atom('O',.5,.5,0),atom('O',.5,0,.5),atom('O',0,.5,.5)];
+ const [ti]=ctx.table(sites,[0],B,[.5,2.2],0,false,true,bruteHull);
+ const lengths=[1.95,1.95,1.95,1.95,2.1,2.1],mean=lengths.reduce((s,d)=>s+d,0)/6;
+ const D=lengths.reduce((s,d)=>s+Math.abs(d-mean),0)/(6*mean);
+ const volume=4/3*1.95*1.95*2.1,l0=Math.cbrt(3*volume/4),lambda=lengths.reduce((s,d)=>s+(d/l0)**2,0)/6;
+ assert.ok(Math.abs(ti.metrics.meanBondLength-mean)<1e-12);
+ assert.ok(Math.abs(ti.metrics.distortionIndex-D)<1e-12);
+ assert.ok(Math.abs(ti.metrics.econ-hoppe(lengths))<1e-12);
+ assert.ok(Math.abs(ti.volume-volume)<1e-9);
+ assert.ok(Math.abs(ti.metrics.quadraticElongation-lambda)<1e-12);
+ assert.ok(Math.abs(ti.metrics.bondAngleVariance)<1e-9,'right angles only');
+ assert.ok(ti.metrics.quadraticElongation>1);
+});
+test('V21 polyhedra table: planar shells keep D/ECoN but no hull, volume or lambda',()=>{
+ const B=[[10,0,0],[0,10,0],[0,0,10]];
+ const sites=[atom('C',.5,.5,.5),atom('O',.62,.5,.5),atom('O',.44,.604,.5),atom('O',.44,.396,.5)];
+ const [row]=ctx.table(sites,[0],B,[.5,1.5],0,false,false,bruteHull);
+ assert.equal(row.neighbors,3);assert.equal(row.volume,null);assert.equal(row.metrics.polyhedronType,null);
+ assert.ok(Number.isFinite(row.metrics.econ));
 });

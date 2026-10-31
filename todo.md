@@ -1073,9 +1073,19 @@ işi olarak açma.
   yüzler, yüz normali/mesafesi, kapalı morfoloji çokyüzlüsü ve
   eğik hücre geometrisini bağımsız test et. Wulff/enerji
   hesabı yoksa morfoloji yüz uzaklığını yüzey enerjisi diye sunma.
-- [ ] Koordinasyon hacmi, Baur D, Hoppe ECoN, quadratic elongation,
+- [x] Koordinasyon hacmi, Baur D, Hoppe ECoN, quadratic elongation,
   bond-angle variance, kesilme/occupancy ve VESTA gerçek Text Area
   bağımsız değer karşılaştırması.
+  **Yapıldı (V21):** P7.9 metrikleri seçili atomla sınırlıydı; artık
+  "Çokyüzlü tablosu" her bağımsız merkez için CN (geometrik/doluluk
+  ağırlıklı), bileşim, ortalama bağ, D, ECoN, hacim, yüzey, λ ve σ²
+  verir ve CSV indirir. Bağımsız kaba kuvvet gövde ve elle yazılmış
+  formüllerle (ideal ve tetragonal uzamış oktahedron, kübik perovskit Sr
+  kübooktahedronu, düzlemsel kabuk) test edildi. Açık: gerçek VESTA Text
+  Area değerleriyle kıyas (V16).
+- [ ] BVS parametrelerini IUCr bvparm2020'den kaynaklı tam tabloya
+  genişletme: iucr.org bu ortamdan erişilemedi; dosya sağlanınca
+  üretici betikle (kaynak/sürüm kaydıyla) eklenecek.
 - [ ] BVS iyon-pair parametre setini kaynak+sürümle genişlet;
   VESTA kılavuzundaki sabit B=0.37 Å ile uygulamadaki örn.
   Cu(II)-O B=0.36 Å seçiminin model/fizik farkını raporla.

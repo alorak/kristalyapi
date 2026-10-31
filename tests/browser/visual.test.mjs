@@ -423,6 +423,14 @@ try{
  assert.ok(await page.locator('#geometryPreview tr').count()>1);
  const [geomCif]=await Promise.all([page.waitForEvent('download'),page.locator('#geometryCif').click()]);
  assert.match(await fs.readFile(await geomCif.path(),'utf8'),/_geom_bond_distance/);
+ // V21: polyhedra table for every centre, with CSV.
+ await page.locator('[data-right-tool="bvs"]').click();
+ await page.locator('#polyTableRun').click();
+ assert.match(await page.locator('#polyTableSummary').textContent(),/^\d+ (merkez|centres)/);
+ assert.ok(await page.locator('#polyTablePreview tr').count()>1);
+ const [polyCsv]=await Promise.all([page.waitForEvent('download'),page.locator('#polyTableCsv').click()]);
+ assert.match(await fs.readFile(await polyCsv.path(),'utf8'),/^label,element,neighbors,unique_vertices,weighted_cn,/);
+ await page.locator('[data-right-tool="bvs"]').click();
  // V24 P2: two-colour bonds take atom colours; SHELX export carries LATT/SFAC.
  await page.locator('[data-right-tool="bonds"]').click();
  await page.locator('#bondStyle').selectOption('bicolor');
