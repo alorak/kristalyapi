@@ -977,10 +977,11 @@ işi olarak açma.
   olduğunun korunması; uydurma external grid ret.
 - [x] Sentetik kötü durum testleri; mevcut merge-only
   CI içinde ayrıca çalıştırma adımı eklendi.
-- [ ] **V17.5 gerçek GUI kabulü:** Operatör VESTA 3.5.8
-  çalıştırmalı, dört senaryonun görüntü/Save As
-  artefaktlarını doldurmalı ve insan tarafından
-  fark matrisi onaylanmalı; halen NOT_RUN ve
+- [ ] **İsteğe bağlı gerçek GUI kabulü:** VESTA 3.5.8 erişimi
+  ileride sağlanırsa dört senaryonun görüntü/Save As
+  artefaktlarını operatör tamamlar, fark matrisi insan
+  tarafından değerlendirilir. Bu, GUI-free geliştirme ve
+  sonraki V18 aşamalarını BLOKLAMAZ. Şimdilik GUI NOT_RUN,
   scientificParity NOT_ESTABLISHED.
 - [ ] VESTA ileri scientific parity: ADP/tensor,
   aktif non-P1 setting, vektör ve polygon topology,
