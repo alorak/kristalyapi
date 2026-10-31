@@ -52,7 +52,7 @@ test('CIF2 rejects invalid symmetry metric, incomplete and repeated affine opera
  const original=fixture('s12_cif2_p21_origin.cif');
  const mismatch=original.replace("'-x,y+1/2,-z'","'-y,x,z'");
  assert.throws(()=>parse(mismatch),/incompatible with cell metric/);
- const missing=fixture('s11_cif2_pminus1.cif').replace("'-x,-y,-z'","");
+ const missing=fixture('s11_cif2_pminus1.cif').replace("'-x,-y,-z'","'x+1/3,y,z'");
  assert.throws(()=>parse(missing),/not closed|missing identity|CIF2/);
  const duplicates=fixture('s11_cif2_pminus1.cif').replace("'-x,-y,-z'","'x,y,z'");
  assert.throws(()=>parse(duplicates),/duplicate equivalent symmetry operators/);
