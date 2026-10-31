@@ -29,6 +29,7 @@ assert.ok(end>0,'Production source boundary not found');
 const ctx={THREE:{Vector3,SphereGeometry:class{},CylinderGeometry:class{}},
  URL,URLSearchParams,TextEncoder,document:{getElementById:()=>null}};
 vm.createContext(ctx);
+require('./cif2-vm.cjs').loadCif2Helpers(ctx);
 vm.runInContext(code.slice(0,end).replace(/^import .*?;\s*$/gm,'')+
  '\nthis.productionBvs=bondValenceSum;this.parameterList=BVS_PARAMETERS;',ctx);
 const reports=input.cases.map(c=>{
