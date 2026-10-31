@@ -571,7 +571,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div class="note"><strong>SHELX .fcf / sınırlı MTZ · deneysel yansımalar</strong>
     <input type="file" id="fcfFile" accept=".fcf,.cif,.mtz" hidden>
-    <div class="actionrow"><button type="button" id="fcfImport">.fcf / MTZ dosyası seç</button><select id="fcfMapKind" aria-label="Deneysel harita türü"><option value="difference">Fo−Fc fark haritası</option><option value="observed">Fo haritası</option><option value="twice-observed">2Fo−Fc (model fazlı, ağırlıksız)</option><option value="weighted-main">FWT/PHWT (rafine ağırlıklı)</option><option value="weighted-difference">DELFWT/PHDELWT (rafine fark)</option></select></div>
+    <div class="actionrow"><button type="button" id="fcfImport">.fcf / MTZ dosyası seç</button><select id="fcfMapKind" aria-label="Deneysel harita türü"><option value="difference">Fo−Fc fark haritası</option><option value="observed">Fo haritası</option><option value="twice-observed">2Fo−Fc (model fazlı, ağırlıksız)</option><option value="weighted-main">FWT/PHWT (rafine ağırlıklı)</option><option value="weighted-difference">DELFWT/PHDELWT (rafine fark)</option><option value="sigmaa-main">2mFo−DFc (σA, uygulamada hesaplanır)</option><option value="sigmaa-difference">mFo−DFc (σA, uygulamada hesaplanır)</option></select></div>
     <div class="actionrow">
      <label class="field compact"><span>MTZ Fo sütunu (isteğe bağlı)</span><input id="mtzFoColumn" type="text" placeholder="ör. 1:FP" maxlength="35"></label>
      <label class="field compact"><span>MTZ Fc sütunu (isteğe bağlı)</span><input id="mtzFcColumn" type="text" placeholder="ör. 1:FC" maxlength="35"></label>
@@ -590,7 +590,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
     <label class="field compact"><span>Fo−Fc / 2Fo−Fc için Fcalc ölçeği</span><select id="fcfScaleMode"><option value="raw">Ham FCF (ölçek değiştirme)</option><option value="lsq">Otomatik en küçük kareler (Fcalc → Fo)</option></select></label>
     <button type="button" id="fcfMapAdd">Fazlı deneysel haritayı oluştur</button>
-    <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. MTZ P1 / P-1 / P21 / C2 / P21/c / P212121 destekler. Ham/LSQ Fo−Fc, isteğe bağlı Fo/σ ve FREE süzgeci, ampirik FOM çarpanı ve doğrudan FWT/DELFWT rafine haritalar kullanılabilir. Anomalous veri ve uygulama içi σA hesaplaması desteklenmez.</p>
+    <p id="fcfStatus" class="hint" aria-live="polite">FCF yüklenmedi. MTZ P1 / P-1 / P21 / C2 / P21/c / P212121 destekler. Ham/LSQ Fo−Fc, isteğe bağlı Fo/σ ve FREE süzgeci, ampirik FOM çarpanı, doğrudan FWT/DELFWT rafine haritalar ve uygulamada σA ile hesaplanan 2mFo−DFc / mFo−DFc kullanılabilir. σA çözünürlük kabuklarında en büyük olabilirlikle bulunur (Read 1986); toplu çözücü düzeltmesi yapılmaz, bunu içeren Fc sütunu (ör. 1:FC_ALL ve 1:PHIC_ALL) seçin. Anomalous veri desteklenmez.</p>
    </div>
    <p class="hint">Yansıma şiddetleri kinematik modeldendir; profil genişliği ampirik pseudo-Voigt/Caglioti modelidir. Cihaz asimetrisi, Kβ, absorpsiyon, tekstür, arka plan ve tam Rietveld inceltmesi modellenmez.</p>
   </div>

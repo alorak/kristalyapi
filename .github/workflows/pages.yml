@@ -222,6 +222,7 @@ jobs:
           cp setting-transform.js public/setting-transform.js
           cp phase-alignment.js public/phase-alignment.js
           cp volume-analysis.js public/volume-analysis.js
+          cp sigmaa.js public/sigmaa.js
           cp qe-defect-compare-view.js public/qe-defect-compare-view.js
           cp qe-api-client.js public/qe-api-client.js
           cp qe-relax-view.js public/qe-relax-view.js
@@ -286,6 +287,7 @@ jobs:
           test -s public/setting-transform.js
           test -s public/phase-alignment.js
           test -s public/volume-analysis.js
+          test -s public/sigmaa.js
           test -s public/vendor/LICENSE-OFL-1.1.txt
           test -s public/qe-defect-compare-view.js
           test -s public/qe-api-client.js

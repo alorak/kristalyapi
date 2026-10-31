@@ -54,7 +54,7 @@ vm.createContext(context);
 // Helper ES modules run in their own function scope (as in the browser) and
 // only their exports become globals for the editor code. Isolated contexts
 // below load them too, because loadProject uses the VESTA module helpers.
-const HELPER_MODULES=['cif2-lex.js','cif2-document.js','cif2-symmetry.js','export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','setting-transform.js','phase-alignment.js','volume-analysis.js','structure-export.js','scene-controls.js',
+const HELPER_MODULES=['cif2-lex.js','cif2-document.js','cif2-symmetry.js','export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','structure-export.js','scene-controls.js',
  'vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js'];
 function loadHelperModules(target){
  for(const file of HELPER_MODULES){
@@ -4169,6 +4169,29 @@ test('P8.2d genuine Gemmi 5wkd refined C2 MTZ has model and weighted map coeffic
  assert.ok(data.mtz.weightedMain.length>350);
  assert.ok(data.mtz.weightedDifference.length>350);
  assert.match(data.source,/MTZ SG 5/);
+});
+test('V20 σA-weighted 2mFo−DFc / mFo−DFc from the real 5wkd MTZ follow Refmac FWT / DELFWT maps',()=>{
+ const gz=fs.readFileSync(path.join(__dirname,'fixtures','gemmi-5wkd_phases.mtz.gz'));
+ const bytes=zlib.gunzipSync(gz);
+ const raw=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+ // Bulk-solvent-corrected model amplitudes and phases.
+ const data=p1.readMtz(raw,{columns:{fc:'1:FC_ALL',phase:'1:PHIC_ALL'}});
+ const options={size:64,dMin:1.8};
+ const correlation=(a,b)=>{const n=a.values.length;let ma=0,mb=0;for(let i=0;i<n;i++){ma+=a.values[i];mb+=b.values[i];}ma/=n;mb/=n;
+  let ab=0,aa=0,bb=0;for(let i=0;i<n;i++){const x=a.values[i]-ma,y=b.values[i]-mb;ab+=x*y;aa+=x*x;bb+=y*y;}return ab/Math.sqrt(aa*bb);};
+ const main=p1.observedFourierMap(data.cell,data,{...options,kind:'sigmaa-main'});
+ const diff=p1.observedFourierMap(data.cell,data,{...options,kind:'sigmaa-difference'});
+ const fwt=p1.observedFourierMap(data.cell,data,{...options,kind:'weighted-main'});
+ const delfwt=p1.observedFourierMap(data.cell,data,{...options,kind:'weighted-difference'});
+ assert.ok(correlation(main,fwt)>.97,'2mFo−DFc vs FWT: '+correlation(main,fwt));
+ assert.ok(correlation(diff,delfwt)>.9,'mFo−DFc vs DELFWT: '+correlation(diff,delfwt));
+ const shells=main.experimental.sigmaA.shells;
+ assert.ok(shells.length>=3&&shells.every(s=>s.sigmaA>.5&&s.sigmaA<1),JSON.stringify(shells));
+ assert.match(main.experimental.warning,/Read 1986/);
+ assert.throws(()=>p1.observedFourierMap(data.cell,data,{...options,kind:'sigmaa-main',fomMode:'multiply'}),/FOM/);
+ const free=p1.observedFourierMap(data.cell,data,{...options,kind:'sigmaa-main',freeFlagValue:0});
+ assert.ok(free.experimental.skippedFree>0,'excluded free reflections are counted');
+ assert.ok(free.experimental.sigmaA.shells.every(s=>s.work<s.n),'and stay out of the σA estimate');
 });
 test('P8.2d optional SIGFP, explicit FREE exclusion, empirical FOM and true weighted coefficients',()=>{
  const columns=[['H','H',0],['K','H',0],['L','H',0],['FP','F',1],['SIGFP','Q',1],
