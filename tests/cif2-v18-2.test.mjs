@@ -44,6 +44,7 @@ test('explicit block selection imports alpha only and beta only',()=>{
  assert.match(a.warning,/selected alpha/);
  assert.match(b.warning,/selected beta/);
  assert.equal(a.cif2BlockName,'alpha');
+ assert.equal(parse.originalRecord(a,fixture),null,'selected block must never re-export the full multi-crystal source');
  assert.equal(b.cif2BlockName,'beta');
  assert.equal(a.cif2TypedMetadata.length,2);
  assert.equal(a.cif2TypedMetadata[0].value.kind,'list');
