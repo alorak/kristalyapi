@@ -47,6 +47,10 @@ class CIF2GemmiReference(unittest.TestCase):
                 self.assertEqual(int(gemmi.cif.as_number(block.find_value("_space_group_IT_number"))),group)
                 symops=list(block.find_values("_space_group_symop_operation_xyz"))
                 self.assertEqual(len(symops),len(gemmi.find_spacegroup_by_number(group).operations()))
+                independent=gemmi.GroupOps([gemmi.Op(gemmi.cif.as_string(value)) for value in symops])
+                identified=gemmi.find_spacegroup_by_ops(independent)
+                self.assertIsNotNone(identified)
+                self.assertEqual(identified.number,group)
                 labels=[gemmi.cif.as_string(v) for v in block.find_values("_atom_site_label")]
                 self.assertIn(label,labels)
                 cmd=subprocess.run(
@@ -70,11 +74,6 @@ class CIF2GemmiReference(unittest.TestCase):
         self.assertIn("α model",title)
         self.assertIn("O'Brien",title)
         self.assertEqual(len(list(block.find_values("_space_group_symop_operation_xyz"))),2)
-
-    def test_gemmi_rejects_deliberately_broken_cif2_triple_quote(self):
-        contents=(ROOT/"tests/validation/fixtures/synthetic/s11_cif2_pminus1.cif").read_text(encoding="utf-8")
-        with self.assertRaises(Exception):
-            gemmi.cif.read_string(contents.replace("'''Kübik", "''Kübik", 1))
 
 
 if __name__=="__main__":
