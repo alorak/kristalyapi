@@ -1002,6 +1002,25 @@ işi olarak açma.
   desteklenen stiller için fark matrisi. Kayıplı alanlar başarılı
   **kayıpsız** dönüşüm olarak raporlanmaz.
 
+### V18.2 — CIF2 tipli List/Table ve veri bloğu seçimi
+
+- [x] İç içe CIF2 List/Table ve save frame ayrıştırma;
+  metadata tipini kaybetmeden AST olarak koruma.
+- [x] Birden çok data_ varsa yalnız tek kristal seçimi;
+  otomatik blok birleştirme yok, belirsizlikte açık seçim.
+- [x] Bilimsel bileşik değerlerde güvenli ret; 60 KB
+  tipli metadata proje/Undo/Redo saklama; sınır aşımı
+  ve kaynağın tamamını yanlış dışa aktarmama.
+- [x] Sentetik nested metadata ve 2 kristal fixture'ı,
+  Node testleri, Gemmi ile yalnız skaler yapısal
+  projeksiyon kontrolü, Pages/PWA ve merge-only CI.
+- [ ] Gerçek CIF2/DDLm corpus, compound science
+  sözlük eşlemesi ve daha erişilebilir blok seçim UI.
+- [ ] V18.3 Hall/setting/origin dönüşümleri;
+  V18.4 mCIF2 ve ADP/disorder.
+
+[V18.2 kapsamı ve kabul sınırları](tests/validation/PACKAGE_18_2_STATUS.md).
+
 ### V18.1 — CIF2 güvenli skaler içe aktarımı ve açık simetri
 
 - [x] CIF2 zorunlu sürüm başlığı, Unicode, üçlü tırnak
@@ -1016,8 +1035,8 @@ işi olarak açma.
 - [x] P−1 ve P2₁ CIF2 fixture, Node parser regresyonu,
   Gemmi 0.7.4 bağımsız karşılaştırması, Pages/PWA
   ve merge-only CI doğrulaması.
-- [ ] V18.2 typed List/Table, çoklu data_ bloğu ve
-  seçilmiş yapı; gerçek CIF2 corpus.
+- [x] V18.2 typed List/Table ve seçili data_ bloğu;
+  gerçek corpus kapsamı ayrıca açık.
 - [ ] V18.3 Hall, unique axis, origin ve setting
   dönüşümlerinin Gemmi kaynaklı matematiksel teyidi.
 - [ ] V18.4 CIF2 manyetik simetri/ADP/disorder

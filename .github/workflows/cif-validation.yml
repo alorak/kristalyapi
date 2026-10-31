@@ -10,6 +10,8 @@ on:
       - 'crystal-app.js'
       - 'cif2-lex.js'
       - 'cif2-symmetry.js'
+      - 'cif2-document.js'
+      - 'tests/cif2-v18-2.test.mjs'
       - 'tests/cif2-v18-1.test.mjs'
       - 'tests/validation/**'
       - '.github/workflows/cif-validation.yml'
@@ -59,7 +61,7 @@ jobs:
       - name: Validate headless CIF extraction against UI bootstrap changes
         run: node --test tests/validation/test_runner.cjs
       - name: CIF2 V18.1 lexical and explicit-symmetry regressions
-        run: node --test tests/cif2-v18-1.test.mjs
+        run: node --test tests/cif2-v18-1.test.mjs tests/cif2-v18-2.test.mjs
 
       - name: Run browser vs Gemmi CIF scientific gate
         env:
