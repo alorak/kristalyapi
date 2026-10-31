@@ -28,6 +28,43 @@ P1 ile listelenen atomların anlamını operatör
 bilinçli olarak kontrol etmelidir. Bu çalışma
 tüm uzay grubu kopyalarının korunmasını kanıtlamaz.
 
+## GUI olmadan: programatik doğrulama (varsayılan)
+
+VESTA 3.5.8 masaüstü arayüzüne erişim gerekmez.
+V17.4 ile üretilen P1 .vesta ve SHA-256 bağlı .vesta.loss.json
+dosyalarını bağımsız Python okuyucusuyla kontrol edin:
+
+    python3 tests/validation/vesta_17_5_offline.py \
+      --vesta mycrystal.vesta \
+      --loss-report mycrystal.vesta.loss.json \
+      --report-out validation-results/v17-5-offline.json
+
+İsteğe bağlı başka bir P1 .vesta varsa
+--reference-vesta reference.vesta seçeneğiyle
+hücre/atom/occupancy farklarını hesaplayın.
+
+Kontrol: P1 grup ve sağ-elli pozitif hacim, atom etiketleri,
+elementler, doluluk, SITET RGB/yarıçap kayıtları,
+dosya/manifest SHA-256 eşitliği, kamera/ADP/vector/harita
+kayıplarının açık raporlanması. Yoğunluk yan dosyasına
+sahte yol veya hash yazılmaz.
+
+Çıktı OFFLINE_STRUCTURAL_CONTRACT_CHECKED_HUMAN_REVIEW_REQUIRED
+olarak işaretlenir; desktopVesta=NOT_RUN ve
+scientificParity=NOT_ESTABLISHED değişmez.
+Bu yöntem gerçek VESTA'nın dosyayı açabildiğini veya
+görsel eşdeğerlik sağlandığını KANITLAMAZ.
+
+    python3 -m unittest discover -s tests \
+      -p 'test_vesta_17_5_offline.py' -v
+
+Testlerdeki tüm örnekler sentetik P1 metinleridir.
+Bağımsız format referansı:
+https://atomsk.univ-lille.fr/doc/en/format_vesta.html
+
+Aşağıdaki gerçek GUI prosedürü erişim sağlanırsa
+isteğe bağlı bilimsel kabul olarak kullanılabilir.
+
 ## Operatör işlemleri
 
 1. Depoda kullanılacak sabit commit'in tam SHA'sını alın:

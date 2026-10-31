@@ -941,6 +941,21 @@ işi olarak açma.
 
 [Kapsam ve gerçek VESTA kabul kriterleri](tests/validation/PACKAGE_17_4_STATUS.md).
 
+### V17.5a — GUI gerektirmeyen yapısal VESTA doğrulaması
+
+- [x] V17.4 P1 .vesta ve .loss.json dosyalarına bağımsız Python
+  kontrolü: SHA-256, sağ-elli hücre hacmi, atom/etiket/doluluk,
+  SITET renk/yarıçap ve açık veri kayıpları.
+- [x] Opsiyonel ikinci P1 .vesta ile sayısal geometri/occupancy
+  farkı; GUI yoksa varsayılan doğrulama yolu.
+- [x] Sentetik negatif testler ve mevcut merge-only CI kapsamı.
+- [ ] Atomsk gibi ayrı VESTA okuyucularıyla ek karşılıklı
+  format testleri ve gerçek kaynak örnekleri.
+- [ ] Gerçek masaüstü ekran ölçümü GUI erişimi olursa
+  isteğe bağlı ek bilimsel kabul; mevcut ilerlemeyi bloklamaz.
+
+[GUI-free protokol](tests/validation/PACKAGE_17_5_STATUS.md).
+
 ### V17.5 — Gerçek VESTA 3.5.8 desktop kabul altyapısı
 
 - [x] Üç SHA-pimli CIF (NaCl, rutil, IUCr K/Na/Ca/Si/O)
@@ -959,11 +974,10 @@ işi olarak açma.
   olduğunun korunması; uydurma external grid ret.
 - [x] Sentetik kötü durum testleri; mevcut merge-only
   CI içinde ayrıca çalıştırma adımı eklendi.
-- [ ] **V17.5 gerçek GUI kabulü:** Operatör VESTA 3.5.8
-  çalıştırmalı, dört senaryonun görüntü/Save As
-  artefaktlarını doldurmalı ve insan tarafından
-  fark matrisi onaylanmalı; halen NOT_RUN ve
-  scientificParity NOT_ESTABLISHED.
+- [ ] **İsteğe bağlı gerçek GUI kabulü:** VESTA 3.5.8 erişimi
+  sağlanırsa dört sahnenin görüntü/Save As kanıtları insan
+  değerlendirmesine alınabilir. Bu, GUI-free geliştirmeyi
+  veya V18'i BLOKLAMAZ. GUI NOT_RUN, parity NOT_ESTABLISHED.
 - [ ] VESTA ileri scientific parity: ADP/tensor,
   aktif non-P1 setting, vektör ve polygon topology,
   gerçek grid dışa aktarma. Sonra V18 CIF2/simetri.
