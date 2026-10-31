@@ -34,6 +34,7 @@ import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
+import {alignPhases,alignmentCsv} from './phase-alignment.js';
 import {findSettingTransform,transformStructure,describeSettingTransform,asymmetricUnit} from './setting-transform.js';
 import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES,bondPairKey,parseBondPairStyles,normalizedDotSurface,dotSurfacePoints,normalizedMomentStyle,momentArrowLength} from './scene-controls.js';
 import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
@@ -3943,7 +3944,7 @@ function normalizedOverlays(raw){
    throw Error('Karşılaştırma fazı saydamlık/rengi geçersiz.');
   return {name:String(item.name||'Ek yapı').slice(0,120),cell,sites,offset,
    align:item.align==='center'?'center':'origin',visible:item.visible!==false,
-   opacity,color};
+   opacity,color,inverted:item.inverted===true};
  });
 }
 function comparisonMetrics(primary,overlay){
@@ -3966,7 +3967,8 @@ function drawOverlayStructures(B,center){
   const material=new THREE.MeshPhongMaterial({color:overlay.color,roughness:.45,transparent:true,
    opacity:overlay.opacity,depthWrite:false});
   for(const s of overlay.sites){
-   const m=new THREE.Mesh(sphereGeometry,material);m.position.copy(toCart([s.x,s.y,s.z],A));m.scale.setScalar(.27);
+   const sign=overlay.inverted?-1:1;
+   const m=new THREE.Mesh(sphereGeometry,material);m.position.copy(toCart([sign*s.x,sign*s.y,sign*s.z],A));m.scale.setScalar(.27);
    g.add(m);
   }
   const edgePairs=[[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
@@ -3978,7 +3980,7 @@ function drawOverlayStructures(B,center){
  }
  if(base.children.length)addLayerObject(base,'overlays');
  $('overlaySummary').textContent=state.overlays.length+' ek faz · toplam '+
-  state.overlays.reduce((n,r)=>n+r.sites.length,0)+' atom · model otomatik hizalama yapmaz.';
+  state.overlays.reduce((n,r)=>n+r.sites.length,0)+' atom · konum yalnız “Eşle ve hizala” ile ayarlanır.';
 }
 function renderOverlayList(){
  const host=$('overlayList');if(!host)return;
@@ -4018,8 +4020,41 @@ function renderOverlayList(){
   const opacity=document.createElement('input');opacity.type='range';opacity.min='.1';opacity.max='1';opacity.step='.05';opacity.value=item.opacity;
   opacity.setAttribute('aria-label',item.name+' opaklık');
   opacity.onchange=()=>{item.opacity=Number(opacity.value);build();};
-  options.append(opacity);wrapper.append(options);host.append(wrapper);
+  options.append(opacity);wrapper.append(options);
+  // V21: atom-to-atom alignment with RMSD.
+  const alignRow=document.createElement('div');alignRow.className='volume-layer-row';
+  const alignButton=document.createElement('button');alignButton.type='button';alignButton.textContent='Eşle ve hizala';alignButton.dataset.overlayAlign=String(i);
+  const csvButton=document.createElement('button');csvButton.type='button';csvButton.textContent='Eşleme CSV';csvButton.dataset.overlayCsv=String(i);
+  const report=document.createElement('small');report.className='overlay-alignment';report.setAttribute('role','status');
+  const last=overlayAlignments.get(item);
+  csvButton.disabled=!last;if(last)report.textContent=overlayAlignmentText(last);
+  alignButton.onclick=()=>{try{
+   const result=alignOverlay(item);overlayAlignments.set(item,result);renderOverlayList();
+  }catch(error){inform('Faz eşleme: '+error.message);}};
+  csvButton.onclick=()=>{const result=overlayAlignments.get(item);if(result)download(safeName(item.name)+'-alignment.csv',alignmentCsv(result),'text/csv');};
+  alignRow.append(alignButton,csvButton);wrapper.append(alignRow,report);host.append(wrapper);
  });
+}
+const overlayAlignments=new WeakMap();
+function overlayAlignmentText(r){
+ const worst=r.pairs.reduce((a,b)=>b.displacement>a.displacement?b:a,r.pairs[0]);
+ const d=r.cell.deltas,sign=v=>(v>=0?'+':'')+v.toFixed(3);
+ return r.pairs.length+' atom eşlendi · RMSD '+r.rmsd.toFixed(4)+' Å · en büyük '+r.maxDisplacement.toFixed(4)+' Å ('+worst.primary+' ↔ '+worst.overlay+')'+
+  ' · Δa '+sign(d.a)+' Δb '+sign(d.b)+' Δc '+sign(d.c)+' Å · ΔV '+(100*r.cell.volumeChange).toFixed(2)+' %'+(r.inverted?' · ters çevrildi':'')+
+  ' · orijin kayması ('+r.shift.map(v=>v.toFixed(4)).join(', ')+')';
+}
+/* Pair the overlay with the displayed structure and move it onto the match. */
+function alignOverlay(item){
+ const primarySites=(state.symmetryEnabled?expandSites(state.sites,state.sgSetting,MAX_ATOMS):state.sites)
+  .map((s,i)=>({symbol:cleanSymbol(s.symbol),label:String(s.label||s.symbol+(i+1)),x:frac(+s.x),y:frac(+s.y),z:frac(+s.z),occupancy:Number(s.occupancy??1)}));
+ const result=alignPhases({cell:validateCell(state.cell),sites:primarySites},
+  {cell:item.cell,sites:item.sites.map(s=>({...s,symbol:cleanSymbol(s.symbol)}))},{allowInversion:$('overlayAllowInversion').checked});
+ // Shift in the overlay's own lattice, the nearest image to the origin.
+ const t=result.shift.map(v=>v-Math.round(v)),A=basis(item.cell);
+ const offset=toCart(t,A);
+ item.offset=[offset.x,offset.y,offset.z].map(v=>Number(v.toFixed(6)));item.align='origin';item.inverted=result.inverted;
+ build();
+ return result;
 }
 
 const LAYER_TYPES=[

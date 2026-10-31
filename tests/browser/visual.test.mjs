@@ -850,6 +850,8 @@ try{
  await page.locator('#overlayFile').setInputFiles(path.join(base,'tests/validation/fixtures/real/COD_4335507.cif'));
  await page.waitForFunction(()=>document.querySelector('#overlaySummary')?.textContent?.includes('1 ek'),null,{timeout:10000});
  await save(page,'08-two-crystals',metrics);
+ await page.evaluate(()=>document.querySelector('[data-overlay-align="0"]').click());
+ assert.equal(await page.locator('.overlay-alignment').first().textContent(),'','a different compound is refused, not matched');
  assert.notEqual(metrics['07-cubic-morphology'].sum,metrics['08-two-crystals'].sum,'second CIF should change rendering');
  // IT92 and neutron scattering modes use distinct physical coefficients.
  await page.locator('[data-right-tool="xrd"]').click();
@@ -1840,7 +1842,7 @@ try{
 
  }finally{await importContext.close();}
  // V18.3: P1 diamond → asymmetric unit of Fd-3m, then origin choice 1 → 2.
- const settingContext=await browser.newContext({viewport:{width:1280,height:800}});
+ const settingContext=await browser.newContext({viewport:{width:1280,height:800},acceptDownloads:true});
  try{
   const sp=await settingContext.newPage();sp.on('pageerror',error=>errors.push(error.message));
   await sp.goto('http://127.0.0.1:'+port+'/index.html',{waitUntil:'domcontentloaded'});
@@ -1861,6 +1863,19 @@ try{
   // Origin 1 has Si on the cell faces (boundary copies are drawn); origin 2 has none,
   // so the 2×2×2 view shows exactly 8 atoms per cell.
   assert.equal(await visible(),8*8,'the transformation keeps eight Si per conventional cell');
+  // V21: the same diamond written in origin choice 1 (explicit P1) matches atom by atom.
+  const si1=['data_si_origin1','_cell_length_a 5.431','_cell_length_b 5.431','_cell_length_c 5.431',
+   '_cell_angle_alpha 90','_cell_angle_beta 90','_cell_angle_gamma 90',"_symmetry_space_group_name_H-M 'P 1'",
+   'loop_','_atom_site_label','_atom_site_type_symbol','_atom_site_fract_x','_atom_site_fract_y','_atom_site_fract_z',
+   ...[[0,0,0],[.25,.25,.25],[.5,.5,0],[.75,.75,.25],[.5,0,.5],[.75,.25,.75],[0,.5,.5],[.25,.75,.75]].map((p,i)=>'Si'+(i+1)+' Si '+p.join(' '))].join('\n');
+  await sp.locator('#overlayFile').setInputFiles({name:'si-origin1.cif',mimeType:'chemical/x-cif',buffer:Buffer.from(si1)});
+  await sp.waitForFunction(()=>document.querySelector('[data-overlay-align="0"]'));
+  await sp.evaluate(()=>document.querySelector('[data-overlay-align="0"]').click());
+  const alignment=await sp.locator('.overlay-alignment').first().textContent();
+  assert.match(alignment,/^8 (atom eşlendi|atoms matched) · RMSD 0\.0000 Å/,alignment);
+  assert.match(alignment,/\(0\.(1250|3750|6250|8750), /,'diamond origin choices differ by ±1/8 (or an equivalent shift): '+alignment);
+  const [alignCsv]=await Promise.all([sp.waitForEvent('download'),sp.evaluate(()=>document.querySelector('[data-overlay-csv="0"]').click())]);
+  assert.match(await fs.readFile(await alignCsv.path(),'utf8'),/^primary,overlay,element,displacement_A/);
  }finally{await settingContext.close();}
  assert.deepEqual(errors,[],'uncaught browser exceptions');
  assert.deepEqual(cdnRequests,[],'all Three.js files should load without external CDN requests');

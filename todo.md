@@ -775,7 +775,7 @@ işi olarak açma.
 | CIF, simetri ve hücre dönüşümü | Kısmi | V18.3: ayar/orijin/eksen dönüşümü ve P1 → asimetrik birim (Gemmi teyitli); monoklinik cell choice 2/3, CIF2/mCIF varyantları → V18 |
 | Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | V19: konum bazlı opaklık/gizleme/etiket, element çifti bağ stili, vdW nokta yüzeyi, ADP ana eksen/elips, moment oku ölçeği; tek bağ/yüz stili ve VESTA görsel kıyası açık |
 | Mesafe/açı, koordinasyon/BVS | Kısmi | 8 gerçek merkez ve VESTA Text Area değerleri; kaynak parametre farkı → V16/V21 |
-| Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; otomatik atom/hücre hizalama, RMSD yok → V21 |
+| Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; V21: atom eşleme, orijin hizalama ve RMSD (aynı ayarda); farklı ayar/süperhücre eşleme açık |
 | Sınırlar ve Miller düzlemleri | Mevcut / doğrulanmadı | V19 P1: 6 (hkl) kesme düzlemi, bağ/molekül bütünlüğü; hacimsel alan kesimi ve VESTA kıyası açık |
 | Kristal morfolojisi, yüz aileleri | Kısmi | Kapsamlı non-kübik nokta grupları ve kapalı yüz topolojisi → V21 |
 | VESTA proje biçimi | Kısmi | V17.1–17.4: site stilleri, kamera önizlemesi, VECTR/THERI/POLYP içe aktarımı ve P1 dışa aktarma; gerçek VESTA gidiş-dönüşü doğrulanmadı → V17 |
@@ -1176,8 +1176,18 @@ işi olarak açma.
 - [ ] BVS iyon-pair parametre setini kaynak+sürümle genişlet;
   VESTA kılavuzundaki sabit B=0.37 Å ile uygulamadaki örn.
   Cu(II)-O B=0.36 Å seçiminin model/fizik farkını raporla.
-- [ ] Çoklu fazda otomatik atom/site eşleme, rijit RMSD, hücre ve
+- [x] Çoklu fazda otomatik atom/site eşleme, rijit RMSD, hücre ve
   orijin hizalama, kimyasal/simetri uyumsuzluklarında güvenli ret.
+  **Yapıldı (V21):** ek faz her atomu aynı elementten ana yapı atomuyla
+  en iyi atamayla (Macar algoritması, kaba kuvvetle test) eşlenir;
+  orijin kayması nadir elementin ortaklarından başlayıp en küçük
+  kareler ile inceltilir, isteğe bağlı x → −x; RMSD, en büyük yer
+  değiştirme, Δa/Δb/Δc/ΔV ve CSV; faz bulunan konuma taşınır. Bileşim,
+  %10/5° hücre farkı ve kısmi doluluk durumunda gerekçeli ret. Dönme
+  uydurulmaz (aynı ayar gerekir; V18.3 dönüşümü kullanılabilir). Tam
+  iç öteleme varsa eşdeğer kaymalar aynı RMSD'yi verir (testli).
+- [ ] Farklı ayar/süperhücredeki fazlar için otomatik ayar ve
+  süperhücre eşleme (COMPSTRU benzeri normalleştirici araması).
 - [ ] **Kabul:** P14'ün sekiz gerçek iyon merkezi, nonkübik morfoloji
   örnekleri ve iki fazlı model; Å/RMSD, hacim, BVS ve koordinasyon
   tolerans tablosu, kaynak/parametre izi.
