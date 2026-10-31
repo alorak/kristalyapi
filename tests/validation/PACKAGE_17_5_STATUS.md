@@ -28,6 +28,43 @@ P1 ile listelenen atomların anlamını operatör
 bilinçli olarak kontrol etmelidir. Bu çalışma
 tüm uzay grubu kopyalarının korunmasını kanıtlamaz.
 
+## GUI olmadan ilerleme: programatik doğrulama (varsayılan)
+
+VESTA 3.5.8 masaüstü arayüzü bu çalışmada kullanılamıyor.
+Bu nedenle GUI kanıtı beklemek zorunlu geliştirme koşulu değildir.
+KristalYapı'nın V17.4 ile dışa aktardığı P1 .vesta dosyası
+ve aynı kaynaktan ürettiği .vesta.loss.json birlikte kontrol edilir.
+
+    python3 tests/validation/vesta_17_5_offline.py \
+      --vesta mycrystal.vesta \
+      --loss-report mycrystal.vesta.loss.json \
+      --report-out validation-results/v17-5-offline.json
+
+Başka bir P1 .vesta dosyası bağımsız referans olarak varsa
+--reference-vesta reference.vesta seçeneği eklenebilir.
+Bu, hücre/atom/occupancy sayısal farklarını kıyaslar;
+VESTA yazılımının resmi görselleştirme eşdeğerliğini ispatlamaz.
+
+Bağımsız Python kodu kaynak metni yeniden okur; SHA-256
+dosya/manifest eşleşmesi, sağ-elli pozitif hücre hacmi,
+atom türü/etiket/doluluk, SITET kapsamı, RGB ve görünüm
+yarıçapı, kamera/ADP/vector/harita kaybını denetler.
+Sonuç her zaman OFFLINE_STRUCTURAL_CONTRACT_CHECKED_HUMAN_REVIEW_REQUIRED;
+desktopVesta=NOT_RUN ve scientificParity=NOT_ESTABLISHED.
+Gerçek VESTA GUI'nin dosyayı açıp aynı görüntüyü
+üretebildiği doğrulanmış sayılmaz.
+
+    python3 -m unittest discover -s tests \
+      -p 'test_vesta_17_5_offline.py' -v
+
+Bu testlerin kullandığı tüm P1 verileri sentetiktir.
+Atomsk'ın ayrı VESTA parser/yazıcı davranışı ve P1
+yaklaşımı biçim karşılaştırmasında ek referans olabilir:
+https://atomsk.univ-lille.fr/doc/en/format_vesta.html
+
+Aşağıdaki gerçek GUI operatör prosedürü, erişim sağlanırsa
+opsiyonel ek bilimsel kabul olarak korunmaktadır.
+
 ## Operatör işlemleri
 
 1. Depoda kullanılacak sabit commit'in tam SHA'sını alın:
