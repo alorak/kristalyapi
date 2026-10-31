@@ -49,10 +49,11 @@ function parserFromHtml(filename) {
   // in independent CI measurements. No arbitrary npm modules are executed.
   for(const [moduleName,names] of [
    ['cif2-lex.js',['isCif2','tokenizeCif2']],
-   ['cif2-symmetry.js',['validateCif2Symmetry']]
+   ['cif2-symmetry.js',['validateCif2Symmetry']],
+   ['cif2-document.js',['readCif2Document','listCif2Structures','selectCif2Structure']]
   ]){
    const helperPath=path.join(path.dirname(filename),moduleName);
-   const code=fs.readFileSync(helperPath,'utf8').replace(/^export /gm,'');
+   const code=fs.readFileSync(helperPath,'utf8').replace(/^export /gm,'').replace(/^import .*?;\s*$/gm,'');
    const bridge=vm.runInContext('(function(){'+code+
       ';return {'+names.map(name=>name+':'+name).join(',')+'};})()',context,
       {timeout:5000,filename:moduleName});
@@ -65,7 +66,9 @@ function parserFromHtml(filename) {
   return Object.assign(context.__cifParser,{
     exportText:context.__cifExportText,
     originalRecord:context.__originalCifRecord,
-    exportPreservingSource:context.__cifExportPreservingSource
+    exportPreservingSource:context.__cifExportPreservingSource,
+    listCif2Structures:context.listCif2Structures,
+    readCif2Document:context.readCif2Document
   });
 }
 function main(){
