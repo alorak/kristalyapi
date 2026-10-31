@@ -34,6 +34,7 @@ import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
+import {readCif2Document,listCif2Structures,selectCif2Structure} from './cif2-document.js';
 import {validateCif2Symmetry} from './cif2-symmetry.js';
 
 const $ = id => document.getElementById(id);
@@ -6520,12 +6521,13 @@ function rotateMagneticMoment(moment,operation,cell){
  return toCart(rotated,B).multiplyScalar(operation.det*operation.time).toArray();
 }
 
-function cifData(src){
+function cifData(src,selectedCif2Block=null){
  const cif2=isCif2(src);
  // CIF2 is only accepted as a strict, single-block scalar/loop subset.
  // This preflight rejects unsupported List/Table, duplicate names and
  // ambiguous multi-block content before any crystallographic interpretation.
- const cif2Tokens=cif2?tokenizeCif2(src):null;
+ const cif2Selection=cif2?selectCif2Structure(src,selectedCif2Block):null;
+ const cif2Tokens=cif2Selection?.tokens||null;
  // A genuine IUCr supplementary CIF can have a metadata-only data_global
  // followed by precisely one structural data_ block. Isolate that block:
  // never mix its cell/atom loops with the global records or a second crystal.
@@ -6688,9 +6690,9 @@ function cifData(src){
   present.push(next);out.push(next);
   if(out.length>1000)throw Error('Simetri genişletmesi 1000 atom sınırını aşıyor.');
  }
- const label=String(src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
+ const label=String(cif2Selection?.name||src.match(/(?:^|\n)data_([^\s]+)/i)?.[1]||'CIF kristali').replace(/_/g,' ');
  return {name:label,detail:(hasMagnetism?'mCIF manyetik':'CIF içe aktarma')+' · '+sg+' · '+out.length+' atom (P1 genişletmesi)',cell:c,sites:out,
-  warning:[assumption,cif2?'CIF2 V18.1: triple-quoted scalar/loop subset; nested List/Table and save frames rejected.':'',excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
+  warning:[assumption,cif2?'CIF2 V18.2: selected '+cif2Selection.name+' (from '+cif2Selection.blockCount+' data blocks); typed metadata '+cif2Selection.ignoredCompoundNames.length+' tags not mapped into crystal physics; '+cif2Selection.ignoredSaveFrames+' save frames ignored.':'',excludedGlobal?'CIF data_global yalnız üstveri bloğu olarak atlandı; tek kristal yapı bloğu okundu.':''].filter(Boolean).join(' '),
   cifMeta:cifMetaFromTags(tags),cifComposition:cifCompositionSignature(out),adpVisible:false,adpLevel:50,sgNumber,sgSetting:key,symmetryEnabled:false};
 }
 function symPart(expr,coord){
@@ -8629,7 +8631,7 @@ function vestaCompanionMatch(reference,files){
  return matches[0]||null;
 }
 
-function structureImportData(source,filename){
+function structureImportData(source,filename,{cif2BlockName=null}={}){
  const name=String(filename).toLowerCase(),str=String(source);
  if(name.endsWith('.json'))return loadProject(str);
   if(name.endsWith('.vesta'))return vestaProjectData(str);
@@ -8637,7 +8639,7 @@ function structureImportData(source,filename){
  // listing (CELL/LATT/SFAC). Respect explicit filenames and CIF data headers
  // before the content-only SHELX heuristic: a .cif must not silently become .res.
  if(name.endsWith('.res')||name.endsWith('.ins'))return shelxData(str);
- if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))return cifData(str);
+ if(name.endsWith('.cif')||name.endsWith('.mcif')||isCif2(str)||/^\s*data_/i.test(str))return cifData(str,cif2BlockName);
  if(/^(?=.*^CELL\s)(?=.*^SFAC\s)(?=.*^LATT\s)/ims.test(str))return shelxData(str);
  if(name.endsWith('.cell')||/^\s*%BLOCK\s+LATTICE_(?:CART|ABC)\b/im.test(str))return castepData(str);
  if(name.endsWith('.xsf')&&!/BEGIN_DATAGRID/i.test(str))return xsfStructureData(str);
@@ -8716,8 +8718,21 @@ async function importFile(file,selectedFiles=[file]){
  const workspaceId=activeWorkspaceId;
  const str=await file.text(),name=file.name.toLowerCase();let obj;
  if(workspaceId!==activeWorkspaceId)throw Error('Dosya okunurken çalışma alanı değişti; lütfen içe aktarmayı yeniden başlatın.');
- const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str);
- obj=structureImportData(str,name);
+ const isCif=name.endsWith('.cif')||name.endsWith('.mcif')||isCif2(str)||/^\s*data_/i.test(str);
+ let cif2BlockName=null;
+ if(isCif2(str)){
+  const blocks=listCif2Structures(str).filter(block=>block.structural);
+  if(!blocks.length)throw Error('CIF2 içinde hücre ve atom koordinatları içeren data_ bloğu yok.');
+  if(blocks.length>1){
+   const message='CIF2 dosyasında birden fazla kristal var. İçe aktarılacak tek data_ bloğunun adını yazın:\n'+blocks.map(b=>'• '+b.name).join('\n')+'\nİptal = hiçbir değişiklik yapma.';
+   const selection=window.prompt(message,blocks[0].name);
+   if(selection===null)throw Error('CIF2 blok seçimi iptal edildi.');
+   const chosen=blocks.find(b=>b.name.normalize('NFKC').toLowerCase()===selection.trim().normalize('NFKC').toLowerCase());
+   if(!chosen)throw Error('CIF2 seçiminde yalnız listelenen data_ blok adlarından biri kullanılabilir.');
+   cif2BlockName=chosen.name;
+  }
+ }
+ obj=structureImportData(str,name,{cif2BlockName});
  const prepared=obj.vesta?await prepareVestaCompanion(obj,selectedFiles):null;
  if(workspaceId!==activeWorkspaceId)throw Error('File loading changed workspaces; please try again.');
  if(densityGrid)resetVolume();
