@@ -34,7 +34,7 @@ import { parseVesta3View,vesta3CameraPreview } from './vesta-project-view.js';
 import {parseVesta3ScientificStyles,validatedVestaDisplayVectors} from './vesta-project-scientific.js';
 import {makeVesta3Export,vestaExportSha256} from './vesta-project-export.js';
 import {isCif2,tokenizeCif2} from './cif2-lex.js';
-import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES} from './scene-controls.js';
+import {validatedSiteAppearance,siteLabelText,normalizedClipSettings,validatedClipPlane,insideClipPlanes,clipKeepMask,placeLabels,SITE_APPEARANCE_KEYS,MAX_CLIP_PLANES,bondPairKey,parseBondPairStyles,normalizedDotSurface,dotSurfacePoints,normalizedMomentStyle,momentArrowLength} from './scene-controls.js';
 import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from './cif2-document.js';
 import {validateCif2Symmetry} from './cif2-symmetry.js';
 
@@ -3972,7 +3972,7 @@ function renderOverlayList(){
 }
 
 const LAYER_TYPES=[
- ['atoms','Atomlar','#467bb9'],['ellipsoids','Termal elipsoitler','#568bc5'],
+ ['atoms','Atomlar','#467bb9'],['dotSurface','van der Waals nokta yüzeyi','#7f9bb8'],['ellipsoids','Termal elipsoitler','#568bc5'],
  ['magnetic','Manyetik momentler','#da7591'],
  ['vestaVectors','VESTA çizim okları (türü belirsiz)','#df8b45'],
  ['bonds','Bağlar','#98a5b0'],['polyhedra','Koordinasyon çokyüzlüleri','#54a1db'],
@@ -4064,7 +4064,7 @@ function atomDisplayRadius(symbol){
 }
 /* ---- Bond styles and hydrogen bonds ------------------------------------- */
 const BOND_STYLE_KEYS=['unicolor','bicolor','line','dashed'];
-let hydrogenBondCount=0,clipHiddenCount=0;
+let hydrogenBondCount=0,clipHiddenCount=0,dotSurfaceStatus=null,momentArrowsCapped=0;
 /* "Si-O 0.08" per line: bond radius (Å) for an element pair, any order. */
 function parseBondRadii(text){
  const radii=new Map();
@@ -4125,7 +4125,7 @@ function drawHydrogenBonds(entry){
 function build(){
  radiusFallbacks=new Set();sceneBoundsCache=null;
  // Runs once this synchronous build has finished and radius fallbacks are known.
- if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();updateHydrogenBondStatus();updateClipStatus();});
+ if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();updateHydrogenBondStatus();updateClipStatus();updateSurfaceStatus();});
  const buildStarted=performance.now();
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
@@ -4219,6 +4219,18 @@ function build(){
      mesh.position.copy(item.pos);mesh.scale.set(...ellipsoid.scales);
      mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(...ellipsoid.axes));
      addLayerObject(mesh,'ellipsoids');
+     if(state.adpAxes){
+      // Principal axes: ± semi-axis of the ellipsoid at the chosen probability.
+      // Principal ellipses (the three great ellipses in the principal planes) lie on the surface,
+      // so they stay visible outside the atom ball, as in ORTEP/VESTA.
+      const ends=ellipsoid.axes.flatMap((axis,k)=>[item.pos.clone().addScaledVector(axis,ellipsoid.scales[k]),item.pos.clone().addScaledVector(axis,-ellipsoid.scales[k])]);
+      for(const [i,j] of [[0,1],[1,2],[2,0]])for(let t=0;t<48;t++)for(const step of [t,t+1]){
+       const angle=step*Math.PI/24;
+       ends.push(item.pos.clone().addScaledVector(ellipsoid.axes[i],ellipsoid.scales[i]*Math.cos(angle)).addScaledVector(ellipsoid.axes[j],ellipsoid.scales[j]*Math.sin(angle)));
+      }
+      const lines=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ends),new THREE.LineBasicMaterial({color:0x2c4258}));
+      lines.userData.adpAxes=true;addLayerObject(lines,'ellipsoids');
+     }
     }
    }catch(e){adpInvalid++;}
   }
@@ -4237,15 +4249,38 @@ function build(){
   mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
   addLayerObject(mesh,'atoms');atomMesh.push(mesh);
  }
- let magneticArrows=0;
+ let magneticArrows=0;momentArrowsCapped=0;dotSurfaceStatus=null;
  for(let i=0;i<entry.length&&magneticArrows<600;i++){
   const item=entry[i],moment=item.site.magneticMoment;
   if(!atomRender[i].visible||!Array.isArray(moment))continue;
   const m=new THREE.Vector3(...moment),norm=m.length();
   if(norm<1e-7)continue;
-  const length=Math.min(1.8,.4+.28*norm),dir=m.normalize();
-  const arrow=new THREE.ArrowHelper(dir,item.pos.clone(),length,0xd7698b,length*.28,Math.max(.07,length*.13));
+  const momentStyle=normalizedMomentStyle(state.momentStyle),{length,capped}=momentArrowLength(norm,momentStyle),dir=m.normalize();
+  if(capped)momentArrowsCapped++;
+  const arrow=new THREE.ArrowHelper(dir,item.pos.clone(),length,new THREE.Color(momentStyle.color),Math.min(.45,length*.28),Math.min(.18,Math.max(.07,length*.13)));
   addLayerObject(arrow,'magnetic');magneticArrows++;
+ }
+ state.dotSurface=normalizedDotSurface(state.dotSurface);
+ if(state.dotSurface.enabled){
+  const spheres=[];let fallback=0;
+  for(let i=0;i<entry.length;i++){
+   if(!atomRender[i].visible)continue;
+   const site=entry[i].site,r=displayRadius(cleanSymbol(site.symbol),'vdw',1.7);if(r.fallback)fallback++;
+   spheres.push({center:entry[i].pos.toArray(),radius:r.radius*state.dotSurface.scale,color:visualHex(site.visualColor,elementColor(site.symbol))});
+  }
+  if(spheres.length>4000)dotSurfaceStatus={skipped:true,atoms:spheres.length};
+  else{
+   const dots=dotSurfacePoints(spheres,{density:state.dotSurface.density});
+   if(dots.points.length){
+    const geometry=new THREE.BufferGeometry(),color=new THREE.Color(),colors=new Float32Array(3*dots.points.length);
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(dots.points.flat(),3));
+    dots.colors.forEach((hex,i)=>{color.set(hex);colors.set([color.r,color.g,color.b],3*i);});
+    geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    const points=new THREE.Points(geometry,new THREE.PointsMaterial({size:2.2,sizeAttenuation:false,vertexColors:true}));
+    addLayerObject(points,'dotSurface');
+   }
+   dotSurfaceStatus={points:dots.points.length,truncated:dots.truncated,fallback};
+  }
  }
  /* VESTA VECTR are untyped VISUAL arrows, never magneticMoment / mu_B. */
  if(!state.symmetryEnabled){
@@ -4282,10 +4317,17 @@ function build(){
     else pieces.push([a,b,entry[i].site,entry[j].site]);
    }
   }
+  const pairKey=(s1,s2)=>bondPairKey(cleanSymbol(s1.symbol),cleanSymbol(s2.symbol));
+  // V19 P2: element-pair colours and hidden pairs (display only).
+  const pairStyles=parseBondPairStyles(state.bondPairStyles||'');
+  if(pairStyles.size)pieces=pieces.filter(([,,s1,s2])=>!pairStyles.get(pairKey(s1,s2))?.hidden);
+  const pairColored=pieces.some(([,,s1,s2])=>pairStyles.get(pairKey(s1,s2))?.color);
   if(style==='dashed')pieces=pieces.flatMap(([a,b,s1,s2])=>dashSegments(a,b,.16,.11).map(([p,q])=>[p,q,s1,s2]));
-  const pairKey=(s1,s2)=>[cleanSymbol(s1.symbol),cleanSymbol(s2.symbol)].sort().join('-');
   const radii=pieces.map(([,,s1,s2])=>style==='line'?baseRadius:pairRadii.get(pairKey(s1,s2))??baseRadius);
-  const colors=coloured?pieces.map(([,,site])=>new THREE.Color(visualHex(site.visualColor,elementColor(site.symbol)))):null;
+  const plainBond=state.style==='wire'?'#96a2ae':'#98a5b0';
+  const colors=coloured||pairColored?pieces.map(([,,site,other])=>new THREE.Color(pairStyles.get(pairKey(site,other))?.color??
+   (coloured?visualHex(site.visualColor,elementColor(site.symbol)):plainBond))):null;
+  if(colors&&!coloured)bondMat.color.set(0xffffff);
   if(pieces.length)addInstancedCylinders(pieces.map(([a,b])=>[a,b]),baseRadius,bondMat,'bonds',{colors,radii});
   else bondMat.dispose();
   if(periodic?.truncated)capReached=true;
@@ -8234,6 +8276,9 @@ function loadProject(json){
   // Thresholds are clamped again where they are used (hydrogenBondSettings).
   hbonds:obj.hbonds&&typeof obj.hbonds==='object'?{enabled:obj.hbonds.enabled===true,maxHA:Number(obj.hbonds.maxHA),maxDA:Number(obj.hbonds.maxDA),minAngle:Number(obj.hbonds.minAngle)}:{enabled:false},
   clip:normalizedClipSettings(obj.clip),
+  // Invalid pair styles are dropped rather than failing the whole project.
+  bondPairStyles:typeof obj.bondPairStyles==='string'&&obj.bondPairStyles.length<=2000&&(()=>{try{parseBondPairStyles(obj.bondPairStyles);return true;}catch{return false;}})()?obj.bondPairStyles:'',
+  dotSurface:normalizedDotSurface(obj.dotSurface),adpAxes:obj.adpAxes===true,momentStyle:normalizedMomentStyle(obj.momentStyle),
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
 
@@ -8355,7 +8400,8 @@ function lastCrystalPayload(current){
   layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder),
   view:current.view,radiusSet:current.radiusSet||'default',ionicRadii:current.ionicRadii||{},colorScheme:current.colorScheme||'app',
   bondStyle:current.bondStyle||'unicolor',bondRadii:current.bondRadii||'',hbonds:current.hbonds||{enabled:false},
-  clip:normalizedClipSettings(current.clip)
+  clip:normalizedClipSettings(current.clip),bondPairStyles:current.bondPairStyles||'',
+  dotSurface:normalizedDotSurface(current.dotSurface),adpAxes:!!current.adpAxes,momentStyle:normalizedMomentStyle(current.momentStyle)
  };
 }
 function storeLastCrystal(storage,current){
@@ -9362,6 +9408,16 @@ function crystalSvgPrimitives(width,height){
      scale.setFromMatrixScale(matrix);line(a,b,obj.instanceColor?colorHex(instance):color,scale.x,opacity);
     }
    }
+  }else if(obj.isPoints){
+   // Dot surface: small flat discs of the on-screen point size.
+   const attr=obj.geometry?.getAttribute('position'),colAttr=obj.geometry?.getAttribute('color'),c=new THREE.Color();
+   const size=(material?.size??2)/2,limit=Math.min(attr?.count||0,VECTOR_DOT_LIMIT);
+   if((attr?.count||0)>VECTOR_DOT_LIMIT)notes.push('Nokta yüzeyinin ilk '+VECTOR_DOT_LIMIT+' noktası vektör çıktıya yazıldı; tamamı için PNG/TIFF kullanın.');
+   for(let i=0;i<limit;i++){
+    const q=screen(asWorld(new THREE.Vector3().fromBufferAttribute(attr,i),obj));if(!q)continue;
+    if(colAttr)c.setRGB(colAttr.getX(i),colAttr.getY(i),colAttr.getZ(i));else c.copy(material.color);
+    objects.push({type:'circle',flat:true,x:q.x,y:q.y,r:size,fill:colorHex(c),strokeWidth:0,opacity,depth:q.depth});
+   }
   }else if(obj.isLineSegments||obj.isLine||obj.isLineLoop){
    const attr=obj.geometry?.getAttribute('position');if(attr){
     const index=obj.geometry.index,count=index?index.count:attr.count;
@@ -9413,7 +9469,7 @@ function crystalSvgPrimitives(width,height){
 /* Isosurfaces become flat-shaded translucent triangles (Lambert term against
    the view direction), as VESTA's vector output does. Texture slices stay
    raster-only, and very large surfaces are left out rather than truncated. */
-const VECTOR_VOLUME_TRIANGLES=40000;
+const VECTOR_VOLUME_TRIANGLES=40000,VECTOR_DOT_LIMIT=30000;
 function volumeVectorTriangles(group,objects,notes,screen){
  const triangles=[],perspective=!!camera.isPerspectiveCamera,forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
  let slice=false,wire=false,count=0;
@@ -9991,7 +10047,8 @@ function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.string
  vestaDisplayVectors:applicableVestaVectors(state),
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale,
  view:state.view,radiusSet:state.radiusSet||'default',ionicRadii:state.ionicRadii||{},colorScheme:state.colorScheme||'app',
- bondStyle:state.bondStyle||'unicolor',bondRadii:state.bondRadii||'',hbonds:state.hbonds||{enabled:false},clip:normalizedClipSettings(state.clip)},null,2),'application/json');}
+ bondStyle:state.bondStyle||'unicolor',bondRadii:state.bondRadii||'',hbonds:state.hbonds||{enabled:false},clip:normalizedClipSettings(state.clip),bondPairStyles:state.bondPairStyles||'',
+ dotSurface:normalizedDotSurface(state.dotSurface),adpAxes:!!state.adpAxes,momentStyle:normalizedMomentStyle(state.momentStyle)},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
@@ -11308,8 +11365,21 @@ function syncViewPanel(){
  renderIonicChoices();applySceneAppearance();
  const h=hydrogenBondSettings();
  $('bondStyle').value=BOND_STYLE_KEYS.includes(state.bondStyle)?state.bondStyle:'unicolor';
- $('bondRadii').value=state.bondRadii||'';$('hbondEnabled').checked=h.enabled;
+ $('bondRadii').value=state.bondRadii||'';$('hbondEnabled').checked=h.enabled;$('bondPairStyles').value=state.bondPairStyles||'';
+ const dots=normalizedDotSurface(state.dotSurface),moments=normalizedMomentStyle(state.momentStyle);
+ $('dotSurfaceEnabled').checked=dots.enabled;$('dotSurfaceScale').value=dots.scale;$('dotSurfaceDensity').value=dots.density;
+ $('adpAxesEnabled').checked=!!state.adpAxes;$('momentMode').value=moments.mode;$('momentScale').value=moments.scale;$('momentColor').value=moments.color;
  $('hbondMaxHA').value=h.maxHA;$('hbondMaxDA').value=h.maxDA;$('hbondMinAngle').value=h.minAngle;
+}
+function updateSurfaceStatus(){
+ if(!$('surfaceStatus'))return;
+ const d=dotSurfaceStatus,notes=[];
+ if(d?.skipped)notes.push('Nokta yüzeyi '+d.atoms+' görünür atom için çizilmedi (en çok 4000); süperhücreyi küçültün.');
+ else if(d){notes.push(d.points+' yüzey noktası.');if(d.truncated)notes.push('Nokta sınırına ulaşıldı; yoğunluğu azaltın.');
+  if(d.fallback)notes.push(d.fallback+' atom için vdW tablo değeri yok; 1,7 Å kullanıldı.');}
+ if(momentArrowsCapped)notes.push(momentArrowsCapped+' moment oku 8 Å ile sınırlandı; ölçeği küçültün.');
+ if(state.adpAxes&&!state.adpVisible)notes.push('ADP eksenleri için termal elipsoitleri açın.');
+ $('surfaceStatus').textContent=notes.join(' ');
 }
 function updateHydrogenBondStatus(){
  if(!$('hbondStatus'))return;
@@ -11321,6 +11391,17 @@ function initBondStylePanel(){
  const rebuild=mutate=>runViewAction(()=>{mutate();build();recordHistoryChange();updateHydrogenBondStatus();});
  $('bondStyle').addEventListener('change',()=>rebuild(()=>{state.bondStyle=$('bondStyle').value;}));
  $('applyBondRadii').onclick=()=>rebuild(()=>{parseBondRadii($('bondRadii').value);state.bondRadii=$('bondRadii').value.trim();});
+ $('applyBondPairStyles').onclick=()=>rebuild(()=>{parseBondPairStyles($('bondPairStyles').value);state.bondPairStyles=$('bondPairStyles').value.trim();});
+ const surfaces=()=>{
+  const dots={enabled:$('dotSurfaceEnabled').checked,scale:Number($('dotSurfaceScale').value),density:Number($('dotSurfaceDensity').value)};
+  if(normalizedDotSurface(dots).scale!==dots.scale||normalizedDotSurface(dots).density!==dots.density)
+   throw Error('Nokta yüzeyi ölçeği 0,5–1,5, yoğunluğu 0,5–8 nokta/Å² olmalı.');
+  const moments={mode:$('momentMode').value,scale:Number($('momentScale').value),color:$('momentColor').value};
+  if(normalizedMomentStyle(moments).scale!==moments.scale)throw Error('Moment ölçeği 0,05–2 Å/μB olmalı.');
+  state.dotSurface=dots;state.adpAxes=$('adpAxesEnabled').checked;state.momentStyle=moments;
+ };
+ for(const id of ['dotSurfaceEnabled','dotSurfaceScale','dotSurfaceDensity','adpAxesEnabled','momentMode','momentScale','momentColor'])
+  $(id).addEventListener('change',()=>runViewAction(()=>{try{surfaces();}catch(error){syncViewPanel();throw error;}build();updateSurfaceStatus();}));
  const hbonds=()=>({enabled:$('hbondEnabled').checked,maxHA:Number($('hbondMaxHA').value),maxDA:Number($('hbondMaxDA').value),minAngle:Number($('hbondMinAngle').value)});
  for(const id of ['hbondEnabled','hbondMaxHA','hbondMaxDA','hbondMinAngle'])$(id).addEventListener('change',()=>rebuild(()=>{state.hbonds=hbonds();}));
 }

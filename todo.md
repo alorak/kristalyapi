@@ -773,7 +773,7 @@ işi olarak açma.
 | Özellik | Durum | Gerçek açık ve paket |
 | --- | --- | --- |
 | CIF, simetri ve hücre dönüşümü | Kısmi | Alternatif setting/origin/Hall, CIF2 ve mCIF varyantları → V18 |
-| Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | V19 P1: konum bazlı opaklık/gizleme/etiket; bağ/yüz bazlı stil, dot-surface, ADP ana eksen → V19 P2 |
+| Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | V19: konum bazlı opaklık/gizleme/etiket, element çifti bağ stili, vdW nokta yüzeyi, ADP ana eksen/elips, moment oku ölçeği; tek bağ/yüz stili ve VESTA görsel kıyası açık |
 | Mesafe/açı, koordinasyon/BVS | Kısmi | 8 gerçek merkez ve VESTA Text Area değerleri; kaynak parametre farkı → V16/V21 |
 | Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; otomatik atom/hücre hizalama, RMSD yok → V21 |
 | Sınırlar ve Miller düzlemleri | Mevcut / doğrulanmadı | V19 P1: 6 (hkl) kesme düzlemi, bağ/molekül bütünlüğü; hacimsel alan kesimi ve VESTA kıyası açık |
@@ -1066,11 +1066,20 @@ işi olarak açma.
   atom opaklığı, gizleme, etiket metni/ofseti/gizleme; çokyüzlü rengi/
   opaklığı konuma özgü; bağ çifti yarıçapı V24 P2. Hepsi proje, son
   kristal ve geri al geçmişinde; gizleme/opaklık yalnız görünüm.
-- [ ] Bağ bazlı (tek bağ veya element çifti) renk ve görünürlük;
-  çokyüzlü tek yüz rengi. Şu an bağ rengi atom/iki renk stilinden gelir.
-- [ ] VESTA benzeri van der Waals **dot surface**, ADP ana eksen
+- [x] Element çifti bazlı bağ rengi ve görünürlüğü. **Yapıldı (V19 P2):**
+  satır başına `Si-O #d04040` / `Si-Si gizle`; yalnız çizim, bağ araması
+  ve ölçümler değişmez; proje ve geri al geçmişinde.
+- [ ] Tek bağ (seçilen iki atom) ve tek çokyüzlü yüzü bazlı renk/görünürlük.
+- [x] VESTA benzeri van der Waals **dot surface**, ADP ana eksen
   bilgi katmanı ve seçilebilir statik yer değiştirme/moment vektörü
-  stilleri; fiziksel yön ve ölçek notu.
+  stilleri; fiziksel yön ve ölçek notu. **Yapıldı (V19 P2):** Alvarez vdW
+  × ölçek kürelerinin başka küre içinde kalmayan noktaları (nokta/Å²
+  yoğunluğu, ayrı katman, SVG/PDF/EPS'de düz disk, ≤4000 atom, ≤80 000
+  nokta); iki örtüşen kürede açık kalan kesir Arşimet şapka kutusu
+  teoremiyle test edildi. ADP ana eksenleri ve ana elipsleri. Moment
+  okları: otomatik (önceki) ya da doğrusal ölçek×|μ| Å (8 Å sınırı),
+  renk; yön notu panelde. Statik yer değiştirme vektörü ayrı veri
+  modeli gerektirir (açık; VESTA VECTR okları V17.3'te).
 - [x] Kesirli x/y/z penceresine ek keyfî clipping düzlemleri;
   bağ/molekül ve poliedr bütünlüğünü koruyan opsiyon; Miller düzlemi
   sadece görsel katman olduğunda bunu belirt. **Yapıldı (V19 P1):** en
@@ -1094,10 +1103,18 @@ işi olarak açma.
   bildirilir; elle ofset verilen etiket taşınmaz. Canlı 3B etiketlerde
   çakışma önleme yok (açık).
 - [ ] Vektör çıktıda kesişen kürelerin tam görünürlüğü (yay kırpma);
-  yarı saydam atomların arkasındaki çizgileri soluklaştırma.
+  yarı saydam atomların arkasındaki çizgileri soluklaştırma. Not (V19
+  P2 incelemesi): yazıcı ressam sıralamasıyla tam daire çiziyor; iç içe
+  kürelerin görünür sınırı radikal düzlem kesitinin izdüşümü olan elips
+  yayıdır ve her daire için kırpma yolu gerektirir. Yarı saydam disk
+  ressam sırasıyla zaten arkasındaki çizginin üstüne boyanır.
 - [ ] Vektör izoyüzeyde komşu yarı saydam üçgenler arasındaki
   kenar yumuşatma dikişleri: parça bazlı birleşik yol veya opak
   dolgu + ayrı saydamlık grubu; PDF/EPS/SVG görüntüleyici testi.
+  Not (V19 P2 incelemesi): saydamlık grubu üçgenleri atomlarla derinlik
+  sıralamasından çıkarır; önce görünürlük sırası korunarak grup sınırı
+  tasarlanmalı.
+- [ ] Canlı 3B görünümde etiket çakışma önleme (dışa aktarmada var).
 - [ ] **Kabul:** Si, NaCl, rutil, ADP, Miller ve volume overlay
   sahnelerinde 1×/4× export; Chromium ve mevcut platformlarda
   bağımsız görsel fark ölçümü, kullanıcı ayarlarının round-trip testi.

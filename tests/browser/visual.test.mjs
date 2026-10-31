@@ -58,6 +58,10 @@ window.__visualTest={
  // Distinct instance colours of bond meshes and of atoms (two-colour bonds reuse atom colours).
  instanceColors:layer=>{const out=new Set(),c=new THREE.Color();for(const o of root.children){if(o.userData.layer!==layer||!o.isInstancedMesh||!o.instanceColor)continue;for(let i=0;i<o.count;i++){o.getColorAt(i,c);out.add(c.getHexString());}}return [...out].sort();},
  atomInstances:()=>atomMesh.reduce((sum,mesh)=>sum+mesh.count,0),
+ dotCount:()=>root.children.filter(o=>o.userData.layer==='dotSurface').reduce((n,o)=>n+o.geometry.getAttribute('position').count,0),
+ firstBondPair:()=>atomData[bondPairs[0][0]].site.symbol+'-'+atomData[bondPairs[0][1]].site.symbol,
+ adpAxisObjects:()=>root.children.filter(o=>o.userData.adpAxes).length,
+ bondInstances:()=>root.children.filter(o=>o.userData.layer==='bonds'&&o.isInstancedMesh).reduce((n,o)=>n+o.count,0),
  labelCount:()=>root.children.filter(o=>o.userData.layer==='labels').length,
  cameraAlongCell:()=>{const c=basis(state.cell)[2].clone().normalize(),out=camera.position.clone().sub(orbit.target).normalize();return out.dot(c);},
  morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
@@ -488,6 +492,24 @@ try{
   await change('labels',false);
  }
  await page.evaluate(()=>document.getElementById('siteStyleReset').click());
+ // V19 P2: dot surface (also in the vector export) and element-pair bond styles.
+ await change('dotSurfaceEnabled',true);
+ const dots=await page.evaluate(()=>window.__visualTest.dotCount());
+ assert.ok(dots>allAtoms*20,'dot surface points: '+dots);
+ assert.match(await page.locator('#surfaceStatus').textContent(),/\d+ (yüzey noktası|surface dots)/);
+ await page.locator('#saveBtn').click();
+ const [dotSvg]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="svg"]').click()]);
+ const flatDots=(await fs.readFile(await dotSvg.path(),'utf8')).match(/<circle [^>]*stroke-width="0"/g)||[];
+ assert.ok(flatDots.length>100,'dot surface reaches the SVG as flat discs: '+flatDots.length);
+ await change('dotSurfaceEnabled',false);
+ const bondsBefore=await page.evaluate(()=>window.__visualTest.bondInstances());
+ const pair=await page.evaluate(()=>window.__visualTest.firstBondPair());
+ await page.evaluate(text=>{document.getElementById('bondPairStyles').value=text;document.getElementById('applyBondPairStyles').click();},pair+' #d04040');
+ assert.ok((await page.evaluate(()=>window.__visualTest.instanceColors('bonds'))).includes('d04040'),'a pair colour is drawn');
+ await page.evaluate(text=>{document.getElementById('bondPairStyles').value=text;document.getElementById('applyBondPairStyles').click();},pair+' gizle');
+ assert.ok(await page.evaluate(()=>window.__visualTest.bondInstances())<bondsBefore,'a hidden pair removes its bonds from the view');
+ await page.evaluate(()=>{document.getElementById('bondPairStyles').value='';document.getElementById('applyBondPairStyles').click();});
+ assert.equal(await page.evaluate(()=>window.__visualTest.bondInstances()),bondsBefore);
  // Undo restores the previous appearance; reset returns to the original scene.
  await page.locator('[data-right-tool="view"]').click();
  await page.locator('#viewAppearanceReset').click();
@@ -807,6 +829,10 @@ try{
  await page.locator('[data-quick-flag="adpVisible"]').click();
  assert.equal(await page.locator('#adpLevel').isEnabled(),true);
  await page.locator('#adpLevel').selectOption('90');
+ await page.evaluate(()=>{const el=document.getElementById('adpAxesEnabled');el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.ok(await page.evaluate(()=>window.__visualTest.adpAxisObjects())>0,'principal axes and ellipses are drawn for anisotropic sites');
+ await page.evaluate(()=>{const el=document.getElementById('adpAxesEnabled');el.checked=false;el.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.equal(await page.evaluate(()=>window.__visualTest.adpAxisObjects()),0);
  await save(page,'04-adp-90',metrics);
  await page.locator('[data-right-tool="layers"]').click();
  await page.locator('#layerManager').getByLabel('Termal elipsoitler görünürlük').uncheck();
