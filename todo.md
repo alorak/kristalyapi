@@ -773,10 +773,10 @@ işi olarak açma.
 | Özellik | Durum | Gerçek açık ve paket |
 | --- | --- | --- |
 | CIF, simetri ve hücre dönüşümü | Kısmi | Alternatif setting/origin/Hall, CIF2 ve mCIF varyantları → V18 |
-| Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | Per-site/bond/facet stilleri, atom dot-surface, ADP geometri eşlemesi → V19 |
+| Ball-stick, space-fill, wireframe, poliedr, ADP | Mevcut / doğrulanmadı | V19 P1: konum bazlı opaklık/gizleme/etiket; bağ/yüz bazlı stil, dot-surface, ADP ana eksen → V19 P2 |
 | Mesafe/açı, koordinasyon/BVS | Kısmi | 8 gerçek merkez ve VESTA Text Area değerleri; kaynak parametre farkı → V16/V21 |
 | Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; otomatik atom/hücre hizalama, RMSD yok → V21 |
-| Sınırlar ve Miller düzlemleri | Kısmi | Genel kırpma düzlemleri ve komşuluk/çokyüzlü bütünlüğü → V19 |
+| Sınırlar ve Miller düzlemleri | Mevcut / doğrulanmadı | V19 P1: 6 (hkl) kesme düzlemi, bağ/molekül bütünlüğü; hacimsel alan kesimi ve VESTA kıyası açık |
 | Kristal morfolojisi, yüz aileleri | Kısmi | Kapsamlı non-kübik nokta grupları ve kapalı yüz topolojisi → V21 |
 | VESTA proje biçimi | Kısmi | V17.1–17.4: site stilleri, kamera önizlemesi, VECTR/THERI/POLYP içe aktarımı ve P1 dışa aktarma; gerçek VESTA gidiş-dönüşü doğrulanmadı → V17 |
 | CUBE/CHGCAR/XSF/CCP4-MRC | Mevcut / kısmi | 24 MB / 2.5M voksel sınırı, birim/orijin, gerçek varyant testi → V20 |
@@ -1060,14 +1060,24 @@ işi olarak açma.
 
 ### V19 — P1 · Sahne kontrolü, kesim ve yayın çıktısı
 
-- [ ] Site/bond/polyhedron facet/label bazlı renk, yarıçap, saydamlık
+- [x] Site/bond/polyhedron facet/label bazlı renk, yarıçap, saydamlık
   ve görünürlük; katman, proje ve Undo/Redo ile aynı durum modeli.
+  **Yapıldı (V19 P1):** konum bazlı atom rengi/ölçeği (V17.1) yanına
+  atom opaklığı, gizleme, etiket metni/ofseti/gizleme; çokyüzlü rengi/
+  opaklığı konuma özgü; bağ çifti yarıçapı V24 P2. Hepsi proje, son
+  kristal ve geri al geçmişinde; gizleme/opaklık yalnız görünüm.
+- [ ] Bağ bazlı (tek bağ veya element çifti) renk ve görünürlük;
+  çokyüzlü tek yüz rengi. Şu an bağ rengi atom/iki renk stilinden gelir.
 - [ ] VESTA benzeri van der Waals **dot surface**, ADP ana eksen
   bilgi katmanı ve seçilebilir statik yer değiştirme/moment vektörü
   stilleri; fiziksel yön ve ölçek notu.
-- [ ] Kesirli x/y/z penceresine ek keyfî clipping düzlemleri;
+- [x] Kesirli x/y/z penceresine ek keyfî clipping düzlemleri;
   bağ/molekül ve poliedr bütünlüğünü koruyan opsiyon; Miller düzlemi
-  sadece görsel katman olduğunda bunu belirt.
+  sadece görsel katman olduğunda bunu belirt. **Yapıldı (V19 P1):** en
+  çok 6 (hkl) düzlemi, uzaklık Å (h·x+k·y+l·z)·d − D işaretli uzaklığı,
+  korunan taraf; bütünlük: yalnız kesim / bağlı ilk komşular
+  (çokyüzlü köşeleri tamam) / bağlı bileşen; Miller düzlemi yalnız
+  görselken panelde not. Hacimsel alanlar kesilmez (açık).
 - [x] Kamera ve XYZ/abc yön göstergesi için PNG/TIFF/SVG/PDF/EPS
   tutarlılığı; transparan arka plan, etiket, çizgi ve çözünürlük/
   DPI metaverisi. Volumetrik 3B veya vektör desteklenmiyorsa
@@ -1077,8 +1087,12 @@ işi olarak açma.
   **#178:** punto cinsinden etiket ve pusula, italik a/b/c, konum
   etiketi, element lejantı, Å ölçek çubuğu, PNG/TIFF/SVG/PDF/EPS köken
   metaverisi, vektörde dolu izoyüzey; kesit/tel kafes için uyarı.
-- [ ] Etiket çakışma önleme; site bazlı özel etiket metni, ofseti ve
-  görünürlüğü (yukarıdaki per-site durum modeliyle).
+- [x] Etiket çakışma önleme; site bazlı özel etiket metni, ofseti ve
+  görünürlüğü (yukarıdaki per-site durum modeliyle). **Yapıldı (V19
+  P1):** dışa aktarmada öndeki atomdan başlayan 8 aday konumlu
+  yerleştirme, çerçeve içinde; çözülemeyen çakışma uyarı olarak
+  bildirilir; elle ofset verilen etiket taşınmaz. Canlı 3B etiketlerde
+  çakışma önleme yok (açık).
 - [ ] Vektör çıktıda kesişen kürelerin tam görünürlüğü (yay kırpma);
   yarı saydam atomların arkasındaki çizgileri soluklaştırma.
 - [ ] Vektör izoyüzeyde komşu yarı saydam üçgenler arasındaki

@@ -810,6 +810,17 @@ header .actions .header-io svg{width:15px;height:15px;stroke:currentColor;stroke
 .site-style-panel input[type=color]{height:31px;padding:3px;width:100%}
 .site-style-panel input[type=number]{height:31px}
 .site-style-panel small{font-size:10px;line-height:1.5;color:#7890a6}
+.site-style-checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11px;color:#385f7e}
+.site-label-offset{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#app .site-style-panel .field .site-label-offset{font-size:16px;color:inherit;text-transform:none;letter-spacing:normal}
+.site-label-offset input{min-width:0;width:100%}
+.site-style-panel input[type=text],.site-label-offset input[type=number]{height:31px}
+.clip-plane-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.clip-plane-form select,#clipIntegrity{font-size:12px;height:31px;padding:4px 6px}
+.clip-plane-form label:last-child{grid-column:span 2}
+.clip-plane-list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.clip-plane-list li{display:flex;align-items:center;gap:8px;justify-content:space-between;font-size:12px;padding:6px 8px;border:1px solid #dce8f4;border-radius:8px;background:#f8fbff}
+.clip-plane-list li label{display:flex;align-items:center;gap:6px}
 .export-png-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 24px;border-top:1px solid #e4ebf3;background:#f8fbff;font-size:12px;color:#55718b}
 .export-png-controls[hidden]{display:none!important}
 .export-png-controls button{padding:5px 10px;font-size:12px;border-radius:7px;border:1px solid #b9cde2;background:#fff;color:#1f4f7d;cursor:pointer}
