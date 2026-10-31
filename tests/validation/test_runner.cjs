@@ -32,6 +32,9 @@ test('future UI bootstrap changes cannot affect the independent CIF parser',()=>
   );
   fs.writeFileSync(path.join(temp,'index.html'),fs.readFileSync(htmlPath,'utf8'));
   fs.writeFileSync(path.join(temp,'crystal-app.js'),changed);
+  // The runner also loads the bounded CIF2 helpers from beside the page.
+  for(const helper of ['cif2-lex.js','cif2-symmetry.js','cif2-document.js'])
+   fs.copyFileSync(path.join(path.dirname(modulePath),helper),path.join(temp,helper));
   const parse=parserFromHtml(path.join(temp,'index.html'));
   const crystal=parse(fs.readFileSync(examplePath,'utf8'));
   assert.equal(crystal.sites.length,1);
