@@ -185,14 +185,20 @@ export function selectCif2Structure(source,selectedName=null){
  }
  const block=doc.blocks.find(b=>nameKey(b.name)===nameKey(chosen.name));
  const tokens=['data_'+block.name],compound=[],dropped=[];
+ const dangerous=value=>typeof value==='string'&&/^(?:_|loop_|data_.+|save_.*|global_|stop_)$/i.test(value);
  for(const entry of block.entries){
   if(entry.kind==='scalar'){
-   if(entry.value.kind==='scalar')tokens.push(entry.name,entry.value.value);
-   else if(SCIENCE.test(entry.name))throw Error('CIF2 compound scientific value unsupported: '+entry.name);
+   if(entry.value.kind==='scalar'){
+    if(dangerous(entry.value.value)){
+     if(SCIENCE.test(entry.name))throw Error('CIF2 reserved keyword cannot be converted to scientific scalar: '+entry.name);
+     dropped.push(entry.name);continue;
+    }
+    tokens.push(entry.name,entry.value.value);
+   }else if(SCIENCE.test(entry.name))throw Error('CIF2 compound scientific value unsupported: '+entry.name);
    else {compound.push({name:entry.name,value:entry.value});dropped.push(entry.name)}
    continue;
   }
-  const complex=entry.rows.some(row=>row.some(v=>v.kind!=='scalar'));
+  const complex=entry.rows.some(row=>row.some(v=>v.kind!=='scalar'||dangerous(v.value)));
   if(complex){
    if(entry.names.some(name=>SCIENCE.test(name)))
     throw Error('CIF2 compound values in structural loop require typed scientific mapping');
