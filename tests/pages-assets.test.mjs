@@ -11,7 +11,7 @@ const sw=read('sw.js');
 const html=read('index.html');
 const editor=read('crystal-app.js');
 const semiconductor=read('semiconductor-p0.js');
-const modules=['dft-ui.js','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js'];
+const modules=['dft-ui.js','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js'];
 
 test('app modules use .js so every static server sends a JavaScript MIME type',()=>{
  // Static servers without an .mjs mapping send application/octet-stream and the
@@ -74,7 +74,15 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-30-v24-view-geometry'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-10-31-v24-bonds-formats'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
+});
+
+test('names imported into crystal-app.js are not declared again at top level',()=>{
+ // A duplicate is a module SyntaxError: the browser would not load the editor at all.
+ const imported=[...editor.matchAll(/^import\s*\{([^}]*)\}\s*from/gm)]
+  .flatMap(m=>m[1].split(',').map(s=>s.trim().split(/\s+as\s+/).pop()).filter(Boolean));
+ const declared=new Set([...editor.matchAll(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]||m[2]));
+ assert.deepEqual(imported.filter(name=>declared.has(name)),[]);
 });

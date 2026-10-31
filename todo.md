@@ -778,7 +778,7 @@ işi olarak açma.
 | Birkaç yapı/alan aynı sahnede | Kısmi | En çok 3 ek faz; otomatik atom/hücre hizalama, RMSD yok → V21 |
 | Sınırlar ve Miller düzlemleri | Kısmi | Genel kırpma düzlemleri ve komşuluk/çokyüzlü bütünlüğü → V19 |
 | Kristal morfolojisi, yüz aileleri | Kısmi | Kapsamlı non-kübik nokta grupları ve kapalı yüz topolojisi → V21 |
-| VESTA proje biçimi | Kısmi | 3.x sınırlı import var; kamera/ışık/vektör/ADP/stil ve export yok → V17 |
+| VESTA proje biçimi | Kısmi | V17.1–17.4: site stilleri, kamera önizlemesi, VECTR/THERI/POLYP içe aktarımı ve P1 dışa aktarma; gerçek VESTA gidiş-dönüşü doğrulanmadı → V17 |
 | CUBE/CHGCAR/XSF/CCP4-MRC | Mevcut / kısmi | 24 MB / 2.5M voksel sınırı, birim/orijin, gerçek varyant testi → V20 |
 | Çok seviyeli ± izoyüzey ve 2B kontur | Mevcut / doğrulanmadı | Mutlak izoeşik, mesh/topoloji, alanla renklendirme ve sayısal kıyas → V16/V20 |
 | Fourier/Patterson ve türetilmiş alan | Kısmi | Deneysel faz/ölçek ve model-FCF-MTZ yorum sınırları → V20 |
@@ -788,9 +788,9 @@ işi olarak açma.
 | Kristalografik bakış yönü (a/b/c, a*/b*/c*, [uvw], (hkl) normali) | Mevcut / doğrulanmadı | V24: Görünüm paneli, sabit açılı döndürme, köken bilgisi; gerçek VESTA kıyası → V16 |
 | Arka plan, derinlik sisi, ışık ve hücre çizgi stili | Mevcut / doğrulanmadı | V24: proje, geri al ve tüm export biçimlerinde; çizgi kalınlığı yok |
 | Atom yarıçap setleri ve element renk şemaları | Kısmi | V24: Alvarez vdW, Shannon iyonik, Jmol/CPK; VESTA'nın kendi tablosu (elements.ini) kaynağıyla yok |
-| Bağ stilleri ve hidrojen bağı | Eksik | Tek renk silindir; iki renk, çizgi, kesikli stil ve D–H···A araması yok → V24 |
+| Bağ stilleri ve hidrojen bağı | Mevcut / doğrulanmadı | V24 P2: tek/iki renk silindir, ince çizgi, kesikli, çifte özel yarıçap; D–H···A çizimi ve `_geom_hbond`; PLATON/VESTA kıyası açık |
 | Geometri tablosu, simetri kodu, s.u. | Mevcut / doğrulanmadı | V24: n_klm kodu, kovaryanssız s.u., CSV ve CIF `_geom_*`; yayınlanmış CIF ile kıyas açık |
-| Yapı dışa aktarma formatları | Kısmi | CIF/POSCAR/XYZ/PDB/JSON var; SHELX, CASTEP, QE, XSF yapı, mCIF yok (VESTA biçimi → V17) → V24 |
+| Yapı dışa aktarma formatları | Mevcut / doğrulanmadı | V24 P2: SHELX .res, CASTEP .cell, QE pw.x, XSF, P1 mCIF; uygulama içe aktarıcılarıyla gidiş-dönüş testli, harici programlarla (SHELXL, CASTEP, pw.x) çalıştırılmadı |
 | Harici RIETAN/MADEL ekosistemi / ek formatlar | Kısmi | Harici araç sınırı, format talep önceliği → V22 |
 | Çok büyük sahneler / çok pencere | Kısmi | 10 workspace, nesne/volume limitleri, gerçek cihaz ölçümü → V22 |
 | Kuasikristaller (3.90.9a geliştirme) | Eksik / ayrı karar | 3.5.8 kabul hedefinin dışında → V23 |
@@ -1136,11 +1136,16 @@ madde "VESTA'da var" diye raporlanmaz.
   Alvarez 2013 vdW, Shannon 1976 iyonik (yük/KS/spin seçimi), Jmol ve CPK;
   seçilmeyen iyonlar varsayılan yarıçapta kalır ve listelenir. Bağ araması
   değişmez. Açık: VESTA renk/yarıçap tablosu (kaynaklı elements.ini yok).
-- [ ] **P2 · Bağ stilleri ve hidrojen bağı:** tek renk / iki renk
+- [x] **P2 · Bağ stilleri ve hidrojen bağı:** tek renk / iki renk
   (yarım bağ atom rengi) silindir, çizgi ve kesikli/noktalı stil;
   element çifti bazlı bağ yarıçapı. D–H···A hidrojen bağı araması
   (H···A ve D···A mesafesi + D–H···A açısı ölçütü, kaynaklı varsayılan)
   kesikli çizimle; vektör export'ta kesikli çizgi, ölçüm tablosunda ayrı tür.
+  **Yapıldı:** iki renkli bağ gerçek orta noktadan (hücre kesiminde de)
+  bölünür; kesikli bağlar ve H-bağları parça silindir olduğu için tüm
+  export biçimlerinde kesikli kalır. H-bağı varsayılanları (D–H ≤ 1,2,
+  H···A ≤ 2,5, D···A ≤ 3,5 Å, açı ≥ 120°) değiştirilebilir; geometri
+  tablosu CSV ve CIF `_geom_hbond_*` (D/H/A simetri kodlarıyla) yazar.
 - [x] **P1 · Geometri tablosu:** bağ, açı ve dihedral listesi
   simetri koduyla (ör. `x, y, z+1` / `1_556`); CIF e.s.d.'lerinden
   hücre + koordinat belirsizliğinin yayılımıyla s.u.; CSV ve CIF
@@ -1150,10 +1155,18 @@ madde "VESTA'da var" diye raporlanmaz.
   saklanır, hücre/koordinat değişince kullanılmaz; aynı sitenin
   görüntüleri arasındaki korelasyon korunur; CIF çıktısı kodların
   başvurduğu simetri işlem listesini içerir. s.u. kovaryanssızdır.
-- [ ] **P2 · Yapı dışa aktarma formatları:** SHELX `.res`, CASTEP
+- [x] **P2 · Yapı dışa aktarma formatları:** SHELX `.res`, CASTEP
   `.cell`, editörden QE `pw.x` girdisi, XSF yapı ve mCIF. Her biri için
   içe→dışa round-trip testi ve kayıp metadata tablosu (occupancy,
   ADP, simetri, manyetik moment). VESTA proje export'u V17'de kalır.
+  **Yapıldı:** `structure-export.js`; SHELX asimetrik birimi LATT/SYMM ile
+  yazar (inversiyon orijinde değilse negatif LATT), özel konum SOF =
+  10 + doluluk·m/M. SHELX içe aktarıcısı da artık SOF'u M/m ile ölçekler
+  (önceden özel konumdaki tam atom yarım okunurdu). CASTEP/QE kısmi
+  doluluğu reddeder; QE psödopotansiyel/kesme/k-örgüsü yer tutucudur;
+  XSF yapı dosyaları artık içe de aktarılır; mCIF yalnız P1 (BNS 1.1).
+  Her dosya aktarılamayanları yorum olarak yazar. Açık: harici
+  programlarla (SHELXL, CASTEP, pw.x, VESTA) gerçek okuma testi.
 - [ ] **Kabul:** Si, NaCl, rutil, triklinik ve H-bağlı (ör. buz Ih
   veya bir hidrat) gerçek CIF'lerde: [uvw]/(hkl) bakışının bağımsız
   vektör hesabıyla açısal hatası, yarıçap tablolarının kaynak değerleriyle

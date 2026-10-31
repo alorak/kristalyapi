@@ -17,7 +17,8 @@ import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightM
 import {createDftSettings,enhanceFilePickers,initTabKeys,syncTabState} from './dft-ui.js';
 import {textOutline,svgPathData,pdfPathData,postScriptPathData,visibleLineIntervals,sphereShade,SPHERE_GRADIENT,mixHex,pngWithDpi,lzwEncode,niceScaleLength,asciiText} from './export-graphics.js';
 import {crystallographicView,rotateVector,normalizedViewSettings,DEFAULT_VIEW_SETTINGS,lightDirection,depthCueFactor,contrastingInk,RADIUS_SETS,COLOR_SCHEMES,ELEMENT_DATA_SOURCE,shannonOptions,displayRadius,schemeColor,normalizedIonicChoices} from './view-settings.js';
-import {symmetryOperations,geometryTable,geometryCsv,geometryCif,formatWithSu} from './geometry-table.js';
+import {symmetryOperations,geometryTable,geometryCsv,geometryCif,formatWithSu,hydrogenBonds} from './geometry-table.js';
+import {shelxResText,castepCellText,qeStructureInputText,xsfStructureText,magneticCifText} from './structure-export.js';
 import {MIN_SLAB_VACUUM_ANGSTROM,slabAnalysis,suggestBandPath,bandCapacityAdvice,bandCapacityFrom} from './qe-electronic-setup.js';
 import {parseConvergenceView,verifyConvergenceFileHashes,renderConvergenceView} from './qe-convergence-view.js';
 import { parseDefectComparisonResult,renderDefectComparison } from './qe-defect-compare-view.js';
@@ -2363,18 +2364,21 @@ function addCellLines(B,r){
  if(state.cellVisible)addLayerObject(cellLine(segments,true),'cell');
 }
 function makeCylinder(a,b,radius,mat){const d=new THREE.Vector3().subVectors(b,a),m=new THREE.Mesh(bondGeometry,mat);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());m.scale.set(radius,d.length(),radius);return m;}
-function addInstancedCylinders(segments,radius,material,layer){
+function addInstancedCylinders(segments,radius,material,layer,{colors=null,radii=null}={}){
  if(!segments.length)return null;
  const mesh=new THREE.InstancedMesh(bondGeometry,material,segments.length);
+ if(colors)colors.forEach((color,i)=>mesh.setColorAt(i,color));
  mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
  const up=new THREE.Vector3(0,1,0),delta=new THREE.Vector3(),mid=new THREE.Vector3(),q=new THREE.Quaternion(),scale=new THREE.Vector3(),matrix=new THREE.Matrix4();
  segments.forEach(([a,b],i)=>{
   delta.subVectors(b,a);const distance=delta.length();
   q.setFromUnitVectors(up,delta.multiplyScalar(1/Math.max(distance,1e-9)));
-  mid.copy(a).add(b).multiplyScalar(.5);scale.set(radius,distance,radius);
+  const r=radii?radii[i]:radius;
+  mid.copy(a).add(b).multiplyScalar(.5);scale.set(r,distance,r);
   matrix.compose(mid,q,scale);mesh.setMatrixAt(i,matrix);
  });
  mesh.instanceMatrix.needsUpdate=true;
+ if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  addLayerObject(mesh,layer);
  return mesh;
 }
@@ -2849,7 +2853,7 @@ function clipSegmentToCell(a,b,repeat){
  }
  return [a.map((v,i)=>v+lower*d[i]),a.map((v,i)=>v+upper*d[i])];
 }
-function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false){
+function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false,{split=false}={}){
  if(sites.length>100) return null; // large structures retain spatial hash renderer
  const neighbors=[],fractional=sites.map(s=>[frac(+s.x),frac(+s.y),frac(+s.z)]);
  let imageCandidates=0;
@@ -2873,10 +2877,14 @@ function periodicBondSegments(sites,repeat,B,rules,cut,limit=6500,auto=false){
  for(let u=0;u<repeat[0];u++)for(let v=0;v<repeat[1];v++)for(let w=0;w<repeat[2];w++){
   for(const [i,j,shift] of neighbors){
    const a=fractional[i].map((x,k)=>x+[u,v,w][k]),b=fractional[j].map((x,k)=>x+[u,v,w][k]+shift[k]);
-   const clipped=clipSegmentToCell(a,b,repeat);if(!clipped)continue;
-   const [p,q]=clipped;const key=[p,q].map(z=>z.map(x=>x.toFixed(6)).join('/')).sort().join(':');
-   if(dedup.has(key))continue;dedup.add(key);result.push([toCart(p,B),toCart(q,B)]);
-   if(result.length>=limit)return {segments:result,truncated:true};
+   // Two-colour bonds change colour at the true midpoint, even when the cell edge clips them.
+   const mid=a.map((x,k)=>(x+b[k])/2),pieces=split?[[a,mid,i],[mid,b,j]]:[[a,b,i,j]];
+   for(const [from,to,site,other] of pieces){
+    const clipped=clipSegmentToCell(from,to,repeat);if(!clipped)continue;
+    const [p,q]=clipped;const key=[p,q].map(z=>z.map(x=>x.toFixed(6)).join('/')).sort().join(':')+(split?'#'+site:'');
+    if(dedup.has(key))continue;dedup.add(key);result.push([toCart(p,B),toCart(q,B),site,other??site]);
+    if(result.length>=limit)return {segments:result,truncated:true};
+   }
   }
  }
  return {segments:result,truncated:false};
@@ -4011,10 +4019,70 @@ function atomDisplayRadius(symbol){
  if(value.fallback)radiusFallbacks.add(symbol);
  return value.radius;
 }
+/* ---- Bond styles and hydrogen bonds ------------------------------------- */
+const BOND_STYLE_KEYS=['unicolor','bicolor','line','dashed'];
+let hydrogenBondCount=0;
+/* "Si-O 0.08" per line: bond radius (Å) for an element pair, any order. */
+function parseBondRadii(text){
+ const radii=new Map();
+ for(const raw of String(text).split(/\n|;/)){
+  const line=raw.trim();if(!line)continue;
+  const m=/^([A-Za-z]{1,2})\s*-\s*([A-Za-z]{1,2})\s*[: ]\s*([0-9.]+)$/.exec(line);
+  if(!m)throw Error('Bağ yarıçapı satırı "Si-O 0.08" biçiminde olmalı: '+line);
+  const r=Number(m[3]);
+  if(!(r>=.005&&r<=.5))throw Error('Bağ yarıçapı 0.005–0.5 Å aralığında olmalı: '+line);
+  radii.set([cleanSymbol(m[1]),cleanSymbol(m[2])].sort().join('-'),r);
+ }
+ return radii;
+}
+/* Dash pieces of a segment, so dashes stay dashed in every export. */
+function dashSegments(a,b,dash,gap){
+ const length=a.distanceTo(b),pieces=[];
+ if(!(length>0))return pieces;
+ for(let s=0;s<length;s+=dash+gap)pieces.push([a.clone().lerp(b,s/length),a.clone().lerp(b,Math.min(length,s+dash)/length)]);
+ return pieces;
+}
+const HBOND_DISPLAY_DEFAULTS={enabled:false,maxHA:2.5,maxDA:3.5,minAngle:120};
+function hydrogenBondSettings(){
+ const h=state.hbonds&&typeof state.hbonds==='object'?state.hbonds:{},d=HBOND_DISPLAY_DEFAULTS;
+ const num=(v,low,high,fallback)=>Number.isFinite(v)&&v>=low&&v<=high?v:fallback;
+ return {enabled:h.enabled===true,maxHA:num(h.maxHA,1.5,3.5,d.maxHA),maxDA:num(h.maxDA,2.2,4.5,d.maxDA),minAngle:num(h.minAngle,90,175,d.minAngle)};
+}
+/* D–H···A among the displayed atoms: D is the nearest N/O/F within 1.2 Å of
+   H; drawn as blue dashes on the bond layer. Criteria as in the geometry table. */
+function drawHydrogenBonds(entry){
+ const o=hydrogenBondSettings(),donors=new Set(['N','O','F']),acceptors=new Set(['N','O','F','S','Cl']);
+ const size=o.maxDA,cell=p=>[Math.floor(p.x/size),Math.floor(p.y/size),Math.floor(p.z/size)],grid=new Map();
+ entry.forEach((item,i)=>{if(!atomRender[i]?.visible)return;const k=cell(item.pos).join(',');if(!grid.has(k))grid.set(k,[]);grid.get(k).push(i);});
+ const near=(i,max)=>{const out=[],c=cell(entry[i].pos);
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++)for(const j of grid.get([c[0]+x,c[1]+y,c[2]+z].join(','))||[]){
+   if(j===i)continue;const d=entry[i].pos.distanceTo(entry[j].pos);if(d<=max)out.push([j,d]);
+  }
+  return out.sort((a,b)=>a[1]-b[1]);};
+ const segments=[];
+ for(let h=0;h<entry.length;h++){
+  if(cleanSymbol(entry[h].site.symbol)!=='H'||!atomRender[h]?.visible)continue;
+  const around=near(h,o.maxHA),donor=around.find(([j,d])=>d<=1.2&&donors.has(cleanSymbol(entry[j].site.symbol)));
+  if(!donor)continue;
+  for(const [a,d] of around){
+   if(a===donor[0]||d<=1.2||!acceptors.has(cleanSymbol(entry[a].site.symbol)))continue;
+   const D=entry[donor[0]].pos,H=entry[h].pos,A=entry[a].pos;
+   const angle=Math.acos(Math.max(-1,Math.min(1,D.clone().sub(H).normalize().dot(A.clone().sub(H).normalize()))))*180/Math.PI;
+   if(D.distanceTo(A)>o.maxDA||angle<o.minAngle)continue;
+   segments.push(...dashSegments(H,A,.12,.09));
+   if(segments.length>40000)break;
+  }
+ }
+ if(!segments.length)return 0;
+ const material=new THREE.MeshStandardMaterial({color:0x3f8fd6,roughness:.5});material.userData.temporary=true;
+ const mesh=addInstancedCylinders(segments,.028,material,'bonds');mesh.userData.hydrogenBonds=true;
+ return segments.length;
+}
+
 function build(){
  radiusFallbacks=new Set();sceneBoundsCache=null;
  // Runs once this synchronous build has finished and radius fallbacks are known.
- if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();});
+ if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();updateHydrogenBondStatus();});
  const buildStarted=performance.now();
  try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
@@ -4142,16 +4210,34 @@ function build(){
   }
  }
  if(state.bonds&&state.style!=='space'&&state.style!=='poly'){
-  const bondMat=new THREE.MeshStandardMaterial({color:state.style==='wire'?0x96a2ae:0x98a5b0,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
-  const radius=state.style==='wire'?.012:state.style==='stick'?.095:.055;
+  const style=BOND_STYLE_KEYS.includes(state.bondStyle)?state.bondStyle:'unicolor',coloured=style==='bicolor'||style==='line';
+  const bondMat=new THREE.MeshStandardMaterial({color:coloured?0xffffff:state.style==='wire'?0x96a2ae:0x98a5b0,transparent:state.style==='wire',opacity:state.style==='wire'?.55:1,roughness:.4});bondMat.userData.temporary=true;
+  const baseRadius=style==='line'?.018:state.style==='wire'?.012:state.style==='stick'?.095:.055;
+  const pairRadii=parseBondRadii(state.bondRadii||'');
   const defaultBounds=state.bounds.every(([a,b])=>a===0&&b===1);
   const periodic=state.plane.slab||!defaultBounds||!bondPeriodic?null:
-   periodicBondSegments(visiblePhysical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond);
-  const segments=periodic?periodic.segments:bondPairs.filter(([i,j])=>atomRender[i].visible&&atomRender[j].visible).map(([i,j])=>[entry[i].pos,entry[j].pos]);
-  if(segments.length)addInstancedCylinders(segments,radius,bondMat,'bonds');
+   periodicBondSegments(visiblePhysical,state.rep,B,rules,state.cut,MAX_BONDS,state.autoBond,{split:coloured});
+  // [start, end, site of this end, site at the other end]; sites give colour and pair radius.
+  let pieces;
+  if(periodic)pieces=periodic.segments.map(([a,b,i,j])=>[a,b,visiblePhysical[i],visiblePhysical[j]]);
+  else{
+   pieces=[];
+   for(const [i,j] of bondPairs){
+    if(!atomRender[i].visible||!atomRender[j].visible)continue;
+    const a=entry[i].pos,b=entry[j].pos;
+    if(coloured){const mid=a.clone().add(b).multiplyScalar(.5);pieces.push([a,mid,entry[i].site,entry[j].site],[mid,b,entry[j].site,entry[i].site]);}
+    else pieces.push([a,b,entry[i].site,entry[j].site]);
+   }
+  }
+  if(style==='dashed')pieces=pieces.flatMap(([a,b,s1,s2])=>dashSegments(a,b,.16,.11).map(([p,q])=>[p,q,s1,s2]));
+  const pairKey=(s1,s2)=>[cleanSymbol(s1.symbol),cleanSymbol(s2.symbol)].sort().join('-');
+  const radii=pieces.map(([,,s1,s2])=>style==='line'?baseRadius:pairRadii.get(pairKey(s1,s2))??baseRadius);
+  const colors=coloured?pieces.map(([,,site])=>new THREE.Color(visualHex(site.visualColor,elementColor(site.symbol)))):null;
+  if(pieces.length)addInstancedCylinders(pieces.map(([a,b])=>[a,b]),baseRadius,bondMat,'bonds',{colors,radii});
   else bondMat.dispose();
   if(periodic?.truncated)capReached=true;
  }
+ hydrogenBondCount=state.hbonds?.enabled?drawHydrogenBonds(entry):0;
  const bondFinished=performance.now();
  addCellLines(B,state.rep);drawMillerPlane(B);drawMorphology(B,center);drawOverlayStructures(B,center);
  if(state.axes){const origin=toCart([0,0,0],B);const axes=[0xea6373,0x72d29a,0x78baff];for(let i=0;i<3;i++){const p=origin.clone().addScaledVector(B[i],Math.min(state.rep[i],1));addLayerObject(makeCylinder(origin,p,.035,new THREE.MeshBasicMaterial({color:axes[i]})),'axes');}}
@@ -6690,6 +6776,21 @@ function shelxData(source){
    operations.push(xyz.join(','));
   }
  }
+ // SHELX occupancies are relative to the general position: a full atom on a
+ // two-fold axis is written 10.5. Scale by M/m (all operations / distinct
+ // positions of the atom) so special positions are not read as half atoms.
+ let overfull=0;
+ const general=new Set(operations).size;
+ for(const atom of atoms){
+  const images=[];
+  for(const op of new Set(operations)){
+   const p=applySymmetry(op,[atom.x,atom.y,atom.z]).map(frac);
+   if(!images.some(q=>q.every((v,i)=>{const d=Math.abs(v-p[i]);return Math.min(d,1-d)<1e-4;})))images.push(p);
+  }
+  const scaled=atom.occupancy*general/images.length;
+  if(scaled>1+1e-3)overfull++;
+  atom.occupancy=Math.min(1,scaled);
+ }
  const cif=['data_shelx','_cell_length_a '+cell.a,'_cell_length_b '+cell.b,'_cell_length_c '+cell.c,
   '_cell_angle_alpha '+cell.alpha,'_cell_angle_beta '+cell.beta,'_cell_angle_gamma '+cell.gamma,
   'loop_','_space_group_symop_operation_xyz',...operations.map(op=>"'"+op+"'"),
@@ -6700,7 +6801,8 @@ function shelxData(source){
  const parsed=cifData(cif);
  parsed.name=title.slice(0,150);parsed.detail='SHELXL .res/.ins · '+parsed.sites.length+' atom (P1 genişletmesi)';
  parsed.warning='SHELX LATT/SYMM simetrisi P1 atomlarına açıldı; bağlar, rafinman kısıtları ve serbest değişkenler proje dosyasına aktarılmaz.'+
-  (part?' PART düzensizlik gruplarının ayrımı korunmaz.':'');
+  (part?' PART düzensizlik gruplarının ayrımı korunmaz.':'')+
+  (overfull?' '+overfull+' özel konum atomunun SOF değeri genel konuma göre 1\'i aştı ve 1\'e indirildi.':'');
  return parsed;
 }
 const BOHR_TO_ANGSTROM=.529177210903;
@@ -7986,6 +8088,10 @@ function loadProject(json){
   radiusSet:RADIUS_SET_KEYS.includes(obj.radiusSet)?obj.radiusSet:'default',
   ionicRadii:obj.ionicRadii&&typeof obj.ionicRadii==='object'&&Object.keys(obj.ionicRadii).length<=120?obj.ionicRadii:{},
   colorScheme:COLOR_SCHEME_KEYS.includes(obj.colorScheme)?obj.colorScheme:'app',
+  bondStyle:BOND_STYLE_KEYS.includes(obj.bondStyle)?obj.bondStyle:'unicolor',
+  bondRadii:typeof obj.bondRadii==='string'&&obj.bondRadii.length<=2000?obj.bondRadii:'',
+  // Thresholds are clamped again where they are used (hydrogenBondSettings).
+  hbonds:obj.hbonds&&typeof obj.hbonds==='object'?{enabled:obj.hbonds.enabled===true,maxHA:Number(obj.hbonds.maxHA),maxDA:Number(obj.hbonds.maxDA),minAngle:Number(obj.hbonds.minAngle)}:{enabled:false},
   bonds:obj.bonds!==false,cellVisible:obj.cellVisible!==false,boundary:obj.boundary!==false,labels:!!obj.labels,axes:!!obj.axes,autoRotate:!!obj.autoRotate,atomScale:Number.isFinite(Number(obj.atomScale))?clamp(Number(obj.atomScale),.3,1.6):.8};
 }
 
@@ -8105,7 +8211,8 @@ function lastCrystalPayload(current){
   atomScale:current.atomScale,poly:current.poly,polyCenters:current.polyCenters,polyColor:current.polyColor,polyOpacity:current.polyOpacity,polyCut:current.polyCut,polyNeighbors:current.polyNeighbors,
   vestaDisplayVectors:applicableVestaVectors(current),
   layers:normalizedLayerState(current.layers),layerOrder:normalizedLayerOrder(current.layerOrder),
-  view:current.view,radiusSet:current.radiusSet||'default',ionicRadii:current.ionicRadii||{},colorScheme:current.colorScheme||'app'
+  view:current.view,radiusSet:current.radiusSet||'default',ionicRadii:current.ionicRadii||{},colorScheme:current.colorScheme||'app',
+  bondStyle:current.bondStyle||'unicolor',bondRadii:current.bondRadii||'',hbonds:current.hbonds||{enabled:false}
  };
 }
 function storeLastCrystal(storage,current){
@@ -8515,6 +8622,7 @@ function structureImportData(source,filename){
  if(name.endsWith('.cif')||name.endsWith('.mcif')||/^\s*data_/i.test(str))return cifData(str);
  if(/^(?=.*^CELL\s)(?=.*^SFAC\s)(?=.*^LATT\s)/ims.test(str))return shelxData(str);
  if(name.endsWith('.cell')||/^\s*%BLOCK\s+LATTICE_(?:CART|ABC)\b/im.test(str))return castepData(str);
+ if(name.endsWith('.xsf')&&!/BEGIN_DATAGRID/i.test(str))return xsfStructureData(str);
  if(/\.(?:in|pwi|pw|qe)$/.test(name)||/&SYSTEM\b/i.test(str)&&/^\s*ATOMIC_POSITIONS\b/im.test(str))return qeData(str);
  if(name.endsWith('.pdb')||name.endsWith('.ent')||/^(?:HEADER|CRYST1|ATOM  |HETATM|MODEL )/m.test(str))return pdbData(str);
  if(name.endsWith('.xyz')||/^\s*\d+\s*\r?\n/.test(str))return xyzData(str);
@@ -8688,6 +8796,58 @@ function cifExportPreservingSource(current){
  if(current.cifOriginal?.text&&current.cifOriginal.fingerprint===cifScientificFingerprint(current))
   return {text:current.cifOriginal.text,original:true};
  return {text:cifExportText(current),original:false};
+}
+/* SHELX/CASTEP/QE/XSF/mCIF writers (structure-export.js). SHELX keeps the
+   asymmetric unit and its symmetry; the others list every atom of the cell.
+   What a format cannot carry is written into the file and shown here. */
+function structureExportModel(expand){
+ const symmetric=state.symmetryEnabled&&!state.nonPeriodic;
+ const plain=list=>list.map(s=>({...s,symbol:cleanSymbol(s.symbol),x:+s.x,y:+s.y,z:+s.z}));
+ const expanded=plain(symmetric?expandSites(state.sites,state.sgSetting,5000):state.sites);
+ return {name:state.name,cell:state.cell,basis:basis(state.cell).map(v=>v.toArray()),nonPeriodic:!!state.nonPeriodic,
+  sites:expand?expanded:plain(state.sites),expandedSites:expanded,symmetry:!expand&&symmetric?{pairs:settingOps(state.sgSetting)}:null};
+}
+function exportStructureFormat(kind){
+ const writers={shelx:[()=>shelxResText(structureExportModel(false)),'.res','chemical/x-shelx'],
+  castep:[()=>castepCellText(structureExportModel(true)),'.cell','text/plain'],
+  qe:[()=>qeStructureInputText(structureExportModel(true)),'.pwi','text/plain'],
+  xsf:[()=>xsfStructureText(structureExportModel(true)),'.xsf','text/plain'],
+  mcif:[()=>magneticCifText(structureExportModel(false)),'.mcif','chemical/x-cif']};
+ const [write,extension,mime]=writers[kind];
+ const {text,losses}=write();
+ download(safeName(state.name)+extension,text,mime+';charset=utf-8');
+ if(losses.length)inform('Aktarılamayanlar: '+losses.map(l=>l.tr).join(' '));
+}
+/* XSF structure files (CRYSTAL/PRIMVEC/PRIMCOORD or ATOMS) without a data
+   grid; grids still go through the volumetric reader. */
+function xsfStructureData(source){
+ const lines=String(source).replace(/\r/g,'').split('\n').map(line=>line.replace(/#.*$/,'').trim()).filter(Boolean);
+ const symbolOf=token=>/^\d+$/.test(token)?PERIODIC_SYMBOLS[Number(token)-1]:cleanSymbol(token);
+ const atomRow=line=>{
+  const t=line.split(/\s+/),symbol=symbolOf(t[0]),xyz=t.slice(1,4).map(Number);
+  if(!symbol||xyz.length!==3||!xyz.every(Number.isFinite))throw Error('XSF atom satırı geçersiz: '+line);
+  return {symbol,xyz};
+ };
+ const primvec=lines.findIndex(l=>/^PRIMVEC$/i.test(l)),primcoord=lines.findIndex(l=>/^PRIMCOORD$/i.test(l));
+ if(primvec>=0&&primcoord>=0){
+  const vectors=lines.slice(primvec+1,primvec+4).map(l=>l.split(/\s+/).map(Number));
+  if(vectors.length!==3||vectors.some(v=>v.length!==3||!v.every(Number.isFinite)))throw Error('XSF PRIMVEC üç vektör içermeli.');
+  const count=Number(lines[primcoord+1].split(/\s+/)[0]);
+  if(!Number.isInteger(count)||count<1||count>1000)throw Error('XSF atom sayısı 1–1000 olmalı.');
+  const B=vectors.map(v=>new THREE.Vector3(...v)),cell=metric(B);
+  const sites=lines.slice(primcoord+2,primcoord+2+count).map((line,i)=>{
+   const {symbol,xyz}=atomRow(line),f=toFrac(new THREE.Vector3(...xyz),B);
+   return {symbol,label:symbol+(i+1),x:frac(f[0]),y:frac(f[1]),z:frac(f[2]),occupancy:1};
+  });
+  if(sites.length!==count)throw Error('XSF PRIMCOORD atom sayısı satırlarla uyuşmuyor.');
+  // The editor's basis puts a on x and b in the xy plane; XSF vectors may be rotated.
+  return {name:'XSF',detail:'XSF CRYSTAL · '+count+' atom',cell,sites,warning:'XSF Kartezyen eksenleri a ekseni x boyunca olacak biçimde yeniden yönlendirildi.'};
+ }
+ const atomsAt=lines.findIndex(l=>/^ATOMS$/i.test(l));
+ if(atomsAt<0)throw Error('XSF yapı bloğu (PRIMVEC/PRIMCOORD veya ATOMS) bulunamadı.');
+ const rows=[];for(const line of lines.slice(atomsAt+1)){if(/^[A-Z_]+$/i.test(line))break;rows.push(atomRow(line));}
+ const xyz=[String(rows.length),'XSF molecule',...rows.map(r=>r.symbol+' '+r.xyz.join(' '))].join('\n');
+ return xyzData(xyz);
 }
 function exportCif(){
  const output=cifExportPreservingSource(state);
@@ -9042,7 +9202,8 @@ function crystalSvgPrimitives(width,height){
     }else{
      const a=new THREE.Vector3(0,-.5,0).applyMatrix4(matrix).applyMatrix4(obj.matrixWorld);
      const b=new THREE.Vector3(0,.5,0).applyMatrix4(matrix).applyMatrix4(obj.matrixWorld);
-     scale.setFromMatrixScale(matrix);line(a,b,color,scale.x,opacity);
+     const instance=new THREE.Color();if(obj.instanceColor)obj.getColorAt(i,instance);
+     scale.setFromMatrixScale(matrix);line(a,b,obj.instanceColor?colorHex(instance):color,scale.x,opacity);
     }
    }
   }else if(obj.isLineSegments||obj.isLine||obj.isLineLoop){
@@ -9667,7 +9828,8 @@ function saveProject(){download(safeName(state.name)+'.kristal.json',JSON.string
  cifMeta:cifMetaValid(state.cifMeta),cifComposition:state.cifComposition||'',adpVisible:!!state.adpVisible,adpLevel:state.adpLevel||50,
  vestaDisplayVectors:applicableVestaVectors(state),
  layers:normalizedLayerState(state.layers),layerOrder:normalizedLayerOrder(state.layerOrder),bonds:state.bonds,cellVisible:state.cellVisible,boundary:state.boundary,labels:state.labels,axes:state.axes,autoRotate:state.autoRotate,atomScale:state.atomScale,
- view:state.view,radiusSet:state.radiusSet||'default',ionicRadii:state.ionicRadii||{},colorScheme:state.colorScheme||'app'},null,2),'application/json');}
+ view:state.view,radiusSet:state.radiusSet||'default',ionicRadii:state.ionicRadii||{},colorScheme:state.colorScheme||'app',
+ bondStyle:state.bondStyle||'unicolor',bondRadii:state.bondRadii||'',hbonds:state.hbonds||{enabled:false}},null,2),'application/json');}
 
 const COD_BASE='https://www.crystallography.net/cod';
 const COD_BOOKMARK_KEY='kristalyapi.cod.bookmarks.v1';
@@ -10656,10 +10818,12 @@ function initOpenModal(){
   }
  });
 }
-const EXPORT_FORMATS=['project','vesta','vesta-loss','cif','poscar','xyz','pdb','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml'];
+const EXPORT_FORMATS=['project','vesta','vesta-loss','cif','poscar','xyz','pdb','shelx','castep','qe','xsf','mcif','png','tiff','pdf','svg','pdf-vector','eps','stl','glb','vrml'];
 let exportFocusBefore=null;
 function exportFunction(format){
- const functions={project:saveProject,vesta:exportVestaProject,'vesta-loss':exportVestaLossReport,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,
+ const functions={project:saveProject,vesta:exportVestaProject,'vesta-loss':exportVestaLossReport,cif:exportCif,poscar:exportPoscar,xyz:exportXyz,pdb:exportPdb,
+  shelx:()=>exportStructureFormat('shelx'),castep:()=>exportStructureFormat('castep'),qe:()=>exportStructureFormat('qe'),
+  xsf:()=>exportStructureFormat('xsf'),mcif:()=>exportStructureFormat('mcif'),png:screenshot,tiff:exportTiff,pdf:exportPdf,svg:exportSvg,
   'pdf-vector':()=>exportVectorPrint('pdf-vector'),eps:()=>exportVectorPrint('eps'),stl:exportStl,glb:exportGlb,vrml:exportVrml};
  if(!EXPORT_FORMATS.includes(format))throw Error('Geçersiz dışa aktarma formatı.');
  return functions[format];
@@ -10980,6 +11144,23 @@ function syncViewPanel(){
  $('radiusSet').value=RADIUS_SET_KEYS.includes(state.radiusSet)?state.radiusSet:'default';
  $('colorScheme').value=COLOR_SCHEME_KEYS.includes(state.colorScheme)?state.colorScheme:'app';
  renderIonicChoices();applySceneAppearance();
+ const h=hydrogenBondSettings();
+ $('bondStyle').value=BOND_STYLE_KEYS.includes(state.bondStyle)?state.bondStyle:'unicolor';
+ $('bondRadii').value=state.bondRadii||'';$('hbondEnabled').checked=h.enabled;
+ $('hbondMaxHA').value=h.maxHA;$('hbondMaxDA').value=h.maxDA;$('hbondMinAngle').value=h.minAngle;
+}
+function updateHydrogenBondStatus(){
+ if(!$('hbondStatus'))return;
+ const h=hydrogenBondSettings(),hasH=atomData.some(item=>cleanSymbol(item.site.symbol)==='H');
+ $('hbondStatus').textContent=!h.enabled?'':!hasH?'Yapıda H atomu yok; hidrojen bağı aranmadı.':
+  hydrogenBondCount?'Hidrojen bağları kesikli mavi çizgilerle gösteriliyor.':'Ölçütlere uyan hidrojen bağı bulunmadı.';
+}
+function initBondStylePanel(){
+ const rebuild=mutate=>runViewAction(()=>{mutate();build();recordHistoryChange();updateHydrogenBondStatus();});
+ $('bondStyle').addEventListener('change',()=>rebuild(()=>{state.bondStyle=$('bondStyle').value;}));
+ $('applyBondRadii').onclick=()=>rebuild(()=>{parseBondRadii($('bondRadii').value);state.bondRadii=$('bondRadii').value.trim();});
+ const hbonds=()=>({enabled:$('hbondEnabled').checked,maxHA:Number($('hbondMaxHA').value),maxDA:Number($('hbondMaxDA').value),minAngle:Number($('hbondMinAngle').value)});
+ for(const id of ['hbondEnabled','hbondMaxHA','hbondMaxDA','hbondMinAngle'])$(id).addEventListener('change',()=>rebuild(()=>{state.hbonds=hbonds();}));
 }
 function initViewPanel(){
  for(const button of document.querySelectorAll('[data-view-axis]'))button.addEventListener('click',()=>runViewAction(()=>{
@@ -11055,9 +11236,15 @@ function initGeometryTable(){
   const input=geometryInputs();
   const rows=geometryTable(input.sites,state.cell,input.ops,input.range,{cellSu:input.cellSu,skip:input.skip,
    torsions:$('geometryTorsions').checked,periodic:!state.nonPeriodic});
+  if($('geometryHbonds').checked){
+   const h=hydrogenBondSettings();
+   rows.hbonds=hydrogenBonds(input.sites,state.cell,input.ops,{maxHA:h.maxHA,maxDA:h.maxDA,minAngle:h.minAngle,
+    cellSu:input.cellSu,skip:input.skip,periodic:!state.nonPeriodic});
+  }
   lastGeometry={rows,ops:input.ops};
   const withSu=[...rows.bonds,...rows.angles,...rows.torsions].some(r=>r.su!=null);
   $('geometrySummary').textContent=rows.bonds.length+' bağ · '+rows.angles.length+' açı · '+rows.torsions.length+' burulma'+
+   (rows.hbonds?' · '+rows.hbonds.length+' hidrojen bağı':'')+
    (withSu?' · s.u. CIF e.s.d.lerinden':' · e.s.d. yok, s.u. boş')+(rows.truncated?' · satır sınırına ulaşıldı':'');
   renderGeometryPreview(rows);
   $('geometryCsv').disabled=$('geometryCif').disabled=false;
@@ -11074,7 +11261,7 @@ function initGeometryTable(){
 function bind(){
  initWorkspaceUi();
  initRightSidebarTabs();
- initViewPanel();initGeometryTable();
+ initViewPanel();initGeometryTable();initBondStylePanel();
  initDftTracking();
  initQeProtocols();
  initLibrary();

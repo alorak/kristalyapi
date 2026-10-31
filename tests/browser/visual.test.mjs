@@ -55,6 +55,8 @@ window.__visualTest={
  },
  bounds:()=>state.bounds.map(a=>[...a]),
  // Cosine between the camera's view-out direction and the c lattice vector.
+ // Distinct instance colours of bond meshes and of atoms (two-colour bonds reuse atom colours).
+ instanceColors:layer=>{const out=new Set(),c=new THREE.Color();for(const o of root.children){if(o.userData.layer!==layer||!o.isInstancedMesh||!o.instanceColor)continue;for(let i=0;i<o.count;i++){o.getColorAt(i,c);out.add(c.getHexString());}}return [...out].sort();},
  cameraAlongCell:()=>{const c=basis(state.cell)[2].clone().normalize(),out=camera.position.clone().sub(orbit.target).normalize();return out.dot(c);},
  morphOrbit:()=>morphologyPointOrbit(1,0,0,'123'),
  moleculeBonds:()=>{const water=xyzData('3\\nH2O\\nO 0 0 0\\nH .9584 0 0\\nH -.239 0 .927');
@@ -421,6 +423,20 @@ try{
  assert.ok(await page.locator('#geometryPreview tr').count()>1);
  const [geomCif]=await Promise.all([page.waitForEvent('download'),page.locator('#geometryCif').click()]);
  assert.match(await fs.readFile(await geomCif.path(),'utf8'),/_geom_bond_distance/);
+ // V24 P2: two-colour bonds take atom colours; SHELX export carries LATT/SFAC.
+ await page.locator('[data-right-tool="bonds"]').click();
+ await page.locator('#bondStyle').selectOption('bicolor');
+ const bondColors=await page.evaluate(()=>window.__visualTest.instanceColors('bonds'));
+ const atomColors=await page.evaluate(()=>window.__visualTest.instanceColors('atoms'));
+ assert.ok(bondColors.length>0&&bondColors.every(c=>atomColors.includes(c)),'two-colour bonds use atom colours: '+bondColors+' / '+atomColors);
+ await page.locator('#bondStyle').selectOption('unicolor');
+ assert.deepEqual(await page.evaluate(()=>window.__visualTest.instanceColors('bonds')),[],'single-colour bonds have no instance colours');
+ await page.locator('[data-right-tool="bonds"]').click();
+ await page.locator('#saveBtn').click();
+ const [shelx]=await Promise.all([page.waitForEvent('download'),page.locator('[data-export="shelx"]').click()]);
+ assert.match(shelx.suggestedFilename(),/\.res$/);
+ const shelxText=await fs.readFile(await shelx.path(),'utf8');
+ assert.match(shelxText,/^TITL /);assert.match(shelxText,/\nLATT -?\d\n/);assert.match(shelxText,/\nSFAC /);assert.match(shelxText,/\nEND\n$/);
  // Undo restores the previous appearance; reset returns to the original scene.
  await page.locator('[data-right-tool="view"]').click();
  await page.locator('#viewAppearanceReset').click();
