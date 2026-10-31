@@ -6452,6 +6452,10 @@ function cifProvenanceSafeValue(value){
  return '"'+s+'"';
 }
 function cifProvenanceFromSource(source){
+ // Never reinterpret CIF2 quoted/list-valued provenance with CIF1 grammar.
+ // If edited, produce a clean generated CIF1 structure without inventing
+ // source metadata; unchanged original text can still be preserved verbatim.
+ if(isCif2(source))return {scalars:[],loops:[]};
  const t=tokenizeCif(source),scalars=[],loops=[],seen=new Set();
  const eligible=key=>/^_(?:publ_author|citation|journal)_[a-z0-9_]+$/.test(key);
  // CIF '?' and '.' are missing-value tokens, distinct from quoted literal
