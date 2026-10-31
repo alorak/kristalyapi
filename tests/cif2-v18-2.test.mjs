@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
-import {readCif2Document,listCif2Structures,selectCif2Structure} from '../cif2-document.js';
+import {readCif2Document,listCif2Structures,selectCif2Structure,safeCif2Metadata} from '../cif2-document.js';
 const require=createRequire(import.meta.url);
 const {parserFromHtml}=require('./validation/js_cif_runner.cjs');
 const parse=parserFromHtml(fileURLToPath(new URL('../index.html',import.meta.url)));
@@ -43,6 +43,12 @@ test('explicit block selection imports alpha only and beta only',()=>{
  assert.equal(b.cell.a,4);
  assert.match(a.warning,/selected alpha/);
  assert.match(b.warning,/selected beta/);
+ assert.equal(a.cif2BlockName,'alpha');
+ assert.equal(b.cif2BlockName,'beta');
+ assert.equal(a.cif2TypedMetadata.length,2);
+ assert.equal(a.cif2TypedMetadata[0].value.kind,'list');
+ assert.equal(a.cif2TypedMetadata[1].rows[0][1].kind,'list');
+ assert.deepEqual(safeCif2Metadata(a.cif2TypedMetadata),a.cif2TypedMetadata);
 });
 test('non-structural compound loops are skipped, but typed metadata is available',()=>{
  const chosen=selectCif2Structure(fixture,'alpha');
@@ -96,6 +102,19 @@ test('CIF2 duplicate data block and save frame names are rejected',()=>{
  const nested=fixture.replace('save_record','save_record\nsave_inner');
  assert.throws(()=>readCif2Document(nested),/nested save frames/);
 });
+test('bounded metadata validation rejects oversized, malformed and non-typed state',()=>{
+ assert.throws(()=>safeCif2Metadata([{}]),/Invalid CIF2 typed metadata entry/);
+ assert.throws(()=>safeCif2Metadata([{name:'_note',value:{kind:'scalar',value:'x'.repeat(70000),quoted:true}}]),/metadata string|60 KB/);
+ assert.throws(()=>safeCif2Metadata([{name:'_note',value:{kind:'table',entries:[{key:'x',value:{kind:'scalar',value:'1',quoted:false}},{key:'X',value:{kind:'scalar',value:'2',quoted:false}}]}}]),/Duplicate CIF2 Table key/);
+});
+test('local file import demands explicit user choice for ambiguous structures and project JSON carries typed metadata',()=>{
+ const app=readFileSync(new URL('../crystal-app.js',import.meta.url),'utf8');
+ assert.match(app,/window\.prompt\(message,blocks\[0\]\.name\)/);
+ assert.match(app,/cif2TypedMetadata:safeCif2Metadata\(state.cif2TypedMetadata\)/);
+ assert.match(app,/cif2TypedMetadata:safeCif2Metadata\(current.cif2TypedMetadata\)/);
+ assert.match(app,/cif2TypedMetadata:safeCif2Metadata\(obj.cif2TypedMetadata\)/);
+});
+
 test('existing V18.1 scalar CIF2 and CIF1 paths remain usable',()=>{
  const v18=readFileSync(new URL('./validation/fixtures/synthetic/s11_cif2_pminus1.cif',import.meta.url),'utf8');
  const out=parse(v18);
