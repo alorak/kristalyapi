@@ -1,0 +1,48 @@
+#\#CIF_2.0
+data_metadata
+_chemical_name_common """Multiblock sample
+unrelated metadata; do not combine structures."""
+_local_rgb [1 0.25 0]
+_local_model {"rgb":[255 100 20] 'nested':{"model":[1 [2 3]]} 'label':"α-sample"}
+save_record
+_local_reference {'url':"https://example.invalid/a" "tags":['x' 'y']}
+save_
+
+data_alpha
+_cell_length_a 5
+_cell_length_b 6
+_cell_length_c 7
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_space_group_IT_number 1
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C .125 .25 .375
+_local_source_collection [red [1 2] {"remark":'safe text'}]
+loop_
+_local_rgb_name
+_local_rgb_value
+'red' [1 0 0]
+'green' [0 1 0]
+
+data_beta
+_cell_length_a 4
+_cell_length_b 4
+_cell_length_c 4
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_space_group_IT_number 1
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Si1 Si .1 .2 .3
+Si2 Si .4 .5 .6
