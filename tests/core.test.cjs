@@ -54,7 +54,7 @@ vm.createContext(context);
 // Helper ES modules run in their own function scope (as in the browser) and
 // only their exports become globals for the editor code. Isolated contexts
 // below load them too, because loadProject uses the VESTA module helpers.
-const HELPER_MODULES=['export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js',
+const HELPER_MODULES=['cif2-lex.js','cif2-symmetry.js','export-glyphs.js','export-graphics.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js',
  'vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js'];
 function loadHelperModules(target){
  for(const file of HELPER_MODULES){
