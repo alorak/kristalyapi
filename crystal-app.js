@@ -2785,6 +2785,45 @@ function polyhedralDistortionMetrics(environment,geometry=null,hull=null){
  result.idealAngle=ideal;result.hullEdgeCount=edges.size;
  return result;
 }
+/* Coordination polyhedra of many centers at once (VESTA lists these per
+   polyhedron). buildHull(vertices) returns {geometry, dispose} for a closed
+   convex hull, or throws for planar/degenerate shells. Each row keeps the
+   same caveats as the single-atom panel. */
+function polyhedraTableRows(sites,centers,B,rules,cut,auto,periodic,buildHull,maxNeighbors=24){
+ return centers.map(index=>{
+  const site=sites[index],shell=coordinationNeighbors(sites,index,B,rules,cut,auto,maxNeighbors,periodic);
+  const environment=coordinationGeometry(shell,B),composition=new Map();
+  for(const n of shell)composition.set(n.element,(composition.get(n.element)||0)+1);
+  const row={index,label:String(site.label||site.symbol),element:site.symbol,neighbors:shell.length,
+   vertices:environment.vertexCount,weightedCN:environment.weightedCN,
+   composition:[...composition].map(([element,count])=>element+count).join(' '),
+   truncated:shell.length>=maxNeighbors,volume:null,area:null,metrics:null,hullError:false};
+  if(!environment.vertexCount)return row;
+  row.metrics=polyhedralDistortionMetrics(environment);
+  if(environment.vertexCount>=4){
+   let hull=null;
+   try{
+    hull=buildHull(environment.vertices.map(v=>v.xyz));
+    const shape=coordinationHullMetrics(hull.geometry);
+    row.volume=shape.volume;row.area=shape.area;
+    row.metrics=polyhedralDistortionMetrics(environment,hull.geometry,shape);
+   }catch(error){row.hullError=true;}
+   finally{hull?.dispose?.();}
+  }
+  return row;
+ });
+}
+function polyhedraCsv(rows){
+ const fixed=(v,d)=>v==null||!Number.isFinite(v)?'':v.toFixed(d);
+ const lines=['label,element,neighbors,unique_vertices,weighted_cn,composition,mean_bond_A,baur_D,hoppe_ECoN,volume_A3,area_A2,polyhedron,quadratic_elongation,bond_angle_variance_deg2,notes'];
+ for(const r of rows){
+  const m=r.metrics||{},notes=[r.truncated?'first 24 neighbours only':'',r.hullError?'no closed 3D hull':'',m.occupancyCaveat?'partial or alternative occupancy not modelled':''].filter(Boolean).join('; ');
+  lines.push([r.label,r.element,r.neighbors,r.vertices,fixed(r.weightedCN,3),r.composition,fixed(m.meanBondLength,5),fixed(m.distortionIndex,6),
+   fixed(m.econ,5),fixed(r.volume,5),fixed(r.area,5),m.polyhedronType||'',fixed(m.quadraticElongation,6),fixed(m.bondAngleVariance,4),notes]
+   .map(v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v)).join(','));
+ }
+ return lines.join('\n')+'\n';
+}
 /* Choose a viable center when switching into polyhedral mode. Prefer a 4–8
    coordinate environment (six is typical for perovskite octahedra), sampling
    a few inequivalent sites per element rather than every supercell image. */
@@ -6019,7 +6058,7 @@ function initRepeatSteppers(){
 function syncControls(){
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncRepeatSteppers();syncSgControls();$('bondRules').value=state.bondRules;
- syncViewPanel();
+ syncViewPanel();syncPolyhedraElements();
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
  for(let axis=0;axis<3;axis++)for(let side=0;side<2;side++)$('bound'+['X','Y','Z'][axis]+(side?'Max':'Min')).value=state.bounds[axis][side];
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible']){if($(k).type==='checkbox')$(k).checked=!!state[k];else $(k).value=state[k];}
@@ -11302,10 +11341,56 @@ function initGeometryTable(){
  };
 }
 
+/* ---- Polyhedra table (coordination / BVS panel) -------------------------- */
+let lastPolyhedra=null;
+function polyhedraCenters(sites,element){
+ // One row per asymmetric site: its first symmetry image in the expanded list.
+ const seen=new Set(),centers=[];
+ sites.forEach((site,i)=>{
+  const key=state.symmetryEnabled&&Number.isInteger(site.sourceSiteIndex)?site.sourceSiteIndex:i;
+  if(seen.has(key)||(element&&cleanSymbol(site.symbol)!==element))return;
+  seen.add(key);centers.push(i);
+ });
+ return centers;
+}
+function syncPolyhedraElements(){
+ const select=$('polyTableElement');if(!select)return;
+ const current=select.value,elements=[...new Set(state.sites.map(s=>cleanSymbol(s.symbol)))].sort((a,b)=>PERIODIC_SYMBOLS.indexOf(a)-PERIODIC_SYMBOLS.indexOf(b));
+ select.replaceChildren(new Option('Tüm elementler',''),...elements.map(e=>new Option(e,e)));
+ if(elements.includes(current))select.value=current;
+}
+function initPolyhedraTable(){
+ syncPolyhedraElements();
+ $('polyTableRun').onclick=()=>runViewAction(()=>{
+  const B=basis(state.cell),sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting):state.sites;
+  const centers=polyhedraCenters(sites,$('polyTableElement').value);
+  if(centers.length>300)throw Error('Çokyüzlü tablosu en çok 300 merkez içindir; bir merkez elementi seçin.');
+  const buildHull=vertices=>{const geometry=new ConvexGeometry(vertices.map(v=>new THREE.Vector3(...v)));return {geometry,dispose:()=>geometry.dispose()};};
+  const rows=polyhedraTableRows(sites,centers,B,parseBondRules(state.bondRules),state.cut,state.autoBond,!state.nonPeriodic,buildHull);
+  lastPolyhedra=rows;
+  const regular=rows.filter(r=>r.metrics?.polyhedronType).length;
+  $('polyTableSummary').textContent=rows.length+' merkez · '+regular+' tetrahedron/oktahedron'+
+   (rows.some(r=>r.truncated)?' · bazı kabuklar ilk 24 komşuyla sınırlı':'');
+  const table=document.createElement('table'),head=document.createElement('tr');
+  for(const title of ['Merkez','KS','Ort. bağ (Å)','D','ECoN','V (Å³)','λ','σ² (°²)'])head.append(Object.assign(document.createElement('th'),{textContent:title}));
+  table.append(head);
+  for(const r of rows.slice(0,80)){
+   const m=r.metrics||{},tr=document.createElement('tr'),f=(v,d)=>v==null||!Number.isFinite(v)?'—':v.toFixed(d);
+   for(const [text,num] of [[r.label+' ('+r.composition+')'],[String(r.neighbors),1],[f(m.meanBondLength,4),1],[f(m.distortionIndex,5),1],
+    [f(m.econ,3),1],[f(r.volume,3),1],[f(m.quadraticElongation,5),1],[f(m.bondAngleVariance,2),1]]){
+    const td=document.createElement('td');td.textContent=text;if(num)td.className='num';tr.append(td);
+   }
+   table.append(tr);
+  }
+  $('polyTablePreview').replaceChildren(table);$('polyTableCsv').disabled=false;
+ });
+ $('polyTableCsv').onclick=()=>{if(lastPolyhedra)download(safeName(state.name)+'_polyhedra.csv',polyhedraCsv(lastPolyhedra),'text/csv;charset=utf-8');};
+}
+
 function bind(){
  initWorkspaceUi();
  initRightSidebarTabs();
- initViewPanel();initGeometryTable();initBondStylePanel();
+ initViewPanel();initGeometryTable();initBondStylePanel();initPolyhedraTable();
  initDftTracking();
  initQeProtocols();
  initLibrary();

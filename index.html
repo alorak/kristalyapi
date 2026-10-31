@@ -477,6 +477,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <p class="hint">Yüklerde atom türünü, asimetrik birimin 1 tabanlı satırını veya benzersiz atom etiketini kullanabilirsiniz; yük simetri eşdeğerlerine aktarılır. Elektriksel olarak nötr hücre ve tam doluluk zorunlu. Ewald gerçek/karşı-uzay ve self terimlerini içerir. Bu noktasal iyon enerjisi bağ enerjisi, elektron yapısı, polarizasyon veya DFT sonucu değildir.</p>
    </div>
   </div>
+  <div class="section" data-right-section="bvs"><h2>Çokyüzlü tablosu</h2>
+   <p class="hint">Her bağımsız merkez için geçerli bağ eşikleriyle ilk koordinasyon kabuğu: geometrik ve doluluk ağırlıklı CN, ortalama bağ, Baur D, Hoppe ECoN, çokyüzlü hacmi ve gerçek tetrahedron/oktahedron topolojisinde quadratic elongation ile bağ açısı varyansı (VESTA kılavuzu §11.4.3 tanımları).</p>
+   <div class="view-index-row"><label>Merkez <select id="polyTableElement" aria-label="Çokyüzlü merkez elementi"><option value="">Tüm elementler</option></select></label><button type="button" id="polyTableRun">Tabloyu hesapla</button><button type="button" id="polyTableCsv" disabled>CSV indir</button></div>
+   <p class="hint" id="polyTableSummary" role="status">Tablo henüz hesaplanmadı.</p>
+   <div class="geometry-preview" id="polyTablePreview"></div>
+  </div>
   <div class="section" data-right-section="plane"><h2>Best-fit plane · düzlemsellik</h2>
    <p class="hint">Aşağıya atomların 1-tabanlı satır indislerini yaz. Örn. 1,2,3,4. Üçten fazla, doğrusal olmayan atom gerekir. Atomlar mevcut hücrenin Kartezyen Å bazında değerlendirilir; sınır aşan atomlar otomatik unwrap edilmez.</p>
    <label class="field"><span>Atom indisleri (virgülle)</span><input id="planeFitAtoms" placeholder="1,2,3,4" maxlength="500"></label>
