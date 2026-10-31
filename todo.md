@@ -941,6 +941,24 @@ işi olarak açma.
 
 [Kapsam ve gerçek VESTA kabul kriterleri](tests/validation/PACKAGE_17_4_STATUS.md).
 
+### V17.5a — GUI gerektirmeyen VESTA doğrulama
+
+- [x] V17.4 tarafından üretilen P1 .vesta ve .loss.json
+  dosyalarını bağımsız Python STRUC/CELLP/P1 okuyucu,
+  sağ-elli hücre hacmi, atom/doluluk, SITET RGB ve
+  görünüm yarıçapı, SHA-256 ve kayıp raporuyla denetleme.
+- [x] İsteğe bağlı ikinci P1 .vesta için sayısal fark
+  ölçümü; gerçek GUI ve görüntü paritesi iddiası YOK.
+- [x] Sentetik negatif test ve merge-only CI adımı;
+  GUI yoksa varsayılan kabul yolu budur.
+- [ ] Atomsk gibi bağımsız VESTA okuyucusuyla ek
+  çapraz format regresyonu ve daha fazla gerçek .vesta
+  örnekleri; GUI olmadığında parite NOT_ESTABLISHED.
+- [ ] Gerçek masaüstü ekran ölçümleri erişim sağlanırsa
+  opsiyonel bilimsel kabul görevi olarak korunabilir.
+
+[GUI-free protokol](tests/validation/PACKAGE_17_5_STATUS.md).
+
 ### V17.5 — Gerçek VESTA 3.5.8 desktop kabul altyapısı
 
 - [x] Üç SHA-pimli CIF (NaCl, rutil, IUCr K/Na/Ca/Si/O)
