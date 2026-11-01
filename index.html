@@ -559,13 +559,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="xrd-match-panel">
      <strong>Ölçüm–referans pik eşleştirmesi · P0</strong>
      <p class="hint">Yalnız 2θ pik konumları için yaklaşık tarama yapılır. Kα2 ayrıştırması, zemin/cihaz düzeltmesi, faz tayini, Rietveld fit ve kabul/red kararı yapılmaz.</p>
+     <div class="xrd-acquisition-fields">
+      <strong>P1 · Ölçüm kaynağı (operatör tarafından girilir)</strong>
+      <div class="triple">
+       <label class="field compact"><span>Numune kimliği</span><input id="xrdSampleId" type="text" maxlength="120" placeholder="Örn. numune-001"></label>
+       <label class="field compact"><span>Cihaz / model</span><input id="xrdInstrument" type="text" maxlength="160" placeholder="Örn. XRD cihaz modeli"></label>
+       <label class="field compact"><span>X-ışını kaynağı</span><select id="xrdRadiation">
+        <option value="Cu-Kalpha1">Cu Kα1</option><option value="Cu-Kalpha1+2">Cu Kα1 + Kα2</option>
+        <option value="Mo-Kalpha1">Mo Kα1</option><option value="Co-Kalpha1">Co Kα1</option>
+        <option value="custom">Diğer / özel</option><option value="unknown">Bilinmiyor</option>
+       </select></label>
+      </div>
+      <div class="triple">
+       <label class="field compact"><span>Ölçülen ana dalga boyu (Å)</span><input id="xrdMeasuredLambda" type="number" min="0.2" max="5" step="0.00001" value="1.5406"></label>
+       <label class="field compact"><span>Kα2 durumu</span><select id="xrdMeasuredKalpha2">
+        <option value="unknown">Bilinmiyor</option><option value="present">Var</option><option value="stripped">Ölçümden ayrıştırıldı</option>
+       </select></label>
+       <label class="field compact"><span>Kalibrasyon kaydı</span><select id="xrdCalibration">
+        <option value="unknown">Bilinmiyor</option><option value="none">Yok</option><option value="standard-recorded">Standart referansı var</option>
+       </select></label>
+       <label class="field compact"><span>Kalibrasyon referansı</span><input id="xrdCalibrationRef" type="text" maxlength="200" placeholder="Örn. SRM / tarih / rapor ID"></label>
+      </div>
+     </div>
      <label class="check"><input id="xrdMatchConfirmed" type="checkbox"> Ölçülen CSV ile modelin dalga boyu ve 2θ eksen tanımının uyumlu olduğunu kontrol ettim.</label>
      <div class="triple">
       <label class="field compact"><span>Pik toleransı (2θ, °)</span><input id="xrdMatchTolerance" type="number" min="0.01" max="2" step="0.01" value="0.2"></label>
       <label class="field compact"><span>Asgari göreli şiddet (%)</span><input id="xrdMatchMinRel" type="number" min="0" max="100" step="1" value="8"></label>
       <label class="field compact"><span>Asgari pik belirginliği (%)</span><input id="xrdMatchProm" type="number" min="0" max="100" step="1" value="4"></label>
      </div>
-     <div class="actionrow"><button id="xrdMatchRun" type="button">Pikleri eşleştir</button><button id="xrdMatchExport" type="button" disabled>Eşleşmeler CSV</button></div>
+     <div class="actionrow"><button id="xrdMatchRun" type="button">Pikleri eşleştir</button><button id="xrdMatchExport" type="button" disabled>Eşleşmeler CSV</button><button id="xrdMatchEvidenceExport" type="button" disabled>Ölçüm kanıt JSON</button></div>
      <p id="xrdMatchStatus" role="status" aria-live="polite" class="hint">Önce teorik XRD ve ölçülen CSV gerekir.</p>
      <div id="xrdMatchResults" class="xrd-match-results" aria-live="polite"></div>
     </div>
@@ -1188,12 +1210,42 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button id="materialsExportCsv" type="button">Karşılaştırma CSV</button>
     <button id="materialsExportJson" type="button">Kaynaklı JSON</button></div>
    <p id="materialsCount" class="hint" aria-live="polite"></p>
+   <div class="materials-evidence-toolbar">
+    <strong>P1 · Kaynak ve dosya kanıtları (yerel SHA-256)</strong>
+    <div class="triple">
+     <label class="field compact"><span>Hedef malzeme kartı</span><select id="materialsEvidenceCard"></select></label>
+     <label class="field compact"><span>Kanıt dosyası türü</span><select id="materialsEvidenceKind">
+      <option value="cif">CIF / kristal kaynağı</option><option value="xrd-scan">XRD ölçümü</option>
+      <option value="qe-input">QE girdisi</option><option value="qe-output">QE çıktısı</option>
+      <option value="qe-protocol">QE protokolü</option><option value="other">Diğer</option>
+     </select></label>
+     <label class="field compact"><span>Kaynak / deney / hesap kimliği</span><input type="text" id="materialsEvidenceSource" maxlength="400" placeholder="örn. COD-ID, numune ID, QE job ID"></label>
+    </div>
+    <input type="file" id="materialsEvidenceFile" hidden>
+    <input type="file" id="materialsVerifyFile" accept=".json,application/json" hidden>
+    <div class="actionrow"><button id="materialsEvidenceChoose" type="button">Dosya SHA-256 kaydı ekle</button>
+     <button id="materialsVerifyChoose" type="button">Kanıt JSON doğrula</button></div>
+    <p class="hint" id="materialsEvidenceStatus" role="status" aria-live="polite">SHA-256 yalnız dosya bütünlüğünü ve kaydedilen yapıyı denetler; kaynağın özgünlüğünü veya hesap/deney doğruluğunu kanıtlamaz. Dosya en çok 12 MiB.</p>
+   </div>
    <div id="materialsStatus" class="note" role="status" aria-live="polite">Kaydedilen yapı bulunmuyor.</div>
    <div id="materialsCards" class="materials-cards" aria-label="Kaydedilen malzeme kartları"></div>
   </section>
   <section class="lesson-panel"><div class="lesson-panel-head"><h3>Geometrik karşılaştırma</h3><span class="lesson-pill">Birimler ve farklar</span></div>
    <div id="materialsComparison" aria-live="polite"></div>
    <p class="hint">Bu kartlar yalnız mevcut yapı verilerinin anlık kopyasıdır; otomatik COD doğrulaması, XRD faz tayini, DFT sonucu, mekanik veya RF malzeme özelliği içermez. Kaynak bağlantısı elle girilir; yapıyla eşleşmesi doğrulanmaz.</p>
+  </section>
+  <section class="lesson-panel">
+   <div class="lesson-panel-head"><h3>P1 · 3B bulk DFT araştırma hazırlığı</h3><span class="lesson-pill">İş göndermez</span></div>
+   <p class="hint">GaN, AlN ve SiC için hücre/bileşim ve 3B k-örgüsü taslağı üretir. Mevcut QE elektronik API, slab odaklı olduğundan 3B bulk hesabı bu panelden başlatılamaz.</p>
+   <div class="triple">
+    <label class="field compact"><span>Malzeme adayı</span><select id="materialsBulkType"><option>GaN</option><option>AlN</option><option>SiC</option></select></label>
+    <label class="field compact"><span>kₓ</span><input id="materialsBulkKx" type="number" min="2" max="64" step="1" value="8"></label>
+    <label class="field compact"><span>kᵧ</span><input id="materialsBulkKy" type="number" min="2" max="64" step="1" value="8"></label>
+    <label class="field compact"><span>k_z</span><input id="materialsBulkKz" type="number" min="2" max="64" step="1" value="8"></label>
+   </div>
+   <div class="actionrow"><button id="materialsBulkPrepare" type="button">3B hazırlık denetimi</button>
+    <button id="materialsBulkExport" type="button" disabled>Hazırlık JSON</button></div>
+   <pre id="materialsBulkResult" class="materials-bulk-result" aria-live="polite">Hesap hazırlığı henüz yapılmadı.</pre>
   </section>
  </div>
 </main>

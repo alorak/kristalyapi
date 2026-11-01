@@ -12,6 +12,8 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import {initMaterialsPage} from './materials-page.js';
 import {matchPowderPeaks,matchReportCsv} from './xrd-peak-match-core.js';
+import {sha256Hex} from './material-evidence-core.js';
+import {xrdAcquisitionMetadata,xrdMetadataCompatibility,xrdScanEvidence} from './xrd-acquisition-core.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
@@ -4973,7 +4975,7 @@ function angleBetweenPlanes(a,b){
  const dot=a.normal.reduce((v,x,i)=>v+x*b.normal[i],0);
  return Math.acos(clamp(Math.abs(dot),0,1))*180/Math.PI;
 }
-let stage3Planes=[],lastBvs=null,lastXrd=null,lastXrdProfile=null,measuredXrd=null,xrdMatchReport=null,measuredXrdFilename='';
+let stage3Planes=[],lastBvs=null,lastXrd=null,lastXrdProfile=null,measuredXrd=null,xrdMatchReport=null,xrdMatchEvidence=null,measuredXrdFilename='';
 const fcfByWorkspace=new Map();
 function drawStage3Planes(){
  for(const [i,plane] of stage3Planes.entries()){
@@ -5856,9 +5858,10 @@ function renderPowderChart(result){
  }
 }
 function clearXrdMatch(message='Model, CSV veya parametre değişti; pik eşleştirmesini yeniden çalıştırın.'){
- xrdMatchReport=null;
+ xrdMatchReport=null;xrdMatchEvidence=null;
  const host=$('xrdMatchResults');if(host)host.replaceChildren();
  if($('xrdMatchExport'))$('xrdMatchExport').disabled=true;
+ if($('xrdMatchEvidenceExport'))$('xrdMatchEvidenceExport').disabled=true;
  if($('xrdMatchStatus'))$('xrdMatchStatus').textContent=message;
 }
 function renderXrdMatchReport(report){
@@ -6022,7 +6025,10 @@ function initStage3Analyses(){
   const workspace=activeWorkspaceId;
   try{
    if(file.size>4000000)throw Error('Ölçüm CSV dosyası en fazla 4 MB olmalı.');
-   const observed=parsePowderCsv(await file.text());
+   const bytes=await file.arrayBuffer();
+   const observed=parsePowderCsv(new TextDecoder().decode(bytes));
+   observed.sourceSha256=await sha256Hex(bytes); // Actual raw file bytes, not text re-encoding
+   observed.sourceByteLength=bytes.byteLength;observed.sourceFileName=file.name;
    if(workspace!==activeWorkspaceId)throw Error('CSV yüklenirken çalışma alanı değişti.');
    measuredXrd=observed;measuredXrdFilename=file.name;$('xrdViewMode').value='profile';
    $('xrdMatchConfirmed').checked=false;clearXrdMatch('CSV yüklendi. Uyumluluğu doğrulayıp eşleştirmeyi başlatın.');
@@ -6041,15 +6047,33 @@ function initStage3Analyses(){
  $('xrdMatchRun').onclick=()=>{
   try{
    if(!lastXrd||!measuredXrd)throw Error('Önce model XRD ve ölçülen CSV yükleyin.');
-   if(lastXrd.scattering!=='xray')throw Error('Bu ilk eşleştirme yalnız X-ışını ölçümü içindir.');
-   if(!$('xrdMatchConfirmed').checked)throw Error('Dalga boyu ve 2θ ekseni uyumunu doğrulayın.');
+   const acquisition=xrdAcquisitionMetadata({
+    sampleId:$('xrdSampleId').value,instrument:$('xrdInstrument').value,
+    source:$('xrdRadiation').value,wavelengthA:Number($('xrdMeasuredLambda').value),
+    kalpha2:$('xrdMeasuredKalpha2').value,calibration:$('xrdCalibration').value,
+    calibrationRef:$('xrdCalibrationRef').value,twoThetaUnit:'deg'
+   });
+   const matchGate=xrdMetadataCompatibility({scattering:lastXrd.scattering,
+    wavelengthA:Number($('xrdLambda').value),modelKalpha2:$('xrdKAlpha2').checked},
+    acquisition,{operatorConfirmed:$('xrdMatchConfirmed').checked});
+   if(!matchGate.compatible)throw Error('Dalga boyu/2θ uyumu kanıtlanmadı: '+matchGate.warnings.join(' '));
+   if(!measuredXrd.sourceSha256)throw Error('Ölçüm dosyasını SHA-256 için yeniden yükleyin.');
+   const scan=xrdScanEvidence(acquisition,measuredXrd.sourceSha256,
+    measuredXrd.sourceByteLength,measuredXrd.sourceFileName);
    const report=matchPowderPeaks(lastXrd.groups,measuredXrd.rows,{
     toleranceDeg:Number($('xrdMatchTolerance').value),
     minimumRelative:Number($('xrdMatchMinRel').value),
     minimumProminence:Number($('xrdMatchProm').value)
    });
-   xrdMatchReport=report;$('xrdMatchExport').disabled=false;
-   $('xrdMatchStatus').textContent='Ölçüm–referans taraması tamamlandı. Bu eşleşmeler faz kimliği veya cihaz kalibrasyonu kanıtı değildir; Kα2 ayrıştırılmadı.';
+   xrdMatchReport=report;
+   xrdMatchEvidence={schema:'kristalyapi.xrd-match-evidence.v1',
+    acquisition:scan,model:{wavelengthA:Number($('xrdLambda').value),
+     scattering:lastXrd.scattering,modelKalpha2:$('xrdKAlpha2').checked},
+    compatibility:matchGate,peakMatches:report,
+    provenance:'operator-declared;not-calibrated-or-phase-identified'};
+   $('xrdMatchExport').disabled=false;$('xrdMatchEvidenceExport').disabled=false;
+   $('xrdMatchStatus').textContent='Pik eşleştirmesi hesaplandı. CSV SHA-256 kaydedildi; cihaz ve kalibrasyon doğrulanmadı. '+
+    (matchGate.warnings.join(' ')||'');
    renderXrdMatchReport(report);
   }catch(error){clearXrdMatch('Pik eşleştirmesi: '+error.message);}
  };
@@ -6059,7 +6083,13 @@ function initStage3Analyses(){
    wavelengthA:Number($('xrdLambda').value),measurementName:measuredXrdFilename
   }),'text/csv;charset=utf-8');
  };
- for(const id of ['xrdMatchTolerance','xrdMatchMinRel','xrdMatchProm','xrdMatchConfirmed'])
+ $('xrdMatchEvidenceExport').onclick=()=>{
+  if(xrdMatchEvidence)download('xrd_match_evidence.json',
+   JSON.stringify(xrdMatchEvidence,null,2)+'\n','application/json');
+ };
+ for(const id of ['xrdMatchTolerance','xrdMatchMinRel','xrdMatchProm','xrdMatchConfirmed',
+  'xrdSampleId','xrdInstrument','xrdRadiation','xrdMeasuredLambda','xrdMeasuredKalpha2',
+  'xrdCalibration','xrdCalibrationRef'])
   $(id).addEventListener('change',()=>clearXrdMatch('Parametreler değişti; yeniden eşleştirin.'));
  $('xrdLambda').addEventListener('change',()=>{
   $('xrdMatchConfirmed').checked=false;clearXrdMatch('Dalga boyu değişti. Ölçüm uyumluluğu yeniden doğrulanmalı.');
@@ -8730,7 +8760,7 @@ function switchWorkspace(id,{saveCurrent=true}={}){
  try{
   activeWorkspaceId=id;state=target.state;editorHistory=target.history;measurementHistory=target.measurements;
   stage3Planes=target.fitPlanes;lastBvs=target.bvs;lastXrd=target.xrd;
-  measuredXrd=target.xrdObserved;measuredXrdFilename='';lastXrdProfile=null;
+  measuredXrd=target.xrdObserved;measuredXrdFilename=measuredXrd?.sourceFileName||'';lastXrdProfile=null;
   $('xrdMatchConfirmed').checked=false;clearXrdMatch('Çalışma alanı değişti; eşleştirme yeniden yapılmalı.');
   $('xrdMeasuredStatus').textContent=measuredXrd?
    measuredXrd.rows.length+' ölçüm · maksimum %100 ölçeğinde (fit yapılmadı).':

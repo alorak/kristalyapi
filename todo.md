@@ -6,10 +6,13 @@
 - [x] Güvenlik/bilimsel kapılar: dalga boyu–2θ uyumunu operatör doğrulaması, değiştirilmiş model/CSV için rapor iptali, ortam dışına veri çıkarmama, kaynak/DFT ilişkisi uydurmama.
 - [ ] P0 son kabul: gerçek cihaz CSV korpusu, karşılaştırmalı pik referansları ve farklı tarayıcılarda elle doğrulanan UI kanıtı. Kod/test tamamlanması bu deneysel kabulün yerine geçmez.
 
-## P1 · Sonraki adımlar (başlanmadı)
-- [ ] **Doğrulanabilir kaynak zinciri:** sample ID, CIF/COD/DOI, deney cihazı, QE job/UPF SHA-256, hesap protokolü, birimler ve açık kaynak geçerlilik göstergeleri.
-- [ ] **XRD gerçek cihaz entegrasyonu:** iki deneysel cihaz CSV korpusu, ölçüm meta verisi, Kα düzeni, sıfır kayması/standart kalibrasyon, çoklu referans adayı ve tekil pik testleri.
-- [ ] **Bulk GaN/SiC/AlN:** geçerli 3B k-örgüsü ve yüksek simetri yolu, yakınsama ve spin ihtiyacı, kaynak/ham kanıt doğrulaması.
+## P1 · Araştırma hazırlığı (kısmen uygulandı)
+- [x] **P1.1 yerel kanıt zinciri MVP:** kanonik P1 geometri SHA-256, kullanıcı kaynak kimliği, türlenmiş ham dosya SHA-256, JSON doğrulama ve dosya/karşılaştırma dışa aktarma. Kaynak aslı/imzası, gerçek QE job/UPF eşleşmesi veya bağımsız bilimsel doğrulama YOK.
+- [x] **P1.2 XRD meta veri kapısı MVP:** numune ID, cihaz, kaynak/Kα₂, dalga boyu, kalibrasyon referansı beyanı, ham CSV SHA-256, operatör onayı ve konum eşleştirme JSON raporu.
+- [x] **P1.3 bulk hazırlık şeması:** GaN/AlN/SiC 1:1 bileşim/3B örgü/3B k-örgü taslağı; açıkça yürütülemez JSON ve sunucu 2B limitleri.
+- [ ] **P1.1 gerçek köken:** dijital imza/attestation, gerçek referans dosyalarının yeniden hash kontrolü, QE job/UPF/protokol bağlamının otomatik eşleştirilmesi ve birim şeması.
+- [ ] **P1.2 deneysel kabul:** iki cihazın gerçek CSV korpusu, cihaz/Kα₂/kalibrasyon testi, sıfır kayması, kör numuneler, çoklu referans adayı ve bağımsız hata analizi.
+- [ ] **P1.3 gerçek 3B QE hesapları:** 3B k-mesh/band path destekli worker/API, GaN/SiC/AlN polimorf doğrulama, UPF ve k/ecut/kuvvet yakınsaması; sonuçların ham kaynak kanıtları.
 
 ## P2 · Araştırma genişletmeleri (başlanmadı)
 - [ ] Rietveld/refinman yalnız bağımsız deneysel kabul ile; otomatik faz oranı iddialarını ertele.
