@@ -50,7 +50,7 @@ class PinnedPseudopotentialTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"redirect"):
                 fetch_pp("N",self.good,self.root/"N.UPF")
         with patch("qe_bulk_download_upf.urllib.request.urlopen",
-                   return_value=FakeResponse(self.bytes,url)):
+                   return_value=FakeResponse(self.bytes,URL+FILES["Ga"])):
             with self.assertRaisesRegex(ValueError,"element"):
                 fetch_pp("Ga",self.good,self.root/"Ga.UPF")
     def test_no_unknown_potential_or_unpinned_hash(self):
