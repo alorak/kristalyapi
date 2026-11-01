@@ -12,8 +12,11 @@
 - [x] **P1.3 bulk hazırlık şeması:** GaN/AlN/SiC 1:1 bileşim/3B örgü/3B k-örgü taslağı; açıkça yürütülemez JSON ve sunucu 2B limitleri.
 - [x] **P1.1 kanıt bütünlüğü ve ayrık imza:** orijinal dosyaları yerel olarak yeniden SHA-256 ile doğrulayan, dosya yoksa hata veren CLI; yalnız bağımsız sabitlenmiş Ed25519 açık anahtarıyla detached imza kontrolü. Gerçek kaynak kurumunun kimliği doğrulanmış sayılmaz.
 - [ ] **P1.1 kanıtın fiziksel/hesaplamalı kökeni:** QE job/UPF/protokol ve yapı/ölçüm bağlamlarının semantik eşleştirilmesi, birim şeması, kurumsal anahtar kimliğinin harici attestation/iptal zinciri ve bağımsız kaynak incelemesi.
-- [ ] **P1.2 deneysel kabul:** iki cihazın gerçek CSV korpusu, cihaz/Kα₂/kalibrasyon testi, sıfır kayması, kör numuneler, çoklu referans adayı ve bağımsız hata analizi.
-- [ ] **P1.3 gerçek 3B QE hesapları:** 3B k-mesh/band path destekli worker/API, GaN/SiC/AlN polimorf doğrulama, UPF ve k/ecut/kuvvet yakınsaması; sonuçların ham kaynak kanıtları.
+- [ ] **P1.2 deneysel kabul:** iki cihazın gerçek CSV korpusu, cihaz/Kα₂/kalibrasyon testi, sıfır kayması, kör numuneler, çoklu referans adayı ve bağımsız hata analizi. Gerçek cihaz ham dosyaları temin edilmedi. IUCr tek donanım kaynağı farklı formatlar sunsa da iki cihaz kanıtı sayılmaz.
+- [x] **P1.3 manuel gerçek QE iş akışı altyapısı:** GitHub Actions manuel `qe-bulk-real.yml`, sabit UPF resmi kaynakları ve operatörce önceden pinlenen SHA-256, GaN/AlN/3C-SiC için dört 3B SCF/bands girdisi, gerçek `pw.x` + ham çıktı arşivleme + bağımsız nümerik yeniden kontrol. İş akışının kendisi gerçek koşu veya fiziksel kabul değildir.
+- [ ] **P1.3 gerçek bilimsel kabul:** üç malzeme için manuel QE çalıştırma, birincil referans CIF/polimorf doğrulama, UPF/XC/valans onayı, 3B k yolu, k/ecutrho/kuvvet/cell relaksasyonu yakınsaması, bağımsız fizik uzmanının ham kaynak+kanıt incelemesi. Şu anda gerçek GaN/AlN/SiC kanıtı henüz yok; web elektronik API hâlâ slab/2B.
+
+[Gerçek deney, QE ve bağımsız bilimsel kabul kontrol listesi](docs/materials-real-acceptance-plan.md).
 
 ## P2 · Sayısal araştırma prototipleri (ilk paket uygulandı; fiziksel kabul yok)
 - [x] **P2.1 kusur termodinamiği çekirdeği:** operatörce verilen E_def/E_bulk/kimyasal potansiyel/yük/elektrostatik düzeltme ile oluşum enerjisi; gerçek yüklü defekt düzeltme hesaplaması veya fiziksel kabul yok.

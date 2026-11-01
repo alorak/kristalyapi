@@ -18,6 +18,12 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 **TRUBA / SLURM dışa aktarma (P0):** DFT → Hesap hazırlığı → TRUBA / SLURM paketi yoluyla tek bir Quantum ESPRESSO SCF/relax girdisi, SLURM betiği, manifest ve isteğe bağlı gerçek UPF dosyalarından çevrimdışı ZIP hazırlanabilir. İş gönderilmez veya bilimsel yakınsama onaylanmaz. [TRUBA kullanımı ve sınırlamalar](docs/qe-truba-slurm.md).
 
+## P1 — Gerçek XRD ve 3B bulk QE doğrulama protokolü
+
+[Gerçek cihaz veri ihtiyacı, bağımsız inceleme ve GaN/AlN/SiC manuel QE çalıştırma yolu](docs/materials-real-acceptance-plan.md).
+
+`.github/workflows/qe-bulk-real.yml` kullanıcı tarafından Actions üzerinden başlatılabilen gerçek `pw.x` iş akışıdır. Operatörün bağımsız gözden geçirdiği resmi PSlibrary SHA-256 hash'leri gerekir; gerçek koşu yapılana kadar hiçbir GaN/AlN/SiC hesap sonucu veya cihaz ölçüm kabulü iddia edilmez. Yaklaşık oluşturulmuş kristal adayları ayrıca fiziksel kaynakla doğrulanmalıdır.
+
 ## P1.1 — Orijinal dosya SHA-256 ve Ed25519 bağımsız doğrulama
 
 `tools/material_evidence_attestation.mjs`, Malzemeler sayfasının kanıt JSON'undaki geometriyi ve kart başına dizinlenen **gerçek dosyaların baytlarını** yeniden doğrular. Ayrık Ed25519 imzasını yalnız kullanıcı tarafından **önceden güvenilir sabitlenmiş açık anahtarla** doğrular; kurum/kaynak kimliği ve bilimsel sonuçlar bu işlemle onaylanmış sayılmaz.
