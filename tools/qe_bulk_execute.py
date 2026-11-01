@@ -166,10 +166,14 @@ def execute(plan_path,output_dir,qe_binary,timeout_seconds,enabled=False):
     (output_dir/"reference").mkdir()
     original=source["structure"]
     shutil.copyfile(original,output_dir/"reference"/original.name)
+    require(digest(output_dir/"reference"/original.name) ==
+            out["structure_reference"]["sha256"], "Structure changed while being staged")
     pseudoref={}
     for element,path in source["pseudopotentials"].items():
         destination=output_dir/"pseudo"/path.name
         shutil.copyfile(path,destination)
+        require(digest(destination) == out["pseudopotentials"][element]["sha256"],
+                "Pinned UPF changed while being staged")
         pseudoref[element]={"path":"pseudo/"+path.name,
                            "sha256":digest(destination)}
     manifest={"schema":"kristalyapi.qe-bulk-evidence.v1",
@@ -182,6 +186,8 @@ def execute(plan_path,output_dir,qe_binary,timeout_seconds,enabled=False):
         src=source["inputs"][name]
         path=output_dir/"stages"/(name+".in")
         shutil.copyfile(src,path)
+        require(digest(path) == out["runs"][name]["input"]["sha256"],
+                "QE input changed while being staged")
         manifest["runs"][name]={"input":{"path":"stages/"+name+".in","sha256":digest(path)},
                                 "output":{"path":"stages/"+name+".out","sha256":""}}
     deadline=time.monotonic()+timeout_seconds
