@@ -2,11 +2,11 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-10-31-v18-monoclinic-settings';
+const CACHE_NAME=CACHE_PREFIX+'2026-11-01-p0-materials-xrd-match';
 const APP_FILES=[
  './','./index.html','./styles.css','./dft-workspace.css','./semiconductor-p0.css','./crystal-app.js','./vesta-project-style.js','./vesta-project-view.js','./vesta-project-scientific.js','./vesta-project-export.js','./cif2-lex.js','./cif2-symmetry.js','./cif2-document.js','./qe-hpc-export.js','./qe-hpc-pipeline.js','./qe-truba-pipeline-view.js','./tools/qe_hpc_pipeline.py','./tools/qe_hpc_electronic.py','./tools/qe_pdos.py','./qe-truba-summary-view.js','./tools/qe_hpc_collect.py','./qe-electronic-view.js','./qe-electronic-setup.js','./dft-ui.js','./export-graphics.js','./export-glyphs.js','./element-data.js','./view-settings.js','./geometry-table.js','./structure-export.js','./scene-controls.js','./setting-transform.js','./phase-alignment.js','./volume-analysis.js','./sigmaa.js','./qe-convergence-view.js','./qe-job-diagnostics-view.js','./qe-job-tracking.js','./qe-protocol-templates.js','./qe-defect-compare-view.js','./qe-api-client.js','./qe-relax-view.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js',
- './semiconductor-p0.js','./semiconductor-physics-p0-core.js','./xrd-factor-core.js','./powder-planes-view.js',
+ './semiconductor-p0.js','./semiconductor-physics-p0-core.js','./material-cards-core.js','./materials-page.js','./xrd-peak-match-core.js','./xrd-factor-core.js','./powder-planes-view.js',
  './favicon.svg','./manifest.webmanifest',
  './vendor/three/build/three.module.js','./vendor/three/build/three.core.js',
  './vendor/three/examples/jsm/controls/OrbitControls.js',

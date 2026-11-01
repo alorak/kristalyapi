@@ -1,3 +1,25 @@
+# P0–P2 Malzeme Ar-Ge ve XRD karakterizasyon yol haritası
+
+## P0 · Uygulanan ilk iş paketi
+- [x] **Malzeme veri kartları:** 1–4 etkin çalışma alanı anlık kopyası, doluluk-ağırlıklı bileşim, geometrik ölçüler/hacim, kullanıcı beyanı kaynak kimliği, CSV/JSON dışa aktarımı, alan doğrulama testleri.
+- [x] **XRD pik-konumu taraması:** mevcut hesap/ölçüm overlay üzerine konum-toleransı, göreli eşik ve yerel belirginlik parametreleri; ölçüm-model tekil eşleme ve eşleşmeyen piklerin CSV raporu.
+- [x] Güvenlik/bilimsel kapılar: dalga boyu–2θ uyumunu operatör doğrulaması, değiştirilmiş model/CSV için rapor iptali, ortam dışına veri çıkarmama, kaynak/DFT ilişkisi uydurmama.
+- [ ] P0 son kabul: gerçek cihaz CSV korpusu, karşılaştırmalı pik referansları ve farklı tarayıcılarda elle doğrulanan UI kanıtı. Kod/test tamamlanması bu deneysel kabulün yerine geçmez.
+
+## P1 · Sonraki adımlar (başlanmadı)
+- [ ] **Doğrulanabilir kaynak zinciri:** sample ID, CIF/COD/DOI, deney cihazı, QE job/UPF SHA-256, hesap protokolü, birimler ve açık kaynak geçerlilik göstergeleri.
+- [ ] **XRD gerçek cihaz entegrasyonu:** iki deneysel cihaz CSV korpusu, ölçüm meta verisi, Kα düzeni, sıfır kayması/standart kalibrasyon, çoklu referans adayı ve tekil pik testleri.
+- [ ] **Bulk GaN/SiC/AlN:** geçerli 3B k-örgüsü ve yüksek simetri yolu, yakınsama ve spin ihtiyacı, kaynak/ham kanıt doğrulaması.
+
+## P2 · Araştırma genişletmeleri (başlanmadı)
+- [ ] Rietveld/refinman yalnız bağımsız deneysel kabul ile; otomatik faz oranı iddialarını ertele.
+- [ ] Yüklü kusur, oluşum enerjisi/sonlu-hücre düzeltmeleri, fonon/termal özellik ve heteroyapı/arayüz modelleri.
+- [ ] Belirsizlik kalibrasyonlu malzeme taraması / fizik bilgili vekil model; ayrı veri güvenilirliği kapısı.
+
+[Ayrıntılı P0 kapsamı ve kabul sınırları](docs/material-intelligence-p0.md).
+
+---
+
 # Eğitim sayfaları: MVP ve sonraki işler
 
 Durum: 19 Ekim 2026 · Kristal Yapı / Paket 14 tabanlı bağımsız eğitim MVP'si.

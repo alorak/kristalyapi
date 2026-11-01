@@ -10,6 +10,8 @@ import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
+import {initMaterialsPage} from './materials-page.js';
+import {matchPowderPeaks,matchReportCsv} from './xrd-peak-match-core.js';
 import { initPowderLesson,initSemiconductorLesson } from './lesson-pages.js';
 import { parseQeElectronicResult,renderQeElectronicResults } from './qe-electronic-view.js';
 import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
@@ -4971,7 +4973,7 @@ function angleBetweenPlanes(a,b){
  const dot=a.normal.reduce((v,x,i)=>v+x*b.normal[i],0);
  return Math.acos(clamp(Math.abs(dot),0,1))*180/Math.PI;
 }
-let stage3Planes=[],lastBvs=null,lastXrd=null,lastXrdProfile=null,measuredXrd=null;
+let stage3Planes=[],lastBvs=null,lastXrd=null,lastXrdProfile=null,measuredXrd=null,xrdMatchReport=null,measuredXrdFilename='';
 const fcfByWorkspace=new Map();
 function drawStage3Planes(){
  for(const [i,plane] of stage3Planes.entries()){
@@ -5853,7 +5855,33 @@ function renderPowderChart(result){
   line(x,H-bottom,x,y,'#2b74af',1.4);
  }
 }
+function clearXrdMatch(message='Model, CSV veya parametre değişti; pik eşleştirmesini yeniden çalıştırın.'){
+ xrdMatchReport=null;
+ const host=$('xrdMatchResults');if(host)host.replaceChildren();
+ if($('xrdMatchExport'))$('xrdMatchExport').disabled=true;
+ if($('xrdMatchStatus'))$('xrdMatchStatus').textContent=message;
+}
+function renderXrdMatchReport(report){
+ const host=$('xrdMatchResults');host.replaceChildren();
+ const summary=document.createElement('p');summary.className='hint';
+ summary.textContent='Eşleşen '+report.matches.length+' / '+report.modelPeaks+' model piki · '+report.measuredPeaks+
+  ' ölçüm piki bulundu · ölçümde eşleşmeyen '+report.unmatchedMeasured.length+
+  ' · modelde eşleşmeyen '+report.unmatchedModel.length+'.';
+ host.append(summary);
+ const list=document.createElement('div');list.className='bond-rule-list';
+ for(const pair of report.matches.slice(0,40)){
+  const row=document.createElement('div');row.className='bond-rule-row';
+  row.textContent='('+pair.model.hkl+') · model '+pair.model.angle.toFixed(3)+'° · ölçüm '+
+   pair.measured.angle.toFixed(3)+'° · Δ2θ '+(pair.deltaDeg>=0?'+':'')+pair.deltaDeg.toFixed(4)+'°';
+  list.append(row);
+ }
+ host.append(list);
+ if(report.matches.length>40){
+  const note=document.createElement('p');note.className='hint';note.textContent='İlk 40 eşleşme gösteriliyor; tamamı CSV içinde.';host.append(note);
+ }
+}
 function runPowderAnalysis(){
+ clearXrdMatch();
  try{
   const sites=state.symmetryEnabled?expandSites(state.sites,state.sgSetting,1000):state.sites;
   lastXrd=powderPattern(state.cell,sites,{
@@ -5865,7 +5893,7 @@ function runPowderAnalysis(){
 }
 function renderWorkspaceXrd(){
  const host=$('xrdResults');host.replaceChildren();
- if(!lastXrd){lastXrdProfile=null;$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
+ if(!lastXrd){lastXrdProfile=null;clearXrdMatch('Önce XRD hesaplayın.');$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
  try{
   lastXrdProfile=powderProfile(lastXrd,xrdProfileOptions());
   $('xrdProfileStatus').textContent='Pseudo-Voigt · '+lastXrdProfile.angles.length+
@@ -5996,7 +6024,8 @@ function initStage3Analyses(){
    if(file.size>4000000)throw Error('Ölçüm CSV dosyası en fazla 4 MB olmalı.');
    const observed=parsePowderCsv(await file.text());
    if(workspace!==activeWorkspaceId)throw Error('CSV yüklenirken çalışma alanı değişti.');
-   measuredXrd=observed;$('xrdViewMode').value='profile';
+   measuredXrd=observed;measuredXrdFilename=file.name;$('xrdViewMode').value='profile';
+   $('xrdMatchConfirmed').checked=false;clearXrdMatch('CSV yüklendi. Uyumluluğu doğrulayıp eşleştirmeyi başlatın.');
    $('xrdMeasuredStatus').textContent=file.name+' · '+observed.rows.length+
     ' ölçüm · maksimum %100 olacak şekilde görsel ölçeklendi; fit yapılmadı.';
    if(lastXrd)renderWorkspaceXrd();
@@ -6004,10 +6033,37 @@ function initStage3Analyses(){
   finally{event.target.value='';}
  };
  $('xrdMeasuredClear').onclick=()=>{
-  measuredXrd=null;
+  measuredXrd=null;measuredXrdFilename='';
+  $('xrdMatchConfirmed').checked=false;clearXrdMatch('Ölçülen CSV kaldırıldı.');
   $('xrdMeasuredStatus').textContent='Ölçüm yüklenmedi. CSV: 2theta_deg,intensity · karşılaştırma maksimuma göre %100\'e ölçeklenir; fit yapılmaz.';
   if(lastXrd)renderWorkspaceXrd();
  };
+ $('xrdMatchRun').onclick=()=>{
+  try{
+   if(!lastXrd||!measuredXrd)throw Error('Önce model XRD ve ölçülen CSV yükleyin.');
+   if(lastXrd.scattering!=='xray')throw Error('Bu ilk eşleştirme yalnız X-ışını ölçümü içindir.');
+   if(!$('xrdMatchConfirmed').checked)throw Error('Dalga boyu ve 2θ ekseni uyumunu doğrulayın.');
+   const report=matchPowderPeaks(lastXrd.groups,measuredXrd.rows,{
+    toleranceDeg:Number($('xrdMatchTolerance').value),
+    minimumRelative:Number($('xrdMatchMinRel').value),
+    minimumProminence:Number($('xrdMatchProm').value)
+   });
+   xrdMatchReport=report;$('xrdMatchExport').disabled=false;
+   $('xrdMatchStatus').textContent='Ölçüm–referans taraması tamamlandı. Bu eşleşmeler faz kimliği veya cihaz kalibrasyonu kanıtı değildir; Kα2 ayrıştırılmadı.';
+   renderXrdMatchReport(report);
+  }catch(error){clearXrdMatch('Pik eşleştirmesi: '+error.message);}
+ };
+ $('xrdMatchExport').onclick=()=>{
+  if(!xrdMatchReport)return;
+  download('xrd_peak_matches.csv','\ufeff'+matchReportCsv(xrdMatchReport,{
+   wavelengthA:Number($('xrdLambda').value),measurementName:measuredXrdFilename
+  }),'text/csv;charset=utf-8');
+ };
+ for(const id of ['xrdMatchTolerance','xrdMatchMinRel','xrdMatchProm','xrdMatchConfirmed'])
+  $(id).addEventListener('change',()=>clearXrdMatch('Parametreler değişti; yeniden eşleştirin.'));
+ $('xrdLambda').addEventListener('change',()=>{
+  $('xrdMatchConfirmed').checked=false;clearXrdMatch('Dalga boyu değişti. Ölçüm uyumluluğu yeniden doğrulanmalı.');
+ });
  const updateXrdProfile=()=>{if(lastXrd)renderWorkspaceXrd();};
  for(const id of ['xrdU','xrdV','xrdW','xrdEta','xrdStep','xrdKAlpha2','xrdLambda2','xrdRatio','xrdViewMode'])
   $(id).addEventListener('change',updateXrdProfile);
@@ -8674,7 +8730,8 @@ function switchWorkspace(id,{saveCurrent=true}={}){
  try{
   activeWorkspaceId=id;state=target.state;editorHistory=target.history;measurementHistory=target.measurements;
   stage3Planes=target.fitPlanes;lastBvs=target.bvs;lastXrd=target.xrd;
-  measuredXrd=target.xrdObserved;lastXrdProfile=null;
+  measuredXrd=target.xrdObserved;measuredXrdFilename='';lastXrdProfile=null;
+  $('xrdMatchConfirmed').checked=false;clearXrdMatch('Çalışma alanı değişti; eşleştirme yeniden yapılmalı.');
   $('xrdMeasuredStatus').textContent=measuredXrd?
    measuredXrd.rows.length+' ölçüm · maksimum %100 ölçeğinde (fit yapılmadı).':
    'Ölçüm yüklenmedi. CSV: 2theta_deg,intensity · karşılaştırma maksimuma göre %100\'e ölçeklenir; fit yapılmaz.';
@@ -10714,12 +10771,13 @@ function pageFromHash(hash){
  if(isLibraryHash(hash))return 'library';
  if(isReciprocalHash(hash))return 'reciprocal';
  if(hash==='#toz-kirinimi')return 'powder';
+ if(hash==='#malzemeler')return 'materials';
  if(hash==='#yariiletken-fizigi')return 'semiconductor';
  if(hash==='#dft'||hash.startsWith('#dft/'))return 'dft';
  return 'editor';
 }
 let reciprocalPage=null;
-let powderLesson=null,semiconductorLesson=null,semiconductorP0=null;
+let powderLesson=null,semiconductorLesson=null,semiconductorP0=null,materialsPage=null;
 let previousPowderSubtab=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
@@ -10732,9 +10790,10 @@ function syncLibraryNavigation(){
  qeJobPoller?.sync();
  document.body.classList.toggle('library-open',library);
  document.body.classList.toggle('reciprocal-open',reciprocal);
- document.body.classList.toggle('lesson-open',powderFamily||page==='semiconductor');
+ document.body.classList.toggle('lesson-open',powderFamily||page==='semiconductor'||page==='materials');
  $('app').hidden=page!=='editor';
  $('libraryPage').hidden=!library;
+ $('materialsPage').hidden=page!=='materials';
  // The reciprocal laboratory is now a nested tab of Powder Diffraction.
  // Parent visibility must be set BEFORE the Three.js subpage is refreshed.
  $('powderPage').hidden=!powderFamily;
@@ -10749,16 +10808,19 @@ function syncLibraryNavigation(){
   $(id).tabIndex=selected?0:-1;
  }
  $('libraryNav').classList.toggle('active',library);
+ $('materialsNav').classList.toggle('active',page==='materials');
  $('powderNav').classList.toggle('active',powderFamily);
  $('semiconductorNav').classList.toggle('active',page==='semiconductor');
  $('homeLink').setAttribute('aria-current',page==='editor'?'page':'false');
  $('libraryNav').setAttribute('aria-current',library?'page':'false');
+ $('materialsNav').setAttribute('aria-current',page==='materials'?'page':'false');
  $('powderNav').setAttribute('aria-current',powderFamily?'page':'false');
  $('semiconductorNav').setAttribute('aria-current',page==='semiconductor'?'page':'false');
  if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
  else {window.scrollTo?.(0,0);}
  reciprocalPage?.setVisible(reciprocal);
  powderLesson?.setVisible(page==='powder');
+ materialsPage?.setVisible(page==='materials');
  semiconductorLesson?.setVisible(page==='semiconductor');
  semiconductorP0?.setVisible(page==='semiconductor');
 }
@@ -11837,6 +11899,7 @@ function bind(){
 try{restoreInitialCrystal();initWorkspaceState();initScene();bind();syncControls();build();if(!restoreWorkspaceCamera(activeWorkspace()?.cameraView))fit();persistWorkspaceSession();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
 // The concept page is optional: a failure there must never block the editor.
 try{reciprocalPage=initReciprocalPage(reciprocalHost());syncLibraryNavigation();}catch(err){console.error('Karşı uzay sayfası başlatılamadı:',err);}
+try{materialsPage=initMaterialsPage(reciprocalHost(),download);syncLibraryNavigation();}catch(err){console.error('Malzeme karşılaştırma sayfası başlatılamadı:',err);}
 try{
  const host=reciprocalHost();
  powderLesson=initPowderLesson(host);

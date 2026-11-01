@@ -38,7 +38,7 @@ test('offline install pre-caches the complete local renderer, WASM and page shel
  const sw=serviceWorkerHarness();await sw.dispatch('install');
  for(const path of ['index.html','styles.css','crystal-app.js','volume-iso-worker.js','reciprocal-page.js',
   'reciprocal-core.js','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','mos2-defect-study-core.js','qe-electronic-view.js','qe-defect-compare-view.js','qe-api-client.js','lesson-pages.js','lesson-core.js','semiconductor-p0.js','semiconductor-physics-p0-core.js',
-  'semiconductor-p0.css','xrd-factor-core.js','powder-planes-view.js','manifest.webmanifest','vendor/moyo_wasm.js',
+  'semiconductor-p0.css','material-cards-core.js','materials-page.js','xrd-peak-match-core.js','xrd-factor-core.js','powder-planes-view.js','manifest.webmanifest','vendor/moyo_wasm.js',
   'vendor/moyo_wasm_bg.wasm','vendor/three/build/three.core.js',
   'vendor/three/examples/jsm/math/ConvexHull.js',
   'vendor/three/examples/jsm/exporters/STLExporter.js',
