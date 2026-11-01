@@ -30,10 +30,21 @@ try{
  await page.waitForFunction(()=>!document.getElementById('materialsPage').hidden);
  await page.locator('#materialsReference').fill('synthetic browser test');
  await page.locator('#materialsAdd').click();
- assert.equal(await page.locator('#materialsCards article').count(),1);
+ await page.waitForFunction(()=>document.querySelectorAll('#materialsCards article').length===1);
  await page.locator('#materialsAdd').click();
- assert.equal(await page.locator('#materialsCards article').count(),2);
+ await page.waitForFunction(()=>document.querySelectorAll('#materialsCards article').length===2);
  assert.ok(await page.locator('#materialsComparison table tbody tr').count()>=9);
+ await page.locator('#materialsEvidenceSource').fill('synthetic-qa-1');
+ await page.locator('#materialsEvidenceFile').setInputFiles({
+  name:'source.cif',mimeType:'text/plain',buffer:Buffer.from('data_test\n')
+ });
+ await page.waitForFunction(()=>document.getElementById('materialsEvidenceStatus')?.textContent?.includes('SHA-256'));
+ assert.match(await page.locator('#materialsCards article').first().textContent(),/SHA-256/);
+ const evidenceDownload=page.waitForEvent('download');
+ await page.locator('#materialsExportJson').click();
+ assert.equal((await evidenceDownload).suggestedFilename(),'materials-evidence.json');
+ await page.locator('#materialsBulkPrepare').click();
+ assert.match(await page.locator('#materialsBulkResult').textContent(),/non-executable|slab|3B|3D/i);
  const download=page.waitForEvent('download');
  await page.locator('#materialsExportCsv').click();
  assert.equal((await download).suggestedFilename(),'materials-comparison.csv');
@@ -56,10 +67,21 @@ try{
  });
  await page.waitForFunction(()=>document.getElementById('xrdMeasuredStatus')?.textContent?.includes('synthetic-p0.csv'));
  await page.locator('#xrdMatchConfirmed').check();
+ await page.locator('#xrdMatchRun').click();
+ assert.match(await page.locator('#xrdMatchStatus').textContent(),/Sample ID|metadata/i);
+ await page.locator('#xrdSampleId').fill('test-S01');
+ await page.locator('#xrdInstrument').fill('Synthetic instrument');
+ await page.locator('#xrdCalibration').selectOption('standard-recorded');
+ await page.locator('#xrdCalibrationRef').fill('Synthetic silicon reference');
+ await page.locator('#xrdMatchConfirmed').check();
  await page.locator('#xrdMatchTolerance').fill('0.25');
  await page.locator('#xrdMatchRun').click();
  assert.ok(await page.locator('#xrdMatchResults .bond-rule-row').count()>=1,'synthetic model peak should match');
  assert.equal(await page.locator('#xrdMatchExport').isDisabled(),false);
+ assert.equal(await page.locator('#xrdMatchEvidenceExport').isDisabled(),false);
+ const xrdEvidenceDownload=page.waitForEvent('download');
+ await page.locator('#xrdMatchEvidenceExport').click();
+ assert.equal((await xrdEvidenceDownload).suggestedFilename(),'xrd_match_evidence.json');
  await page.locator('#xrdLambda').fill('1.6');
  await page.locator('#xrdLambda').dispatchEvent('change');
  assert.equal(await page.locator('#xrdMatchConfirmed').isChecked(),false,'changed wavelength must invalidate user confirmation');
