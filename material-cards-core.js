@@ -61,7 +61,12 @@ export function materialComparison(cards){
    return first===0?null:round((next-first)/first*100,4);
   })}));
 }
-function csvCell(value){const s=String(value??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function csvCell(value){
+ // Quoting alone does not prevent spreadsheet formula execution from untrusted CIF names.
+ const raw=String(value??'');
+ const s=typeof value==='string'&&/^[\\s]*[=+@-]/.test(raw)?"'"+raw:raw;
+ return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
 export function materialComparisonCsv(cards){
  const rows=[['Field','Unit',...cards.map((c,i)=>'Structure '+(i+1)+': '+c.name)]];
  for(const row of materialComparison(cards))rows.push([row.label,row.unit,...row.values]);
