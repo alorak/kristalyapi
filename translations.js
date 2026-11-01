@@ -7,6 +7,10 @@
 (() => {
  'use strict';
  const entries=[
+  ["Cu Kα1","Cu K-alpha 1"],
+  ["Cu Kα1 + Kα2","Cu K-alpha 1 + K-alpha 2"],
+  ["Mo Kα1","Mo K-alpha 1"],
+  ["Co Kα1","Co K-alpha 1"],
   ["P1 · Kaynak ve dosya kanıtları (yerel SHA-256)","P1 · Source and file evidence (local SHA-256)"],
   ["Hedef malzeme kartı","Target material card"],
   ["Kanıt dosyası türü","Evidence file type"],
