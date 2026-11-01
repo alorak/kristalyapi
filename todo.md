@@ -14,10 +14,15 @@
 - [ ] **P1.2 deneysel kabul:** iki cihazın gerçek CSV korpusu, cihaz/Kα₂/kalibrasyon testi, sıfır kayması, kör numuneler, çoklu referans adayı ve bağımsız hata analizi.
 - [ ] **P1.3 gerçek 3B QE hesapları:** 3B k-mesh/band path destekli worker/API, GaN/SiC/AlN polimorf doğrulama, UPF ve k/ecut/kuvvet yakınsaması; sonuçların ham kaynak kanıtları.
 
-## P2 · Araştırma genişletmeleri (başlanmadı)
-- [ ] Rietveld/refinman yalnız bağımsız deneysel kabul ile; otomatik faz oranı iddialarını ertele.
-- [ ] Yüklü kusur, oluşum enerjisi/sonlu-hücre düzeltmeleri, fonon/termal özellik ve heteroyapı/arayüz modelleri.
-- [ ] Belirsizlik kalibrasyonlu malzeme taraması / fizik bilgili vekil model; ayrı veri güvenilirliği kapısı.
+## P2 · Sayısal araştırma prototipleri (ilk paket uygulandı; fiziksel kabul yok)
+- [x] **P2.1 kusur termodinamiği çekirdeği:** operatörce verilen E_def/E_bulk/kimyasal potansiyel/yük/elektrostatik düzeltme ile oluşum enerjisi; gerçek yüklü defekt düzeltme hesaplaması veya fiziksel kabul yok.
+- [x] **P2.2 fonon negatif mod taraması:** harici THz frekansları üzerinde kontrollü tolerans; dinamik kararlılık ve termal iletkenlik ispatı yok.
+- [x] **P2.3 arayüz geometrisi:** iki 2B örgü vektörünün uzunluk/açı uyumsuzluğu; gerçek kommensürat süperhücre/arayüz DFT modeli yok.
+- [x] **P2.4 belirsizlik prototipi:** split-conformal mutlak artık yarıçapı ve sonlu olmayan aralık güvenlik kapısı; gerçek bağımsız test/kapsama kanıtı yok.
+- [ ] **P2 fiziksel kabul:** yüklü kusur düzeltmeleri ve gerçek DFT, fonon kuvvet/q-örgüsü ve termal taşınım, fiziksel arayüz yakınsaması, bağımsız conformal test/karar riski.
+- [ ] **Rietveld/çoklu faz:** yalnız gerçek cihaz referans korpusu ve bağımsız yöntem doğrulamasından sonra değerlendirme.
+
+[Ayrıntılı P2 araştırma protokolleri](docs/materials-p2-research.md).
 
 [Ayrıntılı P0 kapsamı ve kabul sınırları](docs/material-intelligence-p0.md).
 

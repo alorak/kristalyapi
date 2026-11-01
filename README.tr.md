@@ -18,6 +18,12 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 **TRUBA / SLURM dışa aktarma (P0):** DFT → Hesap hazırlığı → TRUBA / SLURM paketi yoluyla tek bir Quantum ESPRESSO SCF/relax girdisi, SLURM betiği, manifest ve isteğe bağlı gerçek UPF dosyalarından çevrimdışı ZIP hazırlanabilir. İş gönderilmez veya bilimsel yakınsama onaylanmaz. [TRUBA kullanımı ve sınırlamalar](docs/qe-truba-slurm.md).
 
+## P2 — Malzeme araştırma sonrası işlem prototipleri
+
+`tools/materials_p2_research.py`: gerçek araştırma verilerinin **operatörce sağlanması koşuluyla**, kusur oluşum enerjisi terimleri, negatif fonon frekans taraması, iki malzeme arası 2B örgü uyumu ve split-conformal artık aralığı hesaplar. **Bu aşama gerçek QE/FDTD, fonon çözücüsü, deney veya malzeme kalite kabulü değildir**; kaynak SHA-256 beyanları orijinal dosyalarla yeniden karşılaştırılmadan doğrulanmış sayılmaz.
+
+[Kapsam, formüller, bilimsel sınırlar ve testler](docs/materials-p2-research.md).
+
 ## P1 — Malzeme kanıt zinciri / XRD kaynak kaydı / 3B bulk hazırlığı
 
 **Yerel kanıt kayıtları:** Malzemeler ekranında kanonik kristal geometrisinin SHA-256 özeti ve seçili kanıt dosyalarının ham bayt hash'leri tutulur; kanıt JSON yeniden doğrulamada geometri özeti kontrol edilir. Bu, harici kaynak kimliği, imza, fiziksel sonuç veya QE yakınsama doğrulaması değildir.
