@@ -61,7 +61,7 @@ export async function auditMaterialEvidence({bundlePath,filesDir}){
   limitation:'Hashes validate supplied bytes only. A signature authenticates possession of the separately trusted key, not the lab, device, CIF source or physical calculation.'};
 }
 function fingerprint(key){
- return digest(createPublicKey(key).export({type:'spki',format:'der'}));
+ return digest((key.type==='public'?key:createPublicKey(key)).export({type:'spki',format:'der'}));
 }
 export async function signEvidenceBundle({bundlePath,filesDir,privateKeyPath,signaturePath}){
  assert(typeof signaturePath==='string'&&signaturePath.length>0,'Signature output path required');
