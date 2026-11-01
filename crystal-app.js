@@ -5893,7 +5893,7 @@ function runPowderAnalysis(){
 }
 function renderWorkspaceXrd(){
  const host=$('xrdResults');host.replaceChildren();
- if(!lastXrd){lastXrdProfile=null;$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
+ if(!lastXrd){lastXrdProfile=null;clearXrdMatch('Önce XRD hesaplayın.');$('xrdChart').replaceChildren();$('xrdSummary').textContent='Önce XRD hesaplayın.';return;}
  try{
   lastXrdProfile=powderProfile(lastXrd,xrdProfileOptions());
   $('xrdProfileStatus').textContent='Pseudo-Voigt · '+lastXrdProfile.angles.length+
