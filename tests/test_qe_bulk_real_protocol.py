@@ -69,7 +69,7 @@ class BulkRealProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"Invalid declared wurtzite"):
             build("AlN",self.source,self.pseudos,self.root/"invalid",
                   self.hashes("AlN"),u=.9)
-        with self.assertRaisesRegex(ValueError,"Invalid 3C"):
+        with self.assertRaisesRegex(ValueError,"3C-SiC does not use"):
             geometry("SiC",4.35,7,.4)
 
 
