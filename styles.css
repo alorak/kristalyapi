@@ -1242,3 +1242,12 @@ body.lesson-open #app{display:none!important}
 .xrd-match-panel .triple{margin:8px 0}
 .xrd-match-results{max-height:200px;overflow:auto}
 .xrd-match-results .bond-rule-row{font-size:11px;line-height:1.5}
+
+/* P1 provenance and material study forms; no decorative acceptance badges. */
+.materials-evidence-toolbar,.xrd-acquisition-fields{border:1px solid #cedfeb;border-radius:12px;padding:13px 15px;margin:14px 0;background:#f8fbff}
+.materials-evidence-toolbar>strong,.xrd-acquisition-fields>strong{display:block;font-size:13px;margin-bottom:10px;color:#284b69}
+.materials-evidence-toolbar .triple,.xrd-acquisition-fields .triple{margin-bottom:10px;flex-wrap:wrap}
+.materials-evidence-toolbar label,.xrd-acquisition-fields label{min-width:150px;max-width:100%;flex:1}
+.materials-evidence-toolbar input,.xrd-acquisition-fields input,.materials-evidence-toolbar select,.xrd-acquisition-fields select{max-width:100%}
+.materials-bulk-result{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;background:#f6f9fc;color:#29405a;border:1px solid #d9e3f1;border-radius:9px;font-size:12px;line-height:1.55;padding:13px;max-height:260px;overflow-y:auto}
+@media(max-width:690px){.materials-evidence-toolbar .triple,.xrd-acquisition-fields .triple{display:grid;grid-template-columns:minmax(0,1fr)}}
