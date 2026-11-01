@@ -8,6 +8,7 @@ on:
       - 'server/**'
       - 'tools/qe_*.py'
       - 'tools/materials_p2_research.py'
+      - 'tools/material_evidence_attestation.mjs'
       - 'tests/**'
       - 'qe-*.js'
       - 'crystal-app.js'
