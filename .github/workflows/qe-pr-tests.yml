@@ -83,6 +83,8 @@ jobs:
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
       - name: Verify dedicated DFT routes and mounted forms without calculations
         run: node tests/browser/dft-workspace.test.mjs
+      - name: Smoke-test P0 materials and XRD controls in real Chromium (synthetic scan)
+        run: node tests/browser/materials-xrd.test.mjs
       - name: Retain DFT screenshots
         if: always()
         uses: actions/upload-artifact@v4
