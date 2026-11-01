@@ -59,7 +59,7 @@ export function matchPowderPeaks(groups,rows,{toleranceDeg=.2,minimumRelative=8,
 export function matchReportCsv(report,{wavelengthA='',measurementName=''}={}){
  const quote=v=>{
   const raw=String(v??'');
-  const safe=typeof v==='string'&&/^[\\s]*[=+@-]/.test(raw)?"'"+raw:raw;
+  const safe=typeof v==='string'&&/^[=+@-]/.test(raw.trimStart())?"'"+raw:raw;
   return '"'+safe.replace(/"/g,'""')+'"';
  };
  const data=[['Status','hkl','model_2theta_deg','model_relative_pct','measured_2theta_deg','measured_relative_pct','delta_2theta_deg','wavelength_A_user_entered','measurement_file']];
