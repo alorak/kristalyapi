@@ -1,0 +1,25 @@
+name: XRD multi-reference screening regression (synthetic only)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'tools/xrd_candidate_review.py'
+      - 'tools/xrd_acceptance.py'
+      - 'tests/test_xrd_candidate_review.py'
+      - 'tests/test_xrd_acceptance.py'
+      - '.github/workflows/xrd-reference-pr.yml'
+permissions:
+  contents: read
+jobs:
+  reference-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check independent reference screening with synthetic fixtures
+        run: python -m unittest discover -s tests -p 'test_xrd_candidate_review.py' -v
