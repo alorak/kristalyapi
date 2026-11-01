@@ -101,6 +101,14 @@ N 0.666667 0.333333 0.875
         report=verify(self.manifest)
         self.assertFalse(report["software_numeric_gates_passed"])
         self.assertFalse(report["scientific_acceptance"])
+    def test_input_pseudo_name_must_match_hashed_upf(self):
+        text=(self.root/"bands.in").read_text().replace("Ga.upf","different.upf")
+        self.write("bands.in",text)
+        self.data["runs"]["bands"]["input"]=self.record("bands.in")
+        self.save()
+        with self.assertRaisesRegex(ValueError,"pseudopotential filenames"):
+            verify(self.manifest)
+
     def test_incomplete_log_and_non_3d_path_fail_closed(self):
         with self.assertRaisesRegex(ValueError,"complete"):
             qe_output("Program PWSCF v.7.2\n", "scf")
