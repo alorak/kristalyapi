@@ -18,6 +18,16 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 **TRUBA / SLURM dışa aktarma (P0):** DFT → Hesap hazırlığı → TRUBA / SLURM paketi yoluyla tek bir Quantum ESPRESSO SCF/relax girdisi, SLURM betiği, manifest ve isteğe bağlı gerçek UPF dosyalarından çevrimdışı ZIP hazırlanabilir. İş gönderilmez veya bilimsel yakınsama onaylanmaz. [TRUBA kullanımı ve sınırlamalar](docs/qe-truba-slurm.md).
 
+## P1 — Malzeme kanıt zinciri / XRD kaynak kaydı / 3B bulk hazırlığı
+
+**Yerel kanıt kayıtları:** Malzemeler ekranında kanonik kristal geometrisinin SHA-256 özeti ve seçili kanıt dosyalarının ham bayt hash'leri tutulur; kanıt JSON yeniden doğrulamada geometri özeti kontrol edilir. Bu, harici kaynak kimliği, imza, fiziksel sonuç veya QE yakınsama doğrulaması değildir.
+
+**XRD meta veri denetimi:** Ölçüm dosyasının SHA-256'sı, numune/cihaz/Kα₂/kalibrasyon beyanı, kullanıcı onayı ve ölçülen-model dalga boyu uyum kapısı. Eşleşmeler JSON olarak indirilebilir; gerçek cihaz kalibrasyonu, faz tayini ve Rietveld değildir.
+
+**GaN / AlN / SiC:** Yürütülemez 3B bulk hazırlık JSON'u, bileşim ve `k_x×k_y×k_z` ön denetimi. Mevcut QE elektronik API yalnız slab/2B hesaplarını destekler; gerçek 3B bulk koşusu bu paketle eklenmedi.
+
+[P1 kapsamı, kısıtlar, testler ve açık bilimsel kabul maddeleri](docs/material-intelligence-p1.md).
+
 ## P0 — Malzeme veri kartları ve XRD ölçüm–referans eşleştirmesi
 
 **Malzemeler** (`#malzemeler`): Etkin çalışma alanından salt-okunur 1–4 kristal anlık kopyasını, doluluk ağırlıklı bileşim, hücre/hacim, kaynak etiketi ve göreli farklar ile karşılaştırır. JSON/CSV yerel dışa aktarılır; DFT veya deneysel kaynak doğrulaması yapılmaz.
