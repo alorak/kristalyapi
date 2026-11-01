@@ -57,7 +57,11 @@ export function matchPowderPeaks(groups,rows,{toleranceDeg=.2,minimumRelative=8,
   unmatchedMeasured:measured.filter((_,j)=>!used.has(j))};
 }
 export function matchReportCsv(report,{wavelengthA='',measurementName=''}={}){
- const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const quote=v=>{
+  const raw=String(v??'');
+  const safe=typeof v==='string'&&/^[\\s]*[=+@-]/.test(raw)?"'"+raw:raw;
+  return '"'+safe.replace(/"/g,'""')+'"';
+ };
  const data=[['Status','hkl','model_2theta_deg','model_relative_pct','measured_2theta_deg','measured_relative_pct','delta_2theta_deg','wavelength_A_user_entered','measurement_file']];
  const add=(status,model,measured,delta)=>data.push([status,model?.hkl??'',model?.angle??'',model?.relative??'',
   measured?.angle??'',measured?.relative??'',delta??'',wavelengthA,measurementName]);
