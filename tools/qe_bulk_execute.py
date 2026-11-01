@@ -37,7 +37,7 @@ def digest(path):
 def exact_control(input_text, key, value):
     # Match only explicit &CONTROL assignments; never allow prefix/outdir/pseudo
     # to refer to arbitrary host paths or stored jobs from unrelated workflows.
-    block = re.search(r"&CONTROL\s*(.*?)/", input_text, re.I | re.S)
+    block = re.search(r"&CONTROL\s*(.*?)^\s*/\s*$", input_text, re.I | re.S | re.M)
     require(block is not None, "QE input must contain explicit &CONTROL")
     found = re.findall(r"\b" + re.escape(key) + r"\s*=\s*['\"]([^'\"]*)['\"]",
                        block.group(1), re.I)
