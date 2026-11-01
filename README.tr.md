@@ -18,6 +18,10 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 **TRUBA / SLURM dışa aktarma (P0):** DFT → Hesap hazırlığı → TRUBA / SLURM paketi yoluyla tek bir Quantum ESPRESSO SCF/relax girdisi, SLURM betiği, manifest ve isteğe bağlı gerçek UPF dosyalarından çevrimdışı ZIP hazırlanabilir. İş gönderilmez veya bilimsel yakınsama onaylanmaz. [TRUBA kullanımı ve sınırlamalar](docs/qe-truba-slurm.md).
 
+## P1 — 3B QE bilimsel semantik tutarlılık denetimi
+
+`tools/qe_bulk_semantic_gate.py` gerçek ham hesap kanıtı ile **bağımsız operatörce hazırlanmış** atomik kaynak transkripsiyonunu; Å/atom konumu, UPF PBE ve valans başlığı, SCF–cutoff–k mesh ayarlarını eşleştirir. Şifreli kaynak kimliği, gerçek XRD veya hesap fiziği bilimsel kabulü değildir. [Protokol](docs/qe-bulk-semantic-review.md).
+
 ## P1 — Gerçek XRD ve 3B bulk QE doğrulama protokolü
 
 [Gerçek cihaz veri ihtiyacı, bağımsız inceleme ve GaN/AlN/SiC manuel QE çalıştırma yolu](docs/materials-real-acceptance-plan.md).
