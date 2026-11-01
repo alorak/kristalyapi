@@ -69,7 +69,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </head>
 <body>
 <header>
- <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="dftNav" href="#dft">DFT</a><a id="powderNav" href="#toz-kirinimi">Toz Kırınımı</a><a id="semiconductorNav" href="#yariiletken-fizigi">Yarıiletken Fiziği</a></nav></div>
+ <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="dftNav" href="#dft">DFT</a><a id="materialsNav" href="#malzemeler">Malzemeler</a><a id="powderNav" href="#toz-kirinimi">Toz Kırınımı</a><a id="semiconductorNav" href="#yariiletken-fizigi">Yarıiletken Fiziği</a></nav></div>
  <div class="actions">
   <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
   <div class="history-toolbar workspace-action" role="group" aria-label="Kristal düzenleme geçmişi">
@@ -556,6 +556,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="actionrow"><button id="xrdMeasuredLoad" type="button">Ölçülen CSV yükle</button><button id="xrdMeasuredClear" type="button">Ölçümü kaldır</button><button id="xrdProfileExport" type="button">Profil CSV</button></div>
     <p id="xrdMeasuredStatus" class="hint" aria-live="polite">Ölçüm yüklenmedi. CSV: 2theta_deg,intensity · karşılaştırma maksimuma göre %100'e ölçeklenir; fit yapılmaz.</p>
     <p id="xrdProfileStatus" class="hint" aria-live="polite">Profil hesaplama bekleniyor.</p>
+    <div class="xrd-match-panel">
+     <strong>Ölçüm–referans pik eşleştirmesi · P0</strong>
+     <p class="hint">Yalnız 2θ pik konumları için yaklaşık tarama yapılır. Kα2 ayrıştırması, zemin/cihaz düzeltmesi, faz tayini, Rietveld fit ve kabul/red kararı yapılmaz.</p>
+     <label class="check"><input id="xrdMatchConfirmed" type="checkbox"> Ölçülen CSV ile modelin dalga boyu ve 2θ eksen tanımının uyumlu olduğunu kontrol ettim.</label>
+     <div class="triple">
+      <label class="field compact"><span>Pik toleransı (2θ, °)</span><input id="xrdMatchTolerance" type="number" min="0.01" max="2" step="0.01" value="0.2"></label>
+      <label class="field compact"><span>Asgari göreli şiddet (%)</span><input id="xrdMatchMinRel" type="number" min="0" max="100" step="1" value="8"></label>
+      <label class="field compact"><span>Asgari pik belirginliği (%)</span><input id="xrdMatchProm" type="number" min="0" max="100" step="1" value="4"></label>
+     </div>
+     <div class="actionrow"><button id="xrdMatchRun" type="button">Pikleri eşleştir</button><button id="xrdMatchExport" type="button" disabled>Eşleşmeler CSV</button></div>
+     <p id="xrdMatchStatus" role="status" aria-live="polite" class="hint">Önce teorik XRD ve ölçülen CSV gerekir.</p>
+     <div id="xrdMatchResults" class="xrd-match-results" aria-live="polite"></div>
+    </div>
    </div>
    <svg id="xrdChart" viewBox="0 0 440 180" role="img" aria-label="Hesaplanan toz kırınımı çubuk grafiği" style="display:block;width:100%;min-height:150px;border:1px solid #dce5f1;border-radius:8px;background:white"></svg>
    <div id="xrdResults" class="bond-rule-list" style="max-height:235px;overflow:auto"></div>
@@ -1161,6 +1174,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
+<main id="materialsPage" class="lesson-page" hidden aria-label="Malzeme veri kartları ve karşılaştırma">
+ <div class="lesson-wrap">
+  <div class="library-header"><div><div class="library-eyebrow">Kristal Yapı / Malzeme Ar-Ge · P0</div>
+   <h2>Malzeme veri kartları</h2><p>Farklı çalışma alanlarındaki kristal yapılarını kaydedip birim hücre, kimyasal bileşim ve kaynak kimliğiyle karşılaştırın.</p>
+  </div><a class="lib-cod-link" href="#kristal">← Kristal editörü</a></div>
+  <section class="lesson-panel">
+   <div class="lesson-panel-head"><h3>Yapı karşılaştırması</h3><span class="lesson-pill">En çok dört yapı · yalnızca bu sekme</span></div>
+   <label class="lesson-field materials-source-field"><span>Kaynak kimliği / bağlantısı (isteğe bağlı; kullanıcı beyanı)</span>
+    <input type="text" id="materialsReference" maxlength="500" placeholder="COD kimliği, DOI, deney/DFT kanıt kimliği"></label>
+   <div class="actionrow materials-actions"><button id="materialsAdd" type="button">Etkin kristalin anlık kopyasını ekle</button>
+    <button id="materialsClear" type="button">Tümünü temizle</button>
+    <button id="materialsExportCsv" type="button">Karşılaştırma CSV</button>
+    <button id="materialsExportJson" type="button">Kaynaklı JSON</button></div>
+   <p id="materialsCount" class="hint" aria-live="polite"></p>
+   <div id="materialsStatus" class="note" role="status" aria-live="polite">Kaydedilen yapı bulunmuyor.</div>
+   <div id="materialsCards" class="materials-cards" aria-label="Kaydedilen malzeme kartları"></div>
+  </section>
+  <section class="lesson-panel"><div class="lesson-panel-head"><h3>Geometrik karşılaştırma</h3><span class="lesson-pill">Birimler ve farklar</span></div>
+   <div id="materialsComparison" aria-live="polite"></div>
+   <p class="hint">Bu kartlar yalnız mevcut yapı verilerinin anlık kopyasıdır; otomatik COD doğrulaması, XRD faz tayini, DFT sonucu, mekanik veya RF malzeme özelliği içermez. Kaynak bağlantısı elle girilir; yapıyla eşleşmesi doğrulanmaz.</p>
+  </section>
+ </div>
+</main>
 <main id="powderPage" class="lesson-page" hidden aria-label="X-ışını toz kırınımı laboratuvarı">
  <div class="library-wrap lesson-wrap">
   <div class="library-header">
