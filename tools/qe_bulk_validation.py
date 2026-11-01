@@ -57,8 +57,9 @@ def match_unique(pattern, source, field):
 def qe_input(source, stage):
     calculation = match_unique(CALC, source, "calculation").lower()
     require(calculation == ("bands" if stage == "bands" else "scf"), "Unexpected QE calculation type")
-    require("CELL_PARAMETERS" in source and "ATOMIC_POSITIONS" in source,
-            "QE input must define explicit cell and atomic positions")
+    require("CELL_PARAMETERS" in source and "ATOMIC_POSITIONS" in source
+            and "ATOMIC_SPECIES" in source,
+            "QE input must define explicit cell, atomic species and positions")
     nat, ntyp = int(match_unique(NAT, source, "nat")), int(match_unique(NTYP, source, "ntyp"))
     require(1 <= nat <= 512 and ntyp == 2, "Invalid nat/ntyp for binary bulk")
     cuts = {name.lower(): float(value) for name, value in ECUT.findall(source)}
@@ -69,6 +70,12 @@ def qe_input(source, stage):
     # all variable cell positions, occupations, functional and atom labels.
     block = source.split("CELL_PARAMETERS", 1)[1].split("K_POINTS", 1)[0]
     require(len(block.strip()) > 10, "Missing cell/atomic structure content")
+    species_section = source.split("ATOMIC_SPECIES", 1)[1].split("CELL_PARAMETERS", 1)[0]
+    species_rows = [line.split() for line in species_section.splitlines() if line.strip()]
+    require(len(species_rows) == ntyp and all(len(parts) == 3 for parts in species_rows),
+            "Invalid ATOMIC_SPECIES rows")
+    species = {parts[0]: Path(parts[2]).name for parts in species_rows}
+    require(len(species) == ntyp, "Duplicate atomic species")
     if stage == "bands":
         m = BANDS.search(source)
         require(m and 4 <= int(m.group(1)) <= 200, "Explicit crystal_b band path required")
@@ -89,7 +96,8 @@ def qe_input(source, stage):
         mesh = [int(v) for v in m.groups()]
         require(all(2 <= v <= 64 for v in mesh), "Bulk k mesh must sample all three dimensions")
     return {"calculation": calculation, "nat": nat, "ntyp": ntyp, "cutoffs_ry": cuts,
-            "mesh": mesh, "geometry_text": re.sub(r"\s+", " ", block.strip())}
+            "mesh": mesh, "atomic_species_pseudos": species,
+            "geometry_text": re.sub(r"\s+", " ", block.strip())}
 
 
 def qe_output(source, stage):
@@ -132,6 +140,9 @@ def verify(manifest_path):
         inp = artifact(root, value.get("input")).read_text(encoding="utf-8")
         out = artifact(root, value.get("output")).read_text(encoding="utf-8")
         parsed_input = qe_input(inp, stage)
+        expected_species = {element: Path(value["path"]).name for element, value in upfs.items()}
+        require(parsed_input["atomic_species_pseudos"] == expected_species,
+                "QE ATOMIC_SPECIES pseudopotential filenames differ from pinned UPFs")
         parsed_output = qe_output(out, stage)
         require(parsed_input["nat"] == qe_input(artifact(root, runs["baseline"]["input"]).read_text(encoding="utf-8"), "scf")["nat"],
                 "Atom count changed between runs")
