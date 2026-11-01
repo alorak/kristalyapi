@@ -1219,3 +1219,26 @@ body.lesson-open #app{display:none!important}
 .geometry-preview td.num{text-align:right;font-variant-numeric:tabular-nums}
 .view-section button,.view-index-row button{padding:5px 9px;font-size:12px;width:auto}
 .view-index-row select{width:auto;min-width:64px;padding:4px 6px;font-size:12px}
+
+/* P0 Materials Intelligence / qualitative XRD peak-position screening */
+.materials-source-field{display:block;max-width:750px;margin:10px 0 14px}
+.materials-source-field input{width:100%;min-height:38px;border:1px solid #cdd9e7;border-radius:8px;padding:7px 10px;background:#fff;color:#243a52}
+.materials-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.materials-actions button:disabled{opacity:.5;cursor:not-allowed}
+.materials-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin:15px 0}
+.materials-card{border:1px solid #d5e1ef;border-radius:12px;padding:13px 15px;background:#f8fbfe;overflow-wrap:anywhere}
+.materials-card h3{font-size:14px;margin:0 0 7px;color:#1d425e}
+.materials-card p{font-size:12px;line-height:1.5;margin:5px 0;color:#486078}
+.materials-card .materials-card-meta{font-variant-numeric:tabular-nums}
+.materials-card button{margin-top:7px;padding:5px 12px}
+.materials-table-scroll{overflow-x:auto;width:100%;margin:12px 0}
+.materials-table-scroll table{border-collapse:collapse;width:100%;min-width:520px;font-size:12px}
+.materials-table-scroll th,.materials-table-scroll td{padding:9px 11px;border-bottom:1px solid #dfebf4;text-align:left;vertical-align:top;white-space:nowrap;font-variant-numeric:tabular-nums}
+.materials-table-scroll tbody th{font-weight:620}
+.materials-table-scroll small{display:block;color:#698098;margin-top:3px;font-size:10px}
+.materials-caution{font-size:12px;line-height:1.6;color:#6b6472}
+.xrd-match-panel{border:1px solid #d3e2ef;border-radius:10px;padding:12px;margin-top:12px}
+.xrd-match-panel .hint{line-height:1.5}
+.xrd-match-panel .triple{margin:8px 0}
+.xrd-match-results{max-height:200px;overflow:auto}
+.xrd-match-results .bond-rule-row{font-size:11px;line-height:1.5}
