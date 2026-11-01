@@ -88,7 +88,7 @@ class BulkSemanticGateTests(unittest.TestCase):
     def test_lattice_unit_and_lattice_mismatch_block(self):
         self.typed["cell_unit"]="bohr"
         self.save()
-        with self.assertRaisesRegex(ValueError,"angstrom"):
+        with self.assertRaisesRegex(ValueError,"cell / fractional"):
             review(self.manifest,self.reference)
         self.typed["cell_unit"]="angstrom"
         self.typed["cell_vectors_angstrom"][0][0]=3.40
