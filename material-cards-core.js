@@ -64,7 +64,7 @@ export function materialComparison(cards){
 function csvCell(value){
  // Quoting alone does not prevent spreadsheet formula execution from untrusted CIF names.
  const raw=String(value??'');
- const s=typeof value==='string'&&/^[\\s]*[=+@-]/.test(raw)?"'"+raw:raw;
+ const s=typeof value==='string'&&/^[=+@-]/.test(raw.trimStart())?"'"+raw:raw;
  return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
 }
 export function materialComparisonCsv(cards){
