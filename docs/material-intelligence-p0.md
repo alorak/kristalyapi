@@ -15,6 +15,7 @@
 ## Kabul ve test
 - `node --test tests/materials-p0.test.mjs tests/xrd-peak-match.test.mjs`
 - `node --test tests/pages-assets.test.mjs`
+- `node tests/browser/materials-xrd.test.mjs` (Playwright/Chromium gerekir; ölçüm sentetiktir, gerçek cihaz kanıtı değildir).
 - Tarayıcıda: iki çalışma alanı açın; ilkini Malzemeler'e ekleyin; diğer çalışma alanına geçip ikinciyi ekleyin; hacim, yüzde farkı, JSON ve CSV'yi denetleyin. XRD için hesap oluşturun, ölçüm CSV yükleyin, dalga boyu kontrolünü onaylayın, tolerans ile pik eşleştirin. Farklı çalışma alanına geçince eski raporun kaybolduğunu kontrol edin.
 
 ## Sıradaki aşamalar
