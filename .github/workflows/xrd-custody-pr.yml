@@ -1,0 +1,25 @@
+name: P1 XRD device independence regression (synthetic fixtures)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'tools/xrd_device_custody_gate.py'
+      - 'tools/xrd_acceptance.py'
+      - 'tests/test_xrd_device_custody_gate.py'
+      - 'tests/test_xrd_acceptance.py'
+      - '.github/workflows/xrd-custody-pr.yml'
+permissions:
+  contents: read
+jobs:
+  custody-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run XRD raw-acquisition, duplicate detection and custody regression
+        run: python -m unittest discover -s tests -p 'test_xrd_device_custody_gate.py' -v
