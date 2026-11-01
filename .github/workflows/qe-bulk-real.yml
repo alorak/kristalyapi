@@ -1,0 +1,133 @@
+name: Real 3D bulk QE GaN AlN SiC (operator-reviewed, manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      material:
+        description: "The intended 3D bulk candidate. Does not prove polytype or sample identity."
+        required: true
+        type: choice
+        options: [GaN, AlN, SiC]
+      first_upf_sha256:
+        description: "Independently PRE-REVIEWED official PSlibrary PBE UPF SHA-256: Ga for GaN, Al for AlN, Si for SiC"
+        required: true
+        type: string
+      second_upf_sha256:
+        description: "Independently PRE-REVIEWED official PSlibrary PBE UPF SHA-256: N for GaN/AlN, C for SiC"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qe-real-bulk-manual-${{ github.ref }}-${{ inputs.material }}
+  cancel-in-progress: false
+
+jobs:
+  real-3d-bulk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      BULK_MATERIAL: ${{ inputs.material }}
+      UPF_SHA_A: ${{ inputs.first_upf_sha256 }}
+      UPF_SHA_B: ${{ inputs.second_upf_sha256 }}
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate manually pinned hashes before accessing source network
+        run: |
+          python - <<'PY'
+          import os,re
+          for name in ("UPF_SHA_A","UPF_SHA_B"):
+              assert re.fullmatch(r"[0-9a-f]{64}",os.environ[name]), name+" must be lowercase SHA-256"
+          PY
+      - name: Install real Quantum ESPRESSO via official Ubuntu package repository
+        run: |
+          sudo apt-get -qq update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y quantum-espresso
+          command -v pw.x
+          dpkg-query -W quantum-espresso > qe-package-version.txt
+          sha256sum "$(command -v pw.x)" > pwx-binary-sha256.txt
+      - name: Acquire real, fixed-source PBE UPF bytes, each hash-gated
+        run: |
+          set -euo pipefail
+          mkdir -p qe-bulk-input/pseudos
+          if [ "$BULK_MATERIAL" = GaN ]; then A=Ga; B=N
+          elif [ "$BULK_MATERIAL" = AlN ]; then A=Al; B=N
+          elif [ "$BULK_MATERIAL" = SiC ]; then A=Si; B=C
+          else echo "Unknown material" >&2; exit 1; fi
+          python tools/qe_bulk_download_upf.py --element "$A" --sha256 "$UPF_SHA_A" --output "qe-bulk-input/pseudos/$A.UPF"
+          python tools/qe_bulk_download_upf.py --element "$B" --sha256 "$UPF_SHA_B" --output "qe-bulk-input/pseudos/$B.UPF"
+          python - <<'PY'
+          import json,os
+          m=os.environ["BULK_MATERIAL"]
+          a,b={"GaN":("Ga","N"),"AlN":("Al","N"),"SiC":("Si","C")}[m]
+          open("qe-bulk-input/pins.json","w").write(json.dumps(
+              {"material":m,"pseudopotentials":{a:os.environ["UPF_SHA_A"],b:os.environ["UPF_SHA_B"]},
+               "source":"official PSlibrary 1.0.0 PBE US; operator-pre-reviewed hashes",
+               "institutional_source_authenticated":False},indent=2)+"\n")
+          PY
+      - name: Generate clearly unverified structural candidate and pinned 3D inputs
+        run: |
+          set -euo pipefail
+          printf 'KristalYapi internally generated structural candidate; NOT an independent experimental CIF or published reference.\n' > qe-bulk-input/candidate-source.txt
+          python - <<'PY'
+          import json,os,subprocess,sys
+          m=os.environ["BULK_MATERIAL"]
+          pair={"GaN":("Ga","N"),"AlN":("Al","N"),"SiC":("Si","C")}[m]
+          cmd=[sys.executable,"tools/qe_bulk_real_protocol.py","--material",m,
+              "--source-file","qe-bulk-input/candidate-source.txt",
+              "--pseudo-dir","qe-bulk-input/pseudos",
+              "--output-dir","qe-bulk-input/prepared","--ecutwfc","60",
+              "--k-base","4","--k-refined","6"]
+          for el,key in zip(pair,("UPF_SHA_A","UPF_SHA_B")):
+              cmd.extend(["--"+el.lower()+"-sha256",os.environ[key]])
+          subprocess.run(cmd,check=True)
+          PY
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,'tools')
+          from qe_bulk_execute import prepare
+          source=prepare('qe-bulk-input/prepared/run-plan.json')
+          assert source['plan']['material']
+          print('Hashed 3D bulk execution preflight passed; science is not yet accepted')
+          PY
+      - name: Execute real pw.x in local runner and generate raw-file evidence
+        run: |
+          python tools/qe_bulk_execute.py \
+            --plan qe-bulk-input/prepared/run-plan.json \
+            --output-dir validation-results/qe-bulk-run \
+            --qe-binary "$(command -v pw.x)" \
+            --timeout-seconds 6300 \
+            --execute
+      - name: Independently recheck raw UPF input output and energy convergence
+        run: |
+          python tools/qe_bulk_validation.py --manifest validation-results/qe-bulk-run/manifest.json \
+            --output validation-results/qe-bulk-run/independent-review.json
+      - name: Attach runner environment metadata without certifying science
+        if: always()
+        run: |
+          mkdir -p validation-results/qe-bulk-run
+          cp -f qe-package-version.txt pwx-binary-sha256.txt validation-results/qe-bulk-run/ || true
+          cp -f qe-bulk-input/pins.json validation-results/qe-bulk-run/ || true
+          cp -f qe-bulk-input/prepared/protocol-provenance.json validation-results/qe-bulk-run/ || true
+          printf 'Evidence is preliminary. External material source, UPF identity, XC, phase and independent reviewer signoff remain required.\n' > validation-results/qe-bulk-run/REVIEW-REQUIRED.txt
+      - name: Preserve real input and solver output even on failed gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qe-real-3d-${{ inputs.material }}-${{ github.run_id }}
+          path: |
+            validation-results/qe-bulk-run/
+            qe-bulk-input/prepared/run-plan.json
+            qe-bulk-input/prepared/protocol-provenance.json
+          retention-days: 30
+          if-no-files-found: warn
