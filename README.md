@@ -15,6 +15,9 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 3. Edit unit-cell dimensions, supercells, and atomic sites in the left panel; change the representation using the bottom toolbar.
 4. Open measurement, bond-valence (BVS), diffraction (XRD), Miller-plane, and other analyses using the right-side tool icons.
 
+**Structure-driven Debye–Scherrer camera:** Open **Powder Diffraction → Camera** to use the currently selected or CIF-imported crystal (including the validated general cell metric and symmetry-expanded atomic sites) in an ideal cylindrical-film simulation. The existing IT92 X-ray powder engine determines the Bragg reflections, while camera diameter and wavelength control their ±film-arc positions. The filter/rotation visual effects are pedagogical approximations, not measured intensity or grain statistics. [Implementation](powder-camera-page.js) · [Geometry tests](tests/powder-camera.test.mjs).
+
+
 5. Use **Save** to export a project JSON, CIF, POSCAR, XYZ, PDB, **vector SVG/PDF/EPS**, **STL**, **VRML97 (.wrl)**, **glTF 2.0 (.glb)**, TIFF, or **1×–4× high-resolution PNG**.
 
 **MoS₂ defect-series comparison (P2 extension):** `tools/qe_defect_compare.py` prepares a local-only comparison of pristine, V_S, V_2S, O_S and O₂@V_S *candidate* structures from independently completed QE PDOS jobs, checking the supercell, pseudopotentials, calculation protocol, and periodic distance-based atom groups. Raw QE energy zeros are **never overlaid** without explicitly supplied (unverified) vacuum-potential lineups. [Methods and limitations](docs/qe-defect-comparison.md).
