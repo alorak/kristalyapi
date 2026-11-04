@@ -7,6 +7,13 @@
 (() => {
  'use strict';
  const entries=[
+
+  ['Yeni anahtar girin (mevcutsa boş bırakın)','Enter a new key (leave blank to keep the saved one)'],
+  ['Sunucu erişim anahtarı (varsa)','Server access token (if configured)'],
+  ['Qwen/Qwen3-8B veya sunulan model ID','Qwen/Qwen3-8B or exact served model ID'],
+  ['Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?','What are this structure\'s symmetry, coordination environment and possible XRD features?'],
+  ['Seçili modelin sunucu adresi','Configured model server address'],
+
   ['LLM Ayarları','LLM Settings'],
   ['Yapay zekâ kristal sohbeti','AI crystal chat'],
   ['Yapay zekâ · kristal sohbeti','AI · crystal chat'],
