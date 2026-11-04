@@ -1562,9 +1562,9 @@ body.lesson-open #app{display:none!important}
 .llm-chat-dock[hidden],#llmChatThinking[hidden]{display:none!important}
 .llm-chat-dock{
  /* The editor viewport is the containing block: never cover the right tool rail. */
- position:absolute;z-index:4;top:12px;right:12px;
+ position:absolute;z-index:4;top:12px;right:12px;bottom:calc(var(--quickbar-height) + 12px);
  width:min(910px,calc(100% - 24px));
- height:min(850px,calc(100% - 24px));
+ height:auto;max-height:850px;
  min-width:0;min-height:0;display:flex;flex-direction:column;
  background:#fff;color:#253f59;border:1px solid #cbdbe9;border-radius:15px;
  box-shadow:0 15px 65px rgba(17,43,73,.24);
