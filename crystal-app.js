@@ -6722,9 +6722,10 @@ function syncClipPanel(){
 function updateClipStatus(){
  if(!$('clipStatus'))return;
  const active=normalizedClipSettings(state.clip).planes.filter(plane=>plane.enabled).length;
- const millerOnly=state.plane?.visible&&!state.plane?.slab;
- $('clipStatus').textContent=[active?active+' etkin düzlem · '+clipHiddenCount+' atom görünümden çıkarıldı.':'',
-  millerOnly?'Miller düzlemi yalnız görsel bir katmandır; atomları kesmez (kesmek için dilim kalınlığını kullanın veya buraya düzlem ekleyin).':''].filter(Boolean).join(' ');
+ const status=$('clipStatus');
+ // Keep only actionable feedback about active clipping planes.
+ status.textContent=active?active+' etkin düzlem · '+clipHiddenCount+' atom görünümden çıkarıldı.':'';
+ status.hidden=!active;
 }
 function changeClip(mutate){
  runViewAction(()=>{
