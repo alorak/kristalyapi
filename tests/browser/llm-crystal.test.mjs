@@ -97,6 +97,21 @@ try{
  await page.locator('#llmChatToggle').click();
  assert.equal(await page.locator('#llmChatDock').isVisible(),true);
  assert.equal(await page.locator('#llmChatToggle').getAttribute('aria-expanded'),'true');
+ assert.equal(await page.locator('#llmChatDock').evaluate(el=>el.parentElement.id),'viewport',
+  'chat dock must be mounted inside the 3D workspace, not above the tool rail');
+ assert.equal(await page.locator('#llmChatPrompt').getAttribute('placeholder'),'Sormak istediğinizi sorabilirsiniz.');
+ const assertChatFitsWorkspace=async()=>{
+  const rects=await page.evaluate(()=>{
+   const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {left:r.left,right:r.right};};
+   return {chat:rect('llmChatDock'),workspace:rect('viewport'),rail:rect('rightToolRail')};
+  });
+  assert.ok(rects.chat.right<=rects.workspace.right-6,'chat overflows workspace: '+JSON.stringify(rects));
+  assert.ok(rects.chat.right<=rects.rail.left-6,'chat covers the right inspector icons: '+JSON.stringify(rects));
+ };
+ await assertChatFitsWorkspace();
+ await page.setViewportSize({width:1000,height:760});
+ await assertChatFitsWorkspace();
+ await page.setViewportSize({width:1480,height:940});
  assert.equal(await page.locator('#llmChatModel').count(),0,'large provider settings card removed');
  assert.equal(await page.locator('#llmChatOpenSettings').count(),0,'large settings link removed');
  assert.equal(await page.locator('#llmChatClearAll').count(),0,'delete-all button removed');
