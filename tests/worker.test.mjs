@@ -241,9 +241,10 @@ test('successful upstream bodies are served from the edge cache without stored C
 test('upstream requests identify the gateway and health reports the mirror list',async()=>{
  let headers=null;
  await handleRequest(req('/api/cif/4335507'),ENV,async(url,options)=>{headers=options.headers;return new Response('data_x\n');},noCache);
- assert.match(headers['User-Agent'],/kristalyapi-cod-worker\/1\.3/);
+ assert.match(headers['User-Agent'],/kristalyapi-cod-worker\/1\.4/);
  const health=await (await handleRequest(req('/health'),ENV)).json();
- assert.equal(health.version,'1.3');
+ assert.equal(health.version,'1.4');
+ assert.equal(health.materialsProjectAlphaIds,true);
  assert.equal(health.materialsProjectProxy,true);
  assert.deepEqual(health.upstreams,['www.crystallography.net','qiserver.ugr.es','cod.ibt.lt']);
 });
@@ -275,7 +276,7 @@ test('MP relay never caches credentials, only allows validated summary fields an
  assert.equal(calls.length,1);
  assert.equal(new URL(calls[0].url).origin,'https://api.materialsproject.org');
  assert.equal(calls[0].options.headers['X-API-KEY'],key);
- assert.match(calls[0].options.headers['User-Agent'],/kristalyapi-mp-worker\/1\.3/);
+ assert.match(calls[0].options.headers['User-Agent'],/kristalyapi-mp-worker\/1\.4/);
  assert.ok(!calls[0].url.includes(key));
  assert.equal(calls[0].options.redirect,'manual');
  assert.equal((await response.json()).data[0].material_id,'mp-5229');
@@ -312,4 +313,31 @@ test('MP gateway forwards upstream failure status without leaking the user key',
  assert.equal(response.status,403);
  assert.equal(response.headers.get('Cache-Control'),'no-store');
  assert.ok(!(await response.text()).includes(key));
+});
+
+test('2026 base-26 MP AlphaIDs pass the bounded gateway and retain the exact identifier',async()=>{
+ const key='synthetic-key';
+ for(const id of ['mp-aaaaaczy','mp-hilze']){
+  const qs=new URLSearchParams({material_ids:id,_fields:'material_id,formula_pretty,structure,last_updated',_limit:'1'});
+  const calls=[];
+  const res=await handleRequest(req('/api/mp/summary?'+qs,{headers:{'X-API-KEY':key}}),ENV,
+   async(url,opts)=>{
+    calls.push({url,opts});
+    return json({data:[{material_id:id,formula_pretty:'Si',structure:{}}]});
+   },{cache:{match(){throw Error('No MP caching');},put(){throw Error('No MP caching');}}});
+  assert.equal(res.status,200,id);
+  assert.equal((await res.json()).data[0].material_id,id);
+  assert.equal(calls.length,1);
+  const upstream=new URL(calls[0].url);
+  assert.equal(upstream.origin,'https://api.materialsproject.org');
+  assert.equal(upstream.searchParams.get('material_ids'),id);
+  assert.equal(calls[0].opts.headers['X-API-KEY'],key);
+  assert.ok(!upstream.href.includes(key));
+ }
+ for(const id of ['mp-a1','mp-abc%2Fbad','mp-ABC','mp-abcdefghijklmnopq']){
+  const qs=new URLSearchParams({material_ids:id,_fields:'material_id',_limit:'1'});
+  const res=await handleRequest(req('/api/mp/summary?'+qs,{headers:{'X-API-KEY':key}}),ENV,
+   ()=>{throw Error('Invalid ID must not reach upstream');});
+  assert.equal(res.status,400,id);
+ }
 });

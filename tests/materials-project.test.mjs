@@ -101,3 +101,73 @@ test('MP Worker requires key-free capability probe and forwards key only to pinn
  assert.equal(oldCalls.length,1,'do not send a key to an old Worker');
  assert.equal(oldCalls[0].options.headers,undefined);
 });
+
+test('post-2026 AlphaIDs are valid through search, result normalization and CIF import',()=>{
+ const alpha='mp-aaaaaczy';
+ assert.equal(new URL(mpSearchUrl(alpha)).searchParams.get('material_ids'),alpha);
+ assert.equal(new URL(mpStructureUrl(alpha)).searchParams.get('material_ids'),alpha);
+ assert.equal(new URL(mpSearchUrl('mp-hilze')).searchParams.get('material_ids'),'mp-hilze');
+ const row=normalizeMpSummary({...Si,material_id:alpha});
+ assert.equal(row.materialId,alpha);
+ assert.equal(normalizeMpResponse({data:[Si,{...Si,material_id:alpha}]}).length,2);
+ const cif=mpStructureToCif({...Si,material_id:alpha,structure},alpha);
+ assert.match(cif,/data_mp_aaaaaczy/);
+ assert.match(cif,/Materials Project mp-aaaaaczy/);
+ assert.match(cif,/_cell_length_a 4\.000000000/);
+ assert.throws(()=>mpStructureToCif({...Si,material_id:'mp-149',structure},alpha),/uyuşmuyor/);
+});
+
+test('MP ID validation remains bounded for both legacy and alphabetical identifiers',()=>{
+ for(const invalid of ['mp-','mp-a1','mp-1a','mp-ABC','mp-äbc',
+  'mp-abcdefghijklmnopq','mp-1234567890123','mp-abc/../../api',
+  'hilze','mvc-13350','mp-aaaaaczy?X-API-KEY=secret']){
+  assert.throws(()=>mpStructureUrl(invalid),undefined,invalid);
+  assert.throws(()=>mpSearchUrl(invalid),undefined,invalid);
+  assert.throws(()=>normalizeMpSummary({material_id:invalid}),undefined,invalid);
+ }
+ assert.equal(normalizeMpSummary({material_id:'mp-3347529'}).materialId,'mp-3347529');
+});
+
+test('AlphaID transport refuses an obsolete Worker before sharing the API key',async()=>{
+ const key='synthetic-unique-private-key',urls=[];
+ await assert.rejects(
+  mpApiGet(mpStructureUrl('mp-aaaaaczy'),key,{
+   transport:'worker',fetcher:async(url,opts)=>{
+    urls.push({url,opts});
+    return {ok:true,json:async()=>({version:'1.3',materialsProjectProxy:true})};
+   }
+  }),/sürüm 1\.4/);
+ assert.equal(urls.length,1,'only the key-free health check may be sent to a v1.3 Worker');
+ assert.match(urls[0].url,/\/health$/);
+ assert.equal(urls[0].opts.headers,undefined);
+});
+
+test('AlphaID Worker v1.4 search and structure requests preserve safe IDs and headers',async()=>{
+ const key='synthetic-key-only-in-headers',calls=[],id='mp-aaaaaczy';
+ const fetcher=async(url,opts)=>{
+  calls.push({url,opts});
+  if(url.endsWith('/health'))return {
+   ok:true,json:async()=>({version:'1.4',materialsProjectProxy:true,materialsProjectAlphaIds:true})
+  };
+  const u=new URL(url),structureRequest=u.searchParams.get('_fields')?.includes('structure');
+  return {ok:true,status:200,headers:{get:()=>null},
+   text:async()=>JSON.stringify({data:[{...Si,material_id:id,...(structureRequest?{structure}:{})}]})};
+ };
+ for(const url of [mpSearchUrl(id),mpStructureUrl(id)]){
+  const response=await mpApiGet(url,key,{fetcher,transport:'worker'});
+  assert.equal(response.data[0].material_id,id);
+ }
+ const apiCalls=calls.filter(x=>x.opts.headers);
+ assert.equal(apiCalls.length,2);
+ for(const call of apiCalls){
+  const u=new URL(call.url);
+  assert.equal(u.origin,'https://kristalyapi-cod-api.aoakkirman.workers.dev');
+  assert.equal(u.searchParams.get('material_ids'),id);
+  assert.equal(call.opts.headers['X-API-KEY'],key);
+  assert.ok(!call.url.includes(key));
+ }
+ const imported=mpStructureToCif({
+  ...Si,material_id:id,structure
+ },id);
+ assert.match(imported,/data_mp_aaaaaczy/);
+});

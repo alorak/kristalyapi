@@ -25,7 +25,7 @@ const ATTEMPT_TIMEOUT_MS = 8_000;
 const UPSTREAM_ROUNDS = 2;
 const RETRY_DELAYS_MS = [800];
 const RETRYABLE_STATUS = new Set([408,425,429,500,502,503,504,520,521,522,523,524,525,526,530]);
-const WORKER_VERSION = '1.3';
+const WORKER_VERSION = '1.4';
 const USER_AGENT = 'kristalyapi-cod-worker/'+WORKER_VERSION+' (+https://github.com/alorak/kristalyapi)';
 // Successful bodies are kept in the Cloudflare edge cache so a COD entry that
 // imported once does not depend on COD being reachable the next time.
@@ -209,7 +209,7 @@ function mpSummaryTarget(search){
  const selectors=['material_ids','formula','chemsys'].filter(k=>p.has(k));
  if(selectors.length!==1||!p.has('_fields')||!p.has('_limit'))throw Error('Invalid Materials Project search');
  const sel=selectors[0],value=p.get(sel);
- if(!(sel==='material_ids'&&/^mp-\d{1,12}$/.test(value)||
+ if(!(sel==='material_ids'&&/^mp-(?:\d{1,12}|[a-z]{1,16})$/.test(value)||
    sel==='formula'&&/^(?:[A-Z][a-z]?\d*(?:\.\d+)?){1,8}$/.test(value)||
    sel==='chemsys'&&/^[A-Z][a-z]?(?:-[A-Z][a-z]?){1,7}$/.test(value)))throw Error('Invalid Materials Project identifier');
  const fields=p.get('_fields')?.split(',');
@@ -261,7 +261,7 @@ export async function handleRequest(request, env={}, upstreamFetch=fetch, option
   if (request.method !== 'GET') return fail(405,'Method not allowed',allowed);
   if (target.pathname === '/health' && !target.search)
     return new Response(JSON.stringify({status:'ok',service:'kristalyapi-cod-worker',version:WORKER_VERSION,
-      upstreams:COD_UPSTREAMS.map(hostOf),materialsProjectProxy:true}),{
+      upstreams:COD_UPSTREAMS.map(hostOf),materialsProjectProxy:true,materialsProjectAlphaIds:true}),{
       headers:{...allowed,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}
     });
   if(target.pathname==='/api/mp/summary')return relayMaterialsProject(request,allowed,upstreamFetch);
