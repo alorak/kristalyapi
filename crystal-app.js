@@ -6525,27 +6525,28 @@ function renderSites(){
  const list=$('siteRows');list.replaceChildren();
  $('siteCount').textContent=String(state.sites.length);
  $('leftAtomsBadge').textContent=String(state.sites.length);
+ const localeEn=window.CrystalI18n?.language==='en';
  state.sites.forEach((site,i)=>{
   const label=site.label||site.symbol+(i+1);
   const card=document.createElement('article');
   card.className='site-entry';card.dataset.siteIndex=String(i);card.setAttribute('role','listitem');
   const head=document.createElement('div');head.className='site-entry-head';
   const choose=document.createElement('button');choose.className='site-entry-select';choose.type='button';
-  choose.setAttribute('aria-label',label+' · 3B görünümde seç');
+  choose.setAttribute('aria-label',label+(localeEn?' · select in 3D view':' · 3B görünümde seç'));
   choose.setAttribute('aria-pressed','false');
-  choose.title='3B görünümde seç / seçimi kaldır';
+  choose.title=localeEn?'Select / deselect in 3D view':'3B görünümde seç / seçimi kaldır';
   const name=document.createElement('strong');name.className='site-entry-name';name.textContent=label;
-  const sub=document.createElement('small');sub.className='site-entry-sub';sub.textContent=site.symbol+' · '+(i+1)+'. konum';
+  const sub=document.createElement('small');sub.className='site-entry-sub';sub.textContent=site.symbol+' · '+(i+1)+'. '+(localeEn?'site':'konum');
   const current=document.createElement('span');current.className='site-entry-selected-label';
-  current.hidden=true;current.textContent='Seçili';
+  current.hidden=true;current.textContent=localeEn?'Selected':'Seçili';
   choose.append(name,sub,current);
   choose.onclick=()=>chooseSidebarSite(i);
   const colorLabel=document.createElement('label');colorLabel.className='site-entry-color';
-  colorLabel.title=label+' · Atom rengi';
-  const colorTitle=document.createElement('span');colorTitle.textContent='Atom rengi';
+  colorLabel.title=label+(localeEn?' · atom color':' · Atom rengi');
+  const colorTitle=document.createElement('span');colorTitle.textContent=localeEn?'Atom color':'Atom rengi';
   const color=document.createElement('input');color.type='color';color.className='site-entry-color-input';
   color.value=visualHex(site.visualColor,elementColor(site.symbol));
-  color.setAttribute('aria-label',label+' atom rengi');
+  color.setAttribute('aria-label',label+(localeEn?' atom color':' atom rengi'));
   color.onchange=()=>{
    $('siteStyleSite').value=String(i);
    updateSiteVisual('visualColor',color.value);
@@ -6553,8 +6554,8 @@ function renderSites(){
   };
   colorLabel.append(colorTitle,color);
   const remove=document.createElement('button');remove.className='site-entry-delete del';
-  remove.type='button';remove.textContent='×';remove.title=label+' · Atom konumunu sil';
-  remove.setAttribute('aria-label',label+' · Atom konumunu sil');
+  remove.type='button';remove.textContent='×';remove.title=label+(localeEn?' · delete atomic site':' · Atom konumunu sil');
+  remove.setAttribute('aria-label',remove.title);
   remove.disabled=state.sites.length<2;
   remove.onclick=()=>{
    state.sites.splice(i,1);state.warning='';selected=[];
@@ -6567,7 +6568,7 @@ function renderSites(){
    const axis=document.createElement('span');axis.textContent=k;
    const inp=document.createElement('input');inp.name=k;inp.type='number';inp.step='.001';
    inp.value=Number(site[k]).toFixed(4);
-   inp.setAttribute('aria-label',label+' '+k+' kesirli koordinatı');
+   inp.setAttribute('aria-label',label+' '+k+(localeEn?' fractional coordinate':' kesirli koordinatı'));
    inp.addEventListener('change',()=>{
     if(!inp.value.trim()||!Number.isFinite(Number(inp.value))){
      inform('Geçersiz koordinat.');renderSites();return;
@@ -12028,6 +12029,7 @@ function bind(){
   selected=[];build();
  };
  window.addEventListener('crystal-language-change',renderDisorderSummary);
+ window.addEventListener('crystal-language-change',renderSites);
  $('siteStyleSite').onchange=renderSiteStyleControls;
  for(const [id,field] of [['siteStyleColor','visualColor'],['siteStyleScale','visualScale'],['sitePolyColor','polyColor'],['sitePolyOpacity','polyOpacity'],['siteStyleOpacity','visualOpacity'],['siteLabelText','labelText']])
   $(id).onchange=event=>updateSiteVisual(field,event.target.value);
