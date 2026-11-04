@@ -11918,6 +11918,9 @@ function bind(){
    getStructure:()=>state,
    getWorkspaceId:()=>String(activeWorkspaceId??'default'),
    onOpenSettings:()=>{
+    // Close the editor drawer before navigating away so the next AI icon
+    // click opens it again instead of silently toggling an invisible pane.
+    setRightSidebarTab(null);
     setLibraryPane('llm');
     window.location.hash='#kutuphane';
     syncLibraryNavigation();
