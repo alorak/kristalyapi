@@ -1681,8 +1681,9 @@ body.lesson-open #app{display:none!important}
  color:#245478;background:#f2f7fc;padding:1px 3px;border-radius:4px}
 
 @media(max-width:850px){
- .llm-chat-dock{top:66px;right:8px;width:calc(100vw - 16px);
-  height:calc(100dvh - 74px)}
+ /* Keep the chat inside the workspace at small widths as well. */
+ #viewport .llm-chat-dock{top:8px;bottom:calc(var(--quickbar-height) + 8px);
+  right:66px;width:min(910px,calc(100% - 78px));height:auto}
  .llm-chat-dock-head{min-height:56px;padding:8px 13px}
  .llm-chat-dock .crystal-llm-chat-section{padding:10px}
  .llm-chat-dock .llm-chat-messages{padding:9px}
