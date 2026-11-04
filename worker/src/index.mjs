@@ -209,7 +209,7 @@ function mpSummaryTarget(search){
  const selectors=['material_ids','formula','chemsys'].filter(k=>p.has(k));
  if(selectors.length!==1||!p.has('_fields')||!p.has('_limit'))throw Error('Invalid Materials Project search');
  const sel=selectors[0],value=p.get(sel);
- if(!(sel==='material_ids'&&/^mp-\d{1,12}$/.test(value)||
+ if(!(sel==='material_ids'&&/^mp-(?:\d{1,12}|[a-z]{1,16})$/.test(value)||
    sel==='formula'&&/^(?:[A-Z][a-z]?\d*(?:\.\d+)?){1,8}$/.test(value)||
    sel==='chemsys'&&/^[A-Z][a-z]?(?:-[A-Z][a-z]?){1,7}$/.test(value)))throw Error('Invalid Materials Project identifier');
  const fields=p.get('_fields')?.split(',');
