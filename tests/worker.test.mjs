@@ -241,9 +241,10 @@ test('successful upstream bodies are served from the edge cache without stored C
 test('upstream requests identify the gateway and health reports the mirror list',async()=>{
  let headers=null;
  await handleRequest(req('/api/cif/4335507'),ENV,async(url,options)=>{headers=options.headers;return new Response('data_x\n');},noCache);
- assert.match(headers['User-Agent'],/kristalyapi-cod-worker\/1\.3/);
+ assert.match(headers['User-Agent'],/kristalyapi-cod-worker\/1\.4/);
  const health=await (await handleRequest(req('/health'),ENV)).json();
- assert.equal(health.version,'1.3');
+ assert.equal(health.version,'1.4');
+ assert.equal(health.materialsProjectAlphaIds,true);
  assert.equal(health.materialsProjectProxy,true);
  assert.deepEqual(health.upstreams,['www.crystallography.net','qiserver.ugr.es','cod.ibt.lt']);
 });
@@ -275,7 +276,7 @@ test('MP relay never caches credentials, only allows validated summary fields an
  assert.equal(calls.length,1);
  assert.equal(new URL(calls[0].url).origin,'https://api.materialsproject.org');
  assert.equal(calls[0].options.headers['X-API-KEY'],key);
- assert.match(calls[0].options.headers['User-Agent'],/kristalyapi-mp-worker\/1\.3/);
+ assert.match(calls[0].options.headers['User-Agent'],/kristalyapi-mp-worker\/1\.4/);
  assert.ok(!calls[0].url.includes(key));
  assert.equal(calls[0].options.redirect,'manual');
  assert.equal((await response.json()).data[0].material_id,'mp-5229');
