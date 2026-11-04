@@ -101,3 +101,29 @@ test('MP Worker requires key-free capability probe and forwards key only to pinn
  assert.equal(oldCalls.length,1,'do not send a key to an old Worker');
  assert.equal(oldCalls[0].options.headers,undefined);
 });
+
+test('post-2026 AlphaIDs are valid through search, result normalization and CIF import',()=>{
+ const alpha='mp-aaaaaczy';
+ assert.equal(new URL(mpSearchUrl(alpha)).searchParams.get('material_ids'),alpha);
+ assert.equal(new URL(mpStructureUrl(alpha)).searchParams.get('material_ids'),alpha);
+ assert.equal(new URL(mpSearchUrl('mp-hilze')).searchParams.get('material_ids'),'mp-hilze');
+ const row=normalizeMpSummary({...Si,material_id:alpha});
+ assert.equal(row.materialId,alpha);
+ assert.equal(normalizeMpResponse({data:[Si,{...Si,material_id:alpha}]}).length,2);
+ const cif=mpStructureToCif({...Si,material_id:alpha,structure},alpha);
+ assert.match(cif,/data_mp_aaaaaczy/);
+ assert.match(cif,/Materials Project mp-aaaaaczy/);
+ assert.match(cif,/_cell_length_a 4\.000000000/);
+ assert.throws(()=>mpStructureToCif({...Si,material_id:'mp-149',structure},alpha),/uyuşmuyor/);
+});
+
+test('MP ID validation remains bounded for both legacy and alphabetical identifiers',()=>{
+ for(const invalid of ['mp-','mp-a1','mp-1a','mp-ABC','mp-äbc',
+  'mp-abcdefghijklmnopq','mp-1234567890123','mp-abc/../../api',
+  'hilze','mvc-13350','mp-aaaaaczy?X-API-KEY=secret']){
+  assert.throws(()=>mpStructureUrl(invalid),undefined,invalid);
+  assert.throws(()=>mpSearchUrl(invalid),undefined,invalid);
+  assert.throws(()=>normalizeMpSummary({material_id:invalid}),undefined,invalid);
+ }
+ assert.equal(normalizeMpSummary({material_id:'mp-3347529'}).materialId,'mp-3347529');
+});
