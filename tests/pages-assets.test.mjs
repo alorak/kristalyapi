@@ -74,7 +74,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-mp-worker-chat-ci-v2'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-materials-project-alphaid-v3'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
@@ -127,4 +127,16 @@ test('Materials Project proxy is opt-in, explicit and never cached by the Worker
  assert.match(worker,/if\(target\.pathname==='\/api\/mp\/summary'\)return relayMaterialsProject/);
  assert.match(worker,/\x27Cache-Control\x27:\x27no-store\x27/);
  assert.match(doc,/Worker v1\.3\+/);
+});
+
+test('2026 Materials Project AlphaID is allowed consistently by UI and pinned Worker',()=>{
+ const core=read('materials-project-core.js'),worker=read('worker/src/index.mjs');
+ const browser=read('tests/browser/materials-project.test.mjs'),unit=read('tests/materials-project.test.mjs');
+ assert.match(core,/\^mp-\(\?:\\d\{1,12\}\|\[a-z\]\{1,16\}\)\$/);
+ assert.match(worker,/sel==='material_ids'&&\/\^mp-\(\?:\\d\{1,12\}\|\[a-z\]\{1,16\}\)\$\//);
+ assert.match(worker,/materialsProjectAlphaIds:true/);
+ assert.match(core,/health\?\.materialsProjectAlphaIds!==true/);
+ assert.match(browser,/alphaId='mp-aaaaaczy'/);
+ assert.match(unit,/post-2026 AlphaIDs/);
+ assert.match(html,/Worker v1\.4\+/);
 });
