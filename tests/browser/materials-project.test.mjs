@@ -72,7 +72,13 @@ try{
   assert.equal(item.headers['x-api-key'],'synthetic-secret-local-only');
   assert.ok(!item.url.includes('synthetic-secret-local-only'));
  }
- // Opt-in proxy path: no real network, key-free health probe and synthetic MP reply.
+ // Opt-in proxy path: exercise 2026 AlphaIDs in search AND crystal import.
+ const alphaId='mp-aaaaaczy';
+ const alphaStructure={
+  lattice:{matrix:[[4,0,0],[0,4,0],[0,0,4]]},
+  sites:[{abc:[0,0,0],species:[{element:'Si',occu:1}]},
+   {abc:[.25,.25,.25],species:[{element:'Si',occu:1}]}]
+ };
  const gatewayCalls=[];
  await page.route('https://kristalyapi-cod-api.aoakkirman.workers.dev/health',route=>
   route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/json'},
@@ -83,8 +89,10 @@ try{
    'access-control-allow-headers':'X-API-KEY,Accept','content-type':'application/json'};
   if(req.method()==='OPTIONS'){await route.fulfill({status:204,headers:allow});return;}
   gatewayCalls.push({url:req.url(),headers:req.headers()});
+  const needsStructure=new URL(req.url()).searchParams.get('_fields')?.split(',').includes('structure');
   await route.fulfill({status:200,headers:allow,body:JSON.stringify({data:[{
-   material_id:'mp-149',formula_pretty:'Si',nsites:2,band_gap:0.6
+   material_id:alphaId,formula_pretty:'Si',nsites:2,band_gap:0.6,
+   ...(needsStructure?{structure:alphaStructure}:{})
   }]})});
  });
  await page.locator('#libraryNav').click();
@@ -98,6 +106,16 @@ try{
  assert.equal(gatewayCalls.length,1);
  assert.equal(gatewayCalls[0].headers['x-api-key'],'synthetic-secret-local-only');
  assert.ok(!gatewayCalls[0].url.includes('synthetic-secret-local-only'));
+ assert.match(await page.locator('#mpResults').textContent(),/mp-aaaaaczy/);
+ await page.locator('#mpResults button').first().click();
+ await page.waitForFunction(id=>
+  document.getElementById('mpSearchStatus')?.textContent.includes(id)&&
+  document.getElementById('mpSearchStatus')?.dataset.state==='ready',alphaId);
+ assert.equal(gatewayCalls.length,2,'AlphaID structure import must use Worker');
+ assert.equal(new URL(gatewayCalls[1].url).searchParams.get('material_ids'),alphaId);
+ assert.equal(gatewayCalls[1].headers['x-api-key'],'synthetic-secret-local-only');
+ assert.ok(!gatewayCalls[1].url.includes('synthetic-secret-local-only'));
+ await page.locator('#libraryNav').click();
  await page.locator('#libMpSettingsTab').click();
  await page.locator('#mpUseWorker').uncheck();
  await page.locator('#mpKeyClear').click();
