@@ -126,7 +126,7 @@ test('Materials Project proxy is opt-in, explicit and never cached by the Worker
  assert.match(core,/endpoint=MP_WORKER\+'\/api\/mp\/summary'\+u\.search/);
  assert.match(worker,/if\(target\.pathname==='\/api\/mp\/summary'\)return relayMaterialsProject/);
  assert.match(worker,/\x27Cache-Control\x27:\x27no-store\x27/);
- assert.match(doc,/Worker v1\.3\+/);
+ assert.match(doc,/Worker v1\.4\+/);
 });
 
 test('2026 Materials Project AlphaID is allowed consistently by UI and pinned Worker',()=>{
