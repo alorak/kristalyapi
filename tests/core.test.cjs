@@ -1263,7 +1263,7 @@ test('English dictionary covers the existing static editor, library and analysis
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
  const languageNeutral=new Set(['GitHub ↗','[u v w]','(h k l)','Jmol','CPK','SHELX (.res)','CASTEP (.cell)','Quantum ESPRESSO (.pwi)','Element A','Element B','FCC conventional → primitive',
   'BCC conventional → primitive','FCC primitive → conventional','Standard (ITA)','3B / 2B',
-  'Cloudflare Worker · COD API','Quantum ESPRESSO','DFT / QUANTUM ESPRESSO','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
+  'Cloudflare Worker · COD API','Materials Project','SrTiO3','mp-149','Quantum ESPRESSO','DFT / QUANTUM ESPRESSO','Otomatik','Fd-3m · 227','Crystallography Open Database · COD','POSCAR',
   'Cu Kα1 · 1.5406 Å','Co Kα1 · 1.7890 Å','Mo Kα1 · 0.7093 Å','Ag Kα1 · 0.5594 Å',
   "kristalyapi-cod-api.aoakkirman.workers.dev","pseudo/","collect.py","summary.json","pipeline.py","pipeline-summary.json","afterok","electronic.py","projwfc.x","electronic-results.json",
   "NSCF kx *","NSCF ky *","NSCF kz *","DOS Emin (eV)","DOS Emax (eV)","DOS ΔE (eV)","TRUBA summary.json / pipeline-summary.json (.json)","10¹⁵ cm⁻³","10¹⁶ cm⁻³","0,00 V","+0,45 V","1,0 mm²","+0,450 V","1 − f(Ev)","= 25, D","= 10 cm²/s, L","P3 · ideal"]);
@@ -1422,7 +1422,7 @@ test('Kütüphane has an independent Örnek Yapılar tab and no old sidebar pres
  assert.ok(!html.includes('<h2>Kristal kütüphanesi'));
  assert.ok(!html.includes('id="resetBtn"'));
  assert.ok(!html.includes('id="newBtn"'));
- assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks','worker']);
+ assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks','worker','mp','mp-settings']);
 });
 test('Kütüphane spans the workspace with filters and results side by side; Worker has its own tab',()=>{
  assert.match(html,/\.library-wrap\{width:100%;max-width:none/);
