@@ -183,6 +183,19 @@ async function responseJson(response,maxBytes=1100000){
  }
  try{return JSON.parse(raw);}catch{throw Error('LLM sunucusu geçersiz JSON döndürdü.');}
 }
+/** Keep provider diagnostics useful without echoing response bodies or secrets. */
+export function llmHttpError(provider,status){
+ const prefix=(provider==='gemini'?'Gemini':'vLLM')+' HTTP '+status;
+ if(provider==='gemini'){
+  if(status===402)return Error(prefix+' · Ön ödemeli API kredisi tükenmiş olabilir. Google AI Studio faturalandırma, bakiye ve kullanım durumunu kontrol edin. Yanlış model adı genellikle HTTP 404 üretir.');
+  if(status===404)return Error(prefix+' · Model bulunamadı veya bu API sürümünde/hesapta kullanılamıyor. LLM Ayarları → Gemini modellerini listele bölümünden bir model seçin.');
+  if(status===401||status===403)return Error(prefix+' · API anahtarını, izinleri ve proje erişimini kontrol edin.');
+  if(status===429)return Error(prefix+' · İstek kotası veya hız limiti aşıldı. Bir süre sonra tekrar deneyin.');
+  if(status===400)return Error(prefix+' · İstek ya da model parametreleri geçersiz. Model listesini kontrol edin.');
+ }
+ return Error(prefix+(status===401||status===403?' · API erişimini kontrol edin.':''));
+}
+
 export async function requestLlm(config,snapshot,messages,{fetcher=fetch,signal}={}){
  const c=normalizeLlmSettings(config);
  const request=buildLlmRequest(c,snapshot,messages);
@@ -193,7 +206,7 @@ export async function requestLlm(config,snapshot,messages,{fetcher=fetch,signal}
   const response=await fetcher(request.url,{method:'POST',mode:'cors',credentials:'omit',
    cache:'no-store',referrerPolicy:'no-referrer',headers:request.headers,
    body:JSON.stringify(request.body),signal:ctrl.signal});
-  if(!response.ok)throw Error('LLM HTTP '+response.status+(response.status===401||response.status===403?' · API erişimini kontrol edin.':''));
+  if(!response.ok)throw llmHttpError(c.provider,response.status);
   const parsed=await responseJson(response);
   const content=c.provider==='gemini'?
    parsed?.candidates?.[0]?.content?.parts?.filter(p=>typeof p?.text==='string').map(p=>p.text).join('\n'):
@@ -215,4 +228,48 @@ export async function getVllmModels(config,{fetcher=fetch}={}){
   return (Array.isArray(json?.data)?json.data:[])
    .map(m=>String(m?.id||'')).filter(validModel).slice(0,100);
  }finally{clearTimeout(timer);}
+}
+
+/** Explicit GET to Google's documented models.list endpoint.
+ * Only generateContent-capable models are returned. A listed model is not
+ * necessarily usable under the account's quota or payment tier.
+ */
+export async function getGeminiModels(config,{fetcher=fetch,signal}={}){
+ const c=normalizeLlmSettings(config);
+ if(!c.geminiKey)throw Error('Önce bir Gemini API anahtarı girin veya kaydedin.');
+ const ctrl=new AbortController(),onAbort=()=>ctrl.abort();
+ if(signal){if(signal.aborted)ctrl.abort();else signal.addEventListener('abort',onAbort,{once:true});}
+ const timer=setTimeout(()=>ctrl.abort(),18000);
+ const models=[],seen=new Set(),visitedTokens=new Set();
+ let pageToken='';
+ try{
+  for(let page=0;page<5;page++){
+   const url=GEMINI_API+'/v1beta/models?pageSize=100'+
+    (pageToken?'&pageToken='+encodeURIComponent(pageToken):'');
+   const res=await fetcher(url,{
+    method:'GET',mode:'cors',credentials:'omit',cache:'no-store',
+    referrerPolicy:'no-referrer',
+    headers:{'Accept':'application/json','x-goog-api-key':c.geminiKey},
+    signal:ctrl.signal
+   });
+   if(!res.ok)throw llmHttpError('gemini',res.status);
+   const body=await responseJson(res,400000);
+   if(!Array.isArray(body?.models))throw Error('Gemini model listesi geçersiz.');
+   for(const item of body.models){
+    const name=String(item?.name||'').replace(/^models\//,'');
+    const methods=item?.supportedGenerationMethods;
+    if(!validModel(name)||!Array.isArray(methods)||!methods.includes('generateContent')||seen.has(name))continue;
+    seen.add(name);
+    models.push({id:name,name:String(item.displayName||name).slice(0,160)});
+    if(models.length>=250)return models;
+   }
+   const next=String(body.nextPageToken||'');
+   if(!next)break;
+   if(next.length>500||visitedTokens.has(next))throw Error('Gemini model listesi sayfalaması geçersiz.');
+   visitedTokens.add(next);pageToken=next;
+  }
+  return models;
+ }finally{
+  clearTimeout(timer);signal?.removeEventListener('abort',onAbort);
+ }
 }
