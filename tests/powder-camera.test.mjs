@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {dirname,resolve} from 'node:path';
 import {CAMERA_RADIATION,CAMERA_DIAMETERS,cameraArcDistance,
  cameraFromPattern,cameraFilmScale,cameraReflectionLabel} from '../powder-camera-core.js';
+import {initPowderCameraPage} from '../powder-camera-page.js';
 
 const here=dirname(fileURLToPath(import.meta.url));
 const read=path=>readFileSync(resolve(here,'..',path),'utf8');
@@ -81,4 +82,55 @@ test('camera is cached offline and its failure is isolated from editor bootstrap
  assert.match(html,/href="\.\/powder-camera\.css"/);
  assert.match(app,/import\('\.\/powder-camera-page\.js'\)\.then/);
  assert.match(app,/\.catch\(error=>\{/);
+});
+
+test('camera UI recomputes from the active crystal and keeps simulated Kβ separate',()=>{
+ const beforeDocument=globalThis.document,beforeWindow=globalThis.window;
+ const elements={};const calls=[];
+ const make=(id='')=>({id,value:'',textContent:'',children:[],options:[],checked:false,
+  disabled:false,listeners:{},dataset:{},addEventListener(type,fn){this.listeners[type]=fn;},
+  replaceChildren(){this.children=[];this.options=this.children;},append(...items){this.children.push(...items);this.options=this.children;},
+  getBoundingClientRect(){return {width:450};}});
+ const node=id=>elements[id]=make(id);
+ for(const id of ['pwCameraPage','pwCameraSource','pwCameraDiameter','pwCameraReflection',
+  'pwCameraFilter','pwCameraRotation','pwCameraMetrics','pwCameraStatus','pwCameraStructure',
+  'pwCameraCell','pwCameraInterpretation','pwCameraFilterName','pwCameraDiagram','pwCameraFilm'])node(id);
+ elements.pwCameraPage.querySelectorAll=()=>[];
+ const canvasContext={};
+ for(const fn of ['setTransform','clearRect','beginPath','arc','stroke','fill','setLineDash','moveTo','lineTo','fillRect'])
+  canvasContext[fn]=()=>{};
+ for(const id of ['pwCameraDiagram','pwCameraFilm'])elements[id].getContext=()=>canvasContext;
+ elements.pwCameraSource.value='Cu';elements.pwCameraDiameter.value='57.3';
+ elements.pwCameraFilter.checked=true;elements.pwCameraRotation.checked=true;
+ globalThis.document={getElementById:id=>elements[id]||null,createElement:()=>make()};
+ globalThis.window={devicePixelRatio:1,CrystalI18n:{language:'tr'},addEventListener(){}};
+ let a=5.431;
+ const host={
+  structure:()=>({name:a===5.431?'Si':'SrTiO₃',sites:[{symbol:'Si',x:0,y:0,z:0}],
+   symmetry:'P1',nonPeriodic:false,cell:{a,b:a,c:a,alpha:90,beta:90,gamma:90}}),
+  powderPattern:(cell,sites,opts)=>{
+   calls.push({a:cell.a,lambda:opts.wavelength,size:sites.length});
+   return {groups:[{angle:opts.wavelength>1?43:20,hkl:[1,1,1],d:cell.a/2,relative:100}]};
+  }
+ };
+ try{
+  const camera=initPowderCameraPage(host);
+  camera.setVisible(true);
+  assert.equal(elements.pwCameraMetrics.children.length,4);
+  assert.equal(elements.pwCameraReflection.options.length,1);
+  assert.equal(calls.length,1);
+  elements.pwCameraFilter.checked=false;elements.pwCameraFilter.listeners.change();
+  assert.equal(calls.length,3);
+  assert.ok(Math.abs(calls[2].lambda-CAMERA_RADIATION.Cu.beta)<1e-8);
+  const small=elements.pwCameraMetrics.children[2].children[1].textContent;
+  elements.pwCameraDiameter.value='114.6';elements.pwCameraDiameter.listeners.change();
+  assert.notEqual(elements.pwCameraMetrics.children[2].children[1].textContent,small);
+  a=3.905;camera.refresh();
+  assert.match(elements.pwCameraStructure.textContent,/SrTiO₃/);
+  assert.equal(calls.at(-1).a,3.905);
+  assert.equal(elements.pwCameraStatus.dataset.state,'ready');
+ }finally{
+  if(beforeDocument===undefined)delete globalThis.document;else globalThis.document=beforeDocument;
+  if(beforeWindow===undefined)delete globalThis.window;else globalThis.window=beforeWindow;
+ }
 });
