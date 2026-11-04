@@ -1406,3 +1406,78 @@ body.lesson-open #app{display:none!important}
  #leftAtomsPane .site-entry-coordinate{gap:3px}
  #app>.panel.left #leftAtomsPane .site-entry-coordinate input{font-size:10px;padding:5px 2px}
 }
+
+
+/* Library LLM settings and text-only, provenance-aware crystal chat. */
+#libLlmPane[hidden],#llmGeminiFields[hidden],#llmVllmFields[hidden],
+#llmChatAbort[hidden]{display:none!important}
+.llm-settings-pane{max-width:1100px}
+.llm-settings-pane .hint{line-height:1.55;color:#647e96;font-size:12px}
+.llm-provider-choice{
+ border:1px solid #dbe5ee;background:#f7fbff;border-radius:10px;
+ padding:14px 16px;margin:0 0 18px;display:flex;flex-wrap:wrap;
+ align-items:center;gap:12px 22px
+}
+.llm-provider-choice legend{font-size:12px;font-weight:750;color:#476079;padding:0 6px}
+.llm-provider-choice label{display:inline-flex;gap:8px;align-items:center;
+ font-size:13px;color:#314b64;cursor:pointer}
+.llm-provider-choice input{accent-color:#2678c2}
+.llm-setting-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,.7fr);
+ gap:14px 17px;margin:5px 0 17px;max-width:930px}
+.llm-setting-fields>.hint{grid-column:1/-1;margin:0}
+.llm-setting-fields .lib-field{max-width:100%}
+.llm-setting-fields #llmFetchModels{align-self:end;justify-self:start;
+ padding:10px 14px;font-size:12px}
+.llm-settings-actions{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 9px}
+.llm-settings-actions button{font-size:12px;padding:11px 14px}
+.llm-settings-status{font-size:12px;line-height:1.5;color:#5e7690;
+ border:1px solid #dce6f0;background:#f5f9fd;border-radius:8px;
+ padding:10px 13px;max-width:900px;overflow-wrap:anywhere}
+.llm-settings-status[data-status="ready"]{background:#f2f9f5;color:#2b6f4b;border-color:#bcdcc8}
+.llm-settings-status[data-status="error"]{background:#fff5f3;color:#a14537;border-color:#f2cac1}
+#libLlmPane a{color:#236aa8}
+#app>.panel.right .crystal-llm-chat-section{padding:12px 11px 15px}
+.llm-chat-context{padding:12px;background:#f4f9ff;border:1px solid #dceaf6;border-radius:10px}
+.llm-chat-context>strong{display:block;color:#24699e;font-size:12px;overflow-wrap:anywhere}
+.llm-chat-context>p{margin:6px 0 10px;color:#627e97;font-size:11px;line-height:1.4}
+.llm-chat-context button{font-size:11px;padding:6px 9px;color:#19649e;background:#fff}
+.llm-chat-toolbar{display:flex;gap:6px;margin:12px 0 9px;flex-wrap:wrap}
+.llm-chat-toolbar button{flex:1 1 auto;padding:8px 6px;font-size:11px}
+.llm-chat-history-field{margin-bottom:7px}
+#app>.panel.right .llm-chat-history-field select{padding:8px 9px;font-size:11px;width:100%}
+.llm-chat-clear-all{font-size:10px;padding:5px 8px;color:#9c4251;border:0;background:transparent;box-shadow:none}
+.llm-chat-clear-all:hover:not(:disabled){background:#fff1f2}
+.llm-chat-messages{
+ min-width:0;display:flex;flex-direction:column;gap:10px;
+ min-height:150px;max-height:min(43vh,470px);overflow-y:auto;
+ background:#f8fafd;border:1px solid #e2eaf4;border-radius:10px;
+ padding:12px 9px;margin:8px 0 11px;
+ scrollbar-width:thin;overflow-wrap:anywhere;
+}
+.llm-chat-empty{font-size:12px;color:#71879a;line-height:1.6;margin:auto 0;text-align:center;padding:16px 8px}
+.llm-chat-message{min-width:0;max-width:98%;padding:9px 10px;
+ border-radius:11px;background:#fff;border:1px solid #dee8f1;
+ box-shadow:0 1px 3px #173a5d09}
+.llm-chat-message.from-user{background:#e9f3ff;border-color:#c4dcf4;align-self:flex-end}
+.llm-chat-message.from-model{align-self:flex-start}
+.llm-chat-message-role{display:block;font-size:10px;color:#386487;margin-bottom:5px}
+.llm-chat-message-text{white-space:pre-wrap;word-break:break-word;margin:0;
+ font-size:12px;color:#314c66;line-height:1.6}
+.llm-chat-form .field{gap:6px}
+#app>.panel.right #llmChatPrompt{width:100%;min-width:0;max-width:100%;
+ padding:11px;border:1px solid #cbd9e7;border-radius:9px;background:#fff;
+ font:12px/1.6 inherit;color:#284762;resize:vertical}
+.llm-chat-form-actions{display:flex;gap:7px;margin-top:8px}
+.llm-chat-form-actions button{flex:1;padding:9px 13px;font-size:12px}
+.llm-chat-status{font-size:11px;line-height:1.45;color:#627b93;min-height:16px;overflow-wrap:anywhere}
+.llm-chat-status[data-status="error"]{color:#b04b3e}
+.llm-chat-status[data-status="ready"]{color:#26704c}
+#app>.panel.right .crystal-llm-chat-section>.hint{
+ font-size:10px;line-height:1.6;margin-top:10px;color:#8393a5}
+@media(max-width:750px){
+ .llm-setting-fields{grid-template-columns:minmax(0,1fr)}
+ .llm-setting-fields>.hint{grid-column:1}
+ .llm-provider-choice{flex-direction:column;align-items:flex-start}
+ .llm-settings-actions button{width:100%}
+ .llm-chat-messages{max-height:38vh}
+}
