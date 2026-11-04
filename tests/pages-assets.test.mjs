@@ -74,7 +74,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-04-atom-list-bond-cut-v1'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-compact-right-drawer-v1'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
@@ -85,4 +85,16 @@ test('names imported into crystal-app.js are not declared again at top level',()
   .flatMap(m=>m[1].split(',').map(s=>s.trim().split(/\s+as\s+/).pop()).filter(Boolean));
  const declared=new Set([...editor.matchAll(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]||m[2]));
  assert.deepEqual(imported.filter(name=>declared.has(name)),[]);
+});
+
+test('right drawer uses compact action and form controls without resizing steppers',()=>{
+ const css=read('styles.css');
+ assert.match(css,/#app>\.panel\.right \.right-drawer-pane>\.section button:not\(\[data-repeat-target\]\)/);
+ assert.match(css,/#app>\.panel\.right \.right-drawer-pane>\.section \.actionrow button\{flex:0 1 auto\}/);
+ assert.match(css,/select\s*\n\)\{height:32px;min-height:32px\}/);
+ assert.match(css,/font-size:12px;\s*line-height:1\.35;\s*padding:6px 8px;/);
+ const bvs=html.slice(html.indexOf('data-right-section="bvs"'),html.indexOf('data-right-section="plane"'));
+ assert.match(bvs,/class="actionrow"[^>]*>[\s\S]*?id="analyzeBvs"[\s\S]*?id="exportBvs"/);
+ for(const id of ['analysisCenter','bvsPair','bvsCutoff','analyzeBvs','exportBvs','madelungCharges','madelungCalculate'])
+  assert.match(bvs,new RegExp('id="'+id+'"'),'BVS control must remain functional: '+id);
 });
