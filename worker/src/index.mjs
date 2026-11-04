@@ -230,7 +230,8 @@ async function relayMaterialsProject(request,allowed,upstreamFetch){
  try{
   const response=await upstreamFetch(target,{method:'GET',redirect:'manual',
    cache:'no-store',credentials:'omit',signal:controller.signal,
-   headers:{'X-API-KEY':key,'Accept':'application/json'}});
+   headers:{'X-API-KEY':key,'Accept':'application/json',
+    'User-Agent':'kristalyapi-mp-worker/'+WORKER_VERSION+' (+https://github.com/alorak/kristalyapi)'}});
   if(!response.ok||response.status>=300){
    const code=[400,401,403,404,408,429].includes(response.status)?response.status:502;
    return fail(code,'Materials Project upstream HTTP '+response.status,allowed);
