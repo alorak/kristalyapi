@@ -1,12 +1,13 @@
 /* Library LLM settings + right-hand crystal chat. Browser-only opt-in:
  * explicit submit sends a bounded structure snapshot to the selected provider.
- * Text is rendered with textContent, never interpreted as HTML/Markdown.
+ * Untrusted model Markdown is rendered by inert DOM nodes, never HTML injection.
  */
 import {
  normalizeLlmSettings,readLlmSettings,writeLlmSettings,llmReady,maskKeyState,
  getVllmModels,getGeminiModels,crystalSnapshot,readChatHistory,writeChatHistory,requestLlm,
  LLM_SETTINGS_KEY,LLM_HISTORY_KEY
 } from './llm-crystal-core.js';
+import {renderLlmMarkdown} from './llm-markdown.js';
 const $=id=>document.getElementById(id);
 const t=(tr,en)=>window.CrystalI18n?.language==='en'?en:tr;
 const el=(tag,cls='',value='')=>{
@@ -148,7 +149,10 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
    for(const msg of session.messages){
     const box=el('article','llm-chat-message '+(msg.role==='user'?'from-user':'from-model'));
     box.append(el('strong','llm-chat-message-role',msg.role==='user'?t('Siz','You'):t('Model','Model')));
-    box.append(el('p','llm-chat-message-text',msg.content));
+    const text=el('div','llm-chat-message-text'+(msg.role==='assistant'?' llm-md':''));
+    if(msg.role==='assistant')renderLlmMarkdown(text,msg.content);
+    else text.textContent=msg.content;
+    box.append(text);
     host.append(box);
    }
   }
@@ -194,11 +198,35 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
   try{persist();renderMessages();status('llmChatStatus',t('Seçili sohbet silindi.','Conversation deleted.'));}
   catch(error){status('llmChatStatus',error.message,'error');}
  };
- $('llmChatAbort').onclick=()=>pending?.abort();
+ $('llmChatAbort').onclick=()=>pending?.abort(new Error('User cancelled'));
+ function showDock(){
+  $('llmChatDock').hidden=false;
+  $('llmChatToggle').setAttribute('aria-expanded','true');
+  $('llmChatToggle').setAttribute('aria-pressed','true');
+  $('llmChatToggle').classList.add('active');
+  // Only reselect a session when changing workspaces. Hiding the dock while
+  // waiting must not change or cancel the current request.
+  onOpen();
+  $('llmChatPrompt').focus();
+ }
+ function hideDock(){
+  $('llmChatDock').hidden=true;
+  $('llmChatToggle').setAttribute('aria-expanded','false');
+  $('llmChatToggle').setAttribute('aria-pressed','false');
+  $('llmChatToggle').classList.remove('active');
+  $('llmChatToggle').focus();
+ }
+ $('llmChatToggle').onclick=()=>$('llmChatDock').hidden?showDock():hideDock();
+ $('llmChatDockHide').onclick=hideDock;
+ $('llmChatDock').addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!event.defaultPrevented){event.preventDefault();hideDock();}
+ });
  function setBusy(value){
   busy=value;$('llmChatSend').disabled=value;$('llmChatNew').disabled=value;
   $('llmChatHistory').disabled=value;$('llmChatDelete').disabled=value||!active();
   $('llmChatHistoryToggle').disabled=value;$('llmChatAbort').hidden=!value;
+  $('llmChatThinking').hidden=!value;
+  if(value)status('llmChatStatus','');
  }
  $('llmChatForm').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;
@@ -209,10 +237,11 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
    status('llmChatStatus',t('Önce Kütüphane → LLM Ayarları bölümünü yapılandırın.',
     'Configure Library → LLM Settings before chatting.'),'error');return;
   }
-  let session,signal;
+  let session,signal,userTurn=null;
   try{
    session=ensureCurrentSession();
-   session.messages.push({role:'user',content:question.slice(0,4000)});
+   userTurn={role:'user',content:question.slice(0,4000)};
+   session.messages.push(userTurn);
    session.messages=session.messages.slice(-64);
    session.title=session.messages.filter(m=>m.role==='user').length===1?
     question.slice(0,52):session.title;
@@ -220,7 +249,8 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
    session.model=settings.provider==='gemini'?settings.geminiModel:settings.vllmModel;
    persist();$('llmChatPrompt').value='';renderMessages();
    setBusy(true);pending=new AbortController();signal=pending.signal;
-   status('llmChatStatus',t('Model yanıtı bekleniyor…','Waiting for model response…'));
+   // The animated indicator is pinned above the conversation; no static
+   // pending message crowds the composer or persists in chat history.
    const answer=await requestLlm(settings,session.snapshot,session.messages,{signal});
    if(signal.aborted)return;
    session.messages.push({role:'assistant',content:answer});
@@ -229,6 +259,15 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
    persist();renderMessages();
    status('llmChatStatus',t('Yanıt tarayıcı geçmişine kaydedildi.','Answer saved to browser history.'),'ready');
   }catch(error){
+   // Failed or cancelled requests should not accumulate duplicate blue
+   // user messages after retries. Restore the draft and keep earlier replies.
+   if(session&&userTurn){
+    const index=session.messages.lastIndexOf(userTurn);
+    if(index>=0){session.messages.splice(index,1);session.updated=Date.now();
+     try{persist();renderMessages();}catch{ /* keep original error visible */ }
+    }
+    if(!$('llmChatPrompt').value.trim())$('llmChatPrompt').value=question;
+   }
    status('llmChatStatus',signal?.aborted?t('İstek iptal edildi.','Request cancelled.'):
     t('Sohbet hatası: ','Chat error: ')+error.message,'error');
   }finally{pending=null;setBusy(false);}
@@ -242,8 +281,7 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
  renderSettings();
  renderSessions();
  renderMessages();setBusy(false);
- return {
-  onOpen(){
+ function onOpen(){
    // History is only a secondary on-demand control, not part of the default
    // chat surface each time the drawer is opened.
    $('llmChatHistoryPanel').hidden=true;
@@ -254,6 +292,6 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
     s.snapshot.fingerprint===current.fingerprint);
    if(!active()||active().snapshot.workspaceId!==current.workspaceId)activeId=match?.id||null;
    renderMessages();
-  }
- };
+ }
+ return {onOpen,hide:hideDock,show:showDock};
 }
