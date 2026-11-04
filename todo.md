@@ -3,7 +3,8 @@
 ## Materials Project · Kütüphane entegrasyonu (2026-11-04)
 
 - [x] **MP-P0.1:** Kütüphane içinde Materials Project Ayarları sekmesi; parola alanında
-  anahtar girişi, yalnız sayfa belleğinde saklama, silme, URL veya depoya anahtar yazmama.
+  anahtar girişi, kullanıcı isteğiyle tarayıcı localStorage alanında kalıcı tutma,
+  kayıtlı anahtarı silme, URL'ye veya GitHub deposuna anahtar yazmama.
 - [x] **MP-P0.2:** Formül/kimyasal sistem/MP-ID üzerinden sınırlı summary sorgusu;
   gerçek MP kimliği, kaynak ve mevcut hesaplanmış malzeme özellikleri.
 - [x] **MP-P0.3:** Seçili hesaplanmış yapının P1 CIF dönüştürülmesi, aktif
