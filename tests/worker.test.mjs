@@ -313,3 +313,30 @@ test('MP gateway forwards upstream failure status without leaking the user key',
  assert.equal(response.headers.get('Cache-Control'),'no-store');
  assert.ok(!(await response.text()).includes(key));
 });
+
+test('2026 base-26 MP AlphaIDs pass the bounded gateway and retain the exact identifier',async()=>{
+ const key='synthetic-key';
+ for(const id of ['mp-aaaaaczy','mp-hilze']){
+  const qs=new URLSearchParams({material_ids:id,_fields:'material_id,formula_pretty,structure,last_updated',_limit:'1'});
+  const calls=[];
+  const res=await handleRequest(req('/api/mp/summary?'+qs,{headers:{'X-API-KEY':key}}),ENV,
+   async(url,opts)=>{
+    calls.push({url,opts});
+    return json({data:[{material_id:id,formula_pretty:'Si',structure:{}}]});
+   },{cache:{match(){throw Error('No MP caching');},put(){throw Error('No MP caching');}}});
+  assert.equal(res.status,200,id);
+  assert.equal((await res.json()).data[0].material_id,id);
+  assert.equal(calls.length,1);
+  const upstream=new URL(calls[0].url);
+  assert.equal(upstream.origin,'https://api.materialsproject.org');
+  assert.equal(upstream.searchParams.get('material_ids'),id);
+  assert.equal(calls[0].opts.headers['X-API-KEY'],key);
+  assert.ok(!upstream.href.includes(key));
+ }
+ for(const id of ['mp-a1','mp-abc%2Fbad','mp-ABC','mp-abcdefghijklmnopq']){
+  const qs=new URLSearchParams({material_ids:id,_fields:'material_id',_limit:'1'});
+  const res=await handleRequest(req('/api/mp/summary?'+qs,{headers:{'X-API-KEY':key}}),ENV,
+   ()=>{throw Error('Invalid ID must not reach upstream');});
+  assert.equal(res.status,400,id);
+ }
+});
