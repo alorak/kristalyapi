@@ -4,7 +4,7 @@
  */
 import {
  normalizeLlmSettings,readLlmSettings,writeLlmSettings,llmReady,maskKeyState,
- getVllmModels,crystalSnapshot,readChatHistory,writeChatHistory,requestLlm,
+ getVllmModels,getGeminiModels,crystalSnapshot,readChatHistory,writeChatHistory,requestLlm,
  LLM_SETTINGS_KEY,LLM_HISTORY_KEY
 } from './llm-crystal-core.js';
 const $=id=>document.getElementById(id);
@@ -15,10 +15,10 @@ const el=(tag,cls='',value='')=>{
  node.textContent=value;
  return node;
 };
-export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
+export function initCrystalLlm({getStructure,getWorkspaceId}){
  let settings=readLlmSettings(localStorage);
  let sessions=readChatHistory(localStorage);
- let activeId=null,busy=false,pending=null;
+ let activeId=null,busy=false,pending=null,geminiModels=[];
  const status=(id,message,kind='')=>{$(id).textContent=message;$(id).dataset.status=kind;};
  const getSnapshot=()=>crystalSnapshot(getStructure(),getWorkspaceId());
  const active=()=>sessions.find(s=>s.id===activeId)||null;
@@ -41,11 +41,26 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
    (settings.vllmModel?t('vLLM adresi ve modeli kayıtlı.','vLLM address and model saved.'):
     t('vLLM modeli girilmedi.','No vLLM model configured.')),llmReady(settings)?'ready':'');
  }
+ function fillGeminiPicker(value){
+  const picker=$('llmGeminiModel');
+  const chosen=value||settings.geminiModel;
+  const options=geminiModels.slice();
+  if(chosen&&!options.some(m=>m.id===chosen))options.unshift({id:chosen,name:chosen});
+  if(!options.length)options.push({id:'gemini-2.5-flash',name:'gemini-2.5-flash'});
+  picker.replaceChildren();
+  for(const item of options){
+   const option=document.createElement('option');
+   option.value=item.id;
+   option.textContent=item.name&&item.name!==item.id?item.name+' · '+item.id:item.id;
+   picker.append(option);
+  }
+  picker.value=chosen;
+ }
  function renderSettings(){
   $('llmProviderGemini').checked=settings.provider==='gemini';
   $('llmProviderVllm').checked=settings.provider==='vllm';
   $('llmGeminiKey').value='';
-  $('llmGeminiModel').value=settings.geminiModel;
+  fillGeminiPicker(settings.geminiModel);
   $('llmVllmUrl').value=settings.vllmUrl;
   $('llmVllmModel').value=settings.vllmModel;
   $('llmVllmToken').value='';
@@ -65,17 +80,34 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
  $('llmSaveSettings').addEventListener('click',()=>{
   try{
    settings=writeLlmSettings(localStorage,currentFormConfig());
-   renderSettings();renderChatHeader();
+   renderSettings();
   }catch(error){status('llmSettingsStatus',t('Kaydedilemedi: ','Save failed: ')+error.message,'error');}
  });
  $('llmClearSettings').addEventListener('click',()=>{
   if(busy)pending?.abort();
   try{
    localStorage.removeItem(LLM_SETTINGS_KEY);
-   settings=normalizeLlmSettings();renderSettings();renderChatHeader();
+   settings=normalizeLlmSettings();geminiModels=[];renderSettings();
    status('llmSettingsStatus',t('LLM ayarları ve kayıtlı anahtarlar silindi. Sohbet geçmişi korundu.',
     'LLM settings and stored keys erased. Chat history retained.'),'ready');
   }catch(error){status('llmSettingsStatus',t('Ayarlar silinemedi: ','Could not erase settings: ')+error.message,'error');}
+ });
+ $('llmFetchGeminiModels').addEventListener('click',async()=>{
+  const button=$('llmFetchGeminiModels');button.disabled=true;
+  status('llmSettingsStatus',t('Gemini modelleri sorgulanıyor…','Loading Gemini models…'));
+  try{
+   const config=currentFormConfig();
+   const models=await getGeminiModels(config);
+   geminiModels=models;
+   // Preserve any manually selected / previously saved model until the user
+   // explicitly selects another option. The list does not grant quota access.
+   fillGeminiPicker(config.geminiModel);
+   status('llmSettingsStatus',models.length+
+    t(' içerik üreten model bulundu. Listeden seçip ayarları kaydedin. Listelenmesi erişim veya kredi garantisi değildir.',
+      ' content-generation models found. Choose one and save. Listing does not guarantee account access or credits.'),'ready');
+  }catch(error){
+   status('llmSettingsStatus',t('Gemini modelleri alınamadı: ','Could not list Gemini models: ')+error.message,'error');
+  }finally{button.disabled=false;}
  });
  $('llmFetchModels').addEventListener('click',async()=>{
   $('llmFetchModels').disabled=true;
@@ -92,18 +124,6 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
    t(' · CORS / ağ erişimini kontrol edin.',' · Check CORS / network access.'),'error');
   }finally{$('llmFetchModels').disabled=false;}
  });
- function renderChatHeader(){
-  settings=readLlmSettings(localStorage);
-  const cfg=settings;
-  const title=cfg.provider==='gemini'?'Gemini · '+cfg.geminiModel:
-   'vLLM · '+(cfg.vllmModel||t('model belirtilmedi','no model'));
-  $('llmChatModel').textContent=title+(llmReady(cfg)?'':' · '+t('ayar gerekli','configure first'));
-  const snapshot=getSnapshot(),session=active();
-  $('llmChatStructure').textContent=session?
-   session.snapshot.name+(session.snapshot.fingerprint===snapshot.fingerprint&&session.snapshot.workspaceId===snapshot.workspaceId?
-    t(' · güncel yapı',' · current structure'):t(' · önceki yapı anlık görüntüsü',' · previous structure snapshot')):
-   snapshot.name+t(' · güncel yapı',' · current structure');
- }
  function renderSessions(){
   const picker=$('llmChatHistory');picker.replaceChildren();
   const placeholder=document.createElement('option');placeholder.value='';
@@ -123,8 +143,7 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
   const session=active();
   if(!session||!session.messages.length){
    host.append(el('p','llm-chat-empty',
-    t('Bu kristal hakkında soru sorun. Yanıtlar deneysel veya DFT doğrulaması yerine geçmez.',
-      'Ask about this crystal. Answers are not experimental or DFT verification.')));
+    t('Kristal hakkında sorunuzu yazın.','Ask a question about this crystal.')));
   }else{
    for(const msg of session.messages){
     const box=el('article','llm-chat-message '+(msg.role==='user'?'from-user':'from-model'));
@@ -133,7 +152,7 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
     host.append(box);
    }
   }
-  renderChatHeader();
+  host.classList.toggle('is-empty',!session||!session.messages.length);
   renderSessions();
   host.scrollTop=host.scrollHeight;
  }
@@ -153,6 +172,11 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
    selected.snapshot.workspaceId===snapshot.workspaceId)return selected;
   return newSession();
  }
+ $('llmChatHistoryToggle').onclick=()=>{
+  const panel=$('llmChatHistoryPanel');
+  panel.hidden=!panel.hidden;
+  $('llmChatHistoryToggle').setAttribute('aria-expanded',String(!panel.hidden));
+ };
  $('llmChatHistory').onchange=e=>{
   if(busy)return;
   activeId=e.target.value||null;
@@ -170,19 +194,11 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
   try{persist();renderMessages();status('llmChatStatus',t('Seçili sohbet silindi.','Conversation deleted.'));}
   catch(error){status('llmChatStatus',error.message,'error');}
  };
- $('llmChatClearAll').onclick=()=>{
-  if(busy||!sessions.length)return;
-  if(!window.confirm(t('Tüm yerel LLM sohbet geçmişi silinsin mi?','Delete all locally stored LLM chat history?')))return;
-  try{localStorage.removeItem(LLM_HISTORY_KEY);sessions=[];activeId=null;
-   renderMessages();status('llmChatStatus',t('Tüm sohbet geçmişi silindi.','All chat history erased.'));
-  }catch(error){status('llmChatStatus',error.message,'error');}
- };
- $('llmChatOpenSettings').onclick=()=>onOpenSettings();
  $('llmChatAbort').onclick=()=>pending?.abort();
  function setBusy(value){
   busy=value;$('llmChatSend').disabled=value;$('llmChatNew').disabled=value;
   $('llmChatHistory').disabled=value;$('llmChatDelete').disabled=value||!active();
-  $('llmChatClearAll').disabled=value;$('llmChatAbort').hidden=!value;
+  $('llmChatHistoryToggle').disabled=value;$('llmChatAbort').hidden=!value;
  }
  $('llmChatForm').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;
