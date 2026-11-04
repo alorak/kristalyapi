@@ -95,6 +95,8 @@ jobs:
         run: node tests/browser/materials-project.test.mjs
       - name: Smoke-test compact atom sidebar in Chromium
         run: node tests/browser/atoms-sidebar.test.mjs
+      - name: Smoke-test LLM settings and crystal conversation with synthetic APIs
+        run: node tests/browser/llm-crystal.test.mjs
       - name: Retain DFT screenshots
         if: always()
         uses: actions/upload-artifact@v4
