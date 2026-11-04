@@ -105,7 +105,7 @@ test('crystal chat is constrained to the workspace and clip-panel prose is conci
  const dockStart=html.indexOf('<section id="llmChatDock"');
  assert.ok(dockStart>html.indexOf('<main id="viewport">')&&dockStart<html.indexOf('</main>'),
   'chat must be contained by the editor workspace');
- assert.match(css,/\.llm-chat-dock\{[\s\S]*?position:absolute;z-index:4;top:12px;right:12px;/);
+ assert.match(css,/\.llm-chat-dock\{[\s\S]*?position:absolute;z-index:9;top:12px;right:12px;/);
  assert.match(css,/#viewport \.llm-chat-dock\{right:66px;width:min\(910px,calc\(100% - 78px\)\)/);
  assert.match(css,/#llmChatDock #llmChatPrompt::placeholder\{color:#9aaaba;opacity:1\}/);
  assert.match(html,/id="llmChatPrompt"[^>]*placeholder="Sormak istediğinizi sorabilirsiniz\."/);
