@@ -107,3 +107,41 @@ npx wrangler dev
 
 Yerel frontend http://localhost:8000 üzerinde çalışıyorsa CORS_ORIGINS
 değerine bu origin'i virgülle ekle; üretim için gereksiz lokal izinleri kaldır.
+
+
+## Materials Project: kişisel anahtarla CORS güvenli erişim (Worker v1.3+)
+
+Statik GitHub Pages sayfası, Materials Project'in `X-API-KEY` başlığını içeren
+cross-origin isteğini API'nin CORS önkontrolü izin vermiyorsa doğrudan yapamaz.
+Bu Worker **isteğe bağlı** ve yalnızca resmî Materials Project sunucusuna
+sabit olarak yönlendirilmiş bir ağ geçidi sunar.
+
+1. Güncellenmiş `worker/src/index.mjs` sürümünü kendi Cloudflare hesabında
+   `cd worker && npx wrangler deploy` ile **ayrıca** yayımla.
+   Sitenin GitHub Pages PR/merge işlemi Worker'ı yayımlamaz.
+2. Worker'ın `https://kristalyapi-cod-api.aoakkirman.workers.dev/health`
+   adresinin `materialsProjectProxy:true` ve `version:1.3` (veya sonrası)
+   döndürdüğünü doğrula. Bu URL, uygulamanın bilerek sabitlediği Worker adresidir;
+   başka adrese dağıtıyorsan frontend sabitini de güvenilir adrese güncelle.
+3. Kütüphane → Materials Project Ayarları altında kişisel anahtarını kaydet,
+   **Materials Project sorgularını Cloudflare Worker üzerinden gönder**
+   seçeneğini açıkça etkinleştir. Anahtar, Worker'a ve oradan resmî MP API'ye
+   yalnız HTTPS `X-API-KEY` başlığıyla iletilir.
+
+Desteklenen tek yeni rota:
+`GET /api/mp/summary?formula=SrTiO3&_fields=material_id,formula_pretty&_limit=20`
+(ayrıca `material_ids` veya `chemsys` seçicisi). Worker yalnızca belirli,
+izinli alanlara ve `https://api.materialsproject.org/materials/summary/`
+adresi üzerinden erişir. `OPTIONS` önkontrolünde `X-API-KEY` kabul edilir.
+
+**Güvenlik:** Anahtar browser localStorage'da tutulur (şifrelenmiş kasa değildir).
+Önce anahtar içermeyen `/health` çağrısı yapılır. Eski Worker sürümü doğrulanmazsa
+anahtar ona gönderilmez. Worker URL'si istemci tarafından serbestçe seçilemez;
+keyfi URL proxy'leme, yönlendirme takibi, edge cache, URL'de anahtar, Worker loglarında
+anahtar veya yanıtların servis çalışanında depolanması yoktur. Yanıtlar
+`Cache-Control: no-store` ile gönderilir. Kendi Worker'a güvenmiyorsan bu
+seçeneği **açma**; doğrudan erişim yöntemi korunur.
+
+Hâlihazırdaki dağıtımın güncelliği bu depodan doğrulanamaz. Worker yayımlanana
+kadar canlı Materials Project erişimi hâlâ CORS/erişim hatası verebilir; sentetik
+tarayıcı testleri gerçek MP erişiminin kanıtı değildir.

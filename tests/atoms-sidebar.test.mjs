@@ -116,3 +116,19 @@ test('bond cutoff sliders follow the longest unit-cell edge and clamp on cell ch
  assert.equal(controls.bondCut.max,'5.2');
  assert.match(html,/id="quickBondCut"[^>]*max="1000"/);
 });
+
+test('moving the bond slider switches to manual distance rather than auto radii',()=>{
+ const start=editor.indexOf('function applyManualBondCut(value){');
+ const end=editor.indexOf("for(const [id,key,out] of [['atomScale'",start);
+ assert.ok(start>0&&end>start,'manual cutoff helper is wired by input listeners');
+ const checkbox={checked:true},context={state:{autoBond:true,cut:2.65},$:id=>id==='autoBond'?checkbox:null};
+ vm.createContext(context);
+ vm.runInContext(editor.slice(start,end),context);
+ vm.runInContext('applyManualBondCut(8.75)',context);
+ assert.equal(context.state.autoBond,false,'manual adjustment disables radii cutoff');
+ assert.equal(checkbox.checked,false,'quickbar auto mode icon must be off');
+ assert.equal(context.state.cut,8.75);
+ assert.match(editor,/if\(key==='cut'\)applyManualBondCut\(e\.target\.value\)/);
+ // Explicit pair rules and automatic radius cap remain available on demand.
+ assert.match(editor,/auto\?Math\.min\(cut,estimate\):cut/);
+});

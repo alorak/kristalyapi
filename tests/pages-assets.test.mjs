@@ -74,7 +74,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-compact-right-drawer-v1'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-mp-worker-chat-ci-v2'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
@@ -97,4 +97,34 @@ test('right drawer uses compact action and form controls without resizing steppe
  assert.match(bvs,/class="actionrow"[^>]*>[\s\S]*?id="analyzeBvs"[\s\S]*?id="exportBvs"/);
  for(const id of ['analysisCenter','bvsPair','bvsCutoff','analyzeBvs','exportBvs','madelungCharges','madelungCalculate'])
   assert.match(bvs,new RegExp('id="'+id+'"'),'BVS control must remain functional: '+id);
+});
+
+test('crystal chat is constrained to the workspace and clip-panel prose is concise',()=>{
+ const css=read('styles.css');
+ const locale=read('translations.js');
+ const dockStart=html.indexOf('<section id="llmChatDock"');
+ assert.ok(dockStart>html.indexOf('<main id="viewport">')&&dockStart<html.indexOf('</main>'),
+  'chat must be contained by the editor workspace');
+ assert.match(css,/\.llm-chat-dock\{[\s\S]*?position:absolute;z-index:9;top:12px;right:12px;/);
+ assert.match(css,/#viewport \.llm-chat-dock\{right:66px;width:min\(910px,calc\(100% - 78px\)\)/);
+ assert.match(css,/#llmChatDock #llmChatPrompt::placeholder\{color:#9aaaba;opacity:1\}/);
+ assert.match(html,/id="llmChatPrompt"[^>]*placeholder="Sormak istediğinizi sorabilirsiniz\."/);
+ assert.match(locale,/Sormak istediğinizi sorabilirsiniz\./);
+ assert.doesNotMatch(html,/Düzlem h·x \+ k·y \+ l·z = uzaklık/);
+ assert.doesNotMatch(editor,/Miller düzlemi yalnız görsel bir katmandır/);
+ assert.match(editor,/status\.textContent=active\?active\+'/,'active clipping status must remain');
+});
+
+test('Materials Project proxy is opt-in, explicit and never cached by the Worker',()=>{
+ const page=read('materials-project-page.js'),core=read('materials-project-core.js');
+ const worker=read('worker/src/index.mjs'),doc=read('worker/README.md');
+ assert.match(html,/id="mpUseWorker" type="checkbox"/);
+ assert.match(html,/id="mpWorkerHelp"/);
+ assert.match(page,/transport:useWorker\?'worker':'direct'/);
+ assert.match(page,/materials-project-worker-opt-in/);
+ assert.match(core,/if\(health\?\.materialsProjectProxy!==true\)/);
+ assert.match(core,/endpoint=MP_WORKER\+'\/api\/mp\/summary'\+u\.search/);
+ assert.match(worker,/if\(target\.pathname==='\/api\/mp\/summary'\)return relayMaterialsProject/);
+ assert.match(worker,/\x27Cache-Control\x27:\x27no-store\x27/);
+ assert.match(doc,/Worker v1\.3\+/);
 });

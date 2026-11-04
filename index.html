@@ -92,35 +92,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
  </div>
 </header>
-<section id="llmChatDock" class="llm-chat-dock" role="region" aria-label="Yapay zekâ kristal sohbeti" hidden>
- <div class="llm-chat-dock-head"><div class="llm-chat-dock-title"><strong>Kristal Sohbeti</strong><small>Yapıya bağlı yapay zekâ asistanı</small></div><button id="llmChatDockHide" type="button" aria-label="Sohbeti gizle" title="Sohbeti gizle">Gizle <span aria-hidden="true">×</span></button></div>
- <div class="llm-chat-dock-body">
-  <div class="section crystal-llm-chat-section" >
-   <div class="llm-chat-toolbar">
-    <button id="llmChatNew" type="button">+ Yeni sohbet</button>
-    <button id="llmChatHistoryToggle" type="button" aria-expanded="false" aria-controls="llmChatHistoryPanel">Geçmiş</button>
-   </div>
-   <div id="llmChatHistoryPanel" class="llm-chat-history-panel" hidden>
-    <label class="field llm-chat-history-field"><span>Sohbet geçmişi</span>
-     <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
-    </label>
-    <button id="llmChatDelete" type="button" disabled>Seçili sohbeti sil</button>
-   </div>
-   <div id="llmChatThinking" class="llm-chat-thinking" role="status" aria-live="polite" hidden><span class="llm-chat-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Yanıt hazırlanıyor…</span></div>
-   <div id="llmChatMessages" class="llm-chat-messages" role="log" aria-label="Kristal sohbet mesajları" aria-live="polite" aria-relevant="additions text"></div>
-   <form id="llmChatForm" class="llm-chat-form">
-    <label class="field"><span>Kristal hakkında sorunuz</span>
-     <textarea id="llmChatPrompt" rows="3" maxlength="4000" placeholder="Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?"></textarea>
-    </label>
-    <div class="llm-chat-form-actions">
-     <button id="llmChatSend" type="submit" class="primary">Gönder</button>
-     <button id="llmChatAbort" type="button" hidden>İptal</button>
-    </div>
-   </form>
-   <p id="llmChatStatus" role="status" aria-live="polite" class="llm-chat-status"></p>
-  </div>
- </div>
-</section>
 <div id="workspaceBackdrop" class="workspace-backdrop" hidden></div>
 <aside id="workspaceDrawer" class="workspace-drawer" role="dialog" aria-label="Kristal çalışma alanları" aria-modal="false" aria-hidden="true" inert>
  <div class="workspace-drawer-head"><div><strong>Çalışma alanları</strong><p>Her yapıyı bağımsız düzenleyin ve aralarında geçiş yapın.</p></div><button id="workspaceDrawerClose" type="button" class="workspace-close-drawer" aria-label="Çalışma alanlarını kapat">×</button></div>
@@ -227,7 +198,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="fractional-bounds-actions"><button id="clipClear" type="button">Tümünü kaldır</button><button id="clipAdd" type="button" class="primary">Düzlem ekle</button></div>
    <label class="field"><span>Bütünlük</span><select id="clipIntegrity"><option value="cut" selected>Yalnız kesim (düzlem içindeki atomlar)</option><option value="bonded">Bağlı ilk komşuları koru (çokyüzlüler tamamlanır)</option><option value="molecule">Bağlı bileşeni bütün koru (molekül)</option></select></label>
    <ul id="clipPlaneList" class="clip-plane-list"></ul>
-   <p class="hint">Düzlem h·x + k·y + l·z = uzaklık / d<sub>hkl</sub> olarak tanımlanır; uzaklık, hücre orijininden düzlem normali boyunca Å cinsindendir. En çok 6 düzlem; atom yalnız tüm etkin düzlemlerin korunan tarafındaysa görünür. Kesim yalnız görünümdür: atomlar yapıda, ölçümlerde ve dışa aktarmada kalır. Hacimsel alanlar ve Miller düzlemi kesilmez. Ağ yapılarda (ör. Si) "molekül" seçeneği tüm bağlı ağı geri getirebilir.</p>
    <p class="hint" id="clipStatus" role="status"></p>
   </div>
   <div class="section" data-right-section="lattice"><h2>Örgü dönüşümü <span class="stage">Aşama 2</span></h2>
@@ -299,6 +269,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  </aside>
  <main id="viewport">
   <div id="stage"></div>
+  <section id="llmChatDock" class="llm-chat-dock" role="region" aria-label="Yapay zekâ kristal sohbeti" hidden>
+   <div class="llm-chat-dock-head"><div class="llm-chat-dock-title"><strong>Kristal Sohbeti</strong><small>Yapıya bağlı yapay zekâ asistanı</small></div><button id="llmChatDockHide" type="button" aria-label="Sohbeti gizle" title="Sohbeti gizle">Gizle <span aria-hidden="true">×</span></button></div>
+   <div class="llm-chat-dock-body">
+    <div class="section crystal-llm-chat-section" >
+     <div class="llm-chat-toolbar">
+      <button id="llmChatNew" type="button">+ Yeni sohbet</button>
+      <button id="llmChatHistoryToggle" type="button" aria-expanded="false" aria-controls="llmChatHistoryPanel">Geçmiş</button>
+     </div>
+     <div id="llmChatHistoryPanel" class="llm-chat-history-panel" hidden>
+      <label class="field llm-chat-history-field"><span>Sohbet geçmişi</span>
+       <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
+      </label>
+      <button id="llmChatDelete" type="button" disabled>Seçili sohbeti sil</button>
+     </div>
+     <div id="llmChatThinking" class="llm-chat-thinking" role="status" aria-live="polite" hidden><span class="llm-chat-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Yanıt hazırlanıyor…</span></div>
+     <div id="llmChatMessages" class="llm-chat-messages" role="log" aria-label="Kristal sohbet mesajları" aria-live="polite" aria-relevant="additions text"></div>
+     <form id="llmChatForm" class="llm-chat-form">
+      <label class="field"><span>Kristal hakkında sorunuz</span>
+       <textarea id="llmChatPrompt" rows="3" maxlength="4000" placeholder="Sormak istediğinizi sorabilirsiniz."></textarea>
+      </label>
+      <div class="llm-chat-form-actions">
+       <button id="llmChatSend" type="submit" class="primary">Gönder</button>
+       <button id="llmChatAbort" type="button" hidden>İptal</button>
+      </div>
+     </form>
+     <p id="llmChatStatus" role="status" aria-live="polite" class="llm-chat-status"></p>
+    </div>
+   </div>
+  </section>
   <div class="topbar">
    <div class="floating tools" role="toolbar" aria-label="3B görünüm araçları">
     <button id="fitBtn" class="view-tool" type="button" aria-label="Görünüme sığdır" title="Görünüme sığdır"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 8 3 3m13 5 5-5M8 16l-5 5m13-5 5 5"/></svg></button>
@@ -1204,12 +1203,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Veriler Materials Project tarafından hesaplanmıştır; deneysel XRD ölçümü değildir. İçe aktarılan yapı etkin çalışma alanına yüklenir ve mevcut Toz Kırınımı / Kamera motoru tarafından kullanılır. Kaynak: <a href="https://materialsproject.org" target="_blank" rel="noopener noreferrer">Materials Project</a>.</p>
   </section>
   <section id="libMpSettingsPane" class="lib-panel mp-settings-pane" role="tabpanel" aria-labelledby="libMpSettingsTab" hidden>
-   <div class="lib-panel-head"><h3>Materials Project Ayarları</h3><p>Kişisel anahtarın ile resmî API'ye doğrudan HTTPS üzerinden eriş.</p></div>
+   <div class="lib-panel-head"><h3>Materials Project Ayarları</h3><p>Kişisel API anahtarınla doğrudan veya isteğe bağlı güvenilir Worker üzerinden HTTPS erişimi kullan.</p></div>
    <label class="lib-field"><span>Materials Project API anahtarı</span><input id="mpApiKey" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="X-API-KEY"></label>
    <label class="mp-reveal"><input id="mpKeyReveal" type="checkbox"> Girilen anahtarı göster</label>
+   <label class="mp-reveal"><input id="mpUseWorker" type="checkbox"> Materials Project sorgularını Cloudflare Worker üzerinden gönder (isteğe bağlı)</label>
+   <p class="hint" id="mpWorkerHelp">Tarayıcınız resmî API'ye doğrudan erişemiyorsa kullanın. Bu seçenek API anahtarınızı yalnızca sabit kristalyapi-cod-api.aoakkirman.workers.dev Worker'ına ve oradan Materials Project'e X-API-KEY başlığıyla gönderir. Worker v1.3+ sürümü Cloudflare'da ayrıca yayımlanmalıdır; anahtar Worker önbelleğine kaydedilmez. Yalnızca bu Worker'a güveniyorsanız etkinleştirin.</p>
    <div class="mp-actions"><button id="mpKeySave" type="button">Tarayıcıya kaydet</button><button id="mpKeyClear" type="button">Anahtarı sil</button></div>
    <p id="mpKeyStatus" class="mp-status" role="status" aria-live="polite">API anahtarı girilmedi.</p>
-   <p class="hint">Gizlilik: API anahtarı bu tarayıcının localStorage alanında kalıcı tutulur; sayfa yenilense de korunur ve Anahtarı sil ile kaldırılabilir. Anahtar URL'ye, GitHub'a, çerezlere, servis çalışanı önbelleğine veya dışa aktarılan dosyalara yazılmaz. localStorage şifreli bir kasa değildir: aynı kökendeki JavaScript ve tarayıcı eklentileri anahtara erişebilir; ortak kullanılan bilgisayarlarda dikkatli olun. Anahtar yalnız resmî api.materialsproject.org adresine HTTPS üzerinden X-API-KEY başlığıyla gönderilir. Tarayıcı erişimi API'nin CORS izinlerine tabi olabilir.</p>
+   <p class="hint">Gizlilik: API anahtarı bu tarayıcının localStorage alanında kalıcı tutulur; sayfa yenilense de korunur ve Anahtarı sil ile kaldırılabilir. Anahtar URL'ye, GitHub'a, çerezlere, servis çalışanı önbelleğine veya dışa aktarılan dosyalara yazılmaz. localStorage şifreli bir kasa değildir: aynı kökendeki JavaScript ve tarayıcı eklentileri anahtara erişebilir; ortak kullanılan bilgisayarlarda dikkatli olun. Doğrudan modda anahtar yalnız resmî api.materialsproject.org adresine gönderilir. Worker modu açıkken anahtar ayrıca açıklanan sabit Cloudflare Worker'a gönderilir. Her iki durumda da HTTPS ve X-API-KEY başlığı kullanılır; tarayıcı erişimi CORS izinlerine tabidir.</p>
    <p><a href="https://materialsproject.org/api" target="_blank" rel="noopener noreferrer">Materials Project API anahtarı</a> · <a href="https://docs.materialsproject.org/downloading-data/using-the-api" target="_blank" rel="noopener noreferrer">Resmî API dokümantasyonu</a></p>
   </section>
 

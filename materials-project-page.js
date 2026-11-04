@@ -3,6 +3,7 @@
  * localStorage is NOT encrypted or isolated from same-origin JavaScript. */
 import {mpSearchUrl,mpStructureUrl,normalizeMpResponse,mpStructureToCif,mpApiGet,mpCompareRows} from './materials-project-core.js';
 const MP_KEY_STORAGE='kristalyapi.materials-project-api-key.v1';
+const MP_WORKER_STORAGE='kristalyapi.materials-project-worker-opt-in.v1';
 const $=id=>document.getElementById(id);
 function readSavedKey(){
  try{
@@ -24,6 +25,17 @@ const number=(value,digits=4)=>value===null||value===undefined?'—':Number(valu
  window.CrystalI18n?.language==='en'?'en-US':'tr-TR',{maximumFractionDigits:digits});
 export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}={}){
  let apiKey=readSavedKey(),persisted=!!apiKey,results=[],selected=new Map(),busy=false,searchAbort=null;
+ let useWorker=false;
+ try{useWorker=localStorage.getItem(MP_WORKER_STORAGE)==='1';}catch{}
+ $('mpUseWorker').checked=useWorker;
+ $('mpUseWorker').addEventListener('change',()=>{
+  useWorker=$('mpUseWorker').checked;
+  try{localStorage.setItem(MP_WORKER_STORAGE,useWorker?'1':'0');}catch{}
+  status('mpSearchStatus',useWorker?
+   t('Worker modu seçildi; sürüm 1.3+ Cloudflare üzerinde yayımlanmış olmalıdır.',
+     'Worker mode selected; version 1.3+ must be deployed to Cloudflare.'):
+   t('Doğrudan API modu seçildi.','Direct API mode selected.'));
+ });
  const status=(id,text,kind='')=>{
   const el=$(id);el.textContent=text;el.dataset.state=kind;
  };
@@ -91,7 +103,7 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
   setBusy(true);status('mpSearchStatus',record.materialId+t(' yapısı getiriliyor…',' structure loading…'));
   const controller=new AbortController();searchAbort=controller;
   try{
-   const response=await mpApiGet(mpStructureUrl(record.materialId),activeKey,{signal:controller.signal});
+   const response=await mpApiGet(mpStructureUrl(record.materialId),activeKey,{signal:controller.signal,transport:useWorker?'worker':'direct'});
    const raw=response.data.find(r=>r?.material_id===record.materialId);
    if(!raw)throw Error('MP yanıtında seçilen malzeme yok.');
    const cif=mpStructureToCif(raw,record.materialId);
@@ -146,7 +158,7 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
   const activeKey=apiKey;
   status('mpSearchStatus',t('MP veritabanında aranıyor…','Searching Materials Project…'));
   try{
-   const json=await mpApiGet(url,activeKey,{signal:controller.signal});
+   const json=await mpApiGet(url,activeKey,{signal:controller.signal,transport:useWorker?'worker':'direct'});
    if(controller.signal.aborted||apiKey!==activeKey)return;
    results=normalizeMpResponse(json);
    selected.clear();renderResults();renderCompare();
@@ -155,7 +167,10 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
   }catch(error){
    if(!controller.signal.aborted)status('mpSearchStatus',
     t('Arama başarısız: ','Search failed: ')+error.message+
-    (error instanceof TypeError?t(' · CORS veya ağ erişimini kontrol edin.',' · Check CORS/network access.'):''),
+    (error instanceof TypeError?(useWorker?
+     t(' · Worker ağ erişimini veya Cloudflare dağıtımını kontrol edin.',' · Check Worker connectivity and deployment.'):
+     t(' · Tarayıcı CORS/ağ engeli olabilir. Materials Project Ayarları → isteğe bağlı Worker seçeneğini inceleyin.',
+       ' · Browser CORS/network restrictions are possible. See the optional Worker setting under Materials Project Settings.')):''),
     'error');
   }finally{if(searchAbort===controller)searchAbort=null;setBusy(false);}
  });

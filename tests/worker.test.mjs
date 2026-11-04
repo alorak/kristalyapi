@@ -241,9 +241,10 @@ test('successful upstream bodies are served from the edge cache without stored C
 test('upstream requests identify the gateway and health reports the mirror list',async()=>{
  let headers=null;
  await handleRequest(req('/api/cif/4335507'),ENV,async(url,options)=>{headers=options.headers;return new Response('data_x\n');},noCache);
- assert.match(headers['User-Agent'],/kristalyapi-cod-worker\/1\.2/);
+ assert.match(headers['User-Agent'],/kristalyapi-cod-worker\/1\.3/);
  const health=await (await handleRequest(req('/health'),ENV)).json();
- assert.equal(health.version,'1.2');
+ assert.equal(health.version,'1.3');
+ assert.equal(health.materialsProjectProxy,true);
  assert.deepEqual(health.upstreams,['www.crystallography.net','qiserver.ugr.es','cod.ibt.lt']);
 });
 test('validBody accepts real CIF/JSON and rejects HTML, PHP source and junk',()=>{
@@ -254,4 +255,61 @@ test('validBody accepts real CIF/JSON and rejects HTML, PHP source and junk',()=
  for (const [type,body] of [['cif','<!DOCTYPE html><p>500</p>'],['cif','<?php echo 1;'],['cif','no data block'],
   ['json','<?php include "bootstrap.php";'],['json','<html></html>'],['json','"string"'],['json','{broken']])
   assert.equal(validBody(type,b(body)),false,type+': '+body);
+});
+
+test('MP relay never caches credentials, only allows validated summary fields and fixes upstream host',async()=>{
+ const search='formula=SrTiO3&_fields=material_id%2Cformula_pretty%2Cband_gap&_limit=20';
+ const key='synthetic-user-owned-key';
+ const request=req('/api/mp/summary?'+search,{headers:{'X-API-KEY':key}});
+ const calls=[],cache={match(){throw Error('MP response must never access edge cache');},put(){throw Error('MP response must never be cached');}};
+ const response=await handleRequest(request,ENV,async(url,options)=>{
+  calls.push({url,options});
+  return new Response(JSON.stringify({data:[{material_id:'mp-5229',formula_pretty:'SrTiO3'}]}),{
+   status:200,headers:{'Content-Type':'application/json'}
+  });
+ },{cache});
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get('Access-Control-Allow-Origin'),ORIGIN);
+ assert.equal(response.headers.get('Cache-Control'),'no-store');
+ assert.equal(response.headers.get('X-Kristalyapi-Cache'),null);
+ assert.equal(calls.length,1);
+ assert.equal(new URL(calls[0].url).origin,'https://api.materialsproject.org');
+ assert.equal(calls[0].options.headers['X-API-KEY'],key);
+ assert.match(calls[0].options.headers['User-Agent'],/kristalyapi-mp-worker\/1\.3/);
+ assert.ok(!calls[0].url.includes(key));
+ assert.equal(calls[0].options.redirect,'manual');
+ assert.equal((await response.json()).data[0].material_id,'mp-5229');
+ const preflight=await handleRequest(req('/api/mp/summary?'+search,{
+  method:'OPTIONS',headers:{'Access-Control-Request-Headers':'X-API-KEY'}
+ }),ENV,()=>{throw Error('Preflight must not call upstream');});
+ assert.equal(preflight.status,204);
+ assert.match(preflight.headers.get('Access-Control-Allow-Headers'),/X-API-KEY/);
+});
+test('MP gateway rejects missing credentials, non-allowlisted query and untrusted origins',async()=>{
+ const search='formula=Si&_fields=material_id%2Cformula_pretty&_limit=20';
+ let upstreamCalled=false;
+ const upstream=async()=>{upstreamCalled=true;throw Error('must not be called');};
+ for(const url of [
+  '/api/mp/summary?url=https%3A%2F%2Fevil.example&_fields=material_id&_limit=20',
+  '/api/mp/summary?formula=Si&_fields=secrets&_limit=20',
+  '/api/mp/summary?formula=Si&_fields=material_id&_limit=999',
+  '/api/mp/summary?formula=Si&material_ids=mp-149&_fields=material_id&_limit=1',
+  '/api/mp/summary?formula=Si&_fields=structure&_limit=1'
+ ]){
+  const result=await handleRequest(req(url,{headers:{'X-API-KEY':'synthetic-key'}}),ENV,upstream);
+  assert.equal(result.status,400,url);
+ }
+ const missing=await handleRequest(req('/api/mp/summary?'+search),ENV,upstream);
+ assert.equal(missing.status,400);
+ const forbidden=await handleRequest(req('/api/mp/summary?'+search,{headers:{'X-API-KEY':'synthetic-key',Origin:'https://evil.example'}}),ENV,upstream);
+ assert.equal(forbidden.status,403);
+ assert.equal(upstreamCalled,false);
+});
+test('MP gateway forwards upstream failure status without leaking the user key',async()=>{
+ const search='material_ids=mp-149&_fields=material_id%2Cstructure&_limit=1',key='private-synthetic-key';
+ const response=await handleRequest(req('/api/mp/summary?'+search,{headers:{'X-API-KEY':key}}),ENV,
+  async()=>new Response('blocked',{status:403}));
+ assert.equal(response.status,403);
+ assert.equal(response.headers.get('Cache-Control'),'no-store');
+ assert.ok(!(await response.text()).includes(key));
 });

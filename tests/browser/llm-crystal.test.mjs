@@ -97,6 +97,31 @@ try{
  await page.locator('#llmChatToggle').click();
  assert.equal(await page.locator('#llmChatDock').isVisible(),true);
  assert.equal(await page.locator('#llmChatToggle').getAttribute('aria-expanded'),'true');
+ assert.equal(await page.locator('#llmChatDock').evaluate(el=>el.parentElement.id),'viewport',
+  'chat dock must be mounted inside the 3D workspace, not above the tool rail');
+ assert.equal(await page.locator('#llmChatPrompt').getAttribute('placeholder'),'Sormak istediğinizi sorabilirsiniz.');
+ const assertChatFitsWorkspace=async()=>{
+  const rects=await page.evaluate(()=>{
+   const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {left:r.left,right:r.right};};
+   const bar=document.getElementById('workbenchQuickbar').getBoundingClientRect();
+   return {chat:{...rect('llmChatDock'),bottom:document.getElementById('llmChatDock').getBoundingClientRect().bottom},
+    workspace:rect('viewport'),rail:rect('rightToolRail'),quickbarTop:bar.top};
+  });
+  assert.ok(rects.chat.right<=rects.workspace.right-6,'chat overflows workspace: '+JSON.stringify(rects));
+  assert.ok(rects.chat.right<=rects.rail.left-6,'chat covers the right inspector icons: '+JSON.stringify(rects));
+  assert.ok(rects.chat.bottom<=rects.quickbarTop-6,'quickbar intercepts chat composer: '+JSON.stringify(rects));
+ };
+ await assertChatFitsWorkspace();
+ await page.setViewportSize({width:1000,height:760});
+ await assertChatFitsWorkspace();
+ await page.setViewportSize({width:1480,height:940});
+ for(const id of ['llmChatDockHide','llmChatSend']){
+  assert.equal(await page.evaluate(id=>{
+   const button=document.getElementById(id),rect=button.getBoundingClientRect();
+   const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+   return hit===button||button.contains(hit);
+  },id),true,id+' must receive pointer input above floating workspace toolbars');
+ }
  assert.equal(await page.locator('#llmChatModel').count(),0,'large provider settings card removed');
  assert.equal(await page.locator('#llmChatOpenSettings').count(),0,'large settings link removed');
  assert.equal(await page.locator('#llmChatClearAll').count(),0,'delete-all button removed');
