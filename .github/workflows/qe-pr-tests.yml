@@ -93,6 +93,8 @@ jobs:
         run: node tests/browser/materials-xrd.test.mjs
       - name: Test Materials Project Library with synthetic HTTP responses
         run: node tests/browser/materials-project.test.mjs
+      - name: Smoke-test compact atom sidebar in Chromium
+        run: node tests/browser/atoms-sidebar.test.mjs
       - name: Retain DFT screenshots
         if: always()
         uses: actions/upload-artifact@v4
