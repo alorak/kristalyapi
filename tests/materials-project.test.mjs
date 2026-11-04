@@ -76,3 +76,28 @@ test('HTTP and data failures are surfaced without exposing keys',async()=>{
  await assert.rejects(mpApiGet(u,'secret',{fetcher:async()=>({ok:false,status:401,headers:{get:()=>null}})}),/401/);
  await assert.rejects(mpApiGet(u,'secret',{fetcher:async()=>({ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify({errors:['no']})})}),/beklenmedik JSON|data/);
 });
+
+test('MP Worker requires key-free capability probe and forwards key only to pinned proxy',async()=>{
+ const search=mpSearchUrl('SrTiO3'),key='synthetic-personal-key';
+ const calls=[];
+ const fetcher=async(url,options)=>{
+  calls.push({url,options});
+  if(url.endsWith('/health'))return {ok:true,json:async()=>({status:'ok',version:'1.3',materialsProjectProxy:true})};
+  return {ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify({data:[Si]})};
+ };
+ const result=await mpApiGet(search,key,{fetcher,transport:'worker'});
+ assert.equal(result.data[0].material_id,'mp-149');
+ assert.equal(calls.length,2);
+ assert.match(calls[0].url,/\/health$/);
+ assert.equal(calls[0].options.headers,undefined,'no credentials in the health probe');
+ assert.equal(new URL(calls[1].url).origin,'https://kristalyapi-cod-api.aoakkirman.workers.dev');
+ assert.equal(new URL(calls[1].url).pathname,'/api/mp/summary');
+ assert.equal(calls[1].options.headers['X-API-KEY'],key);
+ assert.ok(!calls[1].url.includes(key),'key must not enter URL or browser history');
+ const oldCalls=[];
+ await assert.rejects(mpApiGet(search,key,{transport:'worker',fetcher:async(url,options)=>{
+  oldCalls.push({url,options});return {ok:true,json:async()=>({status:'ok',version:'1.2'})};
+ }}),/sürüm 1.3/);
+ assert.equal(oldCalls.length,1,'do not send a key to an old Worker');
+ assert.equal(oldCalls[0].options.headers,undefined);
+});
