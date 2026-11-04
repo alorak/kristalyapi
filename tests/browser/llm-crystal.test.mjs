@@ -115,6 +115,13 @@ try{
  await page.setViewportSize({width:1000,height:760});
  await assertChatFitsWorkspace();
  await page.setViewportSize({width:1480,height:940});
+ for(const id of ['llmChatDockHide','llmChatSend']){
+  assert.equal(await page.evaluate(id=>{
+   const button=document.getElementById(id),rect=button.getBoundingClientRect();
+   const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+   return hit===button||button.contains(hit);
+  },id),true,id+' must receive pointer input above floating workspace toolbars');
+ }
  assert.equal(await page.locator('#llmChatModel').count(),0,'large provider settings card removed');
  assert.equal(await page.locator('#llmChatOpenSettings').count(),0,'large settings link removed');
  assert.equal(await page.locator('#llmChatClearAll').count(),0,'delete-all button removed');
