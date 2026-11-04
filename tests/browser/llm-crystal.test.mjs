@@ -103,10 +103,13 @@ try{
  const assertChatFitsWorkspace=async()=>{
   const rects=await page.evaluate(()=>{
    const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {left:r.left,right:r.right};};
-   return {chat:rect('llmChatDock'),workspace:rect('viewport'),rail:rect('rightToolRail')};
+   const bar=document.getElementById('workbenchQuickbar').getBoundingClientRect();
+   return {chat:{...rect('llmChatDock'),bottom:document.getElementById('llmChatDock').getBoundingClientRect().bottom},
+    workspace:rect('viewport'),rail:rect('rightToolRail'),quickbarTop:bar.top};
   });
   assert.ok(rects.chat.right<=rects.workspace.right-6,'chat overflows workspace: '+JSON.stringify(rects));
   assert.ok(rects.chat.right<=rects.rail.left-6,'chat covers the right inspector icons: '+JSON.stringify(rects));
+  assert.ok(rects.chat.bottom<=rects.quickbarTop-6,'quickbar intercepts chat composer: '+JSON.stringify(rects));
  };
  await assertChatFitsWorkspace();
  await page.setViewportSize({width:1000,height:760});
