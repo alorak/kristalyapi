@@ -1,5 +1,28 @@
 # P0–P2 Malzeme Ar-Ge ve XRD karakterizasyon yol haritası
 
+## Materials Project · Kütüphane entegrasyonu (2026-11-04)
+
+- [x] **MP-P0.1:** Kütüphane içinde Materials Project Ayarları sekmesi; parola alanında
+  anahtar girişi, kullanıcı isteğiyle tarayıcı localStorage alanında kalıcı tutma,
+  kayıtlı anahtarı silme, URL'ye veya GitHub deposuna anahtar yazmama.
+- [x] **MP-P0.2:** Formül/kimyasal sistem/MP-ID üzerinden sınırlı summary sorgusu;
+  gerçek MP kimliği, kaynak ve mevcut hesaplanmış malzeme özellikleri.
+- [x] **MP-P0.3:** Seçili hesaplanmış yapının P1 CIF dönüştürülmesi, aktif
+  çalışma alanına içe aktarılması ve mevcut ideal Toz XRD sayfasının açılması.
+- [x] **MP-P1.1 başlangıcı:** Dört MP kaydı için bant aralığı, doğrudanlık,
+  oluşum/hull enerjileri, yoğunluk ve kaynak kimliği karşılaştırması.
+- [x] **MP kalite altyapısı:** Birim testleri, sentetik Chromium API/XRD testi,
+  TR/EN, PWA modül listesi ve bilimsel sınırlama dokümantasyonu.
+- [ ] **Canlı kabul:** Kişisel API anahtarı ve MP CORS politikasına göre
+  gerçek veriyle Si, SrTiO3, Al2O3 arama/yapı/XRD testleri; şu ana kadar
+  yalnız sentetik fixture kullanıldı.
+- [ ] **MP-P1.2:** Gerçek bant/DOS görev verileri, enerji/k-yolu/spin
+  referansları doğrulanarak yerel QE ile karşılaştırma.
+- [ ] **MP-P1.3:** Farklı MP polimorfları için eş dalga boyunda çoklu XRD
+  overlay; ölçülmüş desen veya faz teşhisi iddia etmeme.
+
+
+
 ## P0 · Uygulanan ilk iş paketi
 - [x] **Malzeme veri kartları:** 1–4 etkin çalışma alanı anlık kopyası, doluluk-ağırlıklı bileşim, geometrik ölçüler/hacim, kullanıcı beyanı kaynak kimliği, CSV/JSON dışa aktarımı, alan doğrulama testleri.
 - [x] **XRD pik-konumu taraması:** mevcut hesap/ölçüm overlay üzerine konum-toleransı, göreli eşik ve yerel belirginlik parametreleri; ölçüm-model tekil eşleme ve eşleşmeyen piklerin CSV raporu.
@@ -165,8 +188,8 @@ VESTA/BVS doğrulaması için öngörülen **Paket 15** takvimini değiştirmez.
   deneysel/hesaplanmış ayrımını taşıyan bant ve DOS dosya şeması.
 - [ ] Önceden paketlenmiş ve açık lisanslı küçük Si/Ge/GaAs örnekleri:
   çevrimdışı açılış; kaynak ve lisans atıfları.
-- [ ] İsteğe bağlı Materials Project verisi: API anahtarı ve kullanıcı
-  rızası; anahtar/uzak isteği varsayılan çevrimdışı akışa sokmama.
+- [x] İsteğe bağlı Materials Project verisi: API anahtarı ve kullanıcı
+  rızası; anahtar/uzak isteği varsayılan çevrimdışı akışa sokmama. [P0/P1 başlangıcı](docs/materials-project.md).
 - [ ] Model bant eğrisini 3B kristalle karıştırmayan görsel ayrım.
 
 ## Ortak mimari / kalite

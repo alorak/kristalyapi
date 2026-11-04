@@ -11,6 +11,7 @@ import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import {initMaterialsPage} from './materials-page.js';
+import {initMaterialsProjectPage} from './materials-project-page.js';
 import {matchPowderPeaks,matchReportCsv} from './xrd-peak-match-core.js';
 import {sha256Hex} from './material-evidence-core.js';
 import {xrdAcquisitionMetadata,xrdMetadataCompatibility,xrdScanEvidence} from './xrd-acquisition-core.js';
@@ -10707,7 +10708,7 @@ function renderCodBookmarks(){
  $('bookmarkEmpty').hidden=codBookmarks.length>0;
  if(codBookmarks.length)list.append(codTable(codBookmarks));
 }
-const LIBRARY_PANES=['search','presets','bookmarks','worker'];
+const LIBRARY_PANES=['search','presets','bookmarks','worker','mp','mp-settings'];
 function setLibraryPane(mode){
  if(!LIBRARY_PANES.includes(mode))throw Error('Bilinmeyen kütüphane sekmesi: '+mode);
  codPane=mode;
@@ -10715,7 +10716,9 @@ function setLibraryPane(mode){
  $('libPresetsPane').hidden=mode!=='presets';
  $('libBookmarksPane').hidden=mode!=='bookmarks';
  $('libWorkerPane').hidden=mode!=='worker';
- for(const [id,selected] of [['libSearchTab',mode==='search'],['libPresetsTab',mode==='presets'],['libBookmarksTab',mode==='bookmarks'],['libWorkerTab',mode==='worker']]){
+ $('libMpPane').hidden=mode!=='mp';
+ $('libMpSettingsPane').hidden=mode!=='mp-settings';
+ for(const [id,selected] of [['libSearchTab',mode==='search'],['libPresetsTab',mode==='presets'],['libBookmarksTab',mode==='bookmarks'],['libWorkerTab',mode==='worker'],['libMpTab',mode==='mp'],['libMpSettingsTab',mode==='mp-settings']]){
   $(id).classList.toggle('selected',selected);
   $(id).setAttribute('aria-selected',String(selected));$(id).tabIndex=selected?0:-1;
  }
@@ -11072,6 +11075,22 @@ function initLibrary(){
  $('libPresetsTab').onclick=()=>setLibraryPane('presets');
  $('libBookmarksTab').onclick=()=>setLibraryPane('bookmarks');
  $('libWorkerTab').onclick=()=>setLibraryPane('worker');
+ $('libMpTab').onclick=()=>setLibraryPane('mp');
+ $('libMpSettingsTab').onclick=()=>setLibraryPane('mp-settings');
+ initMaterialsProjectPage({
+  onMissingKey:()=>setLibraryPane('mp-settings'),
+  workspaceToken:()=>activeWorkspaceId,
+  onImport:async({cif,summary,openPowder})=>{
+   const file=new File([cif],summary.materialId+'.cif',{type:'chemical/x-cif'});
+   await importFile(file);
+   state.name=(summary.formula||summary.materialId)+' · '+summary.materialId;
+   state.detail='Materials Project '+summary.materialId+' · computed DFT reference, not experimental';
+   build();
+   window.location.hash=openPowder?'toz-kirinimi':'kristal';
+   syncLibraryNavigation();
+   inform(summary.materialId+' yapısı aktarıldı.');
+  }
+ });
  $('presetFavoritesOnly').onclick=()=>{
   presetFavoritesOnly=!presetFavoritesOnly;
   if(presetFavoritesOnly&&!presetIsFavorite($('preset').value)&&presetFavoriteKeys.length)selectPreset(presetFavoriteKeys[0]);

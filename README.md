@@ -8,6 +8,8 @@ A browser-based, **VESTA-inspired crystal structure viewer and editor** for scie
 
 > This project is not a complete replacement for VESTA or experimental/high-accuracy computational software. See [Scientific scope and limitations](#scientific-scope-and-limitations) before interpreting quantitative results.
 
+**Materials Project Library (P0/P1 starter):** In **Library → Materials Project Settings**, enter your personal API key; use **Library → Materials Project** to search computed material records by formula, chemical system or MP-ID, import their DFT-relaxed structures (explicit P1 CIF) and launch the existing ideal powder XRD. Compare up to four MP computed property summaries (gap, formation energy, energy above hull and density). The user-provided key is saved in this browser's localStorage and restored after refresh; Library → Materials Project Settings lets you erase it. Browser storage is not an encrypted credential vault. Live direct-browser access depends on the MP API's CORS policy. This does not yet plot MP band/DOS or benchmark QE calculations. [Integration and safety notes](docs/materials-project.md).
+
 ## Quick start
 
 1. [Open the application](https://alorak.github.io/kristalyapi/).
