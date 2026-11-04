@@ -24,7 +24,9 @@ export function initCrystalLlm({getStructure,getWorkspaceId,onOpenSettings}){
  const active=()=>sessions.find(s=>s.id===activeId)||null;
  const persist=()=>{
   sessions.sort((a,b)=>b.updated-a.updated);
-  sessions=writeChatHistory(localStorage,sessions);
+  // Preserve object identity while the HTTP request is pending; a response must
+  // update the same session shown in the history list.
+  writeChatHistory(localStorage,sessions);
  };
  const updateProvider=()=>{
   const vllm=$('llmProviderVllm').checked;
