@@ -72,8 +72,34 @@ try{
   assert.equal(item.headers['x-api-key'],'synthetic-secret-local-only');
   assert.ok(!item.url.includes('synthetic-secret-local-only'));
  }
+ // Opt-in proxy path: no real network, key-free health probe and synthetic MP reply.
+ const gatewayCalls=[];
+ await page.route('https://kristalyapi-cod-api.aoakkirman.workers.dev/health',route=>
+  route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/json'},
+   body:JSON.stringify({status:'ok',version:'1.3',materialsProjectProxy:true})}));
+ await page.route('https://kristalyapi-cod-api.aoakkirman.workers.dev/api/mp/summary**',async route=>{
+  const req=route.request();
+  const allow={'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS',
+   'access-control-allow-headers':'X-API-KEY,Accept','content-type':'application/json'};
+  if(req.method()==='OPTIONS'){await route.fulfill({status:204,headers:allow});return;}
+  gatewayCalls.push({url:req.url(),headers:req.headers()});
+  await route.fulfill({status:200,headers:allow,body:JSON.stringify({data:[{
+   material_id:'mp-149',formula_pretty:'Si',nsites:2,band_gap:0.6
+  }]})});
+ });
  await page.locator('#libraryNav').click();
  await page.locator('#libMpSettingsTab').click();
+ await page.locator('#mpUseWorker').check();
+ assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.materials-project-worker-opt-in.v1')),'1');
+ await page.locator('#libMpTab').click();
+ await page.locator('#mpQuery').fill('Si');
+ await page.locator('#mpSearchSubmit').click();
+ await page.waitForFunction(()=>document.getElementById('mpSearchStatus')?.dataset.state==='ready');
+ assert.equal(gatewayCalls.length,1);
+ assert.equal(gatewayCalls[0].headers['x-api-key'],'synthetic-secret-local-only');
+ assert.ok(!gatewayCalls[0].url.includes('synthetic-secret-local-only'));
+ await page.locator('#libMpSettingsTab').click();
+ await page.locator('#mpUseWorker').uncheck();
  await page.locator('#mpKeyClear').click();
  const erasedKey=await page.evaluate(()=>localStorage.getItem('kristalyapi.materials-project-api-key.v1'));
  assert.equal(erasedKey,null,'Erase key should remove persistent browser storage');
