@@ -74,7 +74,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-bond-manual-chat-layout-v1'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-mp-worker-chat-ci-v2'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
@@ -113,4 +113,18 @@ test('crystal chat is constrained to the workspace and clip-panel prose is conci
  assert.doesNotMatch(html,/Düzlem h·x \+ k·y \+ l·z = uzaklık/);
  assert.doesNotMatch(editor,/Miller düzlemi yalnız görsel bir katmandır/);
  assert.match(editor,/status\.textContent=active\?active\+'/,'active clipping status must remain');
+});
+
+test('Materials Project proxy is opt-in, explicit and never cached by the Worker',()=>{
+ const page=read('materials-project-page.js'),core=read('materials-project-core.js');
+ const worker=read('worker/src/index.mjs'),doc=read('worker/README.md');
+ assert.match(html,/id="mpUseWorker" type="checkbox"/);
+ assert.match(html,/id="mpWorkerHelp"/);
+ assert.match(page,/transport:useWorker\?'worker':'direct'/);
+ assert.match(page,/materials-project-worker-opt-in/);
+ assert.match(core,/if\(health\?\.materialsProjectProxy!==true\)/);
+ assert.match(core,/endpoint=MP_WORKER\+'\/api\/mp\/summary'\+u\.search/);
+ assert.match(worker,/if\(target\.pathname==='\/api\/mp\/summary'\)return relayMaterialsProject/);
+ assert.match(worker,/\x27Cache-Control\x27:\x27no-store\x27/);
+ assert.match(doc,/Worker v1\.3\+/);
 });
