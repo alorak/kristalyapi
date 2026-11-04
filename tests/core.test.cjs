@@ -1171,8 +1171,8 @@ test('light theme and axis widget are present in single HTML', () => {
   assert.match(html,/#viewport\{background:#fff\}/);
   assert.match(html,/<div id="axisGizmo"/);
   assert.match(html,/id="axisGizmoSvg"/);
-  assert.match(html,/id="axisCompassMode"[^>]*aria-label="Yön göstergesi sistemi"/);
-  assert.match(html,/<option value="lattice">Kristalografik a\/b\/c<\/option>/);
+  assert.doesNotMatch(html,/id="axisCompassMode"/,'compass mode chooser is intentionally removed');
+  assert.match(html,/id="axisGizmoSvg"[^>]*aria-label="Kartezyen yön göstergesi/);
   assert.match(html,/id="autoBond"/);
   assert.ok(!html.includes('Kristalografi ve yapı görselleştirme laboratuvarı'));
 });
