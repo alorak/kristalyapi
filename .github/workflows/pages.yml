@@ -243,6 +243,7 @@ jobs:
           cp materials-project-page.js public/materials-project-page.js
           cp llm-crystal-core.js public/llm-crystal-core.js
           cp llm-crystal-page.js public/llm-crystal-page.js
+          cp llm-markdown.js public/llm-markdown.js
           cp xrd-peak-match-core.js public/xrd-peak-match-core.js
           cp xrd-factor-core.js public/xrd-factor-core.js
           cp lesson-pages.js public/lesson-pages.js
@@ -276,6 +277,7 @@ jobs:
           test -s public/materials-project-page.js
           test -s public/llm-crystal-core.js
           test -s public/llm-crystal-page.js
+          test -s public/llm-markdown.js
           test -s public/xrd-peak-match-core.js
           test -s public/xrd-factor-core.js
           test -s public/lesson-pages.js
