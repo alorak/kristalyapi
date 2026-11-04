@@ -209,12 +209,12 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
   onOpen();
   $('llmChatPrompt').focus();
  }
- function hideDock(){
+ function hideDock({restoreFocus=true}={}){
   $('llmChatDock').hidden=true;
   $('llmChatToggle').setAttribute('aria-expanded','false');
   $('llmChatToggle').setAttribute('aria-pressed','false');
   $('llmChatToggle').classList.remove('active');
-  $('llmChatToggle').focus();
+  if(restoreFocus)$('llmChatToggle').focus();
  }
  $('llmChatToggle').onclick=()=>$('llmChatDock').hidden?showDock():hideDock();
  $('llmChatDockHide').onclick=hideDock;
