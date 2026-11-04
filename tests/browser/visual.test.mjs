@@ -30,6 +30,12 @@ const server=http.createServer(async(request,response)=>{
    assert.ok(source.includes(bootstrapMarker),'Expected app bootstrap marker');
    source=source.replace(bootstrapMarker,`
 window.__visualTest={
+ // The dropdown was removed from production UI; this test-only hook preserves
+ // independent crystallographic compass and export checks without restoring it.
+ compassMode:mode=>{
+  if(!['cartesian','lattice'].includes(mode))throw Error('Invalid test compass mode');
+  axisGizmoMode=mode;axisGizmoLastSignature=null;updateAxisGizmo();
+ },
  select:ids=>{selected=[...ids];drawSelection();},
  repeat:()=>[...state.rep],
  instancing:()=>({atoms:atomData.length,groups:atomMesh.length,instances:atomMesh.reduce((s,m)=>s+m.count,0),bondGroups:root.children.filter(m=>m.userData.layer==='bonds').length}),
@@ -1356,13 +1362,17 @@ try{
   if(format==='eps')assert.doesNotMatch(vectorText,/colorimage/,
    'EPS must not rasterize the orientation marker');
  }
- // Select crystallographic a/b/c. No camera movement is needed to refresh the live compass.
- // Axis groups are intentionally sorted by camera depth (SVG painter's order).
- // Test the selected labels as a set, not their DOM stacking order.
- await page.locator('#axisCompassMode').selectOption('lattice');
+ // The Cartesian XYZ dropdown was deliberately removed from the editor.
+ // No obsolete UI control or stored mode preference may be required.
+ assert.equal(await page.locator('#axisCompassMode').count(),0,
+  'the removed Cartesian XYZ dropdown must not reappear');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.axis-compass.v1')),null,
+  'the removed compass selector must not leave browser preference state');
+ // Preserve science-facing lattice projection and exported a/b/c glyph tests
+ // using only the test module's in-memory hook; no production UI is added.
+ await page.evaluate(()=>window.__visualTest.compassMode('lattice'));
  await page.waitForFunction(()=>[...document.querySelectorAll('#axisGizmoSvg g text')]
   .map(el=>el.textContent).sort().join('')==='abc');
- assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.axis-compass.v1')),'lattice');
  assert.match(await page.locator('#axisGizmoSvg').getAttribute('aria-label'),/Kristalografik|Crystallographic/);
  for(const format of ['png','svg','pdf-vector','eps']){
   await page.locator('#saveBtn').click();
@@ -1378,7 +1388,7 @@ try{
     format+' export must show crystallographic '+axis);
   }
  }
- await page.locator('#axisCompassMode').selectOption('cartesian');
+ await page.evaluate(()=>window.__visualTest.compassMode('cartesian'));
  await page.waitForFunction(()=>[...document.querySelectorAll('#axisGizmoSvg g text')]
   .map(el=>el.textContent).sort().join('')==='XYZ');
  await page.setViewportSize({width:1024,height:768});
