@@ -1,7 +1,21 @@
-/* Materials Project library UI. The user's key is held in this module's memory only.
- * No localStorage, sessionStorage, indexedDB, telemetry or URL credentials. */
+/* Materials Project library UI: user opt-in persisted personal key, local to this origin.
+ * Never embed keys in source, URL, exports, service-worker caches or telemetry.
+ * localStorage is NOT encrypted or isolated from same-origin JavaScript. */
 import {mpSearchUrl,mpStructureUrl,normalizeMpResponse,mpStructureToCif,mpApiGet,mpCompareRows} from './materials-project-core.js';
+const MP_KEY_STORAGE='kristalyapi.materials-project-api-key.v1';
 const $=id=>document.getElementById(id);
+function readSavedKey(){
+ try{
+  const key=localStorage.getItem(MP_KEY_STORAGE)||'';
+  return key.length<=512?key:'';
+ }catch{return '';}
+}
+function saveKey(key){
+ try{localStorage.setItem(MP_KEY_STORAGE,key);return true;}catch{return false;}
+}
+function eraseSavedKey(){
+ try{localStorage.removeItem(MP_KEY_STORAGE);return true;}catch{return false;}
+}
 const t=(tr,en)=>window.CrystalI18n?.language==='en'?en:tr;
 const node=(tag,value='',cls='')=>{
  const n=document.createElement(tag);n.textContent=value;if(cls)n.className=cls;return n;
@@ -9,26 +23,34 @@ const node=(tag,value='',cls='')=>{
 const number=(value,digits=4)=>value===null||value===undefined?'—':Number(value).toLocaleString(
  window.CrystalI18n?.language==='en'?'en-US':'tr-TR',{maximumFractionDigits:digits});
 export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}={}){
- let apiKey='',results=[],selected=new Map(),busy=false,searchAbort=null;
+ let apiKey=readSavedKey(),persisted=!!apiKey,results=[],selected=new Map(),busy=false,searchAbort=null;
  const status=(id,text,kind='')=>{
   const el=$(id);el.textContent=text;el.dataset.state=kind;
  };
  const keyStatus=()=>status('mpKeyStatus',apiKey?
-  t('Anahtar bu açık sayfanın belleğinde tanımlı; henüz doğrulanmadı.','Key configured in this page memory; not yet verified.'):
-  t('API anahtarı girilmedi.','API key not configured.'),apiKey?'ready':'');
+  (persisted?
+   t('API anahtarı bu tarayıcıda kalıcı olarak kayıtlı (doğrulanmadı).','API key saved persistently in this browser (not verified).'):
+   t('API anahtarı yalnızca bu açık sayfada kullanılabilir; tarayıcı depolamasına kaydedilemedi.','API key available only for this page; browser storage failed.')):
+  t('API anahtarı girilmedi.','No API key configured.'),apiKey?(persisted?'ready':'error'):'');
  $('mpKeySave').addEventListener('click',()=>{
   const key=$('mpApiKey').value.trim();
   if(!key||key.length>512){status('mpKeyStatus',t('1–512 karakterlik bir API anahtarı girin.','Enter an API key of 1–512 characters.'),'error');return;}
   apiKey=key;
+  persisted=saveKey(key);
   $('mpApiKey').value='';
   keyStatus();
  });
  $('mpKeyClear').addEventListener('click',()=>{
   apiKey='';
+  const erased=eraseSavedKey();
+  persisted=false;
   $('mpApiKey').value='';
   searchAbort?.abort();
-  results=[];selected.clear();renderResults();renderCompare();keyStatus();
-  status('mpSearchStatus',t('Anahtar silindi, arama sonuçları temizlendi.','Key erased; search results cleared.'));
+  results=[];selected.clear();renderResults();renderCompare();
+  keyStatus();
+  status('mpSearchStatus',erased?
+   t('Kayıtlı anahtar ve arama sonuçları silindi.','Saved key and search results erased.'):
+   t('Anahtar sayfa belleğinden temizlendi ancak tarayıcı kaydı silinemedi. Depolama izinlerini kontrol edin.','Key cleared from page memory, but stored key could not be erased. Check browser storage permissions.'),erased?'':'error');
  });
  $('mpKeyReveal').addEventListener('change',()=>{
   $('mpApiKey').type=$('mpKeyReveal').checked?'text':'password';
@@ -144,7 +166,10 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
   $('mpQuery').value=b.dataset.mpExample;
   $('mpQuery').focus();
  }));
- window.addEventListener('beforeunload',()=>{apiKey='';searchAbort?.abort();});
+ window.addEventListener('beforeunload',()=>{searchAbort?.abort();});
+ window.addEventListener('crystal-language-change',()=>{renderResults();renderCompare();keyStatus();});
  keyStatus();renderResults();renderCompare();
- return {clearKey(){apiKey='';$('mpApiKey').value='';keyStatus();}};
+ return {clearKey(){
+  apiKey='';persisted=false;eraseSavedKey();$('mpApiKey').value='';keyStatus();
+ }};
 }
