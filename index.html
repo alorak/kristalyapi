@@ -65,6 +65,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <link rel="stylesheet" href="./styles.css">
 <link rel="stylesheet" href="./semiconductor-p0.css">
 <link rel="stylesheet" href="./dft-workspace.css">
+<link rel="stylesheet" href="./powder-camera.css">
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
 <body>
@@ -1260,6 +1261,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div id="powderLessonTabs" class="sc-tabs powder-lesson-tabs" role="tablist" aria-label="Toz kırınımı alt sekmeleri">
    <a id="pwTabPowder" class="pw-main-tab" href="#toz-kirinimi" role="tab" aria-controls="pwPowderPane" aria-selected="true" tabindex="0">Toz Kırınımı</a>
    <a id="pwTabReciprocal" class="pw-main-tab" href="#toz-kirinimi/karsi-uzay" role="tab" aria-controls="reciprocalPage" aria-selected="false" tabindex="-1">Karşı Uzay</a>
+   <a id="pwTabCamera" class="pw-main-tab" href="#toz-kirinimi/kamera" role="tab" aria-controls="pwCameraPage" aria-selected="false" tabindex="-1">Kamera</a>
   </div>
   <div id="pwPowderPane" class="pw-tab-panel" role="tabpanel" aria-labelledby="pwTabPowder">
   <div class="lesson-layout">
@@ -1513,6 +1515,65 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </section>
  </div>
 </section>
+  <section id="pwCameraPage" class="pw-tab-panel" role="tabpanel" aria-labelledby="pwTabCamera" hidden>
+   <div class="pw-camera-wrap">
+    <div class="lesson-panel pw-camera-top">
+     <div class="lesson-panel-head">
+      <h3 data-camera-tr="Debye–Scherrer kamerası · etkin kristal" data-camera-en="Debye–Scherrer camera · active crystal">Debye–Scherrer kamerası · etkin kristal</h3>
+      <span class="lesson-pill" data-camera-tr="Kristalden hesaplanan" data-camera-en="Computed from structure">Kristalden hesaplanan</span>
+     </div>
+     <p data-camera-tr="Bu laboratuvar sabit numune listesi kullanmaz. Kristal editöründeki veya CIF ile açılan etkin hücrenin örgü parametreleri ve simetriyle genişletilmiş atom konumları, Toz Kırınımı sekmesiyle aynı X-ışını yapı faktörü motoruna gönderilir."
+        data-camera-en="This lab does not use preset samples. The active cell and symmetry-expanded atomic sites from the crystal editor or an imported CIF are sent to the same X-ray structure-factor engine used by the Powder Diffraction tab.">Bu laboratuvar sabit numune listesi kullanmaz. Kristal editöründeki veya CIF ile açılan etkin hücrenin örgü parametreleri ve simetriyle genişletilmiş atom konumları, Toz Kırınımı sekmesiyle aynı X-ışını yapı faktörü motoruna gönderilir.</p>
+     <div class="pw-camera-source">
+      <strong id="pwCameraStructure">—</strong>
+      <span id="pwCameraCell">—</span>
+     </div>
+    </div>
+    <div class="lesson-panel pw-camera-control-panel">
+     <div class="lesson-panel-head">
+      <h3 data-camera-tr="Kamera deney ayarları" data-camera-en="Camera experiment settings">Kamera deney ayarları</h3>
+      <span class="lesson-pill" data-camera-tr="İdeal film geometrisi" data-camera-en="Ideal film geometry">İdeal film geometrisi</span>
+     </div>
+     <div class="pw-camera-controls">
+      <label><span data-camera-tr="X-ışını kaynağı" data-camera-en="X-ray target">X-ışını kaynağı</span>
+       <select id="pwCameraSource"><option value="Cu">Cu Kα</option><option value="Co">Co Kα</option><option value="Mo">Mo Kα</option><option value="Cr">Cr Kα</option><option value="Fe">Fe Kα</option></select>
+      </label>
+      <label><span data-camera-tr="Kamera çapı" data-camera-en="Camera diameter">Kamera çapı</span>
+       <select id="pwCameraDiameter"><option value="57.3">57,3 mm</option><option value="114.6">114,6 mm</option></select>
+      </label>
+      <label class="pw-camera-hkl"><span data-camera-tr="İzlenen yansıma (hkl)" data-camera-en="Tracked reflection (hkl)">İzlenen yansıma (hkl)</span>
+       <select id="pwCameraReflection" aria-label="Bragg hkl reflection"></select>
+      </label>
+      <label class="pw-camera-check"><input id="pwCameraFilter" type="checkbox" checked><span id="pwCameraFilterName">Ni filtresi · Kβ bastırma</span></label>
+      <label class="pw-camera-check"><input id="pwCameraRotation" type="checkbox" checked><span data-camera-tr="Numuneyi döndür (nitel)" data-camera-en="Rotate specimen (qualitative)">Numuneyi döndür (nitel)</span></label>
+     </div>
+     <div class="pw-camera-status" id="pwCameraStatus" role="status" aria-live="polite">Etkin kristal için hesaplama bekleniyor.</div>
+    </div>
+    <div class="pw-camera-visuals">
+     <div class="lesson-panel">
+      <div class="lesson-panel-head"><h3 data-camera-tr="Silindirik kamera kesiti" data-camera-en="Cylindrical camera cross-section">Silindirik kamera kesiti</h3><span class="lesson-pill">2θ</span></div>
+      <canvas id="pwCameraDiagram" role="img" aria-label="Incident beam and diffraction directions in a Debye–Scherrer camera"></canvas>
+     </div>
+     <div class="lesson-panel">
+      <div class="lesson-panel-head"><h3 data-camera-tr="Açılmış film" data-camera-en="Unrolled film">Açılmış film</h3><span class="lesson-pill">±s</span></div>
+      <canvas id="pwCameraFilm" role="img" aria-label="Unrolled Debye–Scherrer film with structure-derived diffraction lines"></canvas>
+     </div>
+    </div>
+    <div class="lesson-panel pw-camera-summary">
+     <div id="pwCameraMetrics" class="pw-camera-metrics" aria-live="polite"></div>
+     <p id="pwCameraInterpretation" class="pw-camera-interpretation" aria-live="polite"></p>
+     <details class="pw-camera-details">
+      <summary data-camera-tr="Açı ve film ölçümünün fiziği · 2θ neye bağlı?" data-camera-en="Physics of angle and film position · what affects 2θ?">Açı ve film ölçümünün fiziği · 2θ neye bağlı?</summary>
+      <p data-camera-tr="Bragg yasası: 2dₕₖₗ sin(θ) = λ (birinci mertebe). 2θ, dalga boyu ve seçilen kristal düzlemi aralığına bağlıdır. Bu aralık tüm kristal sistemlerinde geçerli hücre metriği ve atomik yapıdan alınır; kübik d=a/√(h²+k²+l²) denklemi genelleştirilmez."
+         data-camera-en="Bragg's law: 2dₕₖₗ sin(θ) = λ (first order). The 2θ angle depends on wavelength and interplanar spacing. The general cell metric is used for all crystal systems; the cubic equation d=a/√(h²+k²+l²) is not incorrectly generalized.">Bragg yasası: 2dₕₖₗ sin(θ) = λ (birinci mertebe). 2θ, dalga boyu ve seçilen kristal düzlemi aralığına bağlıdır. Bu aralık tüm kristal sistemlerinde geçerli hücre metriği ve atomik yapıdan alınır; kübik d=a/√(h²+k²+l²) denklemi genelleştirilmez.</p>
+      <p data-camera-tr="Filme kaydedilen yay uzunluğu s = R × 2θ (radyan) olur. Kamera çapı değişirse s değişir; Bragg açısı değişmez. Numune döndürmek ideal çizgi konumunu değiştirmez."
+         data-camera-en="Film arc distance is s = R × 2θ (in radians). Changing camera diameter changes s, not the Bragg angle. Rotating the specimen does not move ideal peak positions.">Filme kaydedilen yay uzunluğu s = R × 2θ (radyan) olur. Kamera çapı değişirse s değişir; Bragg açısı değişmez. Numune döndürmek ideal çizgi konumunu değiştirmez.</p>
+     </details>
+     <p class="pw-camera-limit" data-camera-tr="Bilimsel sınır: Kα çizgileri seçili yapının IT92 X-ışını faktörleri, atom dolulukları ve mevcut XRD motorunun LP çarpanı uygulanmış şiddetlerinden gelir. Filmin çizgi parlaklığı normalize, şematiktir; gerçek film dozu, numune soğurması, floresans, cihaz hatası, tane istatistiği veya kalibrasyon hesabı değildir. Filtre kapalıyken ek Kβ çizgileri yalnızca şematik %20 ağırlıkla çizilir. Açılmış film doğrudan demet çıkışından kesilmiş ideal silindirdir."
+        data-camera-en="Scientific limit: Kα lines come from the active structure's IT92 X-ray scattering factors, occupancies and the existing XRD engine (with its LP factor applied). Film brightness is normalized and schematic, not a measured exposure, specimen absorption, fluorescence, instrument error, grain statistics or calibration. When the filter is off, additional Kβ lines use a schematic 20% weight. The film is an ideal cylinder unrolled at the direct-beam exit.">Bilimsel sınır: Kα çizgileri seçili yapının IT92 X-ışını faktörleri, atom dolulukları ve mevcut XRD motorunun LP çarpanı uygulanmış şiddetlerinden gelir. Filmin çizgi parlaklığı normalize, şematiktir; gerçek film dozu, numune soğurması, floresans, cihaz hatası, tane istatistiği veya kalibrasyon hesabı değildir. Filtre kapalıyken ek Kβ çizgileri yalnızca şematik %20 ağırlıkla çizilir. Açılmış film doğrudan demet çıkışından kesilmiş ideal silindirdir.</p>
+    </div>
+   </div>
+  </section>
  </div>
 </main>
 

@@ -898,13 +898,13 @@ body.lesson-open #app{display:none!important}
 .lesson-page[hidden]{display:none!important}
 .lesson-page{display:block;overflow:auto;height:calc(100dvh - 54px);background:#f3f7fb;color:#233b55}
 .lesson-wrap{padding-top:23px;padding-bottom:65px;max-width:none;width:100%;margin:0}
-#pwPowderPane[hidden],#reciprocalPage[hidden]{display:none!important}
+#pwPowderPane[hidden],#reciprocalPage[hidden],#pwCameraPage[hidden]{display:none!important}
 .powder-lesson-tabs{margin:12px 0 18px}
 .powder-lesson-tabs .pw-main-tab{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:11px 19px;border-radius:10px;color:#53667c;font-size:14px;font-weight:650;text-decoration:none;white-space:nowrap}
 .powder-lesson-tabs .pw-main-tab:hover{background:#e6edf5;color:#203a54;text-decoration:none}
 .powder-lesson-tabs .pw-main-tab[aria-selected="true"]{background:#fff;color:#145b9c;box-shadow:0 1px 5px rgba(15,35,70,.12)}
 .powder-lesson-tabs .pw-main-tab:focus-visible{outline:3px solid #368bcc;outline-offset:2px}
-@media(max-width:550px){.powder-lesson-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.powder-lesson-tabs .pw-main-tab{font-size:13px;padding:10px 6px}}
+@media(max-width:550px){.powder-lesson-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.powder-lesson-tabs .pw-main-tab{font-size:12px;padding:10px 5px}}
 .lesson-source{display:flex;align-items:center;flex-wrap:wrap;gap:11px;background:#e8f1fa;border:1px solid #d6e5f3;border-radius:11px;padding:11px 15px;margin-bottom:20px;font-size:13px;color:#526980}
 .lesson-source>span:first-child{color:#657f9d;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .lesson-source strong{color:#214c74}

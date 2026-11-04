@@ -187,6 +187,7 @@ jobs:
           cp styles.css public/styles.css
           cp dft-workspace.css public/dft-workspace.css
           cp semiconductor-p0.css public/semiconductor-p0.css
+          cp powder-camera.css public/powder-camera.css
           cp sw.js public/sw.js
           cp manifest.webmanifest public/manifest.webmanifest
           cp crystal-app.js public/crystal-app.js
@@ -230,6 +231,8 @@ jobs:
           cp volume-iso-worker.js public/volume-iso-worker.js
           cp reciprocal-core.js public/reciprocal-core.js
           cp reciprocal-page.js public/reciprocal-page.js
+          cp powder-camera-page.js public/powder-camera-page.js
+          cp powder-camera-core.js public/powder-camera-core.js
           cp lesson-core.js public/lesson-core.js
           cp material-cards-core.js public/material-cards-core.js
           cp material-evidence-core.js public/material-evidence-core.js
@@ -257,6 +260,9 @@ jobs:
           test -s public/sw.js
           test -s public/manifest.webmanifest
           test -s public/lesson-core.js
+          test -s public/powder-camera.css
+          test -s public/powder-camera-page.js
+          test -s public/powder-camera-core.js
           test -s public/material-cards-core.js
           test -s public/material-evidence-core.js
           test -s public/bulk-study-preparation.js

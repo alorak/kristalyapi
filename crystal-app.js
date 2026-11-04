@@ -4544,6 +4544,7 @@ function build(){
  recordHistoryChange();
  persistLastCrystal();
  if(reciprocalPage?.visible)reciprocalPage.refresh();
+ if(powderCameraPage?.visible)powderCameraPage.refresh();
  if(powderLesson?.visible)powderLesson.refresh();
  if(semiconductorLesson?.visible)semiconductorLesson.refresh();
  if(semiconductorP0?.visible)semiconductorP0.refresh();
@@ -10800,6 +10801,7 @@ function syncDftWorkspace(){
 function pageFromHash(hash){
  if(isLibraryHash(hash))return 'library';
  if(isReciprocalHash(hash))return 'reciprocal';
+ if(hash==='#toz-kirinimi/kamera')return 'camera';
  if(hash==='#toz-kirinimi')return 'powder';
  if(hash==='#malzemeler')return 'materials';
  if(hash==='#yariiletken-fizigi')return 'semiconductor';
@@ -10807,11 +10809,12 @@ function pageFromHash(hash){
  return 'editor';
 }
 let reciprocalPage=null;
+let powderCameraPage=null;
 let powderLesson=null,semiconductorLesson=null,semiconductorP0=null,materialsPage=null;
 let previousPowderSubtab=null;
 function syncLibraryNavigation(){
- const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal';
- const powderFamily=page==='powder'||reciprocal;
+ const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal',camera=page==='camera';
+ const powderFamily=page==='powder'||reciprocal||camera;
  document.body.classList.toggle('dft-open',page==='dft');
  $('dftPage').hidden=page!=='dft';
  $('dftNav').classList.toggle('active',page==='dft');
@@ -10827,13 +10830,14 @@ function syncLibraryNavigation(){
  // The reciprocal laboratory is now a nested tab of Powder Diffraction.
  // Parent visibility must be set BEFORE the Three.js subpage is refreshed.
  $('powderPage').hidden=!powderFamily;
- $('pwPowderPane').hidden=reciprocal;
+ $('pwPowderPane').hidden=page!=='powder';
  $('reciprocalPage').hidden=!reciprocal;
+ $('pwCameraPage').hidden=!camera;
  $('semiconductorPage').hidden=page!=='semiconductor';
  // A hash switch may retain the old panel's internal scroll position.
  if(powderFamily&&previousPowderSubtab!==page)$('powderPage').scrollTop=0;
  previousPowderSubtab=powderFamily?page:null;
- for(const [id,selected] of [['pwTabPowder',!reciprocal],['pwTabReciprocal',reciprocal]]){
+ for(const [id,selected] of [['pwTabPowder',page==='powder'],['pwTabReciprocal',reciprocal],['pwTabCamera',camera]]){
   $(id).setAttribute('aria-selected',String(selected));
   $(id).tabIndex=selected?0:-1;
  }
@@ -10849,6 +10853,7 @@ function syncLibraryNavigation(){
  if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
  else {window.scrollTo?.(0,0);}
  reciprocalPage?.setVisible(reciprocal);
+ powderCameraPage?.setVisible(camera);
  powderLesson?.setVisible(page==='powder');
  materialsPage?.setVisible(page==='materials');
  semiconductorLesson?.setVisible(page==='semiconductor');
@@ -11929,6 +11934,14 @@ function bind(){
 try{restoreInitialCrystal();initWorkspaceState();initScene();bind();syncControls();build();if(!restoreWorkspaceCamera(activeWorkspace()?.cameraView))fit();persistWorkspaceSession();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
 // The concept page is optional: a failure there must never block the editor.
 try{reciprocalPage=initReciprocalPage(reciprocalHost());syncLibraryNavigation();}catch(err){console.error('Karşı uzay sayfası başlatılamadı:',err);}
+// Camera is isolated from the editor bootstrap: missing optional assets are non-fatal.
+import('./powder-camera-page.js').then(({initPowderCameraPage})=>{
+ powderCameraPage=initPowderCameraPage(reciprocalHost());
+ syncLibraryNavigation();
+}).catch(error=>{
+ console.error('Debye–Scherrer kamera sayfası başlatılamadı:',error);
+ const status=$('pwCameraStatus');if(status)status.textContent='Kamera modülü yüklenemedi: '+error.message;
+});
 try{materialsPage=initMaterialsPage(reciprocalHost(),download);syncLibraryNavigation();}catch(err){console.error('Malzeme karşılaştırma sayfası başlatılamadı:',err);}
 try{
  const host=reciprocalHost();
