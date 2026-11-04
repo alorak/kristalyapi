@@ -22,17 +22,25 @@ rejected rather than approximated.
 
 ## Key handling
 
-The personal key is a module-scoped JavaScript variable until page reload. The
-password field is cleared after the user clicks Use in this page. Erase key clears
-the key, results, selection and aborts requests. The key is **not** stored in
-localStorage, sessionStorage, cookies, URLs, files, GitHub, logs or caches.
-Requests use the fixed https://api.materialsproject.org/materials/summary/
-endpoint with an X-API-KEY header; credentials are omitted, caching is disabled
-and referrerPolicy is no-referrer. Responses are bounded and time out at 20 s.
+The user-provided key persists under
+`localStorage["kristalyapi.materials-project-api-key.v1"]` in this
+browser's origin. The password input is cleared immediately after **Save in this
+browser**; reloading or reopening the site restores the key without displaying it.
+**Erase key** removes the localStorage entry, clears the active key and search
+results, and aborts active requests. When localStorage is unavailable, the UI
+explicitly reports that the key is in memory only, rather than claiming success.
+No key is committed to source control or written into URLs, cookies, export
+files, service-worker caches or telemetry. Requests use the fixed
+https://api.materialsproject.org/materials/summary/ endpoint with an
+X-API-KEY header; credentials are omitted, caching is disabled and
+referrerPolicy is no-referrer. Responses are bounded and time out at 20 s.
 
-Scripts sharing the same origin and browser extensions can still access a
-browser page at runtime; browser memory does not equal server-side isolation.
-Do not enter organization-wide or shared secrets.
+**Security tradeoff:** localStorage is not encrypted or a dedicated secret vault.
+Any same-origin JavaScript with access to this site's storage, and privileged
+browser extensions, may read it. Do not save an organization-wide key on a
+shared/untrusted computer; use **Erase key** when necessary. Browser-site-data
+clearing also removes the value. The key persists only in this browser/profile,
+not across devices.
 
 Direct browser access depends on the Materials Project CORS policy. If blocked,
 the UI reports an error. Do not place private keys into URLs or untrusted CORS
