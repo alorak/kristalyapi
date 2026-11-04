@@ -7,7 +7,9 @@ export const MP_SUMMARY_FIELDS=[
  'formation_energy_per_atom','energy_above_hull','density','has_props','last_updated'
 ];
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const mpId=id=>/^mp-\d{1,12}$/.test(String(id||'').trim());
+// Legacy decimal MPIDs and post-2026-04-13 base-26 alphabetical AlphaIDs.
+// Both material forms use the "mp-" prefix; bare alphabetic task IDs do not.
+const mpId=id=>typeof id==='string'&&/^mp-(?:\d{1,12}|[a-z]{1,16})$/.test(id);
 export function mpSearchUrl(raw){
  const query=String(raw||'').trim();
  if(!query||query.length>100)throw Error('Materials Project: formül veya mp- kimliği girin.');
