@@ -25,7 +25,7 @@ const ATTEMPT_TIMEOUT_MS = 8_000;
 const UPSTREAM_ROUNDS = 2;
 const RETRY_DELAYS_MS = [800];
 const RETRYABLE_STATUS = new Set([408,425,429,500,502,503,504,520,521,522,523,524,525,526,530]);
-const WORKER_VERSION = '1.3';
+const WORKER_VERSION = '1.4';
 const USER_AGENT = 'kristalyapi-cod-worker/'+WORKER_VERSION+' (+https://github.com/alorak/kristalyapi)';
 // Successful bodies are kept in the Cloudflare edge cache so a COD entry that
 // imported once does not depend on COD being reachable the next time.
