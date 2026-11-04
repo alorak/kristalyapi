@@ -10964,6 +10964,7 @@ let previousPowderSubtab=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal',camera=page==='camera';
  const powderFamily=page==='powder'||reciprocal||camera;
+ if(page!=='editor'&&rightSidebarTab!==null)setRightSidebarTab(null);
  document.body.classList.toggle('dft-open',page==='dft');
  $('dftPage').hidden=page!=='dft';
  $('dftNav').classList.toggle('active',page==='dft');
@@ -11916,15 +11917,7 @@ function bind(){
  try{
   crystalLlm=initCrystalLlm({
    getStructure:()=>state,
-   getWorkspaceId:()=>String(activeWorkspaceId??'default'),
-   onOpenSettings:()=>{
-    // Close the editor drawer before navigating away so the next AI icon
-    // click opens it again instead of silently toggling an invisible pane.
-    setRightSidebarTab(null);
-    setLibraryPane('llm');
-    window.location.hash='#kutuphane';
-    syncLibraryNavigation();
-   }
+   getWorkspaceId:()=>String(activeWorkspaceId??'default')
   });
  }catch(error){console.error('LLM sohbet paneli başlatılamadı:',error);}
 
