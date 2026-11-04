@@ -1,4 +1,4 @@
-/* Materials Project Library integration in Chromium, using ONLY synthetic API fixtures.
+/* Materials Project Library integration in Chromium, using ONLY synthetic API fixtures.\n * Verifies the explicitly requested persistent browser credential and erase flow.
  * No real API key, network material data or experimental result is used. */
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
@@ -47,9 +47,17 @@ try{
  await page.locator('#libraryNav').click();
  await page.locator('#libMpSettingsTab').click();
  assert.equal(await page.locator('#libMpSettingsPane').isVisible(),true);
- await page.locator('#mpApiKey').fill('synthetic-secret-never-save');
+ await page.locator('#mpApiKey').fill('synthetic-secret-local-only');
  await page.locator('#mpKeySave').click();
  assert.equal(await page.locator('#mpApiKey').inputValue(),'');
+ const savedKey=await page.evaluate(()=>localStorage.getItem('kristalyapi.materials-project-api-key.v1'));
+ assert.equal(savedKey,'synthetic-secret-local-only','key should persist in localStorage');
+ await page.reload();
+ await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ await page.locator('#libraryNav').click();
+ await page.locator('#libMpSettingsTab').click();
+ assert.equal(await page.locator('#mpApiKey').inputValue(),'','stored key must never appear in password input');
+ assert.match(await page.locator('#mpKeyStatus').textContent(),/kalıcı|persistently/i);
  await page.locator('#libMpTab').click();
  await page.locator('#mpQuery').fill('Si');
  await page.locator('#mpSearchSubmit').click();
@@ -61,11 +69,15 @@ try{
  await page.waitForFunction(()=>window.location.hash==='#toz-kirinimi',{timeout:30000});
  assert.ok(requests.length>=2,'summary and structure requests required');
  for(const item of requests){
-  assert.equal(item.headers['x-api-key'],'synthetic-secret-never-save');
-  assert.ok(!item.url.includes('synthetic-secret-never-save'));
+  assert.equal(item.headers['x-api-key'],'synthetic-secret-local-only');
+  assert.ok(!item.url.includes('synthetic-secret-local-only'));
  }
- const saved=await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}));
- assert.ok(!saved.includes('synthetic-secret-never-save'),'secret must not persist in browser storage');
+ await page.locator('#libraryNav').click();
+ await page.locator('#libMpSettingsTab').click();
+ await page.locator('#mpKeyClear').click();
+ const erasedKey=await page.evaluate(()=>localStorage.getItem('kristalyapi.materials-project-api-key.v1'));
+ assert.equal(erasedKey,null,'Erase key should remove persistent browser storage');
+ assert.match(await page.locator('#mpKeyStatus').textContent(),/girilmedi|configured/i);
  assert.deepEqual(errors,[],errors.join('\n'));
 }finally{
  await browser?.close();
