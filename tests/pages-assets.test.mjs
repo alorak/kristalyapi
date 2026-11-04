@@ -140,3 +140,18 @@ test('2026 Materials Project AlphaID is allowed consistently by UI and pinned Wo
  assert.match(unit,/post-2026 AlphaIDs/);
  assert.match(html,/Worker v1\.4\+/);
 });
+
+test('removed compass dropdown in visual smoke is verified without stale user-facing selector',()=>{
+ const browser=read('tests/browser/visual.test.mjs');
+ const workflow=read('.github/workflows/browser-visual.yml');
+ assert.doesNotMatch(html,/id="axisCompassMode"/,'the dropdown must stay removed');
+ assert.doesNotMatch(browser,/locator\('#axisCompassMode'\)\.selectOption\(/,
+  'visual test must not wait for the removed dropdown');
+ assert.match(browser,/compassMode:mode=>/,'scientific lattice mode stays test-only');
+ assert.match(browser,/window\.__visualTest\.compassMode\('lattice'\)/);
+ assert.match(browser,/window\.__visualTest\.compassMode\('cartesian'\)/);
+ assert.match(workflow,/pull_request:\s*\n\s*types:/,
+  'run the visual smoke on unmerged PRs');
+ assert.match(workflow,/pull_request_target:\s*\n\s*types:/,
+  'keep the post-merge visual smoke');
+});

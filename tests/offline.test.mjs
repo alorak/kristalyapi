@@ -66,15 +66,18 @@ test('activation removes only old Kristal Yapı shell caches',async()=>{
  assert.equal(sw.claimed,1);
 });
 
-test('Pages deployment jobs run only for PRs merged into main and check out the trusted merge',()=>{
- for(const name of ['pages.yml','browser-visual.yml']){
-  const content=readFileSync(new URL('../.github/workflows/'+name,import.meta.url),'utf8');
-  assert.match(content,/^  pull_request_target:\s*\n    types: \[closed\]\s*\n    branches: \[main\]/m,name);
-  assert.doesNotMatch(content,/^  (?:push|pull_request|workflow_dispatch|schedule):/m,name);
-  assert.match(content,/^    if: github\.event\.pull_request\.merged == true$/m,name);
-  assert.match(content,/ref: \$\{\{ github\.event\.pull_request\.merge_commit_sha \}\}/,name);
-  assert.doesNotMatch(content,/pull_request\.head\.(?:sha|ref)/,name);
- }
+test('Pages deploy only merged main PRs; WebGL smoke safely gates PRs before and after merge',()=>{
  const pages=readFileSync(new URL('../.github/workflows/pages.yml',import.meta.url),'utf8');
+ const visual=readFileSync(new URL('../.github/workflows/browser-visual.yml',import.meta.url),'utf8');
+ assert.match(pages,/^  pull_request_target:\s*\n    types: \[closed\]\s*\n    branches: \[main\]/m);
+ assert.doesNotMatch(pages,/^  (?:push|pull_request|workflow_dispatch|schedule):/m);
+ assert.match(pages,/^    if: github\.event\.pull_request\.merged == true$/m);
+ assert.match(pages,/ref: \$\{\{ github\.event\.pull_request\.merge_commit_sha \}\}/);
  assert.match(pages,/  deploy:\n    needs: validate\n    if: github\.event\.pull_request\.merged == true/);
+ assert.match(visual,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review\]/m);
+ assert.match(visual,/^  pull_request_target:\s*\n    types: \[closed\]/m);
+ assert.match(visual,/^    if: github\.event_name == 'pull_request' \|\| github\.event\.pull_request\.merged == true$/m);
+ assert.match(visual,/ref: \$\{\{ github\.event_name == 'pull_request_target' && github\.event\.pull_request\.merge_commit_sha \|\| github\.sha \}\}/);
+ assert.match(visual,/persist-credentials: false/);
+ assert.doesNotMatch(visual,/pull_request\.head\.(?:sha|ref)/);
 });
