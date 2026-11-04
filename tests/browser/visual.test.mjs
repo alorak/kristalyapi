@@ -1222,7 +1222,10 @@ try{
  const polyGroups=await page.locator('#stage').evaluate(()=>window.__visualTest.instancing());
  assert.equal(polyGroups.groups,1);
  await page.locator('#leftAtomsTab').click();
- await page.locator('#siteStyleColor').fill('#dd9944');
+ // Appearance controls now belong to atom cards; the hidden legacy color
+ // input is not a user-facing field and must not be the visual-test target.
+ await page.locator('#siteRows .site-entry').first().locator('.site-entry-color-input').fill('#dd9944');
+ await page.locator('#siteRows .site-entry').first().locator('.site-entry-appearance-toggle').click();
  await page.locator('#siteStyleScale').fill('1.6');
  await page.locator('#leftGeneralTab').click();
  const boundsSection=await page.locator('#boundXMin').evaluate(input=>({
@@ -1852,10 +1855,10 @@ try{
   await sp.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'));
   const visible=async()=>Number((await sp.locator('#totalSummary').textContent()).match(/^(\d+)/)[1]);
   const p1Visible=await visible();
-  assert.equal(await sp.locator('#siteRows tr').count(),8,'built-in silicon starts as eight P1 sites');
+  assert.equal(await sp.locator('#siteRows .site-entry').count(),8,'built-in silicon starts as eight P1 sites');
   await sp.evaluate(()=>{const s=document.getElementById('spaceGroup');s.value='227';s.dispatchEvent(new Event('change',{bubbles:true}));});
   await sp.evaluate(()=>document.getElementById('recoverSymmetry').click());
-  assert.equal(await sp.locator('#siteRows tr').count(),1,'one asymmetric Si site in Fd-3m');
+  assert.equal(await sp.locator('#siteRows .site-entry').count(),1,'one asymmetric Si site in Fd-3m');
   assert.equal(await sp.locator('#useSymmetry').isChecked(),true);
   assert.equal(await visible(),p1Visible,'the expanded structure shows the same atoms');
   assert.equal(await sp.evaluate(()=>document.getElementById('settingTransformRow').hidden),false);
