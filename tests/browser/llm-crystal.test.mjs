@@ -23,7 +23,7 @@ try{
   '--enable-webgl','--use-gl=angle','--use-angle=swiftshader',
   '--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
  const page=await browser.newPage({viewport:{width:1480,height:940}});
- const errors=[],calls=[];
+ const errors=[],calls=[],modelRequests=[];
  page.on('pageerror',error=>errors.push(error.message));
  const cors={
   'access-control-allow-origin':'*',
@@ -34,6 +34,16 @@ try{
  await page.route('https://generativelanguage.googleapis.com/**',async route=>{
   const request=route.request();
   if(request.method()==='OPTIONS'){await route.fulfill({status:204,headers:cors});return;}
+  if(request.method()==='GET'){
+   modelRequests.push({url:request.url(),headers:request.headers()});
+   await route.fulfill({status:200,headers:cors,body:JSON.stringify({
+    models:[
+     {name:'models/gemini-2.5-flash',displayName:'Gemini 2.5 Flash',supportedGenerationMethods:['generateContent']},
+     {name:'models/gemini-2.5-flash-lite',displayName:'Gemini 2.5 Flash Lite',supportedGenerationMethods:['generateContent']},
+     {name:'models/text-embedding-004',displayName:'Embedding',supportedGenerationMethods:['embedContent']}
+    ]
+   })});return;
+  }
   calls.push({provider:'gemini',url:request.url(),headers:request.headers(),
    body:JSON.parse(request.postData()||'{}')});
   await route.fulfill({status:200,headers:cors,body:JSON.stringify({
@@ -64,17 +74,30 @@ try{
  await page.locator('#libLlmTab').click();
  assert.equal(await page.locator('#libLlmPane').isVisible(),true);
  await page.locator('#llmGeminiKey').fill('synthetic-gemini-browser-key');
- await page.locator('#llmGeminiModel').fill('gemini-2.5-flash');
+ await page.locator('#llmFetchGeminiModels').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#llmGeminiModel option').length===2);
+ assert.equal(modelRequests.length,1);
+ assert.ok(modelRequests[0].url.includes('/v1beta/models?pageSize=100'));
+ assert.equal(modelRequests[0].headers['x-goog-api-key'],'synthetic-gemini-browser-key');
+ assert.ok(!modelRequests[0].url.includes('synthetic-gemini-browser-key'));
+ await page.locator('#llmGeminiModel').selectOption('gemini-2.5-flash-lite');
  await page.locator('#llmSaveSettings').click();
  assert.equal(await page.locator('#llmGeminiKey').inputValue(),'');
+ assert.equal(await page.locator('#llmGeminiModel').inputValue(),'gemini-2.5-flash-lite');
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kristalyapi.llm.settings.v1')).geminiKey),
   'synthetic-gemini-browser-key');
  await page.locator('#homeLink').click();
  await page.locator('#rightToolRail [data-right-tool="ai"]').click();
+ assert.equal(await page.locator('#llmChatModel').count(),0,'large provider settings card removed');
+ assert.equal(await page.locator('#llmChatOpenSettings').count(),0,'large settings link removed');
+ assert.equal(await page.locator('#llmChatClearAll').count(),0,'delete-all button removed');
+ assert.equal(await page.locator('#llmChatHistoryPanel').isVisible(),false,'history collapsed initially');
+ assert.equal(await page.locator('#llmChatMessages').evaluate(el=>el.classList.contains('is-empty')),true);
  await page.locator('#llmChatPrompt').fill('Bu kristalin simetrisi nedir?');
  await page.locator('#llmChatSend').click();
  await page.waitForFunction(()=>document.getElementById('llmChatMessages')?.textContent?.includes('Bu kristal yapısı hakkında test yanıtı.'),null,{timeout:15000});
  assert.equal(calls[0].provider,'gemini');
+ assert.ok(calls[0].url.includes('gemini-2.5-flash-lite:generateContent'));
  assert.equal(calls[0].headers['x-goog-api-key'],'synthetic-gemini-browser-key');
  assert.ok(!calls[0].url.includes('synthetic-gemini-browser-key'));
  assert.ok(calls[0].body.systemInstruction.parts[0].text.includes('STRUCTURE_DATA_JSON'));
@@ -88,13 +111,17 @@ try{
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#rightToolRail [data-right-tool="ai"]').click();
  await page.waitForFunction(()=>document.getElementById('llmChatMessages')?.textContent?.includes('Bu kristal yapısı hakkında test yanıtı.'));
+ assert.equal(await page.locator('#llmChatHistoryPanel').isVisible(),false,'history collapsed after reload');
  assert.equal(await page.locator('#llmChatHistory option').count(),2,'saved session should survive reload');
+ await page.locator('#llmChatHistoryToggle').click();
+ assert.equal(await page.locator('#llmChatHistoryPanel').isVisible(),true,'history opens on demand');
  await page.locator('#llmChatNew').click();
  assert.equal(await page.locator('#llmChatHistory option').count(),3,'separate conversation');
  await page.locator('#llmChatDelete').click();
  assert.equal(await page.locator('#llmChatHistory option').count(),2,'deleting a session updates history');
 
- await page.locator('#llmChatOpenSettings').click();
+ await page.locator('#libraryNav').click();
+ await page.locator('#libLlmTab').click();
  assert.equal(await page.locator('#libLlmPane').isVisible(),true);
  await page.locator('#llmProviderVllm').check();
  await page.locator('#llmVllmUrl').fill('http://127.0.0.1:18000/v1');
@@ -112,10 +139,15 @@ try{
  assert.equal(calls.at(-1).body.messages[0].role,'system');
  assert.equal(calls.at(-1).body.model,'Qwen/Qwen3-8B');
 
- page.once('dialog',dialog=>dialog.accept());
- await page.locator('#llmChatClearAll').click();
- await page.waitForFunction(()=>localStorage.getItem('kristalyapi.llm.history.v1')===null);
- await page.locator('#llmChatOpenSettings').click();
+ await page.locator('#llmChatHistoryToggle').click();
+ await page.locator('#llmChatDelete').click();
+ assert.equal(await page.locator('#llmChatHistory option').count(),2);
+ await page.locator('#llmChatHistory').selectOption({index:1});
+ await page.locator('#llmChatDelete').click();
+ assert.equal(await page.locator('#llmChatHistory option').count(),1);
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kristalyapi.llm.history.v1')).length),0);
+ await page.locator('#libraryNav').click();
+ await page.locator('#libLlmTab').click();
  await page.locator('#llmClearSettings').click();
  assert.equal(await page.evaluate(()=>localStorage.getItem('kristalyapi.llm.settings.v1')),null);
  assert.deepEqual(errors,[],errors.join('\n'));
