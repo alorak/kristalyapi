@@ -74,5 +74,5 @@ test('API request sends key in header only; omits credentials and refuses unexpe
 test('HTTP and data failures are surfaced without exposing keys',async()=>{
  const u=mpSearchUrl('Si');
  await assert.rejects(mpApiGet(u,'secret',{fetcher:async()=>({ok:false,status:401,headers:{get:()=>null}})}),/401/);
- await assert.rejects(mpApiGet(u,'secret',{fetcher:async()=>({ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify({errors:['no']})})}),/data/);
+ await assert.rejects(mpApiGet(u,'secret',{fetcher:async()=>({ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify({errors:['no']})})}),/beklenmedik JSON|data/);
 });
