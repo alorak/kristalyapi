@@ -6522,7 +6522,13 @@ function chooseSidebarSite(index){
  }else selected=previous;
  drawSelection();
 }
+let atomSitesRenderActive=false;
 function renderSites(){
+ // An input change/blur may occur while DOM removal is running. Without
+ // a guard, nested renders race replaceChildren() and break Chromium.
+ if(atomSitesRenderActive)return;
+ atomSitesRenderActive=true;
+ try{
  refreshStage3Atoms();
  const list=$('siteRows');list.replaceChildren();
  $('siteCount').textContent=String(state.sites.length);
@@ -6620,6 +6626,7 @@ function renderSites(){
  renderSiteStyleControls();
  refreshDefectControls();
  syncSelectedSiteRows();
+ }finally{atomSitesRenderActive=false;}
 }
 function renderSiteStyleControls(){
  const select=$('siteStyleSite'),index=Math.min(Math.max(0,Number(select.value)||0),state.sites.length-1);
