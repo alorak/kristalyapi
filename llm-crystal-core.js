@@ -196,12 +196,18 @@ export function llmHttpError(provider,status){
  return Error(prefix+(status===401||status===403?' · API erişimini kontrol edin.':''));
 }
 
-export async function requestLlm(config,snapshot,messages,{fetcher=fetch,signal}={}){
+export async function requestLlm(config,snapshot,messages,{fetcher=fetch,signal,timeoutMs=120000}={}){
  const c=normalizeLlmSettings(config);
  const request=buildLlmRequest(c,snapshot,messages);
- const ctrl=new AbortController(),onAbort=()=>ctrl.abort();
- if(signal){if(signal.aborted)ctrl.abort();else signal.addEventListener('abort',onAbort,{once:true});}
- const timer=setTimeout(()=>ctrl.abort(),45000);
+ const ctrl=new AbortController();
+ let timedOut=false;
+ const onAbort=()=>ctrl.abort(new Error('İstek kullanıcı tarafından iptal edildi.'));
+ if(signal){if(signal.aborted)onAbort();else signal.addEventListener('abort',onAbort,{once:true});}
+ const boundedTimeout=Math.max(1,Math.min(180000,Number(timeoutMs)||120000));
+ const timer=setTimeout(()=>{
+  timedOut=true;
+  ctrl.abort(new Error('Model yanıtı zaman aşımına uğradı.'));
+ },boundedTimeout);
  try{
   const response=await fetcher(request.url,{method:'POST',mode:'cors',credentials:'omit',
    cache:'no-store',referrerPolicy:'no-referrer',headers:request.headers,
@@ -214,6 +220,17 @@ export async function requestLlm(config,snapshot,messages,{fetcher=fetch,signal}
     Array.isArray(parsed?.choices?.[0]?.message?.content)?parsed.choices[0].message.content.filter(p=>p?.type==='text').map(p=>p.text).join('\n'):'');
   if(!content||!content.trim())throw Error('Model metin yanıtı üretmedi veya içerik engellendi.');
   return content.trim().slice(0,MAX_CHARS);
+ }catch(error){
+  // Browsers may throw "signal is aborted without reason" on fetch/stream
+  // cancellation. Preserve the cause and distinguish caller cancellation
+  // from our model-response timeout without exposing tokens/response bodies.
+  if(timedOut)throw new Error('Model yanıtı zaman aşımına uğradı ('+
+   Math.round(boundedTimeout/1000)+' sn). İsteği yeniden deneyin veya daha hızlı bir model seçin.');
+  if(signal?.aborted)throw new Error('İstek kullanıcı tarafından iptal edildi.');
+  if(error?.name==='AbortError')throw new Error('Model bağlantısı iptal edildi. Sunucuyu ve ağı kontrol edin.');
+  if(error instanceof TypeError&&/fetch|network|failed/i.test(error.message))
+   throw new Error('Model sunucusuna bağlantı kurulamadı. Ağ, CORS ve HTTPS ayarlarını kontrol edin.');
+  throw error;
  }finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
 }
 export async function getVllmModels(config,{fetcher=fetch}={}){

@@ -10964,7 +10964,10 @@ let previousPowderSubtab=null;
 function syncLibraryNavigation(){
  const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal',camera=page==='camera';
  const powderFamily=page==='powder'||reciprocal||camera;
- if(page!=='editor'&&rightSidebarTab!==null)setRightSidebarTab(null);
+ if(page!=='editor'){
+  if(rightSidebarTab!==null)setRightSidebarTab(null);
+  crystalLlm?.hide({restoreFocus:false});
+ }
  document.body.classList.toggle('dft-open',page==='dft');
  $('dftPage').hidden=page!=='dft';
  $('dftNav').classList.toggle('active',page==='dft');
@@ -11558,8 +11561,8 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','ai','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Yapay zekâ kristal sohbeti','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Görünüm · bakış yönü · ışık · yarıçap','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
+const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Görünüm · bakış yönü · ışık · yarıçap','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
 let rightSidebarTab=null,crystalLlm=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
@@ -11581,7 +11584,6 @@ function setRightSidebarTab(tab){
   button.setAttribute('aria-pressed',String(active));
  }
  if(open)scroll.scrollTop=rightSidebarScroll[next]||0;
- if(open&&next==='ai')crystalLlm?.onOpen();
  if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>resize());
 }
 function initRightSidebarTabs(){
