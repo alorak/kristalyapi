@@ -98,3 +98,19 @@ test('right drawer uses compact action and form controls without resizing steppe
  for(const id of ['analysisCenter','bvsPair','bvsCutoff','analyzeBvs','exportBvs','madelungCharges','madelungCalculate'])
   assert.match(bvs,new RegExp('id="'+id+'"'),'BVS control must remain functional: '+id);
 });
+
+test('crystal chat is constrained to the workspace and clip-panel prose is concise',()=>{
+ const css=read('styles.css');
+ const locale=read('translations.js');
+ const dockStart=html.indexOf('<section id="llmChatDock"');
+ assert.ok(dockStart>html.indexOf('<main id="viewport">')&&dockStart<html.indexOf('</main>'),
+  'chat must be contained by the editor workspace');
+ assert.match(css,/\.llm-chat-dock\{[\s\S]*?position:absolute;z-index:4;top:12px;right:12px;/);
+ assert.match(css,/#viewport \.llm-chat-dock\{right:66px;width:min\(910px,calc\(100% - 78px\)\)/);
+ assert.match(css,/#llmChatDock #llmChatPrompt::placeholder\{color:#9aaaba;opacity:1\}/);
+ assert.match(html,/id="llmChatPrompt"[^>]*placeholder="Sormak istediğinizi sorabilirsiniz\."/);
+ assert.match(locale,/Sormak istediğinizi sorabilirsiniz\./);
+ assert.doesNotMatch(html,/Düzlem h·x \+ k·y \+ l·z = uzaklık/);
+ assert.doesNotMatch(editor,/Miller düzlemi yalnız görsel bir katmandır/);
+ assert.match(editor,/status\.textContent=active\?active\+'/,'active clipping status must remain');
+});
