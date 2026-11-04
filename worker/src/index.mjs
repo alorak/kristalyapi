@@ -261,7 +261,7 @@ export async function handleRequest(request, env={}, upstreamFetch=fetch, option
   if (request.method !== 'GET') return fail(405,'Method not allowed',allowed);
   if (target.pathname === '/health' && !target.search)
     return new Response(JSON.stringify({status:'ok',service:'kristalyapi-cod-worker',version:WORKER_VERSION,
-      upstreams:COD_UPSTREAMS.map(hostOf),materialsProjectProxy:true}),{
+      upstreams:COD_UPSTREAMS.map(hostOf),materialsProjectProxy:true,materialsProjectAlphaIds:true}),{
       headers:{...allowed,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}
     });
   if(target.pathname==='/api/mp/summary')return relayMaterialsProject(request,allowed,upstreamFetch);
