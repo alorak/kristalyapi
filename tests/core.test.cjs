@@ -1422,7 +1422,7 @@ test('Kütüphane has an independent Örnek Yapılar tab and no old sidebar pres
  assert.ok(!html.includes('<h2>Kristal kütüphanesi'));
  assert.ok(!html.includes('id="resetBtn"'));
  assert.ok(!html.includes('id="newBtn"'));
- assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks','worker','mp','mp-settings']);
+ assert.deepEqual(Array.from(api.LIBRARY_PANES),['search','presets','bookmarks','worker','mp','mp-settings','llm']);
 });
 test('Kütüphane spans the workspace with filters and results side by side; Worker has its own tab',()=>{
  assert.match(html,/\.library-wrap\{width:100%;max-width:none/);
@@ -1620,9 +1620,9 @@ test('layout: independent Miller tool and docked quick controls with 12 icon but
  assert.ok(!html.includes('class="gizmo-caption"'));
  assert.ok(!html.includes('<footer>Tarayıcıda çalışır'));
  assert.ok(!html.includes('class="floating footbar"'));
- assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry']);
+ assert.deepEqual(Array.from(api.RIGHT_SIDEBAR_TABS),['info','ai','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry']);
  const rail=html.slice(html.indexOf('id="rightToolRail"'),html.indexOf('</nav>',html.indexOf('id="rightToolRail"')));
- assert.equal((rail.match(/data-right-tool="/g)||[]).length,15);
+ assert.equal((rail.match(/data-right-tool="/g)||[]).length,16);
  assert.match(rail,/data-right-tool="measurement"[\s\S]*?data-right-tool="history"/);
  assert.match(html,/\.right-drawer-pane>\.section\[data-right-section\]>h2:first-child\{display:none\}/);
  assert.ok(!html.includes('Bilimsel kapsam</h2>'),'redundant scientific scope block should be removed');
