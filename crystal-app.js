@@ -11562,6 +11562,8 @@ function syncQuickbar(){
  for(const [quick,source,output] of [['quickAtomScale','atomScale','quickAtomScaleVal'],['quickBondCut','bondCut','quickBondCutVal']]){
   $(quick).value=$(source).value;$(output).value=Number($(source).value).toFixed(2);
  }
+ $('quickBondCut').title=state.autoBond?'Otomatik bağ modu: element yarıçapları sınır uygular. Kaydırıcıyı değiştirerek manuel eşiğe geçebilirsiniz.':
+  (state.bondRules?.trim()?'Manuel eşik: özel element çiftlerinin bağ kuralları önceliklidir.':'Manuel uzaklık eşiği (Å): çizim için geometrik sınır, kimyasal bağ kanıtı değildir.');
  for(const [quick,source] of QUICKBAR_MILLER_FIELDS)$(quick).value=$(source).value;
  $('quickShowPlane').setAttribute('aria-pressed',String($('showPlane').checked));
  $('quickRepeatMillerPlanes').setAttribute('aria-pressed',String($('repeatMillerPlanes').checked));
@@ -12114,7 +12116,22 @@ function bind(){
    if(k==='style'){if(oldStyle==='poly'&&state.style!=='poly'){state.poly='';state.polyCenters=[];}fillPoly();}
   if(k!=='autoRotate')build();else{recordHistoryChange();persistLastCrystal();}
  });
- for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])$(id).addEventListener('input',e=>{state[key]=+e.target.value;$(out).value=state[key].toFixed(2);});
+ // A deliberate slider change requests a geometric distance cutoff, not a
+ // radii-based estimate. The automatic mode remains available via its icon.
+ function applyManualBondCut(value){
+  state.cut=Number(value);
+  if(state.autoBond){
+   state.autoBond=false;
+   $('autoBond').checked=false;
+  }
+  return state.cut;
+ }
+ for(const [id,key,out] of [['atomScale','atomScale','atomScaleVal'],['bondCut','cut','bondCutVal']])
+  $(id).addEventListener('input',e=>{
+   if(key==='cut')applyManualBondCut(e.target.value);
+   else state[key]=+e.target.value;
+   $(out).value=state[key].toFixed(2);
+  });
  for(const id of ['atomScale','bondCut'])$(id).addEventListener('change',()=>build());
  initQuickbar();
  $('adpLevel').onchange=e=>{state.adpLevel=Number(e.target.value);build();};
