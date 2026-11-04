@@ -8,7 +8,7 @@ const node=(tag,value='',cls='')=>{
 };
 const number=(value,digits=4)=>value===null||value===undefined?'—':Number(value).toLocaleString(
  window.CrystalI18n?.language==='en'?'en-US':'tr-TR',{maximumFractionDigits:digits});
-export function initMaterialsProjectPage({onImport,onMissingKey}={}){
+export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}={}){
  let apiKey='',results=[],selected=new Map(),busy=false,searchAbort=null;
  const status=(id,text,kind='')=>{
   const el=$(id);el.textContent=text;el.dataset.state=kind;
@@ -65,7 +65,7 @@ export function initMaterialsProjectPage({onImport,onMissingKey}={}){
  async function loadRecord(record,openPowder){
   if(busy)return;
   if(!apiKey){onMissingKey?.();status('mpSearchStatus',t('Önce Materials Project Ayarları bölümünden anahtar girin.','Enter a key in Materials Project Settings first.'),'error');return;}
-  const activeKey=apiKey;
+  const activeKey=apiKey,originWorkspace=workspaceToken?.();
   setBusy(true);status('mpSearchStatus',record.materialId+t(' yapısı getiriliyor…',' structure loading…'));
   const controller=new AbortController();searchAbort=controller;
   try{
@@ -74,6 +74,7 @@ export function initMaterialsProjectPage({onImport,onMissingKey}={}){
    if(!raw)throw Error('MP yanıtında seçilen malzeme yok.');
    const cif=mpStructureToCif(raw,record.materialId);
    if(controller.signal.aborted||apiKey!==activeKey)throw Error('İstek iptal edildi.');
+   if(workspaceToken?.()!==originWorkspace)throw Error('Çalışma alanı değişti; tekrar deneyin.');
    await onImport({cif,summary:record,openPowder});
    status('mpSearchStatus',record.materialId+t(' aktif çalışma alanına yüklendi.',' loaded into active workspace.'),'ready');
   }catch(error){
