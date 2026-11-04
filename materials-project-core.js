@@ -1,6 +1,7 @@
 /* Materials Project REST adapter. No secrets, storage, third-party proxy, or globals.
  * Data are calculated reference values, not experimental measurements. */
 export const MP_API='https://api.materialsproject.org';
+export const MP_WORKER='https://kristalyapi-cod-api.aoakkirman.workers.dev';
 export const MP_SUMMARY_FIELDS=[
  'material_id','formula_pretty','symmetry','nsites','band_gap','is_gap_direct',
  'formation_energy_per_atom','energy_above_hull','density','has_props','last_updated'
@@ -100,17 +101,32 @@ export function mpStructureToCif(raw,id){
  }
  return lines.join('\n')+'\n';
 }
-export async function mpApiGet(url,apiKey,{fetcher=fetch,signal,maxBytes=2500000}={}){
+export async function mpApiGet(url,apiKey,{fetcher=fetch,signal,maxBytes=2500000,transport='direct'}={}){
  const u=new URL(url);
- if(u.origin!==MP_API||u.pathname!=='/materials/summary/'||!apiKey||apiKey.length>512)
+ if(u.origin!==MP_API||u.pathname!=='/materials/summary/'||!apiKey||apiKey.length>512||!['direct','worker'].includes(transport))
   throw Error('Materials Project istek parametreleri geçersiz.');
  const controller=new AbortController();
  const onAbort=()=>controller.abort();
  if(signal){if(signal.aborted)controller.abort();else signal.addEventListener('abort',onAbort,{once:true});}
  const timeout=setTimeout(()=>controller.abort(),20000);
  try{
-  const response=await fetcher(u.href,{
-   method:'GET',mode:'cors',credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',
+  let endpoint=u.href;
+  if(transport==='worker'){
+   // Probe without a key. Never disclose a credential to COD-only Worker v1.2.
+   let health;
+   try{
+    const probe=await fetcher(MP_WORKER+'/health',{
+     method:'GET',mode:'cors',credentials:'omit',cache:'no-store',
+     referrerPolicy:'no-referrer',redirect:'error',signal:controller.signal
+    });
+    if(probe.ok)health=await probe.json();
+   }catch(error){if(controller.signal.aborted)throw error;}
+   if(health?.materialsProjectProxy!==true)
+    throw Error('Materials Project Worker etkin değil. Cloudflare Worker sürüm 1.3+ dağıtılmalı.');
+   endpoint=MP_WORKER+'/api/mp/summary'+u.search;
+  }
+  const response=await fetcher(endpoint,{
+   method:'GET',mode:'cors',credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',redirect:'error',
    headers:{'X-API-KEY':apiKey,'Accept':'application/json'},signal:controller.signal
   });
   if(!response.ok)throw Error('Materials Project HTTP '+response.status+(response.status===401||response.status===403?' · API anahtarını kontrol edin.':''));
