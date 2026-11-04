@@ -12,6 +12,7 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { initReciprocalPage } from './reciprocal-page.js';
 import {initMaterialsPage} from './materials-page.js';
 import {initMaterialsProjectPage} from './materials-project-page.js';
+import {initCrystalLlm} from './llm-crystal-page.js';
 import {matchPowderPeaks,matchReportCsv} from './xrd-peak-match-core.js';
 import {sha256Hex} from './material-evidence-core.js';
 import {xrdAcquisitionMetadata,xrdMetadataCompatibility,xrdScanEvidence} from './xrd-acquisition-core.js';
@@ -6521,7 +6522,13 @@ function chooseSidebarSite(index){
  }else selected=previous;
  drawSelection();
 }
+let atomSitesRenderActive=false;
 function renderSites(){
+ // An input change/blur may occur while DOM removal is running. Without
+ // a guard, nested renders race replaceChildren() and break Chromium.
+ if(atomSitesRenderActive)return;
+ atomSitesRenderActive=true;
+ try{
  refreshStage3Atoms();
  const list=$('siteRows');list.replaceChildren();
  $('siteCount').textContent=String(state.sites.length);
@@ -6619,6 +6626,7 @@ function renderSites(){
  renderSiteStyleControls();
  refreshDefectControls();
  syncSelectedSiteRows();
+ }finally{atomSitesRenderActive=false;}
 }
 function renderSiteStyleControls(){
  const select=$('siteStyleSite'),index=Math.min(Math.max(0,Number(select.value)||0),state.sites.length-1);
@@ -10845,7 +10853,7 @@ function renderCodBookmarks(){
  $('bookmarkEmpty').hidden=codBookmarks.length>0;
  if(codBookmarks.length)list.append(codTable(codBookmarks));
 }
-const LIBRARY_PANES=['search','presets','bookmarks','worker','mp','mp-settings'];
+const LIBRARY_PANES=['search','presets','bookmarks','worker','mp','mp-settings','llm'];
 function setLibraryPane(mode){
  if(!LIBRARY_PANES.includes(mode))throw Error('Bilinmeyen kütüphane sekmesi: '+mode);
  codPane=mode;
@@ -10855,7 +10863,8 @@ function setLibraryPane(mode){
  $('libWorkerPane').hidden=mode!=='worker';
  $('libMpPane').hidden=mode!=='mp';
  $('libMpSettingsPane').hidden=mode!=='mp-settings';
- for(const [id,selected] of [['libSearchTab',mode==='search'],['libPresetsTab',mode==='presets'],['libBookmarksTab',mode==='bookmarks'],['libWorkerTab',mode==='worker'],['libMpTab',mode==='mp'],['libMpSettingsTab',mode==='mp-settings']]){
+ $('libLlmPane').hidden=mode!=='llm';
+ for(const [id,selected] of [['libSearchTab',mode==='search'],['libPresetsTab',mode==='presets'],['libBookmarksTab',mode==='bookmarks'],['libWorkerTab',mode==='worker'],['libMpTab',mode==='mp'],['libMpSettingsTab',mode==='mp-settings'],['libLlmTab',mode==='llm']]){
   $(id).classList.toggle('selected',selected);
   $(id).setAttribute('aria-selected',String(selected));$(id).tabIndex=selected?0:-1;
  }
@@ -11214,6 +11223,7 @@ function initLibrary(){
  $('libWorkerTab').onclick=()=>setLibraryPane('worker');
  $('libMpTab').onclick=()=>setLibraryPane('mp');
  $('libMpSettingsTab').onclick=()=>setLibraryPane('mp-settings');
+ $('libLlmTab').onclick=()=>setLibraryPane('llm');
  initMaterialsProjectPage({
   onMissingKey:()=>setLibraryPane('mp-settings'),
   workspaceToken:()=>activeWorkspaceId,
@@ -11547,9 +11557,9 @@ function initQuickbar(){
  syncQuickbar();
 }
 
-const RIGHT_SIDEBAR_TABS=['info','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry'];
-const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Görünüm · bakış yönü · ışık · yarıçap','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
-let rightSidebarTab=null;
+const RIGHT_SIDEBAR_TABS=['info','ai','comparison','measurement','history','bvs','plane','xrd','volume','layers','view','bonds','lattice','miller','defects','symmetry'];
+const RIGHT_SIDEBAR_TITLES=['Yapı bilgileri','Yapay zekâ kristal sohbeti','Çoklu yapı / faz karşılaştırması','Atom seçimi ve ölçüm','Ölçüm geçmişi','İleri koordinasyon / BVS','Best-fit plane · düzlemsellik','Yapı faktörü / toz XRD ve nötron','Hacimsel fizik verileri','Nesneler ve katmanlar','Görünüm · bakış yönü · ışık · yarıçap','Atom türlerine göre bağlar','Örgü dönüşümü','Miller düzlemleri ve morfoloji','Kristal kusurları','Kristalografik simetri'];
+let rightSidebarTab=null,crystalLlm=null;
 const rightSidebarScroll=Object.fromEntries(RIGHT_SIDEBAR_TABS.map(name=>[name,0]));
 function setRightSidebarTab(tab){
  if(tab!==null&&!RIGHT_SIDEBAR_TABS.includes(tab))throw Error('Geçersiz sağ panel aracı: '+tab);
@@ -11570,6 +11580,7 @@ function setRightSidebarTab(tab){
   button.setAttribute('aria-pressed',String(active));
  }
  if(open)scroll.scrollTop=rightSidebarScroll[next]||0;
+ if(open&&next==='ai')crystalLlm?.onOpen();
  if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>resize());
 }
 function initRightSidebarTabs(){
@@ -11902,6 +11913,21 @@ function bind(){
  initDftTracking();
  initQeProtocols();
  initLibrary();
+ try{
+  crystalLlm=initCrystalLlm({
+   getStructure:()=>state,
+   getWorkspaceId:()=>String(activeWorkspaceId??'default'),
+   onOpenSettings:()=>{
+    // Close the editor drawer before navigating away so the next AI icon
+    // click opens it again instead of silently toggling an invisible pane.
+    setRightSidebarTab(null);
+    setLibraryPane('llm');
+    window.location.hash='#kutuphane';
+    syncLibraryNavigation();
+   }
+  });
+ }catch(error){console.error('LLM sohbet paneli başlatılamadı:',error);}
+
  initVolumeControls();
  initStage3Analyses();
  initStandardizationControls();

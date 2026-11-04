@@ -462,6 +462,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div id="siteOccupancySummary" class="occupancy-summary" aria-live="polite" hidden></div>
    <div id="legend" class="legend"></div><div id="notice" class="notice"></div></div>
+  <div class="section crystal-llm-chat-section" data-right-section="ai">
+   <div class="llm-chat-context">
+    <strong id="llmChatModel">LLM ayarı gerekli</strong>
+    <p id="llmChatStructure" class="hint">Aktif kristal yapısı</p>
+    <button id="llmChatOpenSettings" type="button">LLM Ayarlarını Aç</button>
+   </div>
+   <div class="llm-chat-toolbar">
+    <button id="llmChatNew" type="button">+ Yeni sohbet</button>
+    <button id="llmChatDelete" type="button" disabled>Seçili sohbeti sil</button>
+   </div>
+   <label class="field llm-chat-history-field"><span>Kaydedilmiş sohbetler</span>
+    <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
+   </label>
+   <button id="llmChatClearAll" class="llm-chat-clear-all" type="button">Tüm sohbetleri sil</button>
+   <div id="llmChatMessages" class="llm-chat-messages" role="log" aria-label="Kristal sohbet mesajları" aria-live="polite" aria-relevant="additions text"></div>
+   <form id="llmChatForm" class="llm-chat-form">
+    <label class="field"><span>Kristal hakkında sorunuz</span>
+     <textarea id="llmChatPrompt" rows="4" maxlength="4000" placeholder="Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?"></textarea>
+    </label>
+    <div class="llm-chat-form-actions">
+     <button id="llmChatSend" type="submit" class="primary">Gönder</button>
+     <button id="llmChatAbort" type="button" hidden>İptal</button>
+    </div>
+   </form>
+   <p id="llmChatStatus" role="status" aria-live="polite" class="llm-chat-status"></p>
+   <p class="hint">Sohbet ve kristal anlık görüntüsü bu tarayıcıda saklanır. Gönder'e bastığınızda mesaj ve yapı bilgileri seçilen Gemini veya vLLM sunucusuna iletilir. Model yanıtları bilimsel doğrulama yerine geçmez.</p>
+  </div>
   <div class="section" data-right-section="comparison"><h2>Çoklu yapı / faz karşılaştırması</h2>
    <p class="hint">En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.</p>
    <input type="file" id="overlayFile" accept=".cif,.mcif" hidden>
@@ -808,6 +835,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
   <nav id="rightToolRail" class="right-tool-rail" aria-label="Analiz araçları">
    <button type="button" class="right-tool" data-right-tool="info" aria-label="Yapı bilgileri" title="Yapı bilgileri" aria-controls="rightDrawerPane-info" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></svg></button>
+   <button type="button" class="right-tool" data-right-tool="ai" aria-label="Yapay zekâ kristal sohbeti" title="Yapay zekâ · kristal sohbeti" aria-controls="rightDrawerPane-ai" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M12 7.5 13 10l2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="comparison" aria-label="Çoklu yapı / faz karşılaştırması" title="Çoklu yapı / faz karşılaştırması" aria-controls="rightDrawerPane-comparison" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="12" height="12" rx="2"/><path d="M9 2h10a2 2 0 0 1 2 2v13m-4 4H7a2 2 0 0 1-2-2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="measurement" aria-label="Atom seçimi ve ölçüm" title="Atom seçimi ve ölçüm" aria-controls="rightDrawerPane-measurement" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="1" transform="rotate(-32 12 12)"/><path d="m8 8 2 3m2-6 2 3m1 8 2 3"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="history" aria-label="Ölçüm geçmişi" title="Ölçüm geçmişi" aria-controls="rightDrawerPane-history" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5"/></svg><span id="historyToolCount" class="right-tool-count" aria-hidden="true">0</span></button>
@@ -1064,6 +1092,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button id="libWorkerTab" type="button" role="tab" aria-controls="libWorkerPane" aria-selected="false">Cloudflare Worker · COD API</button>
    <button id="libMpTab" type="button" role="tab" aria-controls="libMpPane" aria-selected="false">Materials Project</button>
    <button id="libMpSettingsTab" type="button" role="tab" aria-controls="libMpSettingsPane" aria-selected="false">Materials Project Ayarları</button>
+   <button id="libLlmTab" type="button" role="tab" aria-controls="libLlmPane" aria-selected="false">LLM Ayarları</button>
   </div>
   <div id="libSearchPane" role="tabpanel" aria-labelledby="libSearchTab">
    <div class="lib-search-layout">
@@ -1180,6 +1209,38 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p id="mpKeyStatus" class="mp-status" role="status" aria-live="polite">API anahtarı girilmedi.</p>
    <p class="hint">Gizlilik: API anahtarı bu tarayıcının localStorage alanında kalıcı tutulur; sayfa yenilense de korunur ve Anahtarı sil ile kaldırılabilir. Anahtar URL'ye, GitHub'a, çerezlere, servis çalışanı önbelleğine veya dışa aktarılan dosyalara yazılmaz. localStorage şifreli bir kasa değildir: aynı kökendeki JavaScript ve tarayıcı eklentileri anahtara erişebilir; ortak kullanılan bilgisayarlarda dikkatli olun. Anahtar yalnız resmî api.materialsproject.org adresine HTTPS üzerinden X-API-KEY başlığıyla gönderilir. Tarayıcı erişimi API'nin CORS izinlerine tabi olabilir.</p>
    <p><a href="https://materialsproject.org/api" target="_blank" rel="noopener noreferrer">Materials Project API anahtarı</a> · <a href="https://docs.materialsproject.org/downloading-data/using-the-api" target="_blank" rel="noopener noreferrer">Resmî API dokümantasyonu</a></p>
+  </section>
+
+
+  <section id="libLlmPane" class="lib-panel llm-settings-pane" role="tabpanel" aria-labelledby="libLlmTab" hidden>
+   <div class="lib-panel-head"><h3>LLM Ayarları</h3>
+    <p>Kristal sohbeti için Gemini API veya yerel vLLM sunucusunu seçin. Ayarlar bu tarayıcıda kalıcı tutulur.</p>
+   </div>
+   <fieldset class="llm-provider-choice">
+    <legend>Model sağlayıcısı</legend>
+    <label><input type="radio" id="llmProviderGemini" name="llmProvider" value="gemini" checked> Google Gemini API</label>
+    <label><input type="radio" id="llmProviderVllm" name="llmProvider" value="vllm"> Yerel vLLM (OpenAI uyumlu)</label>
+   </fieldset>
+   <div id="llmGeminiFields" class="llm-setting-fields">
+    <label class="lib-field"><span>Google Gemini API anahtarı</span><input type="password" id="llmGeminiKey" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="Yeni anahtar girin (mevcutsa boş bırakın)"></label>
+    <label class="lib-field"><span>Gemini model adı</span><input type="text" id="llmGeminiModel" maxlength="160" value="gemini-2.5-flash" spellcheck="false" placeholder="gemini-2.5-flash"></label>
+    <p class="hint">Gemini isteği, anahtarınız ile yalnız Google'ın resmî API adresine gönderilir. Kaydedilmiş anahtar alanı güvenlik için boş gösterilir.</p>
+   </div>
+   <div id="llmVllmFields" class="llm-setting-fields" hidden>
+    <label class="lib-field"><span>vLLM sunucu adresi</span><input type="url" id="llmVllmUrl" maxlength="300" value="http://127.0.0.1:8000/v1" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:8000/v1"></label>
+    <label class="lib-field"><span>vLLM model kimliği</span><input type="text" id="llmVllmModel" list="llmVllmKnownModels" maxlength="160" spellcheck="false" placeholder="Qwen/Qwen3-8B veya sunulan model ID"></label>
+    <datalist id="llmVllmKnownModels"></datalist>
+    <label class="lib-field"><span>vLLM erişim anahtarı (isteğe bağlı)</span><input type="password" id="llmVllmToken" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="Sunucu erişim anahtarı (varsa)"></label>
+    <button id="llmFetchModels" type="button">Sunucudaki modelleri listele</button>
+    <p class="hint">Yerel/LAN HTTP adresleri ve HTTPS desteklenir. GitHub Pages üzerinde HTTP/Mixed Content, Private Network Access veya CORS engeli oluşabilir; yerel sunucunun tarayıcı kökenine erişim izni vermesi gerekir. Model, sohbet şablonunu desteklemelidir.</p>
+   </div>
+   <div class="llm-settings-actions">
+    <button id="llmSaveSettings" class="primary" type="button">LLM ayarlarını tarayıcıya kaydet</button>
+    <button id="llmClearSettings" type="button">Kaydedilmiş LLM ayarlarını sil</button>
+   </div>
+   <p id="llmSettingsStatus" class="llm-settings-status" role="status" aria-live="polite">Henüz LLM ayarı kaydedilmedi.</p>
+   <p class="hint">Gizlilik: API anahtarları localStorage'da tutulur; bu alan şifreli bir kasa değildir ve aynı kökendeki JavaScript/tarayıcı eklentileri okuyabilir. Anahtarlar GitHub, URL, sohbet geçmişi veya dışa aktarımlara eklenmez. Sohbet geçmişini silmek için sağdaki sohbet panelini kullanın. Yapı bilgileri yalnız sohbet gönderildiğinde seçilen sunucuya gider.</p>
+   <p class="hint"><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">Gemini API anahtarı</a> · <a href="https://docs.vllm.ai/en/stable/serving/online_serving/openai_compatible_server/" target="_blank" rel="noopener noreferrer">vLLM sunucu arayüzü</a></p>
   </section>
 
   <section id="codImportHelp" class="lib-panel cod-import-help" hidden aria-live="polite">

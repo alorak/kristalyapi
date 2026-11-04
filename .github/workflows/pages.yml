@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/qe-hpc-export.test.mjs tests/qe-hpc-pipeline.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/vesta-project-style.test.mjs tests/vesta-project-view.test.mjs tests/vesta-project-scientific.test.mjs tests/vesta-project-export.test.mjs tests/cif2-v18-1.test.mjs tests/cif2-v18-2.test.mjs tests/pages-assets.test.mjs tests/materials-p0.test.mjs tests/materials-project.test.mjs tests/atoms-sidebar.test.mjs tests/material-evidence-p1.test.mjs tests/xrd-acquisition-p1.test.mjs tests/bulk-study-p1.test.mjs tests/xrd-peak-match.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-hpc-export.test.mjs tests/qe-hpc-pipeline.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/vesta-project-style.test.mjs tests/vesta-project-view.test.mjs tests/vesta-project-scientific.test.mjs tests/vesta-project-export.test.mjs tests/cif2-v18-1.test.mjs tests/cif2-v18-2.test.mjs tests/pages-assets.test.mjs tests/materials-p0.test.mjs tests/materials-project.test.mjs tests/llm-crystal.test.mjs tests/atoms-sidebar.test.mjs tests/material-evidence-p1.test.mjs tests/xrd-acquisition-p1.test.mjs tests/bulk-study-p1.test.mjs tests/xrd-peak-match.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
@@ -241,6 +241,8 @@ jobs:
           cp materials-page.js public/materials-page.js
           cp materials-project-core.js public/materials-project-core.js
           cp materials-project-page.js public/materials-project-page.js
+          cp llm-crystal-core.js public/llm-crystal-core.js
+          cp llm-crystal-page.js public/llm-crystal-page.js
           cp xrd-peak-match-core.js public/xrd-peak-match-core.js
           cp xrd-factor-core.js public/xrd-factor-core.js
           cp lesson-pages.js public/lesson-pages.js
@@ -272,6 +274,8 @@ jobs:
           test -s public/materials-page.js
           test -s public/materials-project-core.js
           test -s public/materials-project-page.js
+          test -s public/llm-crystal-core.js
+          test -s public/llm-crystal-page.js
           test -s public/xrd-peak-match-core.js
           test -s public/xrd-factor-core.js
           test -s public/lesson-pages.js
