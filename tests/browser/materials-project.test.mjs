@@ -82,7 +82,7 @@ try{
  const gatewayCalls=[];
  await page.route('https://kristalyapi-cod-api.aoakkirman.workers.dev/health',route=>
   route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/json'},
-   body:JSON.stringify({status:'ok',version:'1.3',materialsProjectProxy:true})}));
+   body:JSON.stringify({status:'ok',version:'1.4',materialsProjectProxy:true,materialsProjectAlphaIds:true})}));
  await page.route('https://kristalyapi-cod-api.aoakkirman.workers.dev/api/mp/summary**',async route=>{
   const req=route.request();
   const allow={'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS',
