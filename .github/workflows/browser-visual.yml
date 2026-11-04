@@ -1,7 +1,32 @@
 name: Real browser WebGL visual smoke
 
 on:
-  # Validate the exact trusted merge commit after a PR is merged into main.
+  # Catch stale browser locators BEFORE merging; uses a read-only PR merge ref.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'reciprocal-core.js'
+      - 'reciprocal-page.js'
+      - 'lesson-core.js'
+      - 'xrd-factor-core.js'
+      - 'lesson-pages.js'
+      - 'powder-planes-view.js'
+      - 'crystal-app.js'
+      - 'volume-iso-worker.js'
+      - 'styles.css'
+      - 'dft-workspace.css'
+      - 'sw.js'
+      - 'manifest.webmanifest'
+      - 'translations.js'
+      - 'vendor/three/**'
+      - '.github/workflows/pages.yml'
+      - 'tests/browser/**'
+      - 'tests/offline.test.mjs'
+      - 'tests/xrd-factor.test.mjs'
+      - '.github/workflows/browser-visual.yml'
+  # Also re-run against the precise trusted merge commit after merge.
   pull_request_target:
     types: [closed]
     branches: [main]
@@ -32,13 +57,15 @@ permissions:
 
 jobs:
   browser-visual:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          # PR: github.sha is the synthetic merge ref; post-merge: actual commit.
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.merge_commit_sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
