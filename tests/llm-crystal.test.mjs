@@ -176,3 +176,37 @@ test('Gemini HTTP 402 diagnoses billing, while wrong/unsupported model indicates
  const vllmPayment=llmHttpError('vllm',402);
  assert.doesNotMatch(vllmPayment.message,/Google AI Studio/);
 });
+
+test('explicit cancel is distinct from internal timeout; raw browser abort errors never escape',async()=>{
+ const cancelled=new AbortController();
+ const blocked=async(_url,options)=>new Promise((_resolve,reject)=>{
+  if(options.signal.aborted)return reject(new Error('signal is aborted without reason'));
+  options.signal.addEventListener('abort',()=>reject(new Error('signal is aborted without reason')),{once:true});
+ });
+ const cancelledRequest=requestLlm(gemini,snapshot,chat,{
+  fetcher:blocked,signal:cancelled.signal,timeoutMs:900
+ });
+ cancelled.abort();
+ await assert.rejects(cancelledRequest,error=>{
+  assert.match(error.message,/kullanıcı tarafından iptal/);
+  assert.doesNotMatch(error.message,/without reason/i);
+  return true;
+ });
+ await assert.rejects(requestLlm(gemini,snapshot,chat,{fetcher:blocked,timeoutMs:15}),error=>{
+  assert.match(error.message,/zaman aşımına uğradı/);
+  assert.match(error.message,/15|1 sn|0 sn/);
+  assert.doesNotMatch(error.message,/without reason/i);
+  return true;
+ });
+});
+test('request timeout default allows a full 120 seconds (not the former 45 seconds)',async()=>{
+ let receivedSignal;
+ const immediate=async(_url,options)=>{
+  receivedSignal=options.signal;
+  return {ok:true,headers:{get:()=>null},text:async()=>JSON.stringify({
+   candidates:[{content:{parts:[{text:'Test answer.'}]}}]
+  })};
+ };
+ assert.equal(await requestLlm(gemini,snapshot,chat,{fetcher:immediate}),'Test answer.');
+ assert.equal(receivedSignal.aborted,false);
+});
