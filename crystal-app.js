@@ -4628,6 +4628,11 @@ function pickAtom(e){
  const ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects(atomMesh,false)[0];if(!hit)return;
  const id=hit.object.userData.instanceAtomIndices?.[hit.instanceId];if(!Number.isInteger(id))return;
  if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length>=4)selected=[id];else selected.push(id);
+ const pickedSite=sourceSiteIndexForAtom(atomData[id]);
+ if(pickedSite>=0){
+  $('siteStyleSite').value=String(pickedSite);
+  renderSiteStyleControls();
+ }
  drawSelection();if(rightSidebarTab!=='measurement')setRightSidebarTab('measurement');
 }
 
@@ -6272,6 +6277,7 @@ function drawSelection(){
  if(selected.length>=3){const p=atomData[selected[0]].pos,q=atomData[selected[1]].pos,r=atomData[selected[2]].pos;const u=p.clone().sub(q),v=r.clone().sub(q);a.querySelector('strong').textContent=(u.angleTo(v)*180/Math.PI).toFixed(2);}
  const t=$('torsionResult');t.style.display=selected.length===4?'block':'none';
  if(selected.length===4){const coords=selected.map(k=>atomData[k].pos.toArray());try{t.querySelector('strong').textContent=dihedralDegrees(...coords).toFixed(2);}catch(e){t.querySelector('strong').textContent='Tanımsız';}}
+ syncSelectedSiteRows();
  renderCoordinationSummary();
  if(semiconductorP0?.visible)semiconductorP0.refresh();
 }
@@ -6471,17 +6477,148 @@ function applyPointDefect(){
  }catch(error){$('defectResult').textContent=error.message;inform('Kristal kusuru: '+error.message);}
 }
 
+/* The scene holds rendered atom instances, while the editor holds asymmetric
+ * sites. Map selected symmetry/periodic images back to the one editable row. */
+function sourceSiteIndexForAtom(item){
+ if(!item?.site)return -1;
+ const direct=state.sites.indexOf(item.site);
+ if(direct>=0)return direct;
+ const index=item.site.sourceSiteIndex;
+ return Number.isInteger(index)&&index>=0&&index<state.sites.length?index:-1;
+}
+function syncSelectedSiteRows(){
+ const container=$('siteRows');if(!container)return;
+ const active=new Set(selected.map(id=>sourceSiteIndexForAtom(atomData[id])).filter(i=>i>=0));
+ for(const card of container.querySelectorAll('.site-entry')){
+  const index=Number(card.dataset.siteIndex),isSelected=active.has(index);
+  card.classList.toggle('is-selected',isSelected);
+  card.querySelector('.site-entry-select')?.setAttribute('aria-pressed',String(isSelected));
+  const badge=card.querySelector('.site-entry-selected-label');
+  if(badge)badge.hidden=!isSelected;
+ }
+}
+function syncSiteColorInputs(){
+ for(const card of $('siteRows')?.querySelectorAll('.site-entry')||[]){
+  const site=state.sites[Number(card.dataset.siteIndex)],input=card.querySelector('.site-entry-color-input');
+  if(site&&input)input.value=visualHex(site.visualColor,elementColor(site.symbol));
+ }
+}
+function chooseSidebarSite(index){
+ const site=state.sites[index];if(!site)return;
+ $('siteStyleSite').value=String(index);
+ renderSiteStyleControls();
+ // Only rendered/visible instances can be measured; no fabricated selection
+ // is created for hidden or clipped sites.
+ const matches=id=>sourceSiteIndexForAtom(atomData[id])===index;
+ const previous=selected.filter(id=>!matches(id));
+ if(previous.length===selected.length){
+  const target=atomData.findIndex(item=>sourceSiteIndexForAtom(item)===index&&item.shown);
+  if(target<0){
+   inform('Bu atom konumu 3B görünümde görünmüyor; görünüm ayarlarını değiştirebilirsin.');
+   return;
+  }
+  selected=selected.length>=4?[target]:[...selected,target];
+ }else selected=previous;
+ drawSelection();
+}
 function renderSites(){
  refreshStage3Atoms();
- const rows=$('siteRows');rows.replaceChildren();$('siteCount').textContent=state.sites.length;$('leftAtomsBadge').textContent=String(state.sites.length);
- state.sites.forEach((site,i)=>{const tr=document.createElement('tr');for(const k of ['symbol','x','y','z']){const td=document.createElement('td');const inp=document.createElement('input');inp.name=k;inp.setAttribute('aria-label',(site.label||'Atom '+(i+1))+' '+k);inp.value=k==='symbol'?site.symbol:Number(site[k]).toFixed(4);inp.type=k==='symbol'?'text':'number';if(k!=='symbol')inp.step='.001';else inp.maxLength=2;inp.addEventListener('change',()=>{const n=k==='symbol'?cleanSymbol(inp.value):Number(inp.value);if(k!=='symbol'&&!Number.isFinite(n)){inform('Geçersiz koordinat.');renderSites();return;}site[k]=n;if(k==='symbol')site.label=n+(i+1);build();if(k==='symbol')fillPoly();renderSites();});td.append(inp);if(k==='symbol'&&site.label){const label=document.createElement('span');label.className='site-atom-label';label.textContent=site.label;label.title='CIF atom etiketi: '+site.label;td.append(label);}tr.append(td);}
-  const wp=document.createElement('td');wp.style.cssText='font-size:10px;color:#55718e;white-space:nowrap';
-  if(state.symmetryEnabled&&state.sites.length<=60){try{const id=identifyWyckoff(site,state.sgSetting);wp.textContent=id.matches.length===1?id.matches[0]:(id.matches.length?id.matches.join('/'):'m='+id.multiplicity);wp.title='Eşdeğer konum sayısı: '+id.multiplicity+' · '+(id.matches.length?id.matches.join(', '):'kesin Wyckoff konumu eşleşmedi');}catch(e){wp.textContent='?';wp.title=e.message;}}else wp.textContent='—';tr.append(wp);
-  const occTd=document.createElement('td'),occSpan=document.createElement('span');const occ=Number(site.occupancy??1);occSpan.className='site-occupancy'+(occ<1-1e-6?' partial':'');occSpan.textContent=(100*occ).toFixed(occ<1?1:0).replace(/\.0$/,'')+'%';occSpan.title='Kristalografik konum doluluğu: '+occ;occTd.append(occSpan);tr.append(occTd);
-  const disorderTd=document.createElement('td'),assembly=disorderTag(site.disorderAssembly),group=disorderTag(site.disorderGroup);disorderTd.className='site-disorder-cell';disorderTd.textContent=group?(assembly?assembly+'/'+group:group):'—';disorderTd.title=group?'Alternatif grup · '+(assembly||'belirtilmedi')+' / '+group:'Düzenli atom konumu';tr.append(disorderTd);
-  const td=document.createElement('td'),btn=document.createElement('button');btn.className='del';btn.textContent='×';btn.title='Atom konumunu sil';btn.disabled=state.sites.length<2;btn.addEventListener('click',()=>{state.sites.splice(i,1);state.warning='';fillPoly();renderSites();build();});td.append(btn);tr.append(td);rows.append(tr);});
+ const list=$('siteRows');list.replaceChildren();
+ $('siteCount').textContent=String(state.sites.length);
+ $('leftAtomsBadge').textContent=String(state.sites.length);
+ const localeEn=window.CrystalI18n?.language==='en';
+ state.sites.forEach((site,i)=>{
+  const label=site.label||site.symbol+(i+1);
+  const card=document.createElement('article');
+  card.className='site-entry';card.dataset.siteIndex=String(i);card.setAttribute('role','listitem');
+  const head=document.createElement('div');head.className='site-entry-head';
+  const choose=document.createElement('button');choose.className='site-entry-select';choose.type='button';
+  choose.setAttribute('aria-label',label+(localeEn?' · select in 3D view':' · 3B görünümde seç'));
+  choose.setAttribute('aria-pressed','false');
+  choose.title=localeEn?'Select / deselect in 3D view':'3B görünümde seç / seçimi kaldır';
+  const name=document.createElement('strong');name.className='site-entry-name';name.textContent=label;
+  const sub=document.createElement('small');sub.className='site-entry-sub';sub.textContent=site.symbol+' · '+(i+1)+'. '+(localeEn?'site':'konum');
+  const current=document.createElement('span');current.className='site-entry-selected-label';
+  current.hidden=true;current.textContent=localeEn?'Selected':'Seçili';
+  choose.append(name,sub,current);
+  choose.onclick=()=>chooseSidebarSite(i);
+  const colorLabel=document.createElement('label');colorLabel.className='site-entry-color';
+  colorLabel.title=label+(localeEn?' · atom color':' · Atom rengi');
+  const colorTitle=document.createElement('span');colorTitle.textContent=localeEn?'Atom color':'Atom rengi';
+  const color=document.createElement('input');color.type='color';color.className='site-entry-color-input';
+  color.value=visualHex(site.visualColor,elementColor(site.symbol));
+  color.setAttribute('aria-label',label+(localeEn?' atom color':' atom rengi'));
+  color.onchange=()=>{
+   $('siteStyleSite').value=String(i);
+   updateSiteVisual('visualColor',color.value);
+   renderSiteStyleControls();syncSiteColorInputs();
+  };
+  colorLabel.append(colorTitle,color);
+  const remove=document.createElement('button');remove.className='site-entry-delete del';
+  remove.type='button';remove.textContent='×';remove.title=label+(localeEn?' · delete atomic site':' · Atom konumunu sil');
+  remove.setAttribute('aria-label',remove.title);
+  remove.disabled=state.sites.length<2;
+  remove.onclick=()=>{
+   state.sites.splice(i,1);state.warning='';selected=[];
+   fillPoly();renderSites();build();
+  };
+  head.append(choose,colorLabel,remove);
+  const coordinates=document.createElement('div');coordinates.className='site-entry-coordinates';
+  for(const k of ['x','y','z']){
+   const coordinate=document.createElement('label');coordinate.className='site-entry-coordinate';
+   const axis=document.createElement('span');axis.textContent=k;
+   const inp=document.createElement('input');inp.name=k;inp.type='number';inp.step='.001';
+   inp.value=Number(site[k]).toFixed(4);
+   inp.setAttribute('aria-label',label+' '+k+(localeEn?' fractional coordinate':' kesirli koordinatı'));
+   inp.addEventListener('change',()=>{
+    if(!inp.value.trim()||!Number.isFinite(Number(inp.value))){
+     inform('Geçersiz koordinat.');renderSites();return;
+    }
+    site[k]=Number(inp.value);
+    build();renderSites();
+   });
+   coordinate.append(axis,inp);coordinates.append(coordinate);
+  }
+  const meta=document.createElement('div');meta.className='site-entry-meta';
+  const symbolField=document.createElement('label');symbolField.className='site-entry-symbol';
+  const symbolCaption=document.createElement('span');symbolCaption.textContent='Element';
+  const symbolInput=document.createElement('input');symbolInput.type='text';
+  symbolInput.name='symbol';symbolInput.maxLength=2;symbolInput.value=site.symbol;
+  symbolInput.setAttribute('aria-label',label+' element');
+  symbolInput.onchange=()=>{
+   const symbol=cleanSymbol(symbolInput.value);
+   site.symbol=symbol;site.label=symbol+(i+1);
+   build();fillPoly();renderSites();
+  };
+  symbolField.append(symbolCaption,symbolInput);
+  const extras=document.createElement('div');extras.className='site-entry-facts';
+  if(state.symmetryEnabled&&state.sites.length<=60){
+   const wp=document.createElement('span');wp.className='site-entry-wyckoff';
+   try{
+    const id=identifyWyckoff(site,state.sgSetting);
+    wp.textContent='WP '+(id.matches.length===1?id.matches[0]:(id.matches.length?id.matches.join('/'):'m='+id.multiplicity));
+    wp.title='Eşdeğer konum sayısı: '+id.multiplicity;
+   }catch(e){wp.textContent='WP ?';wp.title=e.message;}
+   extras.append(wp);
+  }
+  const occupancy=Number(site.occupancy??1),occ=document.createElement('span');
+  occ.className='site-occupancy'+(occupancy<1-1e-6?' partial':'');
+  occ.textContent=(100*occupancy).toFixed(occupancy<1?1:0).replace(/\.0$/,'')+'%';
+  occ.title='Kristalografik konum doluluğu: '+occupancy;
+  extras.append(occ);
+  const assembly=disorderTag(site.disorderAssembly),group=disorderTag(site.disorderGroup);
+  if(group){
+   const disorder=document.createElement('span');disorder.className='site-entry-disorder';
+   disorder.textContent=assembly?assembly+'/'+group:group;
+   disorder.title='Alternatif atom grubu';extras.append(disorder);
+  }
+  meta.append(symbolField,extras);
+  card.append(head,coordinates,meta);
+  list.append(card);
+ });
  renderSiteStyleControls();
  refreshDefectControls();
+ syncSelectedSiteRows();
 }
 function renderSiteStyleControls(){
  const select=$('siteStyleSite'),index=Math.min(Math.max(0,Number(select.value)||0),state.sites.length-1);
@@ -6504,8 +6641,8 @@ function updateSiteVisual(field,raw){
   // Validation drops neutral values (no text, zero offset, not hidden) so the project stays minimal.
   const valid=validatedVisualSite({...site,[field]:value});
   if(valid[field]===undefined)delete site[field];else site[field]=valid[field];
-  build();
- }catch(error){inform(error.message);renderSiteStyleControls();}
+  build();syncSiteColorInputs();
+ }catch(error){inform(error.message);renderSiteStyleControls();syncSiteColorInputs();}
 }
 function clipPlaneText(plane){
  return '('+[plane.h,plane.k,plane.l].join(' ')+') '+(plane.keep==='below'?'≤ ':'≥ ')+plane.distance+' Å';
@@ -11893,6 +12030,7 @@ function bind(){
   selected=[];build();
  };
  window.addEventListener('crystal-language-change',renderDisorderSummary);
+ window.addEventListener('crystal-language-change',renderSites);
  $('siteStyleSite').onchange=renderSiteStyleControls;
  for(const [id,field] of [['siteStyleColor','visualColor'],['siteStyleScale','visualScale'],['sitePolyColor','polyColor'],['sitePolyOpacity','polyOpacity'],['siteStyleOpacity','visualOpacity'],['siteLabelText','labelText']])
   $(id).onchange=event=>updateSiteVisual(field,event.target.value);
@@ -11900,7 +12038,7 @@ function bind(){
   $(id).onchange=event=>updateSiteVisual(field,event.target.checked);
  for(const id of ['siteLabelDx','siteLabelDy'])$(id).onchange=()=>updateSiteVisual('labelOffset',[Number($('siteLabelDx').value),Number($('siteLabelDy').value)]);
  $('siteStyleReset').onclick=()=>{const site=state.sites[Number($('siteStyleSite').value)];if(!site)return;
-  for(const key of ['visualColor','visualScale','polyColor','polyOpacity',...SITE_APPEARANCE_KEYS])delete site[key];renderSiteStyleControls();build();};
+  for(const key of ['visualColor','visualScale','polyColor','polyOpacity',...SITE_APPEARANCE_KEYS])delete site[key];renderSiteStyleControls();build();syncSiteColorInputs();};
  $('addAtom').onclick=()=>{if(state.sites.length>=1000){inform('En fazla 1000 atom konumu.');return;}state.sites.push({symbol:'O',label:'O'+(state.sites.length+1),x:.5,y:.5,z:.5,occupancy:1});renderSites();fillPoly();build();};
  for(const k of ['style','bonds','autoBond','cellVisible','boundary','labels','axes','autoRotate','adpVisible'])$(k).addEventListener('change',e=>{
   const oldStyle=state.style;state[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;

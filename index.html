@@ -239,13 +239,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    </div>
    <div id="leftAtomsPane" class="left-tab-panel" role="tabpanel" aria-labelledby="leftAtomsTab" hidden>
-  <div class="section"><h2>Asimetrik konumlar / atomlar <span id="siteCount">0</span></h2>
-    <div style="overflow-x:auto"><table class="site-table"><thead><tr><th>Atom / etiket</th><th>x</th><th>y</th><th>z</th><th>WP</th><th>Doluluk</th><th>Grup</th><th></th></tr></thead><tbody id="siteRows"></tbody></table></div>
+  <div class="section atoms-sidebar-section">
+    <div class="site-list-summary"><span>Atom konumları</span><span class="site-list-counter"><strong id="siteCount">0</strong> konum</span></div>
+    <div id="siteRows" class="site-list" role="list" aria-label="Atom konumları"></div>
     <div class="actionrow" style="margin-top:9px"><button id="addAtom">+ Atom ekle</button></div>
     <div class="site-style-panel"><strong>Atom / çokyüzlü görünümü</strong>
      <label class="field"><span>Atom konumu</span><select id="siteStyleSite"></select></label>
      <div class="site-style-fields">
-      <label class="field"><span>Atom rengi</span><input id="siteStyleColor" type="color" value="#ffffff"></label>
+      <label class="field site-style-color-field"><span>Atom rengi</span><input id="siteStyleColor" type="color" value="#ffffff" aria-label="Seçilen konumun atom rengi"></label>
       <label class="field"><span>Atom ölçeği</span><input id="siteStyleScale" type="number" min=".2" max="3" step=".1" value="1"></label>
       <label class="field"><span>Çokyüzlü rengi</span><input id="sitePolyColor" type="color" value="#54a1db"></label>
       <label class="field"><span>Çokyüzlü opaklığı</span><input id="sitePolyOpacity" type="number" min=".05" max="1" step=".05" value=".25"></label>
@@ -256,7 +257,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <div class="site-style-checks"><label><input id="siteStyleHidden" type="checkbox"> Bu konumun atomlarını gizle</label><label><input id="siteLabelHidden" type="checkbox"> Etiketini gizle</label></div><div class="actionrow"><button id="siteStyleReset" type="button">Stili sıfırla</button></div>
      <small>Görünüm ayarları seçili atom konumuna özgüdür; proje ve geri alma geçmişinde korunur. Gizleme ve opaklık yalnız görünümü değiştirir: atom yapıda, simetride ve koordinat dışa aktarımlarında kalır. Boş etiket metni element simgesini (dışa aktarmada seçilen etiket türünü) kullanır; pozitif dikey ofset etiketi yukarı taşır.</small>
     </div>
-    <p class="hint">Kesirli koordinatlar: 0–1. CIF içe aktarımında simetri işlemleri P1 atomlarına genişletilir. Görünümdeki atomu seçerek ayrıntılarını inceleyebilirsiniz.</p>
+    <p class="hint">Kesirli koordinatlar (x, y, z) her atomun altında düzenlenebilir. 3B görünümde seçilen atomlar burada vurgulanır; simetri açıksa eşdeğer görüntüler kaynak asimetrik atom satırında gösterilir.</p>
   </div>
    </div>
   </div>

@@ -7,6 +7,16 @@
 (() => {
  'use strict';
  const entries=[
+
+  ['Atom konumları','Atomic sites'],
+  ['konum','site'],
+  ['Seçili','Selected'],
+  ['Element','Element'],
+  ['3B görünümde seç / seçimi kaldır','Select / deselect in 3D view'],
+  ['Atom konumunu sil','Delete atomic site'],
+  ['Bu atom konumu 3B görünümde görünmüyor; görünüm ayarlarını değiştirebilirsin.','This atomic site is not visible in the 3D view; adjust visibility settings.'],
+  ['Kesirli koordinatlar (x, y, z) her atomun altında düzenlenebilir. 3B görünümde seçilen atomlar burada vurgulanır; simetri açıksa eşdeğer görüntüler kaynak asimetrik atom satırında gösterilir.','Fractional coordinates (x, y, z) are editable below each atom. Atoms selected in the 3D view are highlighted here; with symmetry enabled, equivalent images highlight their source asymmetric-site row.'],
+
   ["Materials Project Ayarları","Materials Project Settings"],
   ["Materials Project · hesaplanmış malzemeler","Materials Project · computed materials"],
   ["Kristal yapıları ve DFT referans verilerini kişisel Materials Project API anahtarınla ara. Farklı polimorflar ayrı MP kayıtlarıdır.","Search crystal structures and DFT reference data with your personal Materials Project API key. Different polymorphs have separate MP records."],
