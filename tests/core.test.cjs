@@ -1540,13 +1540,29 @@ test('sidebar General and Atomlar tabs are in bottom nav outside scroll content'
  assert.ok(general>0&&atom>general&&scrollClose>atom);
  assert.match(sidebar,/id="leftGeneralTab"[^>]*role="tab"[^>]*aria-controls="leftGeneralPane"/);
  assert.match(sidebar,/id="leftAtomsTab"[^>]*role="tab"[^>]*aria-controls="leftAtomsPane"/);
- assert.ok(sidebar.indexOf('Asimetrik konumlar / atomlar')>atom);
- assert.ok(sidebar.indexOf('Asimetrik konumlar / atomlar')<scrollClose);
+ assert.ok(!sidebar.includes('Asimetrik konumlar / atomlar'),'wide-table heading should be removed');
+ assert.ok(sidebar.indexOf('class="site-list-summary"')>atom);
+ assert.ok(sidebar.indexOf('id="siteRows" class="site-list" role="list"')>atom);
+ assert.ok(sidebar.indexOf('id="siteRows"')<scrollClose);
+ assert.ok(!sidebar.includes('class="site-table"'),'old horizontally scrolling atom table should be replaced');
  assert.ok(sidebar.indexOf('Birim hücre')>general&&sidebar.indexOf('Birim hücre')<atom);
  assert.ok(!sidebar.slice(general,atom).includes('id="siteRows"'));
  assert.equal((sidebar.match(/id="siteRows"/g)||[]).length,1);
  assert.equal((sidebar.match(/id="siteCount"/g)||[]).length,1);
 });
+test('Atomlar sidebar keeps square site color picker and coordinates under named rows',()=>{
+ assert.match(script,/function sourceSiteIndexForAtom\(item\)/);
+ assert.match(script,/function syncSelectedSiteRows\(\)/);
+ assert.match(script,/function chooseSidebarSite\(index\)/);
+ assert.match(script,/card\.classList\.toggle\('is-selected',isSelected\)/);
+ assert.match(script,/color\.type='color';color\.className='site-entry-color-input'/);
+ assert.match(script,/coordinates\.className='site-entry-coordinates'/);
+ assert.match(script,/choose\.onclick=\(\)=>chooseSidebarSite\(i\)/);
+ assert.match(script,/sourceSiteIndex/);
+ assert.match(html,/id="siteStyleColor" type="color"/);
+ assert.match(html,/id="siteCount">0<\/strong>/);
+});
+
 test('tab switch preserves independent scroll offsets, toggles ARIA selection, rejects invalid tabs',()=>{
  assert.deepEqual(Array.from(api.LEFT_SIDEBAR_TABS),['general','atoms']);
  const nodes={};
