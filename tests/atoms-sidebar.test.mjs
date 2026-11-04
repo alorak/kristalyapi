@@ -38,7 +38,17 @@ test('scene selections map periodic and symmetry-expanded copies to their source
     selector==='.site-entry-selected-label'?badges[i]:null;
   }
  }));
- const list={querySelectorAll:()=>cards};
+ const ordered=cards.slice();
+ const list={
+  children:ordered,
+  querySelectorAll:()=>ordered.slice(),
+  insertBefore(card,before){
+   const original=ordered.indexOf(card);
+   if(original>=0)ordered.splice(original,1);
+   const target=before?ordered.indexOf(before):-1;
+   ordered.splice(target>=0?target:ordered.length,0,card);
+  }
+ };
  const context={
   state:{sites:[direct,other]},
   atomData:[
@@ -60,8 +70,12 @@ test('scene selections map periodic and symmetry-expanded copies to their source
  assert.ok(classes[1].has('is-selected'));
  assert.equal(buttons[0]['aria-pressed'],'true');
  assert.equal(badges[1].hidden,false);
+ context.selected=[2]; // Only second site is selected: it must move to the top.
+ vm.runInContext('syncSelectedSiteRows()',context);
+ assert.equal(ordered[0],cards[1]);
  context.selected=[0];
  vm.runInContext('syncSelectedSiteRows()',context);
+ assert.equal(ordered[0],cards[0]);
  assert.ok(classes[0].has('is-selected'));
  assert.ok(!classes[1].has('is-selected'));
  assert.equal(buttons[1]['aria-pressed'],'false');
@@ -69,4 +83,36 @@ test('scene selections map periodic and symmetry-expanded copies to their source
  context.selected=[];
  vm.runInContext('syncSelectedSiteRows()',context);
  assert.ok(!classes[0].has('is-selected'));
+ assert.deepEqual(ordered,cards,'clearing selection restores source site order');
+});
+
+test('appearance controls are on demand and the redundant compass selector is absent',()=>{
+ assert.match(html,/id="siteAppearanceDock" hidden/);
+ assert.match(html,/id="siteAppearancePanel"/);
+ assert.doesNotMatch(html,/Atom \/ çokyüzlü görünümü/);
+ assert.doesNotMatch(html,/id="axisCompassMode"/);
+ assert.match(editor,/appearance\.onclick=\(\)=>showSiteAppearance/);
+ assert.match(styles,/\.site-entry-appearance-toggle/);
+});
+
+test('bond cutoff sliders follow the longest unit-cell edge and clamp on cell changes',()=>{
+ const start=editor.indexOf('function syncBondCutLimits(){');
+ const end=editor.indexOf('function syncControls(){',start);
+ assert.ok(start>0&&end>start);
+ const controls=Object.fromEntries(['bondCut','quickBondCut','bondCutVal','quickBondCutVal'].map(k=>[k,{}]));
+ const context={state:{cell:{a:11.4,b:8,c:7},cut:8},$:id=>controls[id]};
+ vm.createContext(context);
+ vm.runInContext(editor.slice(start,end),context);
+ vm.runInContext('syncBondCutLimits()',context);
+ assert.equal(controls.bondCut.max,'11.4');
+ assert.equal(controls.quickBondCut.max,'11.4');
+ context.state.cut=15;
+ vm.runInContext('syncBondCutLimits()',context);
+ assert.equal(context.state.cut,11.4);
+ assert.equal(controls.quickBondCut.value,'11.4');
+ context.state.cell={a:3,b:5.2,c:4};
+ vm.runInContext('syncBondCutLimits()',context);
+ assert.equal(context.state.cut,5.2);
+ assert.equal(controls.bondCut.max,'5.2');
+ assert.match(html,/id="quickBondCut"[^>]*max="1000"/);
 });

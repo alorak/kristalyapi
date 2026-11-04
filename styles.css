@@ -1397,6 +1397,20 @@ body.lesson-open #app{display:none!important}
  color:#4d6a83;font-size:10px;padding:3px 5px;white-space:nowrap;
 }
 #leftAtomsPane .site-entry-facts>.partial{border-color:#aad4ed;background:#e8f5ff;color:#1f6d9f}
+#leftAtomsPane .site-entry-appearance-toggle{
+ font-size:10px;line-height:1.3;font-weight:650;white-space:nowrap;
+ padding:4px 7px;border:1px solid #c8daeb;border-radius:6px;
+ background:#f3f8fd;color:#326489;box-shadow:none;cursor:pointer;
+}
+#leftAtomsPane .site-entry-appearance-toggle:hover{background:#e7f2fc;border-color:#9fc3e1}
+#leftAtomsPane .site-entry-appearance-toggle[aria-expanded="true"]{background:#e2f1ff;color:#175f9a;border-color:#85b7e4}
+#leftAtomsPane .site-entry .site-style-panel{
+ min-width:0;box-sizing:border-box;margin-top:9px;padding:9px;
+ background:rgba(255,255,255,.85);
+}
+#leftAtomsPane .site-entry .site-style-panel[hidden]{display:none}
+#leftAtomsPane .site-entry .site-style-panel input[hidden]{display:none}
+
 #leftAtomsPane .site-style-color-field{grid-column:span 2;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
 #leftAtomsPane .site-style-color-field span{font-size:11px;color:#526d87}
 @media(max-width:350px){

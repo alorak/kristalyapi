@@ -193,7 +193,6 @@ function safeName(s){return String(s).normalize('NFKD').replace(/[^\w-]+/g,'_').
 
 /* Camera-aligned compass. Cartesian XYZ and crystallographic a/b/c use separate
    scientific frames: lattice directions come from the actual validated cell. */
-const AXIS_COMPASS_KEY='kristalyapi.axis-compass.v1';
 let axisGizmoMode='cartesian',axisGizmoLastSignature=null;
 /* Lightweight SVG triad is shared by the live view and all image exports. */
 const GIZMO_AXES = [
@@ -204,14 +203,6 @@ const GIZMO_AXES = [
 let axisGizmoParts=[],axisGizmoLastRotation=null;
 function initAxisGizmo(){
  const svg=$('axisGizmoSvg'),ns='http://www.w3.org/2000/svg',center=svg.querySelector('circle');
- try{axisGizmoMode=localStorage.getItem(AXIS_COMPASS_KEY)==='lattice'?'lattice':'cartesian';}catch{}
- $('axisCompassMode').value=axisGizmoMode;
- $('axisCompassMode').addEventListener('change',event=>{
-  axisGizmoMode=event.target.value==='lattice'?'lattice':'cartesian';
-  axisGizmoLastSignature=null;
-  try{localStorage.setItem(AXIS_COMPASS_KEY,axisGizmoMode);}catch{}
-  updateAxisGizmo();
- });
  for(const axis of GIZMO_AXES){
   const group=document.createElementNS(ns,'g');
   const line=document.createElementNS(ns,'line');
@@ -4209,7 +4200,7 @@ function build(){
  // Runs once this synchronous build has finished and radius fallbacks are known.
  if(typeof queueMicrotask==='function')queueMicrotask(()=>{if($('radiusNote'))updateRadiusNote();updateHydrogenBondStatus();updateClipStatus();updateSurfaceStatus();});
  const buildStarted=performance.now();
- try{state.cell=validateCell(state.cell);if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
+ try{state.cell=validateCell(state.cell);syncBondCutLimits();if(!Array.isArray(state.sites)||!state.sites.length)throw Error('En az bir atom gereklidir.');
  state.rep=state.rep.map(v=>clamp(Math.trunc(v)||1,1,6));
  state.bounds=validatedBounds(state.bounds||DEFAULT_BOUNDS);
  const B=basis(state.cell);const center=toCart(state.rep.map(v=>v/2),B);clearRoot();root.position.copy(center).multiplyScalar(-1);
@@ -4631,6 +4622,7 @@ function pickAtom(e){
  if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length>=4)selected=[id];else selected.push(id);
  const pickedSite=sourceSiteIndexForAtom(atomData[id]);
  if(pickedSite>=0){
+  if(openAppearanceIndex>=0&&openAppearanceIndex!==pickedSite)showSiteAppearance(-1);
   $('siteStyleSite').value=String(pickedSite);
   renderSiteStyleControls();
  }
@@ -6304,7 +6296,19 @@ function initRepeatSteppers(){
  for(const name of ['ra','rb','rc'])$(name).addEventListener('input',syncRepeatSteppers);
  syncRepeatSteppers();
 }
+// Bond cutoffs follow the longest unit-cell edge (Å), not a fixed 5 Å limit.
+function syncBondCutLimits(){
+ const max=Math.max(state.cell.a,state.cell.b,state.cell.c);
+ const min=Math.min(.8,max),cut=Number(state.cut);
+ state.cut=Math.min(max,Math.max(min,Number.isFinite(cut)?cut:Math.min(2.65,max)));
+ for(const id of ['bondCut','quickBondCut']){
+  const input=$(id);input.min=String(min);input.max=String(max);input.step='any';input.value=String(state.cut);
+ }
+ $('bondCutVal').value=state.cut.toFixed(2);
+ $('quickBondCutVal').value=state.cut.toFixed(2);
+}
 function syncControls(){
+ syncBondCutLimits();
  for(const k of ['a','b','c','alpha','beta','gamma'])$(k).value=+state.cell[k].toFixed(6);
  ['ra','rb','rc'].forEach((k,i)=>$(k).value=state.rep[i]);syncRepeatSteppers();syncSgControls();$('bondRules').value=state.bondRules;
  syncViewPanel();syncPolyhedraElements();syncClipPanel();
@@ -6315,7 +6319,7 @@ function syncControls(){
  $('adpLevel').value=String(state.adpLevel||50);
  $('polyCut').value=state.polyCut||0;$('polyNeighbors').value=state.polyNeighbors||12;
  $('polyColor').value=visualHex(state.polyColor,'#54a1db');$('polyOpacity').value=state.polyOpacity??.25;
- $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);$('bondCut').value=state.cut;$('bondCutVal').value=state.cut.toFixed(2);
+ $('atomScale').value=state.atomScale;$('atomScaleVal').value=state.atomScale.toFixed(2);
  for(const k of ['h','k','l'])$(k).value=state.plane[k];$('planeOffset').value=state.plane.offset;$('slabThickness').value=state.plane.thickness;$('showPlane').checked=state.plane.visible;$('repeatMillerPlanes').checked=state.plane.repeat!==false;$('slabFilter').checked=state.plane.slab;
  syncQuickbar();
  try{previewPlane();}catch(e){}fillPoly();syncAnalysisAvailability();renderSites();renderBondRuleEditor();renderMillerLayerList();renderMorphList();renderOverlayList();renderLayerManager();
@@ -6487,16 +6491,33 @@ function sourceSiteIndexForAtom(item){
  const index=item.site.sourceSiteIndex;
  return Number.isInteger(index)&&index>=0&&index<state.sites.length?index:-1;
 }
+let openAppearanceIndex=-1;
 function syncSelectedSiteRows(){
  const container=$('siteRows');if(!container)return;
- const active=new Set(selected.map(id=>sourceSiteIndexForAtom(atomData[id])).filter(i=>i>=0));
- for(const card of container.querySelectorAll('.site-entry')){
-  const index=Number(card.dataset.siteIndex),isSelected=active.has(index);
+ // Reorder cards in the DOM only; crystal site indices remain untouched.
+ const order=new Map();
+ selected.forEach((id,rank)=>{
+  const index=sourceSiteIndexForAtom(atomData[id]);
+  if(index>=0&&!order.has(index))order.set(index,rank);
+ });
+ const cards=[...container.querySelectorAll('.site-entry')];
+ for(const card of cards){
+  const index=Number(card.dataset.siteIndex),isSelected=order.has(index);
   card.classList.toggle('is-selected',isSelected);
   card.querySelector('.site-entry-select')?.setAttribute('aria-pressed',String(isSelected));
   const badge=card.querySelector('.site-entry-selected-label');
   if(badge)badge.hidden=!isSelected;
  }
+ cards.sort((a,b)=>{
+  const ai=Number(a.dataset.siteIndex),bi=Number(b.dataset.siteIndex);
+  const ar=order.get(ai),br=order.get(bi);
+  if(ar!==undefined&&br!==undefined)return ar-br;
+  if(ar!==undefined)return -1;
+  if(br!==undefined)return 1;
+  return ai-bi;
+ });
+ // Keep unchanged card nodes mounted to preserve editable field values.
+ cards.forEach((card,i)=>{if(container.children[i]!==card)container.insertBefore(card,container.children[i]||null);});
 }
 function syncSiteColorInputs(){
  for(const card of $('siteRows')?.querySelectorAll('.site-entry')||[]){
@@ -6504,8 +6525,25 @@ function syncSiteColorInputs(){
   if(site&&input)input.value=visualHex(site.visualColor,elementColor(site.symbol));
  }
 }
+function showSiteAppearance(index){
+ const panel=$('siteAppearancePanel'),dock=$('siteAppearanceDock'),list=$('siteRows');
+ if(panel.parentElement!==dock)dock.append(panel);
+ const card=index>=0?list.querySelector('.site-entry[data-site-index="'+index+'"]'):null;
+ openAppearanceIndex=card?index:-1;
+ panel.hidden=!card;
+ for(const button of list.querySelectorAll('.site-entry-appearance-toggle')){
+  const expanded=Number(button.dataset.siteIndex)===openAppearanceIndex;
+  button.setAttribute('aria-expanded',String(expanded));
+ }
+ if(card){
+  card.append(panel);
+  $('siteStyleSite').value=String(index);
+  renderSiteStyleControls();
+ }
+}
 function chooseSidebarSite(index){
  const site=state.sites[index];if(!site)return;
+ if(openAppearanceIndex>=0&&openAppearanceIndex!==index)showSiteAppearance(-1);
  $('siteStyleSite').value=String(index);
  renderSiteStyleControls();
  // Only rendered/visible instances can be measured; no fabricated selection
@@ -6530,7 +6568,7 @@ function renderSites(){
  atomSitesRenderActive=true;
  try{
  refreshStage3Atoms();
- const list=$('siteRows');list.replaceChildren();
+ const list=$('siteRows');$('siteAppearanceDock').append($('siteAppearancePanel'));list.replaceChildren();
  $('siteCount').textContent=String(state.sites.length);
  $('leftAtomsBadge').textContent=String(state.sites.length);
  const localeEn=window.CrystalI18n?.language==='en';
@@ -6558,6 +6596,7 @@ function renderSites(){
   color.onchange=()=>{
    $('siteStyleSite').value=String(i);
    updateSiteVisual('visualColor',color.value);
+   $('siteStyleSite').value=String(openAppearanceIndex>=0?openAppearanceIndex:i);
    renderSiteStyleControls();syncSiteColorInputs();
   };
   colorLabel.append(colorTitle,color);
@@ -6566,7 +6605,7 @@ function renderSites(){
   remove.setAttribute('aria-label',remove.title);
   remove.disabled=state.sites.length<2;
   remove.onclick=()=>{
-   state.sites.splice(i,1);state.warning='';selected=[];
+   state.sites.splice(i,1);state.warning='';selected=[];openAppearanceIndex=-1;
    fillPoly();renderSites();build();
   };
   head.append(choose,colorLabel,remove);
@@ -6619,13 +6658,22 @@ function renderSites(){
    disorder.textContent=assembly?assembly+'/'+group:group;
    disorder.title='Alternatif atom grubu';extras.append(disorder);
   }
-  meta.append(symbolField,extras);
+  const appearance=document.createElement('button');
+  appearance.type='button';appearance.className='site-entry-appearance-toggle';
+  appearance.dataset.siteIndex=String(i);
+  appearance.setAttribute('aria-controls','siteAppearancePanel');
+  appearance.setAttribute('aria-expanded','false');
+  appearance.textContent=localeEn?'Appearance':'Görünüm';
+  appearance.title=localeEn?'Edit appearance of this atomic site':'Bu atom konumunun görünümünü düzenle';
+  appearance.onclick=()=>showSiteAppearance(openAppearanceIndex===i?-1:i);
+  meta.append(symbolField,extras,appearance);
   card.append(head,coordinates,meta);
   list.append(card);
  });
  renderSiteStyleControls();
  refreshDefectControls();
  syncSelectedSiteRows();
+ showSiteAppearance(openAppearanceIndex);
  }finally{atomSitesRenderActive=false;}
 }
 function renderSiteStyleControls(){
@@ -8571,7 +8619,7 @@ function loadProject(json){
  planeNormal(h,k,l,basis(obj.cell));
  if(!Number.isFinite(offset)||!Number.isFinite(thickness)||thickness<=0||thickness>100)throw Error('Kaydedilen Miller kesiti geçersiz.');
  const cut=Number(obj.cut??2.65);
- if(!Number.isFinite(cut)||cut<.8||cut>5)throw Error('Kaydedilen bağ eşiği geçersiz.');
+ if(!Number.isFinite(cut)||cut<=0||cut>1000)throw Error('Kaydedilen bağ eşiği geçersiz.');
  const style=['ball','space','stick','wire','poly'].includes(obj.style)?obj.style:'ball';
  const bounds=validatedBounds(obj.bounds??DEFAULT_BOUNDS);
  const planeLayers=normalizedMillerLayers(obj.planeLayers,obj.cell);
