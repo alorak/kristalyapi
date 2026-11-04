@@ -25,7 +25,7 @@ const ATTEMPT_TIMEOUT_MS = 8_000;
 const UPSTREAM_ROUNDS = 2;
 const RETRY_DELAYS_MS = [800];
 const RETRYABLE_STATUS = new Set([408,425,429,500,502,503,504,520,521,522,523,524,525,526,530]);
-const WORKER_VERSION = '1.2';
+const WORKER_VERSION = '1.3';
 const USER_AGENT = 'kristalyapi-cod-worker/'+WORKER_VERSION+' (+https://github.com/alorak/kristalyapi)';
 // Successful bodies are kept in the Cloudflare edge cache so a COD entry that
 // imported once does not depend on COD being reachable the next time.
@@ -39,7 +39,7 @@ function cors(origin, env) {
     'X-Content-Type-Options': 'nosniff',
     'Vary': 'Origin',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, X-API-KEY'
   };
   if (origin) headers['Access-Control-Allow-Origin'] = origin;
   return headers;
@@ -193,6 +193,61 @@ function edgeCache(options) {
   try { return globalThis.caches?.default||null; } catch { return null; }
 }
 
+// Materials Project: an explicitly opted-in, non-caching, allowlisted API relay.
+// The personal key arrives only in X-API-KEY and is never placed in a URL,
+// response header, edge cache or diagnostic. No arbitrary upstream is accepted.
+const MP_SUMMARY_ORIGIN='https://api.materialsproject.org';
+const MP_FIELDS=new Set(['material_id','formula_pretty','symmetry','nsites','band_gap',
+ 'is_gap_direct','formation_energy_per_atom','energy_above_hull','density','has_props',
+ 'last_updated','structure']);
+const MP_MAX_BYTES=2_500_000;
+function mpSummaryTarget(search){
+ if(search.length>1500)throw Error('Materials Project query too long');
+ const p=new URLSearchParams(search);
+ if(p.size<3||p.size>4)throw Error('Invalid Materials Project query');
+ if([...p.keys()].some(k=>!['material_ids','formula','chemsys','_fields','_limit'].includes(k)))throw Error('Unsupported Materials Project parameter');
+ const selectors=['material_ids','formula','chemsys'].filter(k=>p.has(k));
+ if(selectors.length!==1||!p.has('_fields')||!p.has('_limit'))throw Error('Invalid Materials Project search');
+ const sel=selectors[0],value=p.get(sel);
+ if(!(sel==='material_ids'&&/^mp-\d{1,12}$/.test(value)||
+   sel==='formula'&&/^(?:[A-Z][a-z]?\d*(?:\.\d+)?){1,8}$/.test(value)||
+   sel==='chemsys'&&/^[A-Z][a-z]?(?:-[A-Z][a-z]?){1,7}$/.test(value)))throw Error('Invalid Materials Project identifier');
+ const fields=p.get('_fields')?.split(',');
+ if(!fields?.length||fields.length>12||fields.some(f=>!MP_FIELDS.has(f))||
+    new Set(fields).size!==fields.length)throw Error('Invalid Materials Project fields');
+ const limit=Number(p.get('_limit'));
+ if(!/^\d{1,2}$/.test(p.get('_limit'))||limit<1||limit>20)throw Error('Invalid Materials Project limit');
+ if(fields.includes('structure')&&(sel!=='material_ids'||limit!==1))throw Error('Structure lookup requires a single material ID');
+ return MP_SUMMARY_ORIGIN+'/materials/summary/?'+p.toString();
+}
+async function relayMaterialsProject(request,allowed,upstreamFetch){
+ let target;
+ try{target=mpSummaryTarget(new URL(request.url).search.slice(1));}
+ catch(error){return fail(400,error.message,allowed);}
+ const key=request.headers.get('X-API-KEY')||'';
+ if(!key||key.length>512||/[^\x21-\x7e]/.test(key))return fail(400,'Missing or invalid Materials Project key',allowed);
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+ try{
+  const response=await upstreamFetch(target,{method:'GET',redirect:'manual',
+   cache:'no-store',credentials:'omit',signal:controller.signal,
+   headers:{'X-API-KEY':key,'Accept':'application/json'}});
+  if(!response.ok||response.status>=300){
+   const code=[400,401,403,404,408,429].includes(response.status)?response.status:502;
+   return fail(code,'Materials Project upstream HTTP '+response.status,allowed);
+  }
+  const body=await boundedBody(response,MP_MAX_BYTES);
+  let result;
+  try{result=JSON.parse(new TextDecoder().decode(body));}
+  catch{return fail(502,'Invalid Materials Project JSON',allowed);}
+  if(!result||!Array.isArray(result.data)||result.data.length>100)return fail(502,'Invalid Materials Project response shape',allowed);
+  return new Response(body,{status:200,headers:{...allowed,'Content-Type':'application/json; charset=utf-8',
+   'Cache-Control':'no-store'}});
+ }catch(error){
+  return fail(error.message==='Upstream response too large'?413:504,
+   error.message==='Upstream response too large'?'Materials Project response too large':'Materials Project upstream unavailable',allowed);
+ }finally{clearTimeout(timeout);}
+}
+
 export async function handleRequest(request, env={}, upstreamFetch=fetch, options={}) {
   const origin=request.headers.get('Origin');
   const allowed=cors(origin,env);
@@ -205,9 +260,10 @@ export async function handleRequest(request, env={}, upstreamFetch=fetch, option
   if (request.method !== 'GET') return fail(405,'Method not allowed',allowed);
   if (target.pathname === '/health' && !target.search)
     return new Response(JSON.stringify({status:'ok',service:'kristalyapi-cod-worker',version:WORKER_VERSION,
-      upstreams:COD_UPSTREAMS.map(hostOf)}),{
+      upstreams:COD_UPSTREAMS.map(hostOf),materialsProjectProxy:true}),{
       headers:{...allowed,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}
     });
+  if(target.pathname==='/api/mp/summary')return relayMaterialsProject(request,allowed,upstreamFetch);
   let spec;
   try { spec=upstreamUrl(target.pathname,target.search.slice(1)); }
   catch (error) {return fail(400,error.message,allowed);}
