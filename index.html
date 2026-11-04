@@ -84,6 +84,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <button id="openBtn" class="workspace-action header-io" type="button" title="Örneklerden, favorilerden veya bilgisayardan aç" aria-haspopup="dialog" aria-controls="openModal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v3M3 7h18l-2 13H5L3 7z"/></svg><span>Aç</span></button>
   <button id="saveBtn" class="workspace-action header-io" type="button" title="Projeyi kaydet veya dışa aktar" aria-haspopup="dialog" aria-controls="exportModal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3h2zm2 0v7h10V3M7 21v-8h10v8"/></svg><span>Kaydet</span></button>
   <button id="inspectorToggle" class="nav-toggle workspace-action">Ölçüm</button>
+  <button id="llmChatToggle" class="workspace-action header-chat-toggle" type="button" aria-controls="llmChatDock" aria-expanded="false" aria-pressed="false" title="Kristal yapısı hakkında sohbet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M8 9h8M8 12h6"/></svg><span>Sohbet</span></button>
   <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
   <div class="language-switch" role="group" aria-label="Language / Dil">
    <button id="languageEnglish" type="button" aria-pressed="true" title="English">EN</button>
@@ -91,6 +92,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
  </div>
 </header>
+<section id="llmChatDock" class="llm-chat-dock" role="region" aria-label="Yapay zekâ kristal sohbeti" hidden>
+ <div class="llm-chat-dock-head"><div class="llm-chat-dock-title"><strong>Kristal Sohbeti</strong><small>Yapıya bağlı yapay zekâ asistanı</small></div><button id="llmChatDockHide" type="button" aria-label="Sohbeti gizle" title="Sohbeti gizle">Gizle <span aria-hidden="true">×</span></button></div>
+ <div class="llm-chat-dock-body">
+  <div class="section crystal-llm-chat-section" >
+   <div class="llm-chat-toolbar">
+    <button id="llmChatNew" type="button">+ Yeni sohbet</button>
+    <button id="llmChatHistoryToggle" type="button" aria-expanded="false" aria-controls="llmChatHistoryPanel">Geçmiş</button>
+   </div>
+   <div id="llmChatHistoryPanel" class="llm-chat-history-panel" hidden>
+    <label class="field llm-chat-history-field"><span>Sohbet geçmişi</span>
+     <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
+    </label>
+    <button id="llmChatDelete" type="button" disabled>Seçili sohbeti sil</button>
+   </div>
+   <div id="llmChatThinking" class="llm-chat-thinking" role="status" aria-live="polite" hidden><span class="llm-chat-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Yanıt hazırlanıyor…</span></div>
+   <div id="llmChatMessages" class="llm-chat-messages" role="log" aria-label="Kristal sohbet mesajları" aria-live="polite" aria-relevant="additions text"></div>
+   <form id="llmChatForm" class="llm-chat-form">
+    <label class="field"><span>Kristal hakkında sorunuz</span>
+     <textarea id="llmChatPrompt" rows="3" maxlength="4000" placeholder="Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?"></textarea>
+    </label>
+    <div class="llm-chat-form-actions">
+     <button id="llmChatSend" type="submit" class="primary">Gönder</button>
+     <button id="llmChatAbort" type="button" hidden>İptal</button>
+    </div>
+   </form>
+   <p id="llmChatStatus" role="status" aria-live="polite" class="llm-chat-status"></p>
+  </div>
+ </div>
+</section>
 <div id="workspaceBackdrop" class="workspace-backdrop" hidden></div>
 <aside id="workspaceDrawer" class="workspace-drawer" role="dialog" aria-label="Kristal çalışma alanları" aria-modal="false" aria-hidden="true" inert>
  <div class="workspace-drawer-head"><div><strong>Çalışma alanları</strong><p>Her yapıyı bağımsız düzenleyin ve aralarında geçiş yapın.</p></div><button id="workspaceDrawerClose" type="button" class="workspace-close-drawer" aria-label="Çalışma alanlarını kapat">×</button></div>
@@ -462,29 +492,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div id="siteOccupancySummary" class="occupancy-summary" aria-live="polite" hidden></div>
    <div id="legend" class="legend"></div><div id="notice" class="notice"></div></div>
-  <div class="section crystal-llm-chat-section" data-right-section="ai">
-   <div class="llm-chat-toolbar">
-    <button id="llmChatNew" type="button">+ Yeni sohbet</button>
-    <button id="llmChatHistoryToggle" type="button" aria-expanded="false" aria-controls="llmChatHistoryPanel">Geçmiş</button>
-   </div>
-   <div id="llmChatHistoryPanel" class="llm-chat-history-panel" hidden>
-    <label class="field llm-chat-history-field"><span>Sohbet geçmişi</span>
-     <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
-    </label>
-    <button id="llmChatDelete" type="button" disabled>Seçili sohbeti sil</button>
-   </div>
-   <div id="llmChatMessages" class="llm-chat-messages" role="log" aria-label="Kristal sohbet mesajları" aria-live="polite" aria-relevant="additions text"></div>
-   <form id="llmChatForm" class="llm-chat-form">
-    <label class="field"><span>Kristal hakkında sorunuz</span>
-     <textarea id="llmChatPrompt" rows="3" maxlength="4000" placeholder="Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?"></textarea>
-    </label>
-    <div class="llm-chat-form-actions">
-     <button id="llmChatSend" type="submit" class="primary">Gönder</button>
-     <button id="llmChatAbort" type="button" hidden>İptal</button>
-    </div>
-   </form>
-   <p id="llmChatStatus" role="status" aria-live="polite" class="llm-chat-status"></p>
-  </div>
   <div class="section" data-right-section="comparison"><h2>Çoklu yapı / faz karşılaştırması</h2>
    <p class="hint">En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.</p>
    <input type="file" id="overlayFile" accept=".cif,.mcif" hidden>
@@ -831,7 +838,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
   <nav id="rightToolRail" class="right-tool-rail" aria-label="Analiz araçları">
    <button type="button" class="right-tool" data-right-tool="info" aria-label="Yapı bilgileri" title="Yapı bilgileri" aria-controls="rightDrawerPane-info" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></svg></button>
-   <button type="button" class="right-tool" data-right-tool="ai" aria-label="Yapay zekâ kristal sohbeti" title="Yapay zekâ · kristal sohbeti" aria-controls="rightDrawerPane-ai" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M12 7.5 13 10l2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="comparison" aria-label="Çoklu yapı / faz karşılaştırması" title="Çoklu yapı / faz karşılaştırması" aria-controls="rightDrawerPane-comparison" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="12" height="12" rx="2"/><path d="M9 2h10a2 2 0 0 1 2 2v13m-4 4H7a2 2 0 0 1-2-2"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="measurement" aria-label="Atom seçimi ve ölçüm" title="Atom seçimi ve ölçüm" aria-controls="rightDrawerPane-measurement" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="1" transform="rotate(-32 12 12)"/><path d="m8 8 2 3m2-6 2 3m1 8 2 3"/></svg></button>
    <button type="button" class="right-tool" data-right-tool="history" aria-label="Ölçüm geçmişi" title="Ölçüm geçmişi" aria-controls="rightDrawerPane-history" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5"/></svg><span id="historyToolCount" class="right-tool-count" aria-hidden="true">0</span></button>
