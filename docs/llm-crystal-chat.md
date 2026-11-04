@@ -10,9 +10,14 @@
    A model being listed does not guarantee the current account has billing
    credit, quota or access to use it. For vLLM, List server models is also
    available. The password input is cleared on save.
-3. Return to Crystal. Click the AI icon immediately below Structure Info on
-   the right tool rail.
-4. Ask about the active crystal. Only explicit Send transmits a message, prior
+3. Return to Crystal. Click the **Sohbet / Chat** button in the top navigation.
+   This opens a wide (~910px), responsive conversation dock, separate from the
+   right-hand analysis tool rail.
+4. Use **Hide** to temporarily close the dock, or click the same top button
+   again to reopen it. Hiding does not discard the draft, existing messages,
+   history, or cancel an in-flight request. Navigating away from the editor
+   hides the dock; restoring the editor lets it be reopened.
+5. Ask about the active crystal. Only explicit Send transmits a message, prior
    conversation turns and a bounded snapshot of the active crystal.
 
 The optional List server models button queries the configured vLLM endpoint.
@@ -46,14 +51,17 @@ The conversations use localStorage key kristalyapi.llm.history.v1: per-session
 structure snapshot, message roles and text, provider/model labels. The
 application does not write provider keys into chat history.
 
-The chat opens in a compact layout: no provider settings card, large context
+The chat opens as a wide workspace dock: no provider settings card, large context
 box or lengthy privacy text. The History button reveals the saved-session
 selector and the ability to delete the selected conversation. There is no
 "delete all conversations" button in the chat pane. Users can also clear
 the saved provider settings from the Library.
 History is bounded to 30 sessions, 64 recent messages per session, 5000
-characters per message and about 1 MiB of JSON. Model messages are rendered
-as text, never active HTML. Browser localStorage is **not an encrypted vault**;
+characters per message and about 1 MiB of JSON. Model responses are rendered as a conservative **safe Markdown** subset
+(headings, emphasis, ordered/unordered lists, links, tables, blockquotes,
+code blocks and basic readable inline math). HTML from the model is shown as
+inert text and never parsed or executed. Full TeX typesetting and arbitrary
+HTML are intentionally not supported. Browser localStorage is **not an encrypted vault**;
 same-origin JavaScript and privileged browser extensions can read it.
 Use personal keys on trusted devices; clearing site data also clears history.
 
@@ -97,3 +105,20 @@ a real account, model or LAN environment is reachable.
 
 Errors are translated into user-actionable messages without echoing response
 bodies or API keys. No production Gemini request is required by CI.
+
+## Response progress, cancellation and retries
+
+A compact animated three-dot "Preparing answer" indicator appears above the
+conversation while a request is pending. The static waiting line is removed.
+When reduced-motion is preferred, the indicator is not animated.
+
+The previous hard-coded 45-second HTTP abort could appear in Chromium as
+"signal is aborted without reason". The chat request timeout is now 120
+seconds by default (bounded to three minutes if explicitly overridden).
+Manual Cancel, model-response timeout and network/CORS failures show distinct
+messages. A failed request removes its unsatisfied outgoing message from
+the saved conversation and restores the draft to the input, avoiding a chain
+of repeated unanswered blue bubbles on retry. Completed conversations are
+still stored in localStorage.
+
+These are UX/network changes, not proof of any provider availability.
