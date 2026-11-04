@@ -6481,9 +6481,10 @@ function applyPointDefect(){
  * sites. Map selected symmetry/periodic images back to the one editable row. */
 function sourceSiteIndexForAtom(item){
  if(!item?.site)return -1;
+ const direct=state.sites.indexOf(item.site);
+ if(direct>=0)return direct;
  const index=item.site.sourceSiteIndex;
- if(Number.isInteger(index)&&index>=0&&index<state.sites.length)return index;
- return state.sites.indexOf(item.site);
+ return Number.isInteger(index)&&index>=0&&index<state.sites.length?index:-1;
 }
 function syncSelectedSiteRows(){
  const container=$('siteRows');if(!container)return;
