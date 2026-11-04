@@ -112,9 +112,8 @@ try{
  assert.equal(calls.at(-1).body.messages[0].role,'system');
  assert.equal(calls.at(-1).body.model,'Qwen/Qwen3-8B');
 
- await page.locator('#llmChatClearAll').click();
  page.once('dialog',dialog=>dialog.accept());
- // The click above opens the confirmation; the handler accepts it.
+ await page.locator('#llmChatClearAll').click();
  await page.waitForFunction(()=>localStorage.getItem('kristalyapi.llm.history.v1')===null);
  await page.locator('#llmChatOpenSettings').click();
  await page.locator('#llmClearSettings').click();
