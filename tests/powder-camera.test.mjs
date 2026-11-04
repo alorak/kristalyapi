@@ -97,7 +97,7 @@ test('camera UI recomputes from the active crystal and keeps simulated Kβ separ
   'pwCameraCell','pwCameraInterpretation','pwCameraFilterName','pwCameraDiagram','pwCameraFilm'])node(id);
  elements.pwCameraPage.querySelectorAll=()=>[];
  const canvasContext={};
- for(const fn of ['setTransform','clearRect','beginPath','arc','stroke','fill','setLineDash','moveTo','lineTo','fillRect'])
+ for(const fn of ['setTransform','clearRect','beginPath','arc','stroke','fill','setLineDash','moveTo','lineTo','fillRect','fillText'])
   canvasContext[fn]=()=>{};
  for(const id of ['pwCameraDiagram','pwCameraFilm'])elements[id].getContext=()=>canvasContext;
  elements.pwCameraSource.value='Cu';elements.pwCameraDiameter.value='57.3';
