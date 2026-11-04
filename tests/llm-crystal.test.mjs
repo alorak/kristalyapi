@@ -62,7 +62,7 @@ test('Gemini request keeps key out of URL and includes a precise structure syste
  assert.ok(!req.url.includes('synthetic-test-key'));
  assert.equal(req.body.contents[0].role,'user');
  assert.equal(req.body.systemInstruction.parts[0].text.includes('"name":"Si"'),true);
- assert.match(req.body.systemInstruction.parts[0].text,/not a DFT or experimental/);
+ assert.match(req.body.systemInstruction.parts[0].text,/not a DFT or experimental/i);
 });
 test('vLLM uses OpenAI chat completions; optional auth token sent only as header',()=>{
  const req=buildLlmRequest({...vllm,vllmToken:'private-vllm-token'},snapshot,chat);
