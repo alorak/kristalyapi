@@ -46,8 +46,12 @@ try{
   }
   calls.push({provider:'gemini',url:request.url(),headers:request.headers(),
    body:JSON.parse(request.postData()||'{}')});
+  // Delayed synthetic completion verifies animation and hide/show without
+  // cancelling the pending provider request.
+  await new Promise(resolve=>setTimeout(resolve,3000));
+  const text='### Kristal Özeti\n\n**Bu kristal yapısı hakkında test yanıtı.**\n\n- Si komşuluğu\n- Hücre\n\n| Element | Sayı |\n| --- | --- |\n| Si | 2 |\n\n<img src=x onerror=alert(1)>';
   await route.fulfill({status:200,headers:cors,body:JSON.stringify({
-   candidates:[{content:{parts:[{text:'Bu kristal yapısı hakkında test yanıtı.'}]}}]
+   candidates:[{content:{parts:[{text}]}}]
   })});
  });
  await page.route('http://127.0.0.1:18000/v1/**',async route=>{
@@ -68,7 +72,10 @@ try{
  await page.locator('#languageTurkish').click();
  const rail=page.locator('#rightToolRail [data-right-tool]');
  assert.equal(await rail.nth(0).getAttribute('data-right-tool'),'info');
- assert.equal(await rail.nth(1).getAttribute('data-right-tool'),'ai');
+ assert.equal(await rail.nth(1).getAttribute('data-right-tool'),'comparison');
+ assert.equal(await rail.count(),15);
+ assert.equal(await page.locator('[data-right-tool="ai"]').count(),0);
+ assert.equal(await page.locator('#llmChatDock').isVisible(),false);
 
  await page.locator('#libraryNav').click();
  await page.locator('#libLlmTab').click();
@@ -87,7 +94,9 @@ try{
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kristalyapi.llm.settings.v1')).geminiKey),
   'synthetic-gemini-browser-key');
  await page.locator('#homeLink').click();
- await page.locator('#rightToolRail [data-right-tool="ai"]').click();
+ await page.locator('#llmChatToggle').click();
+ assert.equal(await page.locator('#llmChatDock').isVisible(),true);
+ assert.equal(await page.locator('#llmChatToggle').getAttribute('aria-expanded'),'true');
  assert.equal(await page.locator('#llmChatModel').count(),0,'large provider settings card removed');
  assert.equal(await page.locator('#llmChatOpenSettings').count(),0,'large settings link removed');
  assert.equal(await page.locator('#llmChatClearAll').count(),0,'delete-all button removed');
@@ -95,7 +104,20 @@ try{
  assert.equal(await page.locator('#llmChatMessages').evaluate(el=>el.classList.contains('is-empty')),true);
  await page.locator('#llmChatPrompt').fill('Bu kristalin simetrisi nedir?');
  await page.locator('#llmChatSend').click();
+ assert.equal(await page.locator('#llmChatThinking').isVisible(),true,'animated progress is at the top of the panel');
+ assert.equal(await page.locator('#llmChatStatus').textContent(),'','static waiting status is suppressed');
+ await page.locator('#llmChatDockHide').click();
+ assert.equal(await page.locator('#llmChatDock').isVisible(),false);
+ await page.locator('#llmChatToggle').click();
+ assert.equal(await page.locator('#llmChatDock').isVisible(),true);
  await page.waitForFunction(()=>document.getElementById('llmChatMessages')?.textContent?.includes('Bu kristal yapısı hakkında test yanıtı.'),null,{timeout:15000});
+ assert.equal(await page.locator('#llmChatThinking').isVisible(),false);
+ assert.equal(await page.locator('#llmChatMessages .llm-md h3').count(),1,'Markdown heading is rendered');
+ assert.equal(await page.locator('#llmChatMessages .llm-md strong').count(),1,'Markdown emphasis is rendered');
+ assert.equal(await page.locator('#llmChatMessages .llm-md li').count(),2,'Markdown list is rendered');
+ assert.equal(await page.locator('#llmChatMessages .llm-md table').count(),1,'Markdown table is rendered');
+ assert.equal(await page.locator('#llmChatMessages img').count(),0,'untrusted HTML must never run');
+ assert.ok((await page.locator('#llmChatMessages').textContent()).includes('<img src=x'));
  assert.equal(calls[0].provider,'gemini');
  assert.ok(calls[0].url.includes('gemini-2.5-flash-lite:generateContent'));
  assert.equal(calls[0].headers['x-goog-api-key'],'synthetic-gemini-browser-key');
@@ -109,7 +131,7 @@ try{
 
  await page.reload();
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
- await page.locator('#rightToolRail [data-right-tool="ai"]').click();
+ await page.locator('#llmChatToggle').click();
  await page.waitForFunction(()=>document.getElementById('llmChatMessages')?.textContent?.includes('Bu kristal yapısı hakkında test yanıtı.'));
  assert.equal(await page.locator('#llmChatHistoryPanel').isVisible(),false,'history collapsed after reload');
  assert.equal(await page.locator('#llmChatHistory option').count(),2,'saved session should survive reload');
@@ -130,7 +152,7 @@ try{
  await page.locator('#llmVllmModel').fill('Qwen/Qwen3-8B');
  await page.locator('#llmSaveSettings').click();
  await page.locator('#homeLink').click();
- await page.locator('#rightToolRail [data-right-tool="ai"]').click();
+ await page.locator('#llmChatToggle').click();
  await page.locator('#llmChatNew').click();
  await page.locator('#llmChatPrompt').fill('Bu yapının hücre parametrelerini açıkla.');
  await page.locator('#llmChatSend').click();
