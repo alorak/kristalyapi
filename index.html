@@ -1061,6 +1061,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button id="libPresetsTab" type="button" role="tab" aria-controls="libPresetsPane" aria-selected="false">Örnek Yapılar</button>
    <button id="libBookmarksTab" type="button" role="tab" aria-controls="libBookmarksPane" aria-selected="false">★ Yer imleri <span id="libBookmarkCount" class="lib-counter">0</span></button>
    <button id="libWorkerTab" type="button" role="tab" aria-controls="libWorkerPane" aria-selected="false">Cloudflare Worker · COD API</button>
+   <button id="libMpTab" type="button" role="tab" aria-controls="libMpPane" aria-selected="false">Materials Project</button>
+   <button id="libMpSettingsTab" type="button" role="tab" aria-controls="libMpSettingsPane" aria-selected="false">Materials Project Ayarları</button>
   </div>
   <div id="libSearchPane" role="tabpanel" aria-labelledby="libSearchTab">
    <div class="lib-search-layout">
@@ -1146,6 +1148,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div id="codWorkerStatus" class="cod-worker-status" role="status">Varsayılan COD Worker etkin. Otomatik modda önce bu Worker denenir.</div>
    <div class="lib-worker-instructions">Varsayılan Worker: <strong>kristalyapi-cod-api.aoakkirman.workers.dev</strong>. Özel bir adres kaydedersen yalnızca bu tarayıcıda tutulur ve öncelikli kullanılır. <strong>Varsayılana dön</strong> özel ayarı siler. <strong>COD'da ara</strong> bölümünün <em>Otomatik</em> modunda önce Worker denenir; bağlantı kurulamazsa doğrudan COD'ya geçilir.</div>
+  </section>
+
+
+  <section id="libMpPane" class="lib-panel mp-library-pane" role="tabpanel" aria-labelledby="libMpTab" hidden>
+   <div class="lib-panel-head"><h3>Materials Project · hesaplanmış malzemeler</h3><p>Kristal yapıları ve DFT referans verilerini kişisel Materials Project API anahtarınla ara. Farklı polimorflar ayrı MP kayıtlarıdır.</p></div>
+   <form id="mpSearchForm" class="mp-search-form">
+    <label class="lib-field"><span>Formül / kimyasal sistem / MP kimliği</span><input id="mpQuery" type="text" maxlength="100" autocomplete="off" spellcheck="false" placeholder="SrTiO3 · Si-O · mp-149" required></label>
+    <button id="mpSearchSubmit" type="submit">Materials Project üzerinde ara</button>
+   </form>
+   <div class="mp-examples">Örnekler:
+    <button type="button" data-mp-example="Si">Si</button>
+    <button type="button" data-mp-example="SrTiO3">SrTiO3</button>
+    <button type="button" data-mp-example="Al2O3">Al2O3</button>
+    <button type="button" data-mp-example="mp-149">mp-149</button>
+   </div>
+   <p id="mpSearchStatus" class="mp-status" role="status" aria-live="polite">API anahtarı Kütüphane → Materials Project Ayarları bölümünden girilir.</p>
+   <div id="mpResults" class="mp-results" aria-live="polite"></div>
+   <section class="mp-comparison" aria-label="Materials Project malzeme karşılaştırması">
+    <div class="mp-comparison-heading"><h3>P1 · Malzeme özelliklerini karşılaştır</h3><button id="mpCompareClear" type="button">Seçimi temizle</button></div>
+    <div id="mpCompare"></div>
+   </section>
+   <p class="hint">Veriler Materials Project tarafından hesaplanmıştır; deneysel XRD ölçümü değildir. İçe aktarılan yapı etkin çalışma alanına yüklenir ve mevcut Toz Kırınımı / Kamera motoru tarafından kullanılır. Kaynak: <a href="https://materialsproject.org" target="_blank" rel="noopener noreferrer">Materials Project</a>.</p>
+  </section>
+  <section id="libMpSettingsPane" class="lib-panel mp-settings-pane" role="tabpanel" aria-labelledby="libMpSettingsTab" hidden>
+   <div class="lib-panel-head"><h3>Materials Project Ayarları</h3><p>Kişisel anahtarın ile resmî API'ye doğrudan HTTPS üzerinden eriş.</p></div>
+   <label class="lib-field"><span>Materials Project API anahtarı</span><input id="mpApiKey" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="X-API-KEY"></label>
+   <label class="mp-reveal"><input id="mpKeyReveal" type="checkbox"> Girilen anahtarı göster</label>
+   <div class="mp-actions"><button id="mpKeySave" type="button">Bu sayfada kullan</button><button id="mpKeyClear" type="button">Anahtarı sil</button></div>
+   <p id="mpKeyStatus" class="mp-status" role="status" aria-live="polite">API anahtarı girilmedi.</p>
+   <p class="hint">Gizlilik: Anahtar yalnız bu sayfanın belleğinde tutulur. Yenileme/sekme kapatma sonrası yeniden girilmelidir; localStorage, çerez, URL, GitHub, servis çalışanı veya dışa aktarılan dosyalara kaydedilmez. HTTPS isteğinde yalnız resmî api.materialsproject.org adresine X-API-KEY başlığıyla gönderilir. Tarayıcı erişimi API'nin CORS izinlerine tabi olabilir.</p>
+   <p><a href="https://materialsproject.org/api" target="_blank" rel="noopener noreferrer">Materials Project API anahtarı</a> · <a href="https://docs.materialsproject.org/downloading-data/using-the-api" target="_blank" rel="noopener noreferrer">Resmî API dokümantasyonu</a></p>
   </section>
 
   <section id="codImportHelp" class="lib-panel cod-import-help" hidden aria-live="polite">
