@@ -7,6 +7,12 @@
 (() => {
  'use strict';
  const entries=[
+  ["Sohbet","Chat"],
+  ["Kristal Sohbeti","Crystal Chat"],
+  ["Yapıya bağlı yapay zekâ asistanı","AI assistant for this structure"],
+  ["Sohbeti gizle","Hide chat"],
+  ["Yanıt hazırlanıyor…","Preparing answer…"],
+  ["Kristal yapısı hakkında sohbet","Chat about the crystal structure"],
   ["Geçmiş","History"],
   ["Sohbet geçmişi","Conversation history"],
   ["Gemini modellerini listele","List Gemini models"],
