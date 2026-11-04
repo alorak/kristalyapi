@@ -7,6 +7,11 @@
 (() => {
  'use strict';
  const entries=[
+  ["Geçmiş","History"],
+  ["Sohbet geçmişi","Conversation history"],
+  ["Gemini modellerini listele","List Gemini models"],
+  ["API anahtarıyla generateContent destekleyen modeller görüntülenir.","Lists generateContent-compatible models using your API key."],
+  ["Kristal hakkında sorunuzu yazın.","Ask a question about this crystal."],
 
   ['Yeni anahtar girin (mevcutsa boş bırakın)','Enter a new key (leave blank to keep the saved one)'],
   ['Sunucu erişim anahtarı (varsa)','Server access token (if configured)'],
