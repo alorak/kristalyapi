@@ -1561,9 +1561,10 @@ body.lesson-open #app{display:none!important}
 }
 .llm-chat-dock[hidden],#llmChatThinking[hidden]{display:none!important}
 .llm-chat-dock{
- position:fixed;z-index:120;top:72px;right:clamp(12px,2vw,36px);
- width:min(910px,calc(100vw - 28px));
- height:min(850px,calc(100dvh - 88px));
+ /* The editor viewport is the containing block: never cover the right tool rail. */
+ position:absolute;z-index:4;top:12px;right:12px;
+ width:min(910px,calc(100% - 24px));
+ height:min(850px,calc(100% - 24px));
  min-width:0;min-height:280px;display:flex;flex-direction:column;
  background:#fff;color:#253f59;border:1px solid #cbdbe9;border-radius:15px;
  box-shadow:0 15px 65px rgba(17,43,73,.24);
@@ -1608,6 +1609,12 @@ body.lesson-open #app{display:none!important}
  border:1px solid #c8d8e8;border-radius:10px;background:#fff;color:#294760;
  padding:10px 12px;resize:vertical;box-shadow:none;
  font-family:inherit;font-size:13px;line-height:1.6;
+}
+
+#llmChatDock #llmChatPrompt::placeholder{color:#9aaaba;opacity:1}
+@media(max-width:1180px){
+ /* The compact inspector rail overlays the viewport at these widths. */
+ #viewport .llm-chat-dock{right:66px;width:min(910px,calc(100% - 78px))}
 }
 .llm-chat-dock .llm-chat-form-actions button{flex:0 1 auto;min-width:128px}
 .llm-chat-dock #llmChatSend{flex:1}
