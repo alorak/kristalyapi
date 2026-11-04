@@ -125,6 +125,11 @@ export async function mpApiGet(url,apiKey,{fetcher=fetch,signal,maxBytes=2500000
    }catch(error){if(controller.signal.aborted)throw error;}
    if(health?.materialsProjectProxy!==true)
     throw Error('Materials Project Worker etkin değil. Cloudflare Worker sürüm 1.3+ dağıtılmalı.');
+   // The older gateway accepted formula searches but rejected post-2026
+   // alphabetical material IDs on the subsequent structure lookup.
+   const requestedId=u.searchParams.get('material_ids');
+   if(requestedId&&/^mp-[a-z]{1,16}$/.test(requestedId)&&health?.materialsProjectAlphaIds!==true)
+    throw Error('Alfabetik Materials Project kimliği için Cloudflare Worker sürüm 1.4+ dağıtılmalı.');
    endpoint=MP_WORKER+'/api/mp/summary'+u.search;
   }
   const response=await fetcher(endpoint,{
