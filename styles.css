@@ -535,6 +535,39 @@ header .actions button:hover{background:#eff6fd;border-color:#a9c6e2}
 #app>.panel.right .right-drawer-pane>.section .field span{color:#57728a}
 #app>.panel.right .right-drawer-pane>.section .note{color:#57728a}
 #app>.panel.right .right-drawer-pane>.section :is(input:not([type="checkbox"]):not([type="range"]),select,textarea){background:#fbfdff;border-color:#cbd8e6;color:#263d55}
+
+/* Right inspector: compact, consistent control scale across every tool section.
+   Exclude directional/stepper icon buttons from the generic action-button rule. */
+#app>.panel.right .right-drawer-pane>.section button:not([data-repeat-target]):not([data-view-axis]):not([data-view-rotate]){
+ min-height:32px;
+ padding:6px 9px;
+ font-size:12px;
+ line-height:1.35;
+ font-weight:600;
+ border-radius:7px;
+ max-width:100%;
+ white-space:normal;
+ overflow-wrap:break-word;
+}
+#app>.panel.right .right-drawer-pane>.section :is(
+ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+ select,textarea
+){
+ min-width:0;
+ max-width:100%;
+ font-size:12px;
+ line-height:1.35;
+ padding:6px 8px;
+ border-radius:7px;
+}
+#app>.panel.right .right-drawer-pane>.section :is(
+ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+ select
+){height:32px;min-height:32px}
+#app>.panel.right .right-drawer-pane>.section .field{gap:4px}
+#app>.panel.right .right-drawer-pane>.section .actionrow{gap:6px}
+#app>.panel.right .right-drawer-pane>.section .actionrow button{flex:0 1 auto}
+
 #app>.panel.right .right-drawer-pane>.section :is(.info,.metric,.measure-item){background:#f5f8fc;border-color:#dfe8f1}
 #app>.panel.right .right-drawer-pane>.section :is(.info strong,.metric strong){color:#294562}
 #app>.panel.right .right-drawer-pane>.section #measureList .measure-item{background:#edf4fe;border-color:#cfdff2}
