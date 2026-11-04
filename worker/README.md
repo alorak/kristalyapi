@@ -109,7 +109,7 @@ Yerel frontend http://localhost:8000 üzerinde çalışıyorsa CORS_ORIGINS
 değerine bu origin'i virgülle ekle; üretim için gereksiz lokal izinleri kaldır.
 
 
-## Materials Project: kişisel anahtarla CORS güvenli erişim (Worker v1.3+)
+## Materials Project: kişisel anahtarla CORS güvenli erişim (Worker v1.4+)
 
 Statik GitHub Pages sayfası, Materials Project'in `X-API-KEY` başlığını içeren
 cross-origin isteğini API'nin CORS önkontrolü izin vermiyorsa doğrudan yapamaz.
@@ -145,3 +145,21 @@ seçeneği **açma**; doğrudan erişim yöntemi korunur.
 Hâlihazırdaki dağıtımın güncelliği bu depodan doğrulanamaz. Worker yayımlanana
 kadar canlı Materials Project erişimi hâlâ CORS/erişim hatası verebilir; sentetik
 tarayıcı testleri gerçek MP erişiminin kanıtı değildir.
+
+
+### 2026 AlphaID kimlikleri
+
+Materials Project'in 2026-04-13 sürümünden sonra üretilen kayıtlar
+`mp-aaaaaczy` gibi alfabetik (base-26) malzeme kimlikleri kullanabilir.
+Uygulama hem önceki `mp-149` hem yeni `mp-aaaaaczy` biçimini arama,
+sonuç gösterimi ve kristal içe aktarmada destekler.
+
+Worker **v1.4** ve sonrası `material_ids=mp-aaaaaczy` sorgularını
+kabul eder ve `/health` içinde `materialsProjectAlphaIds:true` özelliğini
+ilan eder. Önceki v1.3 Worker formül aramalarında AlphaID kayıtlarını
+döndürebilir ancak bu kimlikle tekil yapı sorgusunu reddeder. Yeni istemci
+bunu anahtar göndermeden önce denetler ve açık bir hata gösterir.
+
+Dağıtım sonrasında `/health` yanıtında
+`"version":"1.4"`, `"materialsProjectProxy":true` ve
+`"materialsProjectAlphaIds":true` alanlarının bulunmasını doğrulayın.
