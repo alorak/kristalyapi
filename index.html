@@ -144,7 +144,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  <input id="cellVisible" type="checkbox" checked><input id="boundary" type="checkbox" checked>
  <input id="labels" type="checkbox"><input id="axes" type="checkbox"><input id="autoRotate" type="checkbox"><input id="adpVisible" type="checkbox">
  <input id="atomScale" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="atomScaleVal">0.80</output>
- <input id="bondCut" type="range" min=".8" max="5" step=".05" value="2.65"><output id="bondCutVal">2.65</output>
+ <input id="bondCut" type="range" min=".8" max="1000" step=".05" value="2.65"><output id="bondCutVal">2.65</output>
 </div>
 <div id="app">
  <aside class="panel left" id="leftPanel" aria-label="Kristal yapı düzenleyicisi">
@@ -273,10 +273,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div class="site-list-summary"><span>Atom konumları</span><span class="site-list-counter"><strong id="siteCount">0</strong> konum</span></div>
     <div id="siteRows" class="site-list" role="list" aria-label="Atom konumları"></div>
     <div class="actionrow" style="margin-top:9px"><button id="addAtom">+ Atom ekle</button></div>
-    <div class="site-style-panel"><strong>Atom / çokyüzlü görünümü</strong>
-     <label class="field"><span>Atom konumu</span><select id="siteStyleSite"></select></label>
+    <div id="siteAppearanceDock" hidden><div id="siteAppearancePanel" class="site-style-panel">
+     <select id="siteStyleSite" hidden aria-hidden="true"></select>
+     <input id="siteStyleColor" type="color" value="#ffffff" hidden aria-hidden="true">
      <div class="site-style-fields">
-      <label class="field site-style-color-field"><span>Atom rengi</span><input id="siteStyleColor" type="color" value="#ffffff" aria-label="Seçilen konumun atom rengi"></label>
+      
       <label class="field"><span>Atom ölçeği</span><input id="siteStyleScale" type="number" min=".2" max="3" step=".1" value="1"></label>
       <label class="field"><span>Çokyüzlü rengi</span><input id="sitePolyColor" type="color" value="#54a1db"></label>
       <label class="field"><span>Çokyüzlü opaklığı</span><input id="sitePolyOpacity" type="number" min=".05" max="1" step=".05" value=".25"></label>
@@ -286,7 +287,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      </div>
      <div class="site-style-checks"><label><input id="siteStyleHidden" type="checkbox"> Bu konumun atomlarını gizle</label><label><input id="siteLabelHidden" type="checkbox"> Etiketini gizle</label></div><div class="actionrow"><button id="siteStyleReset" type="button">Stili sıfırla</button></div>
      <small>Görünüm ayarları seçili atom konumuna özgüdür; proje ve geri alma geçmişinde korunur. Gizleme ve opaklık yalnız görünümü değiştirir: atom yapıda, simetride ve koordinat dışa aktarımlarında kalır. Boş etiket metni element simgesini (dışa aktarmada seçilen etiket türünü) kullanır; pozitif dikey ofset etiketi yukarı taşır.</small>
-    </div>
+    </div></div>
     <p class="hint">Kesirli koordinatlar (x, y, z) her atomun altında düzenlenebilir. 3B görünümde seçilen atomlar burada vurgulanır; simetri açıksa eşdeğer görüntüler kaynak asimetrik atom satırında gösterilir.</p>
   </div>
    </div>
@@ -321,9 +322,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <button id="performanceDownload" type="button">JSON performans raporunu indir</button>
   </section>
   <div id="axisGizmo" class="axis-gizmo">
-    <select id="axisCompassMode" class="axis-compass-mode" aria-label="Yön göstergesi sistemi" title="Yön göstergesi sistemi">
-      <option value="cartesian">Kartezyen X/Y/Z</option><option value="lattice">Kristalografik a/b/c</option>
-    </select>
     <svg id="axisGizmoSvg" viewBox="0 0 120 120" role="img" aria-label="Kartezyen yön göstergesi: X kırmızı, Y yeşil, Z mavi"><circle cx="60" cy="58" r="4" fill="#69798a" stroke="#fff" stroke-width="1.5"/></svg>
 
   </div>
@@ -352,7 +350,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="quickbar-ranges">
      <label class="quickbar-range"><span class="quickbar-field-label">Atom boyutu</span><input id="quickAtomScale" aria-label="Hızlı atom boyutu" type="range" min=".3" max="1.6" step=".05" value=".8"><output id="quickAtomScaleVal" for="quickAtomScale">0.80</output></label>
-     <label class="quickbar-range"><span class="quickbar-field-label">Bağ uzunluğu (Å)</span><input id="quickBondCut" aria-label="Hızlı bağ uzunluğu eşiği" type="range" min=".8" max="5" step=".05" value="2.65"><output id="quickBondCutVal" for="quickBondCut">2.65</output></label>
+     <label class="quickbar-range"><span class="quickbar-field-label">Bağ uzunluğu (Å)</span><input id="quickBondCut" aria-label="Hızlı bağ uzunluğu eşiği" type="range" min=".8" max="1000" step=".05" value="2.65"><output id="quickBondCutVal" for="quickBondCut">2.65</output></label>
     </div>
    </div>
    <div class="quickbar-group" role="group" aria-label="Miller düzlemleri ve analiz kontrolleri">
