@@ -244,6 +244,10 @@ export function initCrystalLlm({getStructure,getWorkspaceId}){
  renderMessages();setBusy(false);
  return {
   onOpen(){
+   // History is only a secondary on-demand control, not part of the default
+   // chat surface each time the drawer is opened.
+   $('llmChatHistoryPanel').hidden=true;
+   $('llmChatHistoryToggle').setAttribute('aria-expanded','false');
    settings=readLlmSettings(localStorage);
    const current=getSnapshot();
    const match=sessions.find(s=>s.snapshot.workspaceId===current.workspaceId&&
