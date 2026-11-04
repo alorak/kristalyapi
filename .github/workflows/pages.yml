@@ -239,6 +239,8 @@ jobs:
           cp bulk-study-preparation.js public/bulk-study-preparation.js
           cp xrd-acquisition-core.js public/xrd-acquisition-core.js
           cp materials-page.js public/materials-page.js
+          cp materials-project-core.js public/materials-project-core.js
+          cp materials-project-page.js public/materials-project-page.js
           cp xrd-peak-match-core.js public/xrd-peak-match-core.js
           cp xrd-factor-core.js public/xrd-factor-core.js
           cp lesson-pages.js public/lesson-pages.js
@@ -268,6 +270,8 @@ jobs:
           test -s public/bulk-study-preparation.js
           test -s public/xrd-acquisition-core.js
           test -s public/materials-page.js
+          test -s public/materials-project-core.js
+          test -s public/materials-project-page.js
           test -s public/xrd-peak-match-core.js
           test -s public/xrd-factor-core.js
           test -s public/lesson-pages.js
