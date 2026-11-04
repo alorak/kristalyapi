@@ -4,7 +4,12 @@
 
 1. Open **Library → LLM Settings**. Select Google Gemini API, enter a personal
    API key and model, or select Local vLLM, enter its server URL and model ID.
-2. Click Save LLM settings in browser. The password input is cleared.
+2. For Gemini, click **List Gemini models** to call the official API models.list
+   endpoint with the configured key. The list shows only models advertising
+   generateContent support; select one and click Save LLM settings in browser.
+   A model being listed does not guarantee the current account has billing
+   credit, quota or access to use it. For vLLM, List server models is also
+   available. The password input is cleared on save.
 3. Return to Crystal. Click the AI icon immediately below Structure Info on
    the right tool rail.
 4. Ask about the active crystal. Only explicit Send transmits a message, prior
@@ -41,8 +46,11 @@ The conversations use localStorage key kristalyapi.llm.history.v1: per-session
 structure snapshot, message roles and text, provider/model labels. The
 application does not write provider keys into chat history.
 
-The user can start a new conversation, open saved sessions, delete the
-selected session, delete all chats, or clear the saved provider settings.
+The chat opens in a compact layout: no provider settings card, large context
+box or lengthy privacy text. The History button reveals the saved-session
+selector and the ability to delete the selected conversation. There is no
+"delete all conversations" button in the chat pane. Users can also clear
+the saved provider settings from the Library.
 History is bounded to 30 sessions, 64 recent messages per session, 5000
 characters per message and about 1 MiB of JSON. Model messages are rendered
 as text, never active HTML. Browser localStorage is **not an encrypted vault**;
@@ -76,3 +84,16 @@ its --api-key option. Restrict access at the network/reverse-proxy layer.
 
 The automated tests use synthetic Gemini/vLLM results and do not prove that
 a real account, model or LAN environment is reachable.
+
+## Diagnosing Gemini errors
+
+- **HTTP 402:** Gemini API prepaid credit may be exhausted. Check Google AI
+  Studio billing setup, credit balance and usage. Changing a model name alone
+  is unlikely to fix a credit-related 402.
+- **HTTP 404:** the model name/resource is missing, unsupported on that API
+  version or unavailable to the account. Recheck models.list and access.
+- **HTTP 401/403:** API-key validity, permissions and project restrictions.
+- **HTTP 429:** quota or rate limits.
+
+Errors are translated into user-actionable messages without echoing response
+bodies or API keys. No production Gemini request is required by CI.

@@ -4,7 +4,7 @@ import {
  LLM_SETTINGS_KEY,LLM_HISTORY_KEY,GEMINI_API,validateVllmUrl,
  normalizeLlmSettings,llmReady,readLlmSettings,writeLlmSettings,
  crystalSnapshot,readChatHistory,writeChatHistory,buildLlmRequest,
- requestLlm,getVllmModels
+ requestLlm,getVllmModels,getGeminiModels,llmHttpError
 } from '../llm-crystal-core.js';
 
 const mem=()=>{const data=new Map();return {
@@ -125,4 +125,54 @@ test('invalid server body and HTTP failure do not leak an API key',async()=>{
  await assert.rejects(requestLlm(vllm,snapshot,chat,{fetcher:async()=>({
   ok:true,headers:{get:()=>null},text:async()=>JSON.stringify({choices:[{message:{content:''}}]})
  })}),/metin yanıtı/);
+});
+
+test('Gemini models.list fetches available generateContent models and paginates without leaking the key in URLs',async()=>{
+ const visited=[];
+ const result=await getGeminiModels(gemini,{fetcher:async(url,options)=>{
+  visited.push({url,options});
+  return {
+   ok:true,status:200,headers:{get:()=>null},
+   text:async()=>JSON.stringify(visited.length===1?{
+    models:[
+     {name:'models/gemini-2.5-flash',displayName:'Gemini 2.5 Flash',supportedGenerationMethods:['generateContent','countTokens']},
+     {name:'models/text-embedding-004',displayName:'Embedding',supportedGenerationMethods:['embedContent']},
+     {name:'models/gemini-2.5-flash',displayName:'Duplicate',supportedGenerationMethods:['generateContent']}
+    ],nextPageToken:'page-2'
+   }:{
+    models:[{name:'models/gemini-2.5-flash-lite',displayName:'Gemini 2.5 Flash Lite',
+      supportedGenerationMethods:['generateContent']}]
+   })
+  };
+ }});
+ assert.deepEqual(result,[
+  {id:'gemini-2.5-flash',name:'Gemini 2.5 Flash'},
+  {id:'gemini-2.5-flash-lite',name:'Gemini 2.5 Flash Lite'}
+ ]);
+ assert.equal(visited.length,2);
+ assert.match(visited[0].url,/^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/models\?pageSize=100$/);
+ assert.ok(visited[1].url.includes('pageToken=page-2'));
+ for(const visit of visited){
+  assert.ok(!visit.url.includes('synthetic-test-key'));
+  assert.equal(visit.options.headers['x-goog-api-key'],'synthetic-test-key');
+  assert.equal(visit.options.credentials,'omit');
+  assert.equal(visit.options.cache,'no-store');
+  assert.equal(visit.options.method,'GET');
+ }
+ await assert.rejects(getGeminiModels({...gemini,geminiKey:''}),/API anahtarı/);
+});
+test('Gemini HTTP 402 diagnoses billing, while wrong/unsupported model indicates 404',async()=>{
+ const payment=llmHttpError('gemini',402);
+ assert.match(payment.message,/Gemini HTTP 402/);
+ assert.match(payment.message,/kredi|faturalandırma/);
+ assert.match(llmHttpError('gemini',404).message,/Model bulunamadı/);
+ assert.match(llmHttpError('gemini',429).message,/kota/);
+ assert.doesNotMatch(llmHttpError('gemini',402).message,/synthetic-test-key/);
+ await assert.rejects(
+  requestLlm(gemini,snapshot,chat,{fetcher:async()=>({
+   ok:false,status:402,headers:{get:()=>null}
+  })}),/Gemini HTTP 402.*kredi/
+ );
+ const vllmPayment=llmHttpError('vllm',402);
+ assert.doesNotMatch(vllmPayment.message,/Google AI Studio/);
 });

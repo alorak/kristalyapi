@@ -463,23 +463,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div id="siteOccupancySummary" class="occupancy-summary" aria-live="polite" hidden></div>
    <div id="legend" class="legend"></div><div id="notice" class="notice"></div></div>
   <div class="section crystal-llm-chat-section" data-right-section="ai">
-   <div class="llm-chat-context">
-    <strong id="llmChatModel">LLM ayarı gerekli</strong>
-    <p id="llmChatStructure" class="hint">Aktif kristal yapısı</p>
-    <button id="llmChatOpenSettings" type="button">LLM Ayarlarını Aç</button>
-   </div>
    <div class="llm-chat-toolbar">
     <button id="llmChatNew" type="button">+ Yeni sohbet</button>
+    <button id="llmChatHistoryToggle" type="button" aria-expanded="false" aria-controls="llmChatHistoryPanel">Geçmiş</button>
+   </div>
+   <div id="llmChatHistoryPanel" class="llm-chat-history-panel" hidden>
+    <label class="field llm-chat-history-field"><span>Sohbet geçmişi</span>
+     <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
+    </label>
     <button id="llmChatDelete" type="button" disabled>Seçili sohbeti sil</button>
    </div>
-   <label class="field llm-chat-history-field"><span>Kaydedilmiş sohbetler</span>
-    <select id="llmChatHistory" aria-label="LLM sohbet geçmişi"></select>
-   </label>
-   <button id="llmChatClearAll" class="llm-chat-clear-all" type="button">Tüm sohbetleri sil</button>
    <div id="llmChatMessages" class="llm-chat-messages" role="log" aria-label="Kristal sohbet mesajları" aria-live="polite" aria-relevant="additions text"></div>
    <form id="llmChatForm" class="llm-chat-form">
     <label class="field"><span>Kristal hakkında sorunuz</span>
-     <textarea id="llmChatPrompt" rows="4" maxlength="4000" placeholder="Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?"></textarea>
+     <textarea id="llmChatPrompt" rows="3" maxlength="4000" placeholder="Bu yapının simetrisi, koordinasyon çevresi ve olası XRD özellikleri nedir?"></textarea>
     </label>
     <div class="llm-chat-form-actions">
      <button id="llmChatSend" type="submit" class="primary">Gönder</button>
@@ -487,7 +484,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
    </form>
    <p id="llmChatStatus" role="status" aria-live="polite" class="llm-chat-status"></p>
-   <p class="hint">Sohbet ve kristal anlık görüntüsü bu tarayıcıda saklanır. Gönder'e bastığınızda mesaj ve yapı bilgileri seçilen Gemini veya vLLM sunucusuna iletilir. Model yanıtları bilimsel doğrulama yerine geçmez.</p>
   </div>
   <div class="section" data-right-section="comparison"><h2>Çoklu yapı / faz karşılaştırması</h2>
    <p class="hint">En fazla üç ek CIF'i özgün hücreyi değiştirmeden aynı 3B alanda çiz. Renk, saydamlık ve Kartezyen Å ofsetini ayarla. Yüklenen fazlar proje ve Undo/Redo ile saklanır.</p>
@@ -1223,7 +1219,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </fieldset>
    <div id="llmGeminiFields" class="llm-setting-fields">
     <label class="lib-field"><span>Google Gemini API anahtarı</span><input type="password" id="llmGeminiKey" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="Yeni anahtar girin (mevcutsa boş bırakın)"></label>
-    <label class="lib-field"><span>Gemini model adı</span><input type="text" id="llmGeminiModel" maxlength="160" value="gemini-2.5-flash" spellcheck="false" placeholder="gemini-2.5-flash"></label>
+    <label class="lib-field"><span>Gemini model adı</span><select id="llmGeminiModel" aria-label="Gemini model adı"><option value="gemini-2.5-flash">gemini-2.5-flash</option></select></label>
+    <div class="llm-model-actions"><button id="llmFetchGeminiModels" type="button">Gemini modellerini listele</button><small>API anahtarıyla generateContent destekleyen modeller görüntülenir.</small></div>
     <p class="hint">Gemini isteği, anahtarınız ile yalnız Google'ın resmî API adresine gönderilir. Kaydedilmiş anahtar alanı güvenlik için boş gösterilir.</p>
    </div>
    <div id="llmVllmFields" class="llm-setting-fields" hidden>
