@@ -167,7 +167,7 @@ test('AlphaID Worker v1.4 search and structure requests preserve safe IDs and he
   assert.ok(!call.url.includes(key));
  }
  const imported=mpStructureToCif({
-  ...Si,material_id:apiCalls.length?'mp-aaaaaczy':null,structure
+  ...Si,material_id:id,structure
  },id);
  assert.match(imported,/data_mp_aaaaaczy/);
 });
