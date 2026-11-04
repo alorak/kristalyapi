@@ -1495,3 +1495,149 @@ body.lesson-open #app{display:none!important}
  border:1px solid #cbd9e8;border-radius:8px;background:#fff;color:#2c4560;
  font-size:13px
 }
+
+
+/* Wide crystal chat workspace: controlled by the header button, not a sidebar
+   icon. The dock stays mounted while hidden, preserving the draft and request. */
+.header-chat-toggle{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:32px;padding:7px 11px;white-space:nowrap;
+ border:1px solid #cbd8e5;border-radius:8px;background:#f5f9ff;
+ color:#2869a1;font-size:12px;font-weight:730;box-shadow:none;
+}
+.header-chat-toggle svg{
+ flex:0 0 18px;width:18px;height:18px;fill:none;stroke:currentColor;
+ stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;
+}
+.header-chat-toggle:hover,.header-chat-toggle.active{
+ border-color:#8db5da;background:#e8f4ff;color:#1769a5;
+}
+.llm-chat-dock[hidden],#llmChatThinking[hidden]{display:none!important}
+.llm-chat-dock{
+ position:fixed;z-index:120;top:72px;right:clamp(12px,2vw,36px);
+ width:min(910px,calc(100vw - 28px));
+ height:min(850px,calc(100dvh - 88px));
+ min-width:0;min-height:280px;display:flex;flex-direction:column;
+ background:#fff;color:#253f59;border:1px solid #cbdbe9;border-radius:15px;
+ box-shadow:0 15px 65px rgba(17,43,73,.24);
+ overflow:hidden;
+}
+.llm-chat-dock-head{
+ flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+ gap:10px;min-height:67px;padding:12px 20px;
+ background:#f4f8fd;border-bottom:1px solid #dce6f0;
+}
+.llm-chat-dock-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.llm-chat-dock-title strong{font-size:16px;color:#25496e}
+.llm-chat-dock-title small{font-size:11px;color:#7189a1}
+#llmChatDockHide{
+ display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;
+ border:1px solid #cbdced;background:white;border-radius:8px;
+ padding:6px 11px;font-size:12px;font-weight:670;color:#536e88;
+}
+#llmChatDockHide span{font-size:19px;line-height:1}
+.llm-chat-dock-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.llm-chat-dock .crystal-llm-chat-section{
+ flex:1;min-height:0;display:flex;flex-direction:column;
+ padding:13px 18px 16px;margin:0;box-shadow:none;border:0;background:#fff;
+}
+.llm-chat-dock .llm-chat-toolbar{flex:0 0 auto;margin-bottom:10px}
+.llm-chat-dock .llm-chat-toolbar button{font-size:12px;padding:8px 13px}
+.llm-chat-dock .llm-chat-history-panel{flex:0 0 auto}
+.llm-chat-dock .llm-chat-messages{
+ flex:1;min-height:0;max-height:none;overflow:auto;padding:13px 15px;
+ border-radius:11px;margin:0 0 12px;background:#f7f9fc;overscroll-behavior:contain;
+}
+.llm-chat-dock .llm-chat-messages.is-empty{min-height:0;padding:13px 15px}
+.llm-chat-dock .llm-chat-message{max-width:94%;padding:12px 14px}
+.llm-chat-dock .llm-chat-message.from-model{max-width:100%;width:100%;background:#fff}
+.llm-chat-dock .llm-chat-message-role{font-size:11px}
+.llm-chat-dock .llm-chat-message-text{font-size:13px;line-height:1.65}
+.llm-chat-dock .llm-chat-form{flex:0 0 auto}
+.llm-chat-dock .llm-chat-form .field{display:flex;flex-direction:column;gap:6px}
+.llm-chat-dock .llm-chat-form .field span{font-size:12px;color:#59748f;font-weight:690}
+#llmChatDock #llmChatPrompt{
+ width:100%;min-width:0;max-width:100%;max-height:170px;min-height:75px;
+ border:1px solid #c8d8e8;border-radius:10px;background:#fff;color:#294760;
+ padding:10px 12px;resize:vertical;box-shadow:none;
+ font-family:inherit;font-size:13px;line-height:1.6;
+}
+.llm-chat-dock .llm-chat-form-actions button{flex:0 1 auto;min-width:128px}
+.llm-chat-dock #llmChatSend{flex:1}
+.llm-chat-dock .llm-chat-status{flex:0 0 auto;font-size:11px;min-height:16px;margin:8px 0 0}
+.llm-chat-dock .llm-chat-empty{font-size:13px}
+.llm-chat-thinking{
+ display:flex;flex:0 0 auto;align-items:center;justify-content:flex-start;
+ gap:9px;padding:8px 13px;margin:0 0 10px;
+ background:#eaf4ff;border:1px solid #c4e0f8;border-radius:9px;
+ font-size:12px;font-weight:700;color:#246caa;
+}
+.llm-chat-thinking-dots{display:inline-flex;gap:4px;align-items:center;height:16px}
+.llm-chat-thinking-dots i{
+ display:inline-block;width:6px;height:6px;border-radius:50%;
+ background:#297cd3;animation:llm-chat-pulse 1.05s ease-in-out infinite;
+}
+.llm-chat-thinking-dots i:nth-child(2){animation-delay:.18s}
+.llm-chat-thinking-dots i:nth-child(3){animation-delay:.36s}
+@keyframes llm-chat-pulse{
+ 0%,65%,100%{transform:translateY(0);opacity:.38}
+ 30%{transform:translateY(-4px);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+ .llm-chat-thinking-dots i{animation:none;opacity:1}
+}
+
+/* All model content is inert DOM, not HTML. Markdown layout is scoped to
+   AI answers so it cannot change the surrounding crystallography workspace. */
+.llm-chat-dock .llm-md{
+ white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.72;
+}
+.llm-md p{margin:.28em 0 .9em}
+.llm-md p:last-child{margin-bottom:0}
+.llm-md h1,.llm-md h2,.llm-md h3,.llm-md h4,.llm-md h5,.llm-md h6{
+ margin:1.12em 0 .42em;line-height:1.4;color:#1e4f7d;font-weight:770;
+ letter-spacing:normal;
+}
+.llm-md h1{font-size:1.36em}
+.llm-md h2{font-size:1.23em}
+.llm-md h3{font-size:1.14em}
+.llm-md h4,.llm-md h5,.llm-md h6{font-size:1.04em}
+.llm-md h1:first-child,.llm-md h2:first-child,.llm-md h3:first-child{margin-top:.12em}
+.llm-md ul,.llm-md ol{display:block;margin:.5em 0 .95em;padding-left:1.8em}
+.llm-md li{margin:.3em 0;padding-left:.15em}
+.llm-md strong{font-weight:770;color:#23476b}
+.llm-md em{font-style:italic}
+.llm-md code{padding:1px 4px;border-radius:4px;font-family:ui-monospace,Consolas,monospace;
+ font-size:.92em;background:#edf3f9;color:#235c88}
+.llm-md .llm-md-codeblock{
+ margin:.7em 0 1em;padding:11px 13px;overflow-x:auto;
+ white-space:pre;border:1px solid #dce6f0;border-radius:8px;background:#f4f7fb;
+}
+.llm-md .llm-md-codeblock code{padding:0;background:transparent;color:#283e55;
+ font-size:12px;white-space:pre}
+.llm-md .llm-md-table-wrap{max-width:100%;overflow-x:auto;margin:.7em 0 1em}
+.llm-md table{border-collapse:collapse;width:max-content;min-width:60%;font-size:.93em}
+.llm-md th,.llm-md td{padding:7px 10px;border:1px solid #dce7f0;vertical-align:top}
+.llm-md th{background:#edf5fd;font-weight:720}
+.llm-md blockquote{border-left:3px solid #88b7dd;padding:.3em .8em;
+ margin:.8em 0;background:#f5f9ff;color:#516d86}
+.llm-md hr{border:0;border-top:1px solid #dbe6f0;margin:1em 0}
+.llm-md a{color:#1e70b8;text-decoration:underline}
+.llm-md .llm-math{font-family:Cambria,'Times New Roman',serif;
+ color:#245478;background:#f2f7fc;padding:1px 3px;border-radius:4px}
+
+@media(max-width:850px){
+ .llm-chat-dock{top:66px;right:8px;width:calc(100vw - 16px);
+  height:calc(100dvh - 74px)}
+ .llm-chat-dock-head{min-height:56px;padding:8px 13px}
+ .llm-chat-dock .crystal-llm-chat-section{padding:10px}
+ .llm-chat-dock .llm-chat-messages{padding:9px}
+ .llm-chat-dock .llm-chat-message{max-width:98%}
+ .llm-chat-dock .llm-chat-form-actions button{min-width:94px}
+}
+@media(max-width:660px){
+ .header-chat-toggle{padding:6px 8px}
+ .header-chat-toggle svg{width:16px;height:16px;flex-basis:16px}
+ .llm-chat-dock-title small{display:none}
+ .llm-chat-dock .llm-chat-message-text{font-size:12px}
+}
