@@ -56,6 +56,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 ## Hızlı başlangıç
 
+**Kristalden hesaplanan Debye–Scherrer kamerası:** **Toz Kırınımı → Kamera** sekmesi, editörde etkin veya CIF ile içe aktarılmış yapının genel hücre metriğini ve simetriyle genişletilmiş atom konumlarını mevcut IT92 XRD hesaplama motoruna verir. Hesaplanan (hkl) yansımaları, seçilen ışınım ve silindirik kamera çapıyla ±film yay konumlarına dönüştürülür. Filtre ve dönme görselleri öğretici yaklaşımdır; ölçülen şiddet ya da gerçek tane istatistiği değildir. [Uygulama](powder-camera-page.js) · [Testler](tests/powder-camera.test.mjs).
+
 1. [Uygulamayı açın](https://alorak.github.io/kristalyapi/).
 2. Üstteki **Aç** düğmesiyle **favoriler**, **örnek yapılar** veya **bilgisayarındaki CIF/PDB vb. dosyalar** arasından seçin. Aynı seçenekler Kütüphane sekmesinde de mevcuttur.
 3. Sol panelde birim hücreyi, süperhücreyi ve atom konumlarını düzenleyin; alt çubuktan görünümü değiştirin.
