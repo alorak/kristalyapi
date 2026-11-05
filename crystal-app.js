@@ -11649,9 +11649,9 @@ function setRightSidebarTab(tab){
  rightSidebarTab=next;
  const open=next!==null;
  $('rightPanel').classList.toggle('drawer-open',open);
- if(open&&window.matchMedia('(max-width:720px) and (orientation: portrait)').matches)
+ if(open&&typeof window!=='undefined'&&window.matchMedia('(max-width:720px) and (orientation: portrait)').matches)
   document.body.classList.add('mobile-tools-open');
- $('mobileToolsToggle')?.setAttribute('aria-expanded',String(document.body.classList.contains('mobile-tools-open')));
+ if(typeof document!=='undefined')$('mobileToolsToggle')?.setAttribute('aria-expanded',String(document.body.classList.contains('mobile-tools-open')));
  $('app').classList.toggle('right-drawer-open',open);
  scroll.hidden=!open;
  for(const name of RIGHT_SIDEBAR_TABS){
