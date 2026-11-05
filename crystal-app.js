@@ -11042,6 +11042,7 @@ function syncLibraryNavigation(){
  if(page==='dft')syncDftWorkspace();
  qeJobPoller?.sync();
  document.body.classList.toggle('library-open',library);
+ document.body.classList.toggle('layered2d-open',page==='layered2d');
  document.body.classList.toggle('reciprocal-open',reciprocal);
  document.body.classList.toggle('lesson-open',powderFamily||page==='semiconductor'||page==='materials');
  $('app').hidden=page!=='editor';
