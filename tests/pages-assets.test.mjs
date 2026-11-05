@@ -74,9 +74,21 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-materials-project-alphaid-v3'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-05-webgl-fallback-v4'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
+});
+
+test('WebGL failure cannot prevent library and DFT controls from binding',()=>{
+ assert.match(html,/id="webglFallback"[^>]*role="alert"/);
+ assert.match(html,/id="webglRetry"/);
+ assert.match(editor,/bind\(\);syncControls\(\);editorUiBound=true/);
+ assert.match(editor,/if\(editorUiBound\)ensureEditorScene\(\)/);
+ assert.match(editor,/function resize\(\)\{if\(!renderer\|\|!camera\)return/);
+ assert.match(editor,/if\(webglContextLost\|\|document.visibilityState/);
+ assert.match(editor,/requireEditorScene\(\)/);
+ const browserWorkflow=read('.github/workflows/browser-visual.yml');
+ assert.match(browserWorkflow,/node tests\/browser\/webgl-unavailable\.test\.mjs/);
 });
 
 test('names imported into crystal-app.js are not declared again at top level',()=>{
