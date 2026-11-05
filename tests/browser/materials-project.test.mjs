@@ -65,7 +65,13 @@ try{
  const savedKey=await page.evaluate(()=>localStorage.getItem('kristalyapi.materials-project-api-key.v1'));
  assert.equal(savedKey,'synthetic-secret-local-only','key should persist in localStorage');
  await page.reload();
- await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ // The hash remains #kutuphane. The library must initialize independently
+ // without starting the 3D editor merely to restore Materials Project settings.
+ await page.waitForFunction(()=>location.hash==='#kutuphane'&&
+  typeof document.getElementById('libMpSettingsTab')?.onclick==='function');
+ assert.equal(await page.locator('#libraryPage').isVisible(),true);
+ assert.equal(await page.locator('#stage canvas').count(),0,
+  'library reload must not create a hidden WebGL canvas');
  await page.locator('#libraryNav').click();
  await page.locator('#libMpSettingsTab').click();
  assert.equal(await page.locator('#mpApiKey').inputValue(),'','stored key must never appear in password input');
