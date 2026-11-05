@@ -268,7 +268,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </nav>
  </aside>
  <main id="viewport">
-  <div id="stage"></div>
+  <div id="stage">
+   <section id="webglFallback" class="webgl-fallback" role="alert" aria-live="polite" hidden>
+    <div class="webgl-fallback-card">
+     <h2>3B görüntüleme kullanılamıyor</h2>
+     <p>Tarayıcı WebGL bağlamı oluşturamadı veya bağlam kayboldu. Tarayıcı ve GPU hızlandırma ayarlarını kontrol edin.</p>
+     <p>Kütüphane, DFT ve ders sayfalarını kullanmaya devam edebilirsiniz.</p>
+     <div class="webgl-fallback-actions">
+      <button type="button" id="webglRetry" class="primary">Yeniden dene</button>
+      <a href="#kutuphane">Kütüphaneye dön</a>
+     </div>
+    </div>
+   </section>
+  </div>
   <section id="llmChatDock" class="llm-chat-dock" role="region" aria-label="Yapay zekâ kristal sohbeti" hidden>
    <div class="llm-chat-dock-head"><div class="llm-chat-dock-title"><strong>Kristal Sohbeti</strong><small>Yapıya bağlı yapay zekâ asistanı</small></div><button id="llmChatDockHide" type="button" aria-label="Sohbeti gizle" title="Sohbeti gizle">Gizle <span aria-hidden="true">×</span></button></div>
    <div class="llm-chat-dock-body">

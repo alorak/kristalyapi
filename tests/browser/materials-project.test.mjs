@@ -24,8 +24,9 @@ try{
   '--enable-webgl','--use-gl=angle','--use-angle=swiftshader',
   '--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
  const page=await browser.newPage({viewport:{width:1480,height:940}});
- const errors=[],requests=[];
+ const errors=[],requests=[],consoleErrors=[];
  page.on('pageerror',e=>errors.push(e.message));
+ page.on('console',msg=>{if(msg.type()==='error'||msg.type()==='warning')consoleErrors.push(msg.text());});
  await page.route('https://api.materialsproject.org/materials/summary/**',async route=>{
   const req=route.request(),url=new URL(req.url());
   const allow={'access-control-allow-origin':'*','access-control-allow-methods':'GET,OPTIONS',
@@ -42,7 +43,18 @@ try{
   await route.fulfill({status:200,headers:allow,body:JSON.stringify({data})});
  });
  await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
- await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ try{
+  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:15000});
+ }catch(error){
+  console.error('Editor bootstrap diagnostics',await page.evaluate(()=>({
+   hash:location.hash,status:document.querySelector('#renderStatus')?.textContent,
+   fallback:!document.querySelector('#webglFallback')?.hidden,
+   editorVisible:!document.querySelector('#app')?.hidden,
+   libraryBound:typeof document.querySelector('#libPresetsTab')?.onclick==='function',
+   canvases:document.querySelectorAll('#stage canvas').length
+  })),{consoleErrors,errors});
+  throw error;
+ }
  await page.locator('#languageTurkish').click();
  await page.locator('#libraryNav').click();
  await page.locator('#libMpSettingsTab').click();
@@ -53,7 +65,13 @@ try{
  const savedKey=await page.evaluate(()=>localStorage.getItem('kristalyapi.materials-project-api-key.v1'));
  assert.equal(savedKey,'synthetic-secret-local-only','key should persist in localStorage');
  await page.reload();
- await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
+ // The hash remains #kutuphane. The library must initialize independently
+ // without starting the 3D editor merely to restore Materials Project settings.
+ await page.waitForFunction(()=>location.hash==='#kutuphane'&&
+  typeof document.getElementById('libMpSettingsTab')?.onclick==='function');
+ assert.equal(await page.locator('#libraryPage').isVisible(),true);
+ assert.equal(await page.locator('#stage canvas').count(),0,
+  'library reload must not create a hidden WebGL canvas');
  await page.locator('#libraryNav').click();
  await page.locator('#libMpSettingsTab').click();
  assert.equal(await page.locator('#mpApiKey').inputValue(),'','stored key must never appear in password input');

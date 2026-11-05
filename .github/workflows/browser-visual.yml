@@ -80,6 +80,8 @@ jobs:
         run: node tests/browser/lesson-labs.test.mjs
       - name: Verify dedicated DFT routes and controls
         run: node tests/browser/dft-workspace.test.mjs
+      - name: Verify graceful UI with WebGL disabled
+        run: node tests/browser/webgl-unavailable.test.mjs
       - name: Render real WebGL scenes and compare screenshots
         id: visual
         run: node tests/browser/visual.test.mjs
