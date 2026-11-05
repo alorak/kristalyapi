@@ -1193,6 +1193,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <input class="lib-exclude" placeholder="3" aria-label="Hariç element 3" maxlength="2">
       <input class="lib-exclude" placeholder="4" aria-label="Hariç element 4" maxlength="2">
     </div>
+    <div class="lib-ranges lib-primary-ranges" role="group" aria-label="Temel sayısal aralık filtreleri">
+      <fieldset class="lib-range"><legend>Farklı element sayısı</legend><input id="codDistinctMin" type="number" min="1" max="50" step="1" placeholder="Min" aria-label="Farklı element sayısı en az"><span>—</span><input id="codDistinctMax" type="number" min="1" max="50" step="1" placeholder="Maks" aria-label="Farklı element sayısı en çok"></fieldset>
+      <fieldset class="lib-range"><legend>Hücre hacmi (Å³)</legend><input id="codVolMin" type="number" min="0" step="any" placeholder="Min" aria-label="Hücre hacmi en az (Å³)"><span>—</span><input id="codVolMax" type="number" min="0" step="any" placeholder="Maks" aria-label="Hücre hacmi en çok (Å³)"></fieldset>
+    </div>
     <details class="lib-advanced-filters">
      <summary>Diğer filtreler · yayın, aralıklar ve seçenekler</summary>
      <div class="lib-search-grid">
@@ -1204,8 +1208,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="lib-divider"></div>
     <div class="lib-ranges">
-      <fieldset class="lib-range"><legend>Farklı element sayısı</legend><input id="codDistinctMin" type="number" min="1" max="50" step="1" placeholder="Min"><span>—</span><input id="codDistinctMax" type="number" min="1" max="50" step="1" placeholder="Maks"></fieldset>
-      <fieldset class="lib-range"><legend>Hücre hacmi (Å³)</legend><input id="codVolMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codVolMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
       <fieldset class="lib-range"><legend>Z (formül birimi)</legend><input id="codZMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codZMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
       <fieldset class="lib-range"><legend>Z′ (asimetrik birim)</legend><input id="codZpMin" type="number" min="0" step="any" placeholder="Min"><span>—</span><input id="codZpMax" type="number" min="0" step="any" placeholder="Maks"></fieldset>
     </div>

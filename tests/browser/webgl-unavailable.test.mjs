@@ -44,6 +44,21 @@ try{
   'library landing must not attempt a WebGL context');
  assert.equal(await page.locator('#libraryPage').isVisible(),true);
  assert.equal(await page.locator('#webglFallback').isVisible(),false);
+ // Frequently used numeric COD filters must be editable without opening advanced options.
+ assert.equal(await page.locator('.lib-advanced-filters').getAttribute('open'),null);
+ for(const id of ['codDistinctMin','codDistinctMax','codVolMin','codVolMax']){
+  assert.equal(await page.locator('#'+id).isVisible(),true,id+' must be visible in the main COD form');
+  assert.equal(await page.locator('.lib-advanced-filters #'+id).count(),0,id+' must not be nested inside details');
+ }
+ assert.equal(await page.locator('#codZMin').isVisible(),false,'advanced Z range remains collapsed');
+ for(const [id,value] of [['codDistinctMin','2'],['codDistinctMax','4'],['codVolMin','50'],['codVolMax','200']]){
+  await page.locator('#'+id).fill(value);
+  assert.equal(await page.locator('#'+id).inputValue(),value,id+' must accept an input while advanced options are closed');
+ }
+ assert.equal(await page.locator('.lib-advanced-filters').getAttribute('open'),null);
+ await page.locator('#codReset').click();
+ for(const id of ['codDistinctMin','codDistinctMax','codVolMin','codVolMax'])
+  assert.equal(await page.locator('#'+id).inputValue(),'','form reset must clear '+id);
  await page.locator('#libPresetsTab').click();
  assert.equal(await page.locator('#libPresetsPane').isVisible(),true);
  await page.locator('#libMpSettingsTab').click();
