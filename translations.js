@@ -7,6 +7,10 @@
 (() => {
  'use strict';
  const entries=[
+  ['3B görüntüleme kullanılamıyor','3D viewing is unavailable'],
+  ['Tarayıcı WebGL bağlamı oluşturamadı veya bağlam kayboldu. Tarayıcı ve GPU hızlandırma ayarlarını kontrol edin.','The browser could not create a WebGL context, or the context was lost. Check browser settings and GPU acceleration.'],
+  ['Kütüphane, DFT ve ders sayfalarını kullanmaya devam edebilirsiniz.','You can continue using the library, DFT and lesson pages.'],
+  ['Kütüphaneye dön','Back to library'],
   ["Sohbet","Chat"],
   ["Kristal Sohbeti","Crystal Chat"],
   ["Yapıya bağlı yapay zekâ asistanı","AI assistant for this structure"],
