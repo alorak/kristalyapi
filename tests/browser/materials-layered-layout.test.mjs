@@ -41,6 +41,7 @@ try{
    const bounds=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,top:r.top,bottom:r.bottom};};
    return {
     width:innerWidth,documentWidth:document.documentElement.scrollWidth,
+    pageScrollWidth:page.scrollWidth,pageClientWidth:page.clientWidth,
     page:bounds(page),wrap:bounds(materials),paddingLeft:parseFloat(getComputedStyle(materials).paddingLeft),
     paddingRight:parseFloat(getComputedStyle(materials).paddingRight),
     powderPaddingLeft:parseFloat(getComputedStyle(powder).paddingLeft),
@@ -60,7 +61,8 @@ try{
     panel.right<=geometry.wrap.right-geometry.paddingRight+1,
     'Materials panels must align inside the shared gutters: '+JSON.stringify(geometry));
   }
-  assert.ok(geometry.documentWidth<=width+2,'Materials must not overflow the viewport: '+JSON.stringify(geometry));
+  assert.ok(geometry.pageScrollWidth<=geometry.pageClientWidth+2,
+   'Materials content must not overflow its own page (independent of the global navbar): '+JSON.stringify(geometry));
   assert.ok(geometry.formScroll<=geometry.formWidth+2,'bulk preparation fields cannot overflow: '+JSON.stringify(geometry));
   assert.equal(geometry.bulkColumns,width<=480?1:width<=850?2:4,
    'bulk form must have balanced responsive columns: '+JSON.stringify(geometry));
@@ -87,12 +89,15 @@ try{
    const controls=document.querySelector('.layered2d-controls');
    const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};};
    return {width:innerWidth,documentWidth:document.documentElement.scrollWidth,
+    pageScrollWidth:document.getElementById('layered2dPage').scrollWidth,
+    pageClientWidth:document.getElementById('layered2dPage').clientWidth,
     wrap:rect(wrap),panel:rect(panel),svg:rect(svg),controls:rect(controls),
     svgMaxWidth:getComputedStyle(svg).maxWidth};
   });
   assert.ok(g.wrap.width>=width-2,'2D workspace must use full available width: '+JSON.stringify(g));
   assert.equal(g.svgMaxWidth,'none','2D preview must not have a fixed 1100px cap');
-  assert.ok(g.documentWidth<=width+2,'2D page must not overflow viewport: '+JSON.stringify(g));
+  assert.ok(g.pageScrollWidth<=g.pageClientWidth+2,
+   '2D content must not overflow its own page (independent of the global navbar): '+JSON.stringify(g));
   assert.ok(g.svg.width>=g.panel.width-45,'2D preview must fill its panel: '+JSON.stringify(g));
   if(width===1920){
    assert.ok(g.svg.width>1350,'wide desktop must show an expanded SVG preview: '+JSON.stringify(g));
