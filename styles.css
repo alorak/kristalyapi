@@ -1286,6 +1286,23 @@ body.lesson-open #app{display:none!important}
 @media(max-width:690px){.materials-evidence-toolbar .triple,.xrd-acquisition-fields .triple{display:grid;grid-template-columns:minmax(0,1fr)}}
 
 
+/* Align Materials with Powder/Semiconductor gutters; keep all four DFT fields together. */
+#materialsPage .lesson-panel-head{flex-wrap:wrap}
+#materialsPage .materials-bulk-fields{
+ display:grid;
+ grid-template-columns:minmax(170px,1.4fr) repeat(3,minmax(90px,1fr));
+ gap:12px;
+ align-items:end;
+}
+#materialsPage .materials-bulk-fields>.field{min-width:0;width:100%;max-width:none}
+#materialsPage .materials-bulk-fields :is(input,select){min-width:0;width:100%}
+@media(max-width:850px){
+ #materialsPage .materials-bulk-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:480px){
+ #materialsPage .materials-bulk-fields{grid-template-columns:minmax(0,1fr)}
+}
+
 /* Materials Project Library: computed-property search, comparison and key settings. */
 .lib-tabs{overflow-x:auto;scrollbar-width:thin;flex-wrap:nowrap}
 .lib-tabs button{white-space:nowrap;flex:0 0 auto}
@@ -1711,13 +1728,13 @@ body.lesson-open #app{display:none!important}
 /* Scientific 2D figure workspace; independent of the editor WebGL canvas. */
 #layered2dPage[hidden]{display:none!important}
 #layered2dPage{display:block;min-height:calc(100vh - 72px);overflow-y:auto;background:#f3f7fb;color:#29425a}
-.layered2d-wrap{max-width:1550px;margin:0 auto;padding:24px clamp(16px,3vw,42px) 48px}
+.layered2d-wrap{width:100%;max-width:none;margin:0;padding:23px clamp(12px,1.7vw,28px) 48px}
 .layered2d-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:20px}
 .layered2d-eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#347d9e;margin-bottom:8px}
 .layered2d-heading h1{font-size:26px;letter-spacing:-.5px;line-height:1.15;margin:0 0 8px}
 .layered2d-heading p{margin:0;font-size:13px;line-height:1.55;color:#62788f}
 .layered2d-hint{white-space:nowrap;color:#29785a;border:1px solid #b5d8c8;border-radius:20px;background:#e5f5ec;padding:7px 12px;font-size:11px;font-weight:700}
-.layered2d-layout{display:grid;grid-template-columns:minmax(260px,295px) minmax(0,1fr);gap:17px;align-items:start}
+.layered2d-layout{display:grid;grid-template-columns:minmax(255px,280px) minmax(0,1fr);gap:16px;align-items:start}
 .layered2d-controls,.layered2d-canvas{background:#fff;border:1px solid #d9e5ef;border-radius:13px;box-shadow:0 4px 18px rgba(27,58,90,.045)}
 .layered2d-controls{padding:20px;position:sticky;top:14px}
 .layered2d-controls h2{font-size:15px;margin:0 0 18px;color:#24465f}
@@ -1739,9 +1756,9 @@ body.lesson-open #app{display:none!important}
 .layered2d-canvas-top strong{font-size:13px;color:#2b4c68}
 .layered2d-canvas-top span{font-size:10px;color:#7690a6}
 .layered2d-preview{overflow:auto;background:#f3f7fb;border:1px solid #e3eaf1;border-radius:10px;min-height:350px;text-align:center}
-.layered2d-preview svg{display:block;width:100%;height:auto;max-width:1100px;margin:0 auto}
+.layered2d-preview svg{display:block;width:100%;height:auto;max-width:none;margin:0 auto}
 .layered2d-caption{font-size:11px;line-height:1.65;color:#71869a;margin:11px 3px 0}
-@media(max-width:900px){.layered2d-layout{grid-template-columns:1fr}.layered2d-controls{position:static}.layered2d-heading{align-items:start}.layered2d-wrap{padding-top:18px}}
+@media(max-width:1180px){.layered2d-layout{grid-template-columns:minmax(0,1fr)}.layered2d-controls{position:static}.layered2d-heading{align-items:start}.layered2d-wrap{padding-top:18px}}
 @media(max-width:580px){.layered2d-heading{display:block}.layered2d-hint{display:inline-flex;margin-top:12px}.layered2d-canvas{padding:10px}.layered2d-preview{min-height:180px}.layered2d-canvas-top{flex-wrap:wrap}}
 
 
@@ -1749,7 +1766,7 @@ body.lesson-open #app{display:none!important}
 #app[hidden]{display:none!important}
 body.layered2d-open .workspace-action:not(.workspace-launcher){display:none!important}
 body.layered2d-open #app{display:none!important}
-#layered2dPage{height:calc(100dvh - 64px);overflow-y:auto}
+#layered2dPage{height:calc(100dvh - 54px);overflow-y:auto}
 @media(max-width:720px){#layered2dPage{height:calc(100dvh - 54px)}}
 
 
