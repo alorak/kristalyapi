@@ -11019,6 +11019,7 @@ function pageFromHash(hash){
  if(hash==='#toz-kirinimi/kamera')return 'camera';
  if(hash==='#toz-kirinimi')return 'powder';
  if(hash==='#malzemeler')return 'materials';
+ if(hash==='#katmanli-figur')return 'layered2d';
  if(hash==='#yariiletken-fizigi')return 'semiconductor';
  if(hash==='#dft'||hash.startsWith('#dft/'))return 'dft';
  return 'editor';
@@ -11041,10 +11042,12 @@ function syncLibraryNavigation(){
  if(page==='dft')syncDftWorkspace();
  qeJobPoller?.sync();
  document.body.classList.toggle('library-open',library);
+ document.body.classList.toggle('layered2d-open',page==='layered2d');
  document.body.classList.toggle('reciprocal-open',reciprocal);
  document.body.classList.toggle('lesson-open',powderFamily||page==='semiconductor'||page==='materials');
  $('app').hidden=page!=='editor';
  $('libraryPage').hidden=!library;
+ $('layered2dPage').hidden=page!=='layered2d';
  $('materialsPage').hidden=page!=='materials';
  // The reciprocal laboratory is now a nested tab of Powder Diffraction.
  // Parent visibility must be set BEFORE the Three.js subpage is refreshed.
@@ -11062,11 +11065,13 @@ function syncLibraryNavigation(){
  }
  $('libraryNav').classList.toggle('active',library);
  $('materialsNav').classList.toggle('active',page==='materials');
+ $('layered2dNav').classList.toggle('active',page==='layered2d');
  $('powderNav').classList.toggle('active',powderFamily);
  $('semiconductorNav').classList.toggle('active',page==='semiconductor');
  $('homeLink').setAttribute('aria-current',page==='editor'?'page':'false');
  $('libraryNav').setAttribute('aria-current',library?'page':'false');
  $('materialsNav').setAttribute('aria-current',page==='materials'?'page':'false');
+ $('layered2dNav').setAttribute('aria-current',page==='layered2d'?'page':'false');
  $('powderNav').setAttribute('aria-current',powderFamily?'page':'false');
  $('semiconductorNav').setAttribute('aria-current',page==='semiconductor'?'page':'false');
  if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);if(editorUiBound)ensureEditorScene();requestAnimationFrame(()=>resize());}

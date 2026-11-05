@@ -1706,3 +1706,48 @@ body.lesson-open #app{display:none!important}
 .webgl-fallback-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px}
 .webgl-fallback-actions a{font-size:13px;font-weight:600}
 @media(max-width:600px){#webglFallback{padding:12px}.webgl-fallback-card{padding:20px}}
+
+
+/* Scientific 2D figure workspace; independent of the editor WebGL canvas. */
+#layered2dPage[hidden]{display:none!important}
+#layered2dPage{display:block;min-height:calc(100vh - 72px);overflow-y:auto;background:#f3f7fb;color:#29425a}
+.layered2d-wrap{max-width:1550px;margin:0 auto;padding:24px clamp(16px,3vw,42px) 48px}
+.layered2d-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:20px}
+.layered2d-eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#347d9e;margin-bottom:8px}
+.layered2d-heading h1{font-size:26px;letter-spacing:-.5px;line-height:1.15;margin:0 0 8px}
+.layered2d-heading p{margin:0;font-size:13px;line-height:1.55;color:#62788f}
+.layered2d-hint{white-space:nowrap;color:#29785a;border:1px solid #b5d8c8;border-radius:20px;background:#e5f5ec;padding:7px 12px;font-size:11px;font-weight:700}
+.layered2d-layout{display:grid;grid-template-columns:minmax(260px,295px) minmax(0,1fr);gap:17px;align-items:start}
+.layered2d-controls,.layered2d-canvas{background:#fff;border:1px solid #d9e5ef;border-radius:13px;box-shadow:0 4px 18px rgba(27,58,90,.045)}
+.layered2d-controls{padding:20px;position:sticky;top:14px}
+.layered2d-controls h2{font-size:15px;margin:0 0 18px;color:#24465f}
+.layered2d-field{display:flex;flex-direction:column;gap:6px;margin-bottom:13px}
+.layered2d-field span{color:#617b90;font-size:11px;font-weight:700}
+.layered2d-field input,.layered2d-field select{width:100%;height:36px;padding:5px 8px;background:#f9fbfd;border:1px solid #cbd9e6;border-radius:7px;color:#24445d;font-size:12px}
+.layered2d-repeat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.layered2d-switches{display:flex;flex-direction:column;gap:11px;margin:3px 0 22px}
+.layered2d-switches label{display:flex;align-items:center;gap:9px;font-size:12px;color:#465f77;cursor:pointer}
+.layered2d-switches input{accent-color:#2680a9}
+.layered2d-download{display:block;width:100%;min-height:38px}
+.layered2d-download:disabled{opacity:.5;cursor:not-allowed}
+.layered2d-status{font-size:11px;margin:12px 0 0;color:#50718a;line-height:1.5}
+.layered2d-status[data-state="error"]{color:#ac3535}
+.layered2d-note{font-size:11px;line-height:1.65;color:#6a8094;margin:22px 0 9px;padding-top:14px;border-top:1px solid #e3eaf1}
+#layered2dSource{font-size:11px;font-weight:650}
+.layered2d-canvas{padding:16px 18px 18px;min-width:0}
+.layered2d-canvas-top{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:2px 0 13px}
+.layered2d-canvas-top strong{font-size:13px;color:#2b4c68}
+.layered2d-canvas-top span{font-size:10px;color:#7690a6}
+.layered2d-preview{overflow:auto;background:#f3f7fb;border:1px solid #e3eaf1;border-radius:10px;min-height:350px;text-align:center}
+.layered2d-preview svg{display:block;width:100%;height:auto;max-width:1100px;margin:0 auto}
+.layered2d-caption{font-size:11px;line-height:1.65;color:#71869a;margin:11px 3px 0}
+@media(max-width:900px){.layered2d-layout{grid-template-columns:1fr}.layered2d-controls{position:static}.layered2d-heading{align-items:start}.layered2d-wrap{padding-top:18px}}
+@media(max-width:580px){.layered2d-heading{display:block}.layered2d-hint{display:inline-flex;margin-top:12px}.layered2d-canvas{padding:10px}.layered2d-preview{min-height:180px}.layered2d-canvas-top{flex-wrap:wrap}}
+
+
+/* Route isolation: a [hidden] editor must never remain visible through #app display:grid. */
+#app[hidden]{display:none!important}
+body.layered2d-open .workspace-action:not(.workspace-launcher){display:none!important}
+body.layered2d-open #app{display:none!important}
+#layered2dPage{height:calc(100dvh - 64px);overflow-y:auto}
+@media(max-width:720px){#layered2dPage{height:calc(100dvh - 54px)}}
