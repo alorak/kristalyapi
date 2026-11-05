@@ -11048,6 +11048,7 @@ function syncLibraryNavigation(){
  $('app').hidden=page!=='editor';
  $('libraryPage').hidden=!library;
  $('layered2dPage').hidden=page!=='layered2d';
+ if(page==='layered2d')window.dispatchEvent(new CustomEvent('crystal:layered2d-structure'));
  $('materialsPage').hidden=page!=='materials';
  // The reciprocal laboratory is now a nested tab of Powder Diffraction.
  // Parent visibility must be set BEFORE the Three.js subpage is refreshed.
@@ -11108,6 +11109,8 @@ function reciprocalHost(){
   }
  };
 }
+// Safe read-only P1 bridge: 2D figure page consumes the active CIF/workspace.
+if(typeof window!=='undefined')window.KristalLayeredHost={structure:()=>reciprocalHost().structure()};
 function codSetLoading(busy){
  codBusy=busy;
  $('codSubmit').disabled=busy;
@@ -11646,6 +11649,9 @@ function setRightSidebarTab(tab){
  rightSidebarTab=next;
  const open=next!==null;
  $('rightPanel').classList.toggle('drawer-open',open);
+ if(open&&typeof window!=='undefined'&&window.matchMedia('(max-width:720px) and (orientation: portrait)').matches)
+  document.body.classList.add('mobile-tools-open');
+ if(typeof document!=='undefined'&&document.body?.classList)$('mobileToolsToggle')?.setAttribute('aria-expanded',String(document.body.classList.contains('mobile-tools-open')));
  $('app').classList.toggle('right-drawer-open',open);
  scroll.hidden=!open;
  for(const name of RIGHT_SIDEBAR_TABS){
@@ -12194,6 +12200,29 @@ function bind(){
  renderMeasurementHistory();
  $('leftToggle').onclick=()=>{$('leftPanel').classList.toggle('open');setRightSidebarTab(null);};
  $('inspectorToggle').onclick=()=>{$('leftPanel').classList.remove('open');setRightSidebarTab(rightSidebarTab==='measurement'?null:'measurement');};
+ const mobileTools=$('mobileToolsToggle'),mobileNav=$('mobileNavToggle');
+ mobileTools.onclick=()=>{
+  const next=!document.body.classList.contains('mobile-tools-open');
+  document.body.classList.toggle('mobile-tools-open',next);
+  mobileTools.setAttribute('aria-expanded',String(next));
+  if(!next&&rightSidebarTab!==null)setRightSidebarTab(null);
+  if(next){$('leftPanel').classList.remove('open');document.body.classList.remove('mobile-nav-open');mobileNav.setAttribute('aria-expanded','false');}
+  requestAnimationFrame(()=>resize());
+ };
+ mobileNav.onclick=()=>{
+  const next=!document.body.classList.contains('mobile-nav-open');
+  document.body.classList.toggle('mobile-nav-open',next);
+  mobileNav.setAttribute('aria-expanded',String(next));
+ };
+ $('headerMainNav').addEventListener('click',event=>{
+  if(event.target.closest('a')){document.body.classList.remove('mobile-nav-open');mobileNav.setAttribute('aria-expanded','false');}
+ });
+ window.addEventListener('hashchange',()=>{
+  document.body.classList.remove('mobile-nav-open','mobile-tools-open');
+  mobileNav.setAttribute('aria-expanded','false');
+  mobileTools.setAttribute('aria-expanded','false');
+ });
+
  document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){if($('workspaceDrawer').classList.contains('open')){showWorkspaceDrawer(false);return;}$('leftPanel').classList.remove('open');setRightSidebarTab(null);selected=[];drawSelection();}});
 }
 // A missing/blocked WebGL context must not prevent non-3D routes from binding.

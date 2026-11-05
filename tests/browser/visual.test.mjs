@@ -288,16 +288,34 @@ async function assertHorizontalQuickbar(page,{drawerOpen=false,mobile=false}={})
    scrollWidth:dock.scrollWidth,clientWidth:dock.clientWidth
   };
  });
- assert.ok(geometry.dock.height>=116&&geometry.dock.height<=120,'the bottom dock must reserve 118px without stacking: '+JSON.stringify(geometry));
- assert.ok(geometry.view.right<=geometry.miller.left+1,'the two control groups must stay side by side: '+JSON.stringify(geometry));
+ if(mobile){
+  // Portrait mode intentionally stacks the controls. It must never require
+  // horizontal scrolling or clip the final row, even with the drawer open.
+  assert.ok(geometry.dock.height>150,'portrait dock must grow to fit wrapped rows: '+JSON.stringify(geometry));
+  assert.ok(geometry.miller.top>=geometry.view.bottom-2,
+   'portrait quickbar control groups must stack: '+JSON.stringify(geometry));
+  assert.ok(geometry.scrollWidth<=geometry.clientWidth+2,
+   'portrait quickbar must not scroll horizontally: '+JSON.stringify(geometry));
+  assert.ok(geometry.view.left>=geometry.dock.left-1&&geometry.miller.right<=geometry.dock.right+1,
+   'all portrait controls must fit dock width: '+JSON.stringify(geometry));
+  const clipped=await page.locator('#workbenchQuickbar').evaluate(dock=>{
+   const d=dock.getBoundingClientRect();
+   return [...dock.querySelectorAll('input,select,button')].filter(el=>{
+    const r=el.getBoundingClientRect();
+    return r.width&&r.height&&(r.left<d.left-2||r.right>d.right+2||r.top<d.top-2||r.bottom>d.bottom+2);
+   }).map(el=>el.id||el.getAttribute('aria-label')||el.tagName);
+  });
+  assert.deepEqual(clipped,[],'portrait toolbar controls cannot be clipped: '+JSON.stringify(geometry));
+  return;
+ }
+ assert.ok(geometry.dock.height>=116&&geometry.dock.height<=120,'the desktop dock must reserve 118px without stacking: '+JSON.stringify(geometry));
+ assert.ok(geometry.view.right<=geometry.miller.left+1,'desktop control groups must stay side by side: '+JSON.stringify(geometry));
  assert.ok(Math.abs((geometry.view.top+geometry.view.bottom)/2-(geometry.miller.top+geometry.miller.bottom)/2)<12,
-  'the control groups must share the same vertical row: '+JSON.stringify(geometry));
+  'desktop control groups must share the same vertical row: '+JSON.stringify(geometry));
  assert.ok(geometry.leftGap>=3&&geometry.rightGap>=3,'both control rows need breathing room: '+JSON.stringify(geometry));
- assert.equal(geometry.justifySelf,drawerOpen?'start':'end','Miller controls should align right normally and left with the drawer open');
- if(!drawerOpen&&!mobile)assert.ok(geometry.dock.right-geometry.miller.right<=20,
-  'Miller controls should sit at the right edge of the normal toolbar');
- if(mobile)assert.ok(geometry.scrollWidth>geometry.clientWidth,
-  'narrow screens should allow horizontal scrolling instead of vertical stacking');
+ assert.equal(geometry.justifySelf,drawerOpen?'start':'end','desktop Miller controls alignment must follow drawer state');
+ if(!drawerOpen)assert.ok(geometry.dock.right-geometry.miller.right<=20,
+  'desktop Miller controls should sit at the right edge of the normal toolbar');
 }
 const metrics={};
 try{
@@ -1119,21 +1137,27 @@ try{
  await page.setViewportSize({width:650,height:760});
  assert.equal(await page.locator('#workbenchQuickbar').isVisible(),true);
  await assertHorizontalQuickbar(page,{mobile:true});
- await page.locator('#workbenchQuickbar').evaluate(dock=>{dock.scrollLeft=dock.scrollWidth;});
- assert.equal(await page.locator('#workbenchQuickbar').evaluate(dock=>{
-  const miller=dock.querySelector('.quickbar-group:last-child').getBoundingClientRect();
-  const viewport=dock.getBoundingClientRect();
-  return miller.left>=viewport.left&&miller.right<=viewport.right;
- }),true,'horizontal scrolling must reveal the Miller controls');
- assert.equal(await page.evaluate(()=>document.getElementById('stage').getBoundingClientRect().bottom<=document.getElementById('workbenchQuickbar').getBoundingClientRect().top+1),true,'mobile dock must not cover WebGL drawing surface');
+ assert.equal(await page.locator('#rightPanel').isVisible(),false,'portrait tool rail must start closed');
+ assert.equal(await page.locator('.language-switch').isVisible(),false,'language toggle is hidden in portrait');
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),
+  'portrait layout must not overflow page width');
+ assert.equal(await page.evaluate(()=>document.getElementById('stage').getBoundingClientRect().bottom<=document.getElementById('workbenchQuickbar').getBoundingClientRect().top+1),true,
+  'mobile dock must not cover WebGL drawing surface');
+ await page.locator('#mobileToolsToggle').click();
+ assert.equal(await page.locator('#rightPanel').isVisible(),true,'mobile tools button should reveal the rail');
  await page.locator('[data-right-tool="symmetry"]').click();
  assert.equal(await page.locator('#rightDrawerPane-symmetry').isVisible(),true,'mobile drawer must open');
  await assertHorizontalQuickbar(page,{drawerOpen:true,mobile:true});
  assert.equal(await page.locator('.right-drawer-pane:visible').count(),1);
  await page.locator('[data-right-tool="symmetry"]').press('Escape');
  assert.equal(await page.locator('#rightDrawerContent').isHidden(),true,'Escape closes mobile drawer');
+ await page.locator('#mobileToolsToggle').click();
+ assert.equal(await page.locator('#rightPanel').isVisible(),false,'mobile tools button should hide the rail');
  await page.screenshot({path:path.join(artifacts,'11-mobile-quickbar.png'),animations:'disabled'});
+ await page.locator('#mobileNavToggle').click();
+ assert.equal(await page.locator('#headerMainNav').isVisible(),true,'mobile navigation opens from hamburger');
  await page.locator('#libraryNav').click();
+ assert.equal(await page.locator('#headerMainNav').isVisible(),false,'navigation closes after route choice');
  await page.locator('#libSearchTab').click();
  assert.equal(await page.locator('#codSearchForm').isVisible(),true);
  const mobileColumns=await page.evaluate(()=>{
@@ -1192,7 +1216,8 @@ try{
  await page.screenshot({path:path.join(artifacts,'24-cod-detail-worker.png'),animations:'disabled'});
  await page.locator('#codDetailClose').click();
  assert.equal(await page.locator('#codDetailModal').isHidden(),true);
- await page.locator('#languageEnglish').click();
+ // The portrait language buttons are intentionally hidden, but i18n remains functional.
+ await page.evaluate(()=>window.CrystalI18n.setLanguage('en'));
  assert.equal(await page.locator('#libraryNav').textContent(),'Library');
  assert.match(await page.locator('#libSearchTab').textContent(),/Search COD/);
  await page.locator('.lib-cod-id').click();

@@ -1178,7 +1178,7 @@ test('light theme and axis widget are present in single HTML', () => {
 });
 
 test('main navigation places Library before DFT and keeps reciprocal space inside powder tabs',()=>{
- assert.match(html,/id="homeLink"[^>]*>Kristal Yapı<\/a>/);
+ assert.match(html,/id="homeLink"[^>]*>[\s\S]*?<span>Kristal Yapı<\/span><\/a>/);
  assert.match(html,/id="libraryNav"[^>]*>Kütüphane<\/a>/);
  assert.ok(html.indexOf('id="libraryNav"')<html.indexOf('id="dftNav"'),'Library appears before DFT');
  assert.equal((html.match(/id="libraryNav"/g)||[]).length,1,'Library is still one top-level navigation destination');

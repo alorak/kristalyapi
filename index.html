@@ -70,9 +70,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </head>
 <body>
 <header>
- <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön">Kristal Yapı</a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="dftNav" href="#dft">DFT</a><a id="materialsNav" href="#malzemeler">Malzemeler</a><a id="layered2dNav" href="#katmanli-figur">2B Figür</a><a id="powderNav" href="#toz-kirinimi">Toz Kırınımı</a><a id="semiconductorNav" href="#yariiletken-fizigi">Yarıiletken Fiziği</a></nav></div>
+ <div class="brand"><button id="workspaceToggle" type="button" class="workspace-launcher workspace-action" aria-label="Çalışma alanları (1)" aria-haspopup="dialog" aria-controls="workspaceDrawer" aria-expanded="false" title="Çalışma alanlarını aç"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="workspaceCount" class="workspace-count" aria-hidden="true">1</span></button><a id="homeLink" class="brand-home" href="#kristal" title="Kristal Yapı editörüne dön"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5zm0 10 9-5M12 12 3 7m9 5v10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg><span>Kristal Yapı</span></a><span id="workspaceCurrent" class="workspace-current" title="Etkin çalışma alanı">Yapı 1</span><nav class="main-nav" id="headerMainNav" aria-label="Ana sayfalar"><a id="libraryNav" href="#kutuphane">Kütüphane</a><a id="dftNav" href="#dft">DFT</a><a id="materialsNav" href="#malzemeler">Malzemeler</a><a id="layered2dNav" href="#katmanli-figur">2B Figür</a><a id="powderNav" href="#toz-kirinimi">Toz Kırınımı</a><a id="semiconductorNav" href="#yariiletken-fizigi">Yarıiletken Fiziği</a></nav></div>
  <div class="actions">
-  <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç">☰ Düzenle</button>
+  <button id="mobileNavToggle" type="button" class="mobile-icon-action" aria-label="Sayfa menüsünü aç" aria-controls="headerMainNav" aria-expanded="false" title="Sayfa menüsü"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16" /></svg></button>
+  <button id="leftToggle" class="mobile-panel workspace-action" style="display:none" aria-label="Düzenleme panelini aç" title="Düzenle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg><span>Düzenle</span></button>
   <div class="history-toolbar workspace-action" role="group" aria-label="Kristal düzenleme geçmişi">
    <button id="undoBtn" type="button" class="history-button" aria-label="Geri al" title="Geri al · Ctrl/Cmd+Z" disabled>
     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>
@@ -83,6 +84,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </div>
   <button id="openBtn" class="workspace-action header-io" type="button" title="Örneklerden, favorilerden veya bilgisayardan aç" aria-haspopup="dialog" aria-controls="openModal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v3M3 7h18l-2 13H5L3 7z"/></svg><span>Aç</span></button>
   <button id="saveBtn" class="workspace-action header-io" type="button" title="Projeyi kaydet veya dışa aktar" aria-haspopup="dialog" aria-controls="exportModal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3h2zm2 0v7h10V3M7 21v-8h10v8"/></svg><span>Kaydet</span></button>
+  <button id="mobileToolsToggle" type="button" class="mobile-icon-action workspace-action" aria-controls="rightPanel" aria-expanded="false" aria-label="Analiz araçlarını aç" title="Analiz araçları"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14M5 12h14M5 20h14M9 2v4M15 10v4M9 18v4"/></svg></button>
   <button id="inspectorToggle" class="nav-toggle workspace-action">Ölçüm</button>
   <button id="llmChatToggle" class="workspace-action header-chat-toggle" type="button" aria-controls="llmChatDock" aria-expanded="false" aria-pressed="false" title="Kristal yapısı hakkında sohbet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M8 9h8M8 12h6"/></svg><span>Sohbet</span></button>
   <a href="https://github.com/alorak/kristalyapi" target="_blank" rel="noopener noreferrer" class="tag">GitHub ↗</a>
@@ -878,12 +880,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div class="layered2d-layout">
    <aside class="layered2d-controls" aria-label="2B figür seçenekleri">
     <h2>Figür ayarları</h2>
+    <label class="layered2d-field"><span>Veri kaynağı</span>
+     <select id="layered2dSourceMode"><option value="cif">Aktif çalışma alanının CIF yapısı</option><option value="ideal">Hazır MoS₂ 1H / 1T örnekleri</option></select>
+    </label>
+    <div id="layered2dIdealControls">
     <label class="layered2d-field"><span>Malzeme / faz</span>
      <select id="layered2dPhase"><option value="both">MoS₂ · 1H ve 1T</option><option value="1H">MoS₂ · yalnız 1H</option><option value="1T">MoS₂ · yalnız 1T</option></select>
     </label>
     <label class="layered2d-field"><span>Görünüm</span>
      <select id="layered2dMode"><option value="compare">4 panel · üst ve yan</option><option value="top">Üstten görünüm</option><option value="side">Yandan görünüm</option></select>
     </label>
+    </div>
+    <div id="layered2dCifControls" hidden>
+      <div id="layered2dActiveName" class="layered2d-cif-summary" aria-live="polite"></div>
+      <label class="layered2d-field"><span>Tabaka normali</span><select id="layered2dAxis"><option value="c">c yönü (ab düzlemi)</option><option value="a">a yönü (bc düzlemi)</option><option value="b">b yönü (ca düzlemi)</option></select></label>
+      <label class="layered2d-field"><span>Ayırıcı boşluk eşiği (Å)</span><input id="layered2dMinGap" type="number" min="0.5" max="15" step="0.1" value="2.2"></label>
+      <label class="layered2d-field"><span>Bulunan katman</span><select id="layered2dLayerIndex"><option value="0">Katman 1</option></select></label>
+      <button id="layered2dRefresh" type="button">Aktif kristali yeniden oku</button>
+      <p class="layered2d-note">Katmanlar kristal düzlemine dik atomlar arası periyodik boşluklardan tahmin edilir. Bu tek başına kimyasal bağ/van der Waals katman kanıtı değildir. Önce uygun normal yönünü kontrol edin.</p>
+    </div>
     <div class="layered2d-repeat"><label class="layered2d-field"><span>a tekrarı</span><input id="layered2dNa" type="number" min="1" max="6" step="1" value="5" inputmode="numeric"></label>
      <label class="layered2d-field"><span>b tekrarı</span><input id="layered2dNb" type="number" min="1" max="6" step="1" value="5" inputmode="numeric"></label>
     </div>
@@ -892,13 +907,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <label><input type="checkbox" id="layered2dCell" checked> Hücre/katman sınırını göster</label>
      <label><input type="checkbox" id="layered2dLegend" checked> Lejantı göster</label>
     </div>
-    <button id="layered2dSvgDownload" type="button" class="primary layered2d-download">SVG dışa aktar</button>
+    <div class="layered2d-export-actions">
+      <button id="layered2dSvgDownload" type="button" class="primary layered2d-download">SVG</button>
+      <button id="layered2dPngDownload" type="button" class="layered2d-download">PNG</button>
+      <button id="layered2dPdfDownload" type="button" class="layered2d-download">PDF</button>
+    </div>
     <div id="layered2dStatus" class="layered2d-status" role="status" aria-live="polite"></div>
     <p class="layered2d-note">Geometri idealize edilmiştir (a = 3,166 Å; S–S katman aralığı = 3,092 Å). 1H tek katman, bulk 2H istifleme değildir. Enerji veya faz kararlılığı sonucu üretilmez.</p>
     <a id="layered2dSource" href="https://doi.org/10.1038/srep29734" target="_blank" rel="noopener noreferrer">Yapı referansı (Scientific Reports) ↗</a>
    </aside>
    <section class="layered2d-canvas" aria-label="2B kristal figürü">
-    <div class="layered2d-canvas-top"><strong>Figür önizlemesi</strong><span>Vektörel SVG · aynı Å/px ölçeği</span></div>
+    <div class="layered2d-canvas-top"><strong>Figür önizlemesi</strong><span>SVG vektörel · PNG/PDF yüksek çözünürlüklü</span></div>
     <div id="layered2dPreview" class="layered2d-preview" aria-live="off"></div>
     <p class="layered2d-caption">Öğretici ideal model. Tek katman MoS₂ yapıları için 1H trigonal prizmatik, 1T oktahedral metal koordinasyonu kullanılır. SVG dışa aktarımında atomlar ve bağlar gerçek vektör öğeleridir.</p>
    </section>

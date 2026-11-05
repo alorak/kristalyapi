@@ -1751,3 +1751,71 @@ body.layered2d-open .workspace-action:not(.workspace-launcher){display:none!impo
 body.layered2d-open #app{display:none!important}
 #layered2dPage{height:calc(100dvh - 64px);overflow-y:auto}
 @media(max-width:720px){#layered2dPage{height:calc(100dvh - 54px)}}
+
+
+/* Live-CIF figure controls and separate export actions. */
+#layered2dIdealControls[hidden],#layered2dCifControls[hidden]{display:none!important}
+.layered2d-cif-summary{padding:9px 10px;background:#f1f7fd;border:1px solid #d7e7f2;border-radius:7px;font-size:11px;line-height:1.5;color:#355c7b;margin:4px 0 13px;overflow-wrap:anywhere}
+#layered2dRefresh{display:block;width:100%;min-height:34px;margin:1px 0 12px;background:#edf6ff;color:#225e8b;border-color:#b7d4e8;font-size:12px}
+.layered2d-export-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:4px}
+.layered2d-export-actions button{min-width:0;height:38px;border:1px solid #bdd4e6;color:#245c85;background:#eaf5ff;border-radius:8px;font-size:12px;font-weight:750}
+.layered2d-export-actions button.primary{background:#2676bc;border-color:#2676bc;color:#fff}
+.layered2d-export-actions button:disabled{opacity:.5}
+
+/* Mobile-only icon navigation, collapsible right tools, and NO horizontal quickbar scrolling.
+   Landscape/tablet and desktop keep the existing multi-column desktop controls. */
+.mobile-icon-action{display:none}
+@media(max-width:720px) and (orientation:portrait){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ header{position:relative;z-index:25;height:54px;padding:0 8px;gap:4px;min-width:0}
+ header .brand{flex:0 0 auto;gap:4px;min-width:0}
+ header .brand-home{display:inline-grid;place-items:center;width:34px;height:36px;padding:4px;flex:none}
+ header .brand-home span,header .workspace-current{display:none!important}
+ header .brand-home svg{width:22px;height:22px}
+ header .actions{display:flex;flex:1;justify-content:flex-end;min-width:0;gap:4px}
+ header .actions>.tag,header .actions>.history-toolbar,header .language-switch,header #inspectorToggle{display:none!important}
+ header .actions .header-io,header .actions .header-chat-toggle,header #leftToggle,
+ header .mobile-icon-action{width:35px!important;min-width:35px!important;height:36px!important;padding:6px!important;display:inline-flex!important;align-items:center;justify-content:center;flex:none;gap:0;border-radius:9px}
+ header .actions .header-io span,header .actions .header-chat-toggle span,header #leftToggle span{display:none!important}
+ header .actions .header-io svg,header .actions .header-chat-toggle svg,header .mobile-icon-action svg,header #leftToggle svg{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+ header .main-nav{display:none!important;position:absolute;top:54px;left:8px;right:8px;z-index:60;width:auto!important;max-width:none!important;max-height:68dvh;overflow-y:auto;overflow-x:hidden;flex-direction:column;align-items:stretch;gap:2px;border:1px solid #c9dcea;background:#fff;border-radius:12px;padding:8px;box-shadow:0 14px 32px #152d4b44}
+ body.mobile-nav-open header .main-nav{display:flex!important}
+ header .main-nav a{font-size:13px;min-height:38px;padding:10px 12px;white-space:normal}
+ body.mobile-nav-open #mobileNavToggle,body.mobile-tools-open #mobileToolsToggle{background:#dcefff;color:#165f9c;border-color:#8fc0e2}
+ #app,#app.right-drawer-open{display:block;min-width:0;width:100%}
+ #viewport{position:relative;display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;min-width:0;width:100%;height:calc(100dvh - 54px)}
+ #viewport #stage{position:relative;inset:auto;bottom:auto;flex:1 0 235px;min-height:235px;min-width:0;width:100%}
+ #viewport .topbar{top:8px;left:8px;right:8px;z-index:4}
+ #viewport .topbar .tools{max-width:100%;flex-wrap:wrap;justify-content:center}
+ #viewport .axis-gizmo{bottom:auto;top:35%;left:12px}
+ #viewport #toast{bottom:12px}
+ #app>.panel.right{display:none!important;position:fixed;right:0;top:54px;bottom:0;width:54px;z-index:35;box-shadow:-8px 0 24px #172f4b29}
+ body.mobile-tools-open #app>.panel.right{display:flex!important}
+ body.mobile-tools-open #app>.panel.right.drawer-open{width:min(370px,calc(100vw - 12px))}
+ .workbench-quickbar{position:relative;inset:auto;left:auto;right:auto;bottom:auto;z-index:3;display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;align-content:start;gap:9px;width:100%;height:auto;min-height:0;max-height:none;overflow:visible;padding:10px 10px 13px;flex:none}
+ .quickbar-group,.quickbar-group:last-child{justify-self:stretch;width:100%;max-width:100%;min-width:0}
+ .quickbar-group+.quickbar-group{border-left:0;border-top:1px solid #dbe6f0;padding:9px 0 0}
+ .quickbar-topline{display:flex;flex-wrap:wrap;gap:6px}
+ .quickbar-select{width:128px}
+ .quickbar-flags{flex:1 1 175px;flex-wrap:wrap;gap:4px}
+ .quickbar-ranges{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+ .quickbar-range{display:grid;grid-template-columns:76px minmax(0,1fr) 35px;gap:7px;width:100%;max-width:100%}
+ .quickbar-range input{max-width:none;width:100%}
+ .quickbar-miller-line{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:7px}
+ .quickbar-hkl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.35fr);gap:5px;min-width:0}
+ .quickbar-hkl .quickbar-field,.quickbar-hkl .quickbar-field:last-child{flex:auto;width:auto;min-width:0}
+ .quickbar-miller-options{gap:3px}
+ .quickbar-analysis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:7px;min-width:0}
+ .quickbar-analysis .quickbar-field,.quickbar-analysis .quickbar-field:first-child{flex:auto;min-width:0;width:auto}
+ .quickbar-analysis .quickbar-poly{grid-column:span 2;min-width:0;max-width:none}
+ .quickbar-analysis select{max-width:100%}
+ .quickbar-analysis :is(input,select){min-width:0}
+ .quickbar-miller-line,.quickbar-topline,.quickbar-analysis{max-width:100%;overflow:visible}
+}
+@media(max-width:380px) and (orientation:portrait){
+ header .actions{gap:2px}
+ header .actions .header-io,header .actions .header-chat-toggle,header #leftToggle,header .mobile-icon-action{min-width:32px!important;width:32px!important;height:34px!important;padding:5px!important}
+ .workbench-quickbar{padding-left:7px;padding-right:7px}
+ .quickbar-hkl{gap:3px}
+ .quickbar-analysis{gap:5px}
+}
