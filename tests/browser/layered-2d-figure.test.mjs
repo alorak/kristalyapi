@@ -33,6 +33,7 @@ try{
  });
  const url='http://127.0.0.1:'+server.address().port+'/index.html#katmanli-figur';
  await page.goto(url,{waitUntil:'domcontentloaded'});
+ await page.locator('#layered2dSourceMode').selectOption('ideal');
  await page.waitForFunction(()=>document.querySelectorAll('#layered2dPreview g.mx2-panel').length===4);
  // The standalone SVG module can finish before crystal-app's navigation bootstrap.
  await page.waitForFunction(()=>document.getElementById('app')?.hidden===true);
