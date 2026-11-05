@@ -211,6 +211,9 @@ body.library-open #app{display:none}
 .lib-search-layout .lib-element-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
 .lib-search-layout .lib-element-grid input{padding:7px 5px}
 .lib-search-layout .lib-subtitle{margin-bottom:7px;font-size:11px}
+.lib-primary-ranges{margin:13px 0 2px;align-items:stretch}
+.lib-primary-ranges .lib-range{background:#f8fbff;border-color:#d7e5f1}
+.lib-primary-ranges .lib-range input{font-variant-numeric:tabular-nums}
 .lib-advanced-filters{border:1px solid #dce7f1;border-radius:9px;margin-top:11px;padding:0 11px}
 .lib-advanced-filters summary{padding:10px 1px;cursor:pointer;color:#356c9c;font-size:12px;font-weight:700}
 .lib-advanced-filters[open] summary{border-bottom:1px solid #edf1f6;margin-bottom:11px}
