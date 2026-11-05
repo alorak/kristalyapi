@@ -86,6 +86,8 @@ jobs:
         run: node tests/browser/layered-2d-figure.test.mjs
       - name: Verify dynamic CIF and mobile portrait usability
         run: node tests/browser/layered-2d-cif-mobile.test.mjs
+      - name: Verify Materials and wide 2D figure layout
+        run: node tests/browser/materials-layered-layout.test.mjs
       - name: Render real WebGL scenes and compare screenshots
         id: visual
         run: node tests/browser/visual.test.mjs
