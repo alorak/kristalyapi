@@ -1696,3 +1696,13 @@ body.lesson-open #app{display:none!important}
  .llm-chat-dock-title small{display:none}
  .llm-chat-dock .llm-chat-message-text{font-size:12px}
 }
+
+/* WebGL-disabled browsers can still use COD/Materials Project and lesson routes. */
+#webglFallback[hidden]{display:none!important}
+#webglFallback{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:rgba(246,249,252,.97);color:#27384c}
+.webgl-fallback-card{width:min(100%,470px);background:#fff;border:1px solid #d8e2ef;border-radius:14px;box-shadow:0 10px 38px rgba(36,55,82,.12);padding:26px 28px}
+.webgl-fallback-card h2{font-size:18px;line-height:1.35;margin:0 0 12px}
+.webgl-fallback-card p{font-size:13px;line-height:1.6;margin:8px 0;color:#526981}
+.webgl-fallback-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px}
+.webgl-fallback-actions a{font-size:13px;font-weight:600}
+@media(max-width:600px){#webglFallback{padding:12px}.webgl-fallback-card{padding:20px}}
