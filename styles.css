@@ -1743,3 +1743,11 @@ body.lesson-open #app{display:none!important}
 .layered2d-caption{font-size:11px;line-height:1.65;color:#71869a;margin:11px 3px 0}
 @media(max-width:900px){.layered2d-layout{grid-template-columns:1fr}.layered2d-controls{position:static}.layered2d-heading{align-items:start}.layered2d-wrap{padding-top:18px}}
 @media(max-width:580px){.layered2d-heading{display:block}.layered2d-hint{display:inline-flex;margin-top:12px}.layered2d-canvas{padding:10px}.layered2d-preview{min-height:180px}.layered2d-canvas-top{flex-wrap:wrap}}
+
+
+/* Route isolation: a [hidden] editor must never remain visible through #app display:grid. */
+#app[hidden]{display:none!important}
+body.layered2d-open .workspace-action:not(.workspace-launcher){display:none!important}
+body.layered2d-open #app{display:none!important}
+#layered2dPage{height:calc(100dvh - 64px);overflow-y:auto}
+@media(max-width:720px){#layered2dPage{height:calc(100dvh - 54px)}}
