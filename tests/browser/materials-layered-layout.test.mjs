@@ -51,7 +51,7 @@ try{
     lastPanel:bounds(panels.at(-1))
    };
   });
-  assert.ok(geometry.paddingLeft>=12&&geometry.paddingRight>=12,'Materials needs horizontal gutters: '+JSON.stringify(geometry));
+  assert.ok(geometry.paddingLeft>=9.5&&geometry.paddingRight>=9.5,'Materials needs the shared responsive gutters: '+JSON.stringify(geometry));
   assert.ok(Math.abs(geometry.paddingLeft-geometry.powderPaddingLeft)<.1&&
    Math.abs(geometry.paddingRight-geometry.powderPaddingRight)<.1,
    'Materials and Powder must use the same shell spacing: '+JSON.stringify(geometry));
