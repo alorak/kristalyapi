@@ -7,6 +7,19 @@
 (() => {
  'use strict';
  const entries=[
+  ['Veri kaynağı','Data source'],
+  ['Aktif çalışma alanının CIF yapısı','CIF structure in active workspace'],
+  ['Hazır MoS₂ 1H / 1T örnekleri','Built-in MoS₂ 1H / 1T examples'],
+  ['Tabaka normali','Layer normal'],
+  ['c yönü (ab düzlemi)','c direction (ab plane)'],
+  ['a yönü (bc düzlemi)','a direction (bc plane)'],
+  ['b yönü (ca düzlemi)','b direction (ca plane)'],
+  ['Ayırıcı boşluk eşiği (Å)','Separating gap threshold (Å)'],
+  ['Bulunan katman','Detected candidate layer'],
+  ['Katman 1','Layer 1'],
+  ['Aktif kristali yeniden oku','Reload active crystal'],
+  ['Katmanlar kristal düzlemine dik atomlar arası periyodik boşluklardan tahmin edilir. Bu tek başına kimyasal bağ/van der Waals katman kanıtı değildir. Önce uygun normal yönünü kontrol edin.','Layers are proposed from periodic gaps between atomic planes normal to the selected direction. This alone does not prove chemical bonding or van der Waals layering. Check the normal direction first.'],
+  ['SVG vektörel · PNG/PDF yüksek çözünürlüklü','Vector SVG · high-resolution PNG/PDF'],
   ['2B Figür','2D Figure'],
   ['2B Katmanlı Yapı Figürü','2D Layered Structure Figure'],
   ['KRİSTAL YAPI / VEKTÖREL FİGÜR','CRYSTAL STUDIO / VECTOR FIGURE'],
