@@ -11110,7 +11110,7 @@ function reciprocalHost(){
  };
 }
 // Safe read-only P1 bridge: 2D figure page consumes the active CIF/workspace.
-window.KristalLayeredHost={structure:()=>reciprocalHost().structure()};
+if(typeof window!=='undefined')window.KristalLayeredHost={structure:()=>reciprocalHost().structure()};
 function codSetLoading(busy){
  codBusy=busy;
  $('codSubmit').disabled=busy;
