@@ -174,8 +174,9 @@ try{
  assert.deepEqual(dialogs,[],'navigation must not request calculation confirmation');
  assert.deepEqual(errors,[]);
 
+ // Mobile portrait intentionally hides the language switch; test language semantics through the i18n API.
  // Applying evidence-backed protocols creates a separate reference, never an API job.
- await page.locator('#languageTurkish').click();
+ await page.evaluate(()=>window.CrystalI18n.setLanguage('tr'));
  await page.locator('#qeProtocolSelect').selectOption('mos2-d41');
  await page.locator('#qeProtocolReference').click();
  await page.waitForFunction(()=>document.getElementById('dftStructureDetail').textContent.startsWith('3 atom'));
