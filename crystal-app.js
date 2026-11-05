@@ -154,6 +154,8 @@ function validatedVisualSite(site){
 }
 let state={...examples('silicon'),sgNumber:227,sgSetting:'227-1',symmetryEnabled:false,bondRules:'',bondMode:'auto',nonPeriodic:false,nonPeriodicOrigin:[0,0,0],plane:{h:1,k:1,l:1,offset:1,visible:false,repeat:true,slab:false,thickness:2},planeLayers:[],rep:[2,2,2],bounds:DEFAULT_BOUNDS.map(v=>v.slice()),style:'ball',bonds:true,autoBond:true,cellVisible:true,boundary:true,labels:false,axes:false,autoRotate:false,atomScale:.8,cut:2.65,poly:'',polyCenters:[],polyColor:'#54a1db',polyOpacity:.25,polyCut:0,polyNeighbors:12,warning:''};
 let scene,camera,ortho,renderer,orbit,root,atomMesh=[],atomRender=[],atomData=[],bondPairs=[],selected=[],highlights=[],axesWidget,perspective=true,lastPointer=null,currentSpan=25,warningTimer,measurementHistory=[];
+// Route-independent controls must bind before a potentially unavailable WebGL renderer.
+let editorUiBound=false,editorSceneState='idle',webglContextLost=false;
 // InstancedMesh reduces draw calls; these are safety caps, not guaranteed FPS.
 const MAX_ATOMS=20000,MAX_BONDS=65000,MAX_POLYHEDRA=2400;
 const sphereGeometry=new THREE.SphereGeometry(1,24,16);
@@ -2132,9 +2134,18 @@ function initScene(){
  renderer.domElement.addEventListener('pointerdown',e=>lastPointer={x:e.clientX,y:e.clientY});
  renderer.domElement.addEventListener('pointerup',pickAtom);
  renderer.domElement.addEventListener('dblclick',()=>{selected=[];drawSelection();});
+ renderer.domElement.addEventListener('webglcontextlost',event=>{
+  event.preventDefault();webglContextLost=true;
+  $('renderStatus').textContent='WebGL bağlamı kayboldu';
+  $('webglFallback').hidden=false;
+ });
+ renderer.domElement.addEventListener('webglcontextrestored',()=>{
+  webglContextLost=false;$('webglFallback').hidden=true;
+  $('renderStatus').textContent='WebGL · tarayıcıda işleniyor';resize();
+ });
  requestAnimationFrame(loop);
 }
-function resize(){const r=$('stage').getBoundingClientRect();if(r.width<1||r.height<1)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;if(camera.isPerspectiveCamera)camera.updateProjectionMatrix();else{const scale=r.width/r.height;camera.left=-currentSpan*scale/2;camera.right=currentSpan*scale/2;camera.top=currentSpan/2;camera.bottom=-currentSpan/2;camera.updateProjectionMatrix();}}
+function resize(){if(!renderer||!camera)return;const r=$('stage').getBoundingClientRect();if(r.width<1||r.height<1)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;if(camera.isPerspectiveCamera)camera.updateProjectionMatrix();else{const scale=r.width/r.height;camera.left=-currentSpan*scale/2;camera.right=currentSpan*scale/2;camera.top=currentSpan/2;camera.bottom=-currentSpan/2;camera.updateProjectionMatrix();}}
 function updateAtomLod(){
  if(!atomMesh.length||!camera||!renderer)return;
  const distance=Math.max(.01,camera.position.distanceTo(orbit.target));
@@ -2297,8 +2308,9 @@ function refreshPerformancePanel(){
  ].join('\n');
 }
 function loop(timestamp){
+ if(editorSceneState==='failed')return;
  requestAnimationFrame(loop);
- if(document.visibilityState==='hidden'||$('app').hidden){previousFrameTimestamp=0;return;}
+ if(webglContextLost||document.visibilityState==='hidden'||$('app').hidden){previousFrameTimestamp=0;return;}
  orbit.autoRotate=state.autoRotate;orbit.autoRotateSpeed=1.0;orbit.update();
  updateDepthCue();
  if(++performanceFrameCounter%15===0){updateAtomLod();updatePolyhedronLod();}
@@ -6834,6 +6846,7 @@ function updatePresetPreview(){
  renderPresetList();
 }
 function loadPreset(key){
+ requireEditorScene();
  if(densityGrid)resetVolume();
  const ex=examples(presetMetadata(key).key);
  state.name=ex.name;state.detail=ex.detail;state.cell=ex.cell;state.sites=ex.sites;
@@ -6847,6 +6860,7 @@ function loadPreset(key){
  syncControls();build();fit();
 }
 function createEmptyStructure(){
+ requireEditorScene();
  if(densityGrid)resetVolume();
  state.name='Yeni kristal';state.detail='P1 · yeni yapı';
  state.cifMeta={};state.cif2TypedMetadata=[];state.cif2BlockName='';state.cifComposition='';state.cifOriginal=null;state.adpVisible=false;state.adpLevel=50;state.overlays=[];
@@ -6861,12 +6875,14 @@ function createEmptyStructure(){
 function importSelectedPreset(){
  const key=$('preset').value;
  if(!PRESET_KEYS.includes(key))throw Error('Geçersiz örnek yapı.');
+ requireEditorScene();
  window.location.hash='kristal';
  syncLibraryNavigation();
  loadPreset(key);
  inform(presetMetadata(key).name+' örneği 3B çalışma alanına aktarıldı.');
 }
 function createBlankFromLibrary(){
+ if(!ensureEditorScene()){inform('3B görüntüleme için WebGL erişimi gerekli. Tarayıcı ayarlarını kontrol edin.');return;}
  window.location.hash='kristal';syncLibraryNavigation();createEmptyStructure();
  inform('Yeni P1 hücresi oluşturuldu.');
 }
@@ -9261,6 +9277,7 @@ function applyVestaCameraPreview(view){
 }
 
 async function importFile(file,selectedFiles=[file]){
+ requireEditorScene();
  if(file.size>4e6)throw Error('Dosya boyutu 4 MB sınırını aşıyor.');
  const workspaceId=activeWorkspaceId;
  const str=await file.text(),name=file.name.toLowerCase();let obj;
@@ -11052,7 +11069,7 @@ function syncLibraryNavigation(){
  $('materialsNav').setAttribute('aria-current',page==='materials'?'page':'false');
  $('powderNav').setAttribute('aria-current',powderFamily?'page':'false');
  $('semiconductorNav').setAttribute('aria-current',page==='semiconductor'?'page':'false');
- if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);requestAnimationFrame(()=>resize());}
+ if(page==='editor'){$('leftPanel').classList.remove('open');setRightSidebarTab(null);if(editorUiBound)ensureEditorScene();requestAnimationFrame(()=>resize());}
  else {window.scrollTo?.(0,0);}
  reciprocalPage?.setVisible(reciprocal);
  powderCameraPage?.setVisible(camera);
@@ -12174,8 +12191,42 @@ function bind(){
  $('inspectorToggle').onclick=()=>{$('leftPanel').classList.remove('open');setRightSidebarTab(rightSidebarTab==='measurement'?null:'measurement');};
  document.addEventListener('keydown',e=>{if(historyShortcut(e))return;if(e.key==='Escape'){if($('workspaceDrawer').classList.contains('open')){showWorkspaceDrawer(false);return;}$('leftPanel').classList.remove('open');setRightSidebarTab(null);selected=[];drawSelection();}});
 }
+// A missing/blocked WebGL context must not prevent non-3D routes from binding.
+function ensureEditorScene(){
+ if(editorSceneState==='ready')return true;
+ if(editorSceneState!=='idle')return false;
+ editorSceneState='starting';
+ try{
+  initScene();
+  syncControls();build();
+  if(!restoreWorkspaceCamera(activeWorkspace()?.cameraView))fit();
+  persistWorkspaceSession();
+  editorSceneState='ready';
+  $('webglFallback').hidden=true;
+  return true;
+ }catch(error){
+  editorSceneState='failed';
+  // A partial renderer must not leave an active frame loop or canvas behind.
+  try{renderer?.dispose();renderer?.domElement?.remove();}catch(cleanupError){console.warn('WebGL cleanup:',cleanupError);}
+  renderer=null;orbit=null;camera=null;root=null;scene=null;
+  $('renderStatus').textContent='3B başlatılamadı';
+  $('webglFallback').hidden=false;
+  console.warn('3B görüntüleme kullanılamıyor; kütüphane ve veri sayfaları çalışmaya devam ediyor:',error);
+  return false;
+ }
+}
+function requireEditorScene(){
+ if(!ensureEditorScene())throw Error('3B görüntüleme için WebGL erişimi gerekli. Tarayıcı ayarlarını kontrol edin.');
+}
 // @kristalyapi/browser-bootstrap: browser UI entry point, not part of the CIF parser
-try{restoreInitialCrystal();initWorkspaceState();initScene();bind();syncControls();build();if(!restoreWorkspaceCamera(activeWorkspace()?.cameraView))fit();persistWorkspaceSession();}catch(err){$('renderStatus').textContent='3B başlatılamadı';inform(err.message||String(err));console.error(err);}
+try{
+ restoreInitialCrystal();initWorkspaceState();
+ // Bind the library, DFT and editor controls even when the 3D canvas cannot start.
+ bind();syncControls();editorUiBound=true;
+ $('webglRetry').onclick=()=>window.location.reload();
+ if(pageFromHash(window.location.hash)==='editor')ensureEditorScene();
+ persistWorkspaceSession();
+}catch(err){$('renderStatus').textContent='Arayüz başlatılamadı';inform(err.message||String(err));console.error(err);}
 // The concept page is optional: a failure there must never block the editor.
 try{reciprocalPage=initReciprocalPage(reciprocalHost());syncLibraryNavigation();}catch(err){console.error('Karşı uzay sayfası başlatılamadı:',err);}
 // Camera is isolated from the editor bootstrap: missing optional assets are non-fatal.
