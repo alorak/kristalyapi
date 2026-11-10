@@ -1936,3 +1936,9 @@ body.layered2d-open #app{display:none!important}
  #materialsPage .materials-tabs [role="tab"],
  #materialsPage .materials-ml-tabs [role="tab"]{transition:none}
 }
+
+/* P1.3 corpus audit report: horizontally readable on compact devices. */
+#materialsPage #materialsMlP13Result{min-width:0;overflow-x:auto}
+#materialsPage .materials-ml-p13-table{border-collapse:collapse;width:100%;min-width:560px;font-size:12px}
+#materialsPage .materials-ml-p13-table th,#materialsPage .materials-ml-p13-table td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border, #d9e5f0)}
+#materialsPage .materials-ml-p13-table th{font-weight:700}
