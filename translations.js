@@ -7,6 +7,18 @@
 (() => {
  'use strict';
  const entries=[
+  // Materials P1.2 true supervised geometry descriptors and out-of-distribution polymorph benchmark.
+  ["P1.2 · Bağ ve koordinasyon ile eğitilmiş model","P1.2 · Trained bond and coordination model"],
+  ["Araştırma · 170 CIF","Research · 170 CIFs"],
+  ["Bu deneysel kNN modelinde periyodik bağ uzunluğu ve koordinasyon sayısı gerçekten eğitimde kullanıldı. ZEBRA test kümesinde sınırlı iyileşme var; bağımsız TiO₂ polimorf sıralamasında iyileşme yok. P1 modelinin yerine geçmez.","Periodic bond lengths and coordination numbers were actually included in training this experimental kNN. The ZEBRA held-out cohort improved slightly, but the independent TiO₂ polymorph ranking did not. Does not replace P1."],
+  ["P1.2 tahminini çalıştır","Run P1.2 prediction"],
+  ["P1.2 JSON dışa aktar","Export P1.2 JSON"],
+  ["P1.2 hesaplama yapılmadı.","P1.2 has not been run."],
+  ["Bağımsız TiO₂ polimorf kontrolü","Independent TiO₂ polymorph check"],
+  ["8 faz · Eğitim dışı","8 phases · Held out"],
+  ["8 polimorfu karşılaştır","Compare 8 polymorphs"],
+  ["Bağımsız karşılaştırma yapılmadı.","External comparison has not been run."],
+  ["Polimorf kontrolü mutlak oluşum enerjisi doğrulaması değildir: aynı bileşim için eV/atom cinsinden enerji farklarını karşılaştırır. Dış veri ve ZEBRA farklı hesaplama koşullarına sahiptir. E_hull ile E_form mutlak değerleri birbirinin yerine kullanılamaz.","The polymorph check does not validate absolute formation energies: it compares within-composition energy differences in eV/atom. The external and ZEBRA datasets use different computational settings. Absolute E_hull and E_form values cannot be interchanged."],
   // Materials P1: trained hybrid-DFT direct-gap + formation-energy estimates.
   ["P1 · Yapısal ML tahminleri","P1 · Structural ML predictions"],
   ["Hibrit-DFT · KNN","Hybrid DFT · kNN"],
