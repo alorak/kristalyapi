@@ -2,7 +2,7 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-11-10-materials-compact-ui';
+const CACHE_NAME=CACHE_PREFIX+'2026-11-10-powder-indexing-p0';
 const APP_FILES=[
  './','./index.html','./styles.css','./dft-workspace.css','./browser-dft-lab.css','./browser-dft-lab.js','./browser-tb-core.js','./gansu-local-engine.js','./gansu-geometry-scan.js',
  './vendor/gansu-lite/scf-worker.js','./vendor/gansu-lite/basis/sto-3g.gbs',
@@ -10,6 +10,7 @@ const APP_FILES=[
  './vendor/gansu-lite/LICENSE','./semiconductor-p0.css','./crystal-app.js','./layered-2d-figure.js','./layered-2d-page.js','./layered-2d-cif.js','./layered-2d-export.js','./vesta-project-style.js','./vesta-project-view.js','./vesta-project-scientific.js','./vesta-project-export.js','./cif2-lex.js','./cif2-symmetry.js','./cif2-document.js','./qe-hpc-export.js','./qe-hpc-pipeline.js','./qe-truba-pipeline-view.js','./tools/qe_hpc_pipeline.py','./tools/qe_hpc_electronic.py','./tools/qe_pdos.py','./qe-truba-summary-view.js','./tools/qe_hpc_collect.py','./qe-electronic-view.js','./qe-electronic-setup.js','./dft-ui.js','./export-graphics.js','./export-glyphs.js','./element-data.js','./view-settings.js','./geometry-table.js','./structure-export.js','./scene-controls.js','./setting-transform.js','./phase-alignment.js','./volume-analysis.js','./sigmaa.js','./qe-convergence-view.js','./qe-job-diagnostics-view.js','./qe-job-tracking.js','./qe-protocol-templates.js','./qe-defect-compare-view.js','./qe-api-client.js','./qe-relax-view.js','./mos2-defect-study-core.js','./volume-iso-worker.js','./translations.js',
  './reciprocal-page.js','./reciprocal-core.js','./lesson-pages.js','./lesson-core.js',
   './powder-camera-page.js','./powder-camera-core.js','./powder-camera.css',
+  './powder-indexing-core.js','./powder-indexing-page.js','./powder-indexing.css',
  './semiconductor-p0.js','./semiconductor-physics-p0-core.js','./llm-crystal-core.js','./llm-crystal-page.js','./llm-markdown.js','./materials-project-core.js','./materials-project-page.js','./material-cards-core.js','./material-evidence-core.js','./bulk-study-preparation.js','./materials-page.js','./materials-tabs.js','./materials-ml-core.js','./materials-ml-page.js','./materials-ml-p1-core.js','./materials-ml-p1-page.js','./materials-ml-p12-core.js','./materials-ml-p12-page.js','./materials-ml-p12-worker.js','./materials-ml-p13-core.js','./materials-ml-p13-page.js','./materials-ml-p13-worker.js','./models/jarvis-polymorph-p12-source.json','./models/zebra-structural-p1.json','./models/matbench-expt-gap-knn-p0.json','./xrd-acquisition-core.js','./xrd-peak-match-core.js','./xrd-factor-core.js','./powder-planes-view.js',
  './favicon.svg','./manifest.webmanifest',
  './vendor/three/build/three.module.js','./vendor/three/build/three.core.js',
