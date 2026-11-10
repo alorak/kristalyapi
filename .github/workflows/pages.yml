@@ -184,7 +184,7 @@ jobs:
         run: python3 tools/gansu_wasm_assets.py
       - name: Stage local scientific engine and site
         run: |
-          mkdir -p public/vendor public/tools
+          mkdir -p public/vendor public/tools public/models
           cp -R vendor/gansu-lite public/vendor/gansu-lite
           cp index.html public/index.html
           cp styles.css public/styles.css
@@ -250,6 +250,9 @@ jobs:
           cp bulk-study-preparation.js public/bulk-study-preparation.js
           cp xrd-acquisition-core.js public/xrd-acquisition-core.js
           cp materials-page.js public/materials-page.js
+          cp materials-ml-core.js public/materials-ml-core.js
+          cp materials-ml-page.js public/materials-ml-page.js
+          cp models/matbench-expt-gap-knn-p0.json public/models/matbench-expt-gap-knn-p0.json
           cp materials-project-core.js public/materials-project-core.js
           cp materials-project-page.js public/materials-project-page.js
           cp llm-crystal-core.js public/llm-crystal-core.js
@@ -289,6 +292,9 @@ jobs:
           test -s public/bulk-study-preparation.js
           test -s public/xrd-acquisition-core.js
           test -s public/materials-page.js
+          test -s public/materials-ml-core.js
+          test -s public/materials-ml-page.js
+          test -s public/models/matbench-expt-gap-knn-p0.json
           test -s public/materials-project-core.js
           test -s public/materials-project-page.js
           test -s public/llm-crystal-core.js
