@@ -52,6 +52,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 ## P0 — Malzeme veri kartları ve XRD ölçüm–referans eşleştirmesi
 
+**P1.2 Bağ/Koordinasyon Eğitimi ve Polimorf Testi:** Malzemeler altındaki üçüncü ML alanı, JARVIS-DFT OptB88vdW kaynak kristallerindeki gerçek PBC komşuluklarıyla türetilmiş ortalama en yakın bağ uzunluğunu ve koordinasyon sayısını **öğrenilmiş kNN uzaklık girdisi** olarak kullanır. Formül+uzay grubu gruplarına ayrılmış test, aynı bileşime ait farklı uzay grubu yapılarını ayrı tutar; fiziksel faz eşdeğerliğinin nihai kanıtı değildir. Oluşum enerjisi ve bant aralığı P0/P1 ile farklı hesaplama kökenlidir. [P1.2 yöntemi, sızıntı kontrolleri ve ablation](docs/materials-ml-p12.md).
+
 **P1 Yapısal ML Tahminleri (Malzemeler):** ZEBRA verisindeki 1.759 eğitim/doğrulama bileşimi ve 443 bağımsız test ile hibrit-DFT **doğrudan bant aralığı** (test MAE 0,843 eV) ve DFT **oluşum enerjisi** (test MAE 0,180 eV/atom) için ikinci bir kNN modeli eklendi. Bileşim + atom başına hacim öğrenilmiş girdidir; PBC komşulukları ve bağ mesafeleri ayrıca hesaplanır ancak henüz eğitilmiş model girdisi değildir. Çoklu polimorf doğrulaması eksiktir. [P1 teknik ve bilimsel rapor](docs/materials-ml-p1.md).
 
 **P0 ML Tahminleri (Malzemeler):** Etkin CIF/P1 kristalinin yalnız bileşimini kullanarak, yerel Matbench deneysel bant aralığı verileri üzerinde 5-komşulu kNN başlangıç kestirimi çalıştırır. 3.696 eğitim ve 905 ayrılmış test bileşimiyle iç MAE 0,490 eV'dur; güven aralığı değildir. Eğitim alanı dışındaki ve kısmi doluluklu girdiler reddedilir. Oluşum enerjisi, geometrik GNN veya QE/DFT tahmini yapılmaz. [Kapsam ve testler](docs/materials-ml-p0.md).
