@@ -252,7 +252,9 @@ export function initPowderIndexingPage(){
   clearResults();
   const wavelength=String(lambda.value).trim().replace(',','.');
   const numeric=peaks.map(p=>Object.fromEntries(editFields.map(f=>[f,String(p[f]).trim().replace(',','.')])));
-  const measured=numeric.map(p=>{try{return observedPeak(p,wavelength);}catch{return null;}});
+  // d, theta and sin²theta are observable from 2theta alone. Do not require
+  // hkl before auto indexing; a neutral dummy triple is used for Bragg only.
+  const measured=numeric.map(p=>{try{return observedPeak({...p,h:1,k:0,l:0},wavelength);}catch{return null;}});
   for(const [i,row] of Array.from(table.rows).entries()){
    const o=measured[i];
    for(const field of ['thetaDeg','dObserved','sinSquared']){
