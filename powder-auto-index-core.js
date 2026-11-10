@@ -158,7 +158,7 @@ export function parseMeasuredAngles(text){
  const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&!s.startsWith('#'));
  if(!lines.length)throw new RangeError('Angle list is empty.');
  const first=lines[0].toLowerCase().replace(/[\s_°()]/g,'');
- const hasHeader=/(?:2theta|2θ|twotheta|angle)/.test(first)&&!/^\d/.test(first);
+ const hasHeader=/^(?:2theta|2θ|twotheta|angle)(?:$|[,;])/.test(first);
  const delim=hasHeader?(first.includes(';')?';':first.includes(',')?',':null):null;
  const data=lines.slice(hasHeader?1:0);
  if(data.length<5||data.length>40)throw new RangeError('Auto indexing requires 5–40 measured peaks.');
