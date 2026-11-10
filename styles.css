@@ -940,7 +940,7 @@ body.lesson-open #app{display:none!important}
 .powder-lesson-tabs .pw-main-tab:hover{background:#e6edf5;color:#203a54;text-decoration:none}
 .powder-lesson-tabs .pw-main-tab[aria-selected="true"]{background:#fff;color:#145b9c;box-shadow:0 1px 5px rgba(15,35,70,.12)}
 .powder-lesson-tabs .pw-main-tab:focus-visible{outline:3px solid #368bcc;outline-offset:2px}
-@media(max-width:550px){.powder-lesson-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.powder-lesson-tabs .pw-main-tab{font-size:12px;padding:10px 5px}}
+@media(max-width:550px){.powder-lesson-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.powder-lesson-tabs .pw-main-tab{font-size:11px;padding:8px 4px;white-space:normal;text-align:center;line-height:1.2;min-height:48px}}
 .lesson-source{display:flex;align-items:center;flex-wrap:wrap;gap:11px;background:#e8f1fa;border:1px solid #d6e5f3;border-radius:11px;padding:11px 15px;margin-bottom:20px;font-size:13px;color:#526980}
 .lesson-source>span:first-child{color:#657f9d;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .lesson-source strong{color:#214c74}
