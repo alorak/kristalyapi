@@ -1,0 +1,55 @@
+{
+  "schema": "kristalyapi.gansu-pyscf-p03-fixtures.v1",
+  "notes": "Finite isolated molecules only. All XYZ coordinates in Angstrom. Not periodic Si crystal. Ref PySCF 2.15.0 uses libxc.",
+  "upstreamGansuCommit": "58237bc616e9795f393b3d5272805ecef6d377ad",
+  "pyscfVersion": "2.15.0",
+  "basis": "sto-3g",
+  "validationLimitHartree": 0.02,
+  "cases": [
+    {
+      "id": "h2-svwn",
+      "label": "H₂ / SVWN",
+      "xyz": "2\nH2 · R=0.74 Å\nH 0 0 0\nH 0 0 0.74",
+      "charge": 0,
+      "multiplicity": 1,
+      "functional": "SVWN",
+      "grid": "medium"
+    },
+    {
+      "id": "h2o-pbe",
+      "label": "H₂O / PBE",
+      "xyz": "3\nH2O · fixed 104.54 deg\nO 0 0 0\nH 0.757 0.586 0\nH -0.757 0.586 0",
+      "charge": 0,
+      "multiplicity": 1,
+      "functional": "PBE",
+      "grid": "medium"
+    },
+    {
+      "id": "nh3-pbe",
+      "label": "NH₃ / PBE",
+      "xyz": "4\nNH3 · fixed geometry\nN 0.000 0.000 0.128\nH 0.000 0.941 -0.298\nH 0.815 -0.470 -0.298\nH -0.815 -0.470 -0.298",
+      "charge": 0,
+      "multiplicity": 1,
+      "functional": "PBE",
+      "grid": "medium"
+    },
+    {
+      "id": "sih4-svwn",
+      "label": "SiH₄ / SVWN",
+      "xyz": "5\nSilane tetrahedron · Si-H 1.480 Å\nSi 0 0 0\nH 0.85448 0.85448 0.85448\nH -0.85448 -0.85448 0.85448\nH -0.85448 0.85448 -0.85448\nH 0.85448 -0.85448 -0.85448",
+      "charge": 0,
+      "multiplicity": 1,
+      "functional": "SVWN",
+      "grid": "medium"
+    },
+    {
+      "id": "sih4-pbe",
+      "label": "SiH₄ / PBE",
+      "xyz": "5\nSilane tetrahedron · Si-H 1.480 Å\nSi 0 0 0\nH 0.85448 0.85448 0.85448\nH -0.85448 -0.85448 0.85448\nH -0.85448 0.85448 -0.85448\nH 0.85448 -0.85448 -0.85448",
+      "charge": 0,
+      "multiplicity": 1,
+      "functional": "PBE",
+      "grid": "medium"
+    }
+  ]
+}
