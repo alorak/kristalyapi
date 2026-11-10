@@ -1590,6 +1590,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <button id="piExport" type="button" data-pi-tr="CSV dışa aktar" data-pi-en="Export CSV">CSV dışa aktar</button>
      <input id="piImport" type="file" accept=".csv,text/csv,text/plain" hidden aria-label="Peak CSV file">
     </div>
+    <div class="pi-modes" role="group" aria-label="Peak indexing workflow">
+     <button type="button" id="piModeManual" aria-pressed="true" data-pi-tr="Manuel hkl" data-pi-en="Manual hkl">Manuel hkl</button>
+     <button type="button" id="piModeAuto" aria-pressed="false" data-pi-tr="Otomatik hkl · P1" data-pi-en="Automatic hkl · P1">Otomatik hkl · P1</button>
+    </div>
+    <section id="piAutoPanel" class="pi-auto-panel" hidden>
+     <h4 data-pi-tr="P1.1 Kübik / P1.2 Hekzagonal · aday indisleme" data-pi-en="P1.1 Cubic / P1.2 Hexagonal · candidate indexing">P1.1 Kübik / P1.2 Hekzagonal · aday indisleme</h4>
+     <p data-pi-tr="Tablodaki 2θ değerlerinden hkl ve örgü parametrelerini arar; mevcut hkl girişlerini dikkate almaz. Önce yukarıdan kristal sistemini ve dalga boyunu seçin."
+        data-pi-en="Searches for hkl and lattice parameters from the table's 2theta values, ignoring entered hkl. Choose the crystal system and wavelength above.">Tablodaki 2θ değerlerinden hkl ve örgü parametrelerini arar; mevcut hkl girişlerini dikkate almaz. Önce yukarıdan kristal sistemini ve dalga boyunu seçin.</p>
+     <div class="pi-auto-controls">
+      <label id="piAutoCenterWrap"><span data-pi-tr="Kübik örgü adayları" data-pi-en="Cubic lattice candidates">Kübik örgü adayları</span>
+       <select id="piAutoCenter"><option value="all" data-pi-tr="P + I + F tara" data-pi-en="Search P + I + F">P + I + F tara</option>
+        <option value="P">P</option><option value="I">I</option><option value="F">F</option></select>
+      </label>
+      <label><span data-pi-tr="Açı toleransı Δ2θ (°)" data-pi-en="Angle tolerance Δ2θ (°)">Açı toleransı Δ2θ (°)</span>
+       <input id="piAutoTolerance" type="text" inputmode="decimal" value="0.20" autocomplete="off"></label>
+      <label><span>a min (Å)</span><input id="piAutoAmin" type="text" inputmode="decimal" value="2"></label>
+      <label><span>a max (Å)</span><input id="piAutoAmax" type="text" inputmode="decimal" value="10"></label>
+      <label class="pi-hex-field"><span>c min (Å)</span><input id="piAutoCmin" type="text" inputmode="decimal" value="2"></label>
+      <label class="pi-hex-field"><span>c max (Å)</span><input id="piAutoCmax" type="text" inputmode="decimal" value="15"></label>
+     </div>
+     <label class="pi-auto-paste-label" for="piAutoAngles" data-pi-tr="İsteğe bağlı: 2θ listesini yapıştır (satır başına bir pik veya 2theta CSV)" data-pi-en="Optional: paste 2theta values (one peak per line or 2theta CSV)">İsteğe bağlı: 2θ listesini yapıştır (satır başına bir pik veya 2theta CSV)</label>
+     <textarea id="piAutoAngles" rows="3" placeholder="2theta&#10;35.10&#10;38.39&#10;40.17" aria-label="Experimental two-theta peak list"></textarea>
+     <div class="pi-auto-actions">
+      <button id="piAutoLoadAngles" type="button" data-pi-tr="Açıları tabloya aktar" data-pi-en="Load angles into table">Açıları tabloya aktar</button>
+      <button id="piAutoRun" type="button" class="pi-auto-primary" data-pi-tr="Adayları hesapla" data-pi-en="Calculate candidates">Adayları hesapla</button>
+     </div>
+     <p id="piAutoStatus" class="pi-status" role="status" aria-live="polite"></p>
+     <div id="piAutoResults" class="pi-auto-results" aria-live="polite"></div>
+     <p class="pi-note" data-pi-tr="Bu sonuçlar olası indislemelerdir; kesin uzay grubu, kimyasal faz veya yapı doğrulaması değildir. P/I/F yalnız kübik merkezlenme kısıtlarını uygular. Hekzagonal aramada yapı faktörü ve vida ekseni nedeniyle oluşan sistematik sönümler bilinmez. Benzer uyumlu üst hücreler de aday olabilir."
+        data-pi-en="These are candidate indexings, not verified space groups, phases or structures. Cubic P/I/F only applies lattice-centering constraints. Hexagonal structure-factor or screw-axis extinctions are unknown. Supercell aliases may fit equally well.">Bu sonuçlar olası indislemelerdir; kesin uzay grubu, kimyasal faz veya yapı doğrulaması değildir. P/I/F yalnız kübik merkezlenme kısıtlarını uygular. Hekzagonal aramada yapı faktörü ve vida ekseni nedeniyle oluşan sistematik sönümler bilinmez. Benzer uyumlu üst hücreler de aday olabilir.</p>
+    </section>
     <div class="pi-table-scroll" role="region" tabindex="0" aria-label="Peak indexing worksheet">
      <table aria-label="2theta, d spacing, indexed peaks and fitted positions">
       <thead><tr>
