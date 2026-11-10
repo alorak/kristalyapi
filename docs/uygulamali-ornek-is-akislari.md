@@ -98,7 +98,7 @@ python tools/mp_electronic_export.py --mp-id mp-149 --output mp-149-electronic.j
 - Bant ve DOS kaynaklarının **kendi** Fermi sıfırları vardır; görselde ikisinin de `E−E_F` yazması otomatik ortak mutlak hizalama anlamına gelmez.
 - Bu işlem MP'nin **önceden hesaplanmış elektronik sonuçlarını getirir**; tarayıcıda Si Kohn–Sham çözümü **çalıştırmaz**.
 - MP özetindeki tek `band_gap` sayısından gerçek bant eğrisi **üretilmez**. Gerçek veri indirme kişisel anahtar + Python istemcisini gerektirir; yalnız tarayıcıdaki mevcut MP özet araması yeterli değildir.
-- PR henüz birleştirilmediyse bu düğmeler/`tools/mp_electronic_export.py` dosyası `main` dalında yoktur: [PR #247](https://github.com/alorak/kristalyapi/pull/247) · [PR kapsamındaki kullanım kılavuzu](../docs/mp-electronic-browser.md) (birleştirmeden önce ilgili PR dalından aç).
+- PR henüz birleştirilmediyse bu düğmeler/`tools/mp_electronic_export.py` dosyası `main` dalında yoktur: [PR #247](https://github.com/alorak/kristalyapi/pull/247) · [PR #247 kod değişiklikleri ve kılavuz](https://github.com/alorak/kristalyapi/pull/247/files) (birleştirme sonrasında dosya: `docs/mp-electronic-browser.md`).
 
 #### A4.3. DFT → Hesap hazırlığı / Sonuçları incele: gerçek periyodik Si
 
@@ -246,7 +246,7 @@ Her örnek için kısa rapor şu bilgileri içermeli:
 ## 8. İlgili proje içi teknik belgeler
 
 - [Materials Project API, anahtar ve CIF aktarımı](materials-project.md)
-- [MP gerçek bant/DOS iş akışı — PR #247 sonrası](mp-electronic-browser.md)
+- [MP gerçek bant/DOS iş akışı — PR #247, henüz `main` üzerinde değil](https://github.com/alorak/kristalyapi/pull/247/files)
 - [Malzemeler yapı kanıtları ve XRD ölçüm kaydı](material-intelligence-p1.md)
 - [ML P0 Matbench](materials-ml-p0.md) · [ML P1 ZEBRA](materials-ml-p1.md) · [ML P1.2 JARVIS/polimorf](materials-ml-p12.md) · [ML P1.3 veri doğrulama](materials-ml-p13.md)
 - [Yerel GANSU Lite ve grafen Tight-Binding](browser-dft-tb.md) · [SiH₄ enerji taraması](gansu-p04-energy-geometry.md)
