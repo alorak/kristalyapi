@@ -88,6 +88,8 @@ jobs:
           npx playwright install --with-deps chromium
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
+      - name: Prepare pinned same-origin GANSU WASM for DFT browser shell
+        run: python3 tools/gansu_wasm_assets.py
       - name: Verify dedicated DFT routes and mounted forms without calculations
         run: node tests/browser/dft-workspace.test.mjs
       - name: Smoke-test P0 materials and XRD controls in real Chromium (synthetic scan)
