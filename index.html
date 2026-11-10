@@ -1474,6 +1474,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div id="materialsMlP1Result" class="materials-ml-result" aria-live="polite"></div>
     <p class="materials-caution">P1, ZEBRA kaynaklı hesaplanmış <strong>hibrit-DFT doğrudan bant aralığı</strong> ile <strong>DFT oluşum enerjisini</strong> kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:
      <a href="https://github.com/oba-group/ZEBRA-dataset" target="_blank" rel="noopener noreferrer">ZEBRA-Dataset (CC BY 4.0)</a>.</p>
+   <div class="materials-ml-p12" aria-label="Polimorf ML doğrulaması">
+    <div class="lesson-panel-head"><h4>P1.2 · Bağ ve koordinasyonla eğitilmiş ML</h4><span class="lesson-pill">JARVIS · Polimorf testi</span></div>
+    <p class="hint">Aynı bileşimli fakat farklı uzay gruplarındaki kristalleri birbirinden ayrılmış eğitim/test gruplarında inceler. Öğrenilen girdiler: bileşim, atom başına hacim, periyodik en yakın bağ uzunluğu ve koordinasyon. Bu model JARVIS OptB88vdW hedeflerine aittir; P0 deneysel ve P1 hibrit-DFT değerleriyle aynı değildir.</p>
+    <div class="actionrow materials-actions">
+     <button id="materialsMlP12Run" type="button">P1.2 · Polimorf modelini çalıştır</button>
+     <button id="materialsMlP12Export" type="button" disabled>P1.2 sonuç JSON</button>
+    </div>
+    <p id="materialsMlP12Status" class="note" role="status" aria-live="polite">P1.2 henüz çalıştırılmadı.</p>
+    <div id="materialsMlP12Result" class="materials-ml-result" aria-live="polite"></div>
+    <p class="materials-caution">P1.2 araştırma prototipi: aynı formülde farklı uzay grubu, farklı faz için bir vekil ölçüttür; bağımsız faz karakterizasyonu veya güven aralığı değildir. Kaynak:
+     <a href="https://doi.org/10.6084/m9.figshare.6815699" target="_blank" rel="noopener noreferrer">JARVIS-DFT (CC BY 4.0)</a>.
+     <a href="https://github.com/alorak/kristalyapi/blob/main/docs/materials-ml-p12.md" target="_blank" rel="noopener noreferrer">Yöntem dokümanı</a>.</p>
+   </div>
    </div>
   </section>
   <section class="lesson-panel">

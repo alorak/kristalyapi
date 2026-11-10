@@ -7,6 +7,16 @@
 (() => {
  'use strict';
  const entries=[
+  // Materials P1.2: phase-group independent supervised JARVIS regression.
+  ["P1.2 · Bağ ve koordinasyonla eğitilmiş ML","P1.2 · Bond/coordination-trained ML"],
+  ["JARVIS · Polimorf testi","JARVIS · Polymorph holdout"],
+  ["Aynı bileşimli fakat farklı uzay gruplarındaki kristalleri birbirinden ayrılmış eğitim/test gruplarında inceler. Öğrenilen girdiler: bileşim, atom başına hacim, periyodik en yakın bağ uzunluğu ve koordinasyon. Bu model JARVIS OptB88vdW hedeflerine aittir; P0 deneysel ve P1 hibrit-DFT değerleriyle aynı değildir.","Evaluates crystals of identical composition but different space groups in separate training and test groups. Learned descriptors: composition, volume per atom, periodic nearest bond length, and coordination. This model targets JARVIS OptB88vdW, distinct from experimental P0 and hybrid-DFT P1 targets."],
+  ["P1.2 · Polimorf modelini çalıştır","Run P1.2 polymorph model"],
+  ["P1.2 sonuç JSON","P1.2 results JSON"],
+  ["P1.2 henüz çalıştırılmadı.","P1.2 has not been run."],
+  ["P1.2 araştırma prototipi: aynı formülde farklı uzay grubu, farklı faz için bir vekil ölçüttür; bağımsız faz karakterizasyonu veya güven aralığı değildir. Kaynak:","P1.2 research prototype: a different space group of the same composition is a proxy for a different phase, not independently certified phase identity or a confidence interval. Source:"],
+  ["JARVIS-DFT (CC BY 4.0)","JARVIS-DFT (CC BY 4.0)"],
+  ["Yöntem dokümanı","Methods document"],
   // Materials P1: trained hybrid-DFT direct-gap + formation-energy estimates.
   ["P1 · Yapısal ML tahminleri","P1 · Structural ML predictions"],
   ["Hibrit-DFT · KNN","Hybrid DFT · kNN"],
