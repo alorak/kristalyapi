@@ -18,7 +18,7 @@
   ["hibrit-DFT doğrudan bant aralığı","hybrid-DFT direct band gap"],
   ["ile","and"],
   ["DFT oluşum enerjisini","DFT formation energy"],
-  ["kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:\n    ","from reference data. Coordination and bond distances are used for structural checks but are not trained regression inputs in this version. Differentiating polymorphs remains limited. Source:\n    "],
+  ["kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:","from reference data. Coordination and bond distances are used for structural checks but are not trained regression inputs in this version. Differentiating polymorphs remains limited. Source:\n    "],
   ["ZEBRA-Dataset (CC BY 4.0)","ZEBRA Dataset (CC BY 4.0)"],
   // Materials P0: composition-only local ML baseline (not a DFT result).
   ["ML Tahminleri","ML Predictions"],
