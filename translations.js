@@ -25,7 +25,7 @@
   ["P1 · Yapısal","P1 · Structural"],
   ["P1.2 · Polimorflar","P1.2 · Polymorphs"],
   ["P0 · Deneysel bant aralığı","P0 · Experimental band gap"],
-  ["Matbench · kNN","Matbench · kNN"],
+  ["Matbench · kNN","Matbench · nearest-neighbor model"],
 
   // Materials P1.2: phase-group independent supervised JARVIS regression.
   ["P1.2 · Bağ ve koordinasyonla eğitilmiş ML","P1.2 · Bond/coordination-trained ML"],
