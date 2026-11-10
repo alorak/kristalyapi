@@ -35,6 +35,18 @@ test('Materials section and ML sub-tabs preserve all controls and ship offline',
  assert.ok(pages.includes('cp materials-tabs.js public/materials-tabs.js'));
  assert.ok(pages.includes('test -s public/materials-tabs.js'));
 });
+test('Materials workspace removes redundant introduction and uses compact, scoped typography',()=>{
+ const section=html.slice(html.indexOf('<main id="materialsPage"'),html.indexOf('<main id="powderPage"'));
+ const introduction=section.slice(0,section.indexOf('<nav id="materialsTabs"'));
+ assert.match(introduction,/<div class="library-wrap lesson-wrap">/);
+ assert.doesNotMatch(introduction,/library-header|Malzeme Ar-Ge|Malzeme araştırma araçları|Kristal editörü/);
+ const css=read('styles.css');
+ assert.match(css,/#materialsPage \.hint\{font-size:12px;line-height:1\.6/);
+ assert.match(css,/#materialsPage \.materials-actions button\{flex:0 1 auto;min-width:155px\}/);
+ assert.match(css,/#materialsPage \.materials-ml-p1-metric strong\{font-size:17px;/);
+ assert.match(css,/@media\(max-width:690px\)\{[\s\S]*?#materialsPage \.materials-actions button\{flex:1 1 100%;min-width:0\}/);
+});
+
 test('P1.2 independent polymorph source, engine and UI are included in site and offline shell',()=>{
  const model=JSON.parse(read('models/jarvis-polymorph-p12-source.json'));
  assert.equal(model.totalOriginal,184);
@@ -133,7 +145,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-gansu-p04-ml-p13'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-materials-compact-ui'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
