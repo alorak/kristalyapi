@@ -29,3 +29,9 @@
 #dftPage .browser-dft-results td:last-child{font-variant-numeric:tabular-nums}
 #dftPage .browser-dft-results .browser-dft-energy{font-size:21px;font-weight:760;color:#1f6196;margin:5px 0}
 @media(max-width:500px){#dftPage .browser-dft-input-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* P0.4 radial SCF scan controls; independent of the parametric graphene tab. */
+#dftPage .browser-dft-scan{margin:20px 0;padding:14px;border:1px solid #dce8f3;border-radius:9px;min-width:0}
+#dftPage .browser-dft-scan h3{font-size:14px;margin:0 0 10px;color:#254b70}
+#dftPage .browser-dft-scan-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 10px}
+@media(max-width:550px){#dftPage .browser-dft-scan-inputs{grid-template-columns:1fr}}
