@@ -11,8 +11,21 @@ const sw=read('sw.js');
 const html=read('index.html');
 const editor=read('crystal-app.js');
 const semiconductor=read('semiconductor-p0.js');
-const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','materials-ml-core.js','materials-ml-page.js','materials-ml-p1-core.js','materials-ml-p1-page.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
+const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','materials-ml-core.js','materials-ml-page.js','materials-ml-p1-core.js','materials-ml-p1-page.js','materials-ml-p12-core.js','materials-ml-p12-page.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
 
+test('P1.2 independent polymorph source, engine and UI are included in site and offline shell',()=>{
+ const model=JSON.parse(read('models/jarvis-polymorph-p12-source.json'));
+ assert.equal(model.totalOriginal,184);
+ assert.match(model.origin,/CC BY 4.0/);
+ for(const file of ['materials-ml-p12-core.js','materials-ml-p12-page.js','models/jarvis-polymorph-p12-source.json']){
+  assert.ok(pages.includes('cp '+file+' public/'+file),'Pages omits '+file);
+  assert.ok(sw.includes("'./"+file+"'"),'offline shell omits '+file);
+ }
+ assert.match(html,/id="materialsMlP12Run"/);
+ assert.match(html,/id="materialsMlP12Result"/);
+ assert.match(read('materials-ml-p12-core.js'),/meanClosestBondA/);
+ assert.match(read('materials-ml-p12-core.js'),/meanCoordination/);
+});
 test('P1 ZEBRA structure model is packaged and separated from the P0 experimental target',()=>{
  const model=JSON.parse(read('models/zebra-structural-p1.json'));
  assert.equal(model.schema,'kristalyapi.zebra-structural-knn.v1');
@@ -98,7 +111,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-materials-ml-p1'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-materials-ml-p12'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
