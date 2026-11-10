@@ -36,7 +36,7 @@ try{
  assert.equal(await page.locator('#browserDftFunctional').inputValue(),'SVWN');
  assert.equal(await page.locator('#browserDftRun').isEnabled(),true);
  await page.locator('#browserDftRun').click();
- await page.waitForFunction(()=>document.getElementById('browserDftRun')?.disabled===false,{timeout:110000});
+ await page.waitForFunction(()=>document.getElementById('browserDftRun')?.disabled===false,null,{timeout:110000});
  const status=await page.locator('#browserDftEngineStatus').textContent();
  assert.match(status,/WASM doğrulandı.*SCF/,'actual WASM SCF must complete: '+status);
  const energyText=await page.locator('#browserDftResults .browser-dft-energy').textContent();
@@ -53,7 +53,10 @@ try{
  assert.equal(content.result.backend,'WASM');
  assert.equal(content.result.atoms.length,2);
  assert.equal(content.result.functional,'SVWN');
- assert.equal(content.result.energyHartree,energy);
+ assert.ok(Math.abs(content.result.energyHartree-energy)<1e-8,'rounded UI and full-precision JSON differ');
+ // Pinned GANSU Lite SVWN/STO-3G H2(0.74 Å) acceptance value; not an independent PySCF comparison.
+ assert.ok(Math.abs(content.result.energyHartree-(-1.1211943510886253))<5e-5,
+  'pinned upstream energy regression exceeded 50 micro-Hartree');
  assert.deepEqual(outsiders,[],'runtime computation must not contact GANSU or any remote origin');
  assert.deepEqual(errors,[],'no unhandled page errors');
  // User-supplied Ni and spin-inconsistent molecules must fail without calculation.
