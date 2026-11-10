@@ -48,7 +48,7 @@ class TestMpElectronicExport(unittest.TestCase):
         with self.assertRaises(ValueError):
             spins({1: [0.0, float("nan")]})
         with self.assertRaises(ValueError):
-            spins({1: [0.0, -1.0]}, count=None) if False else spins({1: [0.0, float("inf")]})
+            spins({1: [0.0, float("inf")]})
 
 if __name__ == "__main__":
     unittest.main()
