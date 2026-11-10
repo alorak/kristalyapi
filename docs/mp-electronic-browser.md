@@ -16,7 +16,7 @@ export MP_API_KEY='your-personal-key'
 python tools/mp_electronic_export.py --mp-id mp-149 --output mp-149-electronic.json
 ```
 
-Use --first-band 51 --band-count 80 to request a bounded band window. The exporter limits display to 300 bands per spin, 2,000 k samples, 120,000 points per spin, and 20,000 DOS energies. Unsupported or unavailable band/DOS sections are reported, not replaced by invented results. An 8 MB export limit applies.
+By default the exporter selects a bounded window of **real eigenvalue bands nearest the source Fermi level**, so a small ±6 eV view is not accidentally empty merely because lower-index core bands were exported. Use --first-band 51 --band-count 80 for a reproducible explicit band index window. The exporter limits display to 300 bands per spin, 2,000 k samples, 120,000 points per spin, and 20,000 DOS energies. Unsupported or unavailable band/DOS sections are reported, not replaced by invented results. An 8 MB export limit applies.
 
 1. Open **Kütüphane → Materials Project** and select **Bant/DOS JSON** for an MP record, or use the standalone import field.
 2. Import the JSON exported by the official mp-api client; the Library displays band structures and DOS side by side with a common **vertical relative-energy view** (separate Fermi references), source ID, optional task IDs and retrieval timestamp.
