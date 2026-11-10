@@ -2,6 +2,7 @@
  * Never embed keys in source, URL, exports, service-worker caches or telemetry.
  * localStorage is NOT encrypted or isolated from same-origin JavaScript. */
 import {mpSearchUrl,mpStructureUrl,normalizeMpResponse,mpStructureToCif,mpApiGet,mpCompareRows} from './materials-project-core.js';
+import {initMpElectronicImport} from './mp-electronic-page.js';
 const MP_KEY_STORAGE='kristalyapi.materials-project-api-key.v1';
 const MP_WORKER_STORAGE='kristalyapi.materials-project-worker-opt-in.v1';
 const $=id=>document.getElementById(id);
@@ -47,6 +48,7 @@ export function mpIntegrationPresentation({hasKey=false,persisted=false,connecti
 export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}={}){
  let apiKey=readSavedKey(),persisted=!!apiKey,results=[],selected=new Map(),busy=false,searchAbort=null;
  let useWorker=false,connection='unverified';
+ const electronic=initMpElectronicImport();
  try{useWorker=localStorage.getItem(MP_WORKER_STORAGE)==='1';}catch{}
  $('mpUseWorker').checked=useWorker;
  $('mpUseWorker').addEventListener('change',()=>{
@@ -182,7 +184,10 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
     renderCompare();
    });
    checkLabel.append(check,document.createTextNode(' '+t('Karşılaştır','Compare')));
-   actions.append(importButton,xrdButton,checkLabel);
+   const spectrumButton=node('button',t('Bant / DOS JSON','Band / DOS JSON'));
+   spectrumButton.type='button';
+   spectrumButton.addEventListener('click',()=>electronic?.requestFor(record.materialId));
+   actions.append(importButton,xrdButton,spectrumButton,checkLabel);
    card.append(title,link,details,actions);host.append(card);
   }
  }
