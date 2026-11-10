@@ -6,6 +6,7 @@ import {bulkStudyPreparation} from './bulk-study-preparation.js';
 import {initMaterialsMl} from './materials-ml-page.js';
 import {initMaterialsMlP1} from './materials-ml-p1-page.js';
 import {initMaterialsMlP12} from './materials-ml-p12-page.js';
+import {initMaterialsMlP13} from './materials-ml-p13-page.js';
 import {initMaterialsTabs} from './materials-tabs.js';
 const $=id=>document.getElementById(id);
 const t=(tr,en)=>window.CrystalI18n?.language==='en'?en:tr;
@@ -135,6 +136,7 @@ export function initMaterialsPage(host,download){
  const ml=initMaterialsMl(host,download);
  const mlP1=initMaterialsMlP1(host,download);
  const mlP12=initMaterialsMlP12(host,download);
+ initMaterialsMlP13(download);
  initMaterialsTabs($('materialsPage'));
  window.addEventListener('crystal-language-change',render);
  render();
