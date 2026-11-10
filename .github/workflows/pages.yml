@@ -180,9 +180,12 @@ jobs:
           python tools/qe_electronic_convergence.py --verify validation-results/qe-mos2-d41-20261030-amd64
           python tools/qe_convergence_view.py validation-results/qe-mos2-d41-20261030-amd64 --output /tmp/qe-convergence-view.json
           cmp validation-results/qe-mos2-d41-20261030-amd64/convergence-view.json /tmp/qe-convergence-view.json
+      - name: Verify and prepare pinned GANSU Lite WASM runtime
+        run: python3 tools/gansu_wasm_assets.py
       - name: Stage local scientific engine and site
         run: |
           mkdir -p public/vendor public/tools
+          cp -R vendor/gansu-lite public/vendor/gansu-lite
           cp index.html public/index.html
           cp styles.css public/styles.css
           cp dft-workspace.css public/dft-workspace.css
@@ -219,6 +222,7 @@ jobs:
           cp qe-electronic-setup.js public/qe-electronic-setup.js
           cp dft-ui.js public/dft-ui.js
           cp browser-dft-lab.js public/browser-dft-lab.js
+          cp gansu-local-engine.js public/gansu-local-engine.js
           cp browser-tb-core.js public/browser-tb-core.js
           cp export-graphics.js public/export-graphics.js
           cp export-glyphs.js public/export-glyphs.js
@@ -311,6 +315,12 @@ jobs:
           test -s public/qe-electronic-setup.js
           test -s public/dft-ui.js
           test -s public/browser-dft-lab.js
+          test -s public/gansu-local-engine.js
+          test -s public/vendor/gansu-lite/scf-worker.js
+          test -s public/vendor/gansu-lite/basis/sto-3g.gbs
+          test -s public/vendor/gansu-lite/wasm/wasm_eri_bg.wasm
+          test -s public/vendor/gansu-lite/wasm/wasm_eri_simd_bg.wasm
+          test -s public/vendor/gansu-lite/LICENSE
           test -s public/browser-tb-core.js
           test -s public/export-graphics.js
           test -s public/vesta-project-style.js
