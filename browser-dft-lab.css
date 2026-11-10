@@ -16,3 +16,16 @@
 #dftPage .browser-dft-check input{margin-top:4px;flex:none}
 #dftPage .browser-dft-metrics{margin-top:12px!important}
 @media(max-width:980px){.browser-dft-grid{grid-template-columns:1fr}}
+
+/* P0.2 independent local WASM DFT solver panel */
+#dftPage .browser-dft-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+#dftPage .browser-dft-input-grid .field{min-width:0}
+#dftPage .browser-dft-results{border:1px solid #dae6f1;background:#fafdff;border-radius:9px;padding:15px;margin:14px 0;overflow:auto}
+#dftPage .browser-dft-results h3{font-size:14px;margin:0 0 10px;color:#254b70}
+#dftPage .browser-dft-results h4{font-size:12px;margin:12px 0 6px;color:#47627b}
+#dftPage .browser-dft-results table{border-collapse:collapse;width:100%;font-size:12px}
+#dftPage .browser-dft-results th,#dftPage .browser-dft-results td{padding:7px 9px;border-bottom:1px solid #e1e9f1;text-align:left}
+#dftPage .browser-dft-results th{font-weight:700;color:#52718b;background:#f0f6fc}
+#dftPage .browser-dft-results td:last-child{font-variant-numeric:tabular-nums}
+#dftPage .browser-dft-results .browser-dft-energy{font-size:21px;font-weight:760;color:#1f6196;margin:5px 0}
+@media(max-width:500px){#dftPage .browser-dft-input-grid{grid-template-columns:minmax(0,1fr)}}

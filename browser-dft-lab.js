@@ -1,4 +1,5 @@
 import {GRAPHENE_DEMO,grapheneGeometry,grapheneBands,grapheneDos} from './browser-tb-core.js';
+import {runGansuDft,validateGansuRequest,GANSU_UPSTREAM_COMMIT} from './gansu-local-engine.js';
 
 // No automatic requests and no code fetched from a third-party origin.
 // GANSU Lite runs on its own origin: this is an explicit finite-XYZ handoff,
@@ -76,7 +77,114 @@ export function initBrowserDftLab({root,getStructure}){
  if(!root||typeof getStructure!=='function')throw Error('DFT tarayıcı laboratuvarı başlatılamadı.');
  const xyz=$ (root,'browserDftXyz'),xyzStatus=$(root,'browserDftXyzStatus');
  let bands=null,dos=null,sourceLabel='Demonstrasyon: ideal grafen';
+
+ let gansuController=null,gansuResult=null,gansuInput=null,gansuRunId=0;
+ const runBtn=$(root,'browserDftRun'),cancelBtn=$(root,'browserDftCancel');
+ const exportBtn=$(root,'browserDftExport'),engineStatus=$(root,'browserDftEngineStatus');
+ const resultPanel=$(root,'browserDftResults');
+ function invalidateDft(){
+  ++gansuRunId;
+  if(gansuController)gansuController.abort();
+  gansuController=null;gansuResult=null;gansuInput=null;
+  runBtn.disabled=false;cancelBtn.disabled=true;exportBtn.disabled=true;
+  resultPanel.replaceChildren();resultPanel.hidden=true;
+  engineStatus.textContent='Yeni hesaplamaya hazır. Girdi veya fiziksel parametre değişti.';
+ }
+ function textRow(table,label,value){
+  const row=document.createElement('tr');
+  const th=document.createElement('th');th.scope='row';th.textContent=label;
+  const td=document.createElement('td');td.textContent=String(value);
+  row.append(th,td);table.append(row);
+ }
+ function showDftResult(result){
+  resultPanel.replaceChildren();resultPanel.hidden=false;
+  const title=document.createElement('h3');title.textContent='GANSU Lite · Yerel moleküler DFT sonucu';
+  const energy=document.createElement('p');energy.className='browser-dft-energy';
+  energy.textContent=result.energyHartree.toFixed(9)+' Hartree';
+  const table=document.createElement('table');
+  textRow(table,'Yöntem',result.functional+' / '+result.method+' · '+result.basis+' · '+result.grid);
+  textRow(table,'Motor / sürüm','WASM · '+result.upstreamCommit.slice(0,12));
+  textRow(table,'Toplam enerji',result.energyEv.toFixed(6)+' eV');
+  textRow(table,'Elektron sayısı',result.electrons);
+  textRow(table,'SCF iterasyonu',result.iterations);
+  if(Number.isFinite(result.gridElectrons))
+   textRow(table,'XC grid elektron integrali',Number(result.gridElectrons).toFixed(5));
+  if(result.multiplicity===1){
+   const homo=result.occupiedOrbitals-1,levels=result.orbitalEnergiesHartree;
+   if(Number.isInteger(homo)&&homo>=0&&homo<levels.length){
+    textRow(table,'HOMO (Kohn–Sham)',levels[homo].toFixed(6)+' Ha');
+    if(homo+1<levels.length){
+     textRow(table,'LUMO (Kohn–Sham)',levels[homo+1].toFixed(6)+' Ha');
+     textRow(table,'KS orbital ayrımı',((levels[homo+1]-levels[homo])*27.211386245988).toFixed(4)+' eV (temel bant aralığı değildir)');
+    }
+   }
+  }
+  const subtitle=document.createElement('h4');subtitle.textContent='Mulliken atomik yükleri (e)';
+  const charges=document.createElement('table');
+  for(let i=0;i<result.mullikenCharges.length;i++)
+   textRow(charges,result.atoms[i]+' '+(i+1),Number(result.mullikenCharges[i]).toFixed(5));
+  const foot=document.createElement('p');foot.className='hint';
+  foot.textContent='Sonlu molekül, STO-3G ve seçili fonksiyonelle hesaplandı. Periyodik katı DFT değildir; mutlak Kohn–Sham orbital ayrımı deneysel bant aralığı değildir.';
+  resultPanel.append(title,energy,table,subtitle,charges,foot);
+ }
+ const currentSettings=()=>({
+  xyz:xyz.value,
+  functional:$(root,'browserDftFunctional').value,
+  grid:$(root,'browserDftGrid').value,
+  charge:Number($(root,'browserDftCharge').value),
+  multiplicity:Number($(root,'browserDftMultiplicity').value)
+ });
+ for(const id of ['browserDftFunctional','browserDftGrid','browserDftCharge','browserDftMultiplicity']){
+  $(root,id).addEventListener('change',invalidateDft);
+ }
+ xyz.addEventListener('input',invalidateDft);
+ cancelBtn.onclick=()=>{if(gansuController)gansuController.abort();};
+ runBtn.onclick=async()=>{
+  if(gansuController)return;
+  let settings;
+  try{settings=currentSettings();validateGansuRequest(settings);}
+  catch(error){engineStatus.textContent='Hesap reddedildi: '+error.message;return;}
+  const runId=++gansuRunId,controller=new AbortController();
+  gansuController=controller;runBtn.disabled=true;cancelBtn.disabled=false;exportBtn.disabled=true;
+  resultPanel.hidden=true;resultPanel.replaceChildren();
+  engineStatus.textContent='GANSU Lite Worker başlatılıyor · yerel WASM / STO-3G / '+settings.functional+'…';
+  try{
+   const result=await runGansuDft(settings,{
+    signal:controller.signal,timeoutMs:120000,
+    onProgress:msg=>{
+     if(runId!==gansuRunId)return;
+     if(msg.type==='iteration')engineStatus.textContent='SCF iterasyon '+msg.iter+' · E = '+msg.energy.toFixed(9)+' Ha';
+     else if(msg.message.startsWith('Config:'))engineStatus.textContent='Motor: '+msg.message;
+     else if(msg.message.startsWith('DFT:'))engineStatus.textContent='Motor: '+msg.message;
+    }
+   });
+   if(runId!==gansuRunId)return;
+   gansuResult=result;gansuInput={...settings};
+   showDftResult(result);
+   engineStatus.textContent='Hesap tamamlandı: '+result.functional+' / '+result.method+
+    ' · WASM doğrulandı · '+result.iterations+' SCF iterasyonu · '+result.energyHartree.toFixed(9)+' Ha';
+   exportBtn.disabled=false;
+  }catch(error){
+   if(runId===gansuRunId)engineStatus.textContent=error.name==='AbortError'?'Hesaplama kullanıcı tarafından iptal edildi.':'Yerel DFT başarısız: '+error.message;
+  }finally{
+   if(runId===gansuRunId){
+    gansuController=null;runBtn.disabled=false;cancelBtn.disabled=true;
+   }
+  }
+ };
+ exportBtn.onclick=()=>{
+  if(!gansuResult||!gansuInput)return;
+  const data=JSON.stringify({schema:'kristalyapi.gansu-run.v1',
+   source:'KristalYapı embedded GANSU Lite',upstreamCommit:GANSU_UPSTREAM_COMMIT,
+   periodic:false,settings:gansuInput,result:gansuResult},null,2)+'\n';
+  const name='gansu-'+gansuResult.functional.toLowerCase()+'-molecular-dft.json';
+  const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),0);
+ };
+
  function xyzRefresh(){
+  invalidateDft();
   const choice=$(root,'browserDftXyzSource').value;
   if(choice==='active'){
    if(!$(root,'browserDftClusterConsent').checked){
@@ -84,7 +192,8 @@ export function initBrowserDftLab({root,getStructure}){
    }
    try{xyz.value=finiteXyz(getStructure());xyzStatus.textContent='Sonlu XYZ oluşturuldu. Periyodik bağlar kesilir; atom uçları pasifleştirilmez. GANSU içinde uygun yük, spin ve baz seçin.';}
    catch(error){xyz.value='';xyzStatus.textContent=error.message;}
-  }else{xyz.value=PRESETS[choice]||PRESETS.h2;xyzStatus.textContent='Bu örnek moleküldür; gerçek DFT hesabını GANSU Lite uygulamasında ayrıca başlatmanız gerekir.';}
+  }else if(choice==='custom'){xyzStatus.textContent='XYZ içeriğini elle düzenleyebilirsiniz. Yalnız sonlu molekül koordinatları kabul edilir.';}
+  else{xyz.value=PRESETS[choice]||PRESETS.h2;xyzStatus.textContent='Bu örnek sonlu molekül, hesaplama KristalYapı içinde WASM Worker ile yapılır.';}
  }
  $(root,'browserDftXyzSource').onchange=xyzRefresh;
  $(root,'browserDftClusterConsent').onchange=xyzRefresh;

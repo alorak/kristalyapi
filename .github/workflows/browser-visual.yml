@@ -19,6 +19,9 @@ on:
       - 'dft-workspace.css'
       - 'browser-dft-lab.css'
       - 'browser-dft-lab.js'
+      - 'gansu-local-engine.js'
+      - 'vendor/gansu-lite/**'
+      - 'tools/gansu_wasm_assets.py'
       - 'browser-tb-core.js'
       - 'sw.js'
       - 'manifest.webmanifest'
@@ -47,6 +50,9 @@ on:
       - 'dft-workspace.css'
       - 'browser-dft-lab.css'
       - 'browser-dft-lab.js'
+      - 'gansu-local-engine.js'
+      - 'vendor/gansu-lite/**'
+      - 'tools/gansu_wasm_assets.py'
       - 'browser-tb-core.js'
       - 'sw.js'
       - 'manifest.webmanifest'
@@ -83,12 +89,16 @@ jobs:
           mkdir -p vendor
           cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
           cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
+      - name: Install pinned same-origin GANSU Lite WASM for live SCF smoke test
+        run: python3 tools/gansu_wasm_assets.py
       - name: Verify linked education labs in Chromium
         run: node tests/browser/lesson-labs.test.mjs
       - name: Verify dedicated DFT routes and controls
         run: node tests/browser/dft-workspace.test.mjs
       - name: Verify GANSU handoff and graphene tight-binding browser lab
         run: node tests/browser/browser-dft-lab.test.mjs
+      - name: Verify real Kohn–Sham WASM SCF on H2 and safety gates
+        run: node tests/browser/gansu-local.test.mjs
       - name: Verify graceful UI with WebGL disabled
         run: node tests/browser/webgl-unavailable.test.mjs
       - name: Verify 2D MoS2 figure without WebGL

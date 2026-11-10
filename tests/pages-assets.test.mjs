@@ -11,7 +11,7 @@ const sw=read('sw.js');
 const html=read('index.html');
 const editor=read('crystal-app.js');
 const semiconductor=read('semiconductor-p0.js');
-const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
+const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
 
 test('app modules use .js so every static server sends a JavaScript MIME type',()=>{
  // Static servers without an .mjs mapping send application/octet-stream and the
@@ -23,7 +23,7 @@ test('app modules use .js so every static server sends a JavaScript MIME type',(
 test('offline shell entries exist at the same path in the repository',()=>{
  // A missing entry makes cache.addAll reject, so the service worker never installs.
  const listed=[...sw.match(/APP_FILES=\[([\s\S]*?)\]/)[1].matchAll(/'\.\/([^']+)'/g)].map(match=>match[1]);
- const downloaded=new Set(['vendor/moyo_wasm.js','vendor/moyo_wasm_bg.wasm']);
+ const downloaded=new Set(['vendor/moyo_wasm.js','vendor/moyo_wasm_bg.wasm','vendor/gansu-lite/wasm/wasm_eri_bg.wasm','vendor/gansu-lite/wasm/wasm_eri_simd_bg.wasm']);
  assert.deepEqual(listed.filter(file=>!downloaded.has(file)&&!existsSync(path.join(root,file))),[]);
 });
 test('every DFT setup and settings control is either saved or explicitly left unsaved',()=>{
@@ -74,7 +74,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-browser-dft-tb-v1'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-local-gansu-wasm-v2'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });

@@ -7,6 +7,26 @@
 (() => {
  'use strict';
  const entries=[
+  // P0.2 native, same-origin GANSU WASM DFT
+  ["KristalYapı içinde gerçek moleküler Kohn–Sham DFT: GANSU Lite'ın sürümü sabitlenmiş SCF Worker + WebAssembly motoru. Girdi ve sonuçlar cihazınızda kalır, QE sunucusuna gönderilmez. Periyodik kristal DFT değildir.","Real molecular Kohn–Sham DFT inside KristalYapı: a version-pinned GANSU Lite SCF Worker and WebAssembly engine. Inputs and results remain on your device and are not sent to the QE server. This is not periodic crystal DFT."],
+  ["XYZ yapıştır / elle düzenle","Paste / edit XYZ manually"],
+  ["Yerel GANSU DFT için XYZ verisi","XYZ for local GANSU DFT"],
+  ["DFT fonksiyoneli","DFT functional"],
+  ["SVWN / LDA","SVWN / local-density approximation"],
+  ["PBE / GGA","PBE / generalized-gradient approximation"],
+  ["B3LYP / hibrit","B3LYP / hybrid"],
+  ["Sayısal integrasyon ızgarası","Numerical integration grid"],
+  ["Coarse · hızlı","Coarse · fast"],
+  ["Medium · daha hassas","Medium · more accurate"],
+  ["Toplam yük (e)","Total charge (e)"],
+  ["Spin çokluğu (2S+1)","Spin multiplicity (2S+1)"],
+  ["Baz seti: STO-3G (sabit). 1–12 atom ve H–Ne desteklenir. Elektron sayısı ve spin çokluğu kontrol edilir; ağır element ve periyodik hesaplar reddedilir.","Basis set: STO-3G (fixed). Supports 1–12 atoms and H–Ne. Electron count and spin multiplicity are checked; heavy elements and periodic calculations are rejected."],
+  ["Yerel WASM DFT hesapla","Run local WASM DFT"],
+  ["Hesabı iptal et","Cancel calculation"],
+  ["Sonuç JSON indir","Download results JSON"],
+  ["WASM motoru, hesaplama başlatıldığında doğrulanır. Otomatik hesap yapılmaz.","The WASM engine is verified when calculation starts. No calculations run automatically."],
+  ["GANSU Lite kaynak uygulaması ↗","GANSU Lite original application ↗"],
+  ["GANSU Lite BSD-3-Clause lisanslıdır (Y. Ito, 2026). Motor derleme çıktıları ve WASM dosyaları sabitlenmiş sürümden, bütünlük denetimiyle aynı kökenden yüklenir. Yalnız moleküler DFT yapılır; Ni ve diğer ağır elementler bu başlangıçta desteklenmez.","GANSU Lite is BSD-3-Clause licensed (Y. Ito, 2026). Pinned built worker and WASM assets are integrity-verified and loaded from the same origin. Only molecular DFT is performed; Ni and other heavy elements remain unsupported here."],
   // Browser-only GANSU XYZ handoff and graphene tight-binding workspace
   ["Tarayıcı hesapları","Browser calculations"],
   ["DFT / TARAYICI HESAPLAMALARI","DFT / BROWSER CALCULATIONS"],
