@@ -72,12 +72,13 @@ Kaynak koordinatlarının ve etiketlerin küçük, sabit JSON kopyaları:
 - `models/p12/tio2-polymorphs.json` (8 harici TiO₂ fazının koordinatları ve ayrı referans `E_hull`).
 - `models/p12/learned-knn.json` (133 eğitilmiş giriş, kNN ağırlıkları, 37 örneğin ve 8 polimorfun sabit test metrikleri).
 
-`tests/materials-ml-p12.test.mjs`, kaynak koordinatlarından **uygulamanın kendi PBC geometri fonksiyonuyla** bağ/koordinasyon özelliklerini tekrar çıkarır; eğitim satırlarının değerleriyle eşleştirir, 37 ayrılmış test MAE değerlerini yeniden hesaplar ve sekiz TiO₂ kaynağındaki **olumsuz** ikili sıralama sonucunu doğrular. Bu, yalnızca önceden yazılmış metriklere bakılan bir test değildir.
+`tests/materials-ml-p12.test.mjs`, kaynak koordinatlarından **uygulamanın kendi PBC geometri fonksiyonuyla** bağ/koordinasyon özelliklerini tekrar çıkarır; eğitim satırlarının değerleriyle eşleştirir, 37 ayrılmış test MAE değerlerini yeniden hesaplar ve sekiz TiO₂ kaynağındaki **olumsuz** ikili sıralama sonucunu doğrular. Bu, yalnızca önceden yazılmış metriklere bakılan bir test değildir. `tools/train-materials-ml-p12.mjs --check`, çevrimdışı 170 CIF girdisinden geometri özelliklerini ve öğrenilmiş ağırlık seçimini yeniden üretir; kaynak ayrımını, eğitim satırlarını, 37 test MAE'sini ve 8 TiO₂ polimorfunun negatif dış sıralama ölçütlerini kaydedilmiş değerlerle karşılaştırır. `--write` parametresi yalnızca bu denetimler geçtiğinde yerel model dosyasını yeniden yazar.
 
 Çalıştırma:
 
 ```bash
 node --test tests/materials-ml-p12.test.mjs tests/materials-ml-p1.test.mjs
+node tools/train-materials-ml-p12.mjs --check
 ```
 
 Sadece son iki model dosyası ve JS modülleri GitHub Pages/offline pakete konur; tüm eğitim CIF'leri statik arayüzün offline önbelleğine zorla eklenmez. Kullanıcı CIF içeriği sunucuya aktarılmaz.
