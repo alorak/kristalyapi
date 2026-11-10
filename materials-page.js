@@ -3,6 +3,7 @@
 import {materialComparison,materialComparisonCsv} from './material-cards-core.js';
 import {capturedMaterialCard,attachEvidenceFile,verifyEvidenceBundle} from './material-evidence-core.js';
 import {bulkStudyPreparation} from './bulk-study-preparation.js';
+import {initMaterialsMl} from './materials-ml-page.js';
 const $=id=>document.getElementById(id);
 const t=(tr,en)=>window.CrystalI18n?.language==='en'?en:tr;
 const node=(tag,text='',className='')=>{
@@ -128,9 +129,10 @@ export function initMaterialsPage(host,download){
  $('materialsBulkExport').addEventListener('click',()=>{
   if(bulkPlan)download('bulk-dft-preparation.json',JSON.stringify(bulkPlan,null,2)+'\n','application/json');
  });
+ const ml=initMaterialsMl(host,download);
  window.addEventListener('crystal-language-change',render);
  render();
- return {setVisible(visible){if(visible)$('materialsStatus').textContent=cards.length?
+ return {setVisible(visible){ml.setVisible(visible);if(visible)$('materialsStatus').textContent=cards.length?
   t('Karşılaştırılan yapı sayısı: ','Comparing ')+cards.length+t('. Etkin kristaldeki değişiklikler otomatik aktarılmaz.',' captured structures; current workspace edits are not auto-imported.'):
   t('Henüz yapı kartı yok. Etkin kristali ekleyerek başlayın.','No captured structures. Add the active crystal to begin.');}};
 }
