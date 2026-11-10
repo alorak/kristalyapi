@@ -33,3 +33,35 @@
 .pw-indexing .pi-formula{font-size:12px;overflow-wrap:anywhere;background:#f6f9fc;border-radius:8px;padding:10px 12px;color:#385a77}
 @media(max-width:930px){.pw-indexing .pi-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:560px){.pw-indexing .pi-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.pw-indexing .pi-header{display:block}.pw-indexing .pi-controls{gap:9px}}
+
+/* P1.1/P1.2: auto-indexing candidate workflow, scoped to the worksheet. */
+.pw-indexing .pi-modes{display:inline-flex;gap:5px;padding:4px;border:1px solid #d4e2f1;border-radius:10px;background:#edf4fb;margin:2px 0 13px}
+.pw-indexing .pi-modes button{background:transparent;border:0;color:#4e708e;min-height:37px;padding:9px 13px}
+.pw-indexing .pi-modes button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 5px #173d5f1c;color:#135c9d}
+.pw-indexing .pi-auto-panel[hidden],.pw-indexing .pi-auto-controls label[hidden]{display:none!important}
+.pw-indexing .pi-auto-panel{border:1px solid #d5e5f5;background:#f6faff;border-radius:12px;padding:15px 16px;margin:0 0 17px}
+.pw-indexing .pi-auto-panel h4{font-size:15px;margin:1px 0 6px;color:#235377}
+.pw-indexing .pi-auto-panel>p{font-size:12px;color:#566e85;line-height:1.55;margin:0 0 11px}
+.pw-indexing .pi-auto-controls{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:10px;margin-bottom:12px}
+.pw-indexing .pi-auto-controls label{display:grid;align-content:end;gap:5px;font-size:11px;color:#4a667e;font-weight:600}
+.pw-indexing .pi-auto-controls select,.pw-indexing .pi-auto-controls input{width:100%;min-width:0;min-height:35px;border:1px solid #bdcfe1;border-radius:7px;padding:7px 8px;background:#fff;color:#25455f}
+.pw-indexing .pi-auto-paste-label{display:block;margin:10px 0 6px;color:#4f6d88;font-size:12px}
+.pw-indexing #piAutoAngles{display:block;min-width:0;width:100%;max-width:780px;min-height:82px;resize:vertical;border:1px solid #c1d2e4;border-radius:8px;color:#24435f;background:#fff;padding:9px;font-size:12px;font-family:ui-monospace,monospace}
+.pw-indexing .pi-auto-actions{display:flex;flex-wrap:wrap;gap:9px;margin:11px 0}
+.pw-indexing button.pi-auto-primary{background:#1f69a8;color:#fff;border-color:#1f69a8}
+.pw-indexing button.pi-auto-primary:hover{background:#175990}
+.pw-indexing button:disabled{opacity:.55;cursor:not-allowed}
+.pw-indexing .pi-auto-results{display:grid;gap:11px;margin-top:10px}
+.pw-indexing .pi-auto-candidate{background:#fff;border:1px solid #d6e5f2;border-radius:10px;padding:12px}
+.pw-indexing .pi-auto-candidate-top{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px 13px}
+.pw-indexing .pi-auto-candidate-top strong{font-size:13px;color:#1b4f7e}
+.pw-indexing .pi-auto-candidate-top span{font-size:12px;color:#4e6f87;font-variant-numeric:tabular-nums}
+.pw-indexing .pi-auto-candidate details{margin-top:10px}
+.pw-indexing .pi-auto-candidate summary{cursor:pointer;font-size:12px;color:#245f92}
+.pw-indexing .pi-auto-table-scroll{margin:10px 0;max-width:100%;overflow-x:auto;border:1px solid #dfebf5;border-radius:7px}
+.pw-indexing .pi-auto-table-scroll table{min-width:460px}
+.pw-indexing .pi-auto-table-scroll th,.pw-indexing .pi-auto-table-scroll td{padding:7px 9px}
+.pw-indexing .pi-auto-unmatched td{color:#a25a39;background:#fff8f0}
+.pw-indexing .pi-auto-small{font-size:11px;color:#58738d;line-height:1.5;margin:0 0 9px}
+@media(max-width:1050px){.pw-indexing .pi-auto-controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.pw-indexing .pi-auto-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.pw-indexing .pi-modes{display:flex}.pw-indexing .pi-modes button{flex:1;padding:8px 5px;font-size:11px}.pw-indexing .pi-auto-panel{padding:12px 10px}}
