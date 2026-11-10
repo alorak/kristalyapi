@@ -33,7 +33,7 @@
   ["DOS Gaussian genişliği σ (eV)","DOS Gaussian broadening σ (eV)"],
   ["Grafen bant / DOS hesapla","Compute graphene bands / DOS"],
   ["Bant CSV","Bands CSV"],
-  ["DOS CSV","DOS CSV"],
+  ["DOS CSV","Download DOS CSV"],
   ["Model hazırlanıyor.","Preparing model."],
   ["π bantları · Γ–M–K–Γ","π bands · Γ–M–K–Γ"],
   ["Durum yoğunluğu (DOS) · spin başına","Density of states (DOS) · per spin"],
