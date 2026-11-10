@@ -175,7 +175,7 @@ export function trainPolymorphModel(source){
    accepted:corpus.rows.length,rejected:corpus.rejected.length,
    train:split.train.length,validation:split.validation.length,test:split.test.length,
    structurallyDistinctTest:distinctTest.length,
-   ...split.groups,formulas:split.formulas},
+   groupCounts:split.groups,formulas:split.formulas},
   exclusionReasons:corpus.rejected,
   weights:comparisons,
   training:trained,
