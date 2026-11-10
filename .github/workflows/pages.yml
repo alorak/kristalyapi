@@ -186,6 +186,7 @@ jobs:
           cp index.html public/index.html
           cp styles.css public/styles.css
           cp dft-workspace.css public/dft-workspace.css
+          cp browser-dft-lab.css public/browser-dft-lab.css
           cp semiconductor-p0.css public/semiconductor-p0.css
           cp powder-camera.css public/powder-camera.css
           cp sw.js public/sw.js
@@ -217,6 +218,8 @@ jobs:
           cp qe-protocol-templates.js public/qe-protocol-templates.js
           cp qe-electronic-setup.js public/qe-electronic-setup.js
           cp dft-ui.js public/dft-ui.js
+          cp browser-dft-lab.js public/browser-dft-lab.js
+          cp browser-tb-core.js public/browser-tb-core.js
           cp export-graphics.js public/export-graphics.js
           cp export-glyphs.js public/export-glyphs.js
           cp element-data.js public/element-data.js
@@ -266,6 +269,7 @@ jobs:
           test -s public/vendor/three/build/three.module.js
           test -s public/vendor/three/examples/jsm/geometries/ConvexGeometry.js
           test -s public/dft-workspace.css
+          test -s public/browser-dft-lab.css
           test -s public/sw.js
           test -s public/manifest.webmanifest
           test -s public/layered-2d-figure.js
@@ -306,6 +310,8 @@ jobs:
           test -s public/qe-protocol-templates.js
           test -s public/qe-electronic-setup.js
           test -s public/dft-ui.js
+          test -s public/browser-dft-lab.js
+          test -s public/browser-tb-core.js
           test -s public/export-graphics.js
           test -s public/vesta-project-style.js
           test -s public/vesta-project-view.js

@@ -17,6 +17,9 @@ on:
       - 'volume-iso-worker.js'
       - 'styles.css'
       - 'dft-workspace.css'
+      - 'browser-dft-lab.css'
+      - 'browser-dft-lab.js'
+      - 'browser-tb-core.js'
       - 'sw.js'
       - 'manifest.webmanifest'
       - 'translations.js'
@@ -42,6 +45,9 @@ on:
       - 'volume-iso-worker.js'
       - 'styles.css'
       - 'dft-workspace.css'
+      - 'browser-dft-lab.css'
+      - 'browser-dft-lab.js'
+      - 'browser-tb-core.js'
       - 'sw.js'
       - 'manifest.webmanifest'
       - 'translations.js'
@@ -58,7 +64,8 @@ permissions:
 jobs:
   browser-visual:
     if: github.event_name == 'pull_request' || github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 does not support the Ubuntu 26.04 runner image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +87,8 @@ jobs:
         run: node tests/browser/lesson-labs.test.mjs
       - name: Verify dedicated DFT routes and controls
         run: node tests/browser/dft-workspace.test.mjs
+      - name: Verify GANSU handoff and graphene tight-binding browser lab
+        run: node tests/browser/browser-dft-lab.test.mjs
       - name: Verify graceful UI with WebGL disabled
         run: node tests/browser/webgl-unavailable.test.mjs
       - name: Verify 2D MoS2 figure without WebGL
