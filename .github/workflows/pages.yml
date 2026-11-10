@@ -250,6 +250,7 @@ jobs:
           cp bulk-study-preparation.js public/bulk-study-preparation.js
           cp xrd-acquisition-core.js public/xrd-acquisition-core.js
           cp materials-page.js public/materials-page.js
+          cp materials-tabs.js public/materials-tabs.js
           cp materials-ml-core.js public/materials-ml-core.js
           cp materials-ml-page.js public/materials-ml-page.js
           cp materials-ml-p1-core.js public/materials-ml-p1-core.js
@@ -299,6 +300,7 @@ jobs:
           test -s public/bulk-study-preparation.js
           test -s public/xrd-acquisition-core.js
           test -s public/materials-page.js
+          test -s public/materials-tabs.js
           test -s public/materials-ml-core.js
           test -s public/materials-ml-page.js
           test -s public/materials-ml-p1-core.js
