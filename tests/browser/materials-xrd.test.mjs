@@ -28,6 +28,10 @@ try{
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#materialsNav').click();
  await page.waitForFunction(()=>!document.getElementById('materialsPage').hidden);
+ await page.locator('#materialsMlRun').click();
+ await page.waitForFunction(()=>document.getElementById('materialsMlResult')?.textContent?.includes('Matbench'),null,{timeout:30000});
+ assert.match(await page.locator('#materialsMlResult').textContent(),/MAE|eV/);
+ assert.equal(await page.locator('#materialsMlRun').isDisabled(),false);
  await page.locator('#materialsReference').fill('synthetic browser test');
  await page.locator('#materialsAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#materialsCards article').length===1);

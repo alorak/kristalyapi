@@ -1451,6 +1451,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div id="materialsComparison" aria-live="polite"></div>
    <p class="hint">Bu kartlar yalnız mevcut yapı verilerinin anlık kopyasıdır; otomatik COD doğrulaması, XRD faz tayini, DFT sonucu, mekanik veya RF malzeme özelliği içermez. Kaynak bağlantısı elle girilir; yapıyla eşleşmesi doğrulanmaz.</p>
   </section>
+  <section class="lesson-panel materials-ml-panel" aria-label="ML Tahminleri">
+   <div class="lesson-panel-head"><h3>ML Tahminleri</h3><span class="lesson-pill">P0 · Tarayıcıda · kNN</span></div>
+   <p class="hint">Etkin CIF/P1 kristalinin kimyasal bileşiminden, Matbench deneysel verisiyle kurulmuş yerel bir kNN vekil modeliyle bant aralığı tahmini. Model atom koordinatlarını, fazı ve kristal simetrisini <strong>kullanmaz</strong>; sonuç QE/DFT değildir.</p>
+   <div class="actionrow materials-actions">
+    <button id="materialsMlRun" type="button" class="primary">Etkin kristal için ML tahmini</button>
+    <button id="materialsMlExport" type="button" disabled>Tahmin JSON</button>
+   </div>
+   <p id="materialsMlStatus" class="note" role="status" aria-live="polite">Model henüz çalıştırılmadı.</p>
+   <div id="materialsMlResult" class="materials-ml-result" aria-live="polite"></div>
+   <p class="materials-caution">P0 yalnız <strong>deneysel bant aralığını</strong> (eV) kestirir. Oluşum enerjisi ve DOS tahmini henüz yoktur. Eğitim bileşimlerinden uzak veya kısmi doluluklu yapılarda güvenli değer üretmeyebilir. İç test MAE'si bireysel tahminin güven aralığı değildir.
+    Veri: <a href="https://doi.org/10.1038/s41524-020-00406-3" target="_blank" rel="noopener noreferrer">Matbench</a> /
+    <a href="https://doi.org/10.1021/acs.jpclett.8b00124" target="_blank" rel="noopener noreferrer">Zhuo ve ark. (2018)</a>.</p>
+  </section>
   <section class="lesson-panel">
    <div class="lesson-panel-head"><h3>P1 · 3B bulk DFT araştırma hazırlığı</h3><span class="lesson-pill">İş göndermez</span></div>
    <p class="hint">GaN, AlN ve SiC için hücre/bileşim ve 3B k-örgüsü taslağı üretir. Mevcut QE elektronik API, slab odaklı olduğundan 3B bulk hesabı bu panelden başlatılamaz.</p>

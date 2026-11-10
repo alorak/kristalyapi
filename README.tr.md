@@ -52,6 +52,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 ## P0 — Malzeme veri kartları ve XRD ölçüm–referans eşleştirmesi
 
+**P0 ML Tahminleri (Malzemeler):** Etkin CIF/P1 kristalinin yalnız bileşimini kullanarak, yerel Matbench deneysel bant aralığı verileri üzerinde 5-komşulu kNN başlangıç kestirimi çalıştırır. 3.696 eğitim ve 905 ayrılmış test bileşimiyle iç MAE 0,490 eV'dur; güven aralığı değildir. Eğitim alanı dışındaki ve kısmi doluluklu girdiler reddedilir. Oluşum enerjisi, geometrik GNN veya QE/DFT tahmini yapılmaz. [Kapsam ve testler](docs/materials-ml-p0.md).
+
 **Malzemeler** (`#malzemeler`): Etkin çalışma alanından salt-okunur 1–4 kristal anlık kopyasını, doluluk ağırlıklı bileşim, hücre/hacim, kaynak etiketi ve göreli farklar ile karşılaştırır. JSON/CSV yerel dışa aktarılır; DFT veya deneysel kaynak doğrulaması yapılmaz.
 
 **Kristal > XRD**: Ölçülen CSV üst üste gösteriminin yanında, kullanıcı onaylı dalga boyu/2θ eşleşmesi ile yaklaşık pik-konumu karşılaştırması, eşleşen/eşleşmeyen pikler ve CSV raporu. Faz tanılama, Kα₂ ayrıştırma, cihaz kalibrasyonu, Rietveld ve kabul/red kararı değildir.
