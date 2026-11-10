@@ -89,7 +89,8 @@ try{
   path_type:'setyawan_curtarolo',provenance:{band_task_id:null,dos_task_id:null},
   band:{efermi_ev:5,distance_inv_angstrom:[0,.5,1],labels:[{index:0,label:'Γ'},{index:2,label:'X'}],
    first_band:1,total_bands:2,spins:{up:[[4,4.5,5],[6,6.5,7]]}},
-  dos:{efermi_ev:5.1,energy_ev:[4.1,5.1,6.1],spins:{up:[0,1,2]}}};
+  dos:{efermi_ev:5.1,energy_ev:[4.1,5.1,6.1],spins:{up:[0,1,2]},
+   pdos:[{element:'Si',orbital:'p',spins:{up:[0,0.3,0.7]}}]}};
  const [chooser]=await Promise.all([
   page.waitForEvent('filechooser'),page.locator('#mpResults button').nth(2).click()
  ]);
@@ -98,10 +99,22 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('#mpElectronicPreview svg').length===2);
  assert.match(await page.locator('#mpElectronicStatus').textContent(),/mp-149/);
  assert.equal(await page.locator('#mpElectronicPreview svg').count(),2);
+ assert.equal(await page.locator('#mpElectronicPreview [data-mp-fermi]').count(),2,
+  'both real-data panels should show their own Fermi zero');
+ assert.equal(await page.locator('#mpElectronicPreview .mp-electronic-spin-row').count(),1);
+ const dosMode=page.locator('#mpElectronicPreview select[data-mp-dos-mode]');
+ await dosMode.selectOption('p0');
+ assert.match(await page.locator('#mpElectronicPreview').textContent(),/projeksiyon|projection/);
+ await dosMode.selectOption('cumulative');
+ assert.match(await page.locator('#mpElectronicPreview').textContent(),/Trapez|Trapezoidal/);
+ await page.locator('#mpElectronicPreview select[data-mp-energy-window]').selectOption('near');
+ assert.equal(await page.locator('#mpElectronicPreview svg').first().getAttribute('data-y-min'),'-3');
+ assert.equal(await page.locator('#mpElectronicPreview svg').first().getAttribute('data-y-max'),'3');
  await page.locator('#dftNav').click();
  await page.locator('#dft-tab-tarayici').click();
  await page.waitForFunction(()=>document.querySelectorAll('#browserMpReferencePlots svg').length===2);
  assert.equal(await page.locator('#browserMpReferencePlots svg').count(),2);
+ assert.equal(await page.locator('#browserMpReferencePlots [data-mp-fermi]').count(),2);
  assert.match(await page.locator('#browserMpReferencePlots').textContent(),/mp-149/);
  await page.locator('#libraryNav').click();
  await page.locator('#libMpTab').click();
