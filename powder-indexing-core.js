@@ -120,10 +120,10 @@ export function parsePeakCsv(content){
   return p;
  });
 }
-export function peakCsv(peaks,fit=null){
+export function peakCsv(peaks,fit=null,wavelength=fit?.wavelength??TITANIUM_WAVELENGTH){
  const header=['2theta_deg','h','k','l','theta_deg','d_observed_A','sin2theta','twoTheta_calculated_deg','delta_twoTheta_deg'];
  const lines=peaks.map((p,i)=>{
-  const o=observedPeak(p,fit?.wavelength??TITANIUM_WAVELENGTH);
+  const o=observedPeak(p,wavelength);
   const f=fit?.rows[i];
   return [o.twoTheta,o.h,o.k,o.l,o.thetaDeg,o.dObserved,o.sinSquared,
    f?.twoThetaCalculated??'',f?.deltaTwoTheta??''].map(v=>typeof v==='number'?Number(v.toFixed(9)):v).join(',');
