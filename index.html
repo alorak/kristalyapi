@@ -1474,6 +1474,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <div id="materialsMlP1Result" class="materials-ml-result" aria-live="polite"></div>
     <p class="materials-caution">P1, ZEBRA kaynaklı hesaplanmış <strong>hibrit-DFT doğrudan bant aralığı</strong> ile <strong>DFT oluşum enerjisini</strong> kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:
      <a href="https://github.com/oba-group/ZEBRA-dataset" target="_blank" rel="noopener noreferrer">ZEBRA-Dataset (CC BY 4.0)</a>.</p>
+   <div class="materials-ml-p12" aria-label="P1.2 eğitimli bağ ve koordinasyon ML">
+    <div class="lesson-panel-head"><h4>P1.2 · Bağ ve koordinasyon ile eğitilmiş model</h4><span class="lesson-pill">Araştırma · 170 CIF</span></div>
+    <p class="hint">Bu deneysel kNN modelinde periyodik bağ uzunluğu ve koordinasyon sayısı gerçekten eğitimde kullanıldı. ZEBRA test kümesinde sınırlı iyileşme var; bağımsız TiO₂ polimorf sıralamasında iyileşme yok. P1 modelinin yerine geçmez.</p>
+    <div class="actionrow materials-actions">
+     <button id="materialsMlP12Run" type="button">P1.2 tahminini çalıştır</button>
+     <button id="materialsMlP12Export" type="button" disabled>P1.2 JSON dışa aktar</button>
+    </div>
+    <p id="materialsMlP12Status" class="note" role="status" aria-live="polite">P1.2 hesaplama yapılmadı.</p>
+    <div id="materialsMlP12Result" class="materials-ml-result" aria-live="polite"></div>
+    <div class="materials-ml-p12-check">
+     <div class="lesson-panel-head"><h4>Bağımsız TiO₂ polimorf kontrolü</h4><span class="lesson-pill">8 faz · Eğitim dışı</span></div>
+     <div class="actionrow"><button id="materialsMlP12Check" type="button">8 polimorfu karşılaştır</button></div>
+     <p id="materialsMlP12CheckStatus" class="note" role="status" aria-live="polite">Bağımsız karşılaştırma yapılmadı.</p>
+     <div id="materialsMlP12CheckResult" class="materials-ml-result" aria-live="polite"></div>
+    </div>
+    <p class="materials-caution">Polimorf kontrolü mutlak oluşum enerjisi doğrulaması değildir: aynı bileşim için eV/atom cinsinden enerji farklarını karşılaştırır. Dış veri ve ZEBRA farklı hesaplama koşullarına sahiptir. E_hull ile E_form mutlak değerleri birbirinin yerine kullanılamaz.</p>
+   </div>
    </div>
   </section>
   <section class="lesson-panel">
