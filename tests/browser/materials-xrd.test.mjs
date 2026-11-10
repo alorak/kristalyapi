@@ -28,6 +28,13 @@ try{
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#materialsNav').click();
  await page.waitForFunction(()=>!document.getElementById('materialsPage').hidden);
+ assert.equal(await page.locator('#materialsTabCards').getAttribute('aria-selected'),'true');
+ await page.locator('#materialsTabCards').focus();
+ await page.keyboard.press('ArrowRight');
+ assert.equal(await page.locator('#materialsTabCompare').getAttribute('aria-selected'),'true',
+  'section tabs support keyboard navigation');
+ await page.locator('#materialsTabMl').click();
+ await page.locator('#materialsMlTabP12').click();
  await page.locator('#materialsMlP12Run').click();
  await page.waitForFunction(()=>{
   const x=document.getElementById('materialsMlP12Status')?.textContent||'';
@@ -35,12 +42,6 @@ try{
  },null,{timeout:45000});
  assert.match(await page.locator('#materialsMlP12Result').textContent(),/phase|Faz|Polimorf|bond|Bağ|MAE/);
  assert.equal(await page.locator('#materialsMlP12Run').isDisabled(),false);
- assert.equal(await page.locator('#materialsTabCards').getAttribute('aria-selected'),'true');
- await page.locator('#materialsTabCards').focus();
- await page.keyboard.press('ArrowRight');
- assert.equal(await page.locator('#materialsTabCompare').getAttribute('aria-selected'),'true',
-  'section tabs support keyboard navigation');
- await page.locator('#materialsTabMl').click();
  await page.locator('#materialsMlTabP1').click();
  assert.equal(await page.locator('#materialsMlPaneP0').isHidden(),true);
  await page.locator('#materialsMlP1Run').click();
