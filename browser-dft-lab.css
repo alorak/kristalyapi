@@ -1,0 +1,18 @@
+/* Local-only DFT/TB workspace additions. No effect on legacy QE screens. */
+.browser-dft-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+#dftPage .browser-dft-grid .qe-workflow{min-width:0}
+#dftPage .browser-dft-grid textarea{width:100%;min-height:145px;resize:vertical;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#324c66}
+.browser-dft-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px;align-items:center}
+#dftPage .browser-dft-actions a{display:inline-block;padding:10px 12px;background:#eef5fc;border:1px solid #cbdce9;border-radius:6px;color:#246ba4;text-decoration:none;font-size:13px;font-weight:700}
+#dftPage .browser-dft-actions a:hover{background:#e5f1fa}
+.browser-dft-chart{width:100%;overflow-x:auto;margin-top:14px;background:#fbfdff;border:1px solid #e3eaf2;border-radius:8px}
+.browser-dft-chart svg{display:block;width:100%;height:auto;min-width:310px;max-height:340px}
+#dftPage .browser-dft-intro{margin:12px 0}
+#dftPage .browser-dft-grid .browser-dft-warning{margin-top:12px}
+#dftPage .browser-dft-chart-title{display:block;margin:15px 0 3px;font-size:12px;color:#4a6073}
+#dftPage .browser-dft-grid .field{display:block;margin:11px 0}
+#dftPage .browser-dft-grid .field select,#dftPage .browser-dft-grid .field input{width:100%}
+#dftPage .browser-dft-check{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.6;color:#5b7387;margin:9px 0}
+#dftPage .browser-dft-check input{margin-top:4px;flex:none}
+#dftPage .browser-dft-metrics{margin-top:12px!important}
+@media(max-width:980px){.browser-dft-grid{grid-template-columns:1fr}}
