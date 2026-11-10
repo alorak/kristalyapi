@@ -7,6 +7,7 @@
 (() => {
  'use strict';
  const entries=[
+  ["Pik İndisleme","Peak Indexing"],
   // P1.3 validation audit interface.
   ["Yerel ML · P0 / P1 / P1.2 / P1.3","Local ML · P0 / P1 / P1.2 / P1.3"],
   ["P1.3 · Doğrulama","P1.3 · Validation"],

@@ -1258,7 +1258,18 @@ test('COD detail modal, locale controls, favicon and deployment assets are wired
 test('English dictionary covers the existing static editor, library and analysis texts',()=>{
  const uiContext={window:{},document:{title:'',readyState:'loading',addEventListener(){}}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..','translations.js'),'utf8'),uiContext);
- const fragment=html.slice(html.indexOf('<header>'),html.indexOf('<script type="module" src="./crystal-app.js">'));
+ // Page-owned translations use data-pi-tr/en and intentionally opt out of
+ // the global MutationObserver dictionary. Audit that localized section separately.
+ const indexingStart=html.indexOf('<section id="pwIndexingPage"');
+ const indexingEnd=html.indexOf('</section>',indexingStart)+'</section>'.length;
+ assert.ok(indexingStart>0&&indexingEnd>indexingStart,'peak indexing panel must be present');
+ const indexing=html.slice(indexingStart,indexingEnd);
+ assert.match(indexing,/data-i18n-skip/);
+ const labelsWithLocalTranslation=[...indexing.matchAll(/data-pi-tr="([^"]+)" data-pi-en="([^"]+)"/g)];
+ assert.ok(labelsWithLocalTranslation.length>=15,'peak worksheet must supply its own TR/EN labels');
+ assert.ok(labelsWithLocalTranslation.every(([,tr,en])=>tr.trim()&&en.trim()&&tr!==en));
+ const fragment=(html.slice(html.indexOf('<header>'),indexingStart)
+  +html.slice(indexingEnd,html.indexOf('<script type="module" src="./crystal-app.js">')));
  const labels=[...new Set([...fragment.matchAll(/>([^<>]+)</g)]
   .map(match=>match[1].trim()).filter(text=>text.length>5&&/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text)))];
  const languageNeutral=new Set(['GitHub ↗','[u v w]','(h k l)','Jmol','CPK','SHELX (.res)','CASTEP (.cell)','Quantum ESPRESSO (.pwi)','Element A','Element B','FCC conventional → primitive',

@@ -1,0 +1,35 @@
+/* P0 peak indexing worksheet; scoped to Powder Diffraction's fourth tab. */
+.pw-indexing{max-width:1400px;margin:0 auto;padding:2px 0 28px;color:#263d54}
+.pw-indexing .pi-intro{margin:0 0 17px;font-size:13px;line-height:1.55;color:#55718a}
+.pw-indexing .pi-header{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:10px}
+.pw-indexing .pi-header h3{font-size:17px;margin:0 0 7px}
+.pw-indexing .pi-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:15px}
+.pw-indexing .pi-controls label{display:grid;gap:5px;color:#506781;font-size:12px;font-weight:650}
+.pw-indexing .pi-controls select,.pw-indexing .pi-controls input{min-height:38px;background:#fff;border:1px solid #b9cce0;color:#263d54;border-radius:8px;padding:8px 11px;max-width:220px}
+.pw-indexing .pi-controls input{width:150px}
+.pw-indexing .pi-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 13px}
+.pw-indexing button{border:1px solid #b9cde1;border-radius:8px;background:#f2f7fc;color:#235b88;padding:8px 12px;font-weight:650;font-size:12px;min-height:35px}
+.pw-indexing button:hover{background:#e3effb}
+.pw-indexing button:focus-visible,.pw-indexing input:focus-visible,.pw-indexing select:focus-visible{outline:2px solid #368bcc;outline-offset:2px}
+.pw-indexing .pi-table-scroll{width:100%;overflow-x:auto;border:1px solid #d5e3f0;border-radius:10px}
+.pw-indexing table{width:100%;min-width:910px;border-collapse:collapse;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pw-indexing th{padding:9px 8px;text-align:right;background:#eaf3fd;color:#335977;border-bottom:1px solid #cadced;font-size:11px;font-weight:700}
+.pw-indexing th:first-child,.pw-indexing td:first-child{text-align:center}
+.pw-indexing td{border-bottom:1px solid #e1eaf2;border-right:1px solid #ebf1f6;padding:5px 7px;text-align:right;color:#324e67;font-size:12px}
+.pw-indexing tbody tr:nth-child(2n){background:#f8fbff}
+.pw-indexing tbody tr:last-child td{border-bottom:0}
+.pw-indexing td input{width:76px;min-width:58px;padding:7px 6px;background:#fff;color:#203c53;border:1px solid #ccd9e6;border-radius:5px;text-align:right;font-size:12px}
+.pw-indexing td input[data-field="h"],.pw-indexing td input[data-field="k"],.pw-indexing td input[data-field="l"]{width:43px}
+.pw-indexing .pi-computed{background:rgba(218,233,248,.20);color:#5c748a}
+.pw-indexing .pi-row-invalid td:first-child{box-shadow:inset 3px 0 #d18a52}
+.pw-indexing .pi-remove{min-height:28px;padding:2px 9px;font-size:19px;line-height:1}
+.pw-indexing .pi-status{margin-top:10px;padding:9px 12px;background:#eaf4ff;border-radius:8px;color:#245e8f;font-size:12px;line-height:1.5}
+.pw-indexing .pi-status[data-state="invalid"]{background:#fff1e7;color:#97532e}
+.pw-indexing .pi-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:15px 0}
+.pw-indexing .pi-metric{background:#f5f9fd;border:1px solid #e0eaf4;padding:11px 12px;border-radius:10px;min-width:0}
+.pw-indexing .pi-metric span{display:block;font-size:11px;color:#607a93;margin-bottom:6px}
+.pw-indexing .pi-metric strong{font-size:17px;color:#205d98;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pw-indexing .pi-note{font-size:12px;line-height:1.55;color:#596f83;margin:12px 0 0}
+.pw-indexing .pi-formula{font-size:12px;overflow-wrap:anywhere;background:#f6f9fc;border-radius:8px;padding:10px 12px;color:#385a77}
+@media(max-width:930px){.pw-indexing .pi-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.pw-indexing .pi-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.pw-indexing .pi-header{display:block}.pw-indexing .pi-controls{gap:9px}}

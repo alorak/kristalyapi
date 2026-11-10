@@ -67,6 +67,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <link rel="stylesheet" href="./dft-workspace.css">
 <link rel="stylesheet" href="./browser-dft-lab.css">
 <link rel="stylesheet" href="./powder-camera.css">
+<link rel="stylesheet" href="./powder-indexing.css">
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
 <body>
@@ -1564,7 +1565,57 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <a id="pwTabPowder" class="pw-main-tab" href="#toz-kirinimi" role="tab" aria-controls="pwPowderPane" aria-selected="true" tabindex="0">Toz Kırınımı</a>
    <a id="pwTabReciprocal" class="pw-main-tab" href="#toz-kirinimi/karsi-uzay" role="tab" aria-controls="reciprocalPage" aria-selected="false" tabindex="-1">Karşı Uzay</a>
    <a id="pwTabCamera" class="pw-main-tab" href="#toz-kirinimi/kamera" role="tab" aria-controls="pwCameraPage" aria-selected="false" tabindex="-1">Kamera</a>
+   <a id="pwTabIndexing" class="pw-main-tab" href="#toz-kirinimi/pik-indisleme" role="tab" aria-controls="pwIndexingPage" aria-selected="false" tabindex="-1">Pik İndisleme</a>
   </div>
+  <section id="pwIndexingPage" class="pw-tab-panel pw-indexing" role="tabpanel" aria-labelledby="pwTabIndexing" hidden data-i18n-skip>
+   <div class="lesson-panel">
+    <div class="pi-header">
+     <h3 data-pi-tr="Pik İndisleme · örgü parametresi hesabı" data-pi-en="Peak Indexing · lattice refinement">Pik İndisleme · örgü parametresi hesabı</h3>
+     <span class="lesson-pill" data-pi-tr="Ölçüm verisi · hkl atamalı" data-pi-en="Measured data · assigned hkl">Ölçüm verisi · hkl atamalı</span>
+    </div>
+    <p class="pi-intro" data-pi-tr="Deneysel 2θ değerlerini ve atanmış Miller indislerini girin. θ, d, sin²θ, hesaplanan pik konumları ve örgü sabitleri otomatik güncellenir." data-pi-en="Enter measured 2theta values and assigned Miller indices. Theta, d, sin²theta, predicted peak positions and lattice parameters update automatically.">Deneysel 2θ değerlerini ve atanmış Miller indislerini girin. θ, d, sin²θ, hesaplanan pik konumları ve örgü sabitleri otomatik güncellenir.</p>
+    <div class="pi-controls">
+     <label><span data-pi-tr="Kristal sistemi" data-pi-en="Crystal system">Kristal sistemi</span>
+      <select id="piSystem"><option value="hexagonal" data-pi-tr="Hekzagonal" data-pi-en="Hexagonal">Hekzagonal</option><option value="cubic" data-pi-tr="Kübik" data-pi-en="Cubic">Kübik</option></select>
+     </label>
+     <label><span data-pi-tr="Dalga boyu λ (Å)" data-pi-en="Wavelength λ (Å)">Dalga boyu λ (Å)</span>
+      <input id="piLambda" type="text" inputmode="decimal" value="1.540562" autocomplete="off" aria-label="Wavelength in angstrom">
+     </label>
+    </div>
+    <div class="pi-actions">
+     <button id="piTitanium" type="button" data-pi-tr="Ti örnek verilerini yükle" data-pi-en="Load Ti example">Ti örnek verilerini yükle</button>
+     <button id="piAdd" type="button" data-pi-tr="+ Pik ekle" data-pi-en="+ Add peak">+ Pik ekle</button>
+     <button id="piClear" type="button" data-pi-tr="Tabloyu temizle" data-pi-en="Clear worksheet">Tabloyu temizle</button>
+     <button id="piImportButton" type="button" data-pi-tr="CSV içe aktar" data-pi-en="Import CSV">CSV içe aktar</button>
+     <button id="piExport" type="button" data-pi-tr="CSV dışa aktar" data-pi-en="Export CSV">CSV dışa aktar</button>
+     <input id="piImport" type="file" accept=".csv,text/csv,text/plain" hidden aria-label="Peak CSV file">
+    </div>
+    <div class="pi-table-scroll" role="region" tabindex="0" aria-label="Peak indexing worksheet">
+     <table aria-label="2theta, d spacing, indexed peaks and fitted positions">
+      <thead><tr>
+       <th>#</th><th>2θ (°)</th><th>θ (°)</th><th>d (Å)</th><th>sin²θ</th>
+       <th>h</th><th>k</th><th>l</th><th data-pi-tr="2θ hesap (°)" data-pi-en="2θ calc (°)">2θ hesap (°)</th>
+       <th>Δ2θ (°)</th><th data-pi-tr="Sil" data-pi-en="Remove">Sil</th>
+      </tr></thead>
+      <tbody id="piRows"></tbody>
+     </table>
+    </div>
+    <div id="piStatus" class="pi-status" role="status" aria-live="polite"></div>
+    <div id="piMetrics" class="pi-metrics" aria-live="polite">
+     <div class="pi-metric"><span>a (Å)</span><strong data-metric="a">—</strong></div>
+     <div class="pi-metric"><span>b (Å)</span><strong data-metric="b">—</strong></div>
+     <div class="pi-metric"><span>c (Å)</span><strong data-metric="c">—</strong></div>
+     <div class="pi-metric"><span>c/a</span><strong data-metric="ratio">—</strong></div>
+     <div class="pi-metric"><span data-pi-tr="Pik sayısı" data-pi-en="Peaks">Pik sayısı</span><strong data-metric="n">—</strong></div>
+     <div class="pi-metric"><span>RMSE Δ2θ (°)</span><strong data-metric="rmse">—</strong></div>
+     <div class="pi-metric"><span>RMSE sin²θ</span><strong data-metric="rmseSin">—</strong></div>
+    </div>
+    <p class="pi-formula">2d sin θ = λ · <span data-pi-tr="kübik:" data-pi-en="cubic:">kübik:</span> 1/d² = (h²+k²+l²)/a² ·
+     <span data-pi-tr="hekzagonal:" data-pi-en="hexagonal:">hekzagonal:</span> 1/d² = 4(h²+hk+k²)/(3a²) + l²/c²</p>
+    <p class="pi-note" data-pi-tr="Bilimsel kapsam: Eşit ağırlıklı en küçük kareler ile önceden atanmış (hkl) değerlerine örgü parametresi uyumu yapılır. Otomatik hkl araması, sistematik sönümler, karışık faz tespiti, cihaz sıfır kayması ve belirsizlik analizi bu sürümde yoktur. Deneysel doğrulama yerine geçmez."
+      data-pi-en="Scientific scope: Unweighted least-squares lattice fitting from pre-assigned hkl. Automatic hkl search, systematic absences, mixed-phase identification, instrument zero-shift and uncertainty analysis are not included. This is not experimental validation.">Bilimsel kapsam: Eşit ağırlıklı en küçük kareler ile önceden atanmış (hkl) değerlerine örgü parametresi uyumu yapılır. Otomatik hkl araması, sistematik sönümler, karışık faz tespiti, cihaz sıfır kayması ve belirsizlik analizi bu sürümde yoktur. Deneysel doğrulama yerine geçmez.</p>
+   </div>
+  </section>
   <div id="pwPowderPane" class="pw-tab-panel" role="tabpanel" aria-labelledby="pwTabPowder">
   <div class="lesson-layout">
    <section class="lesson-panel lesson-controls" aria-label="Toz kırınımı ayarları">
@@ -2279,6 +2330,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </div>
 
 <script type="module" src="./crystal-app.js"></script>
+<script type="module" src="./powder-indexing-page.js"></script>
 <script type="module" src="./layered-2d-page.js"></script>
 <script>
 if('serviceWorker' in navigator&&window.isSecureContext){
