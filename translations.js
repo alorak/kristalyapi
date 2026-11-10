@@ -7,6 +7,19 @@
 (() => {
  'use strict';
  const entries=[
+  // Materials P1: trained hybrid-DFT direct-gap + formation-energy estimates.
+  ["P1 · Yapısal ML tahminleri","P1 · Structural ML predictions"],
+  ["Hibrit-DFT · KNN","Hybrid DFT · kNN"],
+  ["Kimyasal bileşim ve atom başına hücre hacmiyle eğitilmiş ikinci model. Gerçek periyodik komşulukları ayrıca doğrular. Deneysel P0 tahminleriyle aynı hedefi ölçmez.","Second model trained on chemical composition and volume per atom. Periodic neighborhoods are audited separately. Its target differs from the experimental P0 model."],
+  ["Etkin kristalde yapısal tahmin","Run structural ML for active crystal"],
+  ["Yapısal tahmin JSON","Structural prediction JSON"],
+  ["P1 hesaplama henüz yapılmadı.","P1 has not been run."],
+  ["P1, ZEBRA kaynaklı hesaplanmış","P1 estimates ZEBRA computational"],
+  ["hibrit-DFT doğrudan bant aralığı","hybrid-DFT direct band gap"],
+  ["ile","and"],
+  ["DFT oluşum enerjisini","DFT formation energy"],
+  ["kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:\n    ","from reference data. Coordination and bond distances are used for structural checks but are not trained regression inputs in this version. Differentiating polymorphs remains limited. Source:\n    "],
+  ["ZEBRA-Dataset (CC BY 4.0)","ZEBRA Dataset (CC BY 4.0)"],
   // Materials P0: composition-only local ML baseline (not a DFT result).
   ["ML Tahminleri","ML Predictions"],
   ["P0 · Tarayıcıda · kNN","P0 · In-browser · kNN"],
