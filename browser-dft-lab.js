@@ -1,5 +1,6 @@
 import {GRAPHENE_DEMO,grapheneGeometry,grapheneBands,grapheneDos} from './browser-tb-core.js';
 import {runGansuDft,validateGansuRequest,GANSU_UPSTREAM_COMMIT} from './gansu-local-engine.js';
+import {geometryScanPlan,runGansuGeometryScan,SCAN_DEFAULTS} from './gansu-geometry-scan.js';
 
 // No automatic requests and no code fetched from a third-party origin.
 // GANSU Lite runs on its own origin: this is an explicit finite-XYZ handoff,
@@ -84,12 +85,22 @@ export function initBrowserDftLab({root,getStructure}){
  const runBtn=$(root,'browserDftRun'),cancelBtn=$(root,'browserDftCancel');
  const exportBtn=$(root,'browserDftExport'),engineStatus=$(root,'browserDftEngineStatus');
  const resultPanel=$(root,'browserDftResults');
+ const scanRun=$(root,'browserDftScanRun'),scanCancel=$(root,'browserDftScanCancel');
+ const scanStatus=$(root,'browserDftScanStatus'),scanChart=$(root,'browserDftScanChart');
+ const scanJson=$(root,'browserDftScanJson'),scanCsv=$(root,'browserDftScanCsv');
+ let scanResult=null,scanActive=false;
+ function resetScan(){
+  scanResult=null;scanChart.replaceChildren();scanJson.disabled=true;scanCsv.disabled=true;
+  if(scanActive&&gansuController)gansuController.abort();
+  scanStatus.textContent='Tarama henüz başlatılmadı. Her nokta ayrı gerçek WASM SCF hesabıdır.';
+ }
  function invalidateDft(){
   ++gansuRunId;
   if(gansuController)gansuController.abort();
   gansuController=null;gansuResult=null;gansuInput=null;
   runBtn.disabled=false;cancelBtn.disabled=true;exportBtn.disabled=true;
   resultPanel.replaceChildren();resultPanel.hidden=true;
+  resetScan();scanRun.disabled=false;scanCancel.disabled=true;
   engineStatus.textContent='Yeni hesaplamaya hazır. Girdi veya fiziksel parametre değişti.';
  }
  function textRow(table,label,value){
@@ -141,13 +152,77 @@ export function initBrowserDftLab({root,getStructure}){
  }
  xyz.addEventListener('input',invalidateDft);
  cancelBtn.onclick=()=>{if(gansuController)gansuController.abort();};
+ for(const id of ['browserDftScanFrom','browserDftScanTo','browserDftScanPoints']){
+  $(root,id).addEventListener('input',resetScan);
+ }
+ scanCancel.onclick=()=>{if(scanActive&&gansuController)gansuController.abort();};
+ scanRun.onclick=async()=>{
+  if(gansuController)return;
+  let plan;
+  try{
+   plan=geometryScanPlan(currentSettings(),{
+    startA:numeric(root,'browserDftScanFrom'),
+    endA:numeric(root,'browserDftScanTo'),
+    points:numeric(root,'browserDftScanPoints')
+   });
+  }catch(error){scanStatus.textContent='Tarama reddedildi: '+error.message;return;}
+  const runId=++gansuRunId,controller=new AbortController();
+  gansuController=controller;scanActive=true;runBtn.disabled=true;scanRun.disabled=true;
+  scanCancel.disabled=false;scanResult=null;scanJson.disabled=true;scanCsv.disabled=true;scanChart.replaceChildren();
+  scanStatus.textContent='P0.4 '+plan.molecule+' · 0/'+plan.samples.length+' · WASM SCF hazırlanıyor…';
+  try{
+   const result=await runGansuGeometryScan(plan,{
+    engine:runGansuDft,signal:controller.signal,
+    onProgress:p=>{if(runId===gansuRunId)
+     scanStatus.textContent='P0.4 '+plan.molecule+' · '+p.completed+'/'+p.total+
+      ' SCF · '+p.bondA.toFixed(3)+' Å · '+p.energyHartree.toFixed(7)+' Ha';}
+   });
+   if(runId!==gansuRunId)return;
+   scanResult=result;
+   const upper=Math.max(0.15,...result.points.map(x=>x.relativeEnergyEv))*1.08;
+   scanChart.append(chart(result.molecule+' · gerçek WASM SCF bağ–enerji taraması',result.points,{
+    valueX:p=>p.bondA,valueY:p=>p.relativeEnergyEv,
+    yMin:0,yMax:upper,xLabel:result.bondLabel+' uzunluğu (Å)',yLabel:'E−Emin (eV)'
+   }));
+   scanJson.disabled=false;scanCsv.disabled=false;
+   scanStatus.textContent=plan.molecule+' · '+result.points.length+
+    ' gerçek WASM SCF · örneklenmiş minimum '+result.minimumSampledBondA.toFixed(4)+
+    ' Å; geometri optimizasyonu değildir.';
+  }catch(error){
+   if(runId===gansuRunId){
+    scanResult=null;scanJson.disabled=true;scanCsv.disabled=true;scanChart.replaceChildren();
+    scanStatus.textContent=error.name==='AbortError'?'P0.4 taraması iptal edildi; eksik eğri sunulmaz.':
+     'P0.4 başarısız, sonuç yayımlanmadı: '+error.message;
+   }
+  }finally{
+   if(runId===gansuRunId){
+    gansuController=null;scanActive=false;runBtn.disabled=false;
+    scanRun.disabled=false;scanCancel.disabled=true;
+   }
+  }
+ };
+ scanCsv.onclick=()=>{
+  if(!scanResult)return;
+  saveCsv('gansu-p04-'+scanResult.molecule.toLowerCase()+'-scan.csv',
+   '# actual finite-molecule WASM SCF; sampled minimum only; not periodic DFT\n'+
+   '# upstream commit: '+scanResult.upstreamCommit+'\n'+
+   csv([['bond_A','energy_Hartree','relative_eV','scf_iterations'],
+    ...scanResult.points.map(p=>[p.bondA,p.energyHartree,p.relativeEnergyEv,p.iterations])]));
+ };
+ scanJson.onclick=()=>{
+  if(!scanResult)return;
+  const blob=new Blob([JSON.stringify(scanResult,null,2)+'\n'],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='gansu-p04-'+scanResult.molecule.toLowerCase()+'-scan.json';
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),0);
+ };
  runBtn.onclick=async()=>{
   if(gansuController)return;
   let settings;
   try{settings=currentSettings();validateGansuRequest(settings);}
   catch(error){engineStatus.textContent='Hesap reddedildi: '+error.message;return;}
   const runId=++gansuRunId,controller=new AbortController();
-  gansuController=controller;runBtn.disabled=true;cancelBtn.disabled=false;exportBtn.disabled=true;
+  gansuController=controller;runBtn.disabled=true;scanRun.disabled=true;cancelBtn.disabled=false;exportBtn.disabled=true;
   resultPanel.hidden=true;resultPanel.replaceChildren();
   engineStatus.textContent='GANSU Lite Worker başlatılıyor · yerel WASM / STO-3G / '+settings.functional+'…';
   try{
@@ -170,7 +245,7 @@ export function initBrowserDftLab({root,getStructure}){
    if(runId===gansuRunId)engineStatus.textContent=error.name==='AbortError'?'Hesaplama kullanıcı tarafından iptal edildi.':'Yerel DFT başarısız: '+error.message;
   }finally{
    if(runId===gansuRunId){
-    gansuController=null;runBtn.disabled=false;cancelBtn.disabled=true;
+    gansuController=null;runBtn.disabled=false;scanRun.disabled=false;cancelBtn.disabled=true;
    }
   }
  };
@@ -188,6 +263,12 @@ export function initBrowserDftLab({root,getStructure}){
  function xyzRefresh(){
   invalidateDft();
   const choice=$(root,'browserDftXyzSource').value;
+  const options={h2:'H2',water:'H2O',sih4:'SiH4'};
+  if(SCAN_DEFAULTS[options[choice]]){
+   const defaults=SCAN_DEFAULTS[options[choice]];
+   $(root,'browserDftScanFrom').value=defaults.startA;
+   $(root,'browserDftScanTo').value=defaults.endA;
+  }
   if(choice==='active'){
    if(!$(root,'browserDftClusterConsent').checked){
     xyz.value='';xyzStatus.textContent='Aktif periyodik hücreyi sonlu molekül gibi ele almak için onay kutusunu işaretleyin.';return;
