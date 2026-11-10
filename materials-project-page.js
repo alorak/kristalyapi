@@ -71,7 +71,7 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
  const keyStatus=()=>{
   status('mpKeyStatus',apiKey?
    (persisted?
-    t('API anahtarı bu tarayıcıda kalıcı olarak kayıtlı (doğrulanmadı).','API key saved persistently in this browser (not verified).'):
+    t('API anahtarı bu tarayıcıda kayıtlı.','API key saved in this browser.'):
     t('API anahtarı yalnızca bu açık sayfada kullanılabilir; tarayıcı depolamasına kaydedilemedi.','API key available only for this page; browser storage failed.')):
    t('API anahtarı girilmedi.','No API key configured.'),apiKey?(persisted?'ready':'error'):'');
   refreshIntegration();
