@@ -4,6 +4,7 @@
 import {parseMpElectronic,mpReferenceCurves} from './mp-electronic-core.js';
 import {setMpElectronic,currentMpElectronic,onMpElectronicChange} from './mp-electronic-state.js';
 import {chart as spectralChart} from './qe-electronic-view.js';
+import {mpVisibleEnergyWindow,mpCumulativeDos,mpVisibleDensityMax,mpFermiMarker} from './mp-electronic-visuals.js';
 const el=(tag,text='',cls='')=>{
  const node=document.createElement(tag);
  if(text)node.textContent=text;
@@ -13,6 +14,7 @@ const el=(tag,text='',cls='')=>{
 const isEnglish=()=>window.CrystalI18n?.language==='en';
 const tr=(turkish,english)=>isEnglish()?english:turkish;
 function referencePlots(host,result,{browser=false}={}){
+ const previousWindow=host.querySelector('[data-mp-energy-window]')?.value||'standard';
  host.replaceChildren();
  if(!result){
   host.append(el('p',tr('Henüz gerçek MP bant/DOS dosyası yüklenmedi.',
@@ -28,37 +30,102 @@ function referencePlots(host,result,{browser=false}={}){
   ' · DOS task: '+(result.provenance.dosTask||'—')+
   ' · mp-api '+result.provenance.client+' · k-path '+result.pathType,'hint');
  const warning=el('p',tr(
-  'Bu dosyanın MP tarafından gerçekten üretildiği uygulamada doğrulanmaz. Bant ve DOS ayrı Fermi enerjilerine göre E−EF gösterilir. QE veya deney ile enerji hizalaması yapılmaz.',
-  'This file is not independently authenticated as MP data. Band and DOS use their own E−EF references. No QE or experimental alignment.'),'hint');
+  'Dosyanın MP kaynağı bağımsız doğrulanmaz. Her grafik kendi Fermi enerjisine göre E−EF gösterir. Aynı dikey ölçek enerji seviyelerinin mutlak hizalandığı anlamına gelmez.',
+  'MP origin of the file is not independently verified. Each plot uses its own E−EF reference. A shared vertical scale does not imply absolute energy alignment.'),'hint');
  host.append(title,source,link,provenance,warning);
- const series=mpReferenceCurves(result);
  if(browser)host.append(el('p',tr(
-  'Yukarıdaki grafen π Tight-Binding hesabı yalnız iki-bandlı bir modeldir. MP k-yolu, yapı, bant sayısı ve enerji referansı farklı olabilir; eğriler üst üste bindirilmez ve sayısal hata hesaplanmaz.',
-  'The graphene π tight-binding model above has two bands. MP may differ in phase, k-path, band count and energy reference; no overlay or numerical error is claimed.'
+  'Grafen π Tight-Binding yalnız iki bantlı parametrik bir modeldir. MP ile yapısal, k-yolu ve enerji referansı eşitliği doğrulanmadığından grafikler üst üste bindirilmez.',
+  'Graphene π Tight-Binding is a two-band parameterized model. Since phase, k-path and energy reference are not matched, the MP reference is not overlaid.'
  ),'hint'));
- const layout=el('div','','qe-band-dos-layout mp-electronic-plots');
- const plot=(heading,curves,kind,spin)=>{
-  const box=el('section','','qe-linked-chart');
+ const controls=el('div','','mp-spectrum-controls');
+ const viewLabel=el('label',tr('Enerji penceresi','Energy window'));
+ const windowChoice=el('select');windowChoice.dataset.mpEnergyWindow='1';
+ for(const [value,label] of [
+  ['near','±3 eV'],['standard','±6 eV'],['wide','±12 eV'],
+  ['full',tr('Tüm veri','Full source range')]
+ ]){
+  const option=el('option',label);option.value=value;windowChoice.append(option);
+ }
+ windowChoice.value=['near','standard','wide','full'].includes(previousWindow)?previousWindow:'standard';
+ viewLabel.append(windowChoice);controls.append(viewLabel);
+ controls.append(el('small',tr('Turuncu kesik çizgi: her veri kümesinin kendi E_F = 0 eV düzeyi.',
+  'Orange dashed line: each dataset’s own E_F = 0 eV level.'),'hint'));
+ host.append(controls);
+ windowChoice.addEventListener('change',()=>referencePlots(host,result,{browser}));
+ const range=mpVisibleEnergyWindow(result,windowChoice.value);
+ const series=mpReferenceCurves(result);
+ const layout=el('div','','mp-electronic-plots');
+ const spins=[...new Set([...series.band.map(x=>x.spin),...series.dos.map(x=>x.spin)])]
+  .sort((a,b)=>a==='up'?-1:b==='up'?1:a.localeCompare(b));
+ function plotBox(heading){
+  const box=el('section','','mp-electronic-plot qe-linked-chart');
   box.append(el('strong',heading));
-  try{
-   if(kind==='band'){
-    const b=result.band;
-    box.append(spectralChart('Materials Project bantları, spin '+spin,
-     'k mesafesi (Å⁻¹)','E − E_F (eV)',curves.map(y=>({x:b.distance,y})),480,320,
-     {bandCurves:true,...(b.labels.length?{kNodes:b.labels}:{})}));
-    box.append(el('small',tr('Gerçek MP hesaplanan Kohn–Sham bantları; pencere ',
-      'Actual MP calculated Kohn–Sham bands; window ')+
-      b.firstBand+'–'+(b.firstBand+curves.length-1)+' / '+b.totalBands,'hint'));
-   }else{
-    const d=series.dos.find(s=>s.spin===spin);
-    box.append(spectralChart('Materials Project DOS, spin '+spin,
-      'E − E_F (eV)','DOS (states/eV/cell)',[{x:d.x,y:d.y}],480,320));
+  return box;
+ }
+ for(const spin of spins){
+  const pair=el('div','','mp-electronic-spin-row');
+  pair.dataset.mpSpin=spin;
+  const b=series.band.find(x=>x.spin===spin),d=series.dos.find(x=>x.spin===spin);
+  if(b){
+   const box=plotBox('MP · '+tr('Elektronik bantlar','Electronic bands')+' · spin '+spin);
+   try{
+    const svg=spectralChart('Materials Project band structure spin '+spin,
+     'k (Å⁻¹)','E − E_F (eV)',b.curves.map(y=>({x:b.x,y})),600,330,
+     {bandCurves:true,yDomain:range,...(result.band.labels.length?{kNodes:result.band.labels}:{})});
+    box.append(mpFermiMarker(svg,range));
+    box.append(el('small',tr('MP bant penceresi: ','MP band window: ')+result.band.firstBand+
+     '–'+(result.band.firstBand+b.curves.length-1)+' / '+result.band.totalBands,'hint'));
+   }catch(error){box.append(el('p',tr('Bant grafiği oluşturulamadı: ','Band plot failed: ')+error.message,'hint'));}
+   pair.append(box);
+  }
+  if(d){
+   const box=plotBox('MP · '+tr('Yoğunluk / projeksiyon','Density / projections')+' · spin '+spin);
+   const choice=el('select');choice.dataset.mpDosMode='1';choice.setAttribute('aria-label',
+    tr('DOS görselleştirme türü, spin ','DOS visualization mode, spin ')+spin);
+   const modes=[
+    ['total',tr('Toplam DOS','Total DOS')],
+    ['cumulative',tr('Kümülatif DOS ∫D(E)dE','Cumulative DOS ∫D(E)dE')]
+   ];
+   for(let i=0;i<(result.dos.pdos||[]).length;i++){
+    const p=result.dos.pdos[i];
+    if(p.spins[spin])modes.push(['p'+i,p.element+' · '+p.orbital+' '+tr('orbitali PDOS','orbital PDOS')]);
    }
-  }catch(error){box.append(el('p',tr('Grafik oluşturulamadı: ','Plot failed: ')+error.message,'hint'));}
-  layout.append(box);
- };
- for(const item of series.band)plot('MP · '+tr('Bant yapısı','Band structure')+' · spin '+item.spin,item.curves,'band',item.spin);
- for(const item of series.dos)plot('MP · DOS · spin '+item.spin,null,'dos',item.spin);
+   for(const [id,label] of modes){const option=el('option',label);option.value=id;choice.append(option);}
+   box.append(choice);
+   const graph=el('div','','mp-electronic-dos-graph');box.append(graph);
+   const caption=el('small','','hint');box.append(caption);
+   const render=()=>{
+    graph.replaceChildren();
+    const relativeEnergy=d.x;
+    let values=d.y,name=tr('Durum/(eV·hücre)','States/(eV·cell)');
+    if(choice.value==='cumulative'){
+     values=mpCumulativeDos(result.dos.energy,d.y);
+     name=tr('Birikimli durum/hücre','Cumulative states/cell');
+     caption.textContent=tr('Trapez integrali, yalnız dışa aktarılan enerji aralığından başlar; toplam elektron sayısı değildir.',
+      'Trapezoidal integral starts at the exported minimum energy; not a total electron count.');
+    }else if(choice.value.startsWith('p')){
+     const p=result.dos.pdos[Number(choice.value.slice(1))];
+     if(p&&p.spins[spin])values=p.spins[spin];
+     caption.textContent=tr('Gerçek MP element/orbital projeksiyonu; mutlak elektronik geçiş olasılığı değildir.',
+      'Actual MP element/orbital projection; not an optical transition probability.');
+    }else{
+     caption.textContent=(result.dos.pdos?.length?
+      tr('Element/orbital PDOS için üstte seçim yapın.','Choose an element/orbital PDOS above.'):
+      tr('Bu MP dışa aktarımında PDOS bulunmuyor.','No PDOS in this MP export.'));
+    }
+    try{
+     // The DOS energy is vertical as in the adjacent band plot.
+     const maximum=mpVisibleDensityMax(relativeEnergy,values,range);
+     const svg=spectralChart('Materials Project '+choice.value+' DOS spin '+spin,
+      name,'E − E_F (eV)',[{x:values,y:relativeEnergy}],400,330,
+      {xDomain:[0,maximum],yDomain:range});
+     graph.append(mpFermiMarker(svg,range));
+    }catch(error){graph.append(el('p',tr('DOS grafiği oluşturulamadı: ','DOS plot failed: ')+error.message,'hint'));}
+   };
+   choice.addEventListener('change',render);render();pair.append(box);
+  }
+  layout.append(pair);
+ }
  host.append(layout);
  if(!result.band)host.append(el('p',tr('Bu MP kimliği için bant verisi sağlanmadı.','No band data supplied for this MP ID.'),'hint'));
  if(!result.dos)host.append(el('p',tr('Bu MP kimliği için DOS verisi sağlanmadı.','No DOS data supplied for this MP ID.'),'hint'));
