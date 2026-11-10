@@ -954,6 +954,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    </div>
    <div class="note browser-dft-metrics" id="browserDftEngineStatus" role="status" aria-live="polite">WASM motoru, hesaplama başlatıldığında doğrulanır. Otomatik hesap yapılmaz.</div>
    <div id="browserDftResults" class="browser-dft-results" aria-live="polite" hidden></div>
+   <section class="browser-dft-scan" aria-labelledby="browserDftScanTitle">
+    <h3 id="browserDftScanTitle">P0.4 · Gerçek WASM DFT enerji–geometri taraması</h3>
+    <p class="hint">Yukarıdaki H₂, H₂O veya SiH₄ XYZ geometrisi için sabit bağ açılarıyla simetrik bağ taraması. Her nokta ayrı SCF hesabıdır; interpolasyon veya önceden kaydedilmiş enerji kullanılmaz.</p>
+    <div class="browser-dft-scan-inputs">
+     <label class="field"><span>Başlangıç bağı (Å)</span><input id="browserDftScanFrom" type="number" min="0.45" max="2.5" step="0.05" value="0.6"></label>
+     <label class="field"><span>Bitiş bağı (Å)</span><input id="browserDftScanTo" type="number" min="0.45" max="2.5" step="0.05" value="1.25"></label>
+     <label class="field"><span>SCF noktası</span><input id="browserDftScanPoints" type="number" min="3" max="9" step="1" value="5"></label>
+    </div>
+    <div class="browser-dft-actions">
+     <button type="button" id="browserDftScanRun" class="primary">Enerji taramasını başlat</button>
+     <button type="button" id="browserDftScanCancel" disabled>Tarama iptal</button>
+     <button type="button" id="browserDftScanJson" disabled>Tarama JSON</button>
+     <button type="button" id="browserDftScanCsv" disabled>Tarama CSV</button>
+    </div>
+    <div id="browserDftScanStatus" class="note browser-dft-metrics" role="status" aria-live="polite">Tarama yalnız kullanıcı isteğiyle başlar.</div>
+    <div id="browserDftScanChart" class="browser-dft-chart" role="img" aria-label="GANSU enerji ve bağ uzunluğu grafiği"></div>
+    <p class="hint">Minimum, yalnız örneklenen bağ uzunlukları arasındadır. H₂O açısı ve SiH₄ tetrahedral yönleri korunur. Gerçek geometri optimizasyonu, periyodik DFT veya kimyasal doğruluk kanıtı değildir.</p>
+   </section>
    <div class="browser-dft-actions"><button type="button" id="browserDftXyzCopy">XYZ kopyala</button><a id="browserDftGansuOpen" href="https://yasuaki-ito.github.io/GANSU-Lite/" target="_blank" rel="noopener noreferrer">GANSU Lite kaynak uygulaması ↗</a></div>
    <p class="hint browser-dft-intro">GANSU Lite BSD-3-Clause lisanslıdır (Y. Ito, 2026). Motor derleme çıktıları ve WASM dosyaları sabitlenmiş sürümden, bütünlük denetimiyle aynı kökenden yüklenir. Yalnız moleküler DFT yapılır; Ni ve diğer ağır elementler bu başlangıçta desteklenmez. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-scf-validation.md" target="_blank" rel="noopener noreferrer">Periyodik kristal Si: QE doğrulaması ↗</a></p>
   </div>
