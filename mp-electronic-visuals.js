@@ -47,7 +47,6 @@ export function mpFermiMarker(svg,range){
  // QE generic SVG chart uses left 57, right 12, top 18, bottom 42;
  // marker drawn only in MP charts and never changes the QE renderer.
  const left=57,right=12,top=18,bottom=42;
- const y=top+height-top-bottom;
  const zero=top+(range[1]/(range[1]-range[0]))*(height-top-bottom);
  const ns='http://www.w3.org/2000/svg';
  const line=document.createElementNS(ns,'line');
