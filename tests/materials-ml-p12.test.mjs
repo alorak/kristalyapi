@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {parseCompositionFormula} from '../materials-ml-core.js';
 import {structureDescriptorsP1} from '../materials-ml-p1-core.js';
 import {prepareP12Model,predictP12,rankP12,polymorphPairwise} from '../materials-ml-p12-core.js';
@@ -101,4 +103,11 @@ test('P1.2 rejects malformed schemas, injected duplicates, incomplete geometry a
  assert.throws(()=>prepareP12Model({...source,rows:[source.rows[0],source.rows[0],...source.rows.slice(2)]}),/yinelenen/);
  assert.throws(()=>rankP12(model,{fractions:[],volumePerAtomA3:1,meanClosestBondA:0,
   meanCoordination:1},'gap'),/girdi/);
+});
+
+test('the offline training script independently reconstructs all hyperparameters and external ranking metrics',()=>{
+ const file=fileURLToPath(new URL('../tools/train-materials-ml-p12.mjs',import.meta.url));
+ const result=spawnSync(process.execPath,[file,'--check'],{encoding:'utf8',timeout:90000});
+ assert.equal(result.status,0,result.stderr||result.stdout);
+ assert.match(result.stdout,/PASS/);
 });
