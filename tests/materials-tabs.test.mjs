@@ -9,7 +9,7 @@ function fakeDom(storage){
    ['materialsTabMl','materialsPanelMl'],['materialsTabEvidence','materialsPanelEvidence'],
    ['materialsTabBulk','materialsPanelBulk']]],
   ['materialsMlTabs',[['materialsMlTabP0','materialsMlPaneP0'],['materialsMlTabP1','materialsMlPaneP1'],
-   ['materialsMlTabP12','materialsMlPaneP12']]]
+   ['materialsMlTabP12','materialsMlPaneP12'],['materialsMlTabP13','materialsMlPaneP13']]]
  ];
  for(const [listId,items]of definitions){
   const buttons=[];
@@ -45,6 +45,9 @@ test('section and model tabs hide only inactive panels, preserving nodes and lis
  assert.equal(v.tabs.get('materialsTabCards').getAttribute('aria-selected'),'false');
  v.tabs.get('materialsMlTabP12').trigger('click');
  assert.equal(controller.activeMl(),'materialsMlTabP12');
+ v.tabs.get('materialsMlTabP13').trigger('click');
+ assert.equal(controller.activeMl(),'materialsMlTabP13');
+ v.tabs.get('materialsMlTabP12').trigger('click');
  assert.equal(v.panels.get('materialsMlPaneP0').hidden,true);
  assert.equal(v.panels.get('materialsMlPaneP12').hidden,false);
  assert.equal(v.tabs.get('materialsMlTabP12').tabIndex,0);
@@ -68,8 +71,8 @@ test('arrow keys and Home/End use roving tabindex and focus without changing the
  v.tabs.get('materialsTabCards').trigger('keydown',event('ArrowLeft'));
  assert.equal(t.activeMain(),'materialsTabBulk');
  v.tabs.get('materialsMlTabP0').trigger('keydown',event('End'));
- assert.equal(t.activeMl(),'materialsMlTabP12');
- v.tabs.get('materialsMlTabP12').trigger('keydown',event('Home'));
+ assert.equal(t.activeMl(),'materialsMlTabP13');
+ v.tabs.get('materialsMlTabP13').trigger('keydown',event('Home'));
  assert.equal(t.activeMl(),'materialsMlTabP0');
  v.tabs.get('materialsMlTabP0').trigger('keydown',event('Tab'));
  assert.equal(t.activeMl(),'materialsMlTabP0','Tab should use native browser navigation');
