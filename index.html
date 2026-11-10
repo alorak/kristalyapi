@@ -935,13 +935,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  <div class="browser-dft-grid">
   <div class="qe-workflow">
    <strong class="measure-subheading">P0 · GANSU Lite ile moleküler DFT</strong>
-   <p class="hint browser-dft-intro">XYZ verisini kopyalayıp GANSU Lite uygulamasında SCF/DFT hesabı başlatın. GANSU kendi tarayıcı sekmesinde çalışır; burada DFT hesabı yapılmaz, sonuçlar otomatik alınmaz. İnternet bağlantısı gerekir.</p>
-   <label class="field"><span>Sonlu molekül / XYZ kaynağı</span><select id="browserDftXyzSource"><option value="h2">H₂ · örnek molekül</option><option value="water">H₂O · örnek molekül</option><option value="active">Aktif hücreyi sonlu kümeye dönüştür (deneysel)</option></select></label>
+   <p class="hint browser-dft-intro">KristalYapı içinde gerçek moleküler Kohn–Sham DFT: GANSU Lite'ın sürümü sabitlenmiş SCF Worker + WebAssembly motoru. Girdi ve sonuçlar cihazınızda kalır, QE sunucusuna gönderilmez. Periyodik kristal DFT değildir.</p>
+   <label class="field"><span>Sonlu molekül / XYZ kaynağı</span><select id="browserDftXyzSource"><option value="h2">H₂ · örnek molekül</option><option value="water">H₂O · örnek molekül</option><option value="active">Aktif hücreyi sonlu kümeye dönüştür (deneysel)</option><option value="custom">XYZ yapıştır / elle düzenle</option></select></label>
    <label class="browser-dft-check"><input id="browserDftClusterConsent" type="checkbox"><span>Aktif hücrenin periyodik bağlarını keseceğimi, uçları pasifleştirmediğimi ve çıkan XYZ'nin kristal DFT olmadığını anlıyorum.</span></label>
-   <label class="field"><span>XYZ içeriği (Å)</span><textarea id="browserDftXyz" readonly spellcheck="false" rows="6" aria-label="GANSU Lite için XYZ verisi"></textarea></label>
+   <label class="field"><span>XYZ içeriği (Å)</span><textarea id="browserDftXyz" spellcheck="false" rows="6" aria-label="Yerel GANSU DFT için XYZ verisi"></textarea></label>
    <div id="browserDftXyzStatus" class="note browser-dft-warning" role="status" aria-live="polite"></div>
-   <div class="browser-dft-actions"><button type="button" id="browserDftXyzCopy">XYZ kopyala</button><a id="browserDftGansuOpen" href="https://yasuaki-ito.github.io/GANSU-Lite/" target="_blank" rel="noopener noreferrer">GANSU Lite'ı aç ↗</a></div>
-   <p class="hint browser-dft-intro">GANSU Lite BSD-3-Clause lisanslıdır. Buradaki aktarım, harici yazılımın hesaplama motorunu KristalYapı'ya gömmez. Ni ve diğer ağır elementler bu ilk aktarımda desteklenmez.</p>
+   <div class="browser-dft-input-grid">
+    <label class="field"><span>DFT fonksiyoneli</span><select id="browserDftFunctional"><option value="SVWN" selected>SVWN / LDA</option><option value="PBE">PBE / GGA</option><option value="B3LYP">B3LYP / hibrit</option></select></label>
+    <label class="field"><span>Sayısal integrasyon ızgarası</span><select id="browserDftGrid"><option value="coarse" selected>Coarse · hızlı</option><option value="medium">Medium · daha hassas</option></select></label>
+    <label class="field"><span>Toplam yük (e)</span><input type="number" id="browserDftCharge" value="0" min="-2" max="2" step="1"></label>
+    <label class="field"><span>Spin çokluğu (2S+1)</span><input type="number" id="browserDftMultiplicity" value="1" min="1" max="3" step="1"></label>
+   </div>
+   <p class="hint">Baz seti: STO-3G (sabit). 1–12 atom ve H–Ne desteklenir. Elektron sayısı ve spin çokluğu kontrol edilir; ağır element ve periyodik hesaplar reddedilir.</p>
+   <div class="browser-dft-actions">
+    <button type="button" class="primary" id="browserDftRun">Yerel WASM DFT hesapla</button>
+    <button type="button" id="browserDftCancel" disabled>Hesabı iptal et</button>
+    <button type="button" id="browserDftExport" disabled>Sonuç JSON indir</button>
+   </div>
+   <div class="note browser-dft-metrics" id="browserDftEngineStatus" role="status" aria-live="polite">Yerel WASM motoru hazır. Hesaplama ancak düğmeye basılınca başlar.</div>
+   <div id="browserDftResults" class="browser-dft-results" aria-live="polite" hidden></div>
+   <div class="browser-dft-actions"><button type="button" id="browserDftXyzCopy">XYZ kopyala</button><a id="browserDftGansuOpen" href="https://yasuaki-ito.github.io/GANSU-Lite/" target="_blank" rel="noopener noreferrer">GANSU Lite kaynak uygulaması ↗</a></div>
+   <p class="hint browser-dft-intro">GANSU Lite BSD-3-Clause lisanslıdır (Y. Ito, 2026). Motor derleme çıktıları ve WASM dosyaları sabitlenmiş sürümden, bütünlük denetimiyle aynı kökenden yüklenir. Yalnız moleküler DFT yapılır; Ni ve diğer ağır elementler bu başlangıçta desteklenmez.</p>
   </div>
   <div class="qe-workflow">
    <strong class="measure-subheading">P1 · Periyodik grafen π Tight-Binding</strong>
