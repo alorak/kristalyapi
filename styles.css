@@ -1861,3 +1861,12 @@ body.layered2d-open #app{display:none!important}
 #materialsPage .materials-ml-p1-metric span{font-size:12px;color:#506a82}
 #materialsPage .materials-ml-p1-metric strong{font-size:21px;color:#17598c;font-variant-numeric:tabular-nums}
 @media(max-width:600px){#materialsPage .materials-ml-p1-values{grid-template-columns:minmax(0,1fr)}}
+
+/* Explicitly experimental P1.2, separate from P0 and default P1. */
+.materials-ml-p12{border-top:1px solid var(--border,#334562);margin-top:22px;padding-top:18px}
+.materials-ml-p12 h4{font-size:15px;font-weight:650;margin:0;color:inherit}
+.materials-ml-p12-check{margin-top:18px;padding:14px;border:1px dashed var(--border,#334562);border-radius:10px}
+.materials-ml-p12-table{width:100%;font-size:12px;border-collapse:collapse;max-width:100%}
+.materials-ml-p12-table th,.materials-ml-p12-table td{padding:7px 8px;border-bottom:1px solid var(--border,#334562);text-align:left;font-variant-numeric:tabular-nums}
+.materials-ml-p12-table th{font-weight:650}
+#materialsMlP12CheckResult{overflow-x:auto}
