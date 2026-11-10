@@ -2,7 +2,7 @@
 from enum import Enum
 from types import SimpleNamespace
 import unittest
-from tools.mp_electronic_export import projected_dos, spins
+from tools.mp_electronic_export import projected_dos, spins, choose_near_fermi_band_start
 
 
 class Orbital(Enum):
@@ -23,6 +23,14 @@ class TestMpElectronicExport(unittest.TestCase):
             structure=structure, densities={1: [0.0, 1.0, 2.0]},
             get_element_spd_dos=lambda el: {Orbital.p: partial},
         )
+
+    def test_default_band_window_selects_real_fermi_near_bands(self):
+        bs = SimpleNamespace(
+            efermi=0.0,
+            bands={1: [[-12.0, -11.0], [-4.0, -3.0], [-0.1, 0.1], [5.0, 6.0]]},
+        )
+        self.assertEqual(choose_near_fermi_band_start(bs, 2), 2)
+        self.assertEqual(choose_near_fermi_band_start(bs, 10), 1)
 
     def test_actual_projection_array_preserved(self):
         result = projected_dos(self.make_dos(), 3)
