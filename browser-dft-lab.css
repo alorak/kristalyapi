@@ -35,3 +35,15 @@
 #dftPage .browser-dft-scan h3{font-size:14px;margin:0 0 10px;color:#254b70}
 #dftPage .browser-dft-scan-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 10px}
 @media(max-width:550px){#dftPage .browser-dft-scan-inputs{grid-template-columns:1fr}}
+
+/* MP electronic references share the generic QE SVG plotting primitives, but
+   are never overlaid on browser TB or molecular SCF results. */
+.mp-electronic-plots{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px;margin-top:12px}
+.mp-electronic-plots .qe-linked-chart{min-width:0;overflow:hidden}
+.mp-electronic-plots .qe-linked-chart strong{display:block;font-size:12px;line-height:1.45;margin:0 0 8px}
+.mp-electronic-import{margin-top:16px}
+.mp-electronic-import h3,.mp-browser-reference h3{font-size:14px;line-height:1.4;margin:0 0 8px}
+.mp-electronic-import .mp-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mp-electronic-import input[type=file]{max-width:100%;font-size:12px}
+#dftPage .mp-browser-reference{margin:16px 0 0}
+#dftPage .mp-browser-reference .qe-band-dos-layout{max-width:100%}
