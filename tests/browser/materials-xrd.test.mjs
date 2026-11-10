@@ -28,6 +28,14 @@ try{
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#materialsNav').click();
  await page.waitForFunction(()=>!document.getElementById('materialsPage').hidden);
+ await page.locator('#materialsMlP1Run').click();
+ await page.waitForFunction(()=>{
+  const v=document.getElementById('materialsMlP1Result')?.textContent||'';
+  const status=document.getElementById('materialsMlP1Status')?.textContent||'';
+  return v.includes('MAE')||status.includes('failed')||status.includes('hatası');
+ },null,{timeout:30000});
+ assert.match(await page.locator('#materialsMlP1Result').textContent(),/MAE|eV\/atom/);
+ assert.equal(await page.locator('#materialsMlP1Run').isDisabled(),false);
  await page.locator('#materialsMlRun').click();
  await page.waitForFunction(()=>document.getElementById('materialsMlResult')?.textContent?.includes('Matbench'),null,{timeout:30000});
  assert.match(await page.locator('#materialsMlResult').textContent(),/MAE|eV/);

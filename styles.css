@@ -1852,3 +1852,12 @@ body.layered2d-open #app{display:none!important}
 #materialsPage .materials-ml-result ul{margin:7px 0 0;padding-left:22px;line-height:1.7}
 #materialsPage .materials-ml-caution{font-size:12px;line-height:1.6;color:#657488;margin:0}
 @media(max-width:600px){#materialsPage .materials-ml-panel .actionrow button{flex:1 1 100%}}
+
+/* P1 trained structural-volume model and PBC neighbor audit inside the ML panel. */
+#materialsPage .materials-ml-p1{border-top:1px solid #d8e4ee;margin-top:22px;padding-top:18px}
+#materialsPage .materials-ml-p1 h4{font-size:15px;font-weight:650;margin:0;color:inherit}
+#materialsPage .materials-ml-p1-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+#materialsPage .materials-ml-p1-metric{border:1px solid #d9e5ef;border-radius:10px;padding:14px;background:#f8fbff;display:grid;gap:6px}
+#materialsPage .materials-ml-p1-metric span{font-size:12px;color:#506a82}
+#materialsPage .materials-ml-p1-metric strong{font-size:21px;color:#17598c;font-variant-numeric:tabular-nums}
+@media(max-width:600px){#materialsPage .materials-ml-p1-values{grid-template-columns:minmax(0,1fr)}}

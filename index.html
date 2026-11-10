@@ -1463,6 +1463,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="materials-caution">P0 yalnız <strong>deneysel bant aralığını</strong> (eV) kestirir. Oluşum enerjisi ve DOS tahmini henüz yoktur. Eğitim bileşimlerinden uzak veya kısmi doluluklu yapılarda güvenli değer üretmeyebilir. İç test MAE'si bireysel tahminin güven aralığı değildir.
     Veri: <a href="https://doi.org/10.1038/s41524-020-00406-3" target="_blank" rel="noopener noreferrer">Matbench</a> /
     <a href="https://doi.org/10.1021/acs.jpclett.8b00124" target="_blank" rel="noopener noreferrer">Zhuo ve ark. (2018)</a>.</p>
+   <div class="materials-ml-p1" aria-label="Yapısal ML kestirimi">
+    <div class="lesson-panel-head"><h4>P1 · Yapısal ML tahminleri</h4><span class="lesson-pill">Hibrit-DFT · KNN</span></div>
+    <p class="hint">Kimyasal bileşim ve atom başına hücre hacmiyle eğitilmiş ikinci model. Gerçek periyodik komşulukları ayrıca doğrular. Deneysel P0 tahminleriyle aynı hedefi ölçmez.</p>
+    <div class="actionrow materials-actions">
+     <button id="materialsMlP1Run" type="button">Etkin kristalde yapısal tahmin</button>
+     <button id="materialsMlP1Export" type="button" disabled>Yapısal tahmin JSON</button>
+    </div>
+    <p id="materialsMlP1Status" class="note" role="status" aria-live="polite">P1 hesaplama henüz yapılmadı.</p>
+    <div id="materialsMlP1Result" class="materials-ml-result" aria-live="polite"></div>
+    <p class="materials-caution">P1, ZEBRA kaynaklı hesaplanmış <strong>hibrit-DFT doğrudan bant aralığı</strong> ile <strong>DFT oluşum enerjisini</strong> kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:
+     <a href="https://github.com/oba-group/ZEBRA-dataset" target="_blank" rel="noopener noreferrer">ZEBRA-Dataset (CC BY 4.0)</a>.</p>
+   </div>
   </section>
   <section class="lesson-panel">
    <div class="lesson-panel-head"><h3>P1 · 3B bulk DFT araştırma hazırlığı</h3><span class="lesson-pill">İş göndermez</span></div>
