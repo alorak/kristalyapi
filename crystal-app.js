@@ -11018,6 +11018,7 @@ function pageFromHash(hash){
  if(isLibraryHash(hash))return 'library';
  if(isReciprocalHash(hash))return 'reciprocal';
  if(hash==='#toz-kirinimi/kamera')return 'camera';
+ if(hash==='#toz-kirinimi/pik-indisleme')return 'indexing';
  if(hash==='#toz-kirinimi')return 'powder';
  if(hash==='#malzemeler')return 'materials';
  if(hash==='#katmanli-figur')return 'layered2d';
@@ -11030,8 +11031,8 @@ let powderCameraPage=null;
 let powderLesson=null,semiconductorLesson=null,semiconductorP0=null,materialsPage=null;
 let previousPowderSubtab=null;
 function syncLibraryNavigation(){
- const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal',camera=page==='camera';
- const powderFamily=page==='powder'||reciprocal||camera;
+ const page=pageFromHash(window.location.hash),library=page==='library',reciprocal=page==='reciprocal',camera=page==='camera',indexing=page==='indexing';
+ const powderFamily=page==='powder'||reciprocal||camera||indexing;
  if(page!=='editor'){
   if(rightSidebarTab!==null)setRightSidebarTab(null);
   crystalLlm?.hide({restoreFocus:false});
@@ -11057,11 +11058,12 @@ function syncLibraryNavigation(){
  $('pwPowderPane').hidden=page!=='powder';
  $('reciprocalPage').hidden=!reciprocal;
  $('pwCameraPage').hidden=!camera;
+ $('pwIndexingPage').hidden=!indexing;
  $('semiconductorPage').hidden=page!=='semiconductor';
  // A hash switch may retain the old panel's internal scroll position.
  if(powderFamily&&previousPowderSubtab!==page)$('powderPage').scrollTop=0;
  previousPowderSubtab=powderFamily?page:null;
- for(const [id,selected] of [['pwTabPowder',page==='powder'],['pwTabReciprocal',reciprocal],['pwTabCamera',camera]]){
+ for(const [id,selected] of [['pwTabPowder',page==='powder'],['pwTabReciprocal',reciprocal],['pwTabCamera',camera],['pwTabIndexing',indexing]]){
   $(id).setAttribute('aria-selected',String(selected));
   $(id).tabIndex=selected?0:-1;
  }
@@ -11391,8 +11393,11 @@ function initLibrary(){
   if(!event.target?.matches?.('[role="tab"]'))return;
   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
   event.preventDefault();
-  const next=event.key==='ArrowLeft'||event.key==='Home'?'pwTabPowder':'pwTabReciprocal';
-  const tab=$(next);tab.focus();tab.click();
+  const tabs=[...powderTabs.querySelectorAll('[role="tab"]')];
+  const current=Math.max(0,tabs.indexOf(event.target));
+  const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:
+   (current+(event.key==='ArrowLeft'?-1:1)+tabs.length)%tabs.length;
+  tabs[next].focus();tabs[next].click();
  });
  window.addEventListener('hashchange',syncLibraryNavigation);
  syncLibraryNavigation();
