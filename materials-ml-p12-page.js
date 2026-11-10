@@ -18,7 +18,19 @@ export function initMaterialsMlP12(host,download){
    if(!response.ok)throw Error(t('JARVIS kaynak veri dosyası bulunamadı.','JARVIS source data unavailable.'));
    const text=await response.text();
    if(text.length>200000)throw Error('P1.2 dosyası boyut sınırını aşıyor.');
-   return trainPolymorphModel(JSON.parse(text));
+   const source=JSON.parse(text);
+   if(typeof Worker==='undefined')return trainPolymorphModel(source);
+   return new Promise((resolve,reject)=>{
+    const worker=new Worker(new URL('./materials-ml-p12-worker.js',import.meta.url),{type:'module'});
+    const stop=()=>worker.terminate();
+    worker.onmessage=event=>{
+     stop();
+     if(event.data?.ok)resolve(event.data.trained);
+     else reject(Error(event.data?.message||'P1.2 worker training failed.'));
+    };
+    worker.onerror=event=>{stop();reject(Error('P1.2 worker initialization failed.'));};
+    worker.postMessage(source);
+   });
   })().catch(error=>{trainedPromise=null;throw error;});
   return trainedPromise;
  };
