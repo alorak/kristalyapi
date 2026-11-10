@@ -32,6 +32,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('#materialsPage')?.hidden===false);
  for(const width of [1440,1024,390]){
   await page.setViewportSize({width,height:850});
+  await page.locator('#materialsTabBulk').click();
   const geometry=await page.evaluate(()=>{
    const materials=document.querySelector('#materialsPage .library-wrap.lesson-wrap');
    const powder=document.querySelector('#powderPage .library-wrap.lesson-wrap');
@@ -46,7 +47,8 @@ try{
     paddingRight:parseFloat(getComputedStyle(materials).paddingRight),
     powderPaddingLeft:parseFloat(getComputedStyle(powder).paddingLeft),
     powderPaddingRight:parseFloat(getComputedStyle(powder).paddingRight),
-    panels:panels.map(bounds),bulkColumns:getComputedStyle(form).gridTemplateColumns.split(' ').length,
+    panelCount:panels.length,visiblePanelCount:panels.filter(panel=>!panel.hidden).length,
+    panels:panels.filter(panel=>!panel.hidden).map(bounds),bulkColumns:getComputedStyle(form).gridTemplateColumns.split(' ').length,
     formWidth:bounds(form).width,formScroll:form.scrollWidth,
     lastPanel:bounds(panels.at(-1))
    };
@@ -55,7 +57,8 @@ try{
   assert.ok(Math.abs(geometry.paddingLeft-geometry.powderPaddingLeft)<.1&&
    Math.abs(geometry.paddingRight-geometry.powderPaddingRight)<.1,
    'Materials and Powder must use the same shell spacing: '+JSON.stringify(geometry));
-  assert.equal(geometry.panels.length,4,'Materials comparison, geometry, ML and DFT sections must remain intact');
+  assert.equal(geometry.panelCount,5,'Cards, geometry, ML, evidence and bulk panels must remain mounted');
+  assert.equal(geometry.visiblePanelCount,1,'only one Materials panel may be visible');
   for(const panel of geometry.panels){
    assert.ok(panel.left>=geometry.wrap.left+geometry.paddingLeft-1&&
     panel.right<=geometry.wrap.right-geometry.paddingRight+1,
@@ -66,6 +69,13 @@ try{
   assert.ok(geometry.formScroll<=geometry.formWidth+2,'bulk preparation fields cannot overflow: '+JSON.stringify(geometry));
   assert.equal(geometry.bulkColumns,width<=480?1:width<=850?2:4,
    'bulk form must have balanced responsive columns: '+JSON.stringify(geometry));
+  await page.locator('#materialsTabMl').click();
+  await page.locator('#materialsMlTabP12').click();
+  assert.ok(await page.locator('#materialsMlPaneP12').isVisible(),
+   'P1.2 content should be visible only in its ML model tab');
+  const mlOverflow=await page.locator('#materialsPage').evaluate(el=>el.scrollWidth-el.clientWidth);
+  assert.ok(mlOverflow<=2,'ML nested tabs must not cause horizontal page overflow: '+mlOverflow);
+  await page.locator('#materialsTabBulk').click();
   await page.locator('#materialsPage').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   const bottom=await page.evaluate(()=>{
    const page=document.getElementById('materialsPage').getBoundingClientRect();
