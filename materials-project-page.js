@@ -23,13 +23,35 @@ const node=(tag,value='',cls='')=>{
 };
 const number=(value,digits=4)=>value===null||value===undefined?'—':Number(value).toLocaleString(
  window.CrystalI18n?.language==='en'?'en-US':'tr-TR',{maximumFractionDigits:digits});
+/* Local credential configuration is distinct from an actual successful API call.
+ * Show green when usable credentials exist; state clearly if not yet verified. */
+export function mpIntegrationPresentation({hasKey=false,persisted=false,connection='unverified',language='tr'}={}){
+ const en=language==='en',choose=(tr,enText)=>en?enText:tr;
+ if(!hasKey)return {state:'inactive',
+  label:choose('Entegrasyon kapalı','Integration off'),
+  detail:choose('API anahtarı kayıtlı değil.','No API key configured.')};
+ if(connection==='error')return {state:'warning',
+  label:choose('Bağlantı sorunu','Connection issue'),
+  detail:choose('Son API isteği başarısız oldu; anahtar ayarı korunuyor.',
+   'The last API request failed; your key configuration is retained.')};
+ return {state:'active',
+  label:choose('Entegrasyon aktif','Integration active'),
+  detail:connection==='verified'?
+   choose('API bağlantısı doğrulandı.','API connection verified.'):
+   (persisted?
+    choose('Anahtar kayıtlı · API bağlantısı henüz doğrulanmadı.',
+     'Key saved · API connection not yet verified.'):
+    choose('Anahtar yalnızca bu oturumda · bağlantı doğrulanmadı.',
+     'Key only available for this session · connection not verified.'))};
+}
 export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}={}){
  let apiKey=readSavedKey(),persisted=!!apiKey,results=[],selected=new Map(),busy=false,searchAbort=null;
- let useWorker=false;
+ let useWorker=false,connection='unverified';
  try{useWorker=localStorage.getItem(MP_WORKER_STORAGE)==='1';}catch{}
  $('mpUseWorker').checked=useWorker;
  $('mpUseWorker').addEventListener('change',()=>{
   useWorker=$('mpUseWorker').checked;
+  connection='unverified';refreshIntegration();
   try{localStorage.setItem(MP_WORKER_STORAGE,useWorker?'1':'0');}catch{}
   status('mpSearchStatus',useWorker?
    t('Worker modu seçildi; sürüm 1.3+ Cloudflare üzerinde yayımlanmış olmalıdır.',
@@ -39,21 +61,33 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
  const status=(id,text,kind='')=>{
   const el=$(id);el.textContent=text;el.dataset.state=kind;
  };
- const keyStatus=()=>status('mpKeyStatus',apiKey?
-  (persisted?
-   t('API anahtarı bu tarayıcıda kalıcı olarak kayıtlı (doğrulanmadı).','API key saved persistently in this browser (not verified).'):
-   t('API anahtarı yalnızca bu açık sayfada kullanılabilir; tarayıcı depolamasına kaydedilemedi.','API key available only for this page; browser storage failed.')):
-  t('API anahtarı girilmedi.','No API key configured.'),apiKey?(persisted?'ready':'error'):'');
+ const refreshIntegration=()=>{
+  const view=mpIntegrationPresentation({hasKey:!!apiKey,persisted,connection,
+   language:window.CrystalI18n?.language||document.documentElement.lang||'tr'});
+  const badge=$('mpIntegrationBadge'),detail=$('mpIntegrationDetail');
+  if(badge){badge.textContent=view.label;badge.dataset.state=view.state;}
+  if(detail)detail.textContent=view.detail;
+ };
+ const keyStatus=()=>{
+  status('mpKeyStatus',apiKey?
+   (persisted?
+    t('API anahtarı bu tarayıcıda kalıcı olarak kayıtlı (doğrulanmadı).','API key saved persistently in this browser (not verified).'):
+    t('API anahtarı yalnızca bu açık sayfada kullanılabilir; tarayıcı depolamasına kaydedilemedi.','API key available only for this page; browser storage failed.')):
+   t('API anahtarı girilmedi.','No API key configured.'),apiKey?(persisted?'ready':'error'):'');
+  refreshIntegration();
+ };
  $('mpKeySave').addEventListener('click',()=>{
   const key=$('mpApiKey').value.trim();
   if(!key||key.length>512){status('mpKeyStatus',t('1–512 karakterlik bir API anahtarı girin.','Enter an API key of 1–512 characters.'),'error');return;}
   apiKey=key;
   persisted=saveKey(key);
+  connection='unverified';
   $('mpApiKey').value='';
   keyStatus();
  });
  $('mpKeyClear').addEventListener('click',()=>{
   apiKey='';
+  connection='unverified';
   const erased=eraseSavedKey();
   persisted=false;
   $('mpApiKey').value='';
@@ -104,6 +138,7 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
   const controller=new AbortController();searchAbort=controller;
   try{
    const response=await mpApiGet(mpStructureUrl(record.materialId),activeKey,{signal:controller.signal,transport:useWorker?'worker':'direct'});
+   if(!controller.signal.aborted&&apiKey===activeKey){connection='verified';refreshIntegration();}
    const raw=response.data.find(r=>r?.material_id===record.materialId);
    if(!raw)throw Error('MP yanıtında seçilen malzeme yok.');
    const cif=mpStructureToCif(raw,record.materialId);
@@ -112,7 +147,10 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
    await onImport({cif,summary:record,openPowder});
    status('mpSearchStatus',record.materialId+t(' aktif çalışma alanına yüklendi.',' loaded into active workspace.'),'ready');
   }catch(error){
-   if(!controller.signal.aborted)status('mpSearchStatus',t('Yapı alınamadı: ','Structure import failed: ')+error.message,'error');
+   if(!controller.signal.aborted){
+    if(apiKey===activeKey&&connection!=='verified'){connection='error';refreshIntegration();}
+    status('mpSearchStatus',t('Yapı alınamadı: ','Structure import failed: ')+error.message,'error');
+   }
   }finally{if(searchAbort===controller)searchAbort=null;setBusy(false);}
  }
  function renderResults(){
@@ -161,17 +199,21 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
    const json=await mpApiGet(url,activeKey,{signal:controller.signal,transport:useWorker?'worker':'direct'});
    if(controller.signal.aborted||apiKey!==activeKey)return;
    results=normalizeMpResponse(json);
+   connection='verified';refreshIntegration();
    selected.clear();renderResults();renderCompare();
    status('mpSearchStatus',results.length+
     t(' hesaplanmış malzeme bulundu.',' computed material records found.'),'ready');
   }catch(error){
-   if(!controller.signal.aborted)status('mpSearchStatus',
+   if(!controller.signal.aborted){
+    if(apiKey===activeKey){connection='error';refreshIntegration();}
+    status('mpSearchStatus',
     t('Arama başarısız: ','Search failed: ')+error.message+
     (error instanceof TypeError?(useWorker?
      t(' · Worker ağ erişimini veya Cloudflare dağıtımını kontrol edin.',' · Check Worker connectivity and deployment.'):
      t(' · Tarayıcı CORS/ağ engeli olabilir. Materials Project Ayarları → isteğe bağlı Worker seçeneğini inceleyin.',
        ' · Browser CORS/network restrictions are possible. See the optional Worker setting under Materials Project Settings.')):''),
     'error');
+   }
   }finally{if(searchAbort===controller)searchAbort=null;setBusy(false);}
  });
  $('mpCompareClear').addEventListener('click',()=>{
@@ -185,6 +227,6 @@ export function initMaterialsProjectPage({onImport,onMissingKey,workspaceToken}=
  window.addEventListener('crystal-language-change',()=>{renderResults();renderCompare();keyStatus();});
  keyStatus();renderResults();renderCompare();
  return {clearKey(){
-  apiKey='';persisted=false;eraseSavedKey();$('mpApiKey').value='';keyStatus();
+  apiKey='';persisted=false;connection='unverified';eraseSavedKey();$('mpApiKey').value='';keyStatus();
  }};
 }
