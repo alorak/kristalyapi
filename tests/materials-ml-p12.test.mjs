@@ -20,6 +20,8 @@ test('real public JARVIS source includes distinct same-formula, multiple-SG crys
  assert.ok(corpus.rows.length>=90);
  assert.equal(corpus.rows.length+corpus.rejected.length,source.records.length);
  assert.ok(x.counts.test>=10);
+ assert.equal(x.counts.train+x.counts.validation+x.counts.test,x.counts.accepted);
+ assert.ok(x.counts.groupCounts.test<=x.counts.test);
  assert.ok(x.counts.validation>=10);
  assert.ok(x.counts.formulas.test>=10);
  const groups=new Map();
