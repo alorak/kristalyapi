@@ -75,6 +75,24 @@ test('JARVIS model remains distinct from P0 Matbench and P1 ZEBRA targets',()=>{
  assert.ok(p.trainingCount>50);
 });
 
+test('report reproducible phase-group holdout and ablation summary',t=>{
+ const m=init();
+ const summary={counts:m.counts,
+  gap:{parameters:m.weights.targetGapEV.selected,
+   holdout:m.weights.targetGapEV.heldout.mae,
+   baseline:m.weights.targetGapEV.baseline.mae,
+   phaseGroupMAE:m.weights.targetGapEV.heldout.phaseMacroMae,
+   n:m.weights.targetGapEV.heldout.count},
+  formation:{parameters:m.weights.targetFormationEVPerAtom.selected,
+   holdout:m.weights.targetFormationEVPerAtom.heldout.mae,
+   baseline:m.weights.targetFormationEVPerAtom.baseline.mae,
+   phaseGroupMAE:m.weights.targetFormationEVPerAtom.heldout.phaseMacroMae,
+   n:m.weights.targetFormationEVPerAtom.heldout.count}};
+ console.log('P12_POLYMORPH_METRICS_JSON='+JSON.stringify(summary));
+ assert.equal(summary.gap.n,summary.formation.n);
+ assert.equal(summary.gap.n,summary.counts.test);
+});
+
 test('source poison and duplicate JARVIS rows fail closed',()=>{
  assert.throws(()=>preparePolymorphCorpus({...source,schema:'fake'}),/sürümü/);
  assert.throws(()=>preparePolymorphCorpus({...source,records:[source.records[0],...source.records]}),/Yinelenen/);
