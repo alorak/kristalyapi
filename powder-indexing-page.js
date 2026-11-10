@@ -171,7 +171,7 @@ export function initPowderIndexingPage(){
  });
  $('piExport').addEventListener('click',()=>{
   try{
-   const csv=peakCsv(peaks,lastFit);
+   const csv=peakCsv(peaks,lastFit,lambda.value);
    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
    const a=document.createElement('a');a.href=url;a.download='kristalyapi_pik_indisleme.csv';
    document.body.append(a);a.click();a.remove();
