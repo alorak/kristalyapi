@@ -151,6 +151,25 @@ function distinctCandidates(candidates,limit){
  }
  return distinct;
 }
+/* 2theta-only CSV/text clipboard input, optional intensity column.
+ * A delimiter is interpreted as a decimal comma only for a one-column row. */
+export function parseMeasuredAngles(text){
+ if(typeof text!=='string'||text.length>24000)throw new RangeError('Angle list is missing or too large.');
+ const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&!s.startsWith('#'));
+ if(!lines.length)throw new RangeError('Angle list is empty.');
+ const first=lines[0].toLowerCase().replace(/[\s_°()]/g,'');
+ const hasHeader=/(?:2theta|2θ|twotheta|angle)/.test(first)&&!/^\d/.test(first);
+ const delim=hasHeader?(first.includes(';')?';':first.includes(',')?',':null):null;
+ const data=lines.slice(hasHeader?1:0);
+ if(data.length<5||data.length>40)throw new RangeError('Auto indexing requires 5–40 measured peaks.');
+ return data.map((line,i)=>{
+  const value=(delim?line.split(delim)[0]:line.includes(';')?line.split(';')[0]:
+   line.includes('.')&&line.includes(',')?line.split(',')[0]:line).trim();
+  const number=parseNumber(value);
+  if(!(number>3&&number<150))throw new RangeError('Invalid 2theta at peak '+(i+1)+'.');
+  return {twoTheta:number};
+ });
+}
 export function autoIndexPowder({peaks,wavelength=TITANIUM_WAVELENGTH,system='hexagonal',
  centering='all',toleranceDeg=0.20,aMin=2,aMax=10,cMin=2,cMax=15,limit=8}={}){
  const lambda=parseNumber(wavelength),tol=parseNumber(toleranceDeg);
