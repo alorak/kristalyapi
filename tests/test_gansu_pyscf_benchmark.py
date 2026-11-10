@@ -102,6 +102,22 @@ class P03ComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "precisely"):
             bench.compare_results(self.fixture, g, r)
 
+    def test_committed_real_evidence_matches_fixture_and_energy_arithmetic(self):
+        path = ROOT / "validation-results/gansu-p03-silicon-20261110/summary.json"
+        archived = json.loads(path.read_text(encoding="utf-8"))
+        fixture_bytes = (ROOT / "tests/fixtures/gansu/p03-molecules.json").read_bytes()
+        self.assertEqual(archived["fixtureSha256"], hashlib.sha256(fixture_bytes).hexdigest())
+        self.assertEqual(archived["engineUpstreamCommit"], self.fixture["upstreamGansuCommit"])
+        self.assertEqual({r["id"] for r in archived["runs"]},
+                         {c["id"] for c in self.fixture["cases"]})
+        self.assertTrue(archived["accepted"])
+        self.assertEqual(archived["predeclaredToleranceHartree"], 0.02)
+        for row in archived["runs"]:
+            delta = (row["gansuHa"] - row["pyscfHa"]) * 1000
+            self.assertAlmostEqual(delta, row["deltaMHa"], places=9)
+            self.assertTrue(row["passed"])
+            self.assertLessEqual(abs(delta), 20)
+
     def test_limit_cannot_be_broadened_past_preregistration(self):
         wider = copy.deepcopy(self.fixture)
         wider["validationLimitHartree"] = 0.03
