@@ -31,3 +31,26 @@ test('spin-polarized reference can render channels independently',()=>{
  assert.deepEqual(view.band.map(x=>x.spin),['up','down']);
  assert.deepEqual(view.dos.map(x=>x.spin),['up','down']);
 });
+
+test('optional real element/orbital PDOS is accepted only with exact energy/spin grid',()=>{
+ const v=fixture();
+ v.dos.pdos=[{element:'Si',orbital:'p',spins:{up:[0,0.5,0.7]}}];
+ const parsed=parseMpElectronic(v);
+ assert.equal(parsed.dos.pdos.length,1);
+ assert.equal(parsed.dos.pdos[0].element,'Si');
+ assert.deepEqual(parsed.dos.pdos[0].spins.up,[0,0.5,0.7]);
+ for(const mutate of [
+  x=>{x.dos.pdos[0].spins.up.pop();},
+  x=>{x.dos.pdos[0].spins.down=[0,0,0];},
+  x=>{x.dos.pdos[0].orbital='core-level';},
+  x=>{x.dos.pdos[0].element='Si<script>';},
+  x=>{x.dos.pdos.push(structuredClone(x.dos.pdos[0]));}
+ ]){
+  const invalid=structuredClone(v);mutate(invalid);
+  assert.throws(()=>parseMpElectronic(invalid),/MP elektronik veri/);
+ }
+});
+test('legacy MP band/DOS exports without PDOS continue to parse',()=>{
+ const parsed=parseMpElectronic(fixture());
+ assert.deepEqual(parsed.dos.pdos,[]);
+});
