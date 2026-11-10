@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {preparePolymorphCorpus,splitPolymorphCorpus,trainPolymorphModel,
- inferPolymorphProperties,polymorphPredict} from '../materials-ml-p12-core.js';
+ inferPolymorphProperties,polymorphPredict,geometricallyDistinctPolymorphs} from '../materials-ml-p12-core.js';
 
 const source=JSON.parse(readFileSync(new URL('../models/jarvis-polymorph-p12-source.json',import.meta.url),'utf8'));
 let corpus=null,split=null,trained=null;
@@ -40,6 +40,14 @@ test('polymorph holdout is genuinely independent by formula plus space group',()
  const tr=phase(split.train),val=phase(split.validation),te=phase(split.test);
  assert.ok(![...val,...te].some(g=>tr.has(g)));
  assert.ok(![...val].some(g=>te.has(g)));
+ const distinct=geometricallyDistinctPolymorphs(split.test,[...split.train,...split.validation]);
+ for(const x of distinct){
+  assert.ok(![...split.train,...split.validation].some(y=>y.formula===x.formula&&
+    Math.abs(Math.log(x.vpa/y.vpa))<0.02&&
+    Math.abs(Math.log(x.bond/y.bond))<0.02&&
+    Math.abs(x.coord-y.coord)<0.3));
+ }
+ assert.ok(distinct.length<=split.test.length);
  for(const x of split.test){
   assert.ok(split.train.some(y=>y.formula===x.formula&&y.sg!==x.sg),
    x.id+' must have training crystal(s) of different space group');
@@ -82,11 +90,17 @@ test('report reproducible phase-group holdout and ablation summary',t=>{
    holdout:m.weights.targetGapEV.heldout.mae,
    baseline:m.weights.targetGapEV.baseline.mae,
    phaseGroupMAE:m.weights.targetGapEV.heldout.phaseMacroMae,
+   distinctCount:m.weights.targetGapEV.distinctGeometryHoldout?.count,
+   distinctMae:m.weights.targetGapEV.distinctGeometryHoldout?.mae,
+   distinctBaseline:m.weights.targetGapEV.distinctGeometryBaseline?.mae,
    n:m.weights.targetGapEV.heldout.count},
   formation:{parameters:m.weights.targetFormationEVPerAtom.selected,
    holdout:m.weights.targetFormationEVPerAtom.heldout.mae,
    baseline:m.weights.targetFormationEVPerAtom.baseline.mae,
    phaseGroupMAE:m.weights.targetFormationEVPerAtom.heldout.phaseMacroMae,
+   distinctCount:m.weights.targetFormationEVPerAtom.distinctGeometryHoldout?.count,
+   distinctMae:m.weights.targetFormationEVPerAtom.distinctGeometryHoldout?.mae,
+   distinctBaseline:m.weights.targetFormationEVPerAtom.distinctGeometryBaseline?.mae,
    n:m.weights.targetFormationEVPerAtom.heldout.count}};
  console.log('P12_POLYMORPH_METRICS_JSON='+JSON.stringify(summary));
  assert.equal(summary.gap.n,summary.formation.n);
