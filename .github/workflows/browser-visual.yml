@@ -17,6 +17,9 @@ on:
       - 'volume-iso-worker.js'
       - 'styles.css'
       - 'dft-workspace.css'
+      - 'browser-dft-lab.css'
+      - 'browser-dft-lab.js'
+      - 'browser-tb-core.js'
       - 'sw.js'
       - 'manifest.webmanifest'
       - 'translations.js'
@@ -42,6 +45,9 @@ on:
       - 'volume-iso-worker.js'
       - 'styles.css'
       - 'dft-workspace.css'
+      - 'browser-dft-lab.css'
+      - 'browser-dft-lab.js'
+      - 'browser-tb-core.js'
       - 'sw.js'
       - 'manifest.webmanifest'
       - 'translations.js'
@@ -80,6 +86,8 @@ jobs:
         run: node tests/browser/lesson-labs.test.mjs
       - name: Verify dedicated DFT routes and controls
         run: node tests/browser/dft-workspace.test.mjs
+      - name: Verify GANSU handoff and graphene tight-binding browser lab
+        run: node tests/browser/browser-dft-lab.test.mjs
       - name: Verify graceful UI with WebGL disabled
         run: node tests/browser/webgl-unavailable.test.mjs
       - name: Verify 2D MoS2 figure without WebGL
