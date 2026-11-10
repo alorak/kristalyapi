@@ -1261,7 +1261,9 @@ test('English dictionary covers the existing static editor, library and analysis
  // Page-owned translations use data-pi-tr/en and intentionally opt out of
  // the global MutationObserver dictionary. Audit that localized section separately.
  const indexingStart=html.indexOf('<section id="pwIndexingPage"');
- const indexingEnd=html.indexOf('</section>',indexingStart)+'</section>'.length;
+ // The localized panel can contain nested subsections (P1 automatic search).
+ // Use the next sibling pane, not the first nested closing tag, as its boundary.
+ const indexingEnd=html.indexOf('<div id="pwPowderPane"',indexingStart);
  assert.ok(indexingStart>0&&indexingEnd>indexingStart,'peak indexing panel must be present');
  const indexing=html.slice(indexingStart,indexingEnd);
  assert.match(indexing,/data-i18n-skip/);
