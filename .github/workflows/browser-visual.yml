@@ -64,7 +64,8 @@ permissions:
 jobs:
   browser-visual:
     if: github.event_name == 'pull_request' || github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 does not support the Ubuntu 26.04 runner image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
