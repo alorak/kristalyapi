@@ -61,6 +61,8 @@ test('P1 predictions respond to volume/atom; local neighbor metrics are audit-on
  const expanded=predictStructuralProperties(model,{...common,volumePerAtomA3:row.vpa*1.15});
  assert.notEqual(expanded.status,'out-of-domain');
  assert.notEqual(expanded.neighbors[0].distance,exact.neighbors[0].distance);
+ assert.notEqual(expanded.hybridDirectGapEV,exact.hybridDirectGapEV,
+  'same composition but different volume per atom must change the P1 estimate');
  const onlyNeighbors=predictStructuralProperties(model,{...common,nearestBondA:2.2,meanCoordination:8});
  assert.equal(onlyNeighbors.hybridDirectGapEV,exact.hybridDirectGapEV,
   'P1 does not claim to have trained on local neighbor features');
