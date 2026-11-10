@@ -4,7 +4,7 @@ export const GANSU_UPSTREAM_COMMIT='58237bc616e9795f393b3d5272805ecef6d377ad';
 export const GANSU_WORKER_BLOB='12abad7da0324589d51b96698e1ee4ff765ca763';
 export const GANSU_BASIS_BLOB='2c6b503c18c6f344a3afd5b0df492fbaabd60884';
 export const GANSU_MAX_ATOMS=12;
-const Z={H:1,He:2,Li:3,Be:4,B:5,C:6,N:7,O:8,F:9,Ne:10};
+const Z={H:1,He:2,Li:3,Be:4,B:5,C:6,N:7,O:8,F:9,Ne:10,Si:14};
 const FUNCTIONALS=new Set(['SVWN','PBE','B3LYP']);
 const GRIDS=new Set(['coarse','medium']);
 export const GANSU_ASSET_ROOT=new URL('./vendor/gansu-lite/',import.meta.url);
@@ -19,7 +19,7 @@ export function parseGansuXyz(xyz){
   throw Error('XYZ: İlk satır 1–'+GANSU_MAX_ATOMS+' atom, ikinci satır yorum, devamında tam olarak N atom satırı olmalı.');
  const atoms=lines.slice(2).map(line=>{
   const parts=line.trim().split(/\s+/);
-  if(parts.length!==4||!Object.hasOwn(Z,parts[0]))throw Error('Yerleşik DFT için şu an yalnız H–Ne atomları ve XYZ koordinatları desteklenir.');
+  if(parts.length!==4||!Object.hasOwn(Z,parts[0]))throw Error('Yerleşik DFT için şu an yalnız H–Ne ve Si atomları için doğrulanmış STO-3G bazlı XYZ desteklenir.');
   const coord=parts.slice(1).map(Number);
   if(!coord.every(Number.isFinite)||coord.some(x=>Math.abs(x)>500))throw Error('XYZ koordinatları geçersiz.');
   return {symbol:parts[0],xyz:coord,atomicNumber:Z[parts[0]]};

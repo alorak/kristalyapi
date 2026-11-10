@@ -7,6 +7,11 @@
 (() => {
  'use strict';
  const entries=[
+  // P0.3 silicon and small-molecule validation
+  ["NH₃ · amonyak (P0.3)","NH₃ · ammonia (P0.3)"],
+  ["SiH₄ · silan, moleküler Si (P0.3)","SiH₄ · silane, molecular Si (P0.3)"],
+  ["Baz seti: STO-3G (sabit). 1–12 atom, H–Ne ve silisyum (Si) desteklenir. Moleküler SiH₄ hesaplanır; bu işlem kristal Si bant yapısı üretmez.","Basis: STO-3G (fixed). 1–12 atoms, H–Ne and silicon (Si) are supported. Molecular SiH₄ is calculated; this does not produce bulk Si bands."],
+  ["Periyodik kristal Si: QE doğrulaması ↗","Periodic bulk Si: QE validation ↗"],
   // P0.2 native, same-origin GANSU WASM DFT
   ["KristalYapı içinde gerçek moleküler Kohn–Sham DFT: GANSU Lite'ın sürümü sabitlenmiş SCF Worker + WebAssembly motoru. Girdi ve sonuçlar cihazınızda kalır, QE sunucusuna gönderilmez. Periyodik kristal DFT değildir.","Real molecular Kohn–Sham DFT inside KristalYapı: a version-pinned GANSU Lite SCF Worker and WebAssembly engine. Inputs and results remain on your device and are not sent to the QE server. This is not periodic crystal DFT."],
   ["XYZ yapıştır / elle düzenle","Paste / edit XYZ manually"],

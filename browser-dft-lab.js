@@ -7,7 +7,9 @@ import {runGansuDft,validateGansuRequest,GANSU_UPSTREAM_COMMIT} from './gansu-lo
 const GANSU_URL='https://yasuaki-ito.github.io/GANSU-Lite/';
 const PRESETS={
  h2:'2\nH2 · 0.74 Å\nH 0 0 0\nH 0 0 0.74',
- water:'3\nH2O · experimental-inspired geometry\nO 0 0 0\nH 0.757 0.586 0\nH -0.757 0.586 0'
+ water:'3\nH2O · experimental-inspired geometry\nO 0 0 0\nH 0.757 0.586 0\nH -0.757 0.586 0',
+ nh3:'4\nNH3 · fixed geometry\nN 0.000 0.000 0.128\nH 0.000 0.941 -0.298\nH 0.815 -0.470 -0.298\nH -0.815 -0.470 -0.298',
+ sih4:'5\nSilane tetrahedron · Si-H 1.480 Å\nSi 0 0 0\nH 0.85448 0.85448 0.85448\nH -0.85448 -0.85448 0.85448\nH -0.85448 0.85448 -0.85448\nH 0.85448 -0.85448 -0.85448'
 };
 const $=(root,id)=>root.querySelector('#'+id);
 const svgNS='http://www.w3.org/2000/svg';

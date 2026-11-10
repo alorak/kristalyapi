@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {GANSU_UPSTREAM_COMMIT,GANSU_ASSET_ROOT,parseGansuXyz,validateGansuRequest,runGansuDft} from '../gansu-local-engine.js';
 
 const H2='2\nHydrogen molecule\nH 0 0 0\nH 0 0 0.74';
+const SIH4='5\nSilane tetrahedron · Si-H 1.480 Å\nSi 0 0 0\nH 0.85448 0.85448 0.85448\nH -0.85448 -0.85448 0.85448\nH -0.85448 0.85448 -0.85448\nH 0.85448 -0.85448 -0.85448';
 const basis='****\n'+'H 0\nS 3 1.00\n'.repeat(1100);
 
 test('GANSU bridge is pinned to a same-origin subdirectory and parses finite H2',()=>{
@@ -10,6 +11,17 @@ test('GANSU bridge is pinned to a same-origin subdirectory and parses finite H2'
  assert.match(GANSU_ASSET_ROOT.pathname,/vendor\/gansu-lite\/$/);
  const atoms=parseGansuXyz(H2);assert.equal(atoms.length,2);
  assert.equal(validateGansuRequest({xyz:H2}).electrons,2);
+});
+test('SiH4 is neutral, 18-electron, five-atom closed-shell silicon with tetrahedral bonds',()=>{
+ const atoms=parseGansuXyz(SIH4);
+ assert.equal(atoms.length,5);
+ assert.equal(atoms[0].symbol,'Si');
+ assert.equal(atoms[0].atomicNumber,14);
+ const request=validateGansuRequest({xyz:SIH4,functional:'PBE',grid:'medium'});
+ assert.equal(request.electrons,18);
+ assert.equal(request.multiplicity,1);
+ for(const atom of atoms.slice(1))
+  assert.ok(Math.abs(Math.hypot(...atom.xyz)-1.48)<1e-3);
 });
 test('rejects invalid XYZ, heavy elements, overlapping atoms and inconsistent electrons/spin',()=>{
  assert.throws(()=>parseGansuXyz('2\nwrong\nH 0 0 0'),/XYZ/);

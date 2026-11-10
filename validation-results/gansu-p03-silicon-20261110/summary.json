@@ -1,0 +1,63 @@
+{
+  "schema": "kristalyapi.gansu-pyscf-p03-accepted-evidence.v1",
+  "capturedOn": "2026-11-10",
+  "scope": "finite molecular DFT; no periodic silicon band calculations",
+  "sourceGitHubActions": "https://github.com/alorak/kristalyapi/actions/runs/42785028307",
+  "sourcePR": "https://github.com/alorak/kristalyapi/pull/235",
+  "sourceCommit": "185836b5ed771ad48b466202420d14675a16e697",
+  "artifactId": 13749675589,
+  "artifactZipSha256": "09910d1cd5c177324bb102426109f61ad7f7409c458770777486c80e3a3caf80",
+  "fixtureSha256": "12961e0b7ba18aff3ad3561bcb4e9c18c52a2c21d01a40b74e854e0ef0a0bab5",
+  "engineUpstreamCommit": "58237bc616e9795f393b3d5272805ecef6d377ad",
+  "method": {
+    "gansu": "GANSU Lite pinned Worker + same-origin WASM, STO-3G, medium grid",
+    "pyscf": "PySCF 2.15.0, LibXC, STO-3G, grid level 3",
+    "energyUnit": "Hartree",
+    "differenceUnit": "milli-Hartree"
+  },
+  "predeclaredToleranceHartree": 0.02,
+  "accepted": true,
+  "scientificCaveat": "The 20 mHa gate demonstrates bounded numerical agreement for these five geometries, not chemical accuracy, matched XC implementations or grid-equivalence.",
+  "runs": [
+    {
+      "id": "h2-svwn",
+      "functional": "SVWN",
+      "gansuHa": -1.1212811455701819,
+      "pyscfHa": -1.121206115702412,
+      "deltaMHa": -0.0750298677698602,
+      "passed": true
+    },
+    {
+      "id": "h2o-pbe",
+      "functional": "PBE",
+      "gansuHa": -75.22844877905985,
+      "pyscfHa": -75.22541337546471,
+      "deltaMHa": -3.035403595134767,
+      "passed": true
+    },
+    {
+      "id": "nh3-pbe",
+      "functional": "PBE",
+      "gansuHa": -55.7157677760907,
+      "pyscfHa": -55.71302307955884,
+      "deltaMHa": -2.7446965318631555,
+      "passed": true
+    },
+    {
+      "id": "sih4-svwn",
+      "functional": "SVWN",
+      "gansuHa": -287.271207735307,
+      "pyscfHa": -287.2700596769326,
+      "deltaMHa": -1.148058374383254,
+      "passed": true
+    },
+    {
+      "id": "sih4-pbe",
+      "functional": "PBE",
+      "gansuHa": -288.3470648367669,
+      "pyscfHa": -288.3410826116307,
+      "deltaMHa": -5.982225136165198,
+      "passed": true
+    }
+  ]
+}

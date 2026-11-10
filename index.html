@@ -936,7 +936,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div class="qe-workflow">
    <strong class="measure-subheading">P0 · GANSU Lite ile moleküler DFT</strong>
    <p class="hint browser-dft-intro">KristalYapı içinde gerçek moleküler Kohn–Sham DFT: GANSU Lite'ın sürümü sabitlenmiş SCF Worker + WebAssembly motoru. Girdi ve sonuçlar cihazınızda kalır, QE sunucusuna gönderilmez. Periyodik kristal DFT değildir.</p>
-   <label class="field"><span>Sonlu molekül / XYZ kaynağı</span><select id="browserDftXyzSource"><option value="h2">H₂ · örnek molekül</option><option value="water">H₂O · örnek molekül</option><option value="active">Aktif hücreyi sonlu kümeye dönüştür (deneysel)</option><option value="custom">XYZ yapıştır / elle düzenle</option></select></label>
+   <label class="field"><span>Sonlu molekül / XYZ kaynağı</span><select id="browserDftXyzSource"><option value="h2">H₂ · örnek molekül</option><option value="water">H₂O · örnek molekül</option><option value="nh3">NH₃ · amonyak (P0.3)</option><option value="sih4">SiH₄ · silan, moleküler Si (P0.3)</option><option value="active">Aktif hücreyi sonlu kümeye dönüştür (deneysel)</option><option value="custom">XYZ yapıştır / elle düzenle</option></select></label>
    <label class="browser-dft-check"><input id="browserDftClusterConsent" type="checkbox"><span>Aktif hücrenin periyodik bağlarını keseceğimi, uçları pasifleştirmediğimi ve çıkan XYZ'nin kristal DFT olmadığını anlıyorum.</span></label>
    <label class="field"><span>XYZ içeriği (Å)</span><textarea id="browserDftXyz" spellcheck="false" rows="6" aria-label="Yerel GANSU DFT için XYZ verisi"></textarea></label>
    <div id="browserDftXyzStatus" class="note browser-dft-warning" role="status" aria-live="polite"></div>
@@ -946,7 +946,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <label class="field"><span>Toplam yük (e)</span><input type="number" id="browserDftCharge" value="0" min="-2" max="2" step="1"></label>
     <label class="field"><span>Spin çokluğu (2S+1)</span><input type="number" id="browserDftMultiplicity" value="1" min="1" max="3" step="1"></label>
    </div>
-   <p class="hint">Baz seti: STO-3G (sabit). 1–12 atom ve H–Ne desteklenir. Elektron sayısı ve spin çokluğu kontrol edilir; ağır element ve periyodik hesaplar reddedilir.</p>
+   <p class="hint">Baz seti: STO-3G (sabit). 1–12 atom, H–Ne ve silisyum (Si) desteklenir. Moleküler SiH₄ hesaplanır; bu işlem kristal Si bant yapısı üretmez.</p>
    <div class="browser-dft-actions">
     <button type="button" class="primary" id="browserDftRun">Yerel WASM DFT hesapla</button>
     <button type="button" id="browserDftCancel" disabled>Hesabı iptal et</button>
@@ -955,7 +955,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <div class="note browser-dft-metrics" id="browserDftEngineStatus" role="status" aria-live="polite">WASM motoru, hesaplama başlatıldığında doğrulanır. Otomatik hesap yapılmaz.</div>
    <div id="browserDftResults" class="browser-dft-results" aria-live="polite" hidden></div>
    <div class="browser-dft-actions"><button type="button" id="browserDftXyzCopy">XYZ kopyala</button><a id="browserDftGansuOpen" href="https://yasuaki-ito.github.io/GANSU-Lite/" target="_blank" rel="noopener noreferrer">GANSU Lite kaynak uygulaması ↗</a></div>
-   <p class="hint browser-dft-intro">GANSU Lite BSD-3-Clause lisanslıdır (Y. Ito, 2026). Motor derleme çıktıları ve WASM dosyaları sabitlenmiş sürümden, bütünlük denetimiyle aynı kökenden yüklenir. Yalnız moleküler DFT yapılır; Ni ve diğer ağır elementler bu başlangıçta desteklenmez.</p>
+   <p class="hint browser-dft-intro">GANSU Lite BSD-3-Clause lisanslıdır (Y. Ito, 2026). Motor derleme çıktıları ve WASM dosyaları sabitlenmiş sürümden, bütünlük denetimiyle aynı kökenden yüklenir. Yalnız moleküler DFT yapılır; Ni ve diğer ağır elementler bu başlangıçta desteklenmez. <a href="https://github.com/alorak/kristalyapi/blob/main/docs/qe-scf-validation.md" target="_blank" rel="noopener noreferrer">Periyodik kristal Si: QE doğrulaması ↗</a></p>
   </div>
   <div class="qe-workflow">
    <strong class="measure-subheading">P1 · Periyodik grafen π Tight-Binding</strong>
