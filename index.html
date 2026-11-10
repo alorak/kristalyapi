@@ -1418,7 +1418,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div class="library-header"><div><div class="library-eyebrow">Kristal Yapı / Malzeme Ar-Ge · P0</div>
    <h2>Malzeme veri kartları</h2><p>Farklı çalışma alanlarındaki kristal yapılarını kaydedip birim hücre, kimyasal bileşim ve kaynak kimliğiyle karşılaştırın.</p>
   </div><a class="lib-cod-link" href="#kristal">← Kristal editörü</a></div>
-  <section class="lesson-panel">
+  <nav id="materialsTabs" class="materials-tabs" role="tablist" aria-label="Malzemeler bölüm sekmeleri">
+   <button type="button" id="materialsTabCards" role="tab" aria-controls="materialsPanelCards" aria-selected="true" tabindex="0">Yapı Kartları</button>
+   <button type="button" id="materialsTabCompare" role="tab" aria-controls="materialsPanelCompare" aria-selected="false" tabindex="-1">Karşılaştırma</button>
+   <button type="button" id="materialsTabMl" role="tab" aria-controls="materialsPanelMl" aria-selected="false" tabindex="-1">ML Tahminleri</button>
+   <button type="button" id="materialsTabEvidence" role="tab" aria-controls="materialsPanelEvidence" aria-selected="false" tabindex="-1">Kaynak ve Kanıtlar</button>
+   <button type="button" id="materialsTabBulk" role="tab" aria-controls="materialsPanelBulk" aria-selected="false" tabindex="-1">3B DFT Hazırlığı</button>
+  </nav>
+  <section id="materialsPanelCards" class="lesson-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabCards" tabindex="0">
    <div class="lesson-panel-head"><h3>Yapı karşılaştırması</h3><span class="lesson-pill">En çok dört yapı · yalnızca bu sekme</span></div>
    <label class="lesson-field materials-source-field"><span>Kaynak kimliği / bağlantısı (isteğe bağlı; kullanıcı beyanı)</span>
     <input type="text" id="materialsReference" maxlength="500" placeholder="COD kimliği, DOI, deney/DFT kanıt kimliği"></label>
@@ -1427,6 +1434,63 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <button id="materialsExportCsv" type="button">Karşılaştırma CSV</button>
     <button id="materialsExportJson" type="button">Kaynaklı JSON</button></div>
    <p id="materialsCount" class="hint" aria-live="polite"></p>
+   <div id="materialsStatus" class="note" role="status" aria-live="polite">Kaydedilen yapı bulunmuyor.</div>
+   <div id="materialsCards" class="materials-cards" aria-label="Kaydedilen malzeme kartları"></div>
+  </section>
+  <section id="materialsPanelCompare" class="lesson-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabCompare" tabindex="0" hidden><div class="lesson-panel-head"><h3>Geometrik karşılaştırma</h3><span class="lesson-pill">Birimler ve farklar</span></div>
+   <div id="materialsComparison" aria-live="polite"></div>
+   <p class="hint">Bu kartlar yalnız mevcut yapı verilerinin anlık kopyasıdır; otomatik COD doğrulaması, XRD faz tayini, DFT sonucu, mekanik veya RF malzeme özelliği içermez. Kaynak bağlantısı elle girilir; yapıyla eşleşmesi doğrulanmaz.</p>
+  </section>
+  <section id="materialsPanelMl" class="lesson-panel materials-ml-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabMl" tabindex="0" hidden>
+   <div class="lesson-panel-head"><h3>ML Tahminleri</h3><span class="lesson-pill">Yerel ML · P0 / P1 / P1.2</span></div>
+   <nav id="materialsMlTabs" class="materials-ml-tabs" role="tablist" aria-label="ML tahmin modelleri">
+    <button type="button" id="materialsMlTabP0" role="tab" aria-controls="materialsMlPaneP0" aria-selected="true" tabindex="0">P0 · Deneysel</button>
+    <button type="button" id="materialsMlTabP1" role="tab" aria-controls="materialsMlPaneP1" aria-selected="false" tabindex="-1">P1 · Yapısal</button>
+    <button type="button" id="materialsMlTabP12" role="tab" aria-controls="materialsMlPaneP12" aria-selected="false" tabindex="-1">P1.2 · Polimorflar</button>
+   </nav>
+   <div id="materialsMlPaneP0" class="materials-ml-pane" role="tabpanel" aria-labelledby="materialsMlTabP0" tabindex="0">
+    <div class="lesson-panel-head"><h4>P0 · Deneysel bant aralığı</h4><span class="lesson-pill">Matbench · kNN</span></div>
+
+   <p class="hint">Etkin CIF/P1 kristalinin kimyasal bileşiminden, Matbench deneysel verisiyle kurulmuş yerel bir kNN vekil modeliyle bant aralığı tahmini. Model atom koordinatlarını, fazı ve kristal simetrisini <strong>kullanmaz</strong>; sonuç QE/DFT değildir.</p>
+   <div class="actionrow materials-actions">
+    <button id="materialsMlRun" type="button" class="primary">Etkin kristal için ML tahmini</button>
+    <button id="materialsMlExport" type="button" disabled>Tahmin JSON</button>
+   </div>
+   <p id="materialsMlStatus" class="note" role="status" aria-live="polite">Model henüz çalıştırılmadı.</p>
+   <div id="materialsMlResult" class="materials-ml-result" aria-live="polite"></div>
+   <p class="materials-caution">P0 yalnız <strong>deneysel bant aralığını</strong> (eV) kestirir. Oluşum enerjisi ve DOS tahmini henüz yoktur. Eğitim bileşimlerinden uzak veya kısmi doluluklu yapılarda güvenli değer üretmeyebilir. İç test MAE'si bireysel tahminin güven aralığı değildir.
+    Veri: <a href="https://doi.org/10.1038/s41524-020-00406-3" target="_blank" rel="noopener noreferrer">Matbench</a> /
+    <a href="https://doi.org/10.1021/acs.jpclett.8b00124" target="_blank" rel="noopener noreferrer">Zhuo ve ark. (2018)</a>.</p>
+   </div>
+   <div id="materialsMlPaneP1" class="materials-ml-p1 materials-ml-pane" role="tabpanel" aria-labelledby="materialsMlTabP1" tabindex="0" hidden>
+    <div class="lesson-panel-head"><h4>P1 · Yapısal ML tahminleri</h4><span class="lesson-pill">Hibrit-DFT · KNN</span></div>
+    <p class="hint">Kimyasal bileşim ve atom başına hücre hacmiyle eğitilmiş ikinci model. Gerçek periyodik komşulukları ayrıca doğrular. Deneysel P0 tahminleriyle aynı hedefi ölçmez.</p>
+    <div class="actionrow materials-actions">
+     <button id="materialsMlP1Run" type="button">Etkin kristalde yapısal tahmin</button>
+     <button id="materialsMlP1Export" type="button" disabled>Yapısal tahmin JSON</button>
+    </div>
+    <p id="materialsMlP1Status" class="note" role="status" aria-live="polite">P1 hesaplama henüz yapılmadı.</p>
+    <div id="materialsMlP1Result" class="materials-ml-result" aria-live="polite"></div>
+    <p class="materials-caution">P1, ZEBRA kaynaklı hesaplanmış <strong>hibrit-DFT doğrudan bant aralığı</strong> ile <strong>DFT oluşum enerjisini</strong> kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:
+     <a href="https://github.com/oba-group/ZEBRA-dataset" target="_blank" rel="noopener noreferrer">ZEBRA-Dataset (CC BY 4.0)</a>.</p>
+   </div>
+   <div id="materialsMlPaneP12" class="materials-ml-p12 materials-ml-pane" role="tabpanel" aria-labelledby="materialsMlTabP12" tabindex="0" hidden>
+    <div class="lesson-panel-head"><h4>P1.2 · Bağ ve koordinasyonla eğitilmiş ML</h4><span class="lesson-pill">JARVIS · Polimorf testi</span></div>
+    <p class="hint">Aynı bileşimli fakat farklı uzay gruplarındaki kristalleri birbirinden ayrılmış eğitim/test gruplarında inceler. Öğrenilen girdiler: bileşim, atom başına hacim, periyodik en yakın bağ uzunluğu ve koordinasyon. Bu model JARVIS OptB88vdW hedeflerine aittir; P0 deneysel ve P1 hibrit-DFT değerleriyle aynı değildir.</p>
+    <div class="actionrow materials-actions">
+     <button id="materialsMlP12Run" type="button">P1.2 · Polimorf modelini çalıştır</button>
+     <button id="materialsMlP12Export" type="button" disabled>P1.2 sonuç JSON</button>
+    </div>
+    <p id="materialsMlP12Status" class="note" role="status" aria-live="polite">P1.2 henüz çalıştırılmadı.</p>
+    <div id="materialsMlP12Result" class="materials-ml-result" aria-live="polite"></div>
+    <p class="materials-caution">P1.2 araştırma prototipi: aynı formülde farklı uzay grubu, farklı faz için bir vekil ölçüttür; bağımsız faz karakterizasyonu veya güven aralığı değildir. Kaynak:
+     <a href="https://doi.org/10.6084/m9.figshare.6815699" target="_blank" rel="noopener noreferrer">JARVIS-DFT (CC BY 4.0)</a>.
+     <a href="https://github.com/alorak/kristalyapi/blob/main/docs/materials-ml-p12.md" target="_blank" rel="noopener noreferrer">Yöntem dokümanı</a>.</p>
+   </div>
+  </section>
+  <section id="materialsPanelEvidence" class="lesson-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabEvidence" tabindex="0" hidden>
+   <div class="lesson-panel-head"><h3>Kaynak ve dosya kanıtları</h3><span class="lesson-pill">Yerel SHA-256</span></div>
+   <p class="hint">Önce Yapı Kartları sekmesinden bir kristal ekleyin. Burada kaynak dosyalarını seçili karta ilişkilendirebilir veya daha önce dışa aktarılmış kanıt JSON'unu doğrulayabilirsiniz.</p>
    <div class="materials-evidence-toolbar">
     <strong>P1 · Kaynak ve dosya kanıtları (yerel SHA-256)</strong>
     <div class="triple">
@@ -1444,52 +1508,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      <button id="materialsVerifyChoose" type="button">Kanıt JSON doğrula</button></div>
     <p class="hint" id="materialsEvidenceStatus" role="status" aria-live="polite">SHA-256 yalnız dosya bütünlüğünü ve kaydedilen yapıyı denetler; kaynağın özgünlüğünü veya hesap/deney doğruluğunu kanıtlamaz. Dosya en çok 12 MiB.</p>
    </div>
-   <div id="materialsStatus" class="note" role="status" aria-live="polite">Kaydedilen yapı bulunmuyor.</div>
-   <div id="materialsCards" class="materials-cards" aria-label="Kaydedilen malzeme kartları"></div>
   </section>
-  <section class="lesson-panel"><div class="lesson-panel-head"><h3>Geometrik karşılaştırma</h3><span class="lesson-pill">Birimler ve farklar</span></div>
-   <div id="materialsComparison" aria-live="polite"></div>
-   <p class="hint">Bu kartlar yalnız mevcut yapı verilerinin anlık kopyasıdır; otomatik COD doğrulaması, XRD faz tayini, DFT sonucu, mekanik veya RF malzeme özelliği içermez. Kaynak bağlantısı elle girilir; yapıyla eşleşmesi doğrulanmaz.</p>
-  </section>
-  <section class="lesson-panel materials-ml-panel" aria-label="ML Tahminleri">
-   <div class="lesson-panel-head"><h3>ML Tahminleri</h3><span class="lesson-pill">P0 · Tarayıcıda · kNN</span></div>
-   <p class="hint">Etkin CIF/P1 kristalinin kimyasal bileşiminden, Matbench deneysel verisiyle kurulmuş yerel bir kNN vekil modeliyle bant aralığı tahmini. Model atom koordinatlarını, fazı ve kristal simetrisini <strong>kullanmaz</strong>; sonuç QE/DFT değildir.</p>
-   <div class="actionrow materials-actions">
-    <button id="materialsMlRun" type="button" class="primary">Etkin kristal için ML tahmini</button>
-    <button id="materialsMlExport" type="button" disabled>Tahmin JSON</button>
-   </div>
-   <p id="materialsMlStatus" class="note" role="status" aria-live="polite">Model henüz çalıştırılmadı.</p>
-   <div id="materialsMlResult" class="materials-ml-result" aria-live="polite"></div>
-   <p class="materials-caution">P0 yalnız <strong>deneysel bant aralığını</strong> (eV) kestirir. Oluşum enerjisi ve DOS tahmini henüz yoktur. Eğitim bileşimlerinden uzak veya kısmi doluluklu yapılarda güvenli değer üretmeyebilir. İç test MAE'si bireysel tahminin güven aralığı değildir.
-    Veri: <a href="https://doi.org/10.1038/s41524-020-00406-3" target="_blank" rel="noopener noreferrer">Matbench</a> /
-    <a href="https://doi.org/10.1021/acs.jpclett.8b00124" target="_blank" rel="noopener noreferrer">Zhuo ve ark. (2018)</a>.</p>
-   <div class="materials-ml-p1" aria-label="Yapısal ML kestirimi">
-    <div class="lesson-panel-head"><h4>P1 · Yapısal ML tahminleri</h4><span class="lesson-pill">Hibrit-DFT · KNN</span></div>
-    <p class="hint">Kimyasal bileşim ve atom başına hücre hacmiyle eğitilmiş ikinci model. Gerçek periyodik komşulukları ayrıca doğrular. Deneysel P0 tahminleriyle aynı hedefi ölçmez.</p>
-    <div class="actionrow materials-actions">
-     <button id="materialsMlP1Run" type="button">Etkin kristalde yapısal tahmin</button>
-     <button id="materialsMlP1Export" type="button" disabled>Yapısal tahmin JSON</button>
-    </div>
-    <p id="materialsMlP1Status" class="note" role="status" aria-live="polite">P1 hesaplama henüz yapılmadı.</p>
-    <div id="materialsMlP1Result" class="materials-ml-result" aria-live="polite"></div>
-    <p class="materials-caution">P1, ZEBRA kaynaklı hesaplanmış <strong>hibrit-DFT doğrudan bant aralığı</strong> ile <strong>DFT oluşum enerjisini</strong> kestirir. Koordinasyon ve bağ mesafeleri bu sürümde tahmin modeline eğitilmiş girdi değildir; yalnız geometrik denetimdir. Farklı polimorfları ayırt etme gücü henüz sınırlıdır. Kaynak:
-     <a href="https://github.com/oba-group/ZEBRA-dataset" target="_blank" rel="noopener noreferrer">ZEBRA-Dataset (CC BY 4.0)</a>.</p>
-   <div class="materials-ml-p12" aria-label="Polimorf ML doğrulaması">
-    <div class="lesson-panel-head"><h4>P1.2 · Bağ ve koordinasyonla eğitilmiş ML</h4><span class="lesson-pill">JARVIS · Polimorf testi</span></div>
-    <p class="hint">Aynı bileşimli fakat farklı uzay gruplarındaki kristalleri birbirinden ayrılmış eğitim/test gruplarında inceler. Öğrenilen girdiler: bileşim, atom başına hacim, periyodik en yakın bağ uzunluğu ve koordinasyon. Bu model JARVIS OptB88vdW hedeflerine aittir; P0 deneysel ve P1 hibrit-DFT değerleriyle aynı değildir.</p>
-    <div class="actionrow materials-actions">
-     <button id="materialsMlP12Run" type="button">P1.2 · Polimorf modelini çalıştır</button>
-     <button id="materialsMlP12Export" type="button" disabled>P1.2 sonuç JSON</button>
-    </div>
-    <p id="materialsMlP12Status" class="note" role="status" aria-live="polite">P1.2 henüz çalıştırılmadı.</p>
-    <div id="materialsMlP12Result" class="materials-ml-result" aria-live="polite"></div>
-    <p class="materials-caution">P1.2 araştırma prototipi: aynı formülde farklı uzay grubu, farklı faz için bir vekil ölçüttür; bağımsız faz karakterizasyonu veya güven aralığı değildir. Kaynak:
-     <a href="https://doi.org/10.6084/m9.figshare.6815699" target="_blank" rel="noopener noreferrer">JARVIS-DFT (CC BY 4.0)</a>.
-     <a href="https://github.com/alorak/kristalyapi/blob/main/docs/materials-ml-p12.md" target="_blank" rel="noopener noreferrer">Yöntem dokümanı</a>.</p>
-   </div>
-   </div>
-  </section>
-  <section class="lesson-panel">
+  <section id="materialsPanelBulk" class="lesson-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabBulk" tabindex="0" hidden>
    <div class="lesson-panel-head"><h3>P1 · 3B bulk DFT araştırma hazırlığı</h3><span class="lesson-pill">İş göndermez</span></div>
    <p class="hint">GaN, AlN ve SiC için hücre/bileşim ve 3B k-örgüsü taslağı üretir. Mevcut QE elektronik API, slab odaklı olduğundan 3B bulk hesabı bu panelden başlatılamaz.</p>
    <div class="triple materials-bulk-fields">
