@@ -55,7 +55,7 @@ try{
   assert.ok(Math.abs(geometry.paddingLeft-geometry.powderPaddingLeft)<.1&&
    Math.abs(geometry.paddingRight-geometry.powderPaddingRight)<.1,
    'Materials and Powder must use the same shell spacing: '+JSON.stringify(geometry));
-  assert.equal(geometry.panels.length,3,'Materials sections must remain intact');
+  assert.equal(geometry.panels.length,4,'Materials comparison, geometry, ML and DFT sections must remain intact');
   for(const panel of geometry.panels){
    assert.ok(panel.left>=geometry.wrap.left+geometry.paddingLeft-1&&
     panel.right<=geometry.wrap.right-geometry.paddingRight+1,
