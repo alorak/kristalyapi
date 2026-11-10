@@ -69,7 +69,23 @@ export function parseMpElectronic(data){
   if(!finite(d.efermi_ev)||Math.abs(d.efermi_ev)>10000)error('DOS Fermi referansı geçersiz.');
   const energy=numbers(d.energy_ev,'DOS enerji',20000,{ascending:true});
   const spins=spinArrays(d.spins,'DOS',energy.length,0,true);
-  dos={efermi:d.efermi_ev,energy,spins};
+  let pdos=[];
+  if(d.pdos!==undefined){
+   if(!Array.isArray(d.pdos)||d.pdos.length>16)error('PDOS projeksiyon sayısı geçersiz.');
+   const seen=new Set();
+   pdos=d.pdos.map(entry=>{
+    if(!entry||typeof entry.element!=='string'||!/^[A-Z][a-z]?$/.test(entry.element)||
+       !['s','p','d','f'].includes(entry.orbital))
+     error('PDOS element veya orbital etiketi geçersiz.');
+    const key=entry.element+'|'+entry.orbital;
+    if(seen.has(key))error('Yinelenen PDOS projeksiyonu.');seen.add(key);
+    const channel=spinArrays(entry.spins,'DOS',energy.length,0,true);
+    if(Object.keys(channel).sort().join(',')!==Object.keys(spins).sort().join(','))
+     error('PDOS spin kanalları toplam DOS ile uyuşmuyor.');
+    return {element:entry.element,orbital:entry.orbital,spins:channel};
+   });
+  }
+  dos={efermi:d.efermi_ev,energy,spins,pdos};
  }
  return {materialId:data.material_id,retrievedAt:data.retrieved_at,
    provenance,band,dos,pathType:String(data.path_type||'unknown').slice(0,50),
