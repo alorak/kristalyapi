@@ -17,7 +17,7 @@ export function cellVolumeA3(cell){
  const factor=1+2*ca*cb*cg-ca*ca-cb*cb-cg*cg;
  if(factor<=1e-10)throw Error('Hücre dejenere.');
  const volume=a*b*c*Math.sqrt(factor);
- if(!finite(volume)||volume<=0)return (()=>{throw Error('Hücre hacmi geçersiz.');})();
+ if(!finite(volume)||volume<=0)throw Error('Hücre hacmi geçersiz.');
  return volume;
 }
 export function structureDescriptorsP1(structure){
@@ -30,6 +30,12 @@ export function structureDescriptorsP1(structure){
  if(!finite(mass))throw Error('Atom kütlesi bulunamadı.');
  // The active editor supplies symmetry-expanded P1 sites. Do not re-expand them.
  const sites=structure.sites.map(s=>({symbol:s.symbol,x:s.x-Math.floor(s.x),y:s.y-Math.floor(s.y),z:s.z-Math.floor(s.z)}));
+ const indices=new Set();
+ for(const site of sites){
+  const k=[site.x,site.y,site.z].map(v=>Math.round(v*1e5)).join(':');
+  if(indices.has(k))throw Error('Üst üste binen periyodik atom konumları var.');
+  indices.add(k);
+ }
  const cutoff=Math.min(8,Math.max(4,2.7*Math.cbrt(vpa)));
  const identity=symmetryOperations([['x,y,z','0,0,0']]);
  const lists=neighbourLists(sites,structure.cell,identity,()=>[0.1,cutoff],{periodic:true,limit:40000});
@@ -86,10 +92,11 @@ export function predictStructuralProperties(model,features){
  const accepted=closest.compositionD2<=VALIDITY.compositionD2Max&&
   Math.abs(closest.logVpa)<=VALIDITY.logVolumePerAtomMax;
  const known=closest.compositionD2<1e-10&&Math.abs(closest.logVpa)<1e-6;
+ const source=known?model.rows.find(row=>row.id===closest.id):null;
  return {
   status:!accepted?'out-of-domain':known?'training-reference':'prediction',
-  hybridDirectGapEV:accepted?gap.value:null,
-  formationEnergyEVPerAtom:accepted?formation.value:null,
+  hybridDirectGapEV:accepted?(source?source.gap:gap.value):null,
+  formationEnergyEVPerAtom:accepted?(source?source.formation:formation.value):null,
   neighbors:gap.neighbors,
   modelId:model.modelId,validity:VALIDITY,
   evaluation:{gap:model.meta.gap,formation:model.meta.formation,acceptance:model.meta.acceptance}
