@@ -28,6 +28,22 @@ try{
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#materialsNav').click();
  await page.waitForFunction(()=>!document.getElementById('materialsPage').hidden);
+ await page.locator('#materialsMlP12Run').click();
+ await page.waitForFunction(()=>{
+  const v=document.getElementById('materialsMlP12Result')?.textContent||'';
+  const status=document.getElementById('materialsMlP12Status')?.textContent||'';
+  return v.includes('MAE')||status.includes('failed')||status.includes('hatası');
+ },null,{timeout:45000});
+ assert.match(await page.locator('#materialsMlP12Result').textContent(),/MAE|eV\/atom/);
+ assert.equal(await page.locator('#materialsMlP12Run').isDisabled(),false);
+ await page.locator('#materialsMlP12Check').click();
+ await page.waitForFunction(()=>{
+  const v=document.getElementById('materialsMlP12CheckResult')?.textContent||'';
+  const status=document.getElementById('materialsMlP12CheckStatus')?.textContent||'';
+  return v.includes('MAE')||status.includes('failed')||status.includes('hatası');
+ },null,{timeout:60000});
+ assert.match(await page.locator('#materialsMlP12CheckResult').textContent(),/MAE/);
+ assert.equal(await page.locator('#materialsMlP12Check').isDisabled(),false);
  await page.locator('#materialsMlP1Run').click();
  await page.waitForFunction(()=>{
   const v=document.getElementById('materialsMlP1Result')?.textContent||'';
