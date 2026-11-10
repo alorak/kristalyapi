@@ -25,7 +25,7 @@
 .pw-indexing .pi-remove{min-height:28px;padding:2px 9px;font-size:19px;line-height:1}
 .pw-indexing .pi-status{margin-top:10px;padding:9px 12px;background:#eaf4ff;border-radius:8px;color:#245e8f;font-size:12px;line-height:1.5}
 .pw-indexing .pi-status[data-state="invalid"]{background:#fff1e7;color:#97532e}
-.pw-indexing .pi-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:15px 0}
+.pw-indexing .pi-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:15px 0}
 .pw-indexing .pi-metric{background:#f5f9fd;border:1px solid #e0eaf4;padding:11px 12px;border-radius:10px;min-width:0}
 .pw-indexing .pi-metric span{display:block;font-size:11px;color:#607a93;margin-bottom:6px}
 .pw-indexing .pi-metric strong{font-size:17px;color:#205d98;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
