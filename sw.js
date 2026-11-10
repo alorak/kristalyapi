@@ -2,7 +2,7 @@
  * Only known, same-origin application files are cached; COD and user-provided
  * Cloudflare Worker requests must never be intercepted or stored. */
 const CACHE_PREFIX='kristalyapi-shell-';
-const CACHE_NAME=CACHE_PREFIX+'2026-11-10-gansu-p04-ml-p13';
+const CACHE_NAME=CACHE_PREFIX+'2026-11-10-materials-compact-ui';
 const APP_FILES=[
  './','./index.html','./styles.css','./dft-workspace.css','./browser-dft-lab.css','./browser-dft-lab.js','./browser-tb-core.js','./gansu-local-engine.js','./gansu-geometry-scan.js',
  './vendor/gansu-lite/scf-worker.js','./vendor/gansu-lite/basis/sto-3g.gbs',
