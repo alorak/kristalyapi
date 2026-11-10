@@ -19,7 +19,7 @@ GANSU Worker ve WebAssembly çalışırken **aynı origin** üzerindeki `vendor/
 ### Kullanım
 
 1. **DFT → Tarayıcı hesapları** bölümünde H₂/H₂O örneği ya da kullanıcı XYZ verisi seçilir.
-2. Desteklenen moleküller: H–Ne elementleriyle en fazla 12 atom. Üçüncü satırdan itibaren her satırda `Element x y z` biçiminde Å birimleriyle koordinat yazılır.
+2. Desteklenen moleküller: H–Ne elementleri ve Si atomuyla en fazla 12 atom. SiH₄ için iki fonksiyonelli bağımsız doğrulama: [P0.3 silisyum/PySCF raporu](gansu-p03-silicon-validation.md). Üçüncü satırdan itibaren her satırda `Element x y z` biçiminde Å birimleriyle koordinat yazılır.
 3. `SVWN/LDA`, `PBE/GGA` veya `B3LYP` fonksiyoneli, coarse/medium grid, yük (-2…+2) ve spin çokluğu (1…3) seçilir. Bu ilk sürümde baz seti STO-3G'dir.
 4. **Yerel WASM DFT hesapla** düğmesi kullanılır. Enerji, SCF iterasyonu, orbital enerjileri ve Mulliken yükleri görüntülenir. **Sonuç JSON indir** ile giriş ayarları ve köken bilgisi kaydedilir. Uzun süren işlem **Hesabı iptal et** ile Worker sonlandırılarak durdurulur.
 5. Aktif periyodik hücrenin sonlu kümeye dönüşümü yalnız açık onayla yapılır. Bağlar kesilir, yüzey atomları pasifleştirilmez; **elde edilen sonuç periyodik kristal DFT değildir**.
@@ -80,6 +80,6 @@ Gerçek Chromium duman testi: `node tests/browser/browser-dft-lab.test.mjs` (CI;
 
 ## Sonraki işler
 
-- **P0.3:** Fonksiyonel bazlı PySCF referans kıyasları, Ni için uyumlu ECP/açık kabuk doğrulaması ve uygun baz setlerinin ayrı bilimsel kabul süreci.
+- **P0.3:** H₂, H₂O, NH₃ ve SiH₄ için gerçek WASM–PySCF bağımsız enerji karşılaştırması: [ayrı bilimsel rapor ve CI kapısı](gansu-p03-silicon-validation.md). Ni/ECP/açık kabuk ve geniş baz setleri sonraki aşamalar için kapsam dışıdır.
 - **P1.2:** graphene supercell unfolding, ikinci komşu hopping, t' parametrizasyonu ve k-yolu seçenekleri için ayrı fiziksel doğrulama.
 - **P2:** DFTB veya tam periyodik DFT motoru sadece bağımsız doğrulama ve lisans incelemesi sonrası gündeme alınmalı.
