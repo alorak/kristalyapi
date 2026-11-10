@@ -115,6 +115,28 @@ def discover_tasks(mpr, mid):
     return ids
 
 
+
+def choose_near_fermi_band_start(bandstructure, count):
+    """Return a one-based actual band index for a compact Fermi-near window.
+
+    This only selects a window from real MP eigenvalues. It never alters energies
+    or synthesizes missing bands.
+    """
+    bands = list(bandstructure.bands.values())
+    if not bands:
+        raise ValueError("No band eigenvalues available")
+    total = len(bands[0])
+    if not total:
+        raise ValueError("Band structure is empty")
+    ef = scalar(bandstructure.efermi)
+    candidate = min(
+        range(total),
+        key=lambda index: min(abs(scalar(e) - ef) for spin in bands for e in spin[index])
+    )
+    width = min(count, total)
+    return min(max(0, candidate - width // 2), total - width) + 1
+
+
 def export_data(mpr, mid, first, count):
     import importlib.metadata
     result = {
@@ -132,6 +154,8 @@ def export_data(mpr, mid, first, count):
         bs = mpr.get_bandstructure_by_material_id(mid)
         dist = vector(bs.distance, "k path", 2000)
         total = len(next(iter(bs.bands.values())))
+        if first is None:
+            first = choose_near_fermi_band_start(bs, count)
         if first > total:
             raise ValueError(f"First band {first} exceeds {total}")
         size = min(count, total - first + 1)
@@ -177,12 +201,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mp-id", required=True, help="e.g. mp-149")
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--first-band", type=int, default=1)
+    parser.add_argument("--first-band", type=int, default=None,
+                        help="one-based index; default automatically centers a real band window near E_F")
     parser.add_argument("--band-count", type=int, default=80)
     args = parser.parse_args()
     if not ID.fullmatch(args.mp_id):
         parser.error("Invalid Materials Project ID")
-    if args.first_band < 1 or not 1 <= args.band_count <= 300:
+    if (args.first_band is not None and args.first_band < 1) or not 1 <= args.band_count <= 300:
         parser.error("Invalid band window (1–300)")
     key = os.environ.get("MP_API_KEY", "").strip()
     if not 1 <= len(key) <= 512:
