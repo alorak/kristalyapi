@@ -49,6 +49,20 @@ python -m unittest discover -s tests -p 'test_gansu_pyscf_benchmark.py' -v
 
 Kısmi tamamlanma da açıkça kayda geçmelidir. GANSU hesaplaması başarısızsa, PySCF çalışamazsa, referans uyuşmazsa veya testler zaman aşımına uğrarsa P0.3 bilimsel kapısı kapanır.
 
+## 10 Kasım 2026 gerçek bağımsız sonuçları
+
+[GitHub Actions bilimsel koşusu](https://github.com/alorak/kristalyapi/actions/runs/42785028307) **başarılı** tamamlandı. Bütün beş sonlu molekül, yerel GANSU Worker/WebAssembly üzerinde hesaplandı ve aynı konfigürasyonlar PySCF 2.15.0 + LibXC ile bağımsız çalıştırıldı. Geçici CI artifact'ının yanında [kalıcı, hash referanslı özeti](../validation-results/gansu-p03-silicon-20261110/summary.json) saklanır.
+
+| Molekül / fonksiyonel | GANSU (Ha) | PySCF (Ha) | Mutlak fark (mHa) | Ön-kayıtlı kapı |
+| --- | ---: | ---: | ---: | --- |
+| H₂ / SVWN | −1,121281146 | −1,121206116 | 0,07503 | Geçti |
+| H₂O / PBE | −75,228448779 | −75,225413375 | 3,03540 | Geçti |
+| NH₃ / PBE | −55,715767776 | −55,713023080 | 2,74470 | Geçti |
+| **SiH₄ / SVWN** | **−287,271207735** | **−287,270059677** | **1,14806** | **Geçti** |
+| **SiH₄ / PBE** | **−288,347064837** | **−288,341082612** | **5,98223** | **Geçti** |
+
+En yüksek fark SiH₄/PBE için 5,98223 mHa'dır; önceden belirlenen 20 mHa'nın altındadır. **20 mHa kimyasal doğruluk eşiği değildir**; uygun olmayan grid/XC varyantları karşısında bu karşılaştırmayı "mikro-Hartree hassasiyetinde aynı çözücü" diye nitelemek doğru olmaz. Sonuçlar bu beş sabit geometrinin **moleküler** toplam enerjilerine özeldir.
+
 ## Silisyum kristali için mevcut gerçek QE kanıtı
 
 **SiH₄ molekülü için GANSU/PySCF** ve **elmas Si kristali için Quantum ESPRESSO** birbirinden ayrı yöntemlerdir. P0.3 bunların enerjilerini doğrudan karşılaştırmaz; atom sayısı, sınır koşulları, pseudopotansiyel ve baz setleri farklıdır.
