@@ -60,6 +60,11 @@ export function initMaterialsMlP12(host,download){
    box.append(n('small',t('Faz-gruplu test MAE: ','Phase-group held-out MAE: ')+
     f(validation.heldout.mae)+' '+unit+' · '+
     t('yalnız bileşim/hacim MAE: ','composition/volume-only MAE: ')+f(validation.baseline.mae)+' '+unit));
+   if(validation.distinctGeometryHoldout)box.append(n('small',
+    t('Ayrıca geometrik açıdan ayrık test: ','More distinct-geometry holdout: ')+
+    validation.distinctGeometryHoldout.count+' · MAE '+f(validation.distinctGeometryHoldout.mae)+
+    ' '+unit+' · '+t('temel MAE ','baseline MAE ')+
+    f(validation.distinctGeometryBaseline.mae)+' '+unit));
    box.append(n('small',t('Bağ ağırlığı ','Bond weight ')+validation.selected.bond+
     ' · '+t('koordinasyon ağırlığı ','coordination weight ')+validation.selected.coord));
    flex.append(box);
