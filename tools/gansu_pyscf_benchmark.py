@@ -101,6 +101,14 @@ def compare_results(fixture, gansu, references):
                 raise ValueError(f"{key}: GANSU provenance mismatch: {field}")
         if g.get("upstreamCommit") != fixture["upstreamGansuCommit"]:
             raise ValueError(f"{key}: GANSU hash differs")
+        if g.get("xyzSha256") != hashlib.sha256(case["xyz"].encode("utf-8")).hexdigest():
+            raise ValueError(f"{key}: coordinate SHA-256 does not match original source")
+        if p.get("pyscfVersion") != PYSCF_VERSION or p.get("basis") != "STO-3G":
+            raise ValueError(f"{key}: PySCF reference provenance drift")
+        if p.get("xc") != XC[case["functional"]]:
+            raise ValueError(f"{key}: XC method does not match case")
+        if p.get("electronCount") != g.get("electrons"):
+            raise ValueError(f"{key}: electron count discrepancy between independent solvers")
         if g.get("atoms") != [a[0] for a in parse_xyz(case["xyz"])]:
             raise ValueError(f"{key}: atom identities or order differ")
         if not p.get("converged"):
