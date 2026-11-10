@@ -1,0 +1,81 @@
+name: GANSU molecular DFT · P0.3 independent PySCF validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+    paths:
+      - 'gansu-local-engine.js'
+      - 'browser-dft-lab.js'
+      - 'index.html'
+      - 'tests/fixtures/gansu/**'
+      - 'tests/browser/gansu-science-p03.test.mjs'
+      - 'tests/gansu-local-engine.test.mjs'
+      - 'tests/test_gansu_pyscf_benchmark.py'
+      - 'tools/gansu_pyscf_benchmark.py'
+      - 'tools/gansu_wasm_assets.py'
+      - 'vendor/gansu-lite/**'
+      - '.github/workflows/gansu-pyscf-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gansu-science-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  molecular-scf-independent-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - name: Checkout same PR merge source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install independently pinned PySCF 2.15.0
+        run: python -m pip install 'pyscf==2.15.0'
+      - name: Install pinned Chromium and crystallography runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1 @spglib/moyo-wasm@0.21.0
+          npx playwright install --with-deps chromium
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm.js vendor/moyo_wasm.js
+          cp node_modules/@spglib/moyo-wasm/moyo_wasm_bg.wasm vendor/moyo_wasm_bg.wasm
+      - name: Verify GANSU Worker, basis and immutable upstream WASM assets
+        run: |
+          python tools/gansu_wasm_assets.py
+          python tools/gansu_wasm_assets.py --offline
+      - name: Validate fixture and comparison gate without a solver
+        run: |
+          python -m unittest discover -s tests -p 'test_gansu_pyscf_benchmark.py' -v
+          node --test tests/gansu-local-engine.test.mjs
+      - name: Run real H2, water, ammonia and silicon hydride SCF in Chromium
+        run: node tests/browser/gansu-science-p03.test.mjs
+      - name: Independently compute same STO-3G molecules with PySCF and compare energies
+        run: |
+          python tools/gansu_pyscf_benchmark.py \
+            --fixtures tests/fixtures/gansu/p03-molecules.json \
+            --gansu tests/browser/artifacts/gansu-p03-browser-results.json \
+            --out tests/browser/artifacts/gansu-p03-pyscf-comparison.json
+      - name: Preserve complete scientific evidence even on failed acceptance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gansu-p03-silicon-pyscf-evidence
+          path: |
+            tests/browser/artifacts/gansu-p03-browser-results.json
+            tests/browser/artifacts/gansu-p03-pyscf-comparison.json
+          if-no-files-found: warn
+          retention-days: 30
