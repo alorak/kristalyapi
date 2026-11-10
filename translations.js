@@ -7,6 +7,19 @@
 (() => {
  'use strict';
  const entries=[
+  // Materials P0: composition-only local ML baseline (not a DFT result).
+  ["ML Tahminleri","ML Predictions"],
+  ["P0 · Tarayıcıda · kNN","P0 · In-browser · kNN"],
+  ["Etkin CIF/P1 kristalinin kimyasal bileşiminden, Matbench deneysel verisiyle kurulmuş yerel bir kNN vekil modeliyle bant aralığı tahmini. Model atom koordinatlarını, fazı ve kristal simetrisini","Estimate the band gap from the active CIF/P1 crystal's chemical composition using a local kNN surrogate trained on Matbench experimental data. The model"],
+  ["kullanmaz","does not use"],
+  ["; sonuç QE/DFT değildir.","atomic coordinates, phase, or symmetry; this is not a QE/DFT result."],
+  ["Etkin kristal için ML tahmini","Run ML screening on active crystal"],
+  ["Tahmin JSON","Prediction JSON"],
+  ["Model henüz çalıştırılmadı.","Model has not been run yet."],
+  ["P0 yalnız","P0 estimates only"],
+  ["deneysel bant aralığını","experimental band gap"],
+  ["(eV) kestirir. Oluşum enerjisi ve DOS tahmini henüz yoktur. Eğitim bileşimlerinden uzak veya kısmi doluluklu yapılarda güvenli değer üretmeyebilir. İç test MAE'si bireysel tahminin güven aralığı değildir.\n    Veri:","(eV). Formation energy and DOS predictions are not implemented. Out-of-domain or partially occupied structures may be rejected. The holdout MAE is not an individual prediction confidence interval.\n    Data:"],
+  ["Zhuo ve ark. (2018)","Zhuo et al. (2018)"],
   // P0.3 silicon and small-molecule validation
   ["NH₃ · amonyak (P0.3)","NH₃ · ammonia (P0.3)"],
   ["SiH₄ · silan, moleküler Si (P0.3)","SiH₄ · silane, molecular Si (P0.3)"],
