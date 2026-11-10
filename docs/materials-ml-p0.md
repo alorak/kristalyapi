@@ -18,6 +18,7 @@
 - Normalize edilmiş kimyasal bileşimler üzerinden 3 tekrar kaydı ayıklanınca **4.601** örnek kalır.
 - Aynı bileşimin eğitim/teste dağılmasını önlemek için sıralı element kesirlerinden (beş ondalık) oluşturulmuş imzanın FNV-1a 32-bit değeri kullanılır: `hash mod 10 < 8` eğitim, diğerleri test.
 - **3.696 eğitim, 905 bağımsız tutulan test örneği**. Test MAE **0,490473 eV**, RMSE **yaklaşık 1,053 eV**; pozitif hedefli 438 test örneğinde MAE **0,628283 eV**. Her zaman 0 tahmini yapan basit tabanın MAE'si **0,997536 eV**.
+- `d² ≤ 0,08` kapısından **610/905 örnek (%67,4)** geçer; kapı içinde MAE **0,564491 eV** ve 295 örnekte ret bulunur. Kapı dışı ret, testte MAE'yi iyileştirmemiştir; kesinlik veya doğruluk garantisi olarak yorumlanmamalıdır.
 - Bu değerler **yalnız P0 sabit tek bölünmenin iç doğrulamasıdır**; resmi Matbench beşli CV benchmark skoru veya güven aralığı değildir. Bazı kaynaklarda 0 eV olarak kodlanmış metallere/çok küçük aralıklara duyarlıdır.
 - En yakın bileşimin `d² > 0.08` olduğu durumlarda model **tahmin üretmeyi reddeder**. Bu mühendislik eşiği ampirik kalibrasyon/garanti değildir. Aynı bileşim eğitimde varsa değer açıkça *eğitim kaydı* olarak etiketlenir; bağımsız tahmin sayılmaz.
 
