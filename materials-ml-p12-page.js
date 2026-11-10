@@ -71,7 +71,7 @@ export function initMaterialsMlP12(host,download){
    match.id+' · '+match.formula+' · d²='+number(match.distance)+
    ' · '+number(match.bond)+' Å · CN '+number(match.coord)));
   details.append(list);result.append(details);
-  result.append(el('p',t('Deneysel prototip: 170 CIF'in yalnız 133'ü model referansıdır. Dış TiO₂ polimorf kontrolü daha iyi sonuç vermedi. Varsayılan P1 yerine geçmez.',
+  result.append(el('p',t('Deneysel prototip: 170 CIF yapısının yalnız 133 tanesi model referansıdır. Dış TiO₂ polimorf kontrolü daha iyi sonuç vermedi. Varsayılan P1 yerine geçmez.',
    'Research prototype: only 133 of 170 CIFs are used as model references. The external TiO₂ polymorph test did not improve. Does not replace default P1.'),'materials-ml-caution'));
  }
  run.addEventListener('click',async()=>{
