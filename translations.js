@@ -7,6 +7,26 @@
 (() => {
  'use strict';
  const entries=[
+  // Materials workspace tabs, model sub-tabs and evidence navigation.
+  ["Kristal Yapı / Malzeme Ar-Ge","Crystal Structure / Materials R&D"],
+  ["Malzeme araştırma araçları","Materials research workspace"],
+  ["Yapı karşılaştırması, ML tahminleri, kaynak kanıtları ve 3B DFT hazırlığına aşağıdaki sekmelerden erişin.","Use the tabs below for structure comparison, ML predictions, provenance evidence and 3D DFT preparation."],
+  ["Malzemeler bölüm sekmeleri","Materials workspace tabs"],
+  ["Yapı Kartları","Structure Cards"],
+  ["Karşılaştırma","Comparison"],
+  ["Kaynak ve Kanıtlar","Sources & Evidence"],
+  ["3B DFT Hazırlığı","3D DFT Preparation"],
+  ["Kaynak ve dosya kanıtları","Provenance and file evidence"],
+  ["Yerel SHA-256","Local SHA-256"],
+  ["Önce Yapı Kartları sekmesinden bir kristal ekleyin. Burada kaynak dosyalarını seçili karta ilişkilendirebilir veya daha önce dışa aktarılmış kanıt JSON'unu doğrulayabilirsiniz.","First add a crystal in Structure Cards. Here you can attach source files to the selected card or verify a previously exported evidence JSON."],
+  ["Yerel ML · P0 / P1 / P1.2","Local ML · P0 / P1 / P1.2"],
+  ["ML tahmin modelleri","ML prediction models"],
+  ["P0 · Deneysel","P0 · Experimental"],
+  ["P1 · Yapısal","P1 · Structural"],
+  ["P1.2 · Polimorflar","P1.2 · Polymorphs"],
+  ["P0 · Deneysel bant aralığı","P0 · Experimental band gap"],
+  ["Matbench · kNN","Matbench · kNN"],
+
   // Materials P1.2: phase-group independent supervised JARVIS regression.
   ["P1.2 · Bağ ve koordinasyonla eğitilmiş ML","P1.2 · Bond/coordination-trained ML"],
   ["JARVIS · Polimorf testi","JARVIS · Polymorph holdout"],
