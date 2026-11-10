@@ -341,6 +341,9 @@ try{
  assert.equal(await setupTab.getAttribute('aria-selected'),'true');
  assert.equal(await page.locator('.dft-tabs').getAttribute('role'),'tablist');
  await setupTab.focus();await page.keyboard.press('ArrowRight');
+ await page.waitForFunction(()=>!document.getElementById('dft-tarayici').hidden);
+ assert.equal(await page.locator('[data-dft-section="tarayici"]').evaluate(el=>el===document.activeElement),true);
+ await page.keyboard.press('ArrowRight'); // skips the locked Jobs tab
  await page.waitForFunction(()=>!document.getElementById('dft-sonuclar').hidden);
  assert.equal(await page.locator('[data-dft-section="sonuclar"]').evaluate(el=>el===document.activeElement),true);
  // Translatable file pickers, fixed-size chart labels and no Turkish left in English mode.
