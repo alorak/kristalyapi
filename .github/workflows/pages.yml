@@ -256,6 +256,7 @@ jobs:
           cp materials-ml-p1-page.js public/materials-ml-p1-page.js
           cp materials-ml-p12-core.js public/materials-ml-p12-core.js
           cp materials-ml-p12-page.js public/materials-ml-p12-page.js
+          cp materials-ml-p12-worker.js public/materials-ml-p12-worker.js
           cp models/jarvis-polymorph-p12-source.json public/models/jarvis-polymorph-p12-source.json
           cp models/zebra-structural-p1.json public/models/zebra-structural-p1.json
           cp models/matbench-expt-gap-knn-p0.json public/models/matbench-expt-gap-knn-p0.json
@@ -304,6 +305,7 @@ jobs:
           test -s public/materials-ml-p1-page.js
           test -s public/materials-ml-p12-core.js
           test -s public/materials-ml-p12-page.js
+          test -s public/materials-ml-p12-worker.js
           test -s public/models/jarvis-polymorph-p12-source.json
           test -s public/models/zebra-structural-p1.json
           test -s public/models/matbench-expt-gap-knn-p0.json
