@@ -48,7 +48,10 @@ export function initMaterialsMl(host,download){
   result.append(make('p',
    t('Matbench iç doğrulama: ','Matbench internal holdout: ')+model.validation.samples+
    ' '+t('örnek · MAE ','samples · MAE ')+format(model.validation.maeEV)+
-   ' eV. '+t('Bu değer bir güven aralığı değildir.','This is not a confidence interval.'),
+   ' eV. '+t('Tahmin kabul edilen alt küme: ','Subset admitted for predictions: ')+
+   model.validation.acceptedSamples+'/'+model.validation.samples+
+   ' · '+t('alt küme MAE ','subset MAE ')+format(model.validation.acceptedMaeEV)+
+   ' eV. '+t('Bunlar güven aralığı değildir.','These are not confidence intervals.'),
    'materials-ml-detail'));
   const details=document.createElement('details'),summary=make('summary',t('En yakın eğitim bileşimleri','Nearest training compositions'));
   details.append(summary);
