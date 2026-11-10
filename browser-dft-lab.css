@@ -44,7 +44,7 @@
 .mp-electronic-import input[type=file]{max-width:100%;font-size:12px}
 .mp-spectrum-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
 .mp-spectrum-controls label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
-.mp-spectrum-controls select,.mp-electronic-plot select{font-size:12px;line-height:1.35;padding:6px 8px;max-width:100%;border:1px solid #b9cddd;border-radius:6px;background:var(--surface,#fff);color:inherit}
+.mp-spectrum-controls select,.mp-electronic-plot select{font-size:12px;line-height:1.35;padding:6px 8px;max-width:100%;border:1px solid #b9cddd;border-radius:6px;background:#11243a;color:#e5edf9}
 .mp-spectrum-controls small{flex:1 1 220px}
 .mp-electronic-plots{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:12px 0}
 .mp-electronic-spin-row{display:grid;grid-template-columns:minmax(0,1.48fr) minmax(0,1fr);gap:12px;min-width:0;align-items:start}
