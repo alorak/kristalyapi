@@ -7,6 +7,17 @@
 (() => {
  'use strict';
  const entries=[
+  // P1.3 validation audit interface.
+  ["Yerel ML · P0 / P1 / P1.2 / P1.3","Local ML · P0 / P1 / P1.2 / P1.3"],
+  ["P1.3 · Doğrulama","P1.3 · Validation"],
+  ["P1.3 · Veri kalitesi ve faz-gruplu doğrulama","P1.3 · Data quality and phase-group validation"],
+  ["JARVIS · Denetim","JARVIS · Audit"],
+  ["P1.2 ile aynı JARVIS OptB88vdW veri kümesi. Ret nedenlerini, formül/uzay grubu çeşitliliğini ve dört fold üzerinde bağımsız fold-içi parametre seçimiyle bağ+koordinasyon modelinin temel modele göre hatasını ölçer. Bu aşamada ek veri veya yeni bir DFT hesabı yoktur.","Uses the same JARVIS OptB88vdW dataset as P1.2. Audits rejected records, composition/space-group diversity, and the bond-plus-coordination model against its baseline over four folds with independent inner-fold tuning. No extra data or new DFT calculations are added."],
+  ["P1.3 · Doğrulama denetimini çalıştır","P1.3 · Run validation audit"],
+  ["P1.3 rapor JSON","P1.3 report JSON"],
+  ["Rapor henüz hesaplanmadı; kullanıcı isteğiyle Worker'da çalışır.","Report not yet computed; runs in a Worker only on request."],
+  ["Dört katlı faz-gruplu çapraz doğrulama dış bağımsız test değildir; yapı kaydı farklı foldlarda yinelenebilir. Benzer tanımlayıcılar kristal eşdeğerliği kanıtı değildir. Bootstrap aralığı da tahmin güven aralığı değildir.","Four-fold phase-group cross-validation is not an independent external test; structures may recur across folds. Similar descriptors do not prove crystallographic equivalence. The bootstrap interval is not a predictive confidence interval."],
+  ["P1.3 yöntem belgesi","P1.3 methodology"],
   // Materials workspace tabs, model sub-tabs and evidence navigation.
   ["Kristal Yapı / Malzeme Ar-Ge","Crystal Structure / Materials R&D"],
   ["Malzeme araştırma araçları","Materials research workspace"],
