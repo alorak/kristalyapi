@@ -11,11 +11,11 @@ const sw=read('sw.js');
 const html=read('index.html');
 const editor=read('crystal-app.js');
 const semiconductor=read('semiconductor-p0.js');
-const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','gansu-geometry-scan.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','materials-tabs.js','materials-ml-core.js','materials-ml-page.js','materials-ml-p1-core.js','materials-ml-p1-page.js','materials-ml-p12-core.js','materials-ml-p12-page.js','materials-ml-p12-worker.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
+const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','gansu-geometry-scan.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','materials-tabs.js','materials-ml-core.js','materials-ml-page.js','materials-ml-p1-core.js','materials-ml-p1-page.js','materials-ml-p12-core.js','materials-ml-p12-page.js','materials-ml-p12-worker.js','materials-ml-p13-core.js','materials-ml-p13-page.js','materials-ml-p13-worker.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
 
 test('Materials section and ML sub-tabs preserve all controls and ship offline',()=>{
  const mainIds=['Cards','Compare','Ml','Evidence','Bulk'];
- const mlIds=['P0','P1','P12'];
+ const mlIds=['P0','P1','P12','P13'];
  for(const id of mainIds){
   const tab='materialsTab'+id,panel='materialsPanel'+id;
   assert.match(html,new RegExp('id="'+tab+'"[^>]*role="tab"[^>]*aria-controls="'+panel+'"'));
@@ -28,7 +28,7 @@ test('Materials section and ML sub-tabs preserve all controls and ship offline',
   assert.match(html,new RegExp('id="'+panel+'"[^>]*role="tabpanel"[^>]*aria-labelledby="'+tab+'"'));
  }
  for(const control of ['materialsAdd','materialsCards','materialsComparison','materialsMlRun',
-  'materialsMlP1Run','materialsMlP12Run','materialsEvidenceChoose','materialsBulkPrepare'])
+  'materialsMlP1Run','materialsMlP12Run','materialsMlP13Run','materialsEvidenceChoose','materialsBulkPrepare'])
   assert.equal(html.split('id="'+control+'"').length-1,1,control+' must remain present');
  assert.match(read('materials-page.js'),/initMaterialsTabs/);
  assert.ok(sw.includes("'./materials-tabs.js'"),'tab controller must be cached offline');
@@ -133,7 +133,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-gansu-p04'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-gansu-p04-ml-p13'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });

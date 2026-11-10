@@ -7,6 +7,17 @@
 (() => {
  'use strict';
  const entries=[
+  // P1.3 validation audit interface.
+  ["Yerel ML · P0 / P1 / P1.2 / P1.3","Local ML · P0 / P1 / P1.2 / P1.3"],
+  ["P1.3 · Doğrulama","P1.3 · Validation"],
+  ["P1.3 · Veri kalitesi ve faz-gruplu doğrulama","P1.3 · Data quality and phase-group validation"],
+  ["JARVIS · Denetim","JARVIS · Audit"],
+  ["P1.2 ile aynı JARVIS OptB88vdW veri kümesi. Ret nedenlerini, formül/uzay grubu çeşitliliğini ve dört fold üzerinde bağımsız fold-içi parametre seçimiyle bağ+koordinasyon modelinin temel modele göre hatasını ölçer. Bu aşamada ek veri veya yeni bir DFT hesabı yoktur.","Uses the same JARVIS OptB88vdW dataset as P1.2. Audits rejected records, composition/space-group diversity, and the bond-plus-coordination model against its baseline over four folds with independent inner-fold tuning. No extra data or new DFT calculations are added."],
+  ["P1.3 · Doğrulama denetimini çalıştır","P1.3 · Run validation audit"],
+  ["P1.3 rapor JSON","P1.3 report JSON"],
+  ["Rapor henüz hesaplanmadı; kullanıcı isteğiyle Worker'da çalışır.","Report not yet computed; runs in a Worker only on request."],
+  ["Dört katlı faz-gruplu çapraz doğrulama dış bağımsız test değildir; yapı kaydı farklı foldlarda yinelenebilir. Benzer tanımlayıcılar kristal eşdeğerliği kanıtı değildir. Bootstrap aralığı da tahmin güven aralığı değildir.","Four-fold phase-group cross-validation is not an independent external test; structures may recur across folds. Similar descriptors do not prove crystallographic equivalence. The bootstrap interval is not a predictive confidence interval."],
+  ["P1.3 yöntem belgesi","P1.3 methodology"],
   // P0.4 real WASM energy-geometry scan controls.
   ["P0.4 · Gerçek WASM DFT enerji–geometri taraması","P0.4 · Real WASM DFT energy–geometry scan"],
   ["Yukarıdaki H₂, H₂O veya SiH₄ XYZ geometrisi için sabit bağ açılarıyla simetrik bağ taraması. Her nokta ayrı SCF hesabıdır; interpolasyon veya önceden kaydedilmiş enerji kullanılmaz.","Symmetric bond-length scan for the H₂, H₂O or SiH₄ XYZ geometry above, with fixed bond angles. Each point is an independent SCF calculation, with no interpolation or stored energies."],

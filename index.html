@@ -1460,11 +1460,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Bu kartlar yalnız mevcut yapı verilerinin anlık kopyasıdır; otomatik COD doğrulaması, XRD faz tayini, DFT sonucu, mekanik veya RF malzeme özelliği içermez. Kaynak bağlantısı elle girilir; yapıyla eşleşmesi doğrulanmaz.</p>
   </section>
   <section id="materialsPanelMl" class="lesson-panel materials-ml-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabMl" tabindex="0" hidden>
-   <div class="lesson-panel-head"><h3>ML Tahminleri</h3><span class="lesson-pill">Yerel ML · P0 / P1 / P1.2</span></div>
+   <div class="lesson-panel-head"><h3>ML Tahminleri</h3><span class="lesson-pill">Yerel ML · P0 / P1 / P1.2 / P1.3</span></div>
    <nav id="materialsMlTabs" class="materials-ml-tabs" role="tablist" aria-label="ML tahmin modelleri">
     <button type="button" id="materialsMlTabP0" role="tab" aria-controls="materialsMlPaneP0" aria-selected="true" tabindex="0">P0 · Deneysel</button>
     <button type="button" id="materialsMlTabP1" role="tab" aria-controls="materialsMlPaneP1" aria-selected="false" tabindex="-1">P1 · Yapısal</button>
     <button type="button" id="materialsMlTabP12" role="tab" aria-controls="materialsMlPaneP12" aria-selected="false" tabindex="-1">P1.2 · Polimorflar</button>
+    <button type="button" id="materialsMlTabP13" role="tab" aria-controls="materialsMlPaneP13" aria-selected="false" tabindex="-1">P1.3 · Doğrulama</button>
    </nav>
    <div id="materialsMlPaneP0" class="materials-ml-pane" role="tabpanel" aria-labelledby="materialsMlTabP0" tabindex="0">
     <div class="lesson-panel-head"><h4>P0 · Deneysel bant aralığı</h4><span class="lesson-pill">Matbench · kNN</span></div>
@@ -1504,6 +1505,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <p class="materials-caution">P1.2 araştırma prototipi: aynı formülde farklı uzay grubu, farklı faz için bir vekil ölçüttür; bağımsız faz karakterizasyonu veya güven aralığı değildir. Kaynak:
      <a href="https://doi.org/10.6084/m9.figshare.6815699" target="_blank" rel="noopener noreferrer">JARVIS-DFT (CC BY 4.0)</a>.
      <a href="https://github.com/alorak/kristalyapi/blob/main/docs/materials-ml-p12.md" target="_blank" rel="noopener noreferrer">Yöntem dokümanı</a>.</p>
+   </div>
+   <div id="materialsMlPaneP13" class="materials-ml-pane" role="tabpanel" aria-labelledby="materialsMlTabP13" tabindex="0" hidden>
+    <div class="lesson-panel-head"><h4>P1.3 · Veri kalitesi ve faz-gruplu doğrulama</h4><span class="lesson-pill">JARVIS · Denetim</span></div>
+    <p class="hint">P1.2 ile aynı JARVIS OptB88vdW veri kümesi. Ret nedenlerini, formül/uzay grubu çeşitliliğini ve dört fold üzerinde bağımsız fold-içi parametre seçimiyle bağ+koordinasyon modelinin temel modele göre hatasını ölçer. Bu aşamada ek veri veya yeni bir DFT hesabı yoktur.</p>
+    <div class="actionrow materials-actions">
+     <button id="materialsMlP13Run" type="button">P1.3 · Doğrulama denetimini çalıştır</button>
+     <button id="materialsMlP13Export" type="button" disabled>P1.3 rapor JSON</button>
+    </div>
+    <p id="materialsMlP13Status" class="note" role="status" aria-live="polite">Rapor henüz hesaplanmadı; kullanıcı isteğiyle Worker'da çalışır.</p>
+    <div id="materialsMlP13Result" class="materials-ml-result" aria-live="polite"></div>
+    <p class="materials-caution">Dört katlı faz-gruplu çapraz doğrulama dış bağımsız test değildir; yapı kaydı farklı foldlarda yinelenebilir. Benzer tanımlayıcılar kristal eşdeğerliği kanıtı değildir. Bootstrap aralığı da tahmin güven aralığı değildir.
+     <a href="https://github.com/alorak/kristalyapi/blob/main/docs/materials-ml-p13.md" target="_blank" rel="noopener noreferrer">P1.3 yöntem belgesi</a>.</p>
    </div>
   </section>
   <section id="materialsPanelEvidence" class="lesson-panel materials-tab-panel" role="tabpanel" aria-labelledby="materialsTabEvidence" tabindex="0" hidden>
