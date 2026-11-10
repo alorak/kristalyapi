@@ -11,8 +11,21 @@ const sw=read('sw.js');
 const html=read('index.html');
 const editor=read('crystal-app.js');
 const semiconductor=read('semiconductor-p0.js');
-const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','materials-ml-core.js','materials-ml-page.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
+const modules=['layered-2d-figure.js','layered-2d-page.js','layered-2d-cif.js','layered-2d-export.js','dft-ui.js','browser-dft-lab.js','gansu-local-engine.js','browser-tb-core.js','browser-dft-lab.css','vesta-project-style.js','vesta-project-view.js','vesta-project-scientific.js','vesta-project-export.js','cif2-lex.js','cif2-symmetry.js','cif2-document.js','export-graphics.js','export-glyphs.js','element-data.js','view-settings.js','geometry-table.js','structure-export.js','scene-controls.js','setting-transform.js','phase-alignment.js','volume-analysis.js','sigmaa.js','qe-protocol-templates.js','qe-hpc-export.js','qe-hpc-pipeline.js','qe-truba-pipeline-view.js','qe-truba-summary-view.js','qe-electronic-setup.js','qe-job-tracking.js','dft-workspace.css','semiconductor-p0.js','semiconductor-physics-p0-core.js','semiconductor-p0.css','mos2-defect-study-core.js','qe-electronic-view.js','qe-convergence-view.js','qe-job-diagnostics-view.js','qe-defect-compare-view.js','qe-api-client.js','qe-relax-view.js','material-cards-core.js','material-evidence-core.js','bulk-study-preparation.js','materials-page.js','materials-ml-core.js','materials-ml-page.js','materials-ml-p1-core.js','materials-ml-p1-page.js','xrd-acquisition-core.js','xrd-peak-match-core.js'];
 
+test('P1 ZEBRA structure model is packaged and separated from the P0 experimental target',()=>{
+ const model=JSON.parse(read('models/zebra-structural-p1.json'));
+ assert.equal(model.schema,'kristalyapi.zebra-structural-knn.v1');
+ assert.equal(model.license,'CC-BY-4.0');
+ assert.equal(model.meta.train,model.rows.length);
+ assert.equal(model.meta.test,443);
+ for(const file of ['models/zebra-structural-p1.json','materials-ml-p1-core.js','materials-ml-p1-page.js']){
+  assert.ok(sw.includes("'./"+file+"'"),file+' must be available offline');
+  assert.ok(pages.includes('cp '+file+' public/'+file),file+' must be shipped');
+ }
+ for(const id of ['materialsMlP1Run','materialsMlP1Export','materialsMlP1Status','materialsMlP1Result'])
+  assert.ok(html.includes('id="'+id+'"'),id+' missing from Materials');
+});
 test('P0 ML baseline is packaged offline, named and explicitly scoped',()=>{
  const model=JSON.parse(read('models/matbench-expt-gap-knn-p0.json'));
  assert.equal(model.schema,'kristalyapi.materials-ml-knn.v1');
@@ -85,7 +98,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-materials-ml-p0'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-materials-ml-p1'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });
