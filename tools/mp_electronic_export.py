@@ -52,6 +52,39 @@ def spins(data, start=0, count=None):
     return out
 
 
+
+def projected_dos(dos, length):
+    """Read *actual* pymatgen CompleteDos element/orbital projections if present.
+
+    Not every MP DOS object contains site projections. Missing projections are
+    represented as an empty list, never reconstructed from total DOS.
+    """
+    structure = getattr(dos, "structure", None)
+    if structure is None or not hasattr(dos, "get_element_spd_dos"):
+        return []
+    composition = getattr(structure, "composition", None)
+    if composition is None:
+        return []
+    elements = sorted(composition.elements, key=lambda el: str(el.symbol))
+    entries = []
+    for element in elements:
+        by_orbital = dos.get_element_spd_dos(element)
+        for key, partial in sorted(by_orbital.items(), key=lambda item: str(item[0])):
+            orbital = str(getattr(key, "name", key)).lower()
+            if orbital not in ("s", "p", "d", "f"):
+                continue
+            channels = spins(partial.densities)
+            if set(channels) != set(spins(dos.densities)):
+                raise ValueError("Projected spin channels differ from total DOS")
+            if any(len(values) != length for values in channels.values()):
+                raise ValueError("Projected DOS grid length differs from total DOS")
+            entries.append({"element": str(element.symbol), "orbital": orbital,
+                            "spins": channels})
+            if len(entries) > 16:
+                raise ValueError("More than 16 element/orbital PDOS groups; export total DOS only")
+    return entries
+
+
 def task_id(value):
     if value is None:
         return None
@@ -123,8 +156,15 @@ def export_data(mpr, mid, first, count):
             "energy_ev": vector(dos.energies, "DOS energy", 20000),
             "spins": spins(dos.densities),
         }
-        if len(next(iter(result["dos"]["spins"].values()))) != len(result["dos"]["energy_ev"]):
+        if any(len(values) != len(result["dos"]["energy_ev"])
+               for values in result["dos"]["spins"].values()):
             raise ValueError("DOS energy/density lengths disagree")
+        # A projection error must not invalidate a valid total-DOS export.
+        try:
+            result["dos"]["pdos"] = projected_dos(dos, len(result["dos"]["energy_ev"]))
+        except (AttributeError, TypeError, ValueError) as exc:
+            result["dos"]["pdos"] = []
+            failures.append("PDOS unavailable: " + str(exc))
     except Exception as exc:
         result["dos"] = None
         failures.append("DOS: " + str(exc))
