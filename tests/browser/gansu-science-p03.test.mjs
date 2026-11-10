@@ -2,6 +2,7 @@
 // For each preregistered molecule, triggers the actual KristalYapı UI and
 // saves JSON exported by the app (no injected/mock SCF energies).
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {chromium} from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs/promises';
@@ -76,7 +77,7 @@ try{
   assert.ok(Math.abs(sumCharges-c.charge)<0.12,'Mulliken charge sum unexpectedly large: '+sumCharges);
   if(c.id.startsWith('sih4'))assert.ok(saved.result.energyHartree< -200&&saved.result.energyHartree> -400,
    'Silane energy is implausible in Hartree: '+saved.result.energyHartree);
-  runs[c.id]=saved.result;
+  runs[c.id]={...saved.result,xyzSha256:createHash('sha256').update(c.xyz).digest('hex')};
   process.stdout.write(c.id+': GANSU '+saved.result.energyHartree.toFixed(9)+
    ' Ha · '+saved.result.iterations+' iterations · '+((Date.now()-t0)/1000).toFixed(1)+' sec\n');
  }
