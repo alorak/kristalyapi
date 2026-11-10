@@ -83,6 +83,28 @@ try{
  assert.match(await page.locator('#mpResults').textContent(),/mp-149/);
  await page.locator('#mpResults input[type=checkbox]').check();
  assert.ok(await page.locator('#mpCompare table tbody tr').count()>=8);
+ // Actual MP export format, but SYNTHETIC numerical fixture. Never claim a live MP download.
+ const sample={schema:'kristalyapi.mp-electronic.v1',provider:'Materials Project',
+  material_id:'mp-149',retrieved_at:'2026-11-10T12:00:00Z',mp_api_version:'test',
+  path_type:'setyawan_curtarolo',provenance:{band_task_id:null,dos_task_id:null},
+  band:{efermi_ev:5,distance_inv_angstrom:[0,.5,1],labels:[{index:0,label:'Γ'},{index:2,label:'X'}],
+   first_band:1,total_bands:2,spins:{up:[[4,4.5,5],[6,6.5,7]]}},
+  dos:{efermi_ev:5.1,energy_ev:[4.1,5.1,6.1],spins:{up:[0,1,2]}}};
+ const [chooser]=await Promise.all([
+  page.waitForEvent('filechooser'),page.locator('#mpResults button').nth(2).click()
+ ]);
+ await chooser.setFiles({name:'mp-149-electronic.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify(sample))});
+ await page.waitForFunction(()=>document.querySelectorAll('#mpElectronicPreview svg').length===2);
+ assert.match(await page.locator('#mpElectronicStatus').textContent(),/mp-149/);
+ assert.equal(await page.locator('#mpElectronicPreview svg').count(),2);
+ await page.locator('#dftNav').click();
+ await page.locator('#dft-tab-tarayici').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#browserMpReferencePlots svg').length===2);
+ assert.equal(await page.locator('#browserMpReferencePlots svg').count(),2);
+ assert.match(await page.locator('#browserMpReferencePlots').textContent(),/mp-149/);
+ await page.locator('#libraryNav').click();
+ await page.locator('#libMpTab').click();
  await page.locator('#mpResults button').nth(1).click();
  await page.waitForFunction(()=>window.location.hash==='#toz-kirinimi',{timeout:30000});
  assert.ok(requests.length>=2,'summary and structure requests required');
