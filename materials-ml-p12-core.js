@@ -3,7 +3,7 @@
  * JARVIS OptB88vdW labels are not interchangeable with P0 experiment or P1 ZEBRA targets.
  */
 import {structureDescriptorsP1} from './materials-ml-p1-core.js';
-import {squaredCompositionDistance} from './materials-ml-core.js';
+import {squaredCompositionDistance,parseCompositionFormula} from './materials-ml-core.js';
 
 const SOURCE_SCHEMA='kristalyapi.jarvis-polymorph-source.p12.v1';
 export const MODEL_ID='jarvis-p12-composition-bond-coordination-knn';
@@ -46,8 +46,10 @@ export function preparePolymorphCorpus(source){
    const x=decodeRow(raw),d=structureDescriptorsP1(x.structure);
    if(d.meanClosestBondA<0.45||d.meanClosestBondA>8||
       d.meanCoordination<1||d.meanCoordination>36)throw Error('Geçersiz komşuluk.');
-   // Cross-check the original formula by normalized stoichiometry, not the user's CIF name.
-   // All P1 source sites are fully occupied; formula-only aliases may differ in reduction.
+   // Reject a provenance mismatch between provider formula and actual atoms.
+   const formulaFractions=parseCompositionFormula(x.formula);
+   if(squaredCompositionDistance(d.fractions,formulaFractions)>1e-7)
+    throw Error('JARVIS formül ve atom konumları eşleşmiyor.');
    rows.push({id:x.id,formula:x.formula,sg:x.sg,
     targetGapEV:x.gapEV,targetFormationEVPerAtom:x.formationEVPerAtom,
     fractions:d.fractions,vpa:d.volumePerAtomA3,
@@ -137,9 +139,19 @@ function measure(rows,train,target,params){
    a+arr.reduce((x,y)=>x+y,0)/arr.length,0)/perGroup.size),
   sampleRows:list};
 }
+export function geometricallyDistinctPolymorphs(test,training){
+ // More conservative secondary cohort: reject SG-separated rows if a same-formula
+ // training row is also near-identical in V/atom, mean shortest bond and CN.
+ // Still a descriptor-based proxy, NOT full structural equivalence matching.
+ return test.filter(x=>!training.some(y=>y.formula===x.formula&&
+   Math.abs(Math.log(x.vpa/y.vpa))<0.02&&
+   Math.abs(Math.log(x.bond/y.bond))<0.02&&
+   Math.abs(x.coord-y.coord)<0.3));
+}
 export function trainPolymorphModel(source){
  const corpus=preparePolymorphCorpus(source),split=splitPolymorphCorpus(corpus.rows);
  const trained=[...split.train,...split.validation];
+ const distinctTest=geometricallyDistinctPolymorphs(split.test,trained);
  const targetNames=['targetGapEV','targetFormationEVPerAtom'];
  const comparisons={};
  for(const target of targetNames){
@@ -149,7 +161,11 @@ export function trainPolymorphModel(source){
   comparisons[target]={
    selected,validation:measure(split.validation,split.train,target,selected),
    heldout:measure(split.test,trained,target,selected),
-   baseline:measure(split.test,trained,target,{bond:0,coord:0})
+   baseline:measure(split.test,trained,target,{bond:0,coord:0}),
+   distinctGeometryHoldout:distinctTest.length?
+    measure(distinctTest,trained,target,selected):null,
+   distinctGeometryBaseline:distinctTest.length?
+    measure(distinctTest,trained,target,{bond:0,coord:0}):null
   };
  }
  return {
@@ -158,6 +174,7 @@ export function trainPolymorphModel(source){
   counts:{original:source.totalOriginal,sourceRecords:source.records.length,
    accepted:corpus.rows.length,rejected:corpus.rejected.length,
    train:split.train.length,validation:split.validation.length,test:split.test.length,
+   structurallyDistinctTest:distinctTest.length,
    ...split.groups,formulas:split.formulas},
   exclusionReasons:corpus.rejected,
   weights:comparisons,
