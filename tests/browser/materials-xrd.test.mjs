@@ -28,6 +28,13 @@ try{
  await page.waitForFunction(()=>document.getElementById('renderStatus')?.textContent?.startsWith('WebGL'),null,{timeout:45000});
  await page.locator('#materialsNav').click();
  await page.waitForFunction(()=>!document.getElementById('materialsPage').hidden);
+ await page.locator('#materialsMlP12Run').click();
+ await page.waitForFunction(()=>{
+  const x=document.getElementById('materialsMlP12Status')?.textContent||'';
+  return x.includes('completed')||x.includes('tamamlandı')||x.includes('failed')||x.includes('çalıştırılamadı');
+ },null,{timeout:45000});
+ assert.match(await page.locator('#materialsMlP12Result').textContent(),/phase|Faz|Polimorf|bond|Bağ|MAE/);
+ assert.equal(await page.locator('#materialsMlP12Run').isDisabled(),false);
  await page.locator('#materialsMlP1Run').click();
  await page.waitForFunction(()=>{
   const v=document.getElementById('materialsMlP1Result')?.textContent||'';
