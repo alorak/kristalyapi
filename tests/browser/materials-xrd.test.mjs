@@ -35,6 +35,14 @@ try{
  },null,{timeout:45000});
  assert.match(await page.locator('#materialsMlP12Result').textContent(),/phase|Faz|Polimorf|bond|Bağ|MAE/);
  assert.equal(await page.locator('#materialsMlP12Run').isDisabled(),false);
+ assert.equal(await page.locator('#materialsTabCards').getAttribute('aria-selected'),'true');
+ await page.locator('#materialsTabCards').focus();
+ await page.keyboard.press('ArrowRight');
+ assert.equal(await page.locator('#materialsTabCompare').getAttribute('aria-selected'),'true',
+  'section tabs support keyboard navigation');
+ await page.locator('#materialsTabMl').click();
+ await page.locator('#materialsMlTabP1').click();
+ assert.equal(await page.locator('#materialsMlPaneP0').isHidden(),true);
  await page.locator('#materialsMlP1Run').click();
  await page.waitForFunction(()=>{
   const v=document.getElementById('materialsMlP1Result')?.textContent||'';
@@ -43,30 +51,48 @@ try{
  },null,{timeout:30000});
  assert.match(await page.locator('#materialsMlP1Result').textContent(),/MAE|eV\/atom/);
  assert.equal(await page.locator('#materialsMlP1Run').isDisabled(),false);
+ await page.locator('#materialsMlTabP12').click();
+ assert.equal(await page.locator('#materialsMlP12Run').isVisible(),true);
+ assert.equal(await page.locator('#materialsMlP1Run').isHidden(),true);
+ await page.locator('#materialsMlTabP0').click();
  await page.locator('#materialsMlRun').click();
  await page.waitForFunction(()=>document.getElementById('materialsMlResult')?.textContent?.includes('Matbench'),null,{timeout:30000});
  assert.match(await page.locator('#materialsMlResult').textContent(),/MAE|eV/);
  assert.equal(await page.locator('#materialsMlRun').isDisabled(),false);
+ await page.locator('#materialsTabCards').click();
  await page.locator('#materialsReference').fill('synthetic browser test');
  await page.locator('#materialsAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#materialsCards article').length===1);
  await page.locator('#materialsAdd').click();
  await page.waitForFunction(()=>document.querySelectorAll('#materialsCards article').length===2);
+ await page.locator('#materialsTabCompare').click();
  assert.ok(await page.locator('#materialsComparison table tbody tr').count()>=9);
+ assert.equal(await page.locator('#materialsComparison').isVisible(),true);
+ await page.locator('#materialsTabEvidence').click();
+ assert.equal(await page.locator('#materialsEvidenceChoose').isVisible(),true);
  await page.locator('#materialsEvidenceSource').fill('synthetic-qa-1');
  await page.locator('#materialsEvidenceFile').setInputFiles({
   name:'source.cif',mimeType:'text/plain',buffer:Buffer.from('data_test\n')
  });
  await page.waitForFunction(()=>document.getElementById('materialsEvidenceStatus')?.textContent?.includes('SHA-256'));
  assert.match(await page.locator('#materialsCards article').first().textContent(),/SHA-256/);
+ await page.locator('#materialsTabCards').click();
  const evidenceDownload=page.waitForEvent('download');
  await page.locator('#materialsExportJson').click();
  assert.equal((await evidenceDownload).suggestedFilename(),'materials-evidence.json');
+ await page.locator('#materialsTabBulk').click();
  await page.locator('#materialsBulkPrepare').click();
  assert.match(await page.locator('#materialsBulkResult').textContent(),/non-executable|slab|3B|3D/i);
+ await page.locator('#materialsTabCards').click();
  const download=page.waitForEvent('download');
  await page.locator('#materialsExportCsv').click();
  assert.equal((await download).suggestedFilename(),'materials-comparison.csv');
+ await page.setViewportSize({width:390,height:844});
+ await page.locator('#materialsTabMl').click();
+ assert.ok(await page.locator('#materialsTabs').evaluate(n=>n.scrollWidth>n.clientWidth),
+  'five section tabs must be scrollable on narrow mobile viewports');
+ assert.equal(await page.locator('#materialsMlTabP0').isVisible(),true);
+ await page.setViewportSize({width:1480,height:940});
  await page.locator('#homeLink').click();
  await page.locator('[data-right-tool="xrd"]').click();
  await page.locator('#analyzeXrd').click();
