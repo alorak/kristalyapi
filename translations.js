@@ -248,6 +248,11 @@
   ['Kesirli koordinatlar (x, y, z) her atomun altında düzenlenebilir. 3B görünümde seçilen atomlar burada vurgulanır; simetri açıksa eşdeğer görüntüler kaynak asimetrik atom satırında gösterilir.','Fractional coordinates (x, y, z) are editable below each atom. Atoms selected in the 3D view are highlighted here; with symmetry enabled, equivalent images highlight their source asymmetric-site row.'],
 
   ["Materials Project Ayarları","Materials Project Settings"],
+  ["Bağlantı ayarları","Connection settings"],
+  ["Worker bağlantısı","Worker connection"],
+  ["Gizlilik ve anahtar güvenliği","Privacy and key security"],
+  ["Entegrasyon kapalı","Integration off"],
+  ["API anahtarı kayıtlı değil.","No API key configured."],
   ["Materials Project · hesaplanmış malzemeler","Materials Project · computed materials"],
   ["Kristal yapıları ve DFT referans verilerini kişisel Materials Project API anahtarınla ara. Farklı polimorflar ayrı MP kayıtlarıdır.","Search crystal structures and DFT reference data with your personal Materials Project API key. Different polymorphs have separate MP records."],
   ["Formül / kimyasal sistem / MP kimliği","Formula / chemical system / MP ID"],

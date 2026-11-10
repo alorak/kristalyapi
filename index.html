@@ -1339,15 +1339,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    <p class="hint">Veriler Materials Project tarafından hesaplanmıştır; deneysel XRD ölçümü değildir. İçe aktarılan yapı etkin çalışma alanına yüklenir ve mevcut Toz Kırınımı / Kamera motoru tarafından kullanılır. Kaynak: <a href="https://materialsproject.org" target="_blank" rel="noopener noreferrer">Materials Project</a>.</p>
   </section>
   <section id="libMpSettingsPane" class="lib-panel mp-settings-pane" role="tabpanel" aria-labelledby="libMpSettingsTab" hidden>
-   <div class="lib-panel-head"><h3>Materials Project Ayarları</h3><p>Kişisel API anahtarınla doğrudan veya isteğe bağlı güvenilir Worker üzerinden HTTPS erişimi kullan.</p></div>
-   <label class="lib-field"><span>Materials Project API anahtarı</span><input id="mpApiKey" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="X-API-KEY"></label>
-   <label class="mp-reveal"><input id="mpKeyReveal" type="checkbox"> Girilen anahtarı göster</label>
-   <label class="mp-reveal"><input id="mpUseWorker" type="checkbox"> Materials Project sorgularını Cloudflare Worker üzerinden gönder (isteğe bağlı)</label>
-   <p class="hint" id="mpWorkerHelp">Tarayıcınız resmî API'ye doğrudan erişemiyorsa kullanın. Bu seçenek API anahtarınızı yalnızca sabit kristalyapi-cod-api.aoakkirman.workers.dev Worker'ına ve oradan Materials Project'e X-API-KEY başlığıyla gönderir. Alfabetik malzeme kimlikleri için Worker v1.4+ Cloudflare'da ayrıca yayımlanmalıdır; anahtar Worker önbelleğine kaydedilmez. Yalnızca bu Worker'a güveniyorsanız etkinleştirin.</p>
-   <div class="mp-actions"><button id="mpKeySave" type="button">Tarayıcıya kaydet</button><button id="mpKeyClear" type="button">Anahtarı sil</button></div>
-   <p id="mpKeyStatus" class="mp-status" role="status" aria-live="polite">API anahtarı girilmedi.</p>
-   <p class="hint">Gizlilik: API anahtarı bu tarayıcının localStorage alanında kalıcı tutulur; sayfa yenilense de korunur ve Anahtarı sil ile kaldırılabilir. Anahtar URL'ye, GitHub'a, çerezlere, servis çalışanı önbelleğine veya dışa aktarılan dosyalara yazılmaz. localStorage şifreli bir kasa değildir: aynı kökendeki JavaScript ve tarayıcı eklentileri anahtara erişebilir; ortak kullanılan bilgisayarlarda dikkatli olun. Doğrudan modda anahtar yalnız resmî api.materialsproject.org adresine gönderilir. Worker modu açıkken anahtar ayrıca açıklanan sabit Cloudflare Worker'a gönderilir. Her iki durumda da HTTPS ve X-API-KEY başlığı kullanılır; tarayıcı erişimi CORS izinlerine tabidir.</p>
-   <p><a href="https://materialsproject.org/api" target="_blank" rel="noopener noreferrer">Materials Project API anahtarı</a> · <a href="https://docs.materialsproject.org/downloading-data/using-the-api" target="_blank" rel="noopener noreferrer">Resmî API dokümantasyonu</a></p>
+   <div class="lib-panel-head mp-settings-header">
+    <div class="mp-settings-heading"><h3>Materials Project Ayarları</h3>
+     <p>Kişisel API anahtarınla doğrudan veya isteğe bağlı güvenilir Worker üzerinden HTTPS erişimi kullan.</p></div>
+    <div class="mp-integration-state">
+     <span id="mpIntegrationBadge" class="mp-integration-badge" data-state="inactive">Entegrasyon kapalı</span>
+     <small id="mpIntegrationDetail">API anahtarı kayıtlı değil.</small>
+    </div>
+   </div>
+   <div class="mp-settings-grid">
+    <div class="mp-settings-config">
+     <h4>Bağlantı ayarları</h4>
+     <label class="lib-field"><span>Materials Project API anahtarı</span><input id="mpApiKey" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="X-API-KEY"></label>
+     <label class="mp-reveal"><input id="mpKeyReveal" type="checkbox"> Girilen anahtarı göster</label>
+     <label class="mp-reveal"><input id="mpUseWorker" type="checkbox"> Materials Project sorgularını Cloudflare Worker üzerinden gönder (isteğe bağlı)</label>
+     <div class="mp-actions"><button id="mpKeySave" type="button">Tarayıcıya kaydet</button><button id="mpKeyClear" type="button">Anahtarı sil</button></div>
+     <p id="mpKeyStatus" class="mp-status" role="status" aria-live="polite">API anahtarı girilmedi.</p>
+    </div>
+    <div class="mp-settings-info">
+     <div class="mp-settings-info-block">
+      <h4>Worker bağlantısı</h4>
+      <p class="hint" id="mpWorkerHelp">Tarayıcınız resmî API'ye doğrudan erişemiyorsa kullanın. Bu seçenek API anahtarınızı yalnızca sabit kristalyapi-cod-api.aoakkirman.workers.dev Worker'ına ve oradan Materials Project'e X-API-KEY başlığıyla gönderir. Alfabetik malzeme kimlikleri için Worker v1.4+ Cloudflare'da ayrıca yayımlanmalıdır; anahtar Worker önbelleğine kaydedilmez. Yalnızca bu Worker'a güveniyorsanız etkinleştirin.</p>
+     </div>
+     <div class="mp-settings-info-block">
+      <h4>Gizlilik ve anahtar güvenliği</h4>
+      <p class="hint">Gizlilik: API anahtarı bu tarayıcının localStorage alanında kalıcı tutulur; sayfa yenilense de korunur ve Anahtarı sil ile kaldırılabilir. Anahtar URL'ye, GitHub'a, çerezlere, servis çalışanı önbelleğine veya dışa aktarılan dosyalara yazılmaz. localStorage şifreli bir kasa değildir: aynı kökendeki JavaScript ve tarayıcı eklentileri anahtara erişebilir; ortak kullanılan bilgisayarlarda dikkatli olun. Doğrudan modda anahtar yalnız resmî api.materialsproject.org adresine gönderilir. Worker modu açıkken anahtar ayrıca açıklanan sabit Cloudflare Worker'a gönderilir. Her iki durumda da HTTPS ve X-API-KEY başlığı kullanılır; tarayıcı erişimi CORS izinlerine tabidir.</p>
+     </div>
+     <div class="mp-settings-links"><p><a href="https://materialsproject.org/api" target="_blank" rel="noopener noreferrer">Materials Project API anahtarı</a> · <a href="https://docs.materialsproject.org/downloading-data/using-the-api" target="_blank" rel="noopener noreferrer">Resmî API dokümantasyonu</a></p></div>
+    </div>
+   </div>
   </section>
 
 
