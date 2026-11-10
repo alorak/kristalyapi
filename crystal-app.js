@@ -22,6 +22,7 @@ import {renderJobDiagnostics} from './qe-job-diagnostics-view.js';
 import {createJobPoller,renderJobProgress,renderCalculationSummary} from './qe-job-tracking.js';
 import {protocolTemplates,protocolById,protocolRequestMatches,protocolPreflightMatches} from './qe-protocol-templates.js';
 import {createDftSettings,enhanceFilePickers,initTabKeys,syncTabState} from './dft-ui.js';
+import {initBrowserDftLab} from './browser-dft-lab.js';
 import {textOutline,svgPathData,pdfPathData,postScriptPathData,visibleLineIntervals,sphereShade,SPHERE_GRADIENT,mixHex,pngWithDpi,lzwEncode,niceScaleLength,asciiText} from './export-graphics.js';
 import {crystallographicView,rotateVector,normalizedViewSettings,DEFAULT_VIEW_SETTINGS,lightDirection,depthCueFactor,contrastingInk,RADIUS_SETS,COLOR_SCHEMES,ELEMENT_DATA_SOURCE,shannonOptions,displayRadius,schemeColor,normalizedIonicChoices} from './view-settings.js';
 import {symmetryOperations,geometryTable,geometryCsv,geometryCif,formatWithSu,hydrogenBonds} from './geometry-table.js';
@@ -10940,7 +10941,7 @@ function setLibraryPane(mode){
 function isLibraryHash(hash){return hash==='#kutuphane';}
 function isReciprocalHash(hash){return hash==='#karsi-uzay'||hash==='#toz-kirinimi/karsi-uzay';}
 // Dedicated hash routes keep one mounted set of QE forms, jobs and result hosts.
-const DFT_SECTIONS=['hazirlik','isler','sonuclar','yakinsama','kusurlar','ayarlar'];
+const DFT_SECTIONS=['hazirlik','tarayici','isler','sonuclar','yakinsama','kusurlar','ayarlar'];
 let dftActiveSection=null;
 let dftConnectionState='Bağlantı kontrol edilmedi';
 // Server-backed tabs stay locked until a job-capable server answered for the current address.
@@ -11994,6 +11995,7 @@ function bind(){
  initViewPanel();initGeometryTable();initBondStylePanel();initPolyhedraTable();initClipPanel();
  initDftTracking();
  initQeProtocols();
+ initBrowserDftLab({root:$('dft-tarayici'),getStructure:()=>qeJobGeometry(false)});
  initLibrary();
  try{
   crystalLlm=initCrystalLlm({
