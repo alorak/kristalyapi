@@ -52,6 +52,8 @@ Tarayıcıda çalışan, **VESTA'dan esinlenen kristal yapı görüntüleyicisi 
 
 ## P0 — Malzeme veri kartları ve XRD ölçüm–referans eşleştirmesi
 
+**P1.2 Eğitilmiş Bağ + Koordinasyon (Malzemeler):** Gerçek periyodik CIF'lerden çıkarılmış ortalama en yakın bağ mesafesi ve koordinasyon sayısı, P1.2 kNN modeline *eğitilmiş ağırlıklarla* dahil edildi. 170 gerçek ZEBRA yapısı, 133 paketli eğitim/doğrulama ve 37 ayrılmış test üzerinde küçük kazanımlar; ancak **bağımsız 8 TiO₂ polimorfu sıralamasında kötüleşme** kaydedildi. Bu yüzden P1.2 ayrı ve "araştırma" etiketlidir, P1'in yerine geçmez. [Açık bilimsel sonuçlar ve tekrar üretilebilirlik](docs/materials-ml-p12.md).
+
 **P1 Yapısal ML Tahminleri (Malzemeler):** ZEBRA verisindeki 1.759 eğitim/doğrulama bileşimi ve 443 bağımsız test ile hibrit-DFT **doğrudan bant aralığı** (test MAE 0,843 eV) ve DFT **oluşum enerjisi** (test MAE 0,180 eV/atom) için ikinci bir kNN modeli eklendi. Bileşim + atom başına hacim öğrenilmiş girdidir; PBC komşulukları ve bağ mesafeleri ayrıca hesaplanır ancak henüz eğitilmiş model girdisi değildir. Çoklu polimorf doğrulaması eksiktir. [P1 teknik ve bilimsel rapor](docs/materials-ml-p1.md).
 
 **P0 ML Tahminleri (Malzemeler):** Etkin CIF/P1 kristalinin yalnız bileşimini kullanarak, yerel Matbench deneysel bant aralığı verileri üzerinde 5-komşulu kNN başlangıç kestirimi çalıştırır. 3.696 eğitim ve 905 ayrılmış test bileşimiyle iç MAE 0,490 eV'dur; güven aralığı değildir. Eğitim alanı dışındaki ve kısmi doluluklu girdiler reddedilir. Oluşum enerjisi, geometrik GNN veya QE/DFT tahmini yapılmaz. [Kapsam ve testler](docs/materials-ml-p0.md).
