@@ -1,6 +1,7 @@
 import {GRAPHENE_DEMO,grapheneGeometry,grapheneBands,grapheneDos} from './browser-tb-core.js';
 import {runGansuDft,validateGansuRequest,GANSU_UPSTREAM_COMMIT} from './gansu-local-engine.js';
 import {geometryScanPlan,runGansuGeometryScan,SCAN_DEFAULTS} from './gansu-geometry-scan.js';
+import {initBrowserMpReference} from './mp-electronic-page.js';
 
 // No automatic requests and no code fetched from a third-party origin.
 // GANSU Lite runs on its own origin: this is an explicit finite-XYZ handoff,
@@ -327,6 +328,6 @@ export function initBrowserDftLab({root,getStructure}){
   saveCsv('graphene-tb-dos.csv','# model: graphene pz TB, states/(eV cell spin), not DFT\n# source: '+sourceLabel+'\n'+
    csv([['energy_eV','states_per_eV_cell_spin'],...dos.points.map(p=>[p.energy,p.density])]));
  };
- xyzRefresh();calculate();
+ xyzRefresh();calculate();initBrowserMpReference(root);
  return {recalculate:calculate};
 }

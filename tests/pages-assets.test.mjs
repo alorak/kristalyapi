@@ -145,7 +145,7 @@ test('P0 module graph is staged to Pages and pre-cached for offline use',()=>{
 });
 
 test('service-worker cache name changes when offline module graph changes',()=>{
- assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-10-powder-indexing-p11-p12'/);
+ assert.match(sw,/CACHE_NAME=CACHE_PREFIX\+'2026-11-11-mp-electronic-graphics-p11'/);
  assert.match(sw,/await cache\.addAll\(APP_URLS\)/);
  assert.match(sw,/await self\.skipWaiting\?\.\(\)/);
 });

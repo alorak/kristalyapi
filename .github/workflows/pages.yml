@@ -31,11 +31,13 @@ jobs:
         with:
           node-version: '22'
       - name: Run native regression tests
-        run: node --test tests/qe-hpc-export.test.mjs tests/qe-hpc-pipeline.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/layered-2d-figure.test.mjs tests/layered-2d-cif.test.mjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/powder-indexing.test.mjs tests/powder-auto-index.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/vesta-project-style.test.mjs tests/vesta-project-view.test.mjs tests/vesta-project-scientific.test.mjs tests/vesta-project-export.test.mjs tests/cif2-v18-1.test.mjs tests/cif2-v18-2.test.mjs tests/pages-assets.test.mjs tests/materials-ml.test.mjs tests/materials-ml-p1.test.mjs tests/materials-ml-p12.test.mjs tests/materials-ml-p13.test.mjs tests/gansu-geometry-scan.test.mjs tests/materials-tabs.test.mjs tests/materials-p0.test.mjs tests/materials-project.test.mjs tests/mp-settings-layout.test.mjs tests/llm-crystal.test.mjs tests/atoms-sidebar.test.mjs tests/material-evidence-p1.test.mjs tests/xrd-acquisition-p1.test.mjs tests/bulk-study-p1.test.mjs tests/xrd-peak-match.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
+        run: node --test tests/qe-hpc-export.test.mjs tests/qe-hpc-pipeline.test.mjs tests/qe-truba-summary-view.test.mjs tests/qe-job-diagnostics-view.test.mjs tests/qe-convergence-view.test.mjs tests/qe-defect-preparation.test.mjs tests/qe-relax-view.test.mjs tests/core.test.cjs tests/layered-2d-figure.test.mjs tests/layered-2d-cif.test.mjs tests/volume-worker.test.cjs tests/offline.test.mjs tests/worker.test.mjs tests/reciprocal.test.mjs tests/powder-indexing.test.mjs tests/powder-auto-index.test.mjs tests/lesson-core.test.mjs tests/semiconductor-p0.test.mjs tests/mos2-study.test.mjs tests/qe-electronic-view.test.mjs tests/qe-defect-compare-view.test.mjs tests/qe-api-client.test.mjs tests/vesta-project-style.test.mjs tests/vesta-project-view.test.mjs tests/vesta-project-scientific.test.mjs tests/vesta-project-export.test.mjs tests/cif2-v18-1.test.mjs tests/cif2-v18-2.test.mjs tests/pages-assets.test.mjs tests/materials-ml.test.mjs tests/materials-ml-p1.test.mjs tests/materials-ml-p12.test.mjs tests/materials-ml-p13.test.mjs tests/gansu-geometry-scan.test.mjs tests/materials-tabs.test.mjs tests/materials-p0.test.mjs tests/materials-project.test.mjs tests/mp-settings-layout.test.mjs tests/mp-electronic.test.mjs tests/mp-electronic-visuals.test.mjs tests/llm-crystal.test.mjs tests/atoms-sidebar.test.mjs tests/material-evidence-p1.test.mjs tests/xrd-acquisition-p1.test.mjs tests/bulk-study-p1.test.mjs tests/xrd-peak-match.test.mjs tests/xrd-factor.test.mjs tests/coordination-reference.test.cjs tests/validation/test_runner.cjs
       - name: Set up Python for independent Gemmi reference
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Test MP projected DOS export with synthetic reference arrays
+        run: python -m unittest discover -s tests -p 'test_mp_electronic_export.py' -v
       - name: Test TRUBA P1.3 electronic converter with synthetic fixtures
         run: python -m unittest discover -s tests -p 'test_qe_hpc_electronic.py' -v
       - name: Test TRUBA P1.2 stage runner with synthetic fixtures
@@ -226,6 +228,10 @@ jobs:
           cp qe-electronic-setup.js public/qe-electronic-setup.js
           cp dft-ui.js public/dft-ui.js
           cp browser-dft-lab.js public/browser-dft-lab.js
+          cp mp-electronic-page.js public/mp-electronic-page.js
+          cp mp-electronic-core.js public/mp-electronic-core.js
+          cp mp-electronic-visuals.js public/mp-electronic-visuals.js
+          cp mp-electronic-state.js public/mp-electronic-state.js
           cp gansu-local-engine.js public/gansu-local-engine.js
           cp gansu-geometry-scan.js public/gansu-geometry-scan.js
           cp browser-tb-core.js public/browser-tb-core.js

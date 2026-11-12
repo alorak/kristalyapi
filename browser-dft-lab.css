@@ -35,3 +35,25 @@
 #dftPage .browser-dft-scan h3{font-size:14px;margin:0 0 10px;color:#254b70}
 #dftPage .browser-dft-scan-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 10px}
 @media(max-width:550px){#dftPage .browser-dft-scan-inputs{grid-template-columns:1fr}}
+
+/* Actual MP electronic references are separate from browser TB and QE.
+   For both channels the DOS uses vertical ENERGY, matching the band panel. */
+.mp-electronic-import{margin-top:16px;min-width:0}
+.mp-electronic-import h3,.mp-browser-reference h3{font-size:14px;line-height:1.45;margin:0 0 8px}
+.mp-electronic-import .mp-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mp-electronic-import input[type=file]{max-width:100%;font-size:12px}
+.mp-spectrum-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
+.mp-spectrum-controls label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+.mp-spectrum-controls select,.mp-electronic-plot select{font-size:12px;line-height:1.35;padding:6px 8px;max-width:100%;border:1px solid #b9cddd;border-radius:6px;background:#11243a;color:#e5edf9}
+.mp-spectrum-controls small{flex:1 1 220px}
+.mp-electronic-plots{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:12px 0}
+.mp-electronic-spin-row{display:grid;grid-template-columns:minmax(0,1.48fr) minmax(0,1fr);gap:12px;min-width:0;align-items:start}
+.mp-electronic-plot{min-width:0;padding:12px;border:1px solid #d6e3ed;border-radius:8px;overflow:hidden}
+.mp-electronic-plot strong{display:block;font-size:12px;line-height:1.45;margin:0 0 8px}
+.mp-electronic-plot svg{display:block;width:100%;height:auto;max-height:350px;overflow:visible}
+.mp-electronic-plot small{display:block;font-size:11px;line-height:1.45;margin:6px 0 0;overflow-wrap:anywhere}
+.mp-electronic-plot select{display:block;width:100%;margin-bottom:7px}
+.mp-electronic-dos-graph{min-width:0}
+#dftPage .mp-browser-reference{margin:16px 0 0}
+#dftPage .mp-browser-reference .mp-electronic-plots{max-width:100%}
+@media(max-width:850px){.mp-electronic-spin-row{grid-template-columns:minmax(0,1fr)}}
